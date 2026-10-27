@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Licenza</title>
+<meta name="description" content="Il codice di EuGEnio ha licenza AGPL-3.0, i dati elaborati e i report CC BY 4.0: si riusano citando EuGEnio come fonte. Cosa vuol dire per chi usa il sito e per chi lo installa sul proprio server.">
+<script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
+try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
+if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
+function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v=20261027m">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg">
+</head>
+<body>
+<header class="testata">
+  <div class="testata-alta">
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg" alt="EuGEnio" width="113" height="36"></a>
+    <script>eugenioLoghi()</script>
+    <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Informazioni">
+      <a href="metodo.html">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
+    </nav>
+    <details class="menu-tutto">
+      <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
+      <nav class="menu-pannello" aria-label="Menu completo">
+        <h2>Strumenti</h2>
+        <ul><li><a href="./">Previsione</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
+        <h2>Informazioni</h2>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <h2 id="aspetto-telefono">Aspetto</h2>
+        <div class="vestito">
+          <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
+      <li role="option" id="vestiti-telefono-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-telefono-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-telefono-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-telefono-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-telefono-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+          </ul>
+        </div>
+      </nav>
+    </details>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <div class="testata-menu">
+    <nav class="menu-strumenti" aria-label="Strumenti">
+    <a href="./">Previsione</a>
+    <a href="patrimonio.html">Patrimonio</a>
+    <a href="legge10.html">Legge 10</a>
+    <a href="dati.html">Dati storici</a>
+    <a href="indicatori.html">Indicatori</a>
+    </nav>
+    <div class="vestito">
+      <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
+        aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <ul class="vestito-elenco a-discesa" id="vestiti-elenco" role="listbox" aria-label="Vestito del sito" tabindex="-1" hidden>
+      <li role="option" id="vestiti-elenco-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-elenco-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-elenco-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-elenco-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-elenco-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+      </ul>
+    </div>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+</header>
+
+<main class="articolo">
+  <h1>Licenza</h1>
+  <p>Il codice di EuGEnio è rilasciato con la licenza <strong>GNU Affero General Public License, versione 3</strong>
+    (AGPL-3.0). Il testo completo è sul <a href="https://www.gnu.org/licenses/agpl-3.0.html">sito della Free Software
+    Foundation</a> e nel file <code>LICENSE</code> del <a href="https://github.com/statocritico/eugenio">repository su
+    GitHub</a>. I <a href="#dati">dati elaborati e i report</a> hanno invece la licenza <strong>Creative Commons
+    Attribuzione 4.0</strong> (CC BY 4.0): si riusano liberamente citando EuGEnio come fonte. Questa pagina è un
+    riassunto in parole semplici: in caso di dubbio vale il testo delle licenze.</p>
+
+  <h2 id="dati">Dati e report: licenza CC BY 4.0, cita EuGEnio</h2>
+  <p>I dati elaborati da EuGEnio e i report che produce (Word, PDF, Excel, CSV, JSON) sono distribuiti con la licenza
+    <a href="https://creativecommons.org/licenses/by/4.0/deed.it">Creative Commons Attribuzione 4.0 Internazionale</a>
+    (CC BY 4.0), la stessa di quasi tutte le fonti che usiamo. Puoi copiarli, ripubblicarli, modificarli e usarli per
+    qualsiasi scopo, anche per lavoro, a una condizione: <strong>nei documenti che li usano devi citare EuGEnio come
+    fonte</strong> e mantenere le fonti originali indicate nel file.</p>
+  <p>La formula che ti chiediamo, seguita dalla data in cui hai scaricato i dati o prodotto il report, è:</p>
+  <p class="avviso-legale">Fonte: EuGEnio – eugenio.statocritico.it</p>
+  <p>Qualche esempio:</p>
+  <ul>
+    <li><strong>In una relazione tecnica</strong>, sotto la tabella dei gradi giorno: «Fonte: EuGEnio –
+      eugenio.statocritico.it, dati climatici di Bologna estratti il 27/10/2026; dati meteo Open-Meteo.com
+      (CC BY 4.0), ERA5 Copernicus».</li>
+    <li><strong>In un articolo o in una presentazione</strong>, sotto un grafico: «Fonte: EuGEnio –
+      eugenio.statocritico.it (27/10/2026) su dati OpenBDAP – Ragioneria Generale dello Stato».</li>
+    <li><strong>In un foglio di calcolo o in un sito</strong> che ripubblica i dati: la stessa formula in una nota o nel
+      piede, con un collegamento a eugenio.statocritico.it quando è possibile.</li>
+    <li><strong>Se modifichi i dati</strong> (li ricalcoli, li unisci ad altri, ne tieni una parte), dillo: «elaborazione
+      di [nome] su dati EuGEnio – eugenio.statocritico.it (27/10/2026)».</li>
+  </ul>
+  <p>Non devi chiederci il permesso né avvisarci; non puoi però far credere che EuGEnio approvi il tuo lavoro. La
+    formula è già scritta in ogni file: nelle ultime righe dei CSV («Licenza» e «Come citare»), nel foglio Info dei file
+    Excel, nei campi <code>licenza</code> e <code>citazione</code> dei file JSON e GeoJSON, nel piè di pagina e nelle
+    avvertenze dei report.</p>
+  <h3 id="report">I report: licenza e obblighi</h3>
+  <p>I report che scarichi dalle pagine Previsione, Patrimonio, Legge 10 e Indicatori (Word, PDF, Excel) hanno la stessa
+    licenza CC BY 4.0. Se li usi, così come sono o in parte (una tabella, un grafico, un numero), devi:</p>
+  <ol>
+    <li><strong>citare EuGEnio</strong> nel documento che li usa, con la formula «Fonte: EuGEnio – eugenio.statocritico.it»
+      e la data del report, vicino al dato riportato o nelle fonti del documento;</li>
+    <li><strong>mantenere le fonti originali</strong> elencate nel report, nella sezione «Fonti e attribuzioni»;</li>
+    <li><strong>dire se lo hai modificato</strong>: se togli, ricalcoli o unisci dei dati, scrivi «elaborazione di [nome]
+      su dati EuGEnio»;</li>
+    <li><strong>non presentarlo come un documento ufficiale</strong> né far credere che EuGEnio approvi il tuo lavoro: i
+      valori sono calcolati con sistemi automatici e senza garanzia (vedi le <a href="faq.html#garanzia">F.A.Q.</a>) e
+      non sostituiscono quelli richiesti dalle norme, per esempio nella relazione della Legge 10/91;</li>
+    <li><strong>lasciare le avvertenze</strong> se ripubblichi il report intero: piè di pagina e avvertenze finali fanno
+      parte del documento.</li>
+  </ol>
+  <p>I dati che hai caricato tu (i consumi, l'elenco degli edifici) restano tuoi: gli obblighi riguardano solo quello che
+    EuGEnio ha calcolato. Per riusare il report non devi chiederci nulla né avvisarci.</p>
+
+  <p>Cosa la licenza non copre:</p>
+  <ul>
+    <li><strong>I dati di origine restano soggetti alle loro licenze.</strong> Insieme a EuGEnio vanno citate le fonti
+      scritte nel file: per esempio Open-Meteo e Copernicus per il meteo, <a href="https://www.istat.it/">ISTAT</a> per i
+      comuni, <a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a> per gli indirizzi, OpenBDAP e ReportER per
+      la sanità, Eurostat per i prezzi. Quasi tutte chiedono solo di essere citate.</li>
+    <li><strong>I dati trovati con Zornade.</strong> Le particelle catastali e gli indirizzi trovati con
+      <a href="https://zornade.com">Zornade</a> restano soggetti alle sue condizioni: va riportato il collegamento
+      «Dati elaborati da Zornade» a zornade.com e non si possono ridistribuire in blocco come dati grezzi.</li>
+    <li><strong>I testi normativi.</strong> I gradi giorno e le zone climatiche del DPR 412/93 sono un atto pubblico,
+      libero dal diritto d'autore: la citazione riguarda la nostra raccolta e l'abbinamento ai codici ISTAT attuali,
+      non la legge.</li>
+    <li><strong>I valori ricavati dagli anni tipo del CTI.</strong> Gli indicatori che calcoliamo dagli anni tipo climatici
+      del CTI (vedi la <a href="faq.html#cti-elaborazioni">F.A.Q.</a>) <strong>non hanno la licenza CC BY</strong>: si
+      possono consultare e citare (indicando EuGEnio e il CTI), ma per ripubblicarli o ridistribuirli serve il permesso del
+      CTI, finché il CTI non risponde alla nostra richiesta.</li>
+    <li><strong>I file che carichi.</strong> Restano tuoi: la licenza riguarda solo quello che EuGEnio calcola. I prezzi
+      dei mercati dell'energia (GME, EEX) non sono mai nei file: EuGEnio li usa solo al proprio interno.</li>
+  </ul>
+
+  <h2 id="codice">Il codice: cos'è la AGPL-3.0</h2>
+  <p>È una licenza di software libero pubblicata nel 2007 dalla Free Software Foundation. Dà a chiunque quattro
+    libertà: <strong>usare</strong> il programma per qualsiasi scopo, <strong>studiarne</strong> il funzionamento,
+    <strong>modificarlo</strong> e <strong>ridistribuirlo</strong>, anche nella versione modificata.</p>
+  <p>In cambio chiede una cosa sola: che queste libertà passino intatte a chi viene dopo. È quello che si chiama
+    <em>copyleft</em>: chi distribuisce EuGEnio, modificato o no, deve farlo con la stessa licenza e insieme al codice
+    sorgente. Fin qui è identica alla più nota GPL-3.0. La AGPL aggiunge una clausola pensata per i servizi online (la
+    sezione 13): se un programma modificato viene fatto usare ad altri <strong>attraverso la rete</strong>, come un sito
+    web, chi lo gestisce deve offrire a quegli utenti il codice sorgente della versione che sta facendo girare.</p>
+
+  <h2>Perché l'abbiamo scelta</h2>
+  <ul>
+    <li><strong>Perché EuGEnio è un servizio online.</strong> Con la GPL classica chi prende il codice, lo migliora e lo
+      offre come sito web non deve condividere niente, perché tecnicamente non lo "distribuisce": gli utenti usano il
+      servizio senza mai ricevere il programma. La AGPL chiude questa scappatoia.</li>
+    <li><strong>Perché i miglioramenti tornino a tutti.</strong> Se qualcuno aggiunge una funzione utile, una regione o
+      una correzione e la mette online, gli altri possono vederla e riprenderla. Nessuno può prendere EuGEnio, chiuderlo
+      e rivenderlo come prodotto proprietario.</li>
+    <li><strong>Per coerenza con i progetti su cui poggia.</strong> Diversi strumenti che usiamo sono aperti allo stesso
+      modo: il servizio meteo <a href="https://open-meteo.com">Open-Meteo</a>, la piattaforma di newsletter
+      <a href="https://listmonk.app">listmonk</a>, il catalogo di dati aperti <a href="https://ckan.org">CKAN</a> usano la stessa
+      licenza. Gli altri sono elencati nella pagina <a href="sitografia.html">Sitografia</a>.</li>
+    <li><strong>Perché il metodo deve essere verificabile.</strong> Una previsione o un dato climatico corretto valgono
+      quanto il calcolo che c'è dietro: deve essere pubblico, anche nelle copie che girano altrove.</li>
+  </ul>
+
+  <h2>Cosa comporta per te che usi il sito</h2>
+  <ul>
+    <li><strong>Nessun obbligo per usare il sito.</strong> La AGPL riguarda il codice, non chi usa il servizio: puoi
+      usare EuGEnio per lavoro, anche in un'azienda o in un ente, senza chiedere permessi e senza pagare.</li>
+    <li><strong>I tuoi file restano tuoi, i risultati si citano.</strong> I file che carichi non diventano AGPL né
+      CC BY. Le previsioni, i dati e i report che scarichi hanno la <a href="#dati">licenza CC BY 4.0</a>: se li riusi,
+      cita EuGEnio come fonte e mantieni le fonti dei dati che contengono, indicate in fondo a ogni pagina e nei file
+      scaricati: per esempio Open-Meteo (CC BY 4.0), <a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a> e
+      <a href="https://www.istat.it/">ISTAT</a> (CC BY 4.0) e <a href="https://zornade.com">Zornade</a> per il catasto.</li>
+    <li><strong>Nessuna garanzia.</strong> Come tutto il software libero, EuGEnio è fornito "così com'è" (sezioni 15 e 16
+      della licenza): previsioni e localizzazioni sono stime da verificare, non certificazioni. La
+      <a href="faq.html">pagina delle F.A.Q.</a> spiega i limiti del servizio.</li>
+  </ul>
+
+  <h2>Cosa comporta se installi EuGEnio sul tuo server</h2>
+  <p>È proprio quello per cui il codice è aperto (vedi <a href="faq.html#mirror">perché volerne un mirror</a> e <a href="mirror.html">come farlo</a>). Puoi farlo
+    gratis, per te, per il tuo ente o per i tuoi clienti. Le regole sono poche:</p>
+  <ul>
+    <li><strong>Se lo usi così com'è</strong>, basta lasciare gli avvisi di copyright e di licenza e il collegamento al
+      codice nel piede delle pagine.</li>
+    <li><strong>Se lo modifichi e lo fai usare ad altri in rete</strong> (anche solo ai colleghi sulla rete interna), devi
+      offrire a quegli utenti il codice sorgente della tua versione, con la stessa licenza: in pratica un collegamento a
+      un repository pubblico, nel piede del sito. Le modifiche che tieni solo per te, senza farle usare ad altri, non
+      hai l'obbligo di pubblicarle.</li>
+    <li><strong>Non puoi cambiare licenza</strong> al codice né aggiungere restrizioni per chi lo riceve da te. Puoi invece
+      far pagare un servizio di installazione o di assistenza.</li>
+    <li><strong>Distingui la tua copia da questa.</strong> La licenza non dà diritti sui nomi EuGEnio e Stato Critico: ti
+      chiediamo di non presentare la tua istanza come il sito ufficiale.</li>
+  </ul>
+  <p><strong>Attenzione: la AGPL copre il codice, non i dati.</strong> Chi installa EuGEnio deve procurarsi da sé
+    gli accessi alle fonti e rispettarne le condizioni:</p>
+  <table>
+    <thead><tr><th>Fonte</th><th>Cosa serve</th></tr></thead>
+    <tbody>
+      <tr><td>Open-Meteo</td><td>L'API gratuita è per uso non commerciale e ha limiti giornalieri; in alternativa si installa
+        una propria istanza (anch'essa AGPL) o si sottoscrive un piano. Attribuzione CC BY 4.0.</td></tr>
+      <tr><td><a href="https://zornade.com">Zornade</a></td><td>Una chiave personale, attribuzione con collegamento a zornade.com, niente ridistribuzione dei
+        dati grezzi né estrazione massiva.</td></tr>
+      <tr><td>GME (PUN, PSV, IGI)</td><td>Credenziali proprie: la licenza del GME è personale e vieta di pubblicare o
+        ridistribuire i prezzi. Per questo EuGEnio li usa solo all'interno.</td></tr>
+      <tr><td>EEX (TTF)</td><td>Dati consultabili a solo scopo informativo, da non ripubblicare.</td></tr>
+      <tr><td><a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a>, <a href="https://www.istat.it/">ISTAT</a></td><td>Dati aperti CC BY 4.0: si citano la fonte e la licenza.</td></tr>
+      <tr><td>TiRex-2</td><td>Modello di NX-AI con licenza Apache 2.0: si conservano gli avvisi di copyright.</td></tr>
+    </tbody>
+  </table>
+  <p>Le istruzioni per l'installazione sono nella pagina <a href="mirror.html">Mirror</a> e nel
+    <a href="https://github.com/statocritico/eugenio">repository</a>. Se lo
+    installi, ci fa piacere saperlo: <a href="contatti.html">scrivici</a>.</p>
+</main>
+
+<footer class="piede">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg" alt="" width="44" height="44">
+  <div class="piede-testi">
+  <p>EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a>.</p>
+  <p><a href="contatti.html">Contattaci</a> · <a href="licenza.html" aria-current="page">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  </div>
+</footer>
+<script src="aspetto.js?v=20261027m"></script>
+</body>
+</html>

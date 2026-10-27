@@ -1,0 +1,59 @@
+# Pagine delle centrali di committenza controllate ogni notte dalla sorveglianza (mercati_energia/sorveglianza.py),
+# oltre a quelle scritte nella sezione [sorveglianza] di ogni convenzione.
+#
+#   tipo = "elenco"  pagina con l'elenco delle convenzioni o delle gare: si segnalano i collegamenti nuovi il cui
+#                    testo contiene una delle `parole` (predefinite: energia elettrica, gas naturale, fornitura di
+#                    gas, fornitura di energia). Servono a sapere quando esce una convenzione da aggiungere.
+#   tipo = "pagina"  pagina di una gara o convenzione precisa: si segnalano le modifiche e si scaricano i
+#                    documenti nuovi (listini, esiti, aggiudicazioni, capitolati...), col testo dei PDF.
+#
+# Indirizzi provati dal vivo il 26/10/2026: rispondono tutti. Se una pagina non risponde per tre notti di fila arriva un'email:
+# correggere qui l'indirizzo. Questo file sta in una sottocartella apposta, perché i *.toml della cartella
+# delle convenzioni sono letti come convenzioni.
+
+# ---------------------------------------------------------------- Intercent-ER (Emilia-Romagna)
+[[fonte]]
+id = "intercenter-convenzioni"
+centrale = "Intercent-ER"
+tipo = "elenco"
+url = "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni"
+
+[[fonte]]
+id = "intercenter-gare"
+centrale = "Intercent-ER"
+tipo = "elenco"
+url = "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/bandi-intercenter/bandi-e-procedure-di-gara"
+
+# ---------------------------------------------------------------- Consip (nazionale)
+[[fonte]]
+id = "consip-ee-2880"
+centrale = "Consip"
+tipo = "pagina"
+url = "https://www.consip.it/bandi/gara-energia-elettrica-id-2880"      # Energia Elettrica 23, attiva
+
+[[fonte]]
+id = "consip-ee-2994"
+centrale = "Consip"
+tipo = "pagina"
+url = "https://www.consip.it/bandi/energia-elettrica"                  # Energia Elettrica ID 2994 (19 lotti), in gara
+documenti = "aggiudic|esit|graduator|prezz|listin"
+
+[[fonte]]
+id = "consip-gas-2958"
+centrale = "Consip"
+tipo = "pagina"
+url = "https://www.consip.it/bandi/gara-gas-naturale-id-2958"          # Gas naturale ID 2958 (avviso di aggiudicazione GUUE del 22/10/2026)
+documenti = "aggiudic|esit|graduator|prezz|listin"
+
+# ---------------------------------------------------------------- Consorzio Energia Toscana / Soggetto Aggregatore Toscana
+[[fonte]]
+id = "cet-bandi-aggiudicati"
+centrale = "Consorzio Energia Toscana"
+tipo = "elenco"
+url = "https://www.consorzioenergiatoscana.it/bandi/?anac_stato=aggiudicati"   # energia 2027 e gas 2026/27: aggiudicati, spread non ancora pubblici
+
+[[fonte]]
+id = "cet-bandi"
+centrale = "Consorzio Energia Toscana"
+tipo = "elenco"
+url = "https://www.consorzioenergiatoscana.it/bandi/"

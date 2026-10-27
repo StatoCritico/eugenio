@@ -1,0 +1,53 @@
+# Intercent-ER "Energia elettrica 20" – fornitura anno 2027 (convenzione attiva dall'08/07/2026, ordinativi fino al
+# 30/09/2027, nessun rinnovo). Fonti: pagina della convenzione, capitolato tecnico (All. 2, art. 2, 3, 7, 8) e
+# listini EE20 dell'08/07/2026; ricerca del 26/10/2026.
+# Spread comprensivo di garanzie d'origine (energia verde) e oneri di sbilanciamento; dispacciamento come sul
+# mercato libero (fuori da questo calcolo); perdite convenzionali fatturate allo stesso prezzo dell'energia.
+
+[convenzione]
+id = "intercenter-ee20-2027"
+ente = "Intercent-ER"
+titolo = "Energia elettrica 20 – fornitura 2027"
+regione = "08"
+commodity = "elettricita"
+dal = 2027-01-01
+al = 2027-12-31
+unita_prezzo = "EUR/MWh"
+fonte = "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-attive/2026/energia-elettrica-20"
+
+[[lotto]]
+id = "1"
+descrizione = "Aziende sanitarie dell'Emilia-Romagna, POD in media tensione (Nova AEG, CIG BB45D31452)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F1", "F2", "F3"]
+indice = "PUN_FASCE"                 # PUN Index GME, media aritmetica mensile per fascia (capitolato art. 7)
+spread = 2.44                        # €/MWh (0,00244 €/kWh), GO comprese; listino EE20 lotto 1
+perdite = 0.038                      # perdite convenzionali MT (ARERA, del. 377/2015 e 449/2020)
+[lotto.ambito]
+volume_stimato_mwh = 286944          # capitolato art. 2
+
+[[lotto]]
+id = "2-BT"
+descrizione = "Tutte le PA e aziende sanitarie, POD in bassa tensione (Alperia Smart Services, CIG BB45D32525)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0", "F1", "F2", "F3"]
+indice = "PUN_FASCE"
+spread = 3.47                        # €/MWh (0,00347 €/kWh), GO comprese; listino EE20 lotto 2
+perdite = 0.102                      # perdite convenzionali BT
+
+[[lotto]]
+id = "2-MT"
+descrizione = "Pubbliche amministrazioni (non sanitarie), POD in media tensione (Alperia Smart Services)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0", "F1", "F2", "F3"]
+indice = "PUN_FASCE"
+spread = 3.47                        # €/MWh; listino EE20 lotto 2
+perdite = 0.038
+
+# Sorveglianza notturna della pagina della convenzione: modifiche e documenti nuovi (listini, guida).
+# Nessuna regola sui valori: il formato dei listini EE20 non è ancora stato provato; si aggiunge quando
+# la sorveglianza avrà scaricato il primo listino (testo in <archivio>/sorveglianza/documenti/).
+[sorveglianza]
+pagine = [
+  "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-attive/2026/energia-elettrica-20",
+]

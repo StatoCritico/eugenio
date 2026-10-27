@@ -1,0 +1,92 @@
+# Configurazione dei dati di mercato. I percorsi relativi partono dalla cartella di questo file.
+# Sul server (docker) l'archivio è /dati/mercati e i segreti arrivano da .env (GME_UTENTE, GME_PASSWORD).
+
+[archivio]
+cartella = "archivio_mercati"
+
+[gme]
+abilitato = true
+utente = ""                          # oppure variabile d'ambiente GME_UTENTE
+password_file = ".gme_password"      # oppure GME_PASSWORD; permessi 600, mai nel repository
+inizio_quartorario = 2025-10-01      # PUN Index GME e prezzi zonali a 15 minuti
+inizio_orario = 2004-04-01           # storico orario dall'avvio della borsa elettrica
+inizio_gas = 2010-12-01              # MGP-GAS (PSV) dall'avvio del mercato a pronti del gas
+inizio_igi = 2023-01-01              # IGI: il primo giorno effettivo viene trovato in automatico
+max_minuti_storico = 60              # ogni notte, tempo massimo per recuperare lo storico
+giorni_riverifica = 7                # ogni notte riscarica anche gli ultimi 7 giorni
+volumi = true                        # volumi MGP per zona
+
+[eex]
+ttf = true                           # TTF Neutral Gas Price, file pubblico degli ultimi 60 giorni
+ttf_trimestrali = true               # future trimestrali TTF letti dal sito EEX (a scopo informativo),
+                                     # usati solo per calcolare il PFOR: mai mostrati né esportati
+
+[arera]
+cmem = true                          # PSV day-ahead medio mensile ufficiale (CMEM,m), indice PSV_DA
+
+# Fonte alternativa o aggiuntiva delle forward trimestrali TTF (abbonamento EEX DataSource, ICE, report di
+# un fornitore) che fornisce un CSV via web. Non serve: di norma bastano i future letti dal sito EEX.
+[pfor.sorgente]
+url = ""
+nome = ""
+utente_env = ""                      # nome della variabile d'ambiente con l'utente (es. FORWARD_UTENTE)
+password_env = ""
+separatore = ";"
+giorno_prima = false                 # true se le date sono GG/MM/AAAA
+colonne = { data = "data", trimestre = "trimestre", prezzo = "prezzo" }
+
+[calendario]
+# giorni da trattare come festivi nelle fasce ARERA oltre a quelli nazionali (es. delibere particolari)
+festivi_extra = []
+
+[convenzioni]
+cartella = "convenzioni"           # sul server copiare anche la sottocartella fonti/
+
+[sorveglianza]
+# Ogni notte: pagine delle centrali (convenzioni/fonti/centrali.toml) e delle convenzioni (sezioni [sorveglianza]),
+# documenti nuovi, valori confrontati con i file TOML, PSV ARERA del mese scorso. Email solo se cambia qualcosa.
+attiva = true
+
+# ---------------------------------------------------------------- ISTAT (su richiesta)
+# Gli identificativi dei dataflow cambiano quando ISTAT ribasa gli indici: verificarli con
+#   python -m mercati_energia istat cerca FOI
+#   python -m mercati_energia istat struttura <id>
+# e correggere qui. `filtri` seleziona le righe dopo il download (nomi delle dimensioni SDMX).
+[istat.foi_annuale]
+descrizione = "FOI senza tabacchi – indice generale, medie annue"
+dataflow = "169_746"
+chiave = ""
+dal = "2016"
+filtri = { E_COICOP_REV_ISTAT = "00" }
+
+[istat.foi_mensile]
+descrizione = "FOI senza tabacchi – indice generale, mensile"
+dataflow = "169_745"
+chiave = ""
+dal = "2016-01"
+filtri = { E_COICOP_REV_ISTAT = "00" }
+
+[istat.nic_energia]
+descrizione = "NIC – energia elettrica, gas e altri combustibili (COICOP 045), mensile"
+dataflow = "167_744"
+chiave = ""
+dal = "2016-01"
+filtri = { E_COICOP_REV_ISTAT = "045" }
+
+[istat.prezzi_produzione_energia]
+descrizione = "Prezzi alla produzione dell'industria – fornitura di energia elettrica e gas (ATECO D35)"
+dataflow = "145_360"
+chiave = ""
+dal = "2016-01"
+filtri = { ATECO_2007 = "D" }
+
+# ---------------------------------------------------------------- Eurostat (su richiesta)
+[eurostat.elettricita_pmi]
+descrizione = "Prezzi elettricità clienti non domestici, Italia, tutte le fasce, €/kWh"
+dataset = "nrg_pc_205"
+filtri = { geo = "IT", currency = "EUR", unit = "KWH", tax = ["X_TAX", "X_VAT", "I_TAX"] }
+
+[eurostat.gas_pmi]
+descrizione = "Prezzi gas clienti non domestici, Italia, tutte le fasce, €/GJ (PCS)"
+dataset = "nrg_pc_203"
+filtri = { geo = "IT", currency = "EUR", unit = "GJ_GCV", tax = ["X_TAX", "X_VAT", "I_TAX"] }

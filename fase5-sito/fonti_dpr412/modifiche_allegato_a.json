@@ -1,0 +1,5609 @@
+[
+ {
+  "vecchia": [
+   "TO",
+   "CAFASSE",
+   "E",
+   "2967",
+   "409"
+  ],
+  "nuova": [
+   "TO",
+   "CAFASSE",
+   "F",
+   "3039",
+   "409"
+  ],
+  "passi": [
+   {
+    "versione": 5,
+    "valore": [
+     "TO",
+     "CAFASSE",
+     "F",
+     "3039",
+     "409"
+    ],
+    "in_vigore_dal": "2000-11-10",
+    "gu": "2000-10-26",
+    "atti": [
+     "D.M. 12 ottobre 2000 (in G.U. 26/10/2000, n.251)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TO",
+   "MOMPANTERO",
+   "F",
+   "3447",
+   "729"
+  ],
+  "nuova": [
+   "TO",
+   "MOMPANTERO",
+   "F",
+   "3302",
+   "838"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "TO",
+     "MOMPANTERO",
+     "F",
+     "3302",
+     "838"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TO",
+   "SAN GIORIO DI SUSA",
+   "E",
+   "2984",
+   "420"
+  ],
+  "nuova": [
+   "TO",
+   "SAN GIORIO DI SUSA",
+   "F",
+   "3013",
+   "420"
+  ],
+  "passi": [
+   {
+    "versione": 39,
+    "valore": [
+     "TO",
+     "SAN GIORIO DI SUSA",
+     "F",
+     "3013",
+     "420"
+    ],
+    "in_vigore_dal": "2005-08-31",
+    "gu": "2005-08-16",
+    "atti": [
+     "D.M. 26 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 22 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 21 luglio 2005 (in G.U. 16/08/2005, n.189)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "VC",
+   "MIAGLIANO",
+   "E",
+   "2980",
+   "520"
+  ],
+  "nuova": [
+   "BI",
+   "Miagliano",
+   "F",
+   "3020",
+   "541"
+  ],
+  "passi": [
+   {
+    "versione": 4,
+    "valore": [
+     "BI",
+     "Miagliano",
+     "F",
+     "3020",
+     "541"
+    ],
+    "in_vigore_dal": "2000-09-19",
+    "gu": "2000-09-04",
+    "atti": [
+     "D.M. 4 agosto 2000 (in G.U. 04/09/2000, n.206)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "NO",
+   "CAVAGLIO SPOCCIA",
+   "F",
+   "3211",
+   "697"
+  ],
+  "nuova": [
+   "NO",
+   "CAVAGLIO SPOCCIA",
+   "F",
+   "3042",
+   "410"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "NO",
+     "CAVAGLIO SPOCCIA",
+     "F",
+     "3042",
+     "410"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "NO",
+   "SAVENTINO",
+   "E",
+   "2646",
+   "146"
+  ],
+  "nuova": [
+   "NO",
+   "ROMENTINO",
+   "E",
+   "2646",
+   "146"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "NO",
+     "ROMENTINO",
+     "E",
+     "2646",
+     "146"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "CN",
+   "GENOLA",
+   "E",
+   "2724",
+   "345"
+  ],
+  "nuova": [
+   "CN",
+   "GENOLA",
+   "E",
+   "2741",
+   "345"
+  ],
+  "passi": [
+   {
+    "versione": 18,
+    "valore": [
+     "CN",
+     "GENOLA",
+     "E",
+     "2741",
+     "345"
+    ],
+    "in_vigore_dal": "2002-03-16",
+    "gu": "2002-03-01",
+    "atti": [
+     "D.M. 14 gennaio 2002 (in G.U. 01/03/2002, n.51)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "CN",
+   "MARMORA",
+   "F",
+   "3068",
+   "607"
+  ],
+  "nuova": [
+   "CN",
+   "MARMORA",
+   "F",
+   "3835",
+   "1225"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "CN",
+     "MARMORA",
+     "F",
+     "3802",
+     "1225"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 18,
+    "valore": [
+     "CN",
+     "MARMORA",
+     "F",
+     "3835",
+     "1225"
+    ],
+    "in_vigore_dal": "2002-03-16",
+    "gu": "2002-03-01",
+    "atti": [
+     "D.M. 14 gennaio 2002 (in G.U. 01/03/2002, n.51)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "CN",
+   "SANT'ALBANO STURA",
+   "E",
+   "2765",
+   "378"
+  ],
+  "nuova": [
+   "CN",
+   "SANT'ALBANO STURA",
+   "E",
+   "2782",
+   "378"
+  ],
+  "passi": [
+   {
+    "versione": 18,
+    "valore": [
+     "CN",
+     "SANT'ALBANO STURA",
+     "E",
+     "2782",
+     "378"
+    ],
+    "in_vigore_dal": "2002-03-16",
+    "gu": "2002-03-01",
+    "atti": [
+     "D.M. 14 gennaio 2002 (in G.U. 01/03/2002, n.51)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "AL",
+   "MONLEALE",
+   "E",
+   "2751",
+   "320"
+  ],
+  "nuova": [
+   "AL",
+   "MONLEALE",
+   "E",
+   "2580",
+   "184"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "AL",
+     "MONLEALE",
+     "E",
+     "2580",
+     "184"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "AL",
+   "MONTECHIARO D'AQUI",
+   "E",
+   "2953",
+   "560"
+  ],
+  "nuova": [
+   "AL",
+   "MONTECHIARO D'ACQUI",
+   "E",
+   "2953",
+   "560"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "AL",
+     "MONTECHIARO D'ACQUI",
+     "E",
+     "2953",
+     "560"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "ALBOSAGGIA",
+   "E",
+   "2765",
+   "490"
+  ],
+  "nuova": [
+   "SO",
+   "ALBOSAGGIA",
+   "F",
+   "3256",
+   "490"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "ALBOSAGGIA",
+     "F",
+     "3256",
+     "490"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "ANDALO VALTELLINO",
+   "E",
+   "2395",
+   "229"
+  ],
+  "nuova": [
+   "SO",
+   "ANDALO VALTELLINO",
+   "F",
+   "3011",
+   "229"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "ANDALO VALTELLINO",
+     "F",
+     "3011",
+     "229"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "BUGLIO IN MONTE",
+   "E",
+   "2889",
+   "577"
+  ],
+  "nuova": [
+   "SO",
+   "BUGLIO IN MONTE",
+   "F",
+   "3047",
+   "577"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "BUGLIO IN MONTE",
+     "F",
+     "3047",
+     "577"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "CAIOLO",
+   "E",
+   "2795",
+   "335"
+  ],
+  "nuova": [
+   "SO",
+   "CAIOLO",
+   "F",
+   "3111",
+   "335"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "CAIOLO",
+     "F",
+     "3111",
+     "335"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "CEDRASCO",
+   "E",
+   "2726",
+   "287"
+  ],
+  "nuova": [
+   "SO",
+   "CEDRASCO",
+   "F",
+   "3066",
+   "287"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "CEDRASCO",
+     "F",
+     "3066",
+     "287"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "CINO",
+   "E",
+   "2785",
+   "504"
+  ],
+  "nuova": [
+   "SO",
+   "CINO",
+   "F",
+   "3004",
+   "504"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "CINO",
+     "F",
+     "3004",
+     "504"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "COLORINA",
+   "E",
+   "2748",
+   "302"
+  ],
+  "nuova": [
+   "SO",
+   "COLORINA",
+   "F",
+   "3080",
+   "302"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "COLORINA",
+     "F",
+     "3080",
+     "302"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "COSIO VALTELLINO",
+   "E",
+   "2398",
+   "231"
+  ],
+  "nuova": [
+   "SO",
+   "COSIO VALTELLINO",
+   "F",
+   "3013",
+   "231"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "COSIO VALTELLINO",
+     "F",
+     "3013",
+     "231"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "DAZIO",
+   "E",
+   "2876",
+   "568"
+  ],
+  "nuova": [
+   "SO",
+   "DAZIO",
+   "F",
+   "3041",
+   "568"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "DAZIO",
+     "F",
+     "3041",
+     "568"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "DELEBIO",
+   "E",
+   "2379",
+   "218"
+  ],
+  "nuova": [
+   "SO",
+   "DELEBIO",
+   "F",
+   "3001",
+   "218"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "DELEBIO",
+     "F",
+     "3001",
+     "218"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "FAEDO VALTELLINO",
+   "E",
+   "2861",
+   "557"
+  ],
+  "nuova": [
+   "SO",
+   "FAEDO VALTELLINO",
+   "F",
+   "3319",
+   "557"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "FAEDO VALTELLINO",
+     "F",
+     "3319",
+     "557"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "FORCOLA",
+   "E",
+   "2480",
+   "289"
+  ],
+  "nuova": [
+   "SO",
+   "FORCOLA",
+   "F",
+   "3067",
+   "289"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "FORCOLA",
+     "F",
+     "3067",
+     "289"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "FUSINE",
+   "E",
+   "2724",
+   "285"
+  ],
+  "nuova": [
+   "SO",
+   "FUSINE",
+   "F",
+   "3064",
+   "285"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "FUSINE",
+     "F",
+     "3064",
+     "285"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "GROSOTTO",
+   "E",
+   "2907",
+   "590"
+  ],
+  "nuova": [
+   "SO",
+   "GROSOTTO",
+   "F",
+   "3054",
+   "590"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "GROSOTTO",
+     "F",
+     "3054",
+     "590"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "LOVERO",
+   "E",
+   "2801",
+   "515"
+  ],
+  "nuova": [
+   "SO",
+   "LOVERO",
+   "F",
+   "3011",
+   "515"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "LOVERO",
+     "F",
+     "3011",
+     "515"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "MAZZO DI VALTELLINA",
+   "E",
+   "2853",
+   "552"
+  ],
+  "nuova": [
+   "SO",
+   "MAZZO DI VALTELLINA",
+   "F",
+   "3032",
+   "552"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "MAZZO DI VALTELLINA",
+     "F",
+     "3032",
+     "552"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "MONTAGNA IN VALTELLINA",
+   "E",
+   "2875",
+   "567"
+  ],
+  "nuova": [
+   "SO",
+   "MONTAGNA IN VALTELLINA",
+   "F",
+   "3041",
+   "567"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "MONTAGNA IN VALTELLINA",
+     "F",
+     "3041",
+     "567"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "MORBEGNO",
+   "E",
+   "2442",
+   "262"
+  ],
+  "nuova": [
+   "SO",
+   "MORBEGNO",
+   "F",
+   "3042",
+   "262"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "MORBEGNO",
+     "F",
+     "3042",
+     "262"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "PIATEDA",
+   "E",
+   "2751",
+   "304"
+  ],
+  "nuova": [
+   "SO",
+   "PIATEDA",
+   "F",
+   "3082",
+   "304"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "PIATEDA",
+     "F",
+     "3082",
+     "304"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "POGGIRIDENTI",
+   "E",
+   "2870",
+   "564"
+  ],
+  "nuova": [
+   "SO",
+   "POGGIRIDENTI",
+   "F",
+   "3039",
+   "564"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "POGGIRIDENTI",
+     "F",
+     "3039",
+     "564"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "POSTALESIO",
+   "E",
+   "2802",
+   "516"
+  ],
+  "nuova": [
+   "SO",
+   "POSTALESIO",
+   "F",
+   "3011",
+   "516"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "POSTALESIO",
+     "F",
+     "3011",
+     "516"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "ROGOLO",
+   "E",
+   "2376",
+   "216"
+  ],
+  "nuova": [
+   "SO",
+   "ROGOLO",
+   "F",
+   "3002",
+   "216"
+  ],
+  "passi": [
+   {
+    "versione": 36,
+    "valore": [
+     "SO",
+     "ROGOLO",
+     "F",
+     "3002",
+     "216"
+    ],
+    "in_vigore_dal": "2005-05-06",
+    "gu": "2005-04-21",
+    "atti": [
+     "D.M. 24 marzo 2005 (in G.U. 21/04/2005, n.92)",
+     "D.M. 29 marzo 2005 (in G.U. 21/04/2005, n.92)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "SAN GIACOMO FILIPPO",
+   "E",
+   "2811",
+   "522"
+  ],
+  "nuova": [
+   "SO",
+   "SAN GIACOMO FILIPPO",
+   "F",
+   "3001",
+   "522"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "SAN GIACOMO FILIPPO",
+     "F",
+     "3001",
+     "522"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "SERNIO",
+   "E",
+   "2967",
+   "632"
+  ],
+  "nuova": [
+   "SO",
+   "SERNIO",
+   "F",
+   "3078",
+   "632"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "SERNIO",
+     "F",
+     "3078",
+     "632"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "TALAMONA",
+   "E",
+   "2474",
+   "285"
+  ],
+  "nuova": [
+   "SO",
+   "TALAMONA",
+   "F",
+   "3064",
+   "285"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "TALAMONA",
+     "F",
+     "3064",
+     "285"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "TOVO DI SANT'AGATA",
+   "E",
+   "2817",
+   "526"
+  ],
+  "nuova": [
+   "SO",
+   "TOVO DI SANT'AGATA",
+   "F",
+   "3017",
+   "526"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "TOVO DI SANT'AGATA",
+     "F",
+     "3017",
+     "526"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "TRESIVIO",
+   "E",
+   "2785",
+   "504"
+  ],
+  "nuova": [
+   "SO",
+   "TRESIVIO",
+   "F",
+   "3004",
+   "504"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "TRESIVIO",
+     "F",
+     "3004",
+     "504"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "VERVIO",
+   "E",
+   "2849",
+   "549"
+  ],
+  "nuova": [
+   "SO",
+   "VERVIO",
+   "F",
+   "3030",
+   "549"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "VERVIO",
+     "F",
+     "3030",
+     "549"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SO",
+   "VILLA DI CHIAVENNA",
+   "E",
+   "2968",
+   "633"
+  ],
+  "nuova": [
+   "SO",
+   "VILLA DI CHIAVENNA",
+   "F",
+   "3065",
+   "633"
+  ],
+  "passi": [
+   {
+    "versione": 32,
+    "valore": [
+     "SO",
+     "VILLA DI CHIAVENNA",
+     "F",
+     "3065",
+     "633"
+    ],
+    "in_vigore_dal": "2004-07-01",
+    "gu": "2004-06-16",
+    "atti": [
+     "D.M. 17 maggio 2004 (in G.U. 16/06/2004, n.139)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BG",
+   "BRACCA",
+   "E",
+   "2626",
+   "400"
+  ],
+  "nuova": [
+   "BG",
+   "BRACCA",
+   "E",
+   "2890",
+   "620"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "BG",
+     "BRACCA",
+     "E",
+     "2890",
+     "620"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BG",
+   "SERINA",
+   "F",
+   "3092",
+   "720"
+  ],
+  "nuova": [
+   "BG",
+   "SERINA",
+   "F",
+   "3387",
+   "820"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "BG",
+     "SERINA",
+     "F",
+     "3387",
+     "820"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BS",
+   "LIMONE SUL GARDA",
+   "D",
+   "1976",
+   "66"
+  ],
+  "nuova": [
+   "BS",
+   "Limone sul Garda",
+   "E",
+   "2176",
+   "66"
+  ],
+  "passi": [
+   {
+    "versione": 10,
+    "valore": [
+     "BS",
+     "Limone sul Garda",
+     "D",
+     "2097",
+     "66"
+    ],
+    "in_vigore_dal": "2001-10-26",
+    "gu": "2001-10-11",
+    "atti": [
+     "D.M. 3 luglio 2001 (in G.U. 11/10/2001, n.237)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 45,
+    "valore": [
+     "BS",
+     "Limone sul Garda",
+     "E",
+     "2176",
+     "66"
+    ],
+    "in_vigore_dal": "2009-11-20",
+    "gu": "2009-11-05",
+    "atti": [
+     "D.M. 13 ottobre 2009 (in G.U. 05/11/2009, n.258)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BS",
+   "TREMOSINE",
+   "E",
+   "2801",
+   "414"
+  ],
+  "nuova": [
+   "BS",
+   "TREMOSINE",
+   "E",
+   "2162",
+   "65"
+  ],
+  "passi": [
+   {
+    "versione": 44,
+    "valore": [
+     "BS",
+     "TREMOSINE",
+     "E",
+     "2162",
+     "65"
+    ],
+    "in_vigore_dal": "2008-12-13",
+    "gu": "2008-11-28",
+    "atti": [
+     "D.M. 24 ottobre 2008 (in G.U. 28/11/2008, n.279)",
+     "D.M. 30 ottobre 2008 (in G.U. 28/11/2008, n.279)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PV",
+   "SANTA MARGHERITA DI BELICE",
+   "F",
+   "3138",
+   "550"
+  ],
+  "nuova": [
+   "AG",
+   "SANTA MARGHERITA DI BELICE",
+   "C",
+   "1218",
+   "400"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "AG",
+     "SANTA MARGHERITA DI BELICE",
+     "C",
+     "1218",
+     "400"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BZ",
+   "SENALE S.FELICE",
+   "F",
+   "4401",
+   "1355"
+  ],
+  "nuova": [
+   "BZ",
+   "SENALE-SAN FELICE",
+   "F",
+   "4401",
+   "1355"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "BZ",
+     "SENALE-SAN FELICE",
+     "F",
+     "4401",
+     "1355"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TN",
+   "AVIO",
+   "E",
+   "2311",
+   "131"
+  ],
+  "nuova": [
+   "TN",
+   "AVIO",
+   "E",
+   "2580",
+   "131"
+  ],
+  "passi": [
+   {
+    "versione": 2,
+    "valore": null,
+    "in_vigore_dal": "1994-09-15",
+    "gu": "1994-08-31",
+    "atti": [
+     "D.M. 6 agosto 1994 (in G.U. 31/08/1994, n.203)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 3,
+    "valore": [
+     "TN",
+     "AVIO",
+     "E",
+     "2580",
+     "131"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TN",
+   "MEZZOLOMBARDO",
+   "F",
+   "3092",
+   "227"
+  ],
+  "nuova": [
+   "TN",
+   "MEZZOLOMBARDO",
+   "E",
+   "2835",
+   "227"
+  ],
+  "passi": [
+   {
+    "versione": 2,
+    "valore": null,
+    "in_vigore_dal": "1994-09-15",
+    "gu": "1994-08-31",
+    "atti": [
+     "D.M. 6 agosto 1994 (in G.U. 31/08/1994, n.203)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 3,
+    "valore": [
+     "TN",
+     "MEZZOLOMBARDO",
+     "E",
+     "2835",
+     "227"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TN",
+   "NAGO TORBOLE",
+   "E",
+   "2737",
+   "222"
+  ],
+  "nuova": [
+   "TN",
+   "NAGO-TORBOLE",
+   "E",
+   "2276",
+   "85"
+  ],
+  "passi": [
+   {
+    "versione": 2,
+    "valore": null,
+    "in_vigore_dal": "1994-09-15",
+    "gu": "1994-08-31",
+    "atti": [
+     "D.M. 6 agosto 1994 (in G.U. 31/08/1994, n.203)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 3,
+    "valore": [
+     "TN",
+     "NAGO-TORBOLE",
+     "E",
+     "2276",
+     "85"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TN",
+   "ROVERÈ DELLA LUNA",
+   "F",
+   "3129",
+   "251"
+  ],
+  "nuova": [
+   "TN",
+   "ROVERÈ DELLA LUNA",
+   "E",
+   "2888",
+   "251"
+  ],
+  "passi": [
+   {
+    "versione": 2,
+    "valore": null,
+    "in_vigore_dal": "1994-09-15",
+    "gu": "1994-08-31",
+    "atti": [
+     "D.M. 6 agosto 1994 (in G.U. 31/08/1994, n.203)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 3,
+    "valore": [
+     "TN",
+     "ROVERÈ DELLA LUNA",
+     "E",
+     "2888",
+     "251"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TN",
+   "SANT'ORSOLA",
+   "F",
+   "3729",
+   "925"
+  ],
+  "nuova": [
+   "TN",
+   "SANT'ORSOLA TERME",
+   "F",
+   "3729",
+   "925"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "TN",
+     "SANT'ORSOLA TERME",
+     "F",
+     "3729",
+     "925"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "VR",
+   "VERONA",
+   "D",
+   "2068",
+   "59"
+  ],
+  "nuova": [
+   "VR",
+   "VERONA",
+   "E",
+   "2468",
+   "59"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "VR",
+     "VERONA",
+     "E",
+     "2468",
+     "59"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BL",
+   "BELLUNO",
+   "E",
+   "2936",
+   "383"
+  ],
+  "nuova": [
+   "BL",
+   "BELLUNO",
+   "F",
+   "3043",
+   "389"
+  ],
+  "passi": [
+   {
+    "versione": 19,
+    "valore": [
+     "BL",
+     "BELLUNO",
+     "F",
+     "3043",
+     "389"
+    ],
+    "in_vigore_dal": "2002-04-18",
+    "gu": "2002-04-03",
+    "atti": [
+     "D.M. 8 marzo 2002 (in G.U. 03/04/2002, n.78)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BL",
+   "FARRA D'ALPAGO",
+   "E",
+   "2955",
+   "395"
+  ],
+  "nuova": [
+   "BL",
+   "FARRA D'ALPAGO",
+   "F",
+   "3053",
+   "395"
+  ],
+  "passi": [
+   {
+    "versione": 19,
+    "valore": [
+     "BL",
+     "FARRA D'ALPAGO",
+     "F",
+     "3053",
+     "395"
+    ],
+    "in_vigore_dal": "2002-04-18",
+    "gu": "2002-04-03",
+    "atti": [
+     "D.M. 8 marzo 2002 (in G.U. 03/04/2002, n.78)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BL",
+   "PONTE NELLE ALPI",
+   "E",
+   "2950",
+   "392"
+  ],
+  "nuova": [
+   "BL",
+   "PONTE NELLE ALPI",
+   "F",
+   "3048",
+   "392"
+  ],
+  "passi": [
+   {
+    "versione": 19,
+    "valore": [
+     "BL",
+     "PONTE NELLE ALPI",
+     "F",
+     "3048",
+     "392"
+    ],
+    "in_vigore_dal": "2002-04-18",
+    "gu": "2002-04-03",
+    "atti": [
+     "D.M. 8 marzo 2002 (in G.U. 03/04/2002, n.78)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BL",
+   "PUOS D'ALPAGO",
+   "F",
+   "3246",
+   "419"
+  ],
+  "nuova": [
+   "BL",
+   "PUOS D'ALPAGO",
+   "F",
+   "3091",
+   "419"
+  ],
+  "passi": [
+   {
+    "versione": 19,
+    "valore": [
+     "BL",
+     "PUOS D'ALPAGO",
+     "F",
+     "3091",
+     "419"
+    ],
+    "in_vigore_dal": "2002-04-18",
+    "gu": "2002-04-03",
+    "atti": [
+     "D.M. 8 marzo 2002 (in G.U. 03/04/2002, n.78)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "RO",
+   "PETTORAZZA",
+   "E",
+   "2466",
+   "3"
+  ],
+  "nuova": [
+   "RO",
+   "PETTORAZZA GRIMANI",
+   "E",
+   "2466",
+   "3"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "RO",
+     "PETTORAZZA GRIMANI",
+     "E",
+     "2466",
+     "3"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TS",
+   "DUINO AURISINA",
+   "D",
+   "1936",
+   "144"
+  ],
+  "nuova": [
+   "TS",
+   "Duino Aurisina",
+   "E",
+   "2411",
+   "144"
+  ],
+  "passi": [
+   {
+    "versione": 11,
+    "valore": [
+     "TS",
+     "Duino Aurisina",
+     "E",
+     "2411",
+     "144"
+    ],
+    "in_vigore_dal": "2001-10-28",
+    "gu": "2001-10-13",
+    "atti": [
+     "D.M. 12 luglio 2001 (in G.U. 13/10/2001, n.239)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TS",
+   "MONRUPINO",
+   "E",
+   "2866",
+   "418"
+  ],
+  "nuova": [
+   "TS",
+   "Monrupino",
+   "F",
+   "3341",
+   "418"
+  ],
+  "passi": [
+   {
+    "versione": 11,
+    "valore": [
+     "TS",
+     "Monrupino",
+     "F",
+     "3341",
+     "418"
+    ],
+    "in_vigore_dal": "2001-10-28",
+    "gu": "2001-10-13",
+    "atti": [
+     "D.M. 12 luglio 2001 (in G.U. 13/10/2001, n.239)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TS",
+   "MUGGIA",
+   "D",
+   "1929",
+   "3"
+  ],
+  "nuova": [
+   "TS",
+   "MUGGIA",
+   "E",
+   "2104",
+   "3"
+  ],
+  "passi": [
+   {
+    "versione": 35,
+    "valore": [
+     "TS",
+     "MUGGIA",
+     "E",
+     "2104",
+     "3"
+    ],
+    "in_vigore_dal": "2005-01-22",
+    "gu": "2005-01-07",
+    "atti": [
+     "D.M. 14 dicembre 2004 (in G.U. 07/01/2005, n.4)",
+     "D.M. 13 dicembre 2004 (in G.U. 07/01/2005, n.4)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TS",
+   "SAN DORLIGO DELLA VALLE",
+   "D",
+   "1814",
+   "106"
+  ],
+  "nuova": [
+   "TS",
+   "San Dorligo della Valle-Dolina",
+   "E",
+   "2282",
+   "106"
+  ],
+  "passi": [
+   {
+    "versione": 11,
+    "valore": [
+     "TS",
+     "San Dorligo della Valle-Dolina",
+     "E",
+     "2282",
+     "106"
+    ],
+    "in_vigore_dal": "2001-10-28",
+    "gu": "2001-10-13",
+    "atti": [
+     "D.M. 12 luglio 2001 (in G.U. 13/10/2001, n.239)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TS",
+   "TRIESTE",
+   "D",
+   "1929",
+   "2"
+  ],
+  "nuova": [
+   "TS",
+   "TRIESTE",
+   "E",
+   "2102",
+   "2"
+  ],
+  "passi": [
+   {
+    "versione": 33,
+    "valore": [
+     "TS",
+     "TRIESTE",
+     "E",
+     "2102",
+     "2"
+    ],
+    "in_vigore_dal": "2004-08-22",
+    "gu": "2004-08-07",
+    "atti": [
+     "D.M. 17 giugno 2004 (in G.U. 07/08/2004, n.184)",
+     "D.M. 17 giugno 2004 (in G.U. 07/08/2004, n.184)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PN",
+   "VITO D'ASIO",
+   "E",
+   "2962",
+   "320"
+  ],
+  "nuova": [
+   "PN",
+   "VITO D'ASIO",
+   "F",
+   "2962",
+   "320"
+  ],
+  "passi": [
+   {
+    "versione": 26,
+    "valore": [
+     "PN",
+     "VITO D'ASIO",
+     "F",
+     "2962",
+     "320"
+    ],
+    "in_vigore_dal": "2003-02-28",
+    "gu": "2003-02-13",
+    "atti": [
+     "D.M. 19 dicembre 2002 (in G.U. 13/02/2003, n.36)",
+     "D.M. 27 dicembre 2002 (in G.U. 13/02/2003, n.36)",
+     "D.M. 20 dicembre 2002 (in G.U. 13/02/2003, n.36)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "IM",
+   "BORGHETTO D'ARROSCIA",
+   "D",
+   "1483",
+   "155"
+  ],
+  "nuova": [
+   "IM",
+   "BORGHETTO D'ARROSCIA",
+   "E",
+   "2153",
+   "155"
+  ],
+  "passi": [
+   {
+    "versione": 39,
+    "valore": [
+     "IM",
+     "BORGHETTO D'ARROSCIA",
+     "E",
+     "2153",
+     "155"
+    ],
+    "in_vigore_dal": "2005-08-31",
+    "gu": "2005-08-16",
+    "atti": [
+     "D.M. 26 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 22 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 21 luglio 2005 (in G.U. 16/08/2005, n.189)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "IM",
+   "PIEVE DI TECO",
+   "D",
+   "1694",
+   "240"
+  ],
+  "nuova": [
+   "IM",
+   "PIEVE DI TECO",
+   "E",
+   "2290",
+   "240"
+  ],
+  "passi": [
+   {
+    "versione": 39,
+    "valore": [
+     "IM",
+     "PIEVE DI TECO",
+     "E",
+     "2290",
+     "240"
+    ],
+    "in_vigore_dal": "2005-08-31",
+    "gu": "2005-08-16",
+    "atti": [
+     "D.M. 26 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 22 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 21 luglio 2005 (in G.U. 16/08/2005, n.189)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "IM",
+   "PIGNA",
+   "D",
+   "1718",
+   "280"
+  ],
+  "nuova": [
+   "IM",
+   "PIGNA",
+   "D",
+   "1860",
+   "280"
+  ],
+  "passi": [
+   {
+    "versione": 25,
+    "valore": [
+     "IM",
+     "PIGNA",
+     "D",
+     "1860",
+     "280"
+    ],
+    "in_vigore_dal": "2003-02-20",
+    "gu": "2003-02-05",
+    "atti": [
+     "D.M. 18 dicembre 2002 (in G.U. 05/02/2003, n.29)",
+     "D.M. 17 dicembre 2002 (in G.U. 05/02/2003, n.29)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "IM",
+   "RANZO",
+   "D",
+   "1406",
+   "124"
+  ],
+  "nuova": [
+   "IM",
+   "RANZO",
+   "E",
+   "2103",
+   "124"
+  ],
+  "passi": [
+   {
+    "versione": 39,
+    "valore": [
+     "IM",
+     "RANZO",
+     "E",
+     "2103",
+     "124"
+    ],
+    "in_vigore_dal": "2005-08-31",
+    "gu": "2005-08-16",
+    "atti": [
+     "D.M. 26 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 22 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 21 luglio 2005 (in G.U. 16/08/2005, n.189)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "IM",
+   "VESSALICO",
+   "D",
+   "1587",
+   "197"
+  ],
+  "nuova": [
+   "IM",
+   "VESSALICO",
+   "E",
+   "2220",
+   "192"
+  ],
+  "passi": [
+   {
+    "versione": 39,
+    "valore": [
+     "IM",
+     "VESSALICO",
+     "E",
+     "2220",
+     "192"
+    ],
+    "in_vigore_dal": "2005-08-31",
+    "gu": "2005-08-16",
+    "atti": [
+     "D.M. 26 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 22 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 21 luglio 2005 (in G.U. 16/08/2005, n.189)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SV",
+   "ALBISOLA MARINA",
+   "C",
+   "1393",
+   "8"
+  ],
+  "nuova": [
+   "SV",
+   "ALBISOLA MARINA",
+   "D",
+   "1490",
+   "8"
+  ],
+  "passi": [
+   {
+    "versione": 21,
+    "valore": [
+     "SV",
+     "ALBISOLA MARINA",
+     "D",
+     "1490",
+     "8"
+    ],
+    "in_vigore_dal": "2002-05-21",
+    "gu": "2002-05-06",
+    "atti": [
+     "D.M. 16 marzo 2002 (in G.U. 06/05/2002, n.104)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SV",
+   "ALBISOLA SUPERIORE",
+   "C",
+   "1393",
+   "10"
+  ],
+  "nuova": [
+   "SV",
+   "ALBISOLA SUPERIORE",
+   "D",
+   "1490",
+   "10"
+  ],
+  "passi": [
+   {
+    "versione": 21,
+    "valore": [
+     "SV",
+     "ALBISOLA SUPERIORE",
+     "D",
+     "1490",
+     "10"
+    ],
+    "in_vigore_dal": "2002-05-21",
+    "gu": "2002-05-06",
+    "atti": [
+     "D.M. 16 marzo 2002 (in G.U. 06/05/2002, n.104)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SV",
+   "CELLE LIGURE",
+   "C",
+   "1393",
+   "4"
+  ],
+  "nuova": [
+   "SV",
+   "CELLE LIGURE",
+   "D",
+   "1490",
+   "4"
+  ],
+  "passi": [
+   {
+    "versione": 21,
+    "valore": [
+     "SV",
+     "CELLE LIGURE",
+     "D",
+     "1490",
+     "4"
+    ],
+    "in_vigore_dal": "2002-05-21",
+    "gu": "2002-05-06",
+    "atti": [
+     "D.M. 16 marzo 2002 (in G.U. 06/05/2002, n.104)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SV",
+   "DEGO",
+   "D",
+   "2067",
+   "317"
+  ],
+  "nuova": [
+   "SV",
+   "DEGO",
+   "E",
+   "2105",
+   "317"
+  ],
+  "passi": [
+   {
+    "versione": 40,
+    "valore": [
+     "SV",
+     "DEGO",
+     "E",
+     "2105",
+     "317"
+    ],
+    "in_vigore_dal": "2005-09-03",
+    "gu": "2005-08-19",
+    "atti": [
+     "D.M. 25 luglio 2005 (in G.U. 19/08/2005, n.192)",
+     "D.M. 27 luglio 2005 (in G.U. 19/08/2005, n.192)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SV",
+   "PIANA CRIXIA",
+   "D",
+   "1954",
+   "267"
+  ],
+  "nuova": [
+   "SV",
+   "PIANA CRIXIA",
+   "D",
+   "1996",
+   "267"
+  ],
+  "passi": [
+   {
+    "versione": 40,
+    "valore": [
+     "SV",
+     "PIANA CRIXIA",
+     "D",
+     "1996",
+     "267"
+    ],
+    "in_vigore_dal": "2005-09-03",
+    "gu": "2005-08-19",
+    "atti": [
+     "D.M. 25 luglio 2005 (in G.U. 19/08/2005, n.192)",
+     "D.M. 27 luglio 2005 (in G.U. 19/08/2005, n.192)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "GE",
+   "GORRETO",
+   "E",
+   "2435",
+   "533"
+  ],
+  "nuova": [
+   "GE",
+   "GORRETO",
+   "E",
+   "2794",
+   "533"
+  ],
+  "passi": [
+   {
+    "versione": 13,
+    "valore": [
+     "GE",
+     "GORRETO",
+     "E",
+     "2794",
+     "533"
+    ],
+    "in_vigore_dal": "2001-11-24",
+    "gu": "2001-11-09",
+    "atti": [
+     "D.M. 13 settembre 2001 (in G.U. 09/11/2001, n.261)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "GE",
+   "MIGNANEGO",
+   "D",
+   "1906",
+   "137"
+  ],
+  "nuova": [
+   "GE",
+   "Mignanego",
+   "D",
+   "1962",
+   "170"
+  ],
+  "passi": [
+   {
+    "versione": 9,
+    "valore": [
+     "GE",
+     "Mignanego",
+     "D",
+     "1962",
+     "170"
+    ],
+    "in_vigore_dal": "2001-10-25",
+    "gu": "2001-10-10",
+    "atti": [
+     "D.M. 2 luglio 2001 (in G.U. 10/10/2001, n.236)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SP",
+   "ZIGNAGO",
+   "D",
+   "1938",
+   "472"
+  ],
+  "nuova": [
+   "SP",
+   "ZIGNAGO",
+   "D",
+   "2076",
+   "632"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "SP",
+     "ZIGNAGO",
+     "D",
+     "2076",
+     "632"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PC",
+   "BOBBIO",
+   "E",
+   "2699",
+   "272"
+  ],
+  "nuova": [
+   "PC",
+   "Bobbio",
+   "E",
+   "2802",
+   "272"
+  ],
+  "passi": [
+   {
+    "versione": 8,
+    "valore": [
+     "PC",
+     "Bobbio",
+     "E",
+     "2802",
+     "272"
+    ],
+    "in_vigore_dal": "2001-07-22",
+    "gu": "2001-07-07",
+    "atti": [
+     "D.M. 31 maggio 2001 (in G.U. 07/07/2001, n.156)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PC",
+   "CORTE BRUGNATELLA",
+   "E",
+   "2798",
+   "350"
+  ],
+  "nuova": [
+   "PC",
+   "Corte Brugnatella",
+   "E",
+   "2902",
+   "350"
+  ],
+  "passi": [
+   {
+    "versione": 8,
+    "valore": [
+     "PC",
+     "Corte Brugnatella",
+     "E",
+     "2902",
+     "350"
+    ],
+    "in_vigore_dal": "2001-07-22",
+    "gu": "2001-07-07",
+    "atti": [
+     "D.M. 31 maggio 2001 (in G.U. 07/07/2001, n.156)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PC",
+   "OTTONE",
+   "F",
+   "3110",
+   "510"
+  ],
+  "nuova": [
+   "PC",
+   "OTTONE",
+   "E",
+   "2737",
+   "510"
+  ],
+  "passi": [
+   {
+    "versione": 13,
+    "valore": [
+     "PC",
+     "OTTONE",
+     "E",
+     "2737",
+     "510"
+    ],
+    "in_vigore_dal": "2001-11-24",
+    "gu": "2001-11-09",
+    "atti": [
+     "D.M. 13 settembre 2001 (in G.U. 09/11/2001, n.261)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BO",
+   "GRIZZANA",
+   "E",
+   "2730",
+   "547"
+  ],
+  "nuova": [
+   "BO",
+   "GRIZZANA MORANDI",
+   "E",
+   "2730",
+   "547"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "BO",
+     "GRIZZANA MORANDI",
+     "E",
+     "2730",
+     "547"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "LU",
+   "BAGNI DI LUCCA",
+   "D",
+   "1931",
+   "150"
+  ],
+  "nuova": [
+   "LU",
+   "BAGNI DI LUCCA",
+   "E",
+   "2227",
+   "150"
+  ],
+  "passi": [
+   {
+    "versione": 12,
+    "valore": [
+     "LU",
+     "BAGNI DI LUCCA",
+     "E",
+     "2227",
+     "150"
+    ],
+    "in_vigore_dal": "2001-10-31",
+    "gu": "2001-10-16",
+    "atti": [
+     "D.M. 3 settembre 2001 (in G.U. 16/10/2001, n.241)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "LU",
+   "BORGO A MOZZANO",
+   "D",
+   "1802",
+   "97"
+  ],
+  "nuova": [
+   "LU",
+   "BORGO A MOZZANO",
+   "E",
+   "2101",
+   "96"
+  ],
+  "passi": [
+   {
+    "versione": 14,
+    "valore": [
+     "LU",
+     "BORGO A MOZZANO",
+     "D",
+     "2020",
+     "97"
+    ],
+    "in_vigore_dal": "2002-01-02",
+    "gu": "2001-12-18",
+    "atti": [
+     "D.M. 6 novembre 2001 (in G.U. 18/12/2001, n.293)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 43,
+    "valore": [
+     "LU",
+     "BORGO A MOZZANO",
+     "E",
+     "2101",
+     "96"
+    ],
+    "in_vigore_dal": "2008-11-14",
+    "gu": "2008-10-30",
+    "atti": [
+     "D.M. 26 settembre 2008 (in G.U. 30/10/2008, n.255)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "LU",
+   "GALLICANO",
+   "D",
+   "2053",
+   "186"
+  ],
+  "nuova": [
+   "LU",
+   "GALLICANO",
+   "E",
+   "2183",
+   "186"
+  ],
+  "passi": [
+   {
+    "versione": 36,
+    "valore": [
+     "LU",
+     "GALLICANO",
+     "E",
+     "2183",
+     "186"
+    ],
+    "in_vigore_dal": "2005-05-06",
+    "gu": "2005-04-21",
+    "atti": [
+     "D.M. 24 marzo 2005 (in G.U. 21/04/2005, n.92)",
+     "D.M. 29 marzo 2005 (in G.U. 21/04/2005, n.92)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "LU",
+   "GIUNCAGNANO",
+   "F",
+   "3408",
+   "834"
+  ],
+  "nuova": [
+   "LU",
+   "GIUNCUGNANO",
+   "F",
+   "3408",
+   "834"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "LU",
+     "GIUNCUGNANO",
+     "F",
+     "3408",
+     "834"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "LU",
+   "STAZZEMA",
+   "D",
+   "1726",
+   "158"
+  ],
+  "nuova": [
+   "LU",
+   "STAZZEMA",
+   "F",
+   "3074",
+   "916"
+  ],
+  "passi": [
+   {
+    "versione": 26,
+    "valore": [
+     "LU",
+     "STAZZEMA",
+     "F",
+     "3074",
+     "916"
+    ],
+    "in_vigore_dal": "2003-02-28",
+    "gu": "2003-02-13",
+    "atti": [
+     "D.M. 19 dicembre 2002 (in G.U. 13/02/2003, n.36)",
+     "D.M. 27 dicembre 2002 (in G.U. 13/02/2003, n.36)",
+     "D.M. 20 dicembre 2002 (in G.U. 13/02/2003, n.36)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "LU",
+   "VILLA BASILICA",
+   "E",
+   "2319",
+   "330"
+  ],
+  "nuova": [
+   "LU",
+   "VILLA BASILICA",
+   "E",
+   "2924",
+   "330"
+  ],
+  "passi": [
+   {
+    "versione": 14,
+    "valore": [
+     "LU",
+     "VILLA BASILICA",
+     "E",
+     "2924",
+     "330"
+    ],
+    "in_vigore_dal": "2002-01-02",
+    "gu": "2001-12-18",
+    "atti": [
+     "D.M. 6 novembre 2001 (in G.U. 18/12/2001, n.293)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PT",
+   "CUTIGLIANO",
+   "E",
+   "2512",
+   "678"
+  ],
+  "nuova": [
+   "PT",
+   "CUTIGLIANO",
+   "E",
+   "2901",
+   "678"
+  ],
+  "passi": [
+   {
+    "versione": 24,
+    "valore": [
+     "PT",
+     "CUTIGLIANO",
+     "E",
+     "2901",
+     "678"
+    ],
+    "in_vigore_dal": "2003-02-12",
+    "gu": "2003-01-28",
+    "atti": [
+     "D.M. 13 dicembre 2002 (in G.U. 28/01/2003, n.22)",
+     "D.M. 16 dicembre 2002 (in G.U. 28/01/2003, n.22)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PT",
+   "MASSA E COZZILE",
+   "D",
+   "2080",
+   "223"
+  ],
+  "nuova": [
+   "PT",
+   "MASSA E COZZILE",
+   "E",
+   "2509",
+   "223"
+  ],
+  "passi": [
+   {
+    "versione": 14,
+    "valore": [
+     "PT",
+     "MASSA E COZZILE",
+     "E",
+     "2509",
+     "223"
+    ],
+    "in_vigore_dal": "2002-01-02",
+    "gu": "2001-12-18",
+    "atti": [
+     "D.M. 6 novembre 2001 (in G.U. 18/12/2001, n.293)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PT",
+   "PITEGLIO",
+   "E",
+   "2547",
+   "698"
+  ],
+  "nuova": [
+   "PT",
+   "PITEGLIO",
+   "E",
+   "2933",
+   "698"
+  ],
+  "passi": [
+   {
+    "versione": 26,
+    "valore": [
+     "PT",
+     "PITEGLIO",
+     "E",
+     "2933",
+     "698"
+    ],
+    "in_vigore_dal": "2003-02-28",
+    "gu": "2003-02-13",
+    "atti": [
+     "D.M. 19 dicembre 2002 (in G.U. 13/02/2003, n.36)",
+     "D.M. 27 dicembre 2002 (in G.U. 13/02/2003, n.36)",
+     "D.M. 20 dicembre 2002 (in G.U. 13/02/2003, n.36)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PT",
+   "SAN MARCELLO PISTOIESE",
+   "E",
+   "2418",
+   "623"
+  ],
+  "nuova": [
+   "PT",
+   "SAN MARCELLO PISTOIESE",
+   "E",
+   "2813",
+   "623"
+  ],
+  "passi": [
+   {
+    "versione": 23,
+    "valore": [
+     "PT",
+     "SAN MARCELLO PISTOIESE",
+     "E",
+     "2813",
+     "623"
+    ],
+    "in_vigore_dal": "2003-01-23",
+    "gu": "2003-01-08",
+    "atti": [
+     "D.M. 11 dicembre 2002 (in G.U. 08/01/2003, n.5)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PT",
+   "UZZANO",
+   "E",
+   "2170",
+   "275"
+  ],
+  "nuova": [
+   "PT",
+   "UZZANO",
+   "D",
+   "1837",
+   "50"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "PT",
+     "UZZANO",
+     "D",
+     "1940",
+     "50"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 14,
+    "valore": [
+     "PT",
+     "UZZANO",
+     "D",
+     "1837",
+     "50"
+    ],
+    "in_vigore_dal": "2002-01-02",
+    "gu": "2001-12-18",
+    "atti": [
+     "D.M. 6 novembre 2001 (in G.U. 18/12/2001, n.293)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "AR",
+   "CAPOLONA",
+   "E",
+   "2594",
+   "623"
+  ],
+  "nuova": [
+   "AR",
+   "CAPOLONA",
+   "D",
+   "2026",
+   "263"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "AR",
+     "CAPOLONA",
+     "E",
+     "2260",
+     "263"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 17,
+    "valore": [
+     "AR",
+     "CAPOLONA",
+     "D",
+     "2026",
+     "263"
+    ],
+    "in_vigore_dal": "2002-03-10",
+    "gu": "2002-02-23",
+    "atti": [
+     "D.M. 6 novembre 2001 (in G.U. 23/02/2002, n.46)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "SI",
+   "POGGIBONSI",
+   "D",
+   "1734",
+   "116"
+  ],
+  "nuova": [
+   "SI",
+   "POGGIBONSI",
+   "D",
+   "1984",
+   "116"
+  ],
+  "passi": [
+   {
+    "versione": 31,
+    "valore": [
+     "SI",
+     "POGGIBONSI",
+     "D",
+     "1984",
+     "116"
+    ],
+    "in_vigore_dal": "2003-12-03",
+    "gu": "2003-11-18",
+    "atti": [
+     "D.M. 6 ottobre 2003 (in G.U. 18/11/2003, n.268)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "GR",
+   "SORANO",
+   "D",
+   "2048",
+   "379"
+  ],
+  "nuova": [
+   "GR",
+   "SORANO",
+   "E",
+   "2204",
+   "379"
+  ],
+  "passi": [
+   {
+    "versione": 30,
+    "valore": [
+     "GR",
+     "SORANO",
+     "E",
+     "2204",
+     "379"
+    ],
+    "in_vigore_dal": "2003-10-09",
+    "gu": "2003-09-24",
+    "atti": [
+     "D.M. 28 agosto 2003 (in G.U. 24/09/2003, n.222)",
+     "D.M. 24 luglio 2003 (in G.U. 24/09/2003, n.222)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PG",
+   "LISCIANO NICCONE",
+   "D",
+   "2004",
+   "314"
+  ],
+  "nuova": [
+   "PG",
+   "Lisciano Niccone",
+   "E",
+   "2109",
+   "314"
+  ],
+  "passi": [
+   {
+    "versione": 7,
+    "valore": [
+     "PG",
+     "Lisciano Niccone",
+     "E",
+     "2109",
+     "314"
+    ],
+    "in_vigore_dal": "2001-06-05",
+    "gu": "2001-05-21",
+    "atti": [
+     "D.M. 20 aprile 2001 (in G.U. 21/05/2001, n.116)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PS",
+   "PERGOLA",
+   "D",
+   "2036",
+   "265"
+  ],
+  "nuova": [
+   "PS",
+   "PERGOLA",
+   "E",
+   "2264",
+   "265"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "PS",
+     "PERGOLA",
+     "E",
+     "2264",
+     "265"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PS",
+   "SANT'IPPOLITO",
+   "D",
+   "2020",
+   "246"
+  ],
+  "nuova": [
+   "PS",
+   "Sant'Ippolito",
+   "E",
+   "2271",
+   "246"
+  ],
+  "passi": [
+   {
+    "versione": 6,
+    "valore": [
+     "PS",
+     "Sant'Ippolito",
+     "E",
+     "2271",
+     "246"
+    ],
+    "in_vigore_dal": "2001-05-30",
+    "gu": "2001-05-15",
+    "atti": [
+     "D.M. 3 aprile 2001 (in G.U. 15/05/2001, n.111)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PS",
+   "SASSOFELTRO",
+   "E",
+   "2365",
+   "466"
+  ],
+  "nuova": [
+   "PS",
+   "SASSOFELTRIO",
+   "E",
+   "2365",
+   "466"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "PS",
+     "SASSOFELTRIO",
+     "E",
+     "2365",
+     "466"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "RI",
+   "CASTEL SANT'ANGELO",
+   "E",
+   "2180",
+   "448"
+  ],
+  "nuova": [
+   "RI",
+   "CASTEL SANT'ANGELO",
+   "E",
+   "2487",
+   "581"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "RI",
+     "CASTEL SANT'ANGELO",
+     "E",
+     "2487",
+     "581"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "RI",
+   "TOFFIA",
+   "D",
+   "1930",
+   "262"
+  ],
+  "nuova": [
+   "RI",
+   "TOFFIA",
+   "D",
+   "1830",
+   "262"
+  ],
+  "passi": [
+   {
+    "versione": 20,
+    "valore": [
+     "RI",
+     "TOFFIA",
+     "D",
+     "1830",
+     "262"
+    ],
+    "in_vigore_dal": "2002-04-27",
+    "gu": "2002-04-12",
+    "atti": [
+     "D.M. 15 marzo 2002 (in G.U. 12/04/2002, n.86)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "ALATRI",
+   "D",
+   "1842",
+   "502"
+  ],
+  "nuova": [
+   "FR",
+   "ALATRI",
+   "E",
+   "2102",
+   "502"
+  ],
+  "passi": [
+   {
+    "versione": 39,
+    "valore": [
+     "FR",
+     "ALATRI",
+     "E",
+     "2102",
+     "502"
+    ],
+    "in_vigore_dal": "2005-08-31",
+    "gu": "2005-08-16",
+    "atti": [
+     "D.M. 26 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 22 luglio 2005 (in G.U. 16/08/2005, n.189)",
+     "D.M. 21 luglio 2005 (in G.U. 16/08/2005, n.189)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "ALVITO",
+   "D",
+   "1938",
+   "475"
+  ],
+  "nuova": [
+   "FR",
+   "ALVITO",
+   "D",
+   "1965",
+   "475"
+  ],
+  "passi": [
+   {
+    "versione": 29,
+    "valore": [
+     "FR",
+     "ALVITO",
+     "D",
+     "1965",
+     "475"
+    ],
+    "in_vigore_dal": "2003-07-23",
+    "gu": "2003-07-08",
+    "atti": [
+     "D.M. 27 maggio 2003 (in G.U. 08/07/2003, n.156)",
+     "D.M. 26 maggio 2003 (in G.U. 08/07/2003, n.156)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "ARPINO",
+   "D",
+   "1998",
+   "450"
+  ],
+  "nuova": [
+   "FR",
+   "ARPINO",
+   "E",
+   "2123",
+   "450"
+  ],
+  "passi": [
+   {
+    "versione": 31,
+    "valore": [
+     "FR",
+     "ARPINO",
+     "E",
+     "2123",
+     "450"
+    ],
+    "in_vigore_dal": "2003-12-03",
+    "gu": "2003-11-18",
+    "atti": [
+     "D.M. 6 ottobre 2003 (in G.U. 18/11/2003, n.268)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "ATINA",
+   "D",
+   "1970",
+   "490"
+  ],
+  "nuova": [
+   "FR",
+   "ATINA",
+   "E",
+   "2127",
+   "490"
+  ],
+  "passi": [
+   {
+    "versione": 33,
+    "valore": [
+     "FR",
+     "ATINA",
+     "E",
+     "2127",
+     "490"
+    ],
+    "in_vigore_dal": "2004-08-22",
+    "gu": "2004-08-07",
+    "atti": [
+     "D.M. 17 giugno 2004 (in G.U. 07/08/2004, n.184)",
+     "D.M. 17 giugno 2004 (in G.U. 07/08/2004, n.184)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "CASALATTICO",
+   "D",
+   "1851",
+   "420"
+  ],
+  "nuova": [
+   "FR",
+   "CASALATTICO",
+   "E",
+   "2345",
+   "420"
+  ],
+  "passi": [
+   {
+    "versione": 28,
+    "valore": [
+     "FR",
+     "CASALATTICO",
+     "D",
+     "1855",
+     "420"
+    ],
+    "in_vigore_dal": "2003-07-01",
+    "gu": "2003-06-16",
+    "atti": [
+     "D.M. 23 maggio 2003 (in G.U. 16/06/2003, n.137)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 46,
+    "valore": [
+     "FR",
+     "CASALATTICO",
+     "E",
+     "2345",
+     "420"
+    ],
+    "in_vigore_dal": "2016-08-24",
+    "gu": "2016-08-09",
+    "atti": [
+     "D.M. 27 giugno 2016 (in G.U. 09/08/2016, n.185)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "CASALVIERI",
+   "D",
+   "1757",
+   "380"
+  ],
+  "nuova": [
+   "FR",
+   "CASALVIERI",
+   "D",
+   "1778",
+   "380"
+  ],
+  "passi": [
+   {
+    "versione": 25,
+    "valore": [
+     "FR",
+     "CASALVIERI",
+     "D",
+     "1778",
+     "380"
+    ],
+    "in_vigore_dal": "2003-02-20",
+    "gu": "2003-02-05",
+    "atti": [
+     "D.M. 18 dicembre 2002 (in G.U. 05/02/2003, n.29)",
+     "D.M. 17 dicembre 2002 (in G.U. 05/02/2003, n.29)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "COLLE SAN MAGNO",
+   "D",
+   "2059",
+   "540"
+  ],
+  "nuova": [
+   "FR",
+   "COLLE SAN MAGNO",
+   "E",
+   "2103",
+   "540"
+  ],
+  "passi": [
+   {
+    "versione": 30,
+    "valore": [
+     "FR",
+     "COLLE SAN MAGNO",
+     "E",
+     "2103",
+     "540"
+    ],
+    "in_vigore_dal": "2003-10-09",
+    "gu": "2003-09-24",
+    "atti": [
+     "D.M. 28 agosto 2003 (in G.U. 24/09/2003, n.222)",
+     "D.M. 24 luglio 2003 (in G.U. 24/09/2003, n.222)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "COLLEPARDO",
+   "D",
+   "2085",
+   "586"
+  ],
+  "nuova": [
+   "FR",
+   "COLLEPARDO",
+   "E",
+   "2266",
+   "586"
+  ],
+  "passi": [
+   {
+    "versione": 35,
+    "valore": [
+     "FR",
+     "COLLEPARDO",
+     "E",
+     "2266",
+     "586"
+    ],
+    "in_vigore_dal": "2005-01-22",
+    "gu": "2005-01-07",
+    "atti": [
+     "D.M. 14 dicembre 2004 (in G.U. 07/01/2005, n.4)",
+     "D.M. 13 dicembre 2004 (in G.U. 07/01/2005, n.4)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "FERENTINO",
+   "D",
+   "1913",
+   "395"
+  ],
+  "nuova": [
+   "FR",
+   "FERENTINO",
+   "E",
+   "2222",
+   "581"
+  ],
+  "passi": [
+   {
+    "versione": 44,
+    "valore": [
+     "FR",
+     "FERENTINO",
+     "E",
+     "2222",
+     "581"
+    ],
+    "in_vigore_dal": "2008-12-13",
+    "gu": "2008-11-28",
+    "atti": [
+     "D.M. 24 ottobre 2008 (in G.U. 28/11/2008, n.279)",
+     "D.M. 30 ottobre 2008 (in G.U. 28/11/2008, n.279)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "GALLINARO",
+   "D",
+   "2092",
+   "558"
+  ],
+  "nuova": [
+   "FR",
+   "GALLINARO",
+   "E",
+   "2131",
+   "558"
+  ],
+  "passi": [
+   {
+    "versione": 24,
+    "valore": [
+     "FR",
+     "GALLINARO",
+     "E",
+     "2131",
+     "558"
+    ],
+    "in_vigore_dal": "2003-02-12",
+    "gu": "2003-01-28",
+    "atti": [
+     "D.M. 13 dicembre 2002 (in G.U. 28/01/2003, n.22)",
+     "D.M. 16 dicembre 2002 (in G.U. 28/01/2003, n.22)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "ISOLA DEL LIRI",
+   "D",
+   "1614",
+   "217"
+  ],
+  "nuova": [
+   "FR",
+   "ISOLA DEL LIRI",
+   "D",
+   "1916",
+   "217"
+  ],
+  "passi": [
+   {
+    "versione": 30,
+    "valore": [
+     "FR",
+     "ISOLA DEL LIRI",
+     "D",
+     "1916",
+     "217"
+    ],
+    "in_vigore_dal": "2003-10-09",
+    "gu": "2003-09-24",
+    "atti": [
+     "D.M. 28 agosto 2003 (in G.U. 24/09/2003, n.222)",
+     "D.M. 24 luglio 2003 (in G.U. 24/09/2003, n.222)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "ROCCA D'ARCE",
+   "D",
+   "2083",
+   "507"
+  ],
+  "nuova": [
+   "FR",
+   "ROCCA D'ARCE",
+   "E",
+   "2107",
+   "507"
+  ],
+  "passi": [
+   {
+    "versione": 30,
+    "valore": [
+     "FR",
+     "ROCCA D'ARCE",
+     "E",
+     "2107",
+     "507"
+    ],
+    "in_vigore_dal": "2003-10-09",
+    "gu": "2003-09-24",
+    "atti": [
+     "D.M. 28 agosto 2003 (in G.U. 24/09/2003, n.222)",
+     "D.M. 24 luglio 2003 (in G.U. 24/09/2003, n.222)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "VEROLI",
+   "D",
+   "2014",
+   "594"
+  ],
+  "nuova": [
+   "FR",
+   "VEROLI",
+   "E",
+   "2281",
+   "594"
+  ],
+  "passi": [
+   {
+    "versione": 41,
+    "valore": [
+     "FR",
+     "VEROLI",
+     "E",
+     "2281",
+     "594"
+    ],
+    "in_vigore_dal": "2006-03-28",
+    "gu": "2006-03-13",
+    "atti": [
+     "D.M. 10 febbraio 2006 (in G.U. 13/03/2006, n.60)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FR",
+   "VILLA LATINA",
+   "D",
+   "1829",
+   "415"
+  ],
+  "nuova": [
+   "FR",
+   "VILLA LATINA",
+   "E",
+   "2107",
+   "415"
+  ],
+  "passi": [
+   {
+    "versione": 29,
+    "valore": [
+     "FR",
+     "VILLA LATINA",
+     "D",
+     "1845",
+     "415"
+    ],
+    "in_vigore_dal": "2003-07-23",
+    "gu": "2003-07-08",
+    "atti": [
+     "D.M. 27 maggio 2003 (in G.U. 08/07/2003, n.156)",
+     "D.M. 26 maggio 2003 (in G.U. 08/07/2003, n.156)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 37,
+    "valore": [
+     "FR",
+     "VILLA LATINA",
+     "E",
+     "2107",
+     "415"
+    ],
+    "in_vigore_dal": "2005-06-05",
+    "gu": "2005-05-21",
+    "atti": [
+     "D.M. 7 aprile 2005 (in G.U. 21/05/2005, n.117)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "AQ",
+   "GAGLIANO ATERNO",
+   "E",
+   "2808",
+   "849"
+  ],
+  "nuova": [
+   "AQ",
+   "GAGLIANO ATERNO",
+   "E",
+   "2202",
+   "650"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "AQ",
+     "GAGLIANO ATERNO",
+     "E",
+     "2202",
+     "650"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "CZ",
+   "SANTA CATERINA DELLO IONIO E MARINA",
+   "B",
+   "760",
+   "5"
+  ],
+  "nuova": [
+   "CZ",
+   "SANTA CATERINA DELLO IONIO E MARINA",
+   "C",
+   "1191",
+   "459"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "CZ",
+     "SANTA CATERINA DELLO IONIO E MARINA",
+     "C",
+     "1191",
+     "459"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "RC",
+   "PLACANICA",
+   "C",
+   "916",
+   "125"
+  ],
+  "nuova": [
+   "RC",
+   "PLACANICA",
+   "B",
+   "863",
+   "240"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "RC",
+     "PLACANICA",
+     "B",
+     "863",
+     "240"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "RC",
+   "ROGHUDI",
+   "D",
+   "1678",
+   "527"
+  ],
+  "nuova": [
+   "RC",
+   "ROGHUDI",
+   "C",
+   "1001",
+   "55"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "RC",
+     "ROGHUDI",
+     "C",
+     "1001",
+     "55"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TP",
+   "GIBELLINA",
+   "C",
+   "1276",
+   "450"
+  ],
+  "nuova": [
+   "TP",
+   "GIBELLINA",
+   "C",
+   "1263",
+   "227"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "TP",
+     "GIBELLINA",
+     "C",
+     "1263",
+     "227"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TP",
+   "POGGIOREALE",
+   "C",
+   "1212",
+   "393"
+  ],
+  "nuova": [
+   "TP",
+   "POGGIOREALE",
+   "C",
+   "1297",
+   "189"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "TP",
+     "POGGIOREALE",
+     "C",
+     "1297",
+     "189"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "TP",
+   "SALAPARUTA",
+   "C",
+   "1203",
+   "385"
+  ],
+  "nuova": [
+   "TP",
+   "SALAPARUTA",
+   "C",
+   "1259",
+   "171"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "TP",
+     "SALAPARUTA",
+     "C",
+     "1259",
+     "171"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PE",
+   "MONTESILVANO MARINA",
+   "D",
+   "1720",
+   "5"
+  ],
+  "nuova": [
+   "PE",
+   "MONTESILVANO",
+   "D",
+   "1720",
+   "5"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "PE",
+     "MONTESILVANO",
+     "D",
+     "1720",
+     "5"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "CB",
+   "RIPALIMOSANO",
+   "E",
+   "2161",
+   "640"
+  ],
+  "nuova": [
+   "CB",
+   "RIPALIMOSANI",
+   "E",
+   "2161",
+   "640"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "CB",
+     "RIPALIMOSANI",
+     "E",
+     "2161",
+     "640"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "IS",
+   "COLLE AL VOLTURNO",
+   "D",
+   "1804",
+   "385"
+  ],
+  "nuova": [
+   "IS",
+   "COLLI A VOLTURNO",
+   "D",
+   "1804",
+   "385"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "IS",
+     "COLLI A VOLTURNO",
+     "D",
+     "1804",
+     "385"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "CE",
+   "GALLO",
+   "E",
+   "2739",
+   "875"
+  ],
+  "nuova": [
+   "CE",
+   "GALLO MATESE",
+   "E",
+   "2739",
+   "875"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "CE",
+     "GALLO MATESE",
+     "E",
+     "2739",
+     "875"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BN",
+   "MOLINARA",
+   "D",
+   "2025",
+   "580"
+  ],
+  "nuova": [
+   "BN",
+   "MOLINARA",
+   "E",
+   "2126",
+   "580"
+  ],
+  "passi": [
+   {
+    "versione": 27,
+    "valore": [
+     "BN",
+     "MOLINARA",
+     "E",
+     "2126",
+     "580"
+    ],
+    "in_vigore_dal": "2003-04-23",
+    "gu": "2003-04-08",
+    "atti": [
+     "D.M. 7 marzo 2002 (in G.U. 08/04/2003, n.82)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "FG",
+   "ROSETO VALFORTORE",
+   "D",
+   "2080",
+   "658"
+  ],
+  "nuova": [
+   "FG",
+   "ROSETO VALFORTORE",
+   "E",
+   "2258",
+   "658"
+  ],
+  "passi": [
+   {
+    "versione": 22,
+    "valore": [
+     "FG",
+     "ROSETO VALFORTORE",
+     "E",
+     "2258",
+     "658"
+    ],
+    "in_vigore_dal": "2002-07-10",
+    "gu": "2002-06-25",
+    "atti": [
+     "D.M. 31 maggio 2002 (in G.U. 25/06/2002, n.147)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BR",
+   "CEGLIE MESSAPICO",
+   "D",
+   "1542",
+   "298"
+  ],
+  "nuova": [
+   "BR",
+   "CEGLIE MESSAPICA",
+   "D",
+   "1542",
+   "298"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "BR",
+     "CEGLIE MESSAPICA",
+     "D",
+     "1542",
+     "298"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PZ",
+   "ROTONDA",
+   "D",
+   "1964",
+   "580"
+  ],
+  "nuova": [
+   "PZ",
+   "ROTONDA",
+   "E",
+   "2113",
+   "580"
+  ],
+  "passi": [
+   {
+    "versione": 34,
+    "valore": [
+     "PZ",
+     "ROTONDA",
+     "E",
+     "2113",
+     "580"
+    ],
+    "in_vigore_dal": "2005-01-05",
+    "gu": "2004-12-21",
+    "atti": [
+     "D.M. 29 novembre 2004 (in G.U. 21/12/2004, n.298)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "PZ",
+   "VIGGIANELLO",
+   "D",
+   "1818",
+   "500"
+  ],
+  "nuova": [
+   "PZ",
+   "VIGGIANELLO",
+   "E",
+   "2102",
+   "500"
+  ],
+  "passi": [
+   {
+    "versione": 42,
+    "valore": [
+     "PZ",
+     "VIGGIANELLO",
+     "E",
+     "2102",
+     "500"
+    ],
+    "in_vigore_dal": "2007-02-21",
+    "gu": "2007-02-06",
+    "atti": [
+     "D.M. 16 gennaio 2007 (in G.U. 06/02/2007, n.30)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "MT",
+   "MATERA",
+   "D",
+   "1418",
+   "200"
+  ],
+  "nuova": [
+   "MT",
+   "MATERA",
+   "D",
+   "1776",
+   "401"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "MT",
+     "MATERA",
+     "D",
+     "1776",
+     "401"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "ME",
+   "SCALETTA ZANGLEA",
+   "B",
+   "637",
+   "6"
+  ],
+  "nuova": [
+   "ME",
+   "SCALETTA ZANCLEA",
+   "B",
+   "637",
+   "6"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "ME",
+     "SCALETTA ZANCLEA",
+     "B",
+     "637",
+     "6"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "ME",
+   "VENETICO",
+   "C",
+   "1015",
+   "227"
+  ],
+  "nuova": [
+   "ME",
+   "VENETICO",
+   "B",
+   "831",
+   "6"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "ME",
+     "VENETICO",
+     "B",
+     "831",
+     "6"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "AG",
+   "SANTA MARGHERITA DI STAFFORA",
+   "C",
+   "1218",
+   "400"
+  ],
+  "nuova": [
+   "PV",
+   "SANTA MARGHERITA DI STAFFORA",
+   "F",
+   "3138",
+   "550"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "PV",
+     "SANTA MARGHERITA DI STAFFORA",
+     "F",
+     "3138",
+     "550"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "CT",
+   "MALETTO",
+   "D",
+   "1858",
+   "960"
+  ],
+  "nuova": [
+   "CT",
+   "MALETTO",
+   "E",
+   "2268",
+   "960"
+  ],
+  "passi": [
+   {
+    "versione": 15,
+    "valore": [
+     "CT",
+     "MALETTO",
+     "E",
+     "2268",
+     "960"
+    ],
+    "in_vigore_dal": "2002-01-19",
+    "gu": "2002-01-04",
+    "atti": [
+     "D.M. 3 dicembre 2001 (in G.U. 04/01/2002, n.3)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "CT",
+   "MANIACE",
+   "D",
+   "1580",
+   "695"
+  ],
+  "nuova": [
+   "CT",
+   "MANIACE",
+   "D",
+   "1972",
+   "787"
+  ],
+  "passi": [
+   {
+    "versione": 2,
+    "valore": [
+     "CT",
+     "MANIACE",
+     "D",
+     "1693",
+     "787"
+    ],
+    "in_vigore_dal": "1994-09-15",
+    "gu": "1994-08-31",
+    "atti": [
+     "D.M. 6 agosto 1994 (in G.U. 31/08/1994, n.203)"
+    ],
+    "scarto_giorni": 15
+   },
+   {
+    "versione": 15,
+    "valore": [
+     "CT",
+     "MANIACE",
+     "D",
+     "1972",
+     "787"
+    ],
+    "in_vigore_dal": "2002-01-19",
+    "gu": "2002-01-04",
+    "atti": [
+     "D.M. 3 dicembre 2001 (in G.U. 04/01/2002, n.3)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "CT",
+   "RANDAZZO",
+   "D",
+   "1654",
+   "765"
+  ],
+  "nuova": [
+   "CT",
+   "RANDAZZO",
+   "D",
+   "1934",
+   "765"
+  ],
+  "passi": [
+   {
+    "versione": 15,
+    "valore": [
+     "CT",
+     "RANDAZZO",
+     "D",
+     "1934",
+     "765"
+    ],
+    "in_vigore_dal": "2002-01-19",
+    "gu": "2002-01-04",
+    "atti": [
+     "D.M. 3 dicembre 2001 (in G.U. 04/01/2002, n.3)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "NU",
+   "BELVI",
+   "D",
+   "1885",
+   "660"
+  ],
+  "nuova": [
+   "NU",
+   "BELVÌ",
+   "D",
+   "1885",
+   "660"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "NU",
+     "BELVÌ",
+     "D",
+     "1885",
+     "660"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "NU",
+   "GALTELLI",
+   "B",
+   "846",
+   "35"
+  ],
+  "nuova": [
+   "NU",
+   "GALTELLÌ",
+   "B",
+   "846",
+   "35"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "NU",
+     "GALTELLÌ",
+     "B",
+     "846",
+     "35"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "NU",
+   "ONANI",
+   "D",
+   "1536",
+   "482"
+  ],
+  "nuova": [
+   "NU",
+   "ONANÌ",
+   "D",
+   "1536",
+   "482"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "NU",
+     "ONANÌ",
+     "D",
+     "1536",
+     "482"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "OR",
+   "SANT'ANTONIO RUINAS",
+   "C",
+   "1296",
+   "249"
+  ],
+  "nuova": [
+   "OR",
+   "VILLA SANT'ANTONIO",
+   "C",
+   "1296",
+   "249"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "OR",
+     "VILLA SANT'ANTONIO",
+     "C",
+     "1296",
+     "249"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "OR",
+   "SODDI",
+   "C",
+   "1297",
+   "250"
+  ],
+  "nuova": [
+   "OR",
+   "SODDÌ",
+   "C",
+   "1297",
+   "250"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "OR",
+     "SODDÌ",
+     "C",
+     "1297",
+     "250"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "CO",
+   "San Siro",
+   "E",
+   "2246",
+   "220"
+  ],
+  "passi": [
+   {
+    "versione": 38,
+    "valore": [
+     "CO",
+     "San Siro",
+     "E",
+     "2246",
+     "220"
+    ],
+    "in_vigore_dal": "2005-07-14",
+    "gu": "2005-06-29",
+    "atti": [
+     "D.M. 20 maggio 2005 (in G.U. 29/06/2005, n.149)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "BL",
+   "DANTA",
+   "F",
+   "4793",
+   "1398"
+  ],
+  "nuova": [
+   "BL",
+   "DANTA DI CADORE",
+   "F",
+   "4793",
+   "1398"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "BL",
+     "DANTA DI CADORE",
+     "F",
+     "4793",
+     "1398"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": [
+   "RE",
+   "CIANO D'ENZA",
+   "E",
+   "2484",
+   "219"
+  ],
+  "nuova": [
+   "RE",
+   "CANOSSA",
+   "E",
+   "2484",
+   "219"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "RE",
+     "CANOSSA",
+     "E",
+     "2484",
+     "219"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "RM",
+   "BOVILLE",
+   "D",
+   "1620",
+   "147"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "RM",
+     "BOVILLE",
+     "D",
+     "1620",
+     "147"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "RM",
+   "FIUMICINO",
+   "C",
+   "1240",
+   "1"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "RM",
+     "FIUMICINO",
+     "C",
+     "1240",
+     "1"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "RM",
+   "SAN CESAREO",
+   "D",
+   "1908",
+   "312"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "RM",
+     "SAN CESAREO",
+     "D",
+     "1908",
+     "312"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "FR",
+   "FERENTINO",
+   "E",
+   "2587",
+   "801"
+  ],
+  "passi": [
+   {
+    "versione": 44,
+    "valore": [
+     "FR",
+     "FERENTINO",
+     "E",
+     "2587",
+     "801"
+    ],
+    "in_vigore_dal": "2008-12-13",
+    "gu": "2008-11-28",
+    "atti": [
+     "D.M. 24 ottobre 2008 (in G.U. 28/11/2008, n.279)",
+     "D.M. 30 ottobre 2008 (in G.U. 28/11/2008, n.279)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "NA",
+   "MASSA DI SOMMA",
+   "C",
+   "1273",
+   "175"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "NA",
+     "MASSA DI SOMMA",
+     "C",
+     "1273",
+     "175"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "SA",
+   "BELLIZZI",
+   "C",
+   "1118",
+   "60"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "SA",
+     "BELLIZZI",
+     "C",
+     "1118",
+     "60"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "TA",
+   "STATTE",
+   "C",
+   "1159",
+   "136"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "TA",
+     "STATTE",
+     "C",
+     "1159",
+     "136"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "ME",
+   "TORRENOVA",
+   "B",
+   "654",
+   "10"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "ME",
+     "TORRENOVA",
+     "B",
+     "654",
+     "10"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "CT",
+   "RAGALNA",
+   "D",
+   "1879",
+   "830"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "CT",
+     "RAGALNA",
+     "D",
+     "1879",
+     "830"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "SS",
+   "ERULA",
+   "D",
+   "1507",
+   "457"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "SS",
+     "ERULA",
+     "D",
+     "1507",
+     "457"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "SS",
+   "STINTINO",
+   "C",
+   "937",
+   "9"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "SS",
+     "STINTINO",
+     "C",
+     "937",
+     "9"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "NU",
+   "CARDEDU",
+   "B",
+   "822",
+   "49"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "NU",
+     "CARDEDU",
+     "B",
+     "822",
+     "49"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "NU",
+   "LODINE",
+   "E",
+   "2200",
+   "884"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "NU",
+     "LODINE",
+     "E",
+     "2200",
+     "884"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "CA",
+   "CASTIADAS",
+   "C",
+   "921",
+   "60"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "CA",
+     "CASTIADAS",
+     "C",
+     "921",
+     "60"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "CA",
+   "ELMAS",
+   "C",
+   "934",
+   "7"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "CA",
+     "ELMAS",
+     "C",
+     "934",
+     "7"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "CA",
+   "MONSERRATO",
+   "C",
+   "989",
+   "2"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "CA",
+     "MONSERRATO",
+     "C",
+     "989",
+     "2"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ },
+ {
+  "vecchia": null,
+  "nuova": [
+   "CA",
+   "PISCINAS",
+   "B",
+   "844",
+   "66"
+  ],
+  "passi": [
+   {
+    "versione": 3,
+    "valore": [
+     "CA",
+     "PISCINAS",
+     "B",
+     "844",
+     "66"
+    ],
+    "in_vigore_dal": "1995-06-08",
+    "gu": "1995-05-24",
+    "atti": [
+     "D.M. 16 maggio 1995 (in G.U. 24/05/1995, n.119)"
+    ],
+    "scarto_giorni": 15
+   }
+  ]
+ }
+]

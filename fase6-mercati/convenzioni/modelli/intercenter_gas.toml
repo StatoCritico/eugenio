@@ -1,0 +1,23 @@
+# Intercent-ER – gas naturale. MODELLO GENERICO DA COMPLETARE con la guida alla convenzione attiva.
+# Se la convenzione è indicizzata al PSV day-ahead: indice PSV_DA (ARERA CMEM,m), aggiornato in automatico.
+
+[convenzione]
+id = "intercenter-gas"
+ente = "Intercent-ER"
+titolo = "Fornitura di gas naturale"
+regione = "08"
+commodity = "gas"
+dal = 2025-10-01
+al = 2026-09-30
+unita_prezzo = "EUR/Smc"
+fonte = "DA_COMPILARE: guida alla convenzione"
+
+[[lotto]]
+id = "1"
+descrizione = "DA_COMPILARE"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PSV_DA"
+indice_alternativo = "PSV_GME_MENSILE"
+spread = "DA_COMPILARE"
+pcs_gj_smc = 0.03852

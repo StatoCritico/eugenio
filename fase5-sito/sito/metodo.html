@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Come funziona</title>
+<meta name="description" content="Dati meteo, correzione ERA5, modello di previsione, indicatori della sanità e limiti del servizio.">
+<script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
+try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
+if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
+function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v=20261027m">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg">
+</head>
+<body>
+<header class="testata">
+  <div class="testata-alta">
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg" alt="EuGEnio" width="113" height="36"></a>
+    <script>eugenioLoghi()</script>
+    <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Informazioni">
+      <a href="metodo.html" aria-current="page">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
+    </nav>
+    <details class="menu-tutto">
+      <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
+      <nav class="menu-pannello" aria-label="Menu completo">
+        <h2>Strumenti</h2>
+        <ul><li><a href="./">Previsione</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
+        <h2>Informazioni</h2>
+        <ul><li><a href="metodo.html" aria-current="page">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <h2 id="aspetto-telefono">Aspetto</h2>
+        <div class="vestito">
+          <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
+      <li role="option" id="vestiti-telefono-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-telefono-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-telefono-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-telefono-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-telefono-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+          </ul>
+        </div>
+      </nav>
+    </details>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <div class="testata-menu">
+    <nav class="menu-strumenti" aria-label="Strumenti">
+    <a href="./">Previsione</a>
+    <a href="patrimonio.html">Patrimonio</a>
+    <a href="legge10.html">Legge 10</a>
+    <a href="dati.html">Dati storici</a>
+    <a href="indicatori.html">Indicatori</a>
+    </nav>
+    <div class="vestito">
+      <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
+        aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <ul class="vestito-elenco a-discesa" id="vestiti-elenco" role="listbox" aria-label="Vestito del sito" tabindex="-1" hidden>
+      <li role="option" id="vestiti-elenco-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-elenco-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-elenco-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-elenco-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-elenco-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+      </ul>
+    </div>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+</header>
+
+<main class="articolo">
+  <h1>Come funziona</h1>
+  <p>EuGEnio raccoglie dati pubblici su meteo, clima, territorio ed energia e li mette al servizio di chi gestisce
+    edifici. Ogni capitolo di questa pagina spiega una pagina del servizio: come funziona, da dove vengono i dati e
+    quali sono i limiti.</p>
+
+  <h2 id="in-generale">In generale</h2>
+  <h3>Ma è legale?</h3>
+  <p>Sì. Tutti i dati vengono da fonti pubbliche: quasi tutti sono <a href="https://www.dati.gov.it">open data</a>,
+    mentre i prezzi del GME, le quotazioni EEX e il catasto consultato attraverso Zornade si usano con regolare
+    registrazione. Il tutto nel rispetto delle licenze e delle condizioni di ciascun servizio. Puoi usarli anche tu
+    seguendo i link della sezione <a href="#fonti">Fonti</a>.</p>
+
+  <h3>I tuoi dati</h3>
+  <p>Il file che carichi viene letto in memoria, usato per la previsione e scartato. Non viene salvato né
+    registrato. La ricerca degli indirizzi passa dal nostro server verso <a href="https://zornade.com">Zornade</a>, che riceve solo il testo
+    cercato. Dettagli nell'<a href="privacy.html">informativa privacy</a>.</p>
+
+  <h2 id="previsione">Previsione dei consumi</h2>
+  <p>Carichi i consumi di un edificio, scegli dove si trova, e il servizio stima i consumi futuri tenendo
+    conto del meteo previsto per quel comune e del calendario (festivi, fine settimana, ponti). Il risultato
+    non è un numero solo ma una fascia: dove cadrà il consumo con buona probabilità.</p>
+  <p>Si usa dalla pagina <a href="./">Previsione</a>.</p>
+
+  <h3>Il modello</h3>
+  <p><a href="https://huggingface.co/NX-AI/TiRex-2">TiRex-2</a> di NX-AI è un modello di previsione di serie
+    temporali già addestrato su moltissime serie diverse: non serve allenarlo sui tuoi dati, li legge e
+    prosegue la serie (previsione <em>zero-shot</em>). Accetta variabili esterne note anche nel futuro –
+    qui il meteo e il calendario – e restituisce nove livelli di probabilità, dal 10 % al 90 %.
+    È open source con licenza Apache 2.0 e gira sul nostro server, senza inviare i tuoi dati a terzi.</p>
+
+  <h3>Da dove viene il meteo</h3>
+  <div class="schema">
+    <svg viewBox="0 0 640 170" role="img" aria-label="Periodi coperti da ciascuna fonte meteo">
+      <g font-size="12" font-family="Hanken Grotesk, sans-serif" style="color: var(--inchiostro)">
+        <text x="0" y="28" fill="currentColor">ERA5 (rianalisi)</text>
+        <rect x="150" y="16" width="330" height="18" rx="3" style="fill: var(--serie-2)" opacity=".35"/>
+        <text x="155" y="29" fill="currentColor">2015 → fino a 6 giorni fa</text>
+        <text x="0" y="62" fill="currentColor">ICON (storico)</text>
+        <rect x="370" y="50" width="120" height="18" rx="3" style="fill: var(--serie-2)"/>
+        <text x="375" y="63" style="fill: var(--carta)">nov 2022 → ieri</text>
+        <text x="0" y="96" fill="currentColor">ICON-2I Arpae</text>
+        <rect x="492" y="84" width="40" height="18" rx="3" style="fill: var(--serie-1)"/>
+        <text x="537" y="97" fill="currentColor">0–72 h</text>
+        <text x="0" y="130" fill="currentColor">ECMWF IFS</text>
+        <rect x="520" y="118" width="110" height="18" rx="3" style="fill: var(--serie-3)" opacity=".55"/>
+        <text x="525" y="131" fill="currentColor">48 h → 15 giorni</text>
+        <line x1="491" x2="491" y1="8" y2="150" stroke="currentColor" stroke-dasharray="3 3"/>
+        <text x="491" y="164" text-anchor="middle" fill="currentColor">oggi</text>
+      </g>
+    </svg>
+  </div>
+  <p>Tutti i dati meteo arrivano da <a href="https://open-meteo.com/">Open-Meteo</a>, per otto grandezze:
+    temperatura, umidità, radiazione solare globale e diffusa, vento, nuvolosità, pioggia e neve.
+    Il punto di ogni comune è il baricentro dei suoi edifici (sezioni di censimento <a href="https://www.istat.it/">ISTAT</a> 2021): per un
+    comune di montagna conta il clima del paese, non quello della cima.</p>
+  <ul>
+    <li><strong>Per i prossimi giorni</strong> si usa ICON-2I, il modello ad alta risoluzione (2,2 km) di Arpae
+      Emilia-Romagna, fino a 48 ore; tra 48 e 72 ore si passa gradualmente a ECMWF IFS, il modello globale
+      europeo, che arriva a 15 giorni. Oltre le 72 ore il sito lo segnala: la previsione meteo è meno precisa.</li>
+    <li><strong>Per i prossimi mesi</strong> non esistono previsioni meteo affidabili: dopo i 15 giorni si usa la
+      climatologia, cioè la media degli stessi giorni negli anni passati. Il risultato è uno scenario "anno tipo".</li>
+    <li><strong>Per il passato</strong> si usano ERA5 (dal 2015, serie lunga e omogenea) e l'archivio delle
+      previsioni ICON (dal novembre 2022).</li>
+  </ul>
+
+  <h3>Perché correggiamo ERA5</h3>
+  <p>Il modello impara come i consumi rispondono al meteo guardando il passato, ma per il futuro riceve
+    previsioni di altri modelli. ERA5 descrive il clima su una griglia di 9–25 km; ICON e ICON-2I arrivano a
+    2 km. Nelle valli, lungo la costa e in collina le due fonti differiscono in modo sistematico: senza
+    correzione il modello scambierebbe questa differenza per un cambiamento del tempo.</p>
+  <p>Per questo riportiamo tutte le fonti a un riferimento unico, l'archivio ICON. Per ogni comune, ogni
+    grandezza, ogni mese e ogni ora del giorno confrontiamo le due serie nel periodo in cui esistono entrambe
+    (da novembre 2022 a oggi) e misuriamo lo scarto medio:</p>
+  <ul>
+    <li>temperatura, umidità e nuvolosità: aggiungiamo la differenza media;</li>
+    <li>radiazione e vento: moltiplichiamo per il rapporto fra le medie (fra 0,5 e 2);</li>
+    <li>pioggia e neve: un fattore per mese, perché ora per ora sono troppo variabili.</li>
+  </ul>
+  <p>Per stimare bene ogni mese usiamo anche quello precedente e il successivo, con peso minore. Lo stesso
+    metodo riporta al riferimento anche le previsioni ICON-2I e IFS.</p>
+
+  <h3>La correzione funziona?</h3>
+  <p>Per saperlo onestamente stimiamo la correzione sui dati fino a dodici mesi fa e la verifichiamo
+    sugli ultimi dodici, che il metodo non ha mai visto. Una grandezza viene corretta solo se in questa prova
+    l'errore diminuisce; altrimenti resta com'è.</p>
+  <div id="metriche"><p class="aiuto">Caricamento dei risultati…</p></div>
+
+  <h3>Limiti</h3>
+  <ul>
+    <li>La previsione vale quanto i dati: servono almeno alcune settimane di consumi orari, o un anno di
+      consumi giornalieri, per cogliere l'effetto delle stagioni.</li>
+    <li>Cambiamenti nell'edificio o nell'uso (nuovi impianti, orari diversi, chiusure) non sono prevedibili
+      dal meteo: il modello li scopre solo quando compaiono nei dati.</li>
+    <li>Le stime sono statistiche e senza garanzia; per valutare un contratto o un intervento servono dati
+      e verifiche specifiche.</li>
+  </ul>
+
+  <h2 id="patrimonio">Patrimonio</h2>
+  <h3>Gli edifici sul catasto</h3>
+  <p>La <a href="patrimonio.html">pagina del patrimonio</a> trova il punto di ogni edificio e la particella catastale
+    che lo contiene. Gli indirizzi si cercano prima nell'archivio nazionale dei numeri civici (<a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a>, <a href="https://www.agenziaentrate.gov.it/">Agenzia delle
+    Entrate</a> e <a href="https://www.istat.it/">ISTAT</a>), aggiornato ogni mese sul nostro server; quello che manca si cerca con <a href="https://zornade.com">Zornade</a>, che fornisce anche
+    le particelle. Il punto dell'<a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a> è l'accesso dell'edificio, che spesso cade sulla strada: in quel caso si usa
+    la particella edificata più vicina, entro 16 metri.</p>
+
+  <h2 id="legge-10">Legge 10</h2>
+  <h3>I dati per la Relazione Legge 10/91</h3>
+  <p>La <a href="legge10.html">pagina della Legge 10</a> usa la stessa serie storica corretta, giorno per giorno,
+    sulle ultime stagioni di riscaldamento complete (1 luglio – 30 giugno). Calcola i dati mensili con
+    l'impostazione della UNI 10349-1 (temperature medie, minime e massime, irradiazione globale e diffusa su piano
+    orizzontale, pressione del vapore, vento), i gradi giorno a 20 °C sul periodo di accensione di ogni zona
+    (DPR 412/93), la zona che ne risulta, la tendenza in gradi giorno per decennio e una stima statistica delle
+    temperature di progetto (1° percentile dei minimi e 99° dei massimi giornalieri). Non sostituisce i valori
+    normativi: serve a capire quanto il clima reale se ne discosta.</p>
+  <h3>Il confronto con il DPR 412/93</h3>
+  <p>Per ogni comune la pagina mostra anche i valori di legge dell'<a href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.del.presidente.della.repubblica:1993-08-26;412!vig=">Allegato A del DPR 412/93</a>:
+    gradi giorno, zona climatica e altitudine della casa comunale. Sono i valori da usare nella relazione tecnica,
+    fissati nel 1993 sul clima dei decenni precedenti; il nostro calcolo descrive invece il clima reale delle
+    ultime stagioni. La pagina riporta la differenza in percentuale tra i gradi giorno calcolati e quelli di legge,
+    dice se la zona coincide e nel grafico stagione per stagione traccia il valore del DPR come linea tratteggiata.</p>
+  <p>Il testo del DPR, preso dalla versione vigente su Normattiva, elenca 8.106 righe con i comuni del 1993.
+    Le abbiamo abbinate ai codici ISTAT di oggi seguendo cambi di nome, di provincia e di regione e i comuni
+    soppressi, e correggendo i refusi del testo (per esempio la lettera O al posto dello zero). Un comune che ne ha
+    incorporati altri tiene il proprio valore; per un comune nato da una fusione il DPR non ha un valore unico e la
+    pagina mostra quelli dei comuni d'origine; i pochi comuni nati dopo per distacco da altri non sono nel DPR.
+    Dal 1994 al 2016 l'Allegato A è stato cambiato da 58 decreti ministeriali, che hanno modificato i valori di
+    circa 120 comuni, il nome di altri 17 e aggiunto 17 righe: il testo vigente li contiene già e li abbiamo
+    verificati versione per versione sul testo multivigente di Normattiva. Per questi comuni la pagina riporta in
+    nota il decreto, la data da cui vale e il valore originario del 1993.
+    L'elenco completo si scarica in <a href="dati/dpr412.csv" download>dpr412.csv</a> o dalla pagina dei
+    <a href="dati.html">dati storici</a>. I dati della UNI 10349 e gli anni tipo del CTI non si possono pubblicare:
+    il perché è nelle <a href="faq.html#uni-cti">domande frequenti</a>.</p>
+
+  <h2 id="dati-storici">Dati storici</h2>
+  <h3>Cosa si può scaricare</h3>
+  <p>La pagina <a href="dati.html">Dati storici</a> permette di scaricare, in CSV o Excel, i dati che le licenze ci
+    permettono di ridistribuire: il meteo orario (archivio delle previsioni ICON, da novembre 2022) e giornaliero (ERA5
+    corretto, dal 2015), i gradi giorno, i dati climatici per la Legge 10, l'elenco dei comuni e i prezzi dell'energia
+    di <a href="https://ec.europa.eu/eurostat/">Eurostat</a>. Si scelgono il periodo, la frequenza (dall'ora all'anno o
+    alla stagione di riscaldamento) e la zona: regione, provincia o singoli comuni.</p>
+  <h3>Cosa non si può scaricare</h3>
+  <p>I prezzi del GME e le quotazioni EEX restano solo per uso interno, come richiedono le loro condizioni; le
+    particelle di <a href="https://zornade.com">Zornade</a> e l'archivio <a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a>
+    si consultano dalla pagina del patrimonio ma non si scaricano in blocco. Ogni file riporta le fonti e le
+    attribuzioni richieste dalle licenze.</p>
+  <h3>Medie e completezza</h3>
+  <p>Giorni, mesi e anni sono quelli del calendario italiano. Un periodo compare solo se ha abbastanza dati (di
+    norma il 90 %, si può cambiare): il file indica sempre quanti dati erano attesi e quanti validi.</p>
+
+  <h2 id="indicatori">Indicatori</h2>
+  <p>La pagina <a href="indicatori.html">Indicatori</a> mostra quanto spendono per l'energia gli enti del Servizio
+    Sanitario Nazionale, anno per anno dal 2015, accanto alla loro regione e all'Italia. Sono dati di bilancio pubblici:
+    servono a capire ordini di grandezza e tendenze, non a dare un voto a un'azienda.</p>
+  <h3>Da dove vengono i dati</h3>
+  <p>La spesa e i totali di bilancio vengono dal <strong>modello CE</strong>, il conto economico che ogni ente del SSN
+    manda al Ministero, pubblicato voce per voce dalla Ragioneria Generale dello Stato su
+    <a href="https://bdap-opendata.rgs.mef.gov.it/tema/sanit%C3%A0">OpenBDAP</a>: consuntivi dal 2015 al 2024 e, per il
+    2025, il conto del IV trimestre, ancora provvisorio. Le voci usate sono tre: BA1610 riscaldamento, BA1660 utenze
+    elettricità, BA1670 altre utenze (gas, acqua). Restano fuori la telefonia (BA1650) e combustibili, carburanti e
+    lubrificanti (BA0340), che comprende il carburante degli automezzi: quest'ultima si vede a parte. Come denominatori,
+    il totale del valore della produzione (AZ9999) e dei costi della produzione (BZ9999).</p>
+  <p>Per l'Emilia-Romagna le giornate di degenza (ricoveri ordinari negli ospedali pubblici, esclusi i neonati sani),
+    i posti letto pubblici al 31 dicembre e i residenti per Azienda USL vengono da
+    <a href="https://salute.regione.emilia-romagna.it/siseps/reporter">ReportER</a>, il portale dei dati del SISEPS
+    regionale; le aziende di ReportER sono abbinate ai codici del modello CE (per esempio ROMAGNA → 114, IRCCS
+    S. Orsola → 908, I.O.R. → 960). La popolazione di Italia, regioni e province autonome è quella
+    <a href="https://demo.istat.it/">ISTAT</a> al 1° gennaio dell'anno dopo, cioè al 31 dicembre dell'anno del bilancio.</p>
+  <h3>Gli indicatori</h3>
+  <table>
+    <thead><tr><th>Indicatore</th><th>Come si calcola</th><th>Come si legge</th></tr></thead>
+    <tbody>
+      <tr><td>Spesa per energia e utenze</td><td>BA1610 + BA1660 + BA1670, in euro</td><td>quanto si paga, prezzi compresi</td></tr>
+      <tr><td>Leva</td><td>valore della produzione / spesa</td><td>euro di produzione per ogni euro di energia; più alta è meglio</td></tr>
+      <tr><td>Incidenza</td><td>spesa / valore della produzione</td><td>l'inverso della leva, in percentuale; più bassa è meglio</td></tr>
+      <tr><td>Peso</td><td>spesa / costi della produzione</td><td>quota dell'energia sui costi; più bassa è meglio</td></tr>
+      <tr><td>Per giornata di degenza</td><td>spesa / giornate di degenza ordinaria</td><td>costo dell'energia per unità di attività ospedaliera (solo Emilia-Romagna)</td></tr>
+      <tr><td>Per posto letto</td><td>spesa / posti letto pubblici al 31/12</td><td>costo dell'energia per unità di capacità (solo Emilia-Romagna)</td></tr>
+      <tr><td>Per cittadino</td><td>spesa / residenti al 31/12</td><td>costo dell'energia per abitante: AUSL dell'Emilia-Romagna con i residenti SISEPS, regioni e Italia con quelli ISTAT</td></tr>
+    </tbody>
+  </table>
+  <p>Ogni indicatore si può calcolare sul totale o su una sola delle tre componenti. Dove manca un denominatore il
+    valore è «n.d.»: per esempio le aziende ospedaliere non hanno una popolazione di riferimento, e fuori
+    dall'Emilia-Romagna non abbiamo ancora giornate, posti letto e residenti per azienda.</p>
+  <h3>Con chi si confronta un ente</h3>
+  <p>Ogni ente si confronta con il <strong>conto consolidato della sua regione</strong> (codice 999), che toglie gli
+    scambi tra aziende della stessa regione, e con l'<strong>Italia</strong>, che è la somma dei 21 consolidati di
+    regioni e province autonome (per il Trentino-Alto Adige, Bolzano e Trento hanno ciascuna il proprio). La gestione
+    sanitaria accentrata (GSA, codice 000) non è un'azienda ma la contabilità dei fondi gestiti direttamente dalla
+    regione: è compresa nel consolidato e non compare da sola.</p>
+  <h3>Avvertenze</h3>
+  <ul>
+    <li><strong>Euro, non kilowattora.</strong> La spesa dipende dai prezzi oltre che dai consumi: il 2022 riflette i rincari,
+      non un calo di efficienza.</li>
+    <li><strong>Classificazione contabile.</strong> Con i contratti «servizio energia» o di global service parte dei costi
+      energetici finisce nel riscaldamento o nelle manutenzioni; alcune regioni hanno voci a zero perché registrano i costi
+      altrove. Il confronto sul totale è più robusto di quello per componente.</li>
+    <li><strong>Valore della produzione.</strong> È in gran parte il finanziamento regionale: la leva dipende anche da come la
+      regione divide le risorse tra le aziende.</li>
+    <li><strong>Perimetro.</strong> La spesa di un'AUSL comprende anche le sedi territoriali, mentre giornate e posti letto
+      riguardano solo gli ospedali; la spesa per cittadino della regione comprende aziende ospedaliere e IRCCS ed è quindi
+      più alta di quella di una singola AUSL.</li>
+    <li><strong>Denominatori.</strong> Giornate solo di degenza ordinaria; posti letto come fotografia al 31/12; i residenti
+      SISEPS e ISTAT differiscono di poco (Emilia-Romagna 2024: 4.482.977 contro 4.461.998, −0,5 %).</li>
+    <li><strong>Discontinuità.</strong> La popolazione ISTAT viene dalla ricostruzione intercensuaria fino al 2018 e dal
+      censimento permanente dal 2019, con un piccolo salto tra le due serie; quella del 2025 è la stima al 1° gennaio
+      2026. L'AOSP di Reggio Emilia è confluita nell'AUSL dal 2017, e in altre regioni le aziende sono state riorganizzate
+      (la pagina indica i nomi e gli anni di ogni ente). Il 2025 è provvisorio.</li>
+  </ul>
+  <p>I dati si aggiornano una volta al mese; la pagina dice quando è stato l'ultimo aggiornamento, e da lì si scaricano
+    in CSV tutti i valori mostrati, con fonti e licenze.</p>
+
+  <h2 id="fonti">Fonti e licenze</h2>
+  <p>Tutte le fonti di dati usate da EuGEnio, con la licenza o le condizioni d'uso.</p>
+
+  <h3>Meteo e clima</h3>
+  <ul>
+    <li><a href="https://open-meteo.com/">Open-Meteo</a> (dati CC BY 4.0): distribuisce tutti i dati meteo del sito, previsioni e
+      storico. <em>Weather data by Open-Meteo.com.</em></li>
+    <li><a href="https://www.arpae.it">Arpae Emilia-Romagna</a>: modello ICON-2I a 2,2 km, per i primi due o tre giorni di
+      previsione.</li>
+    <li><a href="https://www.dwd.de">DWD</a>, il servizio meteorologico tedesco: modello ICON e archivio delle sue previsioni dal
+      novembre 2022, il riferimento della correzione.</li>
+    <li><a href="https://www.ecmwf.int">ECMWF</a>, il centro meteorologico europeo: modello IFS, fino a 15 giorni.</li>
+    <li><a href="https://cds.climate.copernicus.eu">Copernicus Climate Change Service</a>: rianalisi ERA5 ed ERA5-Land dal 2015
+      (licenza Copernicus, uso libero con citazione).</li>
+  </ul>
+
+  <h3>Territorio ed edifici</h3>
+  <ul>
+    <li><a href="https://www.istat.it/">ISTAT</a> (CC BY 4.0): elenco e codici dei comuni, confini, sezioni di censimento 2021,
+      attraverso il repository <a href="https://huggingface.co/datasets/Gramscii-IT/european-territory-boundaries">Gramscii
+      <em>european-territory-boundaries</em></a>.</li>
+    <li><a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a>, l'archivio nazionale dei numeri civici di
+      <a href="https://www.agenziaentrate.gov.it/">Agenzia delle Entrate</a> e <a href="https://www.istat.it/">ISTAT</a>
+      (CC BY 4.0): indirizzi e coordinate degli accessi, scaricati una volta al mese.</li>
+    <li><a href="https://zornade.com">Dati elaborati da Zornade</a>: particelle catastali e ricerca degli indirizzi, con le API
+      gratuite e una chiave personale. Zornade elabora il catasto dell'<a href="https://www.agenziaentrate.gov.it/">Agenzia delle
+      Entrate</a>, dati <a href="https://www.istat.it/">ISTAT</a> e <a href="https://www.openstreetmap.org/copyright">© contributori
+      OpenStreetMap</a> (<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>).</li>
+  </ul>
+
+  <h3>Energia e mercati</h3>
+  <ul>
+    <li><a href="https://www.arera.it/area-operatori/prezzi-e-tariffe/valore-cmemm-vulnerabili">ARERA</a>: media mensile del PSV
+      day-ahead (C<sub>MEM,m</sub>) dal 2022 e metodo dell'indice P<sub>FOR,t</sub> (TIVG).</li>
+    <li><a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_pc_205/default/table">Eurostat</a> (CC BY 4.0): prezzi
+      dell'energia elettrica per le imprese, nella newsletter mensile.</li>
+    <li><a href="https://www.mercatoelettrico.org">GME</a>, Gestore dei Mercati Energetici: PUN, prezzi zonali, PSV del mercato a
+      pronti e IGI, con credenziali personali per le API. La licenza vieta di ridistribuirli: si usano <strong>solo al
+      nostro interno</strong>, per simulazioni e analisi.</li>
+    <li><a href="https://www.eex.com/en/markets/natural-gas/gas-market-transparency">EEX</a>, la borsa europea dell'energia:
+      quotazioni del gas al TTF e future trimestrali, pubblicati a scopo informativo; servono <strong>solo</strong> a ricalcolare
+      il P<sub>FOR,t</sub> e non si mostrano.</li>
+  </ul>
+
+  <h3>Sanità</h3>
+  <ul>
+    <li><a href="https://bdap-opendata.rgs.mef.gov.it/tema/sanit%C3%A0">OpenBDAP</a>, la Banca Dati delle Amministrazioni
+      Pubbliche della Ragioneria Generale dello Stato (MEF): modello di rilevazione del Conto Economico degli enti del SSN,
+      2015–2025 (<a href="https://creativecommons.org/licenses/by/4.0/deed.it">CC BY 4.0</a>, titolare dei dati la Ragioneria
+      Generale dello Stato).</li>
+    <li><a href="https://salute.regione.emilia-romagna.it/siseps/reporter">ReportER</a>, il portale open data del SISEPS
+      della Regione Emilia-Romagna: giornate di degenza (Banca dati SDO), posti letto (Anagrafe delle strutture) e
+      residenti per Azienda USL (<a href="https://www.regione.emilia-romagna.it/note-legali">CC BY 4.0</a>, come tutti i
+      contenuti della Regione salvo diversa indicazione).</li>
+    <li><a href="https://www.istat.it/">ISTAT</a> (<a href="https://www.istat.it/note-legali/">CC BY 4.0</a>): popolazione
+      residente al 1° gennaio di Italia, regioni e province autonome, dal censimento permanente e dalla ricostruzione
+      intercensuaria 2002–2019, scaricata da <a href="https://demo.istat.it/">demo.istat.it</a>.</li>
+  </ul>
+
+  <h3>Norme</h3>
+  <ul>
+    <li><a href="https://www.normattiva.it/">Normattiva</a>, il portale della legge vigente (Istituto Poligrafico e
+      Zecca dello Stato): <a href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.del.presidente.della.repubblica:1993-08-26;412!vig=">DPR 26 agosto 1993, n. 412</a>, Allegato A (gradi giorno, zone climatiche e
+      altitudini dei comuni), nel testo vigente. Gli atti normativi non sono coperti da diritto d'autore
+      (art. 5 della legge 633/1941); l'abbinamento ai codici ISTAT attuali è nostro (CC BY 4.0).</li>
+  </ul>
+
+  <h3>Convenzioni per gli enti pubblici</h3>
+  <ul>
+    <li><a href="https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni">Intercent-ER</a>,
+      l'agenzia regionale per gli acquisti dell'Emilia-Romagna: convenzioni per energia elettrica e gas, capitolati e
+      determine.</li>
+    <li><a href="https://www.consip.it/bandi/energia-elettrica">Consip</a>, la centrale nazionale: gare e convenzioni per energia
+      elettrica e gas naturale.</li>
+    <li><a href="https://www.consorzioenergiatoscana.it/bandi/">Consorzio Energia Toscana</a>: gare e spread per energia e gas degli
+      enti toscani.</li>
+  </ul>
+  <p>Sono pagine e documenti pubblici, che il server ricontrolla ogni notte per accorgersi di nuove convenzioni e listini.</p>
+
+  <h3>Modello di previsione</h3>
+  <ul>
+    <li><a href="https://huggingface.co/NX-AI/TiRex-2">TiRex-2</a> di <a href="https://github.com/NX-AI/tirex-2">NX-AI</a>
+      (Apache 2.0): il modello che fa le previsioni, eseguito sul nostro server.</li>
+  </ul>
+
+  <p>Il codice di questo sito è <a href="licenza.html">open source</a>, gira utilizzando software liberi e su risorse hardware
+    disponibili gratuitamente; per l'elenco degli strumenti utilizzati vai alla pagina <a href="sitografia.html">Sitografia</a>.</p>
+</main>
+
+<footer class="piede">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg" alt="" width="44" height="44">
+  <div class="piede-testi">
+  <p>EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a>.</p>
+  <p><a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  </div>
+</footer>
+<script src="aspetto.js?v=20261027m"></script>
+<script>
+"use strict";
+const NOMI = {
+  temperature_2m: ["Temperatura oraria", "°C"], t_media_giornaliera: ["Temperatura media giornaliera", "°C"],
+  gradi_giorno_mensili: ["Gradi giorno mensili", "GG"], relative_humidity_2m: ["Umidità relativa", "%"],
+  shortwave_radiation: ["Radiazione globale", "W/m²"], diffuse_radiation: ["Radiazione diffusa", "W/m²"],
+  wind_speed_10m: ["Vento", "km/h"], cloud_cover: ["Nuvolosità", "%"], precipitation: ["Pioggia (totale mensile)", "mm"],
+  snowfall: ["Neve (totale mensile)", "cm"],
+};
+const f = (x) => x.toLocaleString("it-IT", { maximumFractionDigits: x < 10 ? 2 : 1 });
+fetch("/api/metodologia").then((r) => r.json()).then((d) => {
+  const m = d.metriche, box = document.getElementById("metriche");
+  if (!m) { box.innerHTML = "<p class='aiuto'>Risultati non ancora disponibili.</p>"; return; }
+  const p = m.periodo || {};
+  let h = `<p>Mediana su ${m.comuni} comuni; verifica dal ${p.test_dal || "—"} al ${p.al || "—"}. ` +
+          `Errore quadratico medio (RMSE) di ERA5 rispetto al riferimento, prima e dopo la correzione.</p>` +
+          `<table><thead><tr><th>Grandezza</th><th class="num">Prima</th><th class="num">Dopo</th><th class="num">Comuni corretti</th></tr></thead><tbody>`;
+  for (const [k, [nome, u]] of Object.entries(NOMI)) {
+    const v = m.variabili[k]; if (!v) continue;
+    const q = (m.quota_comuni_corretti || {})[k];
+    const meglio = v.dopo.rmse < v.prima.rmse - 1e-9;
+    h += `<tr><td>${nome}</td><td class="num">${f(v.prima.rmse)} ${u}</td><td class="num${meglio ? " meglio" : ""}">${f(v.dopo.rmse)} ${u}</td>` +
+         `<td class="num">${q === undefined ? "—" : Math.round(q * 100) + " %"}</td></tr>`;
+  }
+  box.innerHTML = h + "</tbody></table>";
+}).catch(() => {
+  document.getElementById("metriche").innerHTML = "<p class='aiuto'>Risultati non disponibili in questo momento.</p>";
+});
+</script>
+<script src="indice.js?v=20261027m"></script>
+</body>
+</html>

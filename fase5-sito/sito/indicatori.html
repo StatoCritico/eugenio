@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EuGEnio – indicatori della sanità</title>
+<meta name="description" content="Quanto spende per l'energia un'azienda sanitaria, anno per anno dal 2015, a confronto con la sua regione e con l'Italia: dati dei conti economici del Servizio Sanitario Nazionale (OpenBDAP), giornate di degenza, posti letto e popolazione.">
+<script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
+try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
+if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
+function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v=20261027m">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg">
+</head>
+<body>
+<header class="testata">
+  <div class="testata-alta">
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg" alt="EuGEnio" width="113" height="36"></a>
+    <script>eugenioLoghi()</script>
+    <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Informazioni">
+      <a href="metodo.html">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
+    </nav>
+    <details class="menu-tutto">
+      <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
+      <nav class="menu-pannello" aria-label="Menu completo">
+        <h2>Strumenti</h2>
+        <ul><li><a href="./">Previsione</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html" aria-current="page">Indicatori</a></li></ul>
+        <h2>Informazioni</h2>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <h2 id="aspetto-telefono">Aspetto</h2>
+        <div class="vestito">
+          <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
+      <li role="option" id="vestiti-telefono-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-telefono-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-telefono-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-telefono-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-telefono-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+          </ul>
+        </div>
+      </nav>
+    </details>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <div class="testata-menu">
+    <nav class="menu-strumenti" aria-label="Strumenti">
+    <a href="./">Previsione</a>
+    <a href="patrimonio.html">Patrimonio</a>
+    <a href="legge10.html">Legge 10</a>
+    <a href="dati.html">Dati storici</a>
+    <a href="indicatori.html" aria-current="page">Indicatori</a>
+    </nav>
+    <div class="vestito">
+      <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
+        aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <ul class="vestito-elenco a-discesa" id="vestiti-elenco" role="listbox" aria-label="Vestito del sito" tabindex="-1" hidden>
+      <li role="option" id="vestiti-elenco-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-elenco-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-elenco-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-elenco-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-elenco-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+      </ul>
+    </div>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+</header>
+
+<main class="strumento pagina-indicatori">
+  <section class="mappa-area" aria-label="Scelta dell'ente">
+    <h1>Quanto spende per l'energia un'azienda sanitaria</h1>
+    <p class="sotto">La spesa per energia e utenze degli enti del Servizio Sanitario Nazionale, anno per anno dal 2015,
+      a confronto con la loro regione e con l'Italia. Scegli la regione, anche dalla piccola mappa, e poi l'ente.</p>
+
+    <div class="ind-scelte">
+      <label for="regione">Regione</label>
+      <select id="regione"></select>
+      <label for="ente">Ente</label>
+      <select id="ente"><option value="">Caricamento…</option></select>
+      <p class="aiuto" id="nota-ente"></p>
+      <label for="componente">Spesa considerata</label>
+      <select id="componente">
+        <option value="totale" selected>Totale energia e utenze</option>
+        <option value="riscaldamento">Solo riscaldamento</option>
+        <option value="elettricita">Solo energia elettrica</option>
+        <option value="altre">Solo altre utenze (gas, acqua)</option>
+      </select>
+      <div class="spunte"><label><input type="checkbox" id="mostra-componenti"> mostra le tre componenti nel grafico e nella tabella</label></div>
+      <div class="messaggio" id="messaggio" role="status" aria-live="polite"></div>
+    </div>
+
+    <aside class="ind-avvertenze" aria-labelledby="titolo-avvertenze">
+      <h2 id="titolo-avvertenze">Prima di leggere i numeri</h2>
+      <ul>
+        <li><b>Sono euro, non kilowattora:</b> la spesa segue i prezzi oltre ai consumi. Il 2022 mostra i rincari, non un calo di efficienza.</li>
+        <li><b>Le voci contabili non sono uguali ovunque:</b> con un contratto «servizio energia» o un global service parte dei costi finisce in altre voci, e in qualche regione una componente è a zero. Il confronto sul totale è più solido di quello sulle singole componenti.</li>
+        <li><b>Il valore della produzione</b> è in gran parte il finanziamento della regione: la leva dipende anche da come la regione divide le risorse.</li>
+        <li><b>Perimetri diversi:</b> la spesa di un'AUSL comprende anche le sedi territoriali, mentre giornate e posti letto sono solo degli ospedali; la spesa per cittadino della regione comprende anche aziende ospedaliere e IRCCS.</li>
+        <li><b>Il 2025 è provvisorio</b> (conto del IV trimestre); popolazioni ISTAT e SISEPS differiscono di poco, e la serie ISTAT ha un salto tra il 2018 e il 2019.</li>
+      </ul>
+      <p class="aiuto">I dettagli sono nella pagina <a href="metodo.html#indicatori">Come funziona</a>.</p>
+    </aside>
+  </section>
+
+  <section class="pannello" aria-label="Indicatori dell'ente">
+    <div class="passo" id="passo-risultato" hidden>
+      <h2><span class="n">1</span><span id="titolo-ente">L'ente</span></h2>
+      <p class="aiuto" id="sottotitolo-ente"></p>
+      <div class="riga ind-anno">
+        <div><label for="anno">Anno del confronto</label><select id="anno"></select></div>
+      </div>
+      <div class="tabella-scorre"><table class="mensili ind-confronto" id="confronto"></table></div>
+      <p class="aiuto" id="nota-confronto"></p>
+
+      <h3>La spesa anno per anno</h3>
+      <div class="grafico" id="grafico-spesa"></div>
+
+      <h3>Leva, incidenza e peso</h3>
+      <div class="filtri" id="scelta-rapporto" role="group" aria-label="Indicatore del grafico"></div>
+      <p class="aiuto" id="lettura-rapporto"></p>
+      <div class="grafico" id="grafico-rapporto"></div>
+
+      <h3>Spesa per cittadino, per giornata di degenza, per posto letto</h3>
+      <div class="filtri" id="scelta-unitario" role="group" aria-label="Indicatore del grafico"></div>
+      <p class="aiuto" id="lettura-unitario"></p>
+      <div class="grafico" id="grafico-unitario"></div>
+
+      <h3>Tutti i valori</h3>
+      <div class="filtri" id="scelta-tabella" role="group" aria-label="Unità della tabella"></div>
+      <div class="tabella-scorre"><table class="mensili" id="tabella"></table></div>
+      <p class="aiuto" id="nota-tabella"></p>
+
+      <div class="scarica">
+        <button class="bottone secondario" id="scarica-ente" type="button">Scarica i dati mostrati (CSV)</button>
+        <button class="bottone secondario" id="scarica-regione" type="button">Scarica tutti gli enti della regione (CSV)</button>
+      </div>
+      <div id="report"></div>
+      <p class="fonti" id="fonti"></p>
+    </div>
+  </section>
+</main>
+
+<footer class="piede">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg" alt="" width="44" height="44">
+  <div class="piede-testi">
+  <p>EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a> – energy management, sanità, IA e altre cose serie.
+    Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>.</p>
+  <p>Conti economici degli enti del SSN: <a href="https://bdap-opendata.rgs.mef.gov.it/tema/sanit%C3%A0">Ragioneria Generale dello Stato – OpenBDAP</a>
+    (<a href="https://creativecommons.org/licenses/by/4.0/deed.it">CC BY 4.0</a>). Giornate di degenza, posti letto e popolazione per azienda:
+    <a href="https://salute.regione.emilia-romagna.it/siseps/reporter">Regione Emilia-Romagna – ReportER (SISEPS)</a> (CC BY 4.0).
+    Popolazione di Italia e regioni: <a href="https://demo.istat.it/">ISTAT</a> (CC BY 4.0). Elaborazione di EuGEnio: somme, rapporti e abbinamento dei codici.</p>
+  <p><a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  </div>
+</footer>
+<script src="aspetto.js?v=20261027m"></script>
+<script src="minimappa.js?v=20261027m"></script>
+<script src="report.js?v=20261027m"></script>
+<script src="indicatori.js?v=20261027m"></script>
+</body>
+</html>

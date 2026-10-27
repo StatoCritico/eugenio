@@ -1,0 +1,77 @@
+# Intercent-ER "Energia elettrica 19" – fornitura anno 2026 (in corso a ottobre 2026).
+# Fornitore Nova AEG S.p.A. su entrambi i lotti. Verificato il 26/10/2026 sul capitolato tecnico EE19 (art. 1, 3, 7, 8),
+# sullo schema di convenzione (art. 13) e sulla determina di aggiudicazione n. 401 del 05/06/2025:
+# - prezzo = PUN Index GME, media aritmetica mensile per fascia (2 decimali) + spread fisso; lotto 1 solo F1/F2/F3,
+#   lotto 2 anche monorario F0;
+# - spread comprensivo di garanzie d'origine (energia tutta verde), sbilanciamento, CO2 e capacità di trasporto;
+#   nessun corrispettivo fisso, di potenza o commissione;
+# - perdite convenzionali ARERA pagate allo stesso prezzo dell'energia (coefficienti TIS: MT 3,8 %, BT 10,2 %);
+# - a parte, fuori da questo calcolo: dispacciamento del mercato libero, trasporto e misura, oneri di sistema, imposte.
+# Convenzione aperta fino al 30/09/2026, fornitura dal 01/01/2026, ordinativi fino al 31/12/2026.
+
+[convenzione]
+id = "intercenter-ee19-2026"
+ente = "Intercent-ER"
+titolo = "Energia elettrica 19 – fornitura 2026"
+regione = "08"
+commodity = "elettricita"
+dal = 2026-01-01
+al = 2026-12-31
+unita_prezzo = "EUR/MWh"
+fonte = "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-attive/2025/energia-elettrica-19"
+
+[[lotto]]
+id = "1"
+descrizione = "Aziende sanitarie dell'Emilia-Romagna, POD in media tensione (Nova AEG)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F1", "F2", "F3"]
+indice = "PUN_FASCE"                 # PUN Index GME, media aritmetica mensile per fascia
+spread = 1.87                        # €/MWh, garanzie d'origine comprese; determina 401/2025
+perdite = 0.038                      # perdite convenzionali MT (ARERA, TIS) fatturate allo stesso prezzo dell'energia
+
+[[lotto]]
+id = "2-BT"
+descrizione = "Pubbliche amministrazioni e aziende sanitarie, POD in bassa tensione (Nova AEG)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0", "F1", "F2", "F3"]     # monorario (F0) o per fasce, secondo il contatore
+indice = "PUN_FASCE"
+spread = 3.25                        # €/MWh; determina 401/2025
+perdite = 0.102                      # perdite convenzionali BT (ARERA, TIS)
+
+[[lotto]]
+id = "2-MT"
+descrizione = "Pubbliche amministrazioni (non sanitarie), POD in media tensione (Nova AEG)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0", "F1", "F2", "F3"]
+indice = "PUN_FASCE"
+spread = 3.25                        # €/MWh; determina 401/2025
+perdite = 0.038
+
+# Sorveglianza notturna: pagina della convenzione e pagina della gara (dove stanno determina e capitolato).
+# Le regole leggono gli spread dalla determina di aggiudicazione (provate sul testo vero il 26/10/2026).
+[sorveglianza]
+pagine = [
+  "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-attive/2025/energia-elettrica-19",
+  "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/bandi-intercenter/bandi-e-procedure-di-gara/bandi-chiusi/BANDO_GARA_PORTALE@10736085",
+]
+
+[[sorveglianza.valore]]
+lotto = "1"
+campo = "spread"
+fonti = "aggiudic|Det_Dir_agg"
+cerca = 'Lotto 1:.{0,700}?spread rispetto al PUN.{0,160}?pari a\s*([0-9]+(?:[.,][0-9]+)?)\s*€/MWh'
+applica = true
+
+[[sorveglianza.valore]]
+lotto = "2-BT"
+campo = "spread"
+fonti = "aggiudic|Det_Dir_agg"
+cerca = 'Lotto 2:.{0,700}?spread rispetto al PUN.{0,160}?pari a\s*([0-9]+(?:[.,][0-9]+)?)\s*€/MWh'
+applica = true
+
+[[sorveglianza.valore]]
+lotto = "2-MT"
+campo = "spread"
+fonti = "aggiudic|Det_Dir_agg"
+cerca = 'Lotto 2:.{0,700}?spread rispetto al PUN.{0,160}?pari a\s*([0-9]+(?:[.,][0-9]+)?)\s*€/MWh'
+applica = true

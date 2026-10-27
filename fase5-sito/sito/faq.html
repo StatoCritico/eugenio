@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F.A.Q. – domande frequenti</title>
+<meta name="description" content="Domande frequenti su EuGEnio: il nome, l'open source, i dati di mercato, i limiti del servizio.">
+<script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
+try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
+if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
+function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v=20261027m">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg">
+</head>
+<body>
+<header class="testata">
+  <div class="testata-alta">
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg" alt="EuGEnio" width="113" height="36"></a>
+    <script>eugenioLoghi()</script>
+    <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Informazioni">
+      <a href="metodo.html">Come funziona</a>
+      <a href="faq.html" aria-current="page">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
+    </nav>
+    <details class="menu-tutto">
+      <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
+      <nav class="menu-pannello" aria-label="Menu completo">
+        <h2>Strumenti</h2>
+        <ul><li><a href="./">Previsione</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
+        <h2>Informazioni</h2>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html" aria-current="page">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <h2 id="aspetto-telefono">Aspetto</h2>
+        <div class="vestito">
+          <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
+      <li role="option" id="vestiti-telefono-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-telefono-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-telefono-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-telefono-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-telefono-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+          </ul>
+        </div>
+      </nav>
+    </details>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <div class="testata-menu">
+    <nav class="menu-strumenti" aria-label="Strumenti">
+    <a href="./">Previsione</a>
+    <a href="patrimonio.html">Patrimonio</a>
+    <a href="legge10.html">Legge 10</a>
+    <a href="dati.html">Dati storici</a>
+    <a href="indicatori.html">Indicatori</a>
+    </nav>
+    <div class="vestito">
+      <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
+        aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <ul class="vestito-elenco a-discesa" id="vestiti-elenco" role="listbox" aria-label="Vestito del sito" tabindex="-1" hidden>
+      <li role="option" id="vestiti-elenco-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-elenco-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-elenco-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-elenco-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-elenco-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+      </ul>
+    </div>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+</header>
+
+<main class="articolo faq">
+  <h1>F.A.Q.</h1>
+
+  <h2 id="il-progetto">Il progetto</h2>
+
+  <details>
+    <summary>Perché si chiama EuGEnio?</summary>
+    <p>Il nome tiene insieme due cose: l'<strong>Eu</strong>ropa, da cui arriva gran parte dei dati (i modelli
+      meteo europei, la rianalisi climatica Copernicus, il mercato del gas olandese che fa da riferimento per
+      tutto il continente), e l'<a href="https://www.secem.eu/"><strong>EGE</strong></a>, l'Esperto in Gestione dell'Energia: la figura che con
+      quei dati deve poi prendere decisioni concrete su edifici, impianti e contratti.</p>
+  </details>
+
+  <details>
+    <summary>Che cosa fa?</summary>
+    <p>Stima i consumi futuri di un edificio partendo dai suoi consumi passati, dal meteo previsto per il
+      comune e dal calendario. Fornisce anche <a href="legge10.html">dati climatici aggiornati per comune</a>, utili per
+      esempio nei calcoli della Legge 10, e <a href="patrimonio.html">localizza sul catasto gli edifici</a> di un
+      patrimonio diffuso. Una volta al mese manda per email un riepilogo dei dati climatici a chi si iscrive.</p>
+  </details>
+
+  <details id="chi">
+    <summary>Chi c'è dietro alla realizzazione di questo sito?</summary>
+    <p>EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>, un progetto personale di
+      divulgazione su energy management, sanità, IA e altre cose serie, curato da un <a href="https://em.fire-italia.org/">energy manager</a> che lavora
+      nel settore sanitario pubblico. Qualche volta parla al plurale, ma è il sovrappeso, che gli causa allucinazioni
+      collettive. Open source e senza scopo di lucro, per contribuire alla crescita
+      professionale di chi opera nel settore energetico.</p>
+  </details>
+
+  <details id="regioni">
+    <summary>Perché ci sono più dati per l'Emilia-Romagna e per la sanità?</summary>
+    <p>Perché sono il settore dove lavoro e il posto dove vivo. Nulla vieta che si effettuino altri mirror di questo sito
+      dedicati ad altri settori e ad altre regioni. Clicca <a href="mirror.html">qui</a> per sapere come fare.</p>
+  </details>
+
+  <details id="mancano">
+    <summary>Perché mancano questi dati? E queste funzioni?</summary>
+    <p>Perché questo sito è fatto da una persona sola, principalmente rubando ore al sonno. Ma se avete un <a href="https://it.wikipedia.org/wiki/A-Team">problema
+      che nessuno può risolvere</a>… e se provate a <a href="contatti.html">scrivermi via email</a>, può darsi che possa
+      implementare un'altra funzione.</p>
+  </details>
+
+  <h2 id="affidabilita">Affidabilità</h2>
+
+  <details id="garanzia">
+    <summary>I dati sono garantiti?</summary>
+    <p>No. Sono calcolati o reperiti con sistemi automatici e verificati a campione da esseri umani. Abbiamo fatto
+      quanto materialmente possibile per renderli affidabili, ma il sito offre un servizio gratuito e non è
+      responsabile di eventuali errori: né di quelli contenuti nei dati, né di quelli indotti dai risultati delle
+      previsioni o dalla lettura, diffusione o riuso dei report. Se trovi degli errori,
+      <a href="contatti.html">segnalali</a>.</p>
+  </details>
+
+  <details>
+    <summary>Quanto è affidabile la previsione?</summary>
+    <p>Dipende dai dati e dall'edificio. Per questo il risultato è una fascia di valori, non un numero solo, e
+      c'è il modo "mettila alla prova": EuGEnio nasconde l'ultimo tratto dei tuoi dati, lo prevede e ti dice
+      quanto ha sbagliato. È il modo più onesto per capire se fidarsi, caso per caso.</p>
+  </details>
+
+  <details>
+    <summary>I dati climatici valgono per la Relazione Legge 10/91?</summary>
+    <p>No, non sostituiscono i valori di legge. La relazione tecnica deve usare i dati normativi (UNI 10349,
+      DPR 412/1993): i gradi giorno e la zona del DPR sono mostrati nella stessa pagina, accanto ai valori calcolati. Quelli di EuGEnio descrivono il clima reale degli ultimi anni nel comune: servono per
+      diagnosi energetiche, per confrontare i consumi effettivi e per capire quanto il clima è cambiato
+      rispetto ai valori di norma.</p>
+  </details>
+
+  <details id="dpr-aggiornato">
+    <summary>I dati del DPR 412 sono aggiornati?</summary>
+    <p>Sì, per quanto abbiamo potuto verificare. Il DPR 412/93 è del 1993, ma il suo Allegato A (gradi giorno, zona
+      climatica e altitudine della casa comunale di ogni comune) è stato modificato molte volte. Ecco come abbiamo
+      ragionato e cosa abbiamo controllato.</p>
+    <ul>
+      <li><strong>La fonte.</strong> Abbiamo preso il testo in vigore da
+        <a href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.del.presidente.della.repubblica:1993-08-26;412!vig=">Normattiva</a>,
+        il portale ufficiale della legge vigente, e non le tabelle che circolano in rete, che spesso hanno refusi o
+        sono ferme a qualche anno fa.</li>
+      <li><strong>Le modifiche.</strong> Lo abbiamo confrontato con il testo "multivigente", cioè con tutte le versioni
+        dell'Allegato A che si sono succedute: tra il 1994 e il 2016 una sessantina di decreti ministeriali hanno
+        cambiato circa 160 righe (valori corretti, comuni rinominati, comuni nuovi come Fiumicino o Monserrato). Il
+        testo in vigore le contiene tutte; per i comuni interessati la pagina <a href="legge10.html">Legge 10</a> riporta
+        nelle note il decreto, la data da cui vale e il valore del 1993.</li>
+      <li><strong>I comuni di oggi.</strong> L'elenco del 1993 non coincide con quello attuale, quindi abbiamo abbinato
+        ogni riga al comune di oggi (codice ISTAT): 8.105 righe su 8.106. Per i comuni nati da una fusione mostriamo i
+        valori dei comuni d'origine; i 6 comuni nati dopo il 1993 per distacco (Mappano, Baranzate, Cavallino-Treporti,
+        Fonte Nuova, Misiliscemi, Padru) non hanno un valore di legge proprio. Abbiamo corretto a mano i refusi del testo
+        (per esempio Bruzzano Zeffirio e Paternò scritti con lo zero, San Michele di Ganzaria) e la riga "Isola di Bari",
+        che per posizione, quota e valori corrisponde a Mola di Bari.</li>
+      <li><strong>Ferentino.</strong> È l'unico caso davvero dubbio. Due decreti dell'ottobre 2008 hanno sostituito la
+        riga del 1993 (zona D, 1913 gradi giorno, 395 m) con due righe: 2222 gradi giorno a 581 m e 2587 gradi giorno a
+        801 m, e nessuna delle due quote è quella della casa comunale. Usiamo 2222, la riga con la quota più vicina al
+        centro; per una relazione tecnica conviene verificare i decreti sulla Gazzetta Ufficiale.</li>
+      <li><strong>Le incoerenze lasciate com'erano.</strong> In 4 comuni (Cunico, Vito d'Asio, Caprese Michelangelo,
+        Mongiana) la zona scritta nel DPR non corrisponde ai gradi giorno: la riportiamo com'è, perché è quella di legge.</li>
+    </ul>
+    <p>La tabella completa, con le note, si scarica dalla pagina Legge 10 (<a href="dati/dpr412.csv">CSV</a>). Se trovi
+      un errore, <a href="contatti.html">segnalalo</a>.</p>
+  </details>
+
+  <h2 id="usare-il-servizio">Usare il servizio</h2>
+
+  <details id="colori">
+    <summary>Come cambio i colori del sito?</summary>
+    <p>In alto a destra, nella riga del menu, ci sono due pulsanti rotondi. Quello del tema, con il cerchio
+      bianco e nero <svg class="icona-testo" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg>, passa dal tema scuro a quello chiaro e viceversa. Quello alla sua sinistra, con
+      l'asterisco <svg class="icona-testo asterisco-testo" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>, apre l'elenco dei «vestiti» del sito: Corallo, Ambra, Indaco, Lime e Verde. Sul telefono il
+      pulsante del tema è accanto a «Menu» e i vestiti sono dentro il menu, alla voce «Aspetto». Il browser ricorda
+      la scelta per le visite successive.</p>
+  </details>
+
+  <details id="altri-stili">
+    <summary>Si può aggiungere un altro stile al sito?</summary>
+    <p>No, casomai ve lo mettete nel <a href="mirror.html">mirror</a>. Ho già avuto abbastanza problemi a sceglierne
+      uno, tanto che ho deciso di lasciarne diversi disponibili all'utente. E comunque io, coi colori, sono negato:
+      vengo da una famiglia di daltonici.</p>
+  </details>
+
+  <details id="csv">
+    <summary>Perché devo lavorare con file CSV?</summary>
+    <p>Perché per tenere i dati sul sito dovremmo conservare e trattare i tuoi dati e chiederti una registrazione, e
+      per il momento questo è contrario allo spirito del progetto. Inoltre sul server non c'è tutto questo spazio.
+      Non è detto, però, che non lo facciamo in futuro.</p>
+  </details>
+
+  <details>
+    <summary>Perché alcuni edifici sono "da verificare" o "non trovati"?</summary>
+    <p>Gli indirizzi si cercano prima nell'archivio nazionale dei numeri civici (<a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a>), poi con <a href="https://zornade.com">Zornade</a>. Un
+      edificio è "da verificare" quando il punto è stato trovato ma qualcosa non torna del tutto: manca il civico
+      nell'elenco, il civico non ha ancora le coordinate e si è usato il più vicino, il nome della via è ambiguo.
+      È "non trovato" quando la via non c'è nell'archivio o il comune non ha ancora georeferenziato i civici: in
+      quel caso basta aggiungere al file le coordinate (<code>lat</code>, <code>lon</code>) o i dati catastali.
+      La nota di ogni edificio spiega il motivo.</p>
+  </details>
+
+  <details>
+    <summary>Perché ci sono dei limiti di utilizzo?</summary>
+    <p>EuGEnio funziona a costo zero, su risorse gratuite che hanno i loro tetti. I limiti servono a far
+      funzionare il servizio per tutti.</p>
+    <ul>
+      <li><strong>20 previsioni all'ora</strong> per ogni indirizzo di rete, e una previsione alla volta: il
+        server ha due processori e il modello di previsione li occupa per qualche secondo.</li>
+      <li><strong>File fino a 5 MB</strong> (circa 200.000 righe): bastano per anni di dati quartorari di un
+        contatore.</li>
+      <li><strong>Fino a 2.000 edifici all'ora</strong> nella localizzazione catastale. Il sito invia l'elenco a
+        blocchi di 40 edifici e mostra l'avanzamento: la ricerca sul catasto usa il servizio gratuito di
+        <a href="https://zornade.com">Zornade</a>, che ha una quota oraria condivisa da tutti.</li>
+      <li><strong>Previsioni meteo fino a 15 giorni.</strong> Oltre, il meteo non è prevedibile e si usa la
+        media degli anni passati: il risultato diventa uno scenario "anno tipo". Già oltre le 72 ore la
+        previsione meteo è meno precisa, e il sito lo segnala.</li>
+      <li><strong>Non tutte le regioni subito.</strong> Lo storico meteo di ogni comune si scarica dal servizio
+        gratuito Open-Meteo, che limita le richieste giornaliere: si parte dall'Emilia-Romagna e si estende
+        regione per regione.</li>
+      <li><strong>Storia usata dal modello:</strong> fino a 90 giorni di dati orari o 3 anni di dati giornalieri.
+        Dati più vecchi non migliorano la previsione e rallenterebbero il calcolo.</li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>Che fine fanno i miei dati?</summary>
+    <p>I file dei consumi e degli edifici vengono elaborati in memoria e scartati: non vengono salvati né
+      registrati. Per gli edifici, indirizzi e dati catastali vengono inviati a <a href="https://zornade.com">Zornade</a> solo per trovare la
+      particella; le risposte restano in una cache tecnica per al massimo 12 mesi, così la stessa ricerca non
+      consuma di nuovo la quota. Dettagli nell'<a href="privacy.html">informativa privacy</a>.</p>
+  </details>
+
+  <h2 id="dati-fonti-licenze">Dati, fonti e licenze</h2>
+
+  <details id="riuso">
+    <summary>Posso riutilizzare i dati e i report?</summary>
+    <p>Sì, anche per lavoro e anche modificandoli, a una condizione: nei documenti che li usano devi citare EuGEnio
+      come fonte, con la formula «Fonte: EuGEnio – eugenio.statocritico.it» seguita dalla data in cui hai scaricato i
+      dati o prodotto il report. I dati elaborati e i report hanno la licenza
+      <a href="https://creativecommons.org/licenses/by/4.0/deed.it">Creative Commons Attribuzione 4.0</a> (CC BY 4.0), la
+      stessa di quasi tutte le fonti che usiamo; il codice ha invece la licenza AGPL-3.0.</p>
+    <p>Insieme a EuGEnio vanno mantenute le fonti originali scritte nel file (per esempio Open-Meteo, ISTAT, OpenBDAP);
+      le particelle e gli indirizzi trovati con <a href="https://zornade.com">Zornade</a> restano soggetti alle sue
+      condizioni. La formula è già in fondo a ogni file e nel piè di pagina dei report. Esempi e dettagli nella pagina
+      <a href="licenza.html#dati">Licenza</a>.</p>
+  </details>
+
+  <details id="licenza-report">
+    <summary>Che licenza hanno i report, e cosa devo fare se li uso?</summary>
+    <p>I report in Word, PDF ed Excel hanno la licenza
+      <a href="https://creativecommons.org/licenses/by/4.0/deed.it">CC BY 4.0</a>, come i dati. Puoi inserirli in una
+      relazione, in una delibera, in una presentazione o in un articolo, anche solo in parte, purché:</p>
+    <ul>
+      <li>citi EuGEnio come fonte, con la formula «Fonte: EuGEnio – eugenio.statocritico.it» e la data del report;</li>
+      <li>mantieni le fonti originali elencate nel report;</li>
+      <li>dici se lo hai modificato («elaborazione di … su dati EuGEnio»);</li>
+      <li>non lo presenti come un documento ufficiale o approvato da EuGEnio: i valori sono senza garanzia e non
+        sostituiscono quelli richiesti dalle norme.</li>
+    </ul>
+    <p>Se ripubblichi il report intero, lascia il piè di pagina e le avvertenze. I valori ricavati dagli anni tipo del CTI,
+      quando ci saranno, non hanno la licenza CC BY: si possono citare, ma non ridistribuire senza il permesso del CTI.
+      Tutti i dettagli nella pagina <a href="licenza.html#report">Licenza</a>.</p>
+  </details>
+
+  <details>
+    <summary>Perché non posso scaricare i prezzi PUN, PSV e TTF?</summary>
+    <p>Perché non sono nostri, e chi li produce non ne permette la ridistribuzione.</p>
+    <ul>
+      <li>I prezzi della borsa elettrica e del gas italiana (PUN, prezzi zonali, PSV del mercato a pronti, IGI)
+        sono del <strong>GME</strong>, il Gestore dei Mercati Energetici. Li riceviamo con una licenza personale e
+        non commerciale che vieta di pubblicarli, trasmetterli o ridistribuirli senza un permesso scritto.</li>
+      <li>Il prezzo del gas al <strong>TTF</strong> viene dalla borsa europea EEX, che ne consente la
+        consultazione ma non la ripubblicazione sistematica. Anche le quotazioni a termine del TTF
+        (i future trimestrali) sono mostrate sul sito EEX solo a scopo informativo: EuGEnio le legge per
+        quello scopo e le usa unicamente per ricalcolare l'indice PFOR dell'ARERA, senza mostrarle.</li>
+    </ul>
+    <p>EuGEnio li usa quindi solo al proprio interno, per simulazioni e analisi (per esempio i costi delle
+      convenzioni regionali), senza mostrarli né renderli scaricabili. I dati originali sono consultabili
+      direttamente alle fonti: <a href="https://www.mercatoelettrico.org">GME</a>,
+      <a href="https://www.eex.com/en/markets/natural-gas/gas-market-transparency">EEX</a> e, per la media mensile
+      del PSV usata nelle bollette, <a href="https://www.arera.it/area-operatori/prezzi-e-tariffe/valore-cmemm-vulnerabili">ARERA</a>.</p>
+  </details>
+
+  <details id="uni-cti">
+    <summary>Perché non posso scaricare i dati della UNI 10349 e gli anni tipo del CTI?</summary>
+    <p>Perché non sono liberi. I prospetti della UNI 10349 (edizioni 1994 e 2016) sono protetti dal
+      <a href="https://uni.com/copyright">diritto d'autore di UNI</a>, che ne vieta la riproduzione e la diffusione,
+      anche parziale, senza autorizzazione. Anche chi è abbonato può solo consultarli, non ripubblicarli.</p>
+    <p>Gli <a href="https://try.cti2000.it/page.php?id=1">anni tipo climatici del CTI</a> (110 località, un anno di
+      dati orari ciascuna) sono gratuiti per chi si registra, ma il CTI ne permette la circolazione solo fuori rete e
+      vieta di ripubblicarli su altri siti. Per questo sul sito non trovi né i file del CTI né i loro dati orari, e
+      non c'è un modo per scaricarli da qui.</p>
+    <p>Dagli anni tipo calcoliamo invece alcuni indicatori nostri, comune per comune: perché lo facciamo e come,
+      lo spieghiamo nella <a href="#cti-elaborazioni">domanda qui sotto</a>. Per la relazione tecnica valgono
+      comunque i valori normativi: la <a href="legge10.html">pagina della Legge 10</a> mostra i gradi giorno e le zone
+      climatiche del
+      <a href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.del.presidente.della.repubblica:1993-08-26;412!vig=">DPR 412/93</a>, che è una legge e quindi è libero (si può anche
+      <a href="dati/dpr412.csv" download>scaricare l'elenco di tutti i comuni</a>), accanto ai valori calcolati
+      dal clima reale con ERA5.</p>
+  </details>
+
+  <details id="cti-elaborazioni">
+    <summary>Perché pubblicate valori calcolati dagli anni tipo del CTI se i loro dati non si possono ripubblicare?</summary>
+    <p>Perché, a nostro avviso, quello che pubblichiamo non sono i dati del CTI ma elaborazioni nostre. Gli
+      <a href="https://try.cti2000.it/page.php?id=1">anni tipo climatici</a> li scarichiamo gratuitamente dal sito del
+      CTI, dopo esserci registrati, e li usiamo come prevedono le loro condizioni: sul nostro computer, fuori rete,
+      senza alterarli né ridistribuirli e citando sempre la fonte.</p>
+    <p>Sul sito non mettiamo né i file né i dati orari. Per ogni comune pubblichiamo solo indicatori che calcoliamo
+      noi: le medie mensili (temperature, irradiazione solare, pressione del vapore, vento), i gradi giorno, la zona
+      climatica e le temperature di progetto. Li ricaviamo dalla località CTI più vicina oppure, se altre sono quasi
+      alla stessa distanza, dalle tre più vicine con una media pesata sulla distanza, e riportiamo le temperature
+      alla quota del comune con il gradiente verticale della UNI 10349. Sono numeri che descrivono il clima di un
+      luogo, non una copia dei dati di partenza: da questi indicatori non si possono ricostruire gli anni tipo.</p>
+    <p>Citiamo sempre il CTI come fonte. Abbiamo comunque scritto al CTI e all'UNI per spiegare cosa facciamo:
+      riteniamo che sia un uso corretto, ma se ci chiedessero di togliere questi valori o di cambiare qualcosa, lo
+      faremo subito.</p>
+    <p>Un'ultima avvertenza. La UNI 10349:2016 nasce dagli stessi anni tipo, quindi nei comuni vicini a una località
+      CTI i nostri valori mensili possono somigliare a quelli della norma. Non sono però i prospetti della norma:
+      metodo e arrotondamenti sono nostri e non li sostituiscono nella relazione tecnica, dove valgono i valori
+      normativi. Come per tutti i dati del sito, non sono garantiti (vedi
+      <a href="#garanzia">«I dati sono garantiti?»</a>): se trovi un errore, <a href="contatti.html">segnalacelo</a>.</p>
+  </details>
+
+  <details id="indicatori-sanita">
+    <summary>Da dove vengono gli indicatori della sanità e quanto sono affidabili?</summary>
+    <p>Dai conti economici che ogni azienda sanitaria manda al Ministero, pubblicati dalla Ragioneria Generale dello Stato
+      su OpenBDAP; per l'Emilia-Romagna anche da giornate di degenza, posti letto e residenti di ReportER, e per regioni e
+      Italia dalla popolazione ISTAT. Sono dati ufficiali, ma contabili: dicono quanti euro si spendono, non quanta
+      energia si consuma, e ogni azienda può registrare alcuni costi in voci diverse (per esempio con un contratto
+      «servizio energia»). Vanno bene per vedere ordini di grandezza e tendenze, meno per fare classifiche. Il 2025 è
+      ancora provvisorio. I dettagli sono in <a href="metodo.html#indicatori">Come funziona</a>.</p>
+  </details>
+
+  <details>
+    <summary>Come ricevo i dati per email, e cosa c'entra Substack?</summary>
+    <p>La newsletter dei dati di EuGEnio è mensile e automatica: <a href="https://notizie.statocritico.it/subscription/form">ci
+      si iscrive qui</a>, con una conferma via email, e ci si cancella con un clic da ogni messaggio. Gli
+      articoli di <a href="https://statocritico.it">Stato Critico</a> sono un'altra cosa, scritti a mano e pubblicati
+      a cadenza irregolare su <a href="https://statocritico.substack.com/">Substack</a>: l'unica cosa in comune che
+      hanno è che sono entrambi gratis.</p>
+  </details>
+
+  <details id="newsletter-12">
+    <summary>Perché la newsletter arriva il 12 del mese?</summary>
+    <p>Perché il 10 di ogni mese e-distribuzione aggiorna i dati di consumo del mese precedente, e il loro scaricamento
+      non è ancora automatico: lo facciamo a mano. Il 12 abbiamo quindi in mano i dati del mese appena concluso, gradi
+      giorno compresi, e la newsletter li può riportare tutti. Quando lo scaricamento sarà automatico la data potrà
+      cambiare: lo diremo nella newsletter stessa.</p>
+  </details>
+
+  <h2 id="open-source-mirror">Open source, mirror e dati aperti</h2>
+
+  <details id="open-source">
+    <summary>Perché è completamente open source?</summary>
+    <p>Per molte ragioni.</p>
+    <ul>
+      <li><strong>Si può verificare.</strong> Una previsione dei consumi o un dato climatico "corretto" valgono
+        quanto il metodo con cui sono costruiti. Con il codice aperto chiunque può controllare come lavora il
+        servizio, rifare i calcoli e segnalare errori.</li>
+      <li><strong>Si può riusare.</strong> Un ente pubblico, un'azienda sanitaria o un energy manager possono
+        installarlo sui propri server, anche per tenere i dati dentro la propria organizzazione, senza
+        chiedere permessi e senza costi di licenza.</li>
+      <li><strong>Poggia su strumenti aperti.</strong> Il modello di previsione (TiRex-2, licenza Apache 2.0),
+        il servizio meteo (Open-Meteo), i confini dei comuni (<a href="https://www.istat.it/">ISTAT</a>, tramite Gramscii) sono aperti: chiudere il
+        risultato sarebbe incoerente.</li>
+      <li><strong>Si può redistribuire.</strong> La licenza è la <a href="licenza.html">AGPL-3.0</a>: chi modifica EuGEnio e lo offre a sua volta
+        come servizio online deve rendere disponibili le modifiche. Nessuno può trasformarlo in un prodotto
+        chiuso.</li>
+      <li><strong>Perché <a href="https://it.wikipedia.org/wiki/Frankenstein_Junior">si – può – fare!</a></strong>
+        EuGEnio offre una serie di funzioni che sono quelle che avrei voluto avere dieci anni fa, quando non ero in
+        grado neanche di immaginare come realizzare una cosa del genere. Con l'AI <a href="sitografia.html#claude">adesso</a>
+        si può. Qualcuno ha detto che nessuna multinazionale può stare alla pari di un appassionato determinato. Questo
+        sito è il mio (primo) piccolo contributo a questa rivoluzione. Per trovarne altri, seguite
+        <a href="https://statocritico.it">Stato Critico</a>.</li>
+    </ul>
+    <p>Il codice è su <a href="https://github.com/statocritico/eugenio">GitHub</a>. Non ci sono pubblicità
+      e i dati degli utenti non vengono venduti né conservati.</p>
+  </details>
+
+  <details id="mirror">
+    <summary>Perché dovrei volerne un mirror?</summary>
+    <p>Perché il sito su cui stiamo è una risorsa gratuita che domani potrebbe non esserci più, e comunque ha limiti
+      di banda, di CPU e di iscritti alla newsletter importanti. E perché magari manca qualche funzione che ci dovrebbe
+      essere: in quel caso, <a href="contatti.html">fatecelo sapere</a>. Le istruzioni per farne uno sono nella pagina
+      <a href="mirror.html">Mirror</a>.</p>
+  </details>
+
+  <details>
+    <summary>Cos'è CKAN?</summary>
+    <p><a href="https://ckan.org">CKAN</a> (Comprehensive Knowledge Archive Network) è il software open source più
+      diffuso al mondo per costruire portali di dati aperti. Nato nel 2006 da un'idea di Rufus Pollock, è mantenuto
+      dalla Open Knowledge Foundation insieme a Link Digital e Datopian, con licenza AGPL come EuGEnio.</p>
+    <p>Lo usano soprattutto le pubbliche amministrazioni per mettere a disposizione di tutti i propri dati: elenchi,
+      statistiche, mappe, misure. EuGEnio oggi non lo usa per pubblicare i suoi dati, ma molti dei dati aperti che
+      servono a chi si occupa di energia stanno su portali CKAN.</p>
+  </details>
+
+  <details>
+    <summary>Come funziona CKAN?</summary>
+    <ul>
+      <li><strong>Un catalogo.</strong> Ogni insieme di dati (dataset) ha una scheda con titolo, descrizione, ente che
+        lo pubblica, licenza, data di aggiornamento e uno o più file (CSV, Excel, JSON, mappe…) da scaricare.</li>
+      <li><strong>Una ricerca.</strong> I dataset si trovano per parole, argomento, ente o formato; dietro c'è il motore
+        di ricerca Solr, mentre le schede stanno in un database PostgreSQL.</li>
+      <li><strong>Un'API.</strong> Tutto quello che si vede nelle pagine si può leggere anche da un programma, così i dati
+        si scaricano e si aggiornano in automatico senza passare dal sito.</li>
+      <li><strong>Portali che si parlano.</strong> Un portale nazionale può raccogliere da solo le schede dei portali
+        regionali e comunali, usando standard comuni per descrivere i dati (in Europa il profilo DCAT-AP).</li>
+      <li><strong>Estensioni.</strong> È scritto in Python e si arricchisce con moduli aggiuntivi: anteprime e grafici,
+        archivio interrogabile dei dati tabellari, mappe, accessi riservati.</li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>Quali sono i siti più importanti che usano CKAN?</summary>
+    <ul>
+      <li><strong>Governi nazionali:</strong> <a href="https://www.data.gov">data.gov</a> (Stati Uniti),
+        <a href="https://www.data.gov.uk">data.gov.uk</a> (Regno Unito), <a href="https://data.gov.au">data.gov.au</a>
+        (Australia), <a href="https://open.canada.ca">open.canada.ca</a> (Canada),
+        <a href="https://data.overheid.nl">data.overheid.nl</a> (Paesi Bassi), <a href="https://data.gov.sg">data.gov.sg</a>
+        (Singapore).</li>
+      <li><strong>Italia:</strong> il catalogo nazionale <a href="https://www.dati.gov.it">dati.gov.it</a> e molti portali di
+        regioni e comuni, per esempio Lazio e Torino. Ci sono anche i dataset dell'<a href="https://www.istat.it">ISTAT</a>,
+        che il catalogo nazionale raccoglie e descrive (il portale statistico dell'<a href="https://www.istat.it/">ISTAT</a> usa invece un sistema
+        proprio, basato sullo standard SDMX).</li>
+      <li><strong>Energia:</strong> <a href="https://www.energidataservice.dk">Energi Data Service</a>, i dati del sistema
+        elettrico e del gas danese, e il portale dati dell'operatore della rete elettrica britannica (National Grid).</li>
+      <li><strong>Organizzazioni internazionali:</strong> <a href="https://data.humdata.org">Humanitarian Data Exchange</a>,
+        il portale dei dati umanitari, <a href="https://africaopendata.org">openAFRICA</a> e i dati di
+        <a href="https://ec.europa.eu/eurostat">Eurostat</a>, l'ufficio statistico dell'Unione europea, che compaiono nei
+        portali CKAN come quelli nazionali (per esempio <a href="https://data.gov.ie/organization/about/eurostat">data.gov.ie</a>)
+        e nel portale europeo dei dati aperti, nato anch'esso su CKAN.</li>
+    </ul>
+    <p>L'elenco completo, con centinaia di portali, è nella <a href="https://ckan.org/showcase">vetrina di CKAN</a>.</p>
+  </details>
+</main>
+
+<footer class="piede">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg" alt="" width="44" height="44">
+  <div class="piede-testi">
+  <p>EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a>.</p>
+  <p><a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  </div>
+</footer>
+<script src="aspetto.js?v=20261027m"></script>
+<script src="indice.js?v=20261027m"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!-- PROPOSTA: da inserire in legge10.html dentro <div class="passo" id="passo-risultato">,
+     dopo la tabella "Gradi giorno sul periodo di accensione di ogni zona" e prima di <div class="scarica">. -->
+<div class="clima-storico" id="clima-storico" aria-live="polite"></div>
+<p class="fonti">
+  <a href="dati/clima_stagioni.csv" download>GG e zona per stagione di tutti i comuni dal 1940 (CSV)</a> ·
+  <a href="dati/clima_sintesi.csv" download>sintesi per comune (CSV)</a>
+</p>
+
+<!-- e in fondo, prima di legge10.js: -->
+<script src="clima_storico.js?v=AAAAMMGG"></script>
+
+<!-- in legge10.js, alla fine di mostra(d):
+       if (window.EUGENIO_CLIMA) window.EUGENIO_CLIMA.mostra(stato.istat, $("clima-storico"),
+         { ggDpr: stato.dpr && Number.isFinite(stato.dpr.gg) ? stato.dpr.gg : null }).catch(() => {});
+     così la sezione compare anche se l'API /clima-legge10 non risponde: in quel caso chiamarla anche
+     nel catch di calcola(). -->

@@ -1,0 +1,106 @@
+# Avvio:  cd fase4-server && cp .env.example .env && nano .env && docker compose up -d --build
+services:
+  api:
+    build: { context: .., dockerfile: fase4-server/api/Dockerfile }
+    image: energia-api
+    env_file: .env
+    volumes:
+      - ${CARTELLA_DATI:-/srv/energia/dati}:/dati
+    restart: unless-stopped
+    mem_limit: 6g
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/salute')"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  worker:
+    image: energia-api
+    depends_on: [api]
+    command: ["python", "-m", "servizio.worker"]
+    env_file: .env
+    volumes:
+      - ${CARTELLA_DATI:-/srv/energia/dati}:/dati
+    restart: unless-stopped
+    mem_limit: 2g
+
+  caddy:
+    image: caddy:2
+    depends_on: [api]
+    # nessuna porta pubblicata: il traffico arriva solo dal tunnel Cloudflare
+    expose: ["80"]
+    env_file: .env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${CARTELLA_SITO:-../fase5-sito/sito}:/srv/sito:ro
+      - caddy-dati:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+  # Cloudflare Tunnel: pubblica eugenio.statocritico.it (→ caddy:80) e notizie.statocritico.it
+  # (→ listmonk:9000) senza aprire porte sul server. Cloudflare termina l'HTTPS.
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.3
+    depends_on: [caddy, listmonk]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?impostare CLOUDFLARE_TUNNEL_TOKEN nel .env}
+    restart: unless-stopped
+    mem_limit: 128m
+
+  # ------------------------------------------------------------ newsletter automatica dei dati (listmonk)
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: listmonk
+      POSTGRES_USER: listmonk
+      POSTGRES_PASSWORD: ${LISTMONK_DB_PASSWORD:?impostare LISTMONK_DB_PASSWORD nel .env}
+    volumes:
+      - listmonk-db:/var/lib/postgresql/data
+    restart: unless-stopped
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U listmonk"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  listmonk:
+    image: listmonk/listmonk:v6.2.0
+    depends_on:
+      postgres: { condition: service_healthy }
+    command: [sh, -c, "./listmonk --install --idempotent --yes --config '' && ./listmonk --upgrade --yes --config '' && ./listmonk --config ''"]
+    environment:
+      TZ: Europe/Rome
+      LISTMONK_app__address: 0.0.0.0:9000
+      LISTMONK_db__host: postgres
+      LISTMONK_db__port: 5432
+      LISTMONK_db__user: listmonk
+      LISTMONK_db__database: listmonk
+      LISTMONK_db__password: ${LISTMONK_DB_PASSWORD}
+      LISTMONK_db__ssl_mode: disable
+      LISTMONK_ADMIN_USER: ${LISTMONK_ADMIN_USER:-admin}
+      LISTMONK_ADMIN_PASSWORD: ${LISTMONK_ADMIN_PASSWORD:?impostare LISTMONK_ADMIN_PASSWORD nel .env}
+    volumes:
+      - listmonk-uploads:/listmonk/uploads
+    restart: unless-stopped
+    mem_limit: 256m
+
+  # Istanza Open-Meteo propria (facoltativa): docker compose --profile open-meteo up -d
+  # poi nel .env: OPEN_METEO_LOCALE=http://open-meteo:8080
+  open-meteo:
+    image: ghcr.io/open-meteo/open-meteo
+    profiles: ["open-meteo"]
+    environment:
+      REMOTE_DATA_DIRECTORY: https://openmeteo.s3.amazonaws.com/data/
+      CACHE_SIZE: 20GB
+    volumes:
+      - open-meteo-dati:/app/data
+    restart: unless-stopped
+
+volumes:
+  listmonk-db:
+  listmonk-uploads:
+  caddy-dati:
+  caddy-config:
+  open-meteo-dati:

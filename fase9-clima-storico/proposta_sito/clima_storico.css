@@ -1,0 +1,6 @@
+/* PROPOSTA: righe da aggiungere a stile.css (usano le variabili già definite). */
+.clima-storico { margin-top: 1.5rem; }
+.clima-storico h3 { margin-top: 1.4rem; }
+.clima-storico select { max-width: 22rem; margin-bottom: .6rem; }
+.clima-storico .grafico svg text.piccolo { font-size: 9px; fill: var(--tenue); }
+.clima-storico .grafico svg text { font-size: 11px; fill: var(--tenue); }

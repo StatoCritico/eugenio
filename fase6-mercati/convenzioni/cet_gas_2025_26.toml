@@ -1,0 +1,47 @@
+# Consorzio Energia Toscana (per il Soggetto Aggregatore Regione Toscana) – accordo quadro gas naturale, anno
+# termico 2025/26 (concluso il 30/09/2026; aggiudicazione 08/07/2025, avviso TED 678010-2025). Ricerca del 26/10/2026.
+# Prezzo mensile = PSV day-ahead medio mensile + spread fisso, adeguato al PCS convenzionale.
+# Spread dalla presentazione CET ad ANCI Toscana (ottobre 2025): confermarli sui documenti START.
+# Anno termico 2026/27: Estra Energie su tutti e tre i lotti (TED 644558-2026; CIG BC10BA63F6, BC10BA74C9,
+# BC10BA859C), spread non ancora pubblici; l'esito arriva dalla sorveglianza delle pagine dei bandi CET (fonti/centrali.toml).
+
+[convenzione]
+id = "cet-gas-2025-26"
+ente = "Consorzio Energia Toscana"
+titolo = "Fornitura di gas naturale anno termico 2025/2026"
+regione = "09"
+commodity = "gas"
+dal = 2025-10-01
+al = 2026-09-30
+unita_prezzo = "EUR/Smc"
+fonte = "https://ancitoscana.it/wp-content/uploads/2025/10/Anna-Maria-Alberghina-Il-ruolo-della-Societa-Consortile-Energia-Toscana-Scrl.pdf"
+
+[[lotto]]
+id = "1-Centro"
+descrizione = "Toscana Centro (Edison Energia)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PSV_DA"
+indice_alternativo = "PSV_GME_MENSILE"
+spread = 0.0168                      # €/Smc (1,68 c€/Smc); presentazione CET
+pcs_gj_smc = 0.03852                 # PCS convenzionale standard: il valore del capitolato non è pubblico
+
+[[lotto]]
+id = "2-NordOvest"
+descrizione = "Toscana Nord-Ovest (Estra Energie)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PSV_DA"
+indice_alternativo = "PSV_GME_MENSILE"
+spread = 0.0156                      # €/Smc (1,56 c€/Smc); presentazione CET
+pcs_gj_smc = 0.03852
+
+[[lotto]]
+id = "3-SudEst"
+descrizione = "Toscana Sud-Est (Estra Energie)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PSV_DA"
+indice_alternativo = "PSV_GME_MENSILE"
+spread = 0.0136                      # €/Smc (1,36 c€/Smc); presentazione CET
+pcs_gj_smc = 0.03852

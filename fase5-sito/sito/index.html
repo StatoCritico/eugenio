@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EuGEnio – consumi e meteo</title>
+<meta name="description" content="Previsione dei consumi energetici di un edificio a partire dai tuoi dati e dal meteo del comune. Progetto open source.">
+<script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
+try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
+if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
+function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v=20261027m">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg">
+</head>
+<body>
+<header class="testata">
+  <div class="testata-alta">
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg" alt="EuGEnio" width="113" height="36"></a>
+    <script>eugenioLoghi()</script>
+    <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Informazioni">
+      <a href="metodo.html">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
+    </nav>
+    <details class="menu-tutto">
+      <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
+      <nav class="menu-pannello" aria-label="Menu completo">
+        <h2>Strumenti</h2>
+        <ul><li><a href="./" aria-current="page">Previsione</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
+        <h2>Informazioni</h2>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <h2 id="aspetto-telefono">Aspetto</h2>
+        <div class="vestito">
+          <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
+      <li role="option" id="vestiti-telefono-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-telefono-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-telefono-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-telefono-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-telefono-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+          </ul>
+        </div>
+      </nav>
+    </details>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <div class="testata-menu">
+    <nav class="menu-strumenti" aria-label="Strumenti">
+    <a href="./" aria-current="page">Previsione</a>
+    <a href="patrimonio.html">Patrimonio</a>
+    <a href="legge10.html">Legge 10</a>
+    <a href="dati.html">Dati storici</a>
+    <a href="indicatori.html">Indicatori</a>
+    </nav>
+    <div class="vestito">
+      <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
+        aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <ul class="vestito-elenco a-discesa" id="vestiti-elenco" role="listbox" aria-label="Vestito del sito" tabindex="-1" hidden>
+      <li role="option" id="vestiti-elenco-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-elenco-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-elenco-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-elenco-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-elenco-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+      </ul>
+    </div>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+</header>
+
+<main class="strumento">
+  <section class="mappa-area" aria-label="Mappa dei comuni">
+    <h1>Il freddo dei prossimi 7 giorni, comune per comune</h1>
+    <p class="sotto">Gradi giorno previsti (base 20 °C): più il colore è scuro, più servirà riscaldare.
+      Tocca un comune per sceglierlo.</p>
+    <div class="mappa" id="mappa"><div class="etichetta-mappa" id="etichetta"></div></div>
+    <div class="scala" aria-hidden="true"><span id="scala-min">—</span><span class="barra" id="scala-barra"></span><span id="scala-max">—</span></div>
+  </section>
+
+  <section class="pannello" aria-label="Previsione dei consumi">
+    <div class="passo">
+      <h2><span class="n">1</span>Dove si trova l'edificio</h2>
+      <label for="cerca">Indirizzo</label>
+      <input id="cerca" type="text" placeholder="Es. via Zamboni 33, Bologna" autocomplete="off">
+      <ul class="risultati-ricerca" id="risultati"></ul>
+      <p class="aiuto">Oppure scegli il comune sulla mappa o dall'elenco.</p>
+      <label for="comune">Comune</label>
+      <select id="comune"><option value="">Scegli…</option></select>
+      <p class="comune-scelto" id="comune-scelto" hidden></p>
+    </div>
+
+    <div class="passo">
+      <h2><span class="n">2</span>I tuoi consumi</h2>
+      <p class="aiuto">Un file CSV con due colonne: data e ora, valore. Va bene l'export del contatore o
+        del portale del distributore (dati orari o quartorari) oppure letture giornaliere.
+        Prova con un <a href="esempi/esempio_orario_sintetico.csv" download>esempio orario</a> o
+        <a href="esempi/esempio_giornaliero_sintetico.csv" download>giornaliero</a>.</p>
+      <label class="file" id="zona-file">
+        <input id="file" type="file" accept=".csv,.txt,text/csv">
+        <span id="nome-file">Scegli il file o trascinalo qui</span>
+      </label>
+      <label for="tipo">I valori sono</label>
+      <select id="tipo">
+        <option value="energia">energia per intervallo (kWh, Smc…): si sommano</option>
+        <option value="potenza">potenza o media (kW, °C…): si mediano</option>
+      </select>
+      <p class="aiuto">Il file viene elaborato e poi scartato: non viene salvato.</p>
+    </div>
+
+    <div class="passo">
+      <h2><span class="n">3</span>Che previsione ti serve</h2>
+      <fieldset style="border:0;padding:0;margin:0">
+        <legend class="aiuto" style="padding:0">Orizzonte</legend>
+        <div class="scelta" role="radiogroup">
+          <label><input type="radio" name="modalita" value="breve" checked><span>Prossimi giorni, ora per ora</span></label>
+          <label><input type="radio" name="modalita" value="lungo"><span>Prossimi mesi, giorno per giorno</span></label>
+        </div>
+      </fieldset>
+      <div class="riga">
+        <div>
+          <label for="orizzonte" id="orizzonte-etichetta">Ore da prevedere</label>
+          <input id="orizzonte" type="number" min="1" max="360" value="72">
+        </div>
+        <div>
+          <label for="verifica">Modo</label>
+          <select id="verifica">
+            <option value="false">Prevedi il futuro</option>
+            <option value="true">Mettila alla prova sull'ultimo periodo</option>
+          </select>
+        </div>
+      </div>
+      <label>Variabili meteo da usare</label>
+      <div class="spunte" id="covariate"></div>
+      <button class="bottone" id="calcola" disabled>Calcola la previsione</button>
+      <div class="messaggio" id="messaggio" role="status" aria-live="polite"></div>
+      <div id="risultato"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="piede">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg" alt="" width="44" height="44">
+  <div class="piede-testi">
+  <p>EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a> – energy management, sanità, IA e altre cose serie.
+    Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>.</p>
+  <p> Previsioni di <a href="https://huggingface.co/NX-AI/TiRex-2">TiRex-2</a> (NX-AI, Apache 2.0).
+    <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0): Arpae ICON-2I, DWD ICON, ECMWF IFS, ERA5 Copernicus.</p>
+  <p>Confini e codici dei comuni: <a href="https://www.istat.it/">ISTAT</a> (CC BY 4.0) tramite Gramscii. Indirizzi e catasto: <a href="https://zornade.com">Dati elaborati da Zornade</a>
+    (<a href="https://www.agenziaentrate.gov.it/">Agenzia delle Entrate</a>, <a href="https://www.istat.it/">ISTAT</a>, © contributori OpenStreetMap, ODbL).</p>
+  <p>Le previsioni sono stime statistiche, senza garanzia: non usarle da sole per decisioni contrattuali o di sicurezza.
+    <a href="privacy.html">Privacy</a>.</p>
+  <p><a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  </div>
+</footer>
+<script src="aspetto.js?v=20261027m"></script>
+<script src="minimappa.js?v=20261027m"></script>
+<script src="report.js?v=20261027m"></script>
+<script src="app.js?v=20261027m"></script>
+</body>
+</html>

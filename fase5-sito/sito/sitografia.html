@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sitografia</title>
+<meta name="description" content="I progetti open source e i dati aperti su cui è costruito EuGEnio, con una breve descrizione di cosa fanno.">
+<script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
+try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
+if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
+function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v=20261027m">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg">
+</head>
+<body>
+<header class="testata">
+  <div class="testata-alta">
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg" alt="EuGEnio" width="113" height="36"></a>
+    <script>eugenioLoghi()</script>
+    <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Informazioni">
+      <a href="metodo.html">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html" aria-current="page">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
+    </nav>
+    <details class="menu-tutto">
+      <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
+      <nav class="menu-pannello" aria-label="Menu completo">
+        <h2>Strumenti</h2>
+        <ul><li><a href="./">Previsione</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
+        <h2>Informazioni</h2>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html" aria-current="page">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <h2 id="aspetto-telefono">Aspetto</h2>
+        <div class="vestito">
+          <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
+      <li role="option" id="vestiti-telefono-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-telefono-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-telefono-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-telefono-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-telefono-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+          </ul>
+        </div>
+      </nav>
+    </details>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <div class="testata-menu">
+    <nav class="menu-strumenti" aria-label="Strumenti">
+    <a href="./">Previsione</a>
+    <a href="patrimonio.html">Patrimonio</a>
+    <a href="legge10.html">Legge 10</a>
+    <a href="dati.html">Dati storici</a>
+    <a href="indicatori.html">Indicatori</a>
+    </nav>
+    <div class="vestito">
+      <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
+        aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <ul class="vestito-elenco a-discesa" id="vestiti-elenco" role="listbox" aria-label="Vestito del sito" tabindex="-1" hidden>
+      <li role="option" id="vestiti-elenco-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-elenco-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-elenco-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-elenco-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-elenco-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+      </ul>
+    </div>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+</header>
+
+<main class="articolo">
+  <h1>Sitografia</h1>
+  <p>EuGEnio è <a href="licenza.html">open source</a> (<a href="https://github.com/statocritico/eugenio">codice su GitHub</a>, <a href="licenza.html">licenza AGPL-3.0</a>)
+    ed è costruito quasi tutto su dati pubblici e progetti aperti. Prima le <strong>fonti dei dati</strong> e i siti utili a
+    chi lavora con l'energia, le norme e i dati della sanità; poi gli <strong>strumenti di sviluppo</strong> con cui è fatto
+    il sito, con due righe su cosa fanno. Grazie a chi li scrive e li mantiene.</p>
+  <p class="comandi-gruppi">
+    <button type="button" class="bottone secondario" id="espandi-tutto">Espandi tutto</button>
+    <button type="button" class="bottone secondario" id="comprimi-tutto">Comprimi tutto</button>
+  </p>
+
+  <h2 id="fonti-dei-dati">Fonti dei dati</h2>
+
+  <details class="gruppo" open>
+    <summary><h3>Territorio e dati aperti</h3></summary>
+  <ul class="servizi">
+    <li><a class="nome" href="https://huggingface.co/datasets/Gramscii-IT/european-territory-boundaries">Gramscii</a><span class="licenza">CC BY 4.0</span>
+      <p>Confini dei comuni e sezioni di censimento <a href="https://www.istat.it/">ISTAT</a> pronti all'uso, con le impronte per verificarli: da qui
+        vengono le mappe del sito.</p></li>
+    <li><a class="nome" href="https://www.istat.it">ISTAT</a> e <a class="nome" href="https://www.agenziaentrate.gov.it">ANNCSU</a><span class="licenza">CC BY 4.0</span>
+      <p>Elenco dei comuni e archivio nazionale dei numeri civici (<a href="https://www.agenziaentrate.gov.it/">Agenzia delle Entrate</a> e <a href="https://www.istat.it/">ISTAT</a>), con cui si
+        trovano gli indirizzi degli edifici.</p></li>
+    <li><a class="nome" href="https://cds.climate.copernicus.eu">Copernicus</a>, <a class="nome" href="https://www.ecmwf.int">ECMWF</a>, <a class="nome" href="https://www.dwd.de">DWD</a> e <a class="nome" href="https://www.arpae.it">Arpae</a><span class="licenza">dati aperti</span>
+      <p>Rianalisi climatica ERA5 e modelli meteo IFS, ICON e ICON-2I, distribuiti tramite Open-Meteo.</p></li>
+    <li><a class="nome" href="https://ec.europa.eu/eurostat">Eurostat</a> e <a class="nome" href="https://www.arera.it">ARERA</a><span class="licenza">dati pubblici</span>
+      <p>Prezzi dell'energia per le imprese e media mensile del PSV usata nelle bollette e nelle convenzioni.</p></li>
+    <li><a class="nome" href="https://www.openstreetmap.org">OpenStreetMap</a><span class="licenza">ODbL</span>
+      <p>La mappa del mondo scritta dai volontari, che arriva qui attraverso i dati catastali di
+        <a href="https://zornade.com">Zornade</a>.</p></li>
+    <li><a class="nome" href="https://zornade.com">Zornade</a><span class="licenza">API gratuite, con attribuzione</span>
+      <p>Catasto, indirizzi e dati territoriali italiani elaborati e resi interrogabili: da qui vengono le particelle
+        catastali della pagina <a href="patrimonio.html">Patrimonio</a> e gli indirizzi che mancano nell'ANNCSU.</p></li>
+    <li><a class="nome" href="https://registry.opendata.aws/open-meteo/">Open-Meteo su AWS</a><span class="licenza">CC BY 4.0</span>
+      <p>Gli archivi di Open-Meteo pubblicati come dati aperti su Amazon Web Services: da qui abbiamo letto ERA5 ed
+        ERA5-Land dal 1940 per <a href="legge10.html">il clima di ogni comune</a>, senza pesare sul servizio gratuito.</p></li>
+  </ul>
+  </details>
+
+  <details class="gruppo" open>
+    <summary><h3>Energia</h3></summary>
+  <ul class="servizi">
+    <li><a class="nome" href="https://fire-italia.org/">FIRE</a><span class="licenza">associazione</span>
+      <p>Federazione Italiana per l'uso Razionale dell'Energia: promuove l'efficienza energetica e raccoglie, per conto
+        del Ministero, le nomine degli energy manager previste dalla Legge 10/91.</p></li>
+    <li><a class="nome" href="https://www.secem.eu">SECEM</a><span class="licenza">certificazione</span>
+      <p>Sistema Europeo per la Certificazione in Energy Management: certifica gli Esperti in Gestione dell'Energia (EGE)
+        secondo la norma UNI CEI 11339.</p></li>
+    <li><a class="nome" href="https://www.enea.it">ENEA</a><span class="licenza">agenzia pubblica</span>
+      <p>Agenzia nazionale per le nuove tecnologie, l'energia e lo sviluppo economico sostenibile: è l'agenzia per
+        l'efficienza energetica, riceve le diagnosi energetiche delle imprese e pubblica i rapporti annuali sull'efficienza.</p></li>
+    <li><a class="nome" href="https://www.gse.it">GSE</a><span class="licenza">società pubblica</span>
+      <p>Gestore dei Servizi Energetici: gestisce gli incentivi per rinnovabili ed efficienza (Conto Termico, certificati
+        bianchi) e pubblica le statistiche nazionali sull'energia.</p></li>
+    <li><a class="nome" href="https://www.energystrategy.it">Energy &amp; Strategy</a><span class="licenza">ricerca universitaria</span>
+      <p>Il gruppo della School of Management del Politecnico di Milano che studia mercati, efficienza energetica e
+        rinnovabili, con osservatori e rapporti annuali.</p></li>
+  </ul>
+  </details>
+
+  <details class="gruppo" open>
+    <summary><h3>Norme e dati climatici</h3></summary>
+  <ul class="servizi">
+    <li><a class="nome" href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.del.presidente.della.repubblica:1993-08-26;412!vig=">Normattiva</a><span class="licenza">legge, uso libero</span>
+      <p>Il portale della legge vigente: qui c'è il DPR 412/93 con l'Allegato A (gradi giorno, zona climatica e altitudine
+        di ogni comune), che la pagina <a href="legge10.html">Legge 10</a> confronta con il clima calcolato.</p></li>
+    <li><a class="nome" href="https://store.uni.com">UNI</a><span class="licenza">norme a pagamento</span>
+      <p>Ente Italiano di Normazione: pubblica la UNI 10349 con i dati climatici di progetto. I prospetti sono protetti dal
+        diritto d'autore e non si possono ripubblicare: abbiamo chiesto l'autorizzazione (vedi le
+        <a href="faq.html#uni-cti">F.A.Q.</a>).</p></li>
+    <li><a class="nome" href="https://try.cti2000.it/page.php?id=1">CTI – anni tipo climatici</a><span class="licenza">gratuiti, solo uso offline</span>
+      <p>Comitato Termotecnico Italiano: anni tipo orari per 110 località, la base della UNI 10349 del 2016. Si scaricano
+        gratis con una registrazione; le condizioni vietano di ripubblicarli su altri siti.</p></li>
+  </ul>
+  </details>
+
+  <details class="gruppo" open>
+    <summary><h3>Dati sanitari e sugli enti pubblici</h3></summary>
+  <ul class="servizi">
+    <li><a class="nome" href="https://esploradati.istat.it/databrowser/">ISTAT – IstatData</a><span class="licenza">CC BY 4.0</span>
+      <p>La banca dati dell'Istituto nazionale di statistica: salute e sanità, popolazione, prezzi, ambiente, con serie per
+        regione e provincia e dati scaricabili.</p></li>
+    <li><a class="nome" href="https://salute.regione.emilia-romagna.it/siseps">SISEPS</a><span class="licenza">CC BY 4.0</span>
+      <p>Il Sistema Informativo Sanità e Politiche Sociali della Regione Emilia-Romagna: ricoveri, specialistica,
+        farmaceutica, strutture e personale delle aziende sanitarie, con la reportistica interattiva di
+        <a href="https://salute.regione.emilia-romagna.it/siseps/reporter">ReportER</a>. Da qui vengono giornate di degenza,
+        posti letto e residenti per azienda della pagina <a href="indicatori.html">Indicatori</a>.</p></li>
+    <li><a class="nome" href="https://openbdap.rgs.mef.gov.it">OpenBDAP</a><span class="licenza">CC BY 4.0</span>
+      <p>La Banca Dati delle Amministrazioni Pubbliche della Ragioneria Generale dello Stato: bilanci e conti economici
+        degli enti pubblici, comprese le aziende sanitarie, voce per voce. Il suo
+        <a href="https://bdap-opendata.rgs.mef.gov.it/tema/sanit%C3%A0">catalogo open data</a> pubblica il conto economico
+        di ogni ente del SSN, da cui la pagina <a href="indicatori.html">Indicatori</a> prende la spesa per l'energia.</p></li>
+    <li><a class="nome" href="https://dovevannoinostrisoldi.it">DoveVannoINostriSoldi</a><span class="licenza">open source</span>
+      <p>Una piattaforma open source che raccoglie in un unico posto i dati della spesa pubblica italiana.</p></li>
+    <li><a class="nome" href="https://reporter.regione.emilia-romagna.it/ReportER/">ReportER</a><span class="licenza">CC BY 4.0</span>
+      <p>La reportistica statistica pubblica della sanità dell'Emilia-Romagna, curata da SISEPS: si consulta senza
+        registrazione e si interroga anche in automatico. Fornisce giornate di degenza, posti letto e residenti per
+        azienda alla pagina <a href="indicatori.html">Indicatori</a>.</p></li>
+  </ul>
+  </details>
+
+  <h2 id="strumenti-di-sviluppo">Strumenti di sviluppo</h2>
+
+  <details class="gruppo" open>
+    <summary><h3>Previsione e meteo</h3></summary>
+  <ul class="servizi">
+    <li><a class="nome" href="https://github.com/NX-AI/tirex-2">TiRex-2</a><span class="licenza">Apache 2.0</span>
+      <p>Modello di intelligenza artificiale pre-addestrato di NX-AI per le serie temporali. È il motore della
+        previsione dei consumi: impara dalla storia del contatore e dal meteo e restituisce una fascia di valori
+        probabili, senza bisogno di addestrarlo su ogni edificio.</p></li>
+    <li><a class="nome" href="https://open-meteo.com">Open-Meteo</a><span class="licenza">AGPL-3.0, dati CC BY 4.0</span>
+      <p>Servizio meteo aperto: previsioni dei principali modelli europei e la rianalisi climatica ERA5, con
+        un'API gratuita e la possibilità di installarlo sul proprio server. Da qui arrivano il meteo previsto e lo
+        storico di ogni comune.</p></li>
+    <li><a class="nome" href="https://pytorch.org">PyTorch</a><span class="licenza">BSD</span>
+      <p>La libreria di calcolo su cui gira TiRex-2, qui senza scheda grafica, sul processore del server.</p></li>
+  </ul>
+  </details>
+
+  <details class="gruppo" open>
+    <summary><h3>Server e pubblicazione</h3></summary>
+  <ul class="servizi">
+    <li><a class="nome" href="https://www.oracle.com/it/cloud/free/">Oracle Cloud</a><span class="licenza">servizio gratuito</span>
+      <p>Ospita il server di EuGEnio: una macchina virtuale con processore ARM nel data center Oracle di Milano, con le
+        risorse del piano gratuito <em>Always Free</em>. Non è software libero ma il servizio di hosting su cui gira tutto
+        il resto.</p></li>
+    <li><a class="nome" href="https://ubuntu.com">Ubuntu</a><span class="licenza">software libero</span>
+      <p>Il sistema operativo del server.</p></li>
+    <li><a class="nome" href="https://mobyproject.org">Docker Engine (Moby)</a><span class="licenza">Apache 2.0</span>
+      <p>Mette ogni parte del servizio (API, aggiornamenti notturni, newsletter, database) nel proprio
+        contenitore, così tutto si installa e si aggiorna con un comando.</p></li>
+    <li><a class="nome" href="https://caddyserver.com">Caddy</a><span class="licenza">Apache 2.0</span>
+      <p>Il server web che consegna queste pagine e smista le richieste verso l'API.</p></li>
+    <li><a class="nome" href="https://github.com/cloudflare/cloudflared">cloudflared</a><span class="licenza">Apache 2.0</span>
+      <p>Il programma che collega il server alla rete Cloudflare senza aprire porte verso internet.</p></li>
+    <li><a class="nome" href="https://www.python.org">Python</a><span class="licenza">PSF</span>
+      <p>Il linguaggio in cui è scritto tutto EuGEnio, dal download dei dati al calcolo delle previsioni.</p></li>
+    <li><a class="nome" href="https://fastapi.tiangolo.com">FastAPI</a> e <a class="nome" href="https://www.uvicorn.org">Uvicorn</a><span class="licenza">MIT, BSD</span>
+      <p>Costruiscono e fanno girare l'API a cui parlano queste pagine, con la documentazione interattiva
+        generata da sola.</p></li>
+  </ul>
+  </details>
+
+  <details class="gruppo" open>
+    <summary><h3>Dati e documenti</h3></summary>
+  <ul class="servizi">
+    <li><a class="nome" href="https://pandas.pydata.org">pandas</a> e <a class="nome" href="https://numpy.org">NumPy</a><span class="licenza">BSD</span>
+      <p>Le librerie con cui si calcolano gradi giorno, medie mensili, fasce orarie e costi delle convenzioni.</p></li>
+    <li><a class="nome" href="https://arrow.apache.org">Apache Arrow</a><span class="licenza">Apache 2.0</span>
+      <p>Legge e scrive i file Parquet in cui stanno gli archivi: compatti, veloci e leggibili da qualsiasi
+        strumento di analisi.</p></li>
+    <li><a class="nome" href="https://www.python-httpx.org">HTTPX</a><span class="licenza">BSD</span>
+      <p>Scarica i dati dalle fonti pubbliche e controlla ogni notte le pagine delle centrali di committenza.</p></li>
+    <li><a class="nome" href="https://github.com/py-pdf/pypdf">pypdf</a> e <a class="nome" href="https://openpyxl.readthedocs.io">openpyxl</a><span class="licenza">BSD, MIT</span>
+      <p>Estraggono il testo da PDF e fogli Excel di listini e determine, così le convenzioni si aggiornano senza
+        ricopiare i valori a mano.</p></li>
+    <li><a class="nome" href="https://python-docx.readthedocs.io/">python-docx</a> e <a class="nome" href="https://py-pdf.github.io/fpdf2/">fpdf2</a><span class="licenza">MIT, LGPL-3.0</span>
+      <p>Scrivono i report scaricabili in Word e in PDF, direttamente sul server e senza conservarli.</p></li>
+    <li><a class="nome" href="https://playwright.dev/">Playwright</a><span class="licenza">Apache 2.0</span>
+      <p>Apre le pagine del sito in un browser automatico, sul computer e sul telefono, per provarle prima di ogni
+        pubblicazione: errori, impaginazione, mappe e scaricamenti.</p></li>
+  </ul>
+  </details>
+
+  <details class="gruppo" open>
+    <summary><h3>Newsletter</h3></summary>
+  <ul class="servizi">
+    <li><a class="nome" href="https://listmonk.app">listmonk</a><span class="licenza">AGPL-3.0</span>
+      <p>Gestisce le iscrizioni con doppia conferma, la cancellazione con un clic e l'invio mensile dei dati, sul
+        nostro server e senza tracciare chi legge.</p></li>
+    <li><a class="nome" href="https://www.postgresql.org">PostgreSQL</a><span class="licenza">PostgreSQL</span>
+      <p>Il database in cui listmonk tiene liste e campagne.</p></li>
+  </ul>
+  </details>
+
+  <details class="gruppo" open>
+    <summary><h3>Caratteri</h3></summary>
+  <ul class="servizi">
+    <li><a class="nome" href="https://fonts.google.com/specimen/Bricolage+Grotesque">Bricolage Grotesque</a> e <a class="nome" href="https://fonts.google.com/specimen/Hanken+Grotesk">Hanken Grotesk</a><span class="licenza">OFL</span>
+      <p>I caratteri dei titoli e del testo, ospitati su questo sito: chi legge non contatta nessun altro server.</p></li>
+    <li><a class="nome" href="https://fonts.google.com/specimen/Barlow">Barlow</a><span class="licenza">OFL</span>
+      <p>Il carattere della scritta EuGEnio nel logo, convertita in disegno vettoriale.</p></li>
+  </ul>
+  </details>
+
+  <details class="gruppo" open>
+    <summary><h3>E per finire</h3></summary>
+  <ul class="servizi">
+    <li class="ultimo" id="claude"><a class="nome" href="https://www.anthropic.com/claude">Claude, di Anthropic</a>
+      <p>No, scherzavamo: non è open source. Però senza questa soluzione di intelligenza artificiale questo sito
+        non sarebbe stato possibile.</p></li>
+  </ul>
+  </details>
+
+</main>
+
+<footer class="piede">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg" alt="" width="44" height="44">
+  <div class="piede-testi">
+  <p>EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a>.</p>
+  <p><a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  </div>
+</footer>
+<script src="aspetto.js?v=20261027m"></script>
+<script>
+"use strict";
+// gruppi di link: all'apertura tutti espansi; i due pulsanti li aprono o li chiudono tutti
+const gruppi = document.querySelectorAll("details.gruppo");
+document.getElementById("espandi-tutto").addEventListener("click", () => gruppi.forEach((d) => (d.open = true)));
+document.getElementById("comprimi-tutto").addEventListener("click", () => gruppi.forEach((d) => (d.open = false)));
+</script>
+<script src="indice.js?v=20261027m"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# Consorzio Energia Toscana (CET) – gas naturale anno termico 2025/26. MODELLO DA COMPLETARE.
+# Prezzo mensile = spread fisso + PSV day-ahead del mese, riportato al PCS standard (stessa fonte ANCI Toscana).
+# Indice PSV_DA: media mensile del PSV day-ahead pubblicata dall'ARERA (CMEM,m), scaricata in automatico
+# ogni notte. Per un mese non ancora pubblicato il calcolo usa come stima il PSV del GME (PSV_GME_MENSILE). segnalandolo nelle note.
+
+[convenzione]
+id = "cet-gas-2025-26"
+ente = "Consorzio Energia Toscana"
+titolo = "Fornitura di gas naturale anno termico 2025/2026"
+regione = "09"
+commodity = "gas"
+dal = 2025-10-01
+al = 2026-09-30
+unita_prezzo = "EUR/Smc"
+fonte = "https://ancitoscana.it/wp-content/uploads/2025/10/Anna-Maria-Alberghina-Il-ruolo-della-Societa-Consortile-Energia-Toscana-Scrl.pdf"
+
+[[lotto]]
+id = "1-Centro"
+descrizione = "Lotto territoriale Centro"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PSV_DA"
+indice_alternativo = "PSV_GME_MENSILE"
+spread = "DA_COMPILARE"   # €/Smc
+pcs_gj_smc = 0.03852
+
+[[lotto]]
+id = "2-NordOvest"
+descrizione = "Lotto territoriale Nord-Ovest"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PSV_DA"
+indice_alternativo = "PSV_GME_MENSILE"
+spread = "DA_COMPILARE"
+pcs_gj_smc = 0.03852
+
+[[lotto]]
+id = "3-SudEst"
+descrizione = "Lotto territoriale Sud-Est"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PSV_DA"
+indice_alternativo = "PSV_GME_MENSILE"
+spread = "DA_COMPILARE"
+pcs_gj_smc = 0.03852

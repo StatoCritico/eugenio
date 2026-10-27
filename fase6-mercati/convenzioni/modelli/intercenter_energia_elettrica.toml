@@ -1,0 +1,25 @@
+# Intercent-ER – energia elettrica. MODELLO GENERICO DA COMPLETARE con la "Guida alla convenzione" attiva
+# (https://intercenter.regione.emilia-romagna.it). Sostituire periodo, lotti, fasce e spread.
+# Per un lotto multiorario: fasce = ["F1","F2","F3"] e indice = "PUN_FASCE" (PUN medio mensile per fascia);
+# per uno monorario: fasce = ["F0"] e indice = "PUN_MENSILE". Le perdite di rete, se la convenzione
+# le applica all'energia, vanno in `perdite` (es. 0.10 = +10%).
+
+[convenzione]
+id = "intercenter-ee"
+ente = "Intercent-ER"
+titolo = "Fornitura di energia elettrica"
+regione = "08"
+commodity = "elettricita"
+dal = 2026-01-01
+al = 2026-12-31
+unita_prezzo = "EUR/MWh"
+fonte = "DA_COMPILARE: guida alla convenzione"
+
+[[lotto]]
+id = "1"
+descrizione = "DA_COMPILARE"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F1", "F2", "F3"]
+indice = "PUN_FASCE"
+spread = { F1 = "DA_COMPILARE", F2 = "DA_COMPILARE", F3 = "DA_COMPILARE" }
+perdite = 0.0

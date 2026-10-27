@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mirror</title>
+<meta name="description" content="Come fare una copia (mirror) di EuGEnio sul tuo PC o su un altro server e configurarla per la tua regione, il tuo settore e i tuoi scopi.">
+<script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
+try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
+if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
+function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v=20261027m">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg">
+</head>
+<body>
+<header class="testata">
+  <div class="testata-alta">
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg" alt="EuGEnio" width="113" height="36"></a>
+    <script>eugenioLoghi()</script>
+    <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Informazioni">
+      <a href="metodo.html">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html" aria-current="page">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
+    </nav>
+    <details class="menu-tutto">
+      <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
+      <nav class="menu-pannello" aria-label="Menu completo">
+        <h2>Strumenti</h2>
+        <ul><li><a href="./">Previsione</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
+        <h2>Informazioni</h2>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html" aria-current="page">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <h2 id="aspetto-telefono">Aspetto</h2>
+        <div class="vestito">
+          <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
+      <li role="option" id="vestiti-telefono-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-telefono-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-telefono-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-telefono-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-telefono-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+          </ul>
+        </div>
+      </nav>
+    </details>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <div class="testata-menu">
+    <nav class="menu-strumenti" aria-label="Strumenti">
+    <a href="./">Previsione</a>
+    <a href="patrimonio.html">Patrimonio</a>
+    <a href="legge10.html">Legge 10</a>
+    <a href="dati.html">Dati storici</a>
+    <a href="indicatori.html">Indicatori</a>
+    </nav>
+    <div class="vestito">
+      <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
+        aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <ul class="vestito-elenco a-discesa" id="vestiti-elenco" role="listbox" aria-label="Vestito del sito" tabindex="-1" hidden>
+      <li role="option" id="vestiti-elenco-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-elenco-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-elenco-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-elenco-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-elenco-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+      </ul>
+    </div>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+</header>
+
+<main class="articolo">
+  <h1>Mirror</h1>
+  <p>Un mirror è una copia di EuGEnio che gira sul tuo computer o sul tuo server. Il codice è
+    <a href="licenza.html">open source</a>: puoi installarlo, cambiare la regione, il settore, le convenzioni, i testi e
+    le funzioni, e usarlo per scopi diversi da quelli per cui è nato questo sito. Qui trovi i passi, dal più semplice
+    (provarlo sul PC) al più completo (un sito tuo, online). I dettagli tecnici di ogni parte sono nei file README del
+    <a href="https://github.com/statocritico/eugenio">repository</a>.</p>
+
+  <nav class="indice" aria-label="In questa pagina">
+    <a href="#serve">Cosa serve</a> · <a href="#codice">1. Il codice</a> · <a href="#meteo">2. I dati meteo</a> ·
+    <a href="#config">3. La configurazione</a> · <a href="#locale">4. Prova in locale</a> ·
+    <a href="#online">5. Online</a> · <a href="#personalizza">Personalizzare</a> · <a href="#regole">Regole</a>
+  </nav>
+
+  <h2 id="serve">Cosa serve</h2>
+  <table>
+    <thead><tr><th>Cosa</th><th>Dettagli</th></tr></thead>
+    <tbody>
+      <tr><td>Un computer</td><td>Linux, oppure Windows con <a href="https://learn.microsoft.com/it-it/windows/wsl/install">WSL2</a>,
+        oppure macOS. Almeno 2 processori, 4 GB di memoria libera (8 consigliati) e 20 GB di disco. Non serve una scheda
+        grafica: il modello di previsione gira sul processore.</td></tr>
+      <tr><td>Programmi</td><td><a href="https://docs.docker.com/engine/install/">Docker Engine</a> con Compose, Git e
+        <a href="https://www.python.org/downloads/">Python 3.12</a> (solo per preparare i dati meteo). Tutti gratuiti.</td></tr>
+      <tr><td>Chiave Zornade</td><td>Gratuita, da <a href="https://app.zornade.com/api">app.zornade.com/api</a>: serve solo
+        alla pagina del patrimonio e alla ricerca degli indirizzi.</td></tr>
+      <tr><td>Per metterlo online</td><td>Un server (va bene il piano gratuito di
+        <a href="https://www.oracle.com/it/cloud/free/">Oracle Cloud</a>), un dominio e un account
+        <a href="https://www.cloudflare.com">Cloudflare</a> gratuito. Per la newsletter, un servizio di invio email.</td></tr>
+      <tr><td>Facoltativo</td><td>Credenziali personali del <a href="https://www.mercatoelettrico.org">GME</a>, se ti servono le
+        simulazioni con i prezzi dell'energia (restano ad uso interno, vedi <a href="#regole">Regole</a>).</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="codice">1. Scarica il codice</h2>
+  <pre><code>git clone https://github.com/statocritico/eugenio.git
+cd eugenio</code></pre>
+  <p>Le cartelle sono divise per fasi: <code>fase3-storico</code> prepara i dati meteo, <code>fase4-server</code> contiene i
+    servizi (API, aggiornamenti, newsletter), <code>fase5-sito</code> le pagine, <code>fase6-mercati</code> prezzi e
+    convenzioni, <code>fase7-territorio</code> indirizzi e catasto, <code>fase1-oracle</code> la preparazione di un server
+    Oracle.</p>
+
+  <h2 id="meteo">2. Prepara i dati meteo della tua regione</h2>
+  <p>È la parte più lunga, perché lo storico meteo di ogni comune si scarica da
+    <a href="https://open-meteo.com">Open-Meteo</a>. Scegli la regione con il suo codice ISTAT: per esempio
+    <code>01</code> Piemonte, <code>03</code> Lombardia, <code>05</code> Veneto, <code>08</code> Emilia-Romagna,
+    <code>09</code> Toscana, <code>12</code> Lazio, <code>15</code> Campania, <code>19</code> Sicilia; più regioni si separano
+    con la virgola, <code>tutte</code> vale per l'Italia intera.</p>
+  <pre><code>cd fase3-storico
+python3 -m venv .venv &amp;&amp; . .venv/bin/activate      # su Windows: .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+python -m meteo_storico comuni   --archivio ~/eugenio-archivio            # una volta, tutta Italia (~730 MB)
+python -m meteo_storico scarica  --archivio ~/eugenio-archivio --regioni 09
+python -m meteo_storico correggi --archivio ~/eugenio-archivio --regioni 09
+python -m meteo_storico esporta  --archivio ~/eugenio-archivio --regioni 09 --dest ~/eugenio-dati</code></pre>
+  <ul>
+    <li><strong>Quanto ci vuole.</strong> L'API gratuita di Open-Meteo consente 10.000 chiamate al giorno e ogni comune ne chiede
+      circa 400: una ventina di comuni al giorno. Il programma rispetta da solo i limiti, si ferma e riprende da dove era
+      rimasto. Per una regione grande conviene un'istanza Open-Meteo propria, che si avvia con un comando Docker e non ha
+      limiti (istruzioni nel README di <code>fase3-storico</code>, opzione <code>--locale</code>).</li>
+    <li><strong>Per provare subito</strong> bastano due o tre comuni: <code>--comuni "048017,050026"</code> (Firenze, Pisa).</li>
+    <li>Alla fine la cartella <code>~/eugenio-dati</code> contiene l'elenco dei comuni, lo storico giornaliero corretto e le
+      metriche della correzione: è la cartella dati del tuo mirror.</li>
+  </ul>
+
+  <h2 id="config">3. Configura i servizi</h2>
+  <pre><code>cd ../fase4-server
+cp .env.example .env
+chmod 600 .env</code></pre>
+  <p>Nel file <code>.env</code> cambia almeno queste righe (con un editor di testo):</p>
+  <table>
+    <thead><tr><th>Riga</th><th>Valore</th></tr></thead>
+    <tbody>
+      <tr><td><code>REGIONI</code></td><td>il codice della tua regione, per esempio <code>09</code></td></tr>
+      <tr><td><code>CARTELLA_DATI</code></td><td>la cartella preparata al passo 2, per esempio <code>/home/tu/eugenio-dati</code></td></tr>
+      <tr><td><code>CARTELLA_SITO</code></td><td>la cartella delle pagine: <code>../fase5-sito/sito</code> oppure una tua copia</td></tr>
+      <tr><td><code>ZORNADE_API_KEY</code></td><td>la tua chiave</td></tr>
+      <tr><td><code>LISTMONK_DB_PASSWORD</code>, <code>LISTMONK_ADMIN_PASSWORD</code></td><td>due password lunghe, per
+        esempio generate con <code>openssl rand -hex 24</code></td></tr>
+      <tr><td><code>CLOUDFLARE_TUNNEL_TOKEN</code></td><td>per la prova in locale basta un valore qualsiasi, per esempio
+        <code>locale</code>; quello vero serve solo online (passo 5)</td></tr>
+      <tr><td><code>SITO_URL</code>, <code>NOTIZIE_URL</code>, <code>SMTP_*</code>, <code>EMAIL_AMMINISTRATORE</code></td><td>i tuoi
+        indirizzi; si possono lasciare vuoti finché non metti online la newsletter</td></tr>
+    </tbody>
+  </table>
+  <p>Su Linux i servizi scrivono nella cartella dati come utente numero 1000: se il tuo utente ha un altro numero, dagli il
+    permesso con <code>sudo setfacl -R -m u:1000:rwX -m d:u:1000:rwX ~/eugenio-dati</code> (pacchetto <code>acl</code>).</p>
+
+  <h2 id="locale">4. Provalo sul tuo computer</h2>
+  <p>In locale non serve Cloudflare: basta rendere visibile il server web sul tuo PC. Nella cartella
+    <code>fase4-server</code> crea il file <code>docker-compose.override.yml</code> con queste righe:</p>
+  <pre><code>services:
+  caddy:
+    ports:
+      - "127.0.0.1:8080:80"</code></pre>
+  <p>Poi avvia l'API e il sito (la prima volta ci vogliono una decina di minuti), e il processo che scarica le previsioni
+    meteo:</p>
+  <pre><code>docker compose up -d --build api caddy
+docker compose up -d worker
+docker compose logs -f worker        # Ctrl+C per uscire dai log</code></pre>
+  <p>Per prezzi di mercato e convenzioni copia anche la loro configurazione nella cartella dati: i comandi sono nel README
+    di <code>fase4-server</code>, paragrafo "Avvio". Senza, quella parte resta semplicemente spenta.</p>
+  <p>Apri <a href="http://localhost:8080">http://localhost:8080</a> nel browser; per la tua regione aggiungi
+    <code>?regione=09</code> all'indirizzo. Le mappe di tutta Italia sono già incluse.</p>
+
+  <h2 id="online">5. Mettilo online</h2>
+  <ol>
+    <li><strong>Server.</strong> Una macchina Linux sempre accesa. Con Oracle Cloud lo script
+      <code>fase1-oracle/01_setup_server.sh</code> installa Docker, gli aggiornamenti automatici e la protezione dell'accesso
+      in pochi minuti; il README della fase 1 spiega come creare la macchina gratuita.</li>
+    <li><strong>Codice e dati.</strong> Copia il codice sul server e la cartella dati del passo 2 (<code>scp -r</code>), poi
+      ripeti il passo 3 con i percorsi del server. Togli <code>docker-compose.override.yml</code>: online non serve
+      nessuna porta aperta.</li>
+    <li><strong>Dominio e tunnel.</strong> Sposta il DNS del tuo dominio su Cloudflare, crea un tunnel in
+      <em>Zero Trust → Networks → Tunnels</em> e metti il suo token in <code>CLOUDFLARE_TUNNEL_TOKEN</code>. Aggiungi due
+      route: il tuo sottodominio per il sito verso <code>http://caddy:80</code> e quello della newsletter verso
+      <code>http://listmonk:9000</code>.</li>
+    <li><strong>Pannello della newsletter.</strong> Proteggi <code>/admin</code> della newsletter con Cloudflare Access
+      (accesso solo con la tua email), configura il servizio di invio email (SPF, DKIM e DMARC sul tuo dominio) e la
+      lista in listmonk.</li>
+    <li><strong>Avvio.</strong> <code>docker compose up -d</code>. Controllo: <code>https://il-tuo-dominio/api/salute</code>.</li>
+  </ol>
+  <p>Il README della fase 4 descrive ogni passo, compresi i dettagli che ci hanno fatto perdere tempo.</p>
+
+  <h2 id="personalizza">Personalizzarlo per altri scopi</h2>
+  <table>
+    <thead><tr><th>Vuoi…</th><th>Dove si cambia</th></tr></thead>
+    <tbody>
+      <tr><td>un'altra regione, o più regioni</td><td><code>REGIONI</code> nel <code>.env</code> e <code>--regioni</code> al passo 2;
+        la pagina si apre su una regione con <code>?regione=RR</code></td></tr>
+      <tr><td>le convenzioni energia e gas del tuo territorio</td><td>un file TOML per convenzione in
+        <code>fase6-mercati/convenzioni/</code> (si parte copiando uno di quelli esistenti); le pagine delle centrali di
+        acquisto da sorvegliare ogni notte in <code>convenzioni/fonti/centrali.toml</code></td></tr>
+      <tr><td>un altro settore</td><td>i testi delle pagine in <code>fase5-sito/sito/*.html</code>; i contenuti della newsletter in
+        <code>fase4-server/servizio/notiziario.py</code></td></tr>
+      <tr><td>il tuo nome, logo e colori</td><td>testata e piede delle pagine; i colori sono variabili in cima a
+        <code>stile.css</code></td></tr>
+      <tr><td>limiti diversi per gli utenti</td><td><code>MAX_UPLOAD_MB</code>, <code>MAX_RIGHE</code>, <code>MAX_EDIFICI</code> nel
+        <code>.env</code></td></tr>
+      <tr><td>meno funzioni</td><td>senza credenziali GME i prezzi di mercato si saltano; senza listmonk non c'è newsletter;
+        le voci si tolgono dal menu delle pagine</td></tr>
+      <tr><td>più potenza</td><td>con una scheda grafica NVIDIA: un'immagine con PyTorch per CUDA (nel <code>Dockerfile</code>
+        dell'API) e <code>TIREX_DEVICE=cuda</code> nel <code>.env</code></td></tr>
+      <tr><td>usarlo dentro un ente</td><td>la prova in locale (passo 4) su un server interno, senza Cloudflare: i dati non escono
+        dalla rete dell'ente, salvo le ricerche verso Zornade</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="regole">Le regole da rispettare</h2>
+  <ul>
+    <li><strong>Licenza AGPL-3.0.</strong> Se modifichi il codice e fai usare il tuo mirror ad altri, anche ai colleghi, devi
+      offrire loro il codice della tua versione: basta un link nel piede del sito. Spiegazione completa nella pagina
+      <a href="licenza.html">Licenza</a>.</li>
+    <li><strong>Un nome tuo.</strong> Non presentare il mirror come il sito ufficiale di EuGEnio o di Stato Critico: cambia testata,
+      piede e collegamenti.</li>
+    <li><strong>Una privacy tua.</strong> Chi gestisce il mirror è titolare del trattamento: riscrivi
+      <code>privacy.html</code> con i tuoi dati e i tuoi fornitori.</li>
+    <li><strong>Le condizioni dei dati.</strong> Ogni fonte ha le sue, elencate in <a href="metodo.html#fonti">Fonti e
+      licenze</a>: l'API gratuita di Open-Meteo è per uso non commerciale, Zornade chiede il link "Dati elaborati da
+      Zornade", i prezzi del GME e di EEX non si pubblicano.</li>
+  </ul>
+  <p>Se fai un mirror, o se ti blocchi a metà, <a href="contatti.html">scrivici</a>: un elenco dei mirror attivi aiuterebbe
+    chi cerca lo stesso servizio in un'altra regione o in un altro settore.</p>
+</main>
+
+<footer class="piede">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg" alt="" width="44" height="44">
+  <div class="piede-testi">
+  <p>EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a>.</p>
+  <p><a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  </div>
+</footer>
+<script src="aspetto.js?v=20261027m"></script>
+</body>
+</html>

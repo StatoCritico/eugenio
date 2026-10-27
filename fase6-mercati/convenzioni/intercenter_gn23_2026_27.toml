@@ -1,0 +1,38 @@
+# Intercent-ER "Gas Naturale 23", lotto 1 – anno termico 2026/27 (fornitura 01/10/2026 – 30/09/2027).
+# Fonti: pagina della convenzione, capitolato (All. 2, art. 1, 3, 6, 10) e listini GN23; ricerca del 26/10/2026.
+# Indice del capitolato (art. 6): media aritmetica delle quotazioni "mid" ICIS Heren PSV Day Ahead su tutti i giorni
+# del mese (weekend e festivi UK con la quotazione Weekend), arrotondata a 2 decimali in c€/Smc, PCS 38,10 MJ/Smc.
+# Qui si usa PSV_DA = CMEM,m ARERA (TIVG art. 6.1): stessa serie ICIS, stessi giorni, stessa regola per i weekend
+# (verificato il 26/10/2026 su capitolato, delibera 374/2022 e TIVG); cambia solo l'arrotondamento finale.
+# Il capitolato non prevede un indice di ripiego se ICIS non pubblica.
+# Esclusi trasporto (RTTG 2024-2027), distribuzione, misura e imposte. Convenzione aperta fino al 31/05/2027.
+
+[convenzione]
+id = "intercenter-gn23-2026-27"
+ente = "Intercent-ER"
+titolo = "Gas Naturale 23 – lotto 1, anno termico 2026/27"
+regione = "08"
+commodity = "gas"
+dal = 2026-10-01
+al = 2027-09-30
+unita_prezzo = "EUR/Smc"
+fonte = "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-attive/2026/gas-naturale-23"
+
+[[lotto]]
+id = "1"
+descrizione = "PA e aziende sanitarie senza cogenerazione, usi termici e non termici (Energy Wave, CIG BB26FBDE72)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PSV_DA"
+indice_alternativo = "PSV_GME_MENSILE"
+spread = 0.0119                      # €/Smc, uguale per usi termici e non termici; listino GN23 lotto 1
+pcs_gj_smc = 0.03810                 # PCS di riferimento 38,10 MJ/Smc (capitolato art. 6); in fattura si riproporziona al PCS misurato
+[lotto.ambito]
+volume_stimato_smc = 39500000        # capitolato art. 2
+
+# Sorveglianza notturna della pagina della convenzione (vale anche per il lotto 2, cogenerazione):
+# modifiche, documenti nuovi (listini, guida, capitolato).
+[sorveglianza]
+pagine = [
+  "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-attive/2026/gas-naturale-23",
+]

@@ -1,0 +1,28 @@
+# Intercent-ER "Gas Naturale 23", lotto 2 – aziende sanitarie con cogenerazione, fornitura 01/01/2027 – 31/12/2027.
+# Fonti: pagina della convenzione, capitolato (All. 2, art. 3, 6) e listini GN23; ricerca del 26/10/2026.
+# ATTENZIONE: il capitolato usa la media GIORNALIERA del PSV day-ahead ponderata sui consumi del PdR (PSVDA G);
+# qui si approssima con la media mensile PSV_DA. Con consumi giornalieri il risultato vero può differire.
+# La pagina della convenzione è sorvegliata dal file del lotto 1 (intercenter_gn23_2026_27.toml).
+
+[convenzione]
+id = "intercenter-gn23-cogen-2027"
+ente = "Intercent-ER"
+titolo = "Gas Naturale 23 – lotto 2 (cogenerazione), 2027"
+regione = "08"
+commodity = "gas"
+dal = 2027-01-01
+al = 2027-12-31
+unita_prezzo = "EUR/Smc"
+fonte = "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-attive/2026/gas-naturale-23"
+
+[[lotto]]
+id = "2"
+descrizione = "Aziende sanitarie con impianti di cogenerazione (Edison Energia, CIG BB26FBEF45)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PSV_DA"
+indice_alternativo = "PSV_GME_MENSILE"
+spread = 0.0067                      # €/Smc; listino GN23 lotto 2
+pcs_gj_smc = 0.03810                 # PCS di riferimento 38,10 MJ/Smc (capitolato art. 6)
+[lotto.ambito]
+volume_stimato_smc = 48600000        # capitolato art. 2

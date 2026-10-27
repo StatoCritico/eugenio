@@ -1,0 +1,14 @@
+id;denominazione;indirizzo;civico;comune;foglio;particella;lat;lon
+H01;Ospedale Santa Maria delle Croci;Viale Vincenzo Randi;5;Ravenna;;;;
+H02;Ospedale degli Infermi;Viale Stradone;9;Faenza;;;;
+H03;Ospedale Umberto I;Viale Dante;10;Lugo;;;;
+H04;Ospedale Angioloni;Via Marconi;38;Bagno di Romagna;;;;
+H05;Ospedale Bufalini;Viale Ghirotti;286;Cesena;;;;
+H06;Ospedale Marconi;;;Cesenatico;22;111;;
+H07;Ospedale Morgagni-Pierantoni;;;Forlì;216;27;;
+H08;Ospedale Nefetti;;;;;;43.942496;11.901527
+H09;Ospedale Cervesi;Via Beethoven;1;Cattolica;;;;
+H10;Ospedale Sacra Famiglia;Via XXIV Maggio;174;Novafeltria;;;;
+H11;Ospedale Ceccarini;Corso Fratelli Cervi;48;Riccione;;;;
+H12;Ospedale degli Infermi;Viale Luigi Settembrini;2;Rimini;;;;
+H13;Ospedale Franchini;Via Pedrignone;3;Santarcangelo di Romagna;;;;

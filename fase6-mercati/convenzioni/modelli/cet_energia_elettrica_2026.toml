@@ -1,0 +1,50 @@
+# Consorzio Energia Toscana (CET) – energia elettrica 2026. MODELLO DA COMPLETARE.
+# Struttura descritta in: "Il ruolo della Società Consortile Energia Toscana" (ANCI Toscana, ottobre 2025):
+# prezzo trinomio = corrispettivo di potenza (€/kW) + corrispettivo fisso (€/POD/anno) + energia (€/kWh),
+# energia = spread fisso offerto + media aritmetica mensile del PUN Index GME. Tre lotti per tipo di uso.
+# Copiare nella cartella convenzioni/ e sostituire ogni "DA_COMPILARE" con i valori dei documenti di gara.
+
+[convenzione]
+id = "cet-ee-2026"
+ente = "Consorzio Energia Toscana"
+titolo = "Fornitura di energia elettrica 2026"
+regione = "09"
+commodity = "elettricita"
+dal = 2026-01-01
+al = 2026-12-31
+unita_prezzo = "EUR/MWh"
+fonte = "https://ancitoscana.it/wp-content/uploads/2025/10/Anna-Maria-Alberghina-Il-ruolo-della-Societa-Consortile-Energia-Toscana-Scrl.pdf"
+
+[[lotto]]
+id = "AT-MT"
+descrizione = "Alta e media tensione"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PUN_MENSILE"
+spread = "DA_COMPILARE"            # €/MWh
+perdite = 0.0                      # le perdite di rete sono "passanti" (ARERA): 0 se fatturate a parte
+[lotto.corrispettivi]
+fisso_pod_anno = "DA_COMPILARE"    # €/POD/anno
+potenza_kw_mese = "DA_COMPILARE"   # €/kW/mese
+
+[[lotto]]
+id = "BT"
+descrizione = "Bassa tensione"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PUN_MENSILE"
+spread = "DA_COMPILARE"
+[lotto.corrispettivi]
+fisso_pod_anno = "DA_COMPILARE"
+potenza_kw_mese = "DA_COMPILARE"
+
+[[lotto]]
+id = "IP"
+descrizione = "Illuminazione pubblica"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0"]
+indice = "PUN_MENSILE"
+spread = "DA_COMPILARE"
+[lotto.corrispettivi]
+fisso_pod_anno = "DA_COMPILARE"
+potenza_kw_mese = "DA_COMPILARE"

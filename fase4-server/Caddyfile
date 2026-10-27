@@ -1,0 +1,47 @@
+{
+	# HTTPS gestito da Cloudflare: Caddy ascolta in chiaro solo dentro la rete Docker
+	auto_https off
+	admin off
+}
+
+:80 {
+	encode zstd gzip
+
+	# API (FastAPI): limite di dimensione per i CSV e IP reale del visitatore per i limiti di uso
+	handle /api/* {
+		request_body {
+			max_size 6MB
+		}
+		reverse_proxy api:8000 {
+			header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+			transport http {
+				read_timeout 180s
+			}
+		}
+	}
+
+	# sito statico (fase 5)
+	handle {
+		root * /srv/sito
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(self)"
+		# il sito può essere incorporato (iframe) solo da statocritico.it
+		Content-Security-Policy "frame-ancestors 'self' https://statocritico.it https://*.statocritico.it"
+	}
+	# registro degli accessi (contiene gli IP): file a rotazione cancellati dopo 14 giorni, come dice
+	# l'informativa privacy (fase5-sito/sito/privacy.html)
+	log {
+		output file /data/log/accessi.log {
+			roll_size 10MiB
+			roll_keep 20
+			roll_keep_for 336h
+		}
+		format json
+	}
+}

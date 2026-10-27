@@ -1,0 +1,50 @@
+# Consorzio Energia Toscana (per il Soggetto Aggregatore Regione Toscana) – accordo quadro energia elettrica 2026
+# (gara START 024894/2025, aggiudicata con determina CET 239 del 16/09/2025, accordi quadro firmati il 28/10/2025).
+# Fonte: comunicazione CET ai soci del 29/10/2025 (pubblicata dal Comune di Rignano sull'Arno) e accordo quadro del
+# lotto 3; verificata il 26/10/2026. Gli spread 2,27 / 3,47 / 3,32 usati prima erano quelli del 2025 (slide ANCI).
+# Prezzo = media aritmetica mensile di fascia del PUN Index GME (2 decimali) + spread fisso per tutto il 2026.
+# Il fornitore non applica corrispettivi fissi o di potenza propri: oltre allo spread ci sono, passanti, le perdite
+# di rete (coefficienti TIS, valorizzate al prezzo di fornitura), il dispacciamento del mercato libero, trasporto e
+# misura, oneri di sistema e imposte. Qui si calcolano energia e perdite; il resto è fuori, come per le altre.
+# Opzione verde (garanzie d'origine, a richiesta): +1,500 €/MWh lotti 1 e 2, +3,500 €/MWh lotto 3, perdite escluse.
+
+[convenzione]
+id = "cet-ee-2026"
+ente = "Consorzio Energia Toscana"
+titolo = "Fornitura di energia elettrica 2026"
+regione = "09"
+commodity = "elettricita"
+dal = 2026-01-01
+al = 2026-12-31
+unita_prezzo = "EUR/MWh"
+fonte = "https://www.consorzioenergiatoscana.it/bandi/?anac_stato=aggiudicati"
+
+[[lotto]]
+id = "AT-MT"
+descrizione = "Lotto 1, altri usi in alta e media tensione (NovaAEG, CIG B76B94429B)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F1", "F2", "F3"]
+indice = "PUN_FASCE"                 # media aritmetica mensile di fascia del PUN Index GME
+spread = 1.180                       # €/MWh, F1 F2 F3; comunicazione CET 29/10/2025
+perdite = 0.038                      # coefficiente TIS media tensione (tabella 4, del. 449/2020); in alta tensione 1,8 %
+
+[[lotto]]
+id = "BT"
+descrizione = "Lotto 2, altri usi in bassa tensione (NovaAEG, CIG B76B94536E)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0", "F1", "F2", "F3"]
+indice = "PUN_FASCE"
+spread = 2.470                       # €/MWh, F0 F1 F2 F3; comunicazione CET 29/10/2025
+perdite = 0.102                      # coefficiente TIS bassa tensione
+
+[[lotto]]
+id = "IP"
+descrizione = "Lotto 3, illuminazione pubblica in media e bassa tensione (A2A Energia, CIG B76B946441)"
+regola_prezzo = "indice_piu_spread"
+fasce = ["F0", "F1", "F2", "F3"]
+indice = "PUN_FASCE"
+spread = 4.250                       # €/MWh, F0 F1 F2 F3; comunicazione CET e accordo quadro del lotto 3
+perdite = 0.102                      # bassa tensione (la gran parte dei punti); per i POD in MT usare 0.038
+
+# I documenti economici del CET stanno su START (riservato) o nelle delibere dei singoli enti: la sorveglianza
+# controlla le pagine dei bandi CET (fonti/centrali.toml) per gli esiti e le gare nuove, ma non legge gli spread.
