@@ -219,6 +219,31 @@ Lo scaricamento completo (fatto il 27/10/2026, dati fino al 21/10/2026) ha letto
 ~5 minuti, ~1,5 GB di RAM. Le sezioni di censimento (729 MB) sono state cancellate dopo l'uso:
 `scarica.py comuni` le riscarica e ne verifica lo SHA256.
 
+### Aggiornamento automatico sul server (dal 27/10/2026)
+
+Il worker della fase 4 rifà il calcolo **il 10 gennaio e il 10 luglio dalle 3** (`CLIMA_DATE`): il 10 luglio la
+stagione di riscaldamento 1/7–30/6 è finita da dieci giorni (ERA5T arriva con ~5 giorni di ritardo) ed entrano i
+suoi gradi giorno; il 10 gennaio è finito l'anno solare ed entrano i mensili, le temperature di progetto e la
+tendenza annua. Gli script sono nell'immagine in `/app/clima_storico/` (solo i `.py`; dipendenze in più
+`omfiles`, `fsspec`, `s3fs`, ~100 MB); cartella di lavoro `/srv/energia/dati/clima_lavoro/` con `comuni.parquet`
+(copiato dal PC: lo produce `scarica.py comuni`, che sul server non serve), `cache/`, `scarica.log` e
+`clima_mensili.parquet`. Il lavoro esegue, in processi separati:
+
+```bash
+python scarica.py --log …/scarica.log meteo --cache …/cache --comuni …/comuni.parquet --aggiorna
+python calcola.py --cache …/cache --comuni …/comuni.parquet --uscita /sito/dati/.clima_nuova --dpr /sito/dati/dpr412.json
+```
+
+e, se in `.clima_nuova/clima/` ci sono `indice.json` e almeno il 99 % dei JSON pubblicati, scambia la cartella
+con `dati/clima/` (due `rename` sullo stesso disco) e sostituisce i due CSV nazionali; il parquet dei mensili
+resta nella cartella di lavoro. A regime `--aggiorna` riscarica solo l'anno in corso (a gennaio anche il
+precedente): prova del 27/10/2026 sul campione di 26 comuni, anno 2026, 0,33 GB letti da S3 e 132 s in tutto;
+per tutta Italia ~10 minuti. La **prima volta** la cache è vuota e si scarica tutta la serie dal 1940 (~1 ora,
+27 GB letti, 630 MB su disco). Il calcolo usa ~1,5 GB di RAM: il worker ha `mem_limit: 3g`. Comandi di
+installazione e cron provvisorio (finché il worker è spento) nel README della fase 4, sezione «Lavori periodici
+sui file del sito». Opzioni aggiunte per questo uso: `--comuni` (in `scarica.py meteo` e `calcola.py`) e
+`--log` (in `scarica.py`, prima del sottocomando).
+
 ## 6. Prodotti
 
 ```
@@ -275,5 +300,4 @@ via Gramscii per comuni e sezioni.
   Superiore-fusione 001317 e Grosio).
 
 Passi successivi: confronto con la serie corretta ERA5→ICON sul server per l'Emilia-Romagna (stagioni
-2022/23–2025/26); scegliere se mostrare i GG con quota DEM o DPR; aggiornamento mensile (`--aggiorna` +
-`calcola.py`); eventualmente gradi giorno di raffrescamento.
+2022/23–2025/26); scegliere se mostrare i GG con quota DEM o DPR; aggiornamento automatico (fatto: gennaio e luglio); eventualmente gradi giorno di raffrescamento.

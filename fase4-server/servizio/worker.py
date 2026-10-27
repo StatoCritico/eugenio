@@ -7,18 +7,26 @@
   newsletter dei dati    mensile, il giorno NOTIZIARIO_GIORNO (listmonk)
   verifica territorio    il 2 di ogni mese: nuovi comuni ISTAT o nuova versione dei confini Gramscii
   indirizzario ANNCSU    il giorno ANNCSU_GIORNO di ogni mese (o subito, se manca): civici georeferenziati
+  indicatori sanità      il giorno INDICATORI_GIORNO di ogni mese, dalle 6 (fase 8: OpenBDAP, ReportER, ISTAT)
+  clima dal 1940         nei giorni CLIMA_DATE (10/1 e 10/7), dalle 3 (fase 9: ERA5 dai file .om su AWS)
+I file del sito (indicatori, clima) si scrivono in una cartella nuova e si scambiano con quella pubblicata solo a
+lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
 
   python -m servizio.worker                 ciclo continuo
-  python -m servizio.worker previsioni|storico|mercati|mensile|territorio|anncsu   una sola esecuzione
+  python -m servizio.worker previsioni|storico|mercati|mensile|territorio|anncsu|indicatori|clima
+                                            una sola esecuzione (anche con docker compose run --rm worker …)
 """
 from __future__ import annotations
 
 import datetime as dt
 import json
 import logging
+import shutil
+import subprocess
 import sys
 import time
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from . import avvisi, config as C, meteo
@@ -77,6 +85,64 @@ def anncsu() -> None:
     log.info("Cache Zornade: %d risposte scadute cancellate", pulisci_cache(C.DATI / "cache_zornade.sqlite", 365))
 
 
+def _pubblica(nuova: Path, finale: Path) -> None:
+    """Sostituisce la cartella pubblicata `finale` con `nuova` (stesso disco: due rename, il sito resta senza la
+    cartella per qualche microsecondo); la vecchia si cancella dopo."""
+    vecchia = finale.with_name(f".{finale.name}_vecchia")
+    shutil.rmtree(vecchia, ignore_errors=True)
+    if finale.exists():
+        finale.rename(vecchia)
+    nuova.rename(finale)
+    shutil.rmtree(vecchia, ignore_errors=True)
+
+
+def _conta_json(cartella: Path) -> int:
+    return sum(1 for _ in cartella.rglob("*.json")) if cartella.exists() else 0
+
+
+def indicatori() -> None:
+    """Indicatori della sanità (fase 8): CE OpenBDAP, ReportER, ISTAT → JSON statici del sito (dati/indicatori/).
+    Se una fonte manca, cli.aggiorna solleva FonteNonDisponibile: email all'amministratore, file del mese prima."""
+    from indicatori_ssn import cli
+    finale = C.SITO_DATI / "indicatori"
+    nuova = C.SITO_DATI / ".indicatori_nuova"
+    shutil.rmtree(nuova, ignore_errors=True)
+    esito = cli.aggiorna(nuova, C.DATI / "indicatori_cache", rinnova=True, pausa=2.0)
+    if not (nuova / "indice.json").exists() or _conta_json(nuova) < 0.9 * _conta_json(finale):
+        raise RuntimeError(f"indicatori: file nuovi incompleti ({_conta_json(nuova)} contro {_conta_json(finale)})")
+    _pubblica(nuova, finale)
+    log.info("Indicatori: %d file, %d byte", len(esito["dimensioni"]), sum(esito["dimensioni"].values()))
+
+
+def clima() -> None:
+    """Clima dal 1940 (fase 9). Aggiorna la cache giornaliera per cella con l'anno in corso (e i mancanti) dai file
+    .om di Open-Meteo su AWS, ricalcola gli indicatori di tutti i comuni (~5 min, ~1,5 GB di RAM) e pubblica
+    dati/clima/ e i due CSV nazionali. In processi separati, così la memoria torna libera alla fine.
+    La prima volta (cache vuota) scarica tutto: ~1 ora e 27 GB letti da S3, 630 MB su disco."""
+    L = C.CLIMA_LAVORO
+    comuni = L / "comuni.parquet"
+    if not comuni.exists():
+        raise FileNotFoundError(f"manca {comuni}: copiarlo dal PC (README della fase 9)")
+    L.mkdir(parents=True, exist_ok=True)
+    py = [sys.executable]
+    subprocess.run(py + [str(C.CLIMA_CODICE / "scarica.py"), "--log", str(L / "scarica.log"), "meteo",
+                         "--cache", str(L / "cache"), "--comuni", str(comuni), "--aggiorna"], check=True)
+    tmp = C.SITO_DATI / ".clima_nuova"       # stesso disco della cartella pubblicata: il rename è immediato
+    shutil.rmtree(tmp, ignore_errors=True)
+    subprocess.run(py + [str(C.CLIMA_CODICE / "calcola.py"), "--cache", str(L / "cache"), "--comuni", str(comuni),
+                         "--uscita", str(tmp), "--dpr", str(C.SITO_DATI / "dpr412.json")], check=True)
+    finale = C.SITO_DATI / "clima"
+    n_nuovi, n_vecchi = _conta_json(tmp / "clima"), _conta_json(finale)
+    if not (tmp / "clima" / "indice.json").exists() or n_nuovi < 0.99 * n_vecchi:
+        raise RuntimeError(f"clima: file nuovi incompleti ({n_nuovi} contro {n_vecchi}), pubblicati quelli di prima")
+    (tmp / "clima_mensili.parquet").replace(L / "clima_mensili.parquet")    # 83 MB, non serve al sito
+    _pubblica(tmp / "clima", finale)
+    for nome in ("clima_stagioni.csv", "clima_sintesi.csv"):
+        (tmp / nome).replace(C.SITO_DATI / nome)
+    shutil.rmtree(tmp, ignore_errors=True)
+    log.info("Clima dal 1940: %d file pubblicati", n_nuovi)
+
+
 def _stato_leggi() -> dict:
     p = C.DATI / "worker_stato.json"
     try:
@@ -119,6 +185,12 @@ def ciclo() -> None:
                 loc.day == C.ANNCSU_GIORNO or (not C.ANNCSU_FILE.exists() and "anncsu" not in fatti)):
             _sicuro(anncsu, "indirizzario ANNCSU")
             fatti["anncsu"] = oggi
+        if loc.day == C.INDICATORI_GIORNO and loc.hour >= 6 and fatti.get("indicatori") != oggi:
+            _sicuro(indicatori, "indicatori della sanità")
+            fatti["indicatori"] = oggi
+        if (loc.day, loc.month) in C.CLIMA_DATE and loc.hour >= 3 and fatti.get("clima") != oggi:
+            _sicuro(clima, "clima dal 1940")
+            fatti["clima"] = oggi
         _stato_scrivi(fatti)
         time.sleep(300)
 
@@ -126,4 +198,5 @@ def ciclo() -> None:
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "ciclo"
     {"ciclo": ciclo, "previsioni": meteo.aggiorna_previsioni, "storico": meteo.aggiorna_storico,
-     "mercati": mercati, "mensile": mensile, "territorio": territorio, "anncsu": anncsu}[cmd]()
+     "mercati": mercati, "mensile": mensile, "territorio": territorio, "anncsu": anncsu,
+     "indicatori": indicatori, "clima": clima}[cmd]()

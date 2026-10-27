@@ -223,7 +223,7 @@ def celle_dominio(comuni: pd.DataFrame, dom: str) -> pd.DataFrame:
 
 
 def cmd_meteo(args):
-    comuni = pd.read_parquet(QUI / "dati" / "comuni.parquet")
+    comuni = pd.read_parquet(Path(args.comuni) if args.comuni else QUI / "dati" / "comuni.parquet")
     cache = QUI / (args.cache or "cache")
     if args.campione:
         ist = [x.strip().zfill(6) for x in Path(args.campione).read_text().split() if x.strip()]
@@ -281,11 +281,13 @@ def main():
     m.add_argument("--da", type=int, help="primo anno")
     m.add_argument("--fino-a", type=int, dest="fino_a", help="ultimo anno")
     m.add_argument("--aggiorna", action="store_true", help="riscarica anche l'anno in corso già in cache")
+    m.add_argument("--comuni", help="comuni.parquet (predefinito dati/comuni.parquet accanto allo script)")
     s = sub.add_parser("stato")
     s.add_argument("--cache")
+    p.add_argument("--log", help="file di registro (predefinito scarica.log accanto allo script)")
     args = p.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
-                        handlers=[logging.StreamHandler(), logging.FileHandler(QUI / "scarica.log")])
+                        handlers=[logging.StreamHandler(), logging.FileHandler(args.log or QUI / "scarica.log")])
     {"comuni": cmd_comuni, "meteo": cmd_meteo, "stato": cmd_stato}[args.cmd](args)
 
 

@@ -245,7 +245,7 @@ async function caricaRegione(cod) {
   box.prepend(svg);
   const g = el("g", {}, svg);
   for (const c of m.comuni) {
-    const p = el("path", { d: c.d, fill: css("--linea") }, g);
+    const p = el("path", { d: c.d, fill: document.documentElement.dataset.theme === "light" ? css("--linea") : css("--bordo") }, g);
     p.addEventListener("click", () => tocca(c));
     p.addEventListener("mousemove", (e) => etichetta(e, `${c.nome} (${c.prov})`));
     p.addEventListener("mouseleave", () => ($("etichetta").style.display = "none"));
@@ -361,7 +361,9 @@ function colora() {
   const tipo = radio("area"), prov = $("provincia").value;
   const attiva = stato.ds && stato.ds.area;
   const servita = !stato.catalogo || stato.catalogo.regioni.includes(stato.regione);
-  const dentroColore = css("--primario"), grigio = css("--linea");
+  const dentroColore = css("--primario");
+  // fuori dalla selezione: nel tema scuro un grigio medio (con --linea i confini comunali non si vedevano)
+  const grigio = document.documentElement.dataset.theme === "light" ? css("--linea") : css("--bordo");
   stato.inclusi.clear();
   for (const c of stato.comuniRegione) {
     const dentro = attiva && servita && (tipo === "tutti" || tipo === "regione" || (tipo === "provincia" && c.prov === prov)

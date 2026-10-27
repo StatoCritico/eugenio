@@ -14,6 +14,17 @@
   // tutti i vestiti (si cambiano solo lì). Si leggono quando la mappa viene disegnata.
   const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const colore = (cod) => css(`--reg-${cod}`) || css("--linea") || "#999";
+  // fondo dei comuni della regione scelta nella mappa grande: nel tema scuro il colore della regione, un po'
+  // schiarito, così la regione scelta è la più luminosa e i confini comunali (tratti scuri) si vedono bene;
+  // nel tema chiaro il grigio chiaro di sempre
+  const scuro = () => document.documentElement.dataset.theme !== "light";
+  function schiarisci(hex, t) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    if (!m) return hex;
+    const n = parseInt(m[1], 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((x) => Math.round(x + (255 - x) * t));
+    return "#" + c.map((x) => x.toString(16).padStart(2, "0")).join("");
+  }
+  const fondoComuni = (cod) => (scuro() ? schiarisci(colore(cod), 0.18) : css("--linea"));
   const pulisci = (v) => (v || "").replace(/\D/g, "").padStart(2, "0").slice(0, 2);
   function leggiRicordata() { try { return localStorage.getItem(CHIAVE); } catch { return null; } }
   function ricorda(cod) { try { localStorage.setItem(CHIAVE, cod); } catch { /* navigazione privata */ } }
@@ -89,6 +100,9 @@
       const p = el("path", { d: r.d, fill: colore(r.cod) }, sotto);
       p.dataset.cod = r.cod;
       if (r.cod === regione) p.classList.add("attiva");
+      el("title", {}, p).textContent = r.nome;
+      // clic su una regione vicina: diventa la regione della mappa grande, come dalla piccola mappa
+      p.addEventListener("click", () => { if (r.cod !== regione) cambiaRegione(r.cod, r.nome); });
       el("path", { d: r.d }, sopra);
     }
     return m;
@@ -136,20 +150,20 @@
     const box = document.createElement("div");
     box.className = "minimappa";
     box.innerHTML = '<div class="minimappa-etichetta" role="status"></div>' +
-      '<div class="minimappa-comandi"><button type="button" data-z="1.6" aria-label="Ingrandisci">+</button>' +
-      '<button type="button" data-z="0.625" aria-label="Riduci">−</button>' +
-      '<button type="button" data-z="0" aria-label="Italia intera">⟲</button></div>';
+      '<div class="minimappa-comandi"><button type="button" data-z="1.6" title="Ingrandisci" aria-label="Ingrandisci la piccola mappa">+</button>' +
+      '<button type="button" data-z="0.625" title="Rimpicciolisci" aria-label="Rimpicciolisci la piccola mappa">−</button>' +
+      '<button type="button" data-z="0" title="Ripristina la vista" aria-label="Ripristina la vista della piccola mappa">⟲</button></div>';
     riga.appendChild(box);
     const etichetta = box.querySelector(".minimappa-etichetta");
-    // freccia: la mappa grande torna a tutta l'Italia (la regione scelta resta quella)
+    // freccia in basso, ultima dei comandi: la mappa grande (qui sotto) mostra tutta l'Italia; la regione scelta resta
     const su = document.createElement("button");
     su.type = "button";
     su.className = "minimappa-su";
-    su.textContent = "↑";
-    su.title = "Torna alla mappa nazionale";
+    su.textContent = "↓";
+    su.title = "Mostra tutta l'Italia nella mappa grande";
     su.setAttribute("aria-label", "Mostra tutta l'Italia nella mappa grande");
     su.addEventListener("click", () => window.EUGENIO.mappaPrincipale && window.EUGENIO.mappaPrincipale.nazionale());
-    box.appendChild(su);
+    box.querySelector(".minimappa-comandi").appendChild(su);
 
     let m;
     try { m = await italia(); } catch { box.remove(); return; }
@@ -184,26 +198,7 @@
       etichetta.style.left = `${Math.max(0, Math.min(e.clientX - b.left + 10, b.width - etichetta.offsetWidth))}px`;
       etichetta.style.top = `${Math.max(0, e.clientY - b.top - 28)}px`;
     }
-    function scegli(cod, nome) {
-      if (cod === regione) return;
-      regione = cod;
-      window.EUGENIO.regione = cod;
-      ricorda(cod);
-      percorsi.forEach((p) => p.classList.remove("attiva"));
-      const p = percorsi.get(cod);
-      p.classList.add("attiva"); p.parentNode.appendChild(p);
-      aggiornaCollegamenti(cod);
-      const u = new URL(location.href);
-      u.searchParams.set("regione", cod);
-      if (typeof window.EUGENIO.suRegione === "function") {
-        // la pagina cambia regione da sola (patrimonio: niente ricarica, i risultati restano)
-        history.replaceState(null, "", u);
-        window.EUGENIO.suRegione(cod, nome);
-      } else {
-        u.searchParams.delete("comune");
-        location.href = u.toString();
-      }
-    }
+    function scegli(cod, nome) { cambiaRegione(cod, nome); }
     const z = zoomabile(svg, {
       limiti: () => m.viewBox, ritorno: () => m.viewBox, minimo: 1 / 12,
       suCambio: (frazione) => {
@@ -212,6 +207,27 @@
       },
     });
     box.querySelectorAll(".minimappa-comandi button").forEach((b) => b.addEventListener("click", () => z.zoom(+b.dataset.z)));
+  }
+
+  // cambio di regione dalla piccola mappa o da una regione vicina nella mappa grande: stessa strada per entrambe
+  function cambiaRegione(cod, nome) {
+    if (cod === regione || !VALIDE.test(cod)) return;
+    regione = cod;
+    window.EUGENIO.regione = cod;
+    ricorda(cod);
+    if (evidenzia) evidenzia(cod);
+    document.querySelectorAll(".mappa .italia-sfondo path").forEach((p) => p.classList.toggle("attiva", p.dataset.cod === cod));
+    aggiornaCollegamenti(cod);
+    const u = new URL(location.href);
+    u.searchParams.set("regione", cod);
+    if (typeof window.EUGENIO.suRegione === "function") {
+      // la pagina cambia regione da sola (patrimonio, dati: niente ricarica, i risultati restano)
+      history.replaceState(null, "", u);
+      window.EUGENIO.suRegione(cod, nome);
+    } else {
+      u.searchParams.delete("comune");
+      location.href = u.toString();
+    }
   }
 
   // la pagina ha cambiato regione da sola (per esempio da un elenco): la piccola mappa e i collegamenti la seguono
@@ -225,7 +241,7 @@
     aggiornaCollegamenti(cod);
   }
 
-  window.EUGENIO = { regione, colore, italia, zoomabile, sfondoItalia, mappaGrande, el, seleziona };
+  window.EUGENIO = { regione, colore, fondoComuni, italia, zoomabile, sfondoItalia, mappaGrande, el, seleziona };
   window.EUGENIO_REGIONE = regione;     // compatibilità
   aggiornaCollegamenti(regione);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => piccola().catch(() => {}));

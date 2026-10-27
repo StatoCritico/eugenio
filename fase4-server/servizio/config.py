@@ -40,6 +40,17 @@ MAX_EDIFICI = int(os.environ.get("MAX_EDIFICI", "500"))               # righe pe
 ANNCSU_FILE = DATI / "anncsu" / "anncsu_civici.parquet"               # indirizzario ANNCSU (civici georeferenziati)
 ANNCSU_GIORNO = int(os.environ.get("ANNCSU_GIORNO", "12"))            # giorno del mese in cui riscaricarlo
 
+# file statici del sito aggiornati dal worker (montati in scrittura solo nel worker: /srv/energia/sito/dati)
+SITO_DATI = Path(os.environ.get("SITO_DATI", "/sito/dati"))
+# indicatori della sanità (fase 8): una volta al mese
+INDICATORI_GIORNO = int(os.environ.get("INDICATORI_GIORNO", "5"))       # giorno del mese, dalle 6
+# clima dal 1940 (fase 9): due volte l'anno, giorno/mese separati da virgola. Il 10 luglio la stagione di
+# riscaldamento 1/7–30/6 è finita da 10 giorni (ERA5T arriva con ~5 giorni di ritardo): entrano i suoi gradi
+# giorno. Il 10 gennaio è finito l'anno solare: entrano i mensili, le temperature di progetto e la tendenza annua.
+CLIMA_DATE = [tuple(int(x) for x in d.split("/")) for d in os.environ.get("CLIMA_DATE", "10/01,10/07").split(",") if d.strip()]
+CLIMA_LAVORO = Path(os.environ.get("CLIMA_LAVORO", str(DATI / "clima_lavoro")))   # comuni.parquet, cache, registri
+CLIMA_CODICE = Path(os.environ.get("CLIMA_CODICE", "/app/clima_storico"))           # script della fase 9
+
 # report scaricabili (docx, pdf, xlsx): limiti del documento ricevuto e font per il PDF
 REPORT_MAX_MB = float(os.environ.get("REPORT_MAX_MB", "5"))                    # corpo JSON della richiesta
 REPORT_MAX_SEZIONI = int(os.environ.get("REPORT_MAX_SEZIONI", "50"))

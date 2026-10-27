@@ -19,6 +19,17 @@
   }
   if (typeof window.eugenioLoghi === "function") window.eugenioLoghi();
 
+  // ------------------------------------------------------------------ testata fissa
+  // la testata resta ferma in alto (position: sticky): la sua altezza va in --alto-testata, che il CSS usa per gli
+  // altri elementi fissi (mappa, indice laterale) e per i punti d'arrivo dei collegamenti interni
+  const testata = document.querySelector(".testata");
+  if (testata) {
+    const misura = () => radice.style.setProperty("--alto-testata", `${testata.offsetHeight}px`);
+    misura();
+    if ("ResizeObserver" in window) new ResizeObserver(misura).observe(testata);
+    else window.addEventListener("resize", misura);
+  }
+
   // ------------------------------------------------------------------ tema
   document.querySelectorAll(".tema").forEach((b) => {
     const testo = chiaro ? "Passa al tema scuro" : "Passa al tema chiaro";

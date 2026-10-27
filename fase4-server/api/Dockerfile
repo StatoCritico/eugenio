@@ -17,6 +17,9 @@ WORKDIR /app
 COPY fase3-storico/meteo_storico /app/meteo_storico
 COPY fase6-mercati/mercati_energia /app/mercati_energia
 COPY fase7-territorio/territorio /app/territorio
+# lavori periodici del worker: indicatori della sanità (fase 8) e clima dal 1940 (fase 9, script lanciati a parte)
+COPY fase8-indicatori/indicatori_ssn /app/indicatori_ssn
+COPY fase9-clima-storico/*.py /app/clima_storico/
 COPY fase4-server/servizio /app/servizio
 
 RUN useradd --uid 1000 --create-home energia

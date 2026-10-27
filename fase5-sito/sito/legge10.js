@@ -36,7 +36,7 @@ async function caricaMappa() {
   $("mappa").prepend(svg);
   const g = el("g", {}, svg);
   for (const c of m.comuni) {
-    const p = el("path", { d: c.d, fill: css("--linea") }, g);
+    const p = el("path", { d: c.d, fill: (window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : css("--linea")) }, g);
     el("title", {}, p).textContent = c.nome;
     p.addEventListener("click", () => scegli(c.istat));
     p.addEventListener("mousemove", (e) => etichetta(e, c.nome));
@@ -88,7 +88,7 @@ $("anni").addEventListener("change", () => stato.istat && calcola());
 // funziona lo stesso senza il confronto.
 let tabellaDPR = null;
 function caricaDPR() {
-  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261027m")
+  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261027r")
     .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   return tabellaDPR;
 }
@@ -111,6 +111,18 @@ async function storico() {
   } catch { passo.hidden = true; }
 }
 
+// indicatori dagli anni tipo del CTI (file statici): compaiono anche se il calcolo sulle ultime stagioni non risponde
+async function annoTipo() {
+  const box = $("anno-tipo-cti"), passo = $("passo-cti");
+  if (!box || !window.EUGENIO_CTI) return;
+  const istat = stato.istat;
+  try {
+    const dpr = valoriDPR(await caricaDPR(), istat);
+    const ok = await window.EUGENIO_CTI.mostra(box, { istat, regione: REGIONE, dpr });
+    if (istat === stato.istat) passo.hidden = !ok;
+  } catch { passo.hidden = true; }
+}
+
 async function calcola() {
   const n = ++stato.richiesta;      // se si cambia comune prima della risposta, vale l'ultima richiesta
   messaggio("Calcolo in corso…");
@@ -129,7 +141,7 @@ async function calcola() {
     $("passo-risultato").hidden = true;
     messaggio(`Dati delle ultime stagioni non disponibili per questo comune: ${e.message}`, true);
   }
-  if (n === stato.richiesta) storico();
+  if (n === stato.richiesta) { annoTipo(); storico(); }
 }
 
 // ------------------------------------------------------------------ risultato

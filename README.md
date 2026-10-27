@@ -5,21 +5,18 @@
 - `eugenio.statocritico.it` – il servizio, pubblicato tramite Cloudflare Tunnel;
 - `notizie.statocritico.it` – la newsletter mensile automatica dei dati;
 - `statocritico.substack.com` – la newsletter degli articoli, scritta a mano (resta su Substack);
-- `statocritico.it` – landing page da preparare (vedi `DA_FARE.md`);
+- `statocritico.it` – il sito di Stato Critico (in costruzione);
 - codice su `github.com/statocritico/eugenio`.
 
-Due cose distinte nello stesso progetto:
-
-1. **Daemon gradi giorno** (uso personale, contratto) – fase 2.
-2. **Servizio open source** di previsione dei consumi energetici con TiRex-2, meteo per comune, dati di
-   mercato per simulazioni, convenzioni regionali, patrimonio edilizio e dati per la Legge 10 – fasi 3–7.
-
-Tutto gira sullo stesso server gratuito Oracle Cloud (fase 1).
+È un **servizio open source** di previsione dei consumi energetici con TiRex-2, meteo per comune, dati
+climatici per la Legge 10 (con i valori del DPR 412/93 e il clima dal 1940), patrimonio edilizio,
+indicatori di spesa energetica degli enti sanitari, dati di mercato per simulazioni interne e convenzioni
+regionali. Gira su un server gratuito Oracle Cloud (fase 1). Le cartelle sono numerate per fase; la
+numerazione ha un buco (la 2) perché quella fase non fa parte del servizio pubblico.
 
 | Fase | Cartella | Cosa contiene | Dove si esegue |
 |---|---|---|---|
 | 1 | `fase1-oracle/` | account Oracle, Always Free o PAYG (analisi), quote, budget, istanza ARM, preparazione, backup | console Oracle + server |
-| 2 | `fase2-gradi-giorno/` | daemon mensile gradi giorno Arpae → file Excel predefinito + email; consolidato su richiesta | server |
 | 3 | `fase3-storico/` | storico meteo Open-Meteo per comune, correzione ERA5, **dati climatici per la Legge 10**, verifica comuni/confini | PC o server |
 | 4 | `fase4-server/` | docker compose: API + TiRex-2, worker (meteo, mercati, newsletter, ANNCSU, avvisi), **Cloudflare Tunnel**, **newsletter automatica** (listmonk) | server |
 | 5 | `fase5-sito/` | sito statico: previsione dei consumi (mappa, CSV, grafico), patrimonio edilizio sul catasto, dati climatici per la Legge 10, metodo, FAQ, informativa privacy | server |
@@ -31,12 +28,10 @@ Tutto gira sullo stesso server gratuito Oracle Cloud (fase 1).
 ## Ordine consigliato
 
 1. Fase 1 (1–2 ore).
-2. Fase 2 (30 minuti): il daemon parte subito, indipendente dal resto.
-3. Fase 3: avviare il download meteo (circa 12 giorni con l'API gratuita per l'Emilia-Romagna).
-   Nel frattempo: richiedere le credenziali API del GME (fase 6) e la chiave Zornade (fase 7),
-   spostare il DNS di statocritico.it su Cloudflare (fase 4).
-4. Fasi 4, 5, 6, 7 quando il pacchetto meteo è pronto.
-5. Cosa resta da fare dopo il lancio: `DA_FARE.md`.
+2. Fase 3: avviare il download meteo (circa 12 giorni con l'API gratuita per l'Emilia-Romagna).
+   Nel frattempo: chiedere le eventuali credenziali (API del GME per la fase 6, chiave Zornade per la
+   fase 7) e preparare il dominio su Cloudflare (fase 4).
+3. Fasi 4, 5, 6, 7 quando il pacchetto meteo è pronto; fasi 8 e 9 quando servono.
 
 ## Spazio su disco e memoria
 
@@ -55,7 +50,6 @@ Stime per l'Emilia-Romagna (330 comuni); misurate dove indicato.
 | Sorveglianza delle convenzioni (copie delle pagine, documenti scaricati) | < 50 MB | ~20 MB |
 | Cache Zornade (1.000 edifici) | ~5 MB | — |
 | Newsletter (10.000 iscritti, campagne) | < 0,2 GB | piccola |
-| Fase 2: file Arpae grezzi + archivio | 0,3 GB | ~0,3 GB |
 | **Totale** | **~12–16 GB** | **< 0,5 GB** |
 | Istanza Open-Meteo propria (facoltativa, cache) | +20 GB (configurabile) | — |
 | Tutta Italia invece della sola ER (meteo sul server) | +4 GB | +1 GB |
@@ -64,17 +58,16 @@ Il disco gratuito è 200 GB in tutto: un volume di avvio da **100 GB** basta con
 spazio ai backup. Sul PC, l'archivio meteo completo dell'ER occupa ~2 GB (Italia ~50 GB).
 Memoria: ~3,5 GB in uso su 12 (API con TiRex-2 1,2 GB misurati, worker, PostgreSQL, listmonk, Caddy, cloudflared).
 
-## Segreti (mai nel repository)
+## Credenziali
 
-- password per le app di Gmail → `/opt/gg-arpae/.smtp_password` (fase 2)
-- `.env` del server (fase 4): token del tunnel Cloudflare, chiave Zornade, credenziali GME, SMTP di
-  OCI Email Delivery, password di listmonk e del suo database
-- chiave SSH privata → solo sul PC
+Nessuna credenziale è nel repository. Il server le legge dal file `fase4-server/.env`, da creare
+copiando `fase4-server/.env.example` (che elenca le variabili, tutte vuote); il file `.env` è escluso
+da `.gitignore`.
 
 ## Licenze e condizioni dei dati
 
-- Codice delle fasi 3–7: AGPL-3.0 (file `LICENSE`). Il daemon della fase 2 è di uso personale:
-  tenerlo fuori dal repository pubblico.
+- Codice: AGPL-3.0 (file `LICENSE`). Dati elaborati e report di EuGEnio: CC BY 4.0, riuso citando
+  «Fonte: EuGEnio – eugenio.statocritico.it»; i valori ricavati dagli anni tipo CTI si possono solo citare.
 - Liberi con attribuzione: Open-Meteo (CC BY 4.0), ISTAT e confini Gramscii (CC BY 4.0), Arpae
   (CC BY 4.0), ANNCSU (Agenzia delle Entrate e ISTAT, CC BY 4.0), Eurostat, Zornade (piano gratuito:
   link "Dati elaborati da Zornade" + fonti; OSM ODbL).

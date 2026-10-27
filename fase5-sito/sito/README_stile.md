@@ -36,6 +36,11 @@ Tutte le `<img data-logo="NOME">` prendono il file `logo/<vestito>/NOME_<tema>.s
 - nella testata, `<script>eugenioLoghi()</script>` subito dopo il marchio;
 - nel piè di pagina, il simbolo viene aggiornato da `aspetto.js`.
 
+Il `logo_orizzontale` (27/10/2026 sera) ha la stessa geometria del logo dei report: la E di «EuGEnio» è alta quanto
+l'edificio, la base del simbolo è sulla linea di base della scritta e il tetto sporge un po' sopra la E
+(simbolo `scale(0.85)` traslato, scritta spostata a sinistra di 34,4 unità, `viewBox="0 30 333 61"`). In testata è
+alto 28 px sul computer (153 px di larghezza, circa +40 % rispetto a prima) e `min(30px, 7.7vw)` sul telefono.
+
 L'icona del browser è sempre Corallo chiaro (`icona_32_chiaro.svg`, `icona_16_chiaro.svg`).
 
 ## Variabili principali (`stile.css`)
@@ -49,7 +54,7 @@ L'icona del browser è sempre Corallo chiaro (`icona_32_chiaro.svg`, `icona_16_c
 | `--successo`, `--attenzione`, `--errore` (e i `-fondo`) | stati e messaggi |
 | `--serie-1` … `--serie-6` | serie dei grafici, una per tratto: continua, `7 4`, `2 3`, `10 3 2 3`, `12 5`, `1 4` |
 | `--scala-da`, `--scala-a` | mappa della Previsione e striscia delle zone climatiche, dal chiaro allo scuro |
-| `--reg-01` … `--reg-20` | colori delle regioni (codice ISTAT), letti da `minimappa.js`; cambiano con il tema e sono uguali in tutti i vestiti |
+| `--reg-01` … `--reg-20` | colori delle regioni (codice ISTAT), letti da `minimappa.js`; cambiano con il tema e sono uguali in tutti i vestiti. Nel tema scuro (27/10/2026 sera): regioni vicine al 50 %, piccola mappa all'80 %, e i comuni della regione scelta riempiti con il colore della regione schiarito del 18 % (`EUGENIO.fondoComuni`), così la regione scelta è la più luminosa e i confini comunali scuri si vedono; nel tema chiaro tutto come prima (comuni in `--linea`) |
 | `--freddo`, `--gelo`, `--avviso`, `--fuoco` | vecchi nomi, rimasti come alias di `--primario`, `--profondo`, `--segno`, `--tinta` |
 | `--ind-ente`, `--ind-regione`, `--ind-italia`, `--ind-risc`, `--ind-ele`, `--ind-altre` | alias delle serie per `indicatori.js` |
 

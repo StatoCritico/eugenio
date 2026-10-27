@@ -59,7 +59,7 @@ async function caricaMappa() {
   $("mappa").prepend(svg);
   const g = el("g", {}, svg);
   for (const c of m.comuni) {
-    const p = el("path", { d: c.d, fill: css("--linea"), tabindex: "-1" }, g);
+    const p = el("path", { d: c.d, fill: (window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : css("--linea")), tabindex: "-1" }, g);
     p.dataset.istat = c.istat;
     const t = el("title", {}, p); t.textContent = c.nome;
     stato.percorsi.set(c.istat, p);

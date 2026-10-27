@@ -151,51 +151,29 @@ dall'elenco e dalla piccola mappa, componenti, screenshot) e controlla in tutte 
 segua «Dati storici», che i CSS e JS condivisi siano alla versione `?v=20261027g` e che l'indice laterale di
 metodo, faq e sitografia ci sia ancora.
 
-## Aggiornamento mensile sul server (proposta)
+## Aggiornamento mensile sul server
 
 I dati cambiano poche volte l'anno (consuntivo CE in primavera, IV trimestre a febbraio, ReportER in
-ottobre–novembre, ISTAT a giugno e a marzo), quindi basta **una volta al mese**, per esempio il 5, alle 6. I file
-vanno in **`/srv/energia/sito/dati/indicatori/`**, che Caddy serve già come statico insieme al sito.
+ottobre–novembre, ISTAT a giugno e a marzo), quindi basta **una volta al mese**: il worker della fase 4 lo fa il
+**5 di ogni mese dalle 6** (`INDICATORI_GIORNO` nel `.env`), dal 27/10/2026. Come è collegato:
 
-1. `Dockerfile` dell'API (usato anche dal worker): `COPY fase8-indicatori/indicatori_ssn /app/indicatori_ssn`
-   (nessuna dipendenza nuova: `httpx` c'è già).
-2. `docker-compose.yml`, servizio `worker`: montare la cartella degli indicatori del sito in scrittura, per esempio
-   `- /srv/energia/sito/dati/indicatori:/sito/indicatori`, e dare i permessi all'utente del container
-   (`sudo mkdir -p /srv/energia/sito/dati/indicatori && sudo setfacl -R -m u:1000:rwX -m d:u:1000:rwX /srv/energia/sito/dati/indicatori`).
-   La cache resta in `/dati/indicatori_cache` (volume dei dati, fuori dal sito).
-3. `servizio/config.py`:
+- `fase4-server/api/Dockerfile`: `COPY fase8-indicatori/indicatori_ssn /app/indicatori_ssn` (nessuna dipendenza
+  nuova: `httpx` c'è già);
+- `docker-compose.yml`, servizio `worker`: `/srv/energia/sito/dati` montata in scrittura su `/sito/dati`; la cache
+  resta in `/dati/indicatori_cache` (fuori dal sito);
+- `servizio/worker.py`, lavoro `indicatori`: `cli.aggiorna(…, rinnova=True, pausa=2.0)` scrive in
+  `dati/.indicatori_nuova/`; se c'è `indice.json` e almeno il 90 % dei file di prima, la cartella prende il posto di
+  `dati/indicatori/` (due `rename`), altrimenti restano i file del mese prima.
 
-```python
-INDICATORI_GIORNO = int(os.environ.get("INDICATORI_GIORNO", "5"))          # giorno del mese dell'aggiornamento
-INDICATORI_OUT = Path(os.environ.get("INDICATORI_OUT", "/sito/indicatori"))  # = /srv/energia/sito/dati/indicatori
-```
+Se OpenBDAP o un'altra fonte non risponde, `cli.aggiorna` solleva `FonteNonDisponibile`: il worker manda l'email
+all'amministratore e i file pubblicati restano quelli del mese prima. Con `rinnova=True` si riscaricano circa
+11 + 44 + 16 file (≈ 3 minuti con le pause). Quando esce un nuovo anno (CE 2026) si aggiunge il suo ID in
+`costanti.DATASET_CE` e si sposta `PROVVISORI`.
 
-4. `servizio/worker.py` (non modificato: righe da aggiungere), accanto agli altri lavori mensili:
-
-```python
-def indicatori() -> None:
-    """Indicatori della sanità (fase 8): CE OpenBDAP, ReportER, ISTAT → JSON statici del sito."""
-    from indicatori_ssn import cli
-    esito = cli.aggiorna(C.INDICATORI_OUT, C.DATI / "indicatori_cache", rinnova=True, pausa=2.0)
-    log.info("Indicatori: %d file, %d byte", len(esito["dimensioni"]), sum(esito["dimensioni"].values()))
-```
-
-nel `ciclo()`:
-
-```python
-        if loc.day == C.INDICATORI_GIORNO and loc.hour >= 6 and fatti.get("indicatori") != oggi:
-            _sicuro(indicatori, "indicatori della sanità")
-            fatti["indicatori"] = oggi
-```
-
-e nel dizionario dei comandi: `"indicatori": indicatori` (così `python -m servizio.worker indicatori` lo esegue
-subito). Se OpenBDAP o un'altra fonte non risponde, `cli.aggiorna` solleva `FonteNonDisponibile`: `_sicuro` manda
-l'email all'amministratore e i file pubblicati restano quelli del mese prima. Con `rinnova=True` si riscaricano
-circa 11 + 44 + 16 file (≈ 3 minuti con le pause; il CE completo, se la ricerca filtrata non va, è di qualche
-decina di MB per anno e si cancella dopo il filtro). Quando esce un nuovo anno (CE 2026) si aggiunge il suo ID
-in `costanti.DATASET_CE` e si sposta `PROVVISORI`.
-
-Prima installazione, a mano: `docker compose exec worker python -m indicatori_ssn aggiorna --out /sito/indicatori --cache /dati/indicatori_cache`.
+A mano (anche finché il worker è spento, o da cron dell'host):
+`cd ~/energia/fase4-server && docker compose run --rm worker python -m servizio.worker indicatori`.
+Istruzioni di prima installazione (permessi della cartella, cron provvisorio) nel README della fase 4, sezione
+«Lavori periodici sui file del sito».
 
 ## Proposte per le prossime versioni
 
@@ -210,5 +188,5 @@ Prima installazione, a mano: `docker compose exec worker python -m indicatori_ss
 
 ## Stato
 
-27/10/2026: prima versione. Dati 2015–2025 scaricati (CE OpenBDAP, ReportER, ISTAT), JSON scritti in
+27/10/2026: prima versione; aggiornamento mensile automatico dal worker (il 5 del mese). Dati 2015–2025 scaricati (CE OpenBDAP, ReportER, ISTAT), JSON scritti in
 `fase5-sito/sito/dati/indicatori/`, valori di controllo 2024 verificati, prove Python e Playwright superate.

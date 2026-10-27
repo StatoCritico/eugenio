@@ -9,30 +9,22 @@
 try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<link rel="stylesheet" href="stile.css?v=20261027m">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261027r";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v=20261027r">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261027r">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261027r">
 </head>
 <body>
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg" alt="EuGEnio" width="113" height="36"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261027r" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
-    <nav class="menu-info" aria-label="Informazioni">
-      <a href="metodo.html" aria-current="page">Come funziona</a>
-      <a href="faq.html">F.A.Q.</a>
-      <a href="sitografia.html">Sitografia</a>
-      <a href="mirror.html">Mirror</a>
-      <a href="contatti.html">Contattaci</a>
-      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
-    </nav>
     <details class="menu-tutto">
       <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
       <nav class="menu-pannello" aria-label="Menu completo">
         <h2>Strumenti</h2>
-        <ul><li><a href="./">Previsione</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
+        <ul><li><a href="./">Previsioni</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
         <h2>Informazioni</h2>
         <ul><li><a href="metodo.html" aria-current="page">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
@@ -51,11 +43,19 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   </div>
   <div class="testata-menu">
     <nav class="menu-strumenti" aria-label="Strumenti">
-    <a href="./">Previsione</a>
+    <a href="./">Previsioni</a>
     <a href="patrimonio.html">Patrimonio</a>
     <a href="legge10.html">Legge 10</a>
     <a href="dati.html">Dati storici</a>
     <a href="indicatori.html">Indicatori</a>
+    </nav>
+    <nav class="menu-info" aria-label="Informazioni">
+      <a href="metodo.html" aria-current="page">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
     </nav>
     <div class="vestito">
       <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
@@ -94,7 +94,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <p>Carichi i consumi di un edificio, scegli dove si trova, e il servizio stima i consumi futuri tenendo
     conto del meteo previsto per quel comune e del calendario (festivi, fine settimana, ponti). Il risultato
     non è un numero solo ma una fascia: dove cadrà il consumo con buona probabilità.</p>
-  <p>Si usa dalla pagina <a href="./">Previsione</a>.</p>
+  <p>Si usa dalla pagina <a href="./">Previsioni</a>.</p>
 
   <h3>Il modello</h3>
   <p><a href="https://huggingface.co/NX-AI/TiRex-2">TiRex-2</a> di NX-AI è un modello di previsione di serie
@@ -205,6 +205,37 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     L'elenco completo si scarica in <a href="dati/dpr412.csv" download>dpr412.csv</a> o dalla pagina dei
     <a href="dati.html">dati storici</a>. I dati della UNI 10349 e gli anni tipo del CTI non si possono pubblicare:
     il perché è nelle <a href="faq.html#uni-cti">domande frequenti</a>.</p>
+  <h3 id="anno-tipo-cti">L'anno tipo del CTI</h3>
+  <p>Gli <a href="https://try.cti2000.it/">anni tipo climatici del CTI</a> (Comitato Termotecnico Italiano) descrivono
+    con un anno di dati orari il clima di 110 località, una o due per provincia, e sono la base della UNI 10349:2016.
+    Il CTI li distribuisce gratis a chi si registra, ma ne permette l'uso solo fuori rete, a scopo scientifico,
+    didattico o documentario e citando la fonte, e vieta di ripubblicarli su altri siti. Per questo la
+    <a href="legge10.html">pagina della Legge 10</a> non mostra i dati del CTI ma solo <strong>indicatori calcolati da
+    noi</strong> per ogni comune, accanto ai valori di legge del DPR 412/93 e al clima reale delle ultime stagioni.</p>
+  <p>Come li calcoliamo: leggiamo i file del CTI sul nostro computer e, per ogni comune, seguiamo il metodo del
+    «foglio elettronico interpolatore» che il CTI stesso distribuisce. Prendiamo le due località CTI più vicine
+    <strong>della stessa regione</strong> del comune (come fa la UNI 10349 per i comuni senza località propria, per non
+    scavalcare i crinali tra una regione e l'altra), facciamo la media ora per ora delle due serie con pesi
+    proporzionali a 1/distanza² e riportiamo la temperatura alla quota della casa comunale con
+    <strong>6,5 °C ogni 1000 m</strong>; se il comune è più lontano da entrambe di quanto lo siano tra loro, usiamo
+    solo la più vicina. Dalla serie così ottenuta calcoliamo, con le stesse regole delle altre sezioni, i gradi giorno sul
+    periodo di accensione della zona, la zona che ne risulta, le temperature di progetto (1° percentile delle minime
+    e 99° delle massime giornaliere) e le medie mensili (temperature, irradiazione globale e diffusa, pressione del
+    vapore, umidità, vento). La pagina dice sempre quali località sono state usate, a che distanza e con che peso.</p>
+  <p>Cosa non pubblichiamo: i file del CTI e i dati orari, né sul sito né in download; i valori CTI non sono nel
+    file CSV della pagina né nel report. Abbiamo scritto al CTI e all'UNI per chiedere l'autorizzazione e spiegare
+    cosa facciamo; finché il CTI non risponde, questi valori <strong>non hanno la licenza CC BY 4.0</strong> del
+    resto del sito: si possono solo citare, con la fonte «elaborazione EuGEnio su anni tipo climatici CTI – Comitato
+    Termotecnico Italiano». Se il CTI ci chiedesse di toglierli o di cambiare qualcosa, lo faremo subito. Il perché
+    di queste scelte è nelle <a href="faq.html#cti-elaborazioni">domande frequenti</a>.</p>
+  <p>Perché lo mostriamo solo per confronto: il metodo del CTI ha <strong>limiti noti</strong>, che la pagina segnala
+    comune per comune. La correzione di quota fissa di 6,5 °C ogni 1000 m è troppo forte d'inverno in montagna, dove
+    il freddo ristagna nelle valli: con dislivelli tra 500 e 1000 m dalla località CTI i gradi giorno escono in media
+    il 13 % sopra il DPR 412/93, oltre i 1000 m il 21 % (Sestola, Cortina, Bardonecchia). Le località sono una o due per
+    provincia e spesso sulla costa o in aeroporto, così un comune oltre un crinale eredita un clima che non è il suo:
+    i comuni del versante padano della Liguria escono tra il 23 e il 27 % sotto il DPR. Non correggiamo questi valori
+    perché il loro senso è proprio mostrare cosa dà il metodo ufficiale; i valori che EuGEnio calcola da sé, per ogni
+    comune e da dati aperti, sono quelli del clima reale (ERA5) delle altre sezioni della pagina.</p>
 
   <h2 id="dati-storici">Dati storici</h2>
   <h3>Cosa si può scaricare</h3>
@@ -298,6 +329,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <li><a href="https://www.ecmwf.int">ECMWF</a>, il centro meteorologico europeo: modello IFS, fino a 15 giorni.</li>
     <li><a href="https://cds.climate.copernicus.eu">Copernicus Climate Change Service</a>: rianalisi ERA5 ed ERA5-Land dal 2015
       (licenza Copernicus, uso libero con citazione).</li>
+    <li><a href="https://try.cti2000.it/">CTI – Comitato Termotecnico Italiano</a>: anni tipo climatici di 110 località
+      (versione 3, 2015-2016), usati sul nostro computer per calcolare gli indicatori della
+      <a href="#anno-tipo-cti">sezione «L'anno tipo del CTI»</a>; i dati non si ripubblicano, gli indicatori si
+      possono solo citare (non CC BY) finché il CTI non risponde.</li>
   </ul>
 
   <h3>Territorio ed edifici</h3>
@@ -374,13 +409,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </main>
 
 <footer class="piede">
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg" alt="" width="44" height="44">
-  <div class="piede-testi">
-  <p>EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a>.</p>
-  <p><a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
-  </div>
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261027r" alt="" width="44" height="44">
+  <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
 </footer>
-<script src="aspetto.js?v=20261027m"></script>
+<script src="aspetto.js?v=20261027r"></script>
 <script>
 "use strict";
 const NOMI = {
@@ -410,6 +442,6 @@ fetch("/api/metodologia").then((r) => r.json()).then((d) => {
   document.getElementById("metriche").innerHTML = "<p class='aiuto'>Risultati non disponibili in questo momento.</p>";
 });
 </script>
-<script src="indice.js?v=20261027m"></script>
+<script src="indice.js?v=20261027r"></script>
 </body>
 </html>

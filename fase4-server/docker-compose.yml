@@ -21,8 +21,10 @@ services:
     env_file: .env
     volumes:
       - ${CARTELLA_DATI:-/srv/energia/dati}:/dati
+      # file del sito rifatti dal worker: indicatori (ogni mese) e clima dal 1940 (gennaio e luglio)
+      - ${CARTELLA_SITO:-../fase5-sito/sito}/dati:/sito/dati
     restart: unless-stopped
-    mem_limit: 2g
+    mem_limit: 3g   # il ricalcolo del clima dal 1940 usa ~1,5 GB per qualche minuto
 
   caddy:
     image: caddy:2

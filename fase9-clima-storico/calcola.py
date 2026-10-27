@@ -418,9 +418,10 @@ def main():
                         "del DPR (predefinita; DEM del baricentro edifici se il DPR non c'è) oppure sempre il DEM "
                         "del baricentro edifici")
     p.add_argument("--senza-json", action="store_true", help="solo CSV/parquet nazionali")
+    p.add_argument("--comuni", help="comuni.parquet (predefinito dati/comuni.parquet accanto allo script)")
     a = p.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    comuni = pd.read_parquet(QUI / "dati" / "comuni.parquet")
+    comuni = pd.read_parquet(Path(a.comuni) if a.comuni else QUI / "dati" / "comuni.parquet")
     if a.istat:
         ist = [x.strip().zfill(6) for x in Path(a.istat).read_text().split() if x.strip()]
         comuni = comuni[comuni.istat.isin(ist)]

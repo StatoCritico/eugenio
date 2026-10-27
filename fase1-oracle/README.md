@@ -268,7 +268,6 @@ Sul server:
 
 ```bash
 git clone https://github.com/statocritico/eugenio.git energia   # oppure copia la cartella con scp
-# la fase 2 (daemon personale) non è nel repository pubblico: copiarla a parte con scp
 cd energia/fase1-oracle
 sudo bash 01_setup_server.sh
 ```

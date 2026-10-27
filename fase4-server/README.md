@@ -161,6 +161,50 @@ cd ~/energia && git pull
 cd fase4-server && docker compose up -d --build
 ```
 
+## Lavori periodici sui file del sito (fasi 8 e 9)
+
+Il worker rifà da sé due gruppi di file statici del sito, montando in scrittura **solo**
+`/srv/energia/sito/dati` (`/sito/dati` nel container; Caddy continua a leggere il sito in sola lettura):
+
+| lavoro | quando | cosa fa | risorse |
+|---|---|---|---|
+| `indicatori` (fase 8) | il **5 di ogni mese** dalle 6 (`INDICATORI_GIORNO`) | riscarica CE OpenBDAP, ReportER e ISTAT e riscrive `dati/indicatori/` | ~3 minuti, pochi MB, ~70 file scaricati |
+| `clima` (fase 9) | il **10 gennaio** e il **10 luglio** dalle 3 (`CLIMA_DATE`) | aggiorna la cache ERA5/ERA5-Land con l'anno in corso dai file `.om` di Open-Meteo su AWS, ricalcola tutti i comuni e riscrive `dati/clima/`, `dati/clima_stagioni.csv`, `dati/clima_sintesi.csv` | ~10 minuti; ~1,5 GB di RAM durante il calcolo; cache 630 MB in `/srv/energia/dati/clima_lavoro/` |
+
+Perché quelle date: la stagione di riscaldamento va dal 1/7 al 30/6 (la zona F non ha limiti) e ERA5T arriva con
+~5 giorni di ritardo, quindi **il 10 luglio** entrano i gradi giorno della stagione appena finita; **il 10 gennaio**
+è finito l'anno solare ed entrano i mensili, le temperature di progetto e la tendenza della temperatura media.
+
+I file nuovi si scrivono in una cartella accanto (`dati/.indicatori_nuova`, `dati/.clima_nuova`), si controllano
+(indice presente, almeno il 90 % / 99 % dei file di prima) e solo allora si scambiano con quelli pubblicati con due
+`rename` sullo stesso disco. Se una fonte non risponde o il controllo fallisce, restano i file di prima e
+l'amministratore riceve l'email. Il calcolo del clima gira in processi separati (`scarica.py`, `calcola.py` della
+fase 9 in `/app/clima_storico`), così la memoria torna libera alla fine; per questo il worker ha `mem_limit: 3g`.
+
+**Prima installazione** (una volta, sul server):
+
+```bash
+sudo mkdir -p /srv/energia/dati/clima_lavoro
+sudo setfacl -R -m u:1000:rwX -m d:u:1000:rwX -m u:ubuntu:rwX -m d:u:ubuntu:rwX /srv/energia/sito/dati /srv/energia/dati/clima_lavoro
+cp ~/clima_comuni.parquet /srv/energia/dati/clima_lavoro/comuni.parquet     # dal PC (pacchetti)
+cd ~/energia/fase4-server
+docker compose run --rm worker python -m servizio.worker indicatori        # ~3 minuti
+nohup docker compose run --rm worker python -m servizio.worker clima > ~/clima_primo.log 2>&1 &   # ~1 ora la prima volta
+```
+
+La prima esecuzione di `clima` scarica tutta la serie dal 1940 (27 GB letti da S3 in ~1 ora, gratuiti: AWS Open
+Data; 630 MB su disco); le successive solo l'anno in corso. **Finché il worker è spento**, gli stessi comandi vanno
+nel cron dell'host (`crontab -e`), da togliere quando si accende il worker:
+
+```
+0 6 5 * *    cd /home/ubuntu/energia/fase4-server && docker compose run --rm worker python -m servizio.worker indicatori >> /home/ubuntu/lavori.log 2>&1
+0 3 10 1,7 * cd /home/ubuntu/energia/fase4-server && docker compose run --rm worker python -m servizio.worker clima >> /home/ubuntu/lavori.log 2>&1
+```
+
+Siccome il server riscrive `dati/indicatori/`, `dati/clima/` e i due CSV, **il sito non va più copiato con
+`scp -r sito/*`** (riporterebbe gli indicatori del PC, più vecchi): si copia con un archivio che li esclude
+(comandi nel README della fase 5).
+
 ## API
 
 | Metodo | Percorso | Descrizione |
@@ -303,6 +347,9 @@ documento e inviarlo a `POST /api/report`.
 
 Prove: dalla cartella `fase4-server`, `python -m pytest tests` (non servono TiRex-2 né i dati meteo).
 
+Senza l'archivio meteo della fase 3 (`giornaliero.parquet`) `/api/clima-legge10/{istat}` risponde **503** con il
+messaggio "i dati meteo delle ultime stagioni non sono ancora sul server", che la pagina Legge 10 mostra così com'è.
+
 **Stile dei report (decisione del 27/10/2026)**: stile professionale e sobrio, adatto alla stampa in bianco e nero.
 Testo nero; nessun fondo colorato (né nelle intestazioni delle tabelle né nei riquadri: solo bordi neri sottili);
 collegamenti in blu scuro (`COLORE_LINK` = #1A3F8F) sottolineati. Logo Corallo a colori (`servizio/logo_eugenio.png`,
@@ -380,7 +427,8 @@ Per tutta Italia serve l'istanza Open-Meteo propria (`--profile open-meteo`).
 TiRex-2 su CPU: ~1,2 GB di RAM (misurati) per il processo API. Totale stimato con tutti i servizi:
 ~3,5 GB su 12. Disco: vedi la tabella "Spazio" nel README principale (~15 GB, ~35 GB con Open-Meteo).
 Una previsione alla volta (le altre attendono in coda) per non saturare i 2 core. La conversione mensile
-dell'indirizzario ANNCSU usa ~400 MB di memoria per un paio di minuti.
+dell'indirizzario ANNCSU usa ~400 MB di memoria per un paio di minuti; il ricalcolo del clima dal 1940
+(gennaio e luglio) ~1,5 GB per ~5 minuti.
 
 ## Licenze e attribuzioni (da mostrare sul sito)
 

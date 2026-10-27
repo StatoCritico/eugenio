@@ -142,10 +142,14 @@ h1, h2, h3 { font-family: var(--titoli); color: var(--inchiostro); text-wrap: ba
 .solo-lettori { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ------------------------------------------------------------------------------------------- testata */
-.testata { background: var(--carta); border-bottom: 1px solid var(--linea); }
+.testata { position: sticky; top: 0; z-index: 40; background: var(--carta); border-bottom: 1px solid var(--linea); }
+/* la testata resta ferma in alto: --alto-testata (misurata da aspetto.js) sposta in basso gli altri elementi fissi
+   e i punti d'arrivo dei collegamenti interni */
+:root { --alto-testata: 6rem; }
+html { scroll-padding-top: calc(var(--alto-testata) + var(--s3)); }
 .testata-alta { display: flex; align-items: center; gap: var(--s4); padding: var(--s3) var(--margine) 0; }
 .marchio { display: flex; align-items: center; flex: none; text-decoration: none; border-radius: var(--r-s); }
-.marchio img { height: 36px; width: auto; display: block; }
+.marchio img { height: 28px; width: auto; display: block; }   /* logo con la E alta come l'edificio: 153 × 28 px */
 .sezione { color: var(--tenue); font-size: var(--c-s); margin-right: auto; padding-top: .3rem; }
 .sezione a { color: inherit; }
 .menu-info { display: flex; gap: var(--s1); flex-wrap: wrap; align-items: center; font-size: var(--c-s); }
@@ -156,6 +160,7 @@ h1, h2, h3 { font-family: var(--titoli); color: var(--inchiostro); text-wrap: ba
 .menu-info a.iscriviti:hover { border-color: var(--primario); color: var(--primario); background: none; }
 
 .testata-menu { display: flex; align-items: flex-end; gap: var(--s4); padding: 0 var(--margine); }
+.testata-menu .menu-info { align-self: center; margin-bottom: 3px; }   /* stessa riga dei link degli strumenti, accanto a ✱ e ◐ */
 .menu-strumenti { display: flex; gap: var(--s1); margin-right: auto; overflow-x: auto; scrollbar-width: none; }
 .menu-strumenti a {
   display: flex; align-items: center; gap: .4rem; min-height: var(--tocco); padding: 0 .85rem;
@@ -195,7 +200,7 @@ h1, h2, h3 { font-family: var(--titoli); color: var(--inchiostro); text-wrap: ba
 .vestito-pulsante .asterisco { transition: transform .35s ease; }
 .vestito-pulsante:hover { background: var(--rialzo); border-color: var(--inchiostro); }
 .vestito-pulsante:hover .asterisco, .vestito-pulsante[aria-expanded="true"] .asterisco { transform: rotate(30deg); }
-.vestito-pulsante[aria-expanded="true"] { background: var(--rialzo); border-color: var(--inchiostro); }   /* il bordo resta neutro come quello di ◐: colorato è solo l'asterisco */
+.vestito-pulsante[aria-expanded="true"] { background: var(--rialzo); }   /* il bordo resta neutro come quello di ◐: colorato è solo l'asterisco */
 .vestito-pulsante:focus-visible { outline: 3px solid var(--inchiostro); outline-offset: 2px; border-radius: var(--r-tondo); }
 .vestito-elenco { list-style: none; margin: 0; padding: var(--s1); }
 .vestito-elenco:focus { outline: none; }
@@ -236,7 +241,7 @@ h1, h2, h3 { font-family: var(--titoli); color: var(--inchiostro); text-wrap: ba
 .menu-tutto > summary::-webkit-details-marker { display: none; }
 .menu-tutto > summary svg { width: 18px; height: 18px; }
 .menu-tutto[open] > summary { background: var(--inchiostro); color: var(--carta); border-color: var(--inchiostro); }
-.menu-pannello { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; background: var(--foglio); border-bottom: 1px solid var(--linea);
+.menu-pannello { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; max-height: calc(100vh - var(--alto-testata)); overflow-y: auto; background: var(--foglio); border-bottom: 1px solid var(--linea);
   box-shadow: var(--ombra-2); padding: var(--s3) var(--margine) var(--s5); display: grid; gap: var(--s4); }
 .menu-pannello h2 { font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; color: var(--tenue); margin: var(--s2) 0 0; }
 .menu-pannello ul { list-style: none; margin: 0; padding: 0; display: grid; }
@@ -247,7 +252,7 @@ h1, h2, h3 { font-family: var(--titoli); color: var(--inchiostro); text-wrap: ba
 
 /* ------------------------------------------------------------------------------------------- pagina strumento */
 .strumento { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(340px, 1fr); }
-.mappa-area { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; gap: var(--s3); padding: var(--s6) var(--margine); }
+.mappa-area { position: sticky; top: var(--alto-testata); align-self: start; display: flex; flex-direction: column; gap: var(--s3); padding: var(--s6) var(--margine); }
 .mappa-area h1 { font: 700 var(--c-h1)/1.04 var(--titoli); margin: 0; max-width: 17ch; letter-spacing: -.012em; }
 .mappa-area .sotto { color: var(--tenue); margin: 0; max-width: 62ch; }
 .intestazione { display: flex; gap: var(--s4); align-items: flex-start; justify-content: space-between; }
@@ -257,8 +262,20 @@ h1, h2, h3 { font-family: var(--titoli); color: var(--inchiostro); text-wrap: ba
 .mappa path { stroke: var(--carta); stroke-width: .5; vector-effect: non-scaling-stroke; cursor: pointer; }
 .mappa path:hover { stroke: var(--inchiostro); stroke-width: 1.2; }
 .mappa path.scelto { stroke: var(--segno); stroke-width: 2.6; fill-opacity: .9; }
-.mappa .italia-sfondo path { fill-opacity: .22; stroke: none; pointer-events: none; }
-.mappa .italia-sfondo path.attiva { fill-opacity: .4; }
+/* comune scelto (Previsioni, Legge 10): riempito nel colore di segno del vestito, bordo come il confine regionale
+   (stesso tratto e colore), portato sopra i vicini dallo script; il CSS vince sull'attributo fill della mappa */
+main:not(.pagina-dati) .mappa path.scelto { fill: var(--segno); fill-opacity: 1; stroke: var(--inchiostro); stroke-width: 2.2; stroke-linejoin: round; }
+/* tema scuro: i comuni sono chiari, quindi il bordo scuro (stesso spessore del confine regionale) stacca meglio */
+:root:not([data-theme="light"]) main:not(.pagina-dati) .mappa path.scelto { stroke: var(--carta); stroke-width: 2.6; }
+.mappa .italia-sfondo path { fill-opacity: .22; stroke: none; cursor: pointer; }   /* clic su una regione vicina: la carica */
+.mappa .italia-sfondo path:hover { fill-opacity: .45; stroke: none; }
+.mappa .italia-sfondo path.attiva { fill-opacity: .4; cursor: inherit; }
+.mappa .italia-sfondo path.attiva:hover { fill-opacity: .4; }
+/* tema scuro: regioni vicine in tinta chiara ma più spenta della regione scelta, che (i comuni sopra hanno il suo
+   colore schiarito: EUGENIO.fondoComuni) resta la più luminosa; i confini comunali sono tratti scuri */
+:root:not([data-theme="light"]) .mappa .italia-sfondo path { fill-opacity: .5; }
+:root:not([data-theme="light"]) .mappa .italia-sfondo path:hover { fill-opacity: .72; }
+:root:not([data-theme="light"]) .mappa .italia-sfondo path.attiva { fill-opacity: .95; }
 .mappa .province path { fill: none; stroke: var(--inchiostro); stroke-width: 1.2; opacity: .6; pointer-events: none; stroke-linejoin: round; }
 .mappa .confini-regioni path { fill: none; stroke: var(--inchiostro); stroke-width: 2.2; opacity: .8; pointer-events: none; stroke-linejoin: round; }
 .mappa .segnaposto { fill: var(--segno); stroke: var(--foglio); stroke-width: .4; pointer-events: none; }
@@ -277,13 +294,17 @@ h1, h2, h3 { font-family: var(--titoli); color: var(--inchiostro); text-wrap: ba
 .minimappa path { fill-opacity: .55; stroke: var(--carta); cursor: pointer; }
 .minimappa path:hover, .minimappa path:focus-visible { fill-opacity: .85; }
 .minimappa path.attiva { fill-opacity: 1; stroke: var(--inchiostro); }
-.minimappa-comandi { position: absolute; right: -6px; bottom: 0; display: flex; flex-direction: column; gap: 4px; }
+/* tema scuro: tinte più piene (al 22 % e al 55 % sul fondo quasi nero risultavano spente e scure) */
+:root:not([data-theme="light"]) .minimappa path { fill-opacity: .8; }
+:root:not([data-theme="light"]) .minimappa path:hover { fill-opacity: .95; }
+:root:not([data-theme="light"]) .minimappa path.attiva { fill-opacity: 1; }
+.minimappa-comandi { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; gap: 4px; }   /* a sinistra, in colonna: + − ⟲ ↓ */
 .minimappa-comandi button, .minimappa-su {
   width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border: 1px solid var(--bordo); border-radius: var(--r);
   background: var(--foglio); color: var(--inchiostro); font: 700 .95rem/1 var(--testo); cursor: pointer; box-shadow: var(--ombra-1);
 }
 .minimappa-comandi button:hover, .minimappa-su:hover { background: var(--rialzo); border-color: var(--inchiostro); }
-.minimappa-su { position: absolute; left: 0; top: 0; }
+.minimappa-comandi .minimappa-su { margin-top: 4px; }   /* la freccia, staccata dai comandi di zoom */
 
 /* pannello a passi */
 .pannello { background: var(--foglio); border-left: 1px solid var(--linea); padding: var(--s6) var(--margine); }
@@ -497,7 +518,7 @@ code { font: .9em var(--mono); background: var(--rialzo); padding: .05em .3em; b
 .articolo pre { background: var(--foglio); border: 1px solid var(--linea); border-radius: var(--r); padding: .8rem 1rem; overflow-x: auto; font-size: var(--c-s); }
 
 .articolo.con-indice { display: grid; grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); gap: var(--s7); align-items: start; }
-.indice-laterale { position: sticky; top: var(--s4); max-height: calc(100vh - 2rem); overflow-y: auto; padding-top: var(--s5); }
+.indice-laterale { position: sticky; top: calc(var(--alto-testata) + var(--s4)); max-height: calc(100vh - var(--alto-testata) - 2rem); overflow-y: auto; padding-top: var(--s5); }
 .indice-laterale summary { font: 600 var(--c-xs)/1.2 var(--titoli); text-transform: uppercase; letter-spacing: .08em; color: var(--tenue); list-style: none; padding: .2rem 0; }
 .indice-laterale summary::-webkit-details-marker { display: none; }
 .indice-laterale ol { list-style: none; padding: 0; margin: var(--s3) 0 0; border-left: 2px solid var(--linea); }
@@ -545,10 +566,12 @@ code { font: .9em var(--mono); background: var(--rialzo); padding: .05em .3em; b
 
 /* ------------------------------------------------------------------------------------------- piè di pagina */
 .piede { padding: var(--s6) var(--margine) var(--s7); color: var(--tenue); font-size: var(--c-s); border-top: 1px solid var(--linea); background: var(--carta);
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s2) var(--s5); }
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s2) var(--s5); align-items: end; }
 .piede .piede-simbolo { width: 44px; height: auto; }
-.piede .piede-testi { display: grid; gap: var(--s2); min-width: 0; }
-.piede p { margin: 0; max-width: 100ch; }
+.piede .piede-fonti { grid-column: 1 / -1; display: grid; gap: var(--s2); margin-bottom: var(--s3); }   /* fonti e avvertenze delle pagine strumento */
+.piede .piede-fonti p { max-width: 110ch; }
+.piede .piede-testi { min-width: 0; line-height: 1.3; margin-bottom: 1px; }   /* una riga, sulla base dell'edificio del simbolo */
+.piede p { margin: 0; }
 .piede a { color: var(--inchiostro); }
 .piede a:hover { color: var(--primario); }
 .piede .piede-link { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin-top: var(--s2); }
@@ -561,7 +584,7 @@ code { font: .9em var(--mono); background: var(--rialzo); padding: .05em .3em; b
 .mappa svg.trascina { cursor: grabbing; }
 .mappa path { transition: fill .3s; }
 @media (min-width: 861px) {
-  .mappa-area { height: calc(100vh - 5.9rem); min-height: 520px; }   /* 5,9 rem: la testata su due righe */
+  .mappa-area { height: calc(100vh - var(--alto-testata)); min-height: 520px; }   /* sotto la testata fissa */
   .mappa { flex: 1 1 auto; }
   .mappa svg { height: 100%; }
 }
@@ -646,7 +669,7 @@ code { font: .9em var(--mono); background: var(--rialzo); padding: .05em .3em; b
 .servizi li.ultimo p { font-style: italic; }
 
 /* indice laterale: voci di secondo livello e posizione dei titoli raggiunti dall'indice */
-.con-indice .articolo-corpo > h2, .con-indice .articolo-corpo > h3, .con-indice .articolo-corpo > details { scroll-margin-top: var(--s4); }
+.con-indice .articolo-corpo > h2, .con-indice .articolo-corpo > h3, .con-indice .articolo-corpo > details { scroll-margin-top: calc(var(--alto-testata) + var(--s4)); }
 .indice-laterale li.sotto a { padding: .2rem .8rem .2rem 1.6rem; font-size: var(--c-xs); }
 .indice-laterale li:not(.sotto) + li:not(.sotto), .indice-laterale li.sotto + li:not(.sotto) { margin-top: .15rem; }
 .indice-laterale li:not(.sotto) > a { color: var(--inchiostro); font-weight: 600; }
@@ -721,10 +744,9 @@ table.ind-confronto th small, table.ind-confronto td small { display: block; fon
 
 /* ------------------------------------------------------------------------------------------- telefono */
 @media (max-width: 860px) {
-  .testata { position: relative; }
   .testata-alta { padding-top: var(--s2); padding-bottom: var(--s2); }
   .marchio { margin-right: auto; }
-  .marchio img { height: 30px; }
+  .marchio img { height: min(30px, 7.7vw); }   /* il più grande possibile accanto a Menu e ◐: 30 px (164 di larghezza) da 390 px in su */
   .testata-alta { gap: var(--s2); }
   .sezione, .menu-info { display: none; }
   .menu-tutto { display: block; }
@@ -738,14 +760,14 @@ table.ind-confronto th small, table.ind-confronto td small { display: block; fon
   .mappa { height: 52vw; min-height: 220px; }
   .mappa svg { height: 100%; }
   .strumento.pagina-indicatori { grid-template-columns: minmax(0, 1fr); }
-  .con-indice .articolo-corpo > h2, .con-indice .articolo-corpo > h3, .con-indice .articolo-corpo > details { scroll-margin-top: 3.5rem; }
+  .con-indice .articolo-corpo > h2, .con-indice .articolo-corpo > h3, .con-indice .articolo-corpo > details { scroll-margin-top: calc(var(--alto-testata) + 3.5rem); }
   .pannello { border-left: 0; border-top: 1px solid var(--linea); padding: var(--s5) var(--margine); }
   .riga { grid-template-columns: 1fr; }
   .confronto { grid-template-columns: 1fr 1fr; }
   .confronto .differenza { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; text-align: left; }
   .confronto .differenza span { max-width: none; }
   .articolo.con-indice { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .indice-laterale { position: sticky; top: 0; z-index: 3; max-height: 70vh; padding: 0; background: var(--carta); border-bottom: 1px solid var(--linea);
+  .indice-laterale { position: sticky; top: var(--alto-testata); z-index: 3; max-height: 70vh; padding: 0; background: var(--carta); border-bottom: 1px solid var(--linea);
     margin: 0 calc(-1 * var(--margine)); }
   .indice-laterale summary { display: flex; justify-content: space-between; align-items: center; min-height: var(--tocco); padding: 0 var(--margine);
     font-size: var(--c-s); cursor: pointer; color: var(--inchiostro); }
@@ -758,3 +780,24 @@ table.ind-confronto th small, table.ind-confronto td small { display: block; fon
 @media (min-width: 861px) { .indice-laterale summary { pointer-events: none; } }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Legge 10 – sezione «L'anno tipo del CTI» (cti_legge10.js) */
+.anno-tipo-cti .cifre { margin-bottom: var(--s3); }
+.anno-tipo-cti .tabella-scorre + .aiuto { margin-top: var(--s3); }
+.cti-mensili { margin: var(--s3) 0; border-top: 1px solid var(--linea); border-bottom: 1px solid var(--linea); }
+.cti-mensili > summary { cursor: pointer; padding: .7rem 0; font: 600 var(--c-m, 1rem)/1.3 var(--titoli); }
+.cti-mensili > summary:hover { color: var(--primario); }
+.cti-mensili[open] > summary { margin-bottom: var(--s2); }
+.avviso-legale.licenza-cti::before { content: "§ Licenza"; }
+table.confronto-cti th, table.confronto-cti td { white-space: normal; }
+table.confronto-cti td { white-space: nowrap; }
+table.confronto-cti tbody th { min-width: 9rem; }
+table.confronto-cti th:last-child, table.confronto-cti td:last-child { color: var(--primario); font-weight: 700; }
+table.confronto-cti thead th:last-child small { font-weight: 400; }
+/* sezione CTI della Legge 10: limiti del metodo segnalati comune per comune */
+.avviso-cti { margin: var(--s3) 0; }
+/* schermi medi: le voci informative non stanno sulla riga degli strumenti, vanno nel pulsante Menu */
+@media (min-width: 861px) and (max-width: 1240px) {
+  .testata-menu .menu-info { display: none; }
+  .menu-tutto { display: block; }
+}
