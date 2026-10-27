@@ -801,3 +801,6 @@ table.confronto-cti thead th:last-child small { font-weight: 400; }
   .testata-menu .menu-info { display: none; }
   .menu-tutto { display: block; }
 }
+/* mappa di Dati storici: comuni fuori dalla selezione (grigio medio nel tema scuro, chiaro nel chiaro) */
+:root { --comune-fuori: var(--bordo); }
+:root[data-theme="light"] { --comune-fuori: var(--linea); }

@@ -1,0 +1,8 @@
+<script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
+try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
+if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
+function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v={{versione}}";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v={{versione}}">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v={{versione}}">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v={{versione}}">

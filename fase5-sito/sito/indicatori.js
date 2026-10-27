@@ -34,7 +34,11 @@ function h(tag, cls, testo) {
 }
 function el(tag, attrs = {}, parent) {
   const e = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  for (const [k, v] of Object.entries(attrs)) {
+    // colori "var(--…)": nello stile, così seguono da soli il cambio di tema o di vestito
+    if ((k === "fill" || k === "stroke") && typeof v === "string" && v.startsWith("var(")) e.style.setProperty(k, v);
+    else e.setAttribute(k, v);
+  }
   if (parent) parent.appendChild(e);
   return e;
 }
@@ -356,7 +360,7 @@ function graficoSpesa(t) {
   anni().forEach((anno, i) => {
     if (tot[i] === null) return;
     const x = a.X(i) - larg / 2;
-    const segmenti = parti ? parti.map(([k, , c]) => [u.v[k][i] || 0, css(c)]) : [[tot[i], css("--ind-ente")]];
+    const segmenti = parti ? parti.map(([k, , c]) => [u.v[k][i] || 0, `var(${c})`]) : [[tot[i], "var(--ind-ente)"]];
     let base = 0;
     segmenti.forEach(([v, colore], j) => {
       if (!(v > 0)) return;
@@ -371,13 +375,13 @@ function graficoSpesa(t) {
   bersagli(g, a, (i) => {
     if (tot[i] === null) return [];
     const nc = NOMI_COMP[stato.comp];
-    const righe = [[css("--ind-ente"), `${nc[0].toUpperCase()}${nc.slice(1)}: ${valore("spesa", tot[i])}`]];
-    if (parti) parti.forEach(([k, nome, c]) => righe.push([css(c), `${nome}: ${valore("spesa", u.v[k][i])}`]));
+    const righe = [["var(--ind-ente)", `${nc[0].toUpperCase()}${nc.slice(1)}: ${valore("spesa", tot[i])}`]];
+    if (parti) parti.forEach(([k, nome, c]) => righe.push([`var(${c})`, `${nome}: ${valore("spesa", u.v[k][i])}`]));
     const comb = u.v.BA0340[i];
-    if (comb !== null && comb !== undefined) righe.push([css("--linea"), `Combustibili e carburanti, esclusi: ${valore("spesa", comb)}`]);
+    if (comb !== null && comb !== undefined) righe.push(["var(--linea)", `Combustibili e carburanti, esclusi: ${valore("spesa", comb)}`]);
     return righe;
   }, false);
-  if (parti) legenda(g.box, parti.map(([, nome, c]) => [css(c), nome]));
+  if (parti) legenda(g.box, parti.map(([, nome, c]) => [`var(${c})`, nome]));
   g.box.appendChild(h("p", "aiuto", `In euro all'anno. ${anni().filter(provvisorio).map((x) => `${x}*`).join(", ")} provvisorio, su fondo grigio. `
     + "I combustibili e carburanti (voce BA0340, comprende il carburante degli automezzi) non sono nel totale: si vedono passando sulle colonne."));
 }
@@ -412,7 +416,7 @@ function notaPopolazione(t) {
 
 function graficoLinee(id, ind, t) {
   const cols = nomiColonne(t);
-  const serie = SERIE.filter(([k]) => t[k]).map(([k, c, tratto]) => ({ k, nome: k === "ente" && !t.consolidato ? t.ente.nome : cols[k], colore: css(c), tratto,
+  const serie = SERIE.filter(([k]) => t[k]).map(([k, c, tratto]) => ({ k, nome: k === "ente" && !t.consolidato ? t.ente.nome : cols[k], colore: `var(${c})`, tratto,
     v: anni().map((_, i) => { const x = indicatori(t[k], i)[ind]; return x === undefined ? null : x; }) }))
     .filter((s) => s.v.some((x) => x !== null));
   const d = INDICATORI[ind], scala = d.perc ? 100 : 1;
@@ -432,8 +436,8 @@ function graficoLinee(id, ind, t) {
       ...(s.tratto ? { "stroke-dasharray": s.tratto } : {}) }, g.svg);
     s.v.forEach((x, i) => {
       if (x === null) return;
-      const c = el("circle", { cx: a.X(i), cy: a.Y(x * scala), r: 4, fill: s.colore, stroke: css("--foglio"), "stroke-width": 2 }, g.svg);
-      if (provvisorio(anni()[i])) { c.setAttribute("fill", css("--foglio")); c.setAttribute("stroke", s.colore); }
+      const c = el("circle", { cx: a.X(i), cy: a.Y(x * scala), r: 4, fill: s.colore, stroke: "var(--foglio)", "stroke-width": 2 }, g.svg);
+      if (provvisorio(anni()[i])) { c.style.fill = "var(--foglio)"; c.style.stroke = s.colore; }
     });
   }
   bersagli(g, a, (i) => serie.filter((s) => s.v[i] !== null).map((s) => [s.colore, `${s.nome}: ${valore(ind, s.v[i])}`]), true);

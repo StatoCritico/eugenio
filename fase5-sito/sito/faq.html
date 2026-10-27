@@ -5,19 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>F.A.Q. – domande frequenti</title>
 <meta name="description" content="Domande frequenti su EuGEnio: il nome, l'open source, i dati di mercato, i limiti del servizio.">
+<!-- testa -->
 <script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
 try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261027r";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<link rel="stylesheet" href="stile.css?v=20261027r">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261027r">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261027r">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261027t";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v=20261027t">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261027t">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261027t">
+<!-- /testa -->
 </head>
 <body>
+<!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261027r" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261027t" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <details class="menu-tutto">
@@ -71,6 +74,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
   </div>
 </header>
+<!-- /testata -->
 
 <main class="articolo faq">
   <h1>F.A.Q.</h1>
@@ -171,6 +175,33 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     </ul>
     <p>La tabella completa, con le note, si scarica dalla pagina Legge 10 (<a href="dati/dpr412.csv">CSV</a>). Se trovi
       un errore, <a href="contatti.html">segnalalo</a>.</p>
+  </details>
+
+  <details id="dpr-stima">
+    <summary>Cosa sono i «GG di legge aggiornati al clima recente»?</summary>
+    <p>Nella sezione «Il clima dal 1940» della pagina <a href="legge10.html">Legge 10</a> c'è una stima dei gradi
+      giorno del DPR 412/93 aggiornati al clima di oggi: il valore di legge del comune moltiplicato per la variazione
+      che la stessa serie ERA5 mostra tra il 1961–1990 e le ultime 10 stagioni. Esempio: se il DPR dà 2.500 GG e la
+      serie del comune scende del 10 % tra quei due periodi, la stima è 2.250 GG.</p>
+    <p>Moltiplicare per la variazione, invece di prendere direttamente i gradi giorno della serie, toglie gran parte
+      degli errori sistematici della rianalisi (coste, città, fondovalle), che restano uguali nei due periodi. Il
+      1961–1990 è un'ipotesi: il DPR non dice su quali anni sono stati calcolati i suoi valori. È una stima e
+      <strong>non ha valore normativo</strong>: per la relazione tecnica valgono i gradi giorno e la zona del DPR.</p>
+  </details>
+
+  <details id="zona-coerente">
+    <summary>Come scegliete la zona climatica quando i gradi giorno ne permettono due?</summary>
+    <p>I gradi giorno si contano solo nel periodo di accensione degli impianti, che dipende dalla zona (la D dal
+      1° novembre al 15 aprile, la E dal 15 ottobre al 15 aprile). Per ogni stagione calcoliamo quindi i gradi giorno
+      sul periodo di ogni zona e guardiamo se il risultato cade nella fascia di quella zona (D da 1.401 a 2.100, E da
+      2.101 a 3.000…): in quel caso la zona è «coerente». In un comune di confine può succedere che sul periodo D si
+      contino 2.050 GG (coerente con la D) e sul periodo E, più lungo, 2.250 (coerente con la E).</p>
+    <p>In questi casi <strong>teniamo la zona del DPR 412/93</strong> del comune, se è tra quelle coerenti. Se non lo
+      è, o se il comune non ha una zona di legge (comuni nati da fusioni), prendiamo la zona coerente che sta più lontana
+      dai bordi della sua fascia; se nessuna zona è coerente, quella dei gradi giorno sull'anno intero. La regola è la
+      stessa per il clima delle ultime stagioni, per il clima dal 1940 e per gli anni tipo del CTI. Riguarda poche
+      stagioni, quasi tutte a cavallo tra D ed E o tra E ed F; i gradi giorno sul periodo della zona di legge non
+      cambiano.</p>
   </details>
 
   <h2 id="usare-il-servizio">Usare il servizio</h2>
@@ -452,10 +483,12 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </main>
 
 <footer class="piede">
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261027r" alt="" width="44" height="44">
+  <!-- piede -->
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261027t" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  <!-- /piede -->
 </footer>
-<script src="aspetto.js?v=20261027r"></script>
-<script src="indice.js?v=20261027r"></script>
+<script src="aspetto.js?v=20261027t"></script>
+<script src="indice.js?v=20261027t"></script>
 </body>
 </html>

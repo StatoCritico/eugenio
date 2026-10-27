@@ -349,6 +349,9 @@ Prove: dalla cartella `fase4-server`, `python -m pytest tests` (non servono TiRe
 
 Senza l'archivio meteo della fase 3 (`giornaliero.parquet`) `/api/clima-legge10/{istat}` risponde **503** con il
 messaggio "i dati meteo delle ultime stagioni non sono ancora sul server", che la pagina Legge 10 mostra così com'è.
+La zona risultante di `/api/clima-legge10` e dei Dati storici «Legge 10» usa la zona del DPR 412/93 del comune
+(`storici.zona_dpr`, da `DATI/dpr412.json`) quando più zone sono coerenti (regola del 27/10/2026, README della
+fase 3).
 
 **Stile dei report (decisione del 27/10/2026)**: stile professionale e sobrio, adatto alla stampa in bianco e nero.
 Testo nero; nessun fondo colorato (né nelle intestazioni delle tabelle né nei riquadri: solo bordi neri sottili);

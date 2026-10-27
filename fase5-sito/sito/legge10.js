@@ -12,7 +12,11 @@ const ZONE = ["A", "B", "C", "D", "E", "F"];
 
 function el(tag, attrs = {}, parent) {
   const e = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  for (const [k, v] of Object.entries(attrs)) {
+    // colori "var(--…)": nello stile, così seguono da soli il cambio di tema o di vestito
+    if ((k === "fill" || k === "stroke") && typeof v === "string" && v.startsWith("var(")) e.style.setProperty(k, v);
+    else e.setAttribute(k, v);
+  }
   if (parent) parent.appendChild(e);
   return e;
 }
@@ -36,7 +40,7 @@ async function caricaMappa() {
   $("mappa").prepend(svg);
   const g = el("g", {}, svg);
   for (const c of m.comuni) {
-    const p = el("path", { d: c.d, fill: (window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : css("--linea")) }, g);
+    const p = el("path", { d: c.d, fill: (window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : "var(--linea)") }, g);
     el("title", {}, p).textContent = c.nome;
     p.addEventListener("click", () => scegli(c.istat));
     p.addEventListener("mousemove", (e) => etichetta(e, c.nome));
@@ -88,7 +92,7 @@ $("anni").addEventListener("change", () => stato.istat && calcola());
 // funziona lo stesso senza il confronto.
 let tabellaDPR = null;
 function caricaDPR() {
-  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261027r")
+  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261027t")
     .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   return tabellaDPR;
 }
@@ -276,37 +280,37 @@ function graficoGG(gg, ggLegge = null) {
   const max = Math.ceil(picco / passoY) * passoY, Y = (v) => su + (H - su - gi) * (1 - v / max);
   for (let v = 0; v <= max; v += passoY) {
     const y = Y(v);
-    el("line", { x1: sx, x2: W - dx, y1: y, y2: y, stroke: css("--linea"), "stroke-width": .6 }, svg);
+    el("line", { x1: sx, x2: W - dx, y1: y, y2: y, stroke: "var(--linea)", "stroke-width": .6 }, svg);
     el("text", { x: sx - 6, y: y + 4, "text-anchor": "end" }, svg).textContent = num(v);
   }
   const passo = (W - sx - dx) / voci.length, larg = Math.min(passo * 0.62, 46);
   voci.forEach(([st, v], i) => {
     const x = sx + passo * i + (passo - larg) / 2;
-    const r = el("rect", { x, y: Y(v), width: larg, height: Y(0) - Y(v), fill: css("--primario"), rx: 2, class: "barra" }, svg);
+    const r = el("rect", { x, y: Y(v), width: larg, height: Y(0) - Y(v), fill: "var(--primario)", rx: 2, class: "barra" }, svg);
     el("title", {}, r).textContent = `${st}: ${num(v)} GG`;
     if (i % Math.ceil(voci.length / 8) === 0 || i === voci.length - 1)
       el("text", { x: x + larg / 2, y: H - 8, "text-anchor": "middle" }, svg).textContent = st;
   });
   const ym = Y(gg.gg_periodo_zona);
-  el("line", { x1: sx, x2: W - dx, y1: ym, y2: ym, stroke: css("--inchiostro"), "stroke-dasharray": "2 4", "stroke-width": 1.5, class: "media" }, svg);
+  el("line", { x1: sx, x2: W - dx, y1: ym, y2: ym, stroke: "var(--inchiostro)", "stroke-dasharray": "2 4", "stroke-width": 1.5, class: "media" }, svg);
   el("text", { x: W - dx, y: ym - 5, "text-anchor": "end" }, svg).textContent = `media ${num(gg.gg_periodo_zona)}`;
   const leg = h("div", "legenda");
   const voce = (cl, colore, testo) => {
     const s = h("span"); const i = h("i", cl); i.style.color = colore; i.style.background = cl ? "" : colore;
     s.append(i, testo); leg.appendChild(s);
   };
-  voce(null, css("--primario"), "gradi giorno della stagione (calcolati)");
-  voce("linea punti", css("--inchiostro"), `media delle stagioni: ${num(gg.gg_periodo_zona)}`);
+  voce(null, "var(--primario)", "gradi giorno della stagione (calcolati)");
+  voce("linea punti", "var(--inchiostro)", `media delle stagioni: ${num(gg.gg_periodo_zona)}`);
   if (ggLegge !== null) {
     const yl = Y(ggLegge);
-    el("line", { x1: sx, x2: W - dx, y1: yl, y2: yl, stroke: css("--segno"), "stroke-dasharray": "7 4", "stroke-width": 2, class: "legge" }, svg);
+    el("line", { x1: sx, x2: W - dx, y1: yl, y2: yl, stroke: "var(--segno)", "stroke-dasharray": "7 4", "stroke-width": 2, class: "legge" }, svg);
     // etichetta a sinistra, sopra o sotto la linea per non coprire quella della media
     const sotto = Math.abs(yl - ym) < 16 && yl > ym;
     const t = el("text", { x: sx + 6, y: sotto ? yl + 15 : yl - 6, "text-anchor": "start" }, svg);
     t.textContent = `DPR 412/93 ${num(ggLegge)}`;
-    t.style.fill = css("--segno");
+    t.style.fill = "var(--segno)";
     t.setAttribute("class", "etichetta-legge");
-    voce("linea tratto", css("--segno"), `valore di legge (DPR 412/93): ${num(ggLegge)}`);
+    voce("linea tratto", "var(--segno)", `valore di legge (DPR 412/93): ${num(ggLegge)}`);
   } else if (stato.dpr && stato.dpr.origini.length) {
     leg.appendChild(h("span", null, "nessuna linea del DPR 412/93: il comune è nato da una fusione e la legge non ha un valore unico"));
   }
@@ -392,3 +396,9 @@ if (window.EUGENIO_REPORT) window.EUGENIO_REPORT.pulsanti($("report"), {
 });
 
 caricaMappa().catch((e) => messaggio(`Mappa non disponibile: ${e.message}`, true));
+
+// cambio di tema o di vestito (aspetto.js, senza ricaricare): il fondo dei comuni è un colore calcolato
+document.addEventListener("eugenio:aspetto", () => {
+  const fondo = window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : css("--linea");
+  stato.percorsi.forEach((p) => p.setAttribute("fill", fondo));
+});

@@ -151,6 +151,14 @@ Il primo produce per ogni comune un JSON e un CSV mensile (UNI 10349-1, gradi gi
 zona climatica risultante, tendenza, temperature di progetto stimate); dettagli nel README della
 fase 7. Gli altri due controllano nuovi comuni ISTAT e nuove versioni dei confini Gramscii.
 
+**Zona climatica risultante** (`legge10.zona_risultante`, decisione del 27/10/2026, uguale nella fase 9 e
+negli indicatori CTI): una zona è *coerente* se i suoi gradi giorno, calcolati sul suo stesso periodo di
+accensione, cadono nella sua fascia dell'art. 2; a cavallo di due zone possono esserlo entrambe (es. 2.050 GG
+sul periodo D e 2.250 sul periodo E). Si prende la zona del DPR 412/93 del comune se è tra le coerenti
+(`calcola(..., zona_dpr=...)`; sul server la passa `servizio.storici.zona_dpr` leggendo `dpr412.json`);
+altrimenti, o senza zona DPR, la coerente più lontana dai bordi della propria fascia; se nessuna è coerente,
+la zona dei GG sull'anno intero.
+
 ## Cosa produce
 
 ```

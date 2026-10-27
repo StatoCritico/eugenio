@@ -245,6 +245,7 @@ def costruisci_uscite(R: dict, dpr: dict, uscita: Path, scrivi_json: bool = True
         voce = dpr.get(r.istat)
         info_dpr = voce if voce and voce[0] is not None else None     # GG di legge univoci
         zona_legge = voce[1] if voce and voce[1] else None             # anche fusioni con zona unica
+        zona_dpr = zona_legge                                          # per la regola della zona risultante
         g6 = gg[c][st_idx]                               # stagioni × 6 zone
         if zona_legge is None:                          # senza DPR: zona coerente sulla media 1991-2020
             sel = (st >= 1990) & (st <= 2019)
@@ -255,7 +256,7 @@ def costruisci_uscite(R: dict, dpr: dict, uscita: Path, scrivi_json: bool = True
         kz = ind.NOMI_ZONE.index(zona_legge)
         gz = g6[:, kz]
         ga = g6[:, 5]
-        zone_st = "".join(ind.zona_coerente(v) if np.isfinite(v[5]) else "-" for v in g6)
+        zone_st = "".join(ind.zona_coerente(v, zona_dpr) if np.isfinite(v[5]) else "-" for v in g6)
         x = st.astype(float)
         tend = {"tutta": ind.pendenza_per_decennio(x, gz),
                 "dal_1981": ind.pendenza_per_decennio(x[st >= 1981], gz[st >= 1981]),
@@ -305,7 +306,7 @@ def costruisci_uscite(R: dict, dpr: dict, uscita: Path, scrivi_json: bool = True
                                               f"{st[isel[-1]]}/{str(st[isel[-1]] + 1)[2:]}"] if len(isel) else None,
                 "gg_zona": r1(gzp, 0), "gg_anno": r1(np.nanmean(ga[isel]), 0) if len(isel) else None,
                 "zona": ind.zona_da_gg(gzp) if np.isfinite(gzp) else None,
-                "zona_coerente": ind.zona_coerente(np.nanmean(g6[isel], 0)) if len(isel) else None,
+                "zona_coerente": ind.zona_coerente(np.nanmean(g6[isel], 0), zona_dpr) if len(isel) else None,
                 "theta_inv": r1(pi), "theta_est": r1(pe),
                 "mensili": {v: [r1(mm[m, k], 2 if v.startswith("h_") else 1) if v != "pv" else r1(mm[m, k], 0)
                                 for m in range(12)] for k, v in enumerate(MENSILI)}}

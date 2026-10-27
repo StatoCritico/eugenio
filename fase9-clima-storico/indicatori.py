@@ -46,13 +46,37 @@ def lunghezza_periodi() -> np.ndarray:
     return maschere_periodi(d.month.to_numpy(), d.day.to_numpy()).sum(axis=1)
 
 
-def zona_coerente(gg_per_zona: np.ndarray) -> str:
-    """Come legge10.py: la zona i cui GG, calcolati sul suo stesso periodo di accensione, cadono nella sua
-    fascia; se nessuna (casi limite), la zona dei GG sull'anno intero."""
+def zona_coerente(gg_per_zona: np.ndarray, zona_dpr: str | None = None) -> str:
+    """Zona che risulta dai GG (stessa regola di legge10.py e di cti_try, decisione del 27/10/2026).
+
+    Una zona è "coerente" se i suoi GG, calcolati sul suo stesso periodo di accensione, cadono nella sua fascia
+    (a cavallo D/E possono esserlo due zone: es. 2.050 GG sul periodo D e 2.250 sul periodo E). Regola:
+    1. se la zona del DPR 412/93 del comune è tra le coerenti, si prende quella;
+    2. altrimenti (o senza zona DPR) la coerente più lontana dai bordi della propria fascia (margine in GG:
+       min(GG − limite inferiore, limite superiore − GG); per A conta solo il limite superiore, per F solo
+       quello inferiore); a parità, la prima in ordine A…F;
+    3. se nessuna zona è coerente (casi limite), la zona dei GG sull'anno intero (periodo F)."""
+    coerenti = []
     for k, z in enumerate(NOMI_ZONE):
-        if np.isfinite(gg_per_zona[k]) and zona_da_gg(gg_per_zona[k]) == z:
-            return z
-    return zona_da_gg(gg_per_zona[5]) if np.isfinite(gg_per_zona[5]) else "-"
+        v = gg_per_zona[k]
+        if np.isfinite(v) and zona_da_gg(v) == z:
+            coerenti.append((z, float(v)))
+    if not coerenti:
+        return zona_da_gg(gg_per_zona[5]) if np.isfinite(gg_per_zona[5]) else "-"
+    if zona_dpr and any(z == zona_dpr for z, _ in coerenti):
+        return zona_dpr
+    return max(coerenti, key=lambda zv: margine_fascia(*zv))[0]
+
+
+def margine_fascia(zona: str, gg: float) -> float:
+    """Distanza in GG dal bordo più vicino della fascia della zona (art. 2 DPR 412/93)."""
+    _, lo, hi = ZONE[NOMI_ZONE.index(zona)]
+    g = round(gg)
+    if zona == "A":
+        return hi - g
+    if zona == "F":
+        return g - (lo - 1)
+    return min(g - (lo - 1), hi - g)
 
 
 def pressione_vapore_da_td(td):

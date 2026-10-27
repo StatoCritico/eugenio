@@ -29,13 +29,25 @@
   function leggiRicordata() { try { return localStorage.getItem(CHIAVE); } catch { return null; } }
   function ricorda(cod) { try { localStorage.setItem(CHIAVE, cod); } catch { /* navigazione privata */ } }
 
-  let regione = pulisci(new URLSearchParams(location.search).get("regione") || leggiRicordata() || PREDEFINITA);
+  // Vista d'Italia all'apertura della mappa grande (le regioni si scelgono con un clic):
+  //  - sempre con ?vista=italia nell'indirizzo;
+  //  - anche alla prima visita (nessuna regione nell'indirizzo né ricordata) se ITALIA_ALLA_PRIMA_VISITA è true.
+  // Oggi è false: alla prima visita si apre l'Emilia-Romagna, l'unica con il meteo completo.
+  const ITALIA_ALLA_PRIMA_VISITA = false;
+  const parametri = new URLSearchParams(location.search);
+  const primaVisita = !parametri.get("regione") && !leggiRicordata();
+  const apriSuItalia = parametri.get("vista") === "italia" || (ITALIA_ALLA_PRIMA_VISITA && primaVisita);
+  let regione = pulisci(parametri.get("regione") || leggiRicordata() || PREDEFINITA);
   if (!VALIDE.test(regione)) regione = PREDEFINITA;
   ricorda(regione);
 
   function el(tag, attrs, parent) {
     const e = document.createElementNS(NS, tag);
-    for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      // colori "var(--…)": nello stile, così seguono da soli il cambio di tema o di vestito
+      if ((k === "fill" || k === "stroke") && typeof v === "string" && v.startsWith("var(")) e.style.setProperty(k, v);
+      else e.setAttribute(k, v);
+    }
     if (parent) parent.appendChild(e);
     return e;
   }
@@ -97,7 +109,7 @@
     svg.insertBefore(sotto, svg.firstChild);
     const sopra = el("g", { class: "confini-regioni" }, svg);
     for (const r of m.regioni) {
-      const p = el("path", { d: r.d, fill: colore(r.cod) }, sotto);
+      const p = el("path", { d: r.d, fill: `var(--reg-${r.cod})` }, sotto);
       p.dataset.cod = r.cod;
       if (r.cod === regione) p.classList.add("attiva");
       el("title", {}, p).textContent = r.nome;
@@ -120,6 +132,7 @@
       nazionale() { svg.setAttribute("viewBox", ITALIA.join(" ")); },   // la freccia accanto alla piccola mappa
     };
     window.EUGENIO.mappaPrincipale = mappa;
+    if (apriSuItalia) mappa.nazionale();
     return mappa;
   }
 
@@ -172,7 +185,7 @@
     const g = el("g", {}, svg);
     const percorsi = new Map();
     for (const reg of m.regioni) {
-      const p = el("path", { d: reg.d, fill: colore(reg.cod), tabindex: "0", role: "button", "aria-label": reg.nome }, g);
+      const p = el("path", { d: reg.d, fill: `var(--reg-${reg.cod})`, tabindex: "0", role: "button", "aria-label": reg.nome }, g);
       p.dataset.cod = reg.cod;
       if (reg.cod === regione) p.classList.add("attiva");
       percorsi.set(reg.cod, p);
@@ -220,6 +233,7 @@
     aggiornaCollegamenti(cod);
     const u = new URL(location.href);
     u.searchParams.set("regione", cod);
+    u.searchParams.delete("vista");          // scelta la regione, la mappa grande si apre su di lei
     if (typeof window.EUGENIO.suRegione === "function") {
       // la pagina cambia regione da sola (patrimonio, dati: niente ricarica, i risultati restano)
       history.replaceState(null, "", u);

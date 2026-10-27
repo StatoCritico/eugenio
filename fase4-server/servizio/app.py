@@ -136,7 +136,8 @@ def clima_legge10(istat: str, anni: int = 10):
     from meteo_storico import legge10
     _istat_valido(istat)
     try:
-        ris = legge10.calcola(meteo.storico_giornaliero(istat), max(3, min(anni, 30)))
+        from servizio.storici import zona_dpr
+        ris = legge10.calcola(meteo.storico_giornaliero(istat), max(3, min(anni, 30)), zona_dpr=zona_dpr(istat))
     except FileNotFoundError:                      # archivio meteo della fase 3 non ancora copiato sul server
         raise HTTPException(503, "i dati meteo delle ultime stagioni non sono ancora sul server: "
                                  "arriveranno nei prossimi giorni")

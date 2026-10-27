@@ -904,6 +904,18 @@ def _gen_giornaliero(p: Piano) -> Iterator[pd.DataFrame]:
         yield _arrotonda(_luogo(out, p.comuni), p.colonne)
 
 
+def zona_dpr(istat: str) -> str | None:
+    """Zona del comune nell'Allegato A del DPR 412/93 (anche fusioni se la zona è uguale per tutti i comuni
+    d'origine); None se manca. Serve a legge10.zona_risultante quando più zone sono coerenti."""
+    p = _p_dpr412()
+    try:
+        df = _dpr412_cache(p.stat().st_mtime)
+    except OSError:
+        return None
+    z = df.loc[df.istat == istat, "zona"].dropna().unique()
+    return str(z[0]) if len(z) == 1 else None
+
+
 L10_COLONNE = ["t_media", "t_min", "t_max", "ur_media", "rad_globale_kwh_m2", "rad_diffusa_kwh_m2", "vento_medio_kmh"]
 
 
@@ -917,7 +929,7 @@ def _gen_legge10(p: Piano) -> Iterator[pd.DataFrame]:
         for istat, g in df.groupby("istat", sort=True):
             try:
                 r = legge10.calcola(g.drop(columns="istat").reset_index(drop=True), p.req.stagioni,
-                                    fino_a=str(p.al))
+                                    fino_a=str(p.al), zona_dpr=zona_dpr(istat))
             except ValueError:
                 scartati.append(istat)
                 continue

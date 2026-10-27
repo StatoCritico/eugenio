@@ -56,7 +56,8 @@ volta: ~7.900 "chiamate") e la verifica a campione (~40).
 * **Quota per la correzione di temperatura: altitudine della casa comunale del DPR** (`--quota dpr`,
   predefinita), DEM del baricentro solo per i 135 comuni senza altitudine nel DPR. È la quota a cui si
   riferiscono i GG di legge e toglie i casi sopra; `--quota dem` usa sempre il DEM del baricentro. Il
-  punto (lat/lon) e la cella restano quelli del baricentro edifici, decisione del progetto.
+  punto (lat/lon) e la cella restano quelli del baricentro edifici, decisione del progetto. **Decisione di
+  Paolo del 27/10/2026 sera: resta la quota della casa comunale del DPR.**
 * Cella: come `cell_selection=land` di Open-Meteo, tra le 3×3 celle intorno al punto quella di terra con
   quota più vicina; se nessuna è di terra, la più vicina entro 7×7. Distanza media punto–centro cella:
   10 km (ERA5-Land), 25 km (ERA5).
@@ -92,10 +93,19 @@ volta: ~7.900 "chiamate") e la verifica a campione (~40).
   * `gg_zona`: sul periodo della **zona di legge del comune** (Allegato A del DPR, da
     `sito_fin/dati/dpr412.json`); se il comune non è abbinato, zona coerente sulla media 1991–2020;
   * `gg_anno`: GG "convenzionali" su tutta la stagione;
-  * zona per stagione: la "zona coerente" di `legge10.py` (la zona i cui GG sul proprio periodo cadono
-    nella propria fascia: A ≤ 600, B 601–900, C 901–1400, D 1401–2100, E 2101–3000, F > 3000).
-    Se più zone sono coerenti (capita a cavallo D/E: es. 2.050 GG sul periodo D e 2.250 sul periodo E) vince
-    la prima in ordine A…F, come in `legge10.py`: è la scelta più "mite" ed è da rivedere (vedi dubbi).
+  * zona per stagione (e dei periodi): la **zona risultante**, con la stessa regola di
+    `fase3-storico/meteo_storico/legge10.py` (`zona_risultante`) e di `cti_try` (decisione di Paolo del
+    27/10/2026 sera). Una zona è *coerente* se i suoi GG, calcolati sul suo stesso periodo di accensione,
+    cadono nella sua fascia (A ≤ 600, B 601–900, C 901–1400, D 1401–2100, E 2101–3000, F > 3000). A cavallo
+    di due zone possono esserlo entrambe (es. 2.050 GG sul periodo D e 2.250 sul periodo E: il periodo E ha
+    17 giorni in più). Regola:
+    1. se la **zona del DPR 412/93** del comune è tra le coerenti, si prende quella;
+    2. altrimenti, o se il comune non ha una zona nel DPR, la coerente **più lontana dai bordi** della
+       propria fascia: margine in GG = min(GG − limite inferiore, limite superiore − GG), per A solo il
+       limite superiore, per F solo quello inferiore (nell'esempio D 50, E 150 → E); a parità la prima
+       in ordine A…F;
+    3. se nessuna zona è coerente (casi limite), la zona dei GG sull'anno intero (periodo F).
+    Prima vinceva sempre la prima in ordine A…F (la più "mite").
 * **Temperature di progetto statistiche** (non la UNI 10349-3): invernale = 1° percentile dei minimi
   giornalieri, estiva = 99° percentile dei massimi (come il ripiego di `legge10.py`), su **finestre
   mobili di 10 anni solari completi** (una per anno finale, dal 1949) e sui periodi fissi. Dieci anni sono
@@ -107,11 +117,15 @@ volta: ~7.900 "chiamate") e la verifica a campione (~40).
 * **Tendenze**: pendenza della regressione lineare dei GG sul periodo di zona, in GG per decennio, su
   tutta la serie, dal 1981/82 e sulle ultime 30 stagioni; pendenza della T media annua (°C/decennio).
 * **Confronto con il DPR**: differenza (assoluta e %) delle medie delle ultime 10 e 30 stagioni dai GG
-  di legge; zona che ne risulterebbe. In più una **proposta**: "DPR aggiornato" =
+  di legge; zona che ne risulterebbe. In più il **"DPR aggiornato"** (dal 27/10/2026 **mostrato sul sito
+  come stima**, senza valore normativo) =
   GG_DPR × GG(ultime N) / GG(1961–1990) della stessa serie, cioè il valore di legge spostato della
   variazione relativa osservata. Toglie gran parte dell'errore sistematico della cella (coste, città,
   fondovalle, vedi § 4). Il periodo 1961–1990 è un'ipotesi: il DPR non dichiara su quali anni sono
-  calcolati i suoi GG.
+  calcolati i suoi GG. Campi nel JSON di ogni comune (`confronto_dpr`): `dpr_aggiornato_10` e
+  `dpr_aggiornato_30` (GG di legge aggiornati con le ultime 10 / 30 stagioni), `zona_aggiornata_10` e
+  `zona_aggiornata_30` (zona dai GG aggiornati), `riferimento_rapporto` ("1961-1990") e `gg_rif` (GG medi
+  della serie sul periodo di riferimento); mancano per i comuni senza GG di legge univoci (fusioni).
 
 ## 3. Verifica a campione (26 comuni, tutti gli anni)
 

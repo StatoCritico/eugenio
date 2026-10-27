@@ -68,6 +68,11 @@ da `.gitignore`.
 
 - Codice: AGPL-3.0 (file `LICENSE`). Dati elaborati e report di EuGEnio: CC BY 4.0, riuso citando
   «Fonte: EuGEnio – eugenio.statocritico.it»; i valori ricavati dagli anni tipo CTI si possono solo citare.
+- **Nome e logo** non sono concessi in licenza: i nomi «EuGEnio» e «Stato Critico», il logo, il simbolo e la
+  scritta (file in `fase5-sito/sito/logo/` e `fase4-server/servizio/logo_eugenio.png`) restano esclusi dall'AGPL
+  e dalla CC BY e servono solo al funzionamento di questo sito. Si possono citare per indicare la provenienza
+  («basato su EuGEnio»), ma un mirror o un servizio derivato deve avere nome e logo propri e non deve presentarsi
+  come il sito ufficiale né come approvato da Stato Critico. Dettagli: pagina Licenza del sito, sezione «Nome e logo».
 - Liberi con attribuzione: Open-Meteo (CC BY 4.0), ISTAT e confini Gramscii (CC BY 4.0), Arpae
   (CC BY 4.0), ANNCSU (Agenzia delle Entrate e ISTAT, CC BY 4.0), Eurostat, Zornade (piano gratuito:
   link "Dati elaborati da Zornade" + fonti; OSM ODbL).

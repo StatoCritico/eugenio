@@ -21,7 +21,11 @@ function h(tag, cls, testo) {
 }
 function el(tag, attrs = {}, parent) {
   const e = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  for (const [k, v] of Object.entries(attrs)) {
+    // colori "var(--…)": nello stile, così seguono da soli il cambio di tema o di vestito
+    if ((k === "fill" || k === "stroke") && typeof v === "string" && v.startsWith("var(")) e.style.setProperty(k, v);
+    else e.setAttribute(k, v);
+  }
   if (parent) parent.appendChild(e);
   return e;
 }
@@ -245,7 +249,7 @@ async function caricaRegione(cod) {
   box.prepend(svg);
   const g = el("g", {}, svg);
   for (const c of m.comuni) {
-    const p = el("path", { d: c.d, fill: document.documentElement.dataset.theme === "light" ? css("--linea") : css("--bordo") }, g);
+    const p = el("path", { d: c.d, fill: "var(--comune-fuori)" }, g);
     p.addEventListener("click", () => tocca(c));
     p.addEventListener("mousemove", (e) => etichetta(e, `${c.nome} (${c.prov})`));
     p.addEventListener("mouseleave", () => ($("etichetta").style.display = "none"));
@@ -361,16 +365,16 @@ function colora() {
   const tipo = radio("area"), prov = $("provincia").value;
   const attiva = stato.ds && stato.ds.area;
   const servita = !stato.catalogo || stato.catalogo.regioni.includes(stato.regione);
-  const dentroColore = css("--primario");
+  const dentroColore = "var(--primario)";
   // fuori dalla selezione: nel tema scuro un grigio medio (con --linea i confini comunali non si vedevano)
-  const grigio = document.documentElement.dataset.theme === "light" ? css("--linea") : css("--bordo");
+  const grigio = "var(--comune-fuori)";   // --linea nel tema chiaro, --bordo nello scuro (stile.css)
   stato.inclusi.clear();
   for (const c of stato.comuniRegione) {
     const dentro = attiva && servita && (tipo === "tutti" || tipo === "regione" || (tipo === "provincia" && c.prov === prov)
       || (tipo === "comuni" && stato.scelti.has(c.istat)));
     if (dentro) stato.inclusi.add(c.istat);
     const p = stato.percorsi.get(c.istat);
-    p.setAttribute("fill", dentro ? dentroColore : grigio);
+    p.style.fill = dentro ? dentroColore : grigio;
     p.classList.toggle("scelto", tipo === "comuni" && stato.scelti.has(c.istat));
   }
 }

@@ -24,10 +24,15 @@ def test_periodi():
 
 
 def test_zona_coerente():
-    # come legge10.py: vince la prima zona coerente in ordine A..F (qui D: 2050 sul periodo D; anche E sarebbe
-    # coerente con 2250 sul periodo E)
-    assert ind.zona_coerente(np.array([1500, 1600, 1800, 2050, 2250, 2400])) == "D"
+    # regola del 27/10/2026: D ed E entrambe coerenti (2050 sul periodo D, 2250 sul periodo E)
+    g = np.array([1500, 1600, 1800, 2050, 2250, 2400])
+    assert ind.zona_coerente(g, "D") == "D"          # vince la zona del DPR se è coerente
+    assert ind.zona_coerente(g, "E") == "E"
+    assert ind.zona_coerente(g) == "E"               # senza DPR: margine D = 50 GG, E = 150 GG
+    assert ind.zona_coerente(g, "C") == "E"          # zona DPR non coerente: come senza DPR
     assert ind.zona_coerente(np.array([1500, 1600, 1800, 2150, 2350, 2600])) == "E"
+    assert ind.zona_coerente(np.array([1500, 1600, 1800, 2080, 2120, 2400])) == "D"   # D 20, E 19
+    assert ind.margine_fascia("F", 3050) == 50 and ind.margine_fascia("A", 550) == 50
 
 
 def test_quantile_da_estremi_uguale_a_numpy():

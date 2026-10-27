@@ -67,10 +67,14 @@ sito/
 costruisci_dpr412.py  rigenera dati/dpr412.* (Normattiva + elenchi ISTAT di comuni, soppressi e variazioni)
 abbinamento_dpr412.md scelte e casi dell'abbinamento al codice ISTAT attuale (refusi, fusioni, cambi di nome)
 costruisci_mappa.py  genera dati/mappa/ dai confini Gramscii (versione bloccata) e da comuni.parquet nazionale
-scarica_font.py      scarica una volta i caratteri (licenza OFL): i visitatori non chiamano Google Fonts
+scarica_font.py      scarica i caratteri usati (Hanken Grotesk, Barlow; OFL) e scrive font/font.css: i visitatori
+                     non chiamano Google Fonts; --solo-css riscrive solo font.css dai file presenti
+costruisci_pagine.py rimette in tutte le pagine testata, piè e parte comune del <head> da parti/, e il numero di
+                     versione (--versione); test in tests/test_costruisci_pagine.py
+parti/               testa.html, testata.html, piede.html: le parti comuni delle pagine, da modificare solo qui
 ```
 
-Menu di tutte le pagine: Previsione, Patrimonio, Legge 10, Dati storici, Come funziona, F.A.Q., Sitografia, Mirror, Contattaci, Iscriviti (modulo
+Menu di tutte le pagine: Previsioni, Patrimonio, Legge 10, Dati storici, Come funziona, F.A.Q., Sitografia, Mirror, Contattaci, Iscriviti (modulo
 di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occupano tutta la larghezza dello schermo
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
@@ -82,7 +86,18 @@ i comuni o la versione dei confini (vedi fase 7):
 
 ```bash
 python costruisci_mappa.py --comuni <archivio fase 3>/comuni.parquet
-python scarica_font.py
+python scarica_font.py             # solo se cambiano i caratteri; con --solo-css non usa la rete
+```
+
+**Testata, piè e versione (dal 27/10/2026 sera).** Testata, riga finale del piè e parte comune del `<head>` (script del
+tema e del vestito, foglio di stile, icone) si modificano **solo** in `parti/`; nelle pagine stanno tra i marcatori
+`<!-- testa -->`, `<!-- testata -->`, `<!-- piede -->` (e i loro `<!-- /… -->`) e si rigenerano con lo script, che segna
+da sé la voce di menu della pagina (`aria-current="page"`). Le fonti di ogni pagina strumento (`.piede-fonti`) restano
+nella pagina, sopra la riga finale. Prima di ogni pubblicazione che cambia stile, script o pagine:
+```bash
+python costruisci_pagine.py --versione 20261028a   # aaaammgg + lettera: nuova versione in pagine e script
+python costruisci_pagine.py --controlla            # 0 = tutto aggiornato (lo usano anche i test)
+python -m pytest tests                             # idempotenza, voce attiva, versione
 ```
 La regione mostrata da `index.html` e `legge10.html` si sceglie con `?regione=RR` nell'indirizzo (predefinita 08,
 Emilia-Romagna). `legge10.html?comune=037006` apre direttamente un comune (il link si aggiorna a ogni scelta).
@@ -98,8 +113,8 @@ scp ..\..\sito.tar.gz eugenio:~/
 ssh eugenio "tar -xzmf ~/sito.tar.gz --no-overwrite-dir -C /srv/energia/sito && rm ~/sito.tar.gz"
 ```
 Caddy lo serve subito, senza riavvii. Le pagine richiamano `stile.css` e gli script con un numero di versione
-(`?v=20261027r`): quando si cambiano stile o script, aumentarlo in tutte le pagine, così i browser non usano la copia
-vecchia rimasta in memoria.
+(`?v=20261027t`): quando si cambiano stile o script, si aumenta con `costruisci_pagine.py --versione …`, così i
+browser e Cloudflare non usano la copia vecchia rimasta in memoria.
 
 Per vedere solo la grafica in locale: `python -m http.server -d sito 8000` (mappe visibili, dati no: servono le API).
 
@@ -186,4 +201,20 @@ Se il comune non ha una stagione completa, la pagina mostra il messaggio dell'AP
   quanto l'edificio e il tetto che sporge; comandi della piccola mappa a sinistra, in colonna (+, −, ⟲ e per ultima la
   freccia ↓ che mostra tutta l'Italia nella mappa grande), ciascuno con il suggerimento; mappa regionale nel tema scuro
   con colori chiari e la regione scelta più luminosa (dettagli in `sito/README_stile.md`).
-- Versione cache: `?v=20261027r`.
+- Versione cache: `?v=20261027t`.
+- 27/10/2026 notte:
+  - testata, piè e `<head>` comuni in `parti/` con `costruisci_pagine.py` (vedi «Preparazione»);
+  - **cambio di vestito o di tema senza ricaricare la pagina** (nella Previsione il file caricato resta): `aspetto.js`
+    cambia `data-theme`/`data-vestito` e i loghi, poi emette l'evento `eugenio:aspetto`. Mappe e grafici disegnano i
+    colori come `var(--…)` nello stile degli elementi SVG, quindi cambiano da soli; i colori calcolati (fondo dei comuni
+    della regione, scala dei gradi giorno della Previsione, striscia delle zone del clima dal 1940) li rifanno
+    `app.js`, `legge10.js` e `clima_storico.js` all'evento. Per ogni altro colore scritto come valore, `aspetto.js`
+    sostituisce il vecchio valore di una variabile con il nuovo (rete di sicurezza). In Dati storici i comuni fuori
+    dalla selezione usano `--comune-fuori` (grigio medio nel tema scuro, chiaro nel chiaro);
+  - `scarica_font.py` riscritto: solo Hanken Grotesk (variabile) e Barlow 500/600/700, stessi file e stesso `font.css`
+    di oggi (verificato byte per byte), niente Bricolage;
+  - **vista d'Italia**: la freccia ↓ accanto alla piccola mappa mostra tutta l'Italia nella mappa grande, con le
+    regioni colorate; un clic su una regione la sceglie (Previsioni e Legge 10 si ricaricano sulla regione, Patrimonio e
+    Dati storici cambiano senza ricaricare). Con `?vista=italia` nell'indirizzo la mappa grande si apre già su tutta
+    l'Italia. Alla prima visita si apre ancora l'Emilia-Romagna (unica con il meteo completo); per aprire invece
+    l'Italia basta `ITALIA_ALLA_PRIMA_VISITA = true` in `minimappa.js`.

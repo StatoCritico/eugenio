@@ -18,9 +18,12 @@ Nota tecnica sullo stile grafico di EuGEnio (27/10/2026). Il progetto è di Clau
     elenco è sempre aperto nel menu, alla voce «Aspetto».
   - **Tastiera:** frecce, Inizio e Fine per muoversi, Invio o Spazio per scegliere, Esc per chiudere. Un clic fuori
     dall'elenco lo chiude.
-- Dopo la scelta di un tema o di un vestito **la pagina si ricarica**, perché mappe e grafici leggono i colori dal CSS
-  (`getComputedStyle`) quando vengono disegnati. Se il browser non salva le scelte, il cambio vale solo per la pagina
-  aperta e i disegni già fatti restano con i colori di prima.
+- Dopo la scelta di un tema o di un vestito **la pagina non si ricarica** (dal 27/10/2026): mappe e grafici scrivono i
+  colori come `var(--…)` nello stile degli elementi SVG e cambiano da soli; i colori calcolati (fondo dei comuni,
+  scala dei gradi giorno, striscia delle zone) li rifanno gli script all'evento `eugenio:aspetto` che `aspetto.js`
+  emette dopo il cambio. Chi aggiunge un disegno: colori come `"var(--nome)"` (la funzione `el()` degli script li mette
+  nello stile), oppure ascoltare `eugenio:aspetto`. Se il browser non salva le scelte, il cambio vale per la pagina
+  aperta.
 
 ## Loghi
 

@@ -34,6 +34,32 @@ def zona_da_gg(gg: float) -> str:
     return "F"
 
 
+def margine_fascia(zona: str, gg: float) -> float:
+    """Distanza in GG dal bordo più vicino della fascia della zona (art. 2): per A conta solo il limite
+    superiore, per F solo quello inferiore."""
+    _, lo, hi = next(x for x in ZONE if x[0] == zona)
+    if zona == "A":
+        return hi - gg
+    if zona == "F":
+        return gg - (lo - 1)
+    return min(gg - (lo - 1), hi - gg)
+
+
+def zona_risultante(gg_zona: dict, zona_dpr: str | None = None) -> str:
+    """Zona che risulta dai GG (regola del 27/10/2026, uguale in fase9-clima-storico e cti_try).
+
+    "Coerenti" sono le zone i cui GG, calcolati sul loro stesso periodo di accensione, cadono nella loro fascia
+    (a cavallo D/E possono esserlo due zone). Si prende la zona del DPR 412/93 se è tra le coerenti; altrimenti
+    (o senza zona DPR) la coerente più lontana dai bordi della propria fascia (a parità la prima in ordine A…F);
+    se nessuna è coerente, la zona dei GG sull'anno intero."""
+    coerenti = [z for z in PERIODI if zona_da_gg(gg_zona[z]) == z]
+    if not coerenti:
+        return zona_da_gg(gg_zona["F"])
+    if zona_dpr in coerenti:
+        return zona_dpr
+    return max(coerenti, key=lambda z: margine_fascia(z, gg_zona[z]))
+
+
 def _nel_periodo(date: pd.DatetimeIndex, zona: str) -> np.ndarray:
     per = PERIODI[zona]
     if per is None:
@@ -62,9 +88,11 @@ def gradi_giorno(g: pd.DataFrame, zona: str) -> pd.Series:
 
 
 def calcola(giornaliero: pd.DataFrame, anni: int = 10, orario: pd.DataFrame | None = None,
-            ufficiali: dict | None = None, fino_a: str | None = None) -> dict:
+            ufficiali: dict | None = None, fino_a: str | None = None, zona_dpr: str | None = None) -> dict:
     """giornaliero: colonne data, t_media, t_min, t_max, ur_media, rad_globale_kwh_m2, rad_diffusa_kwh_m2,
-    vento_medio_kmh (formato di meteo_storico.aggrega.giornaliero). Usa le ultime `anni` stagioni complete."""
+    vento_medio_kmh (formato di meteo_storico.aggrega.giornaliero). Usa le ultime `anni` stagioni complete.
+    zona_dpr: zona del comune nell'Allegato A del DPR 412/93, se c'è: decide la zona risultante quando più zone
+    sono coerenti (vedi zona_risultante)."""
     g = giornaliero.copy()
     g["data"] = pd.to_datetime(g.data)
     if fino_a:
@@ -94,9 +122,8 @@ def calcola(giornaliero: pd.DataFrame, anni: int = 10, orario: pd.DataFrame | No
     # --- gradi giorno e zona climatica
     gg_anno_intero = (20 - g.t_media).clip(lower=0).groupby(g.stagione).sum()
     gg_zona = {z: float(gradi_giorno(g, z).mean()) for z in PERIODI}
-    # zona coerente: quella in cui cadono i GG calcolati sul suo stesso periodo
-    coerenti = [z for z in PERIODI if zona_da_gg(gg_zona[z]) == z]
-    zona_calc = coerenti[0] if coerenti else zona_da_gg(gg_zona["F"])
+    # zona risultante: tra le zone coerenti, quella del DPR se c'è, altrimenti la più centrale nella sua fascia
+    zona_calc = zona_risultante(gg_zona, zona_dpr or (ufficiali or {}).get("zona"))
     zona_rif = (ufficiali or {}).get("zona") or zona_calc
     serie_gg = gradi_giorno(g, zona_rif)
     if len(serie_gg) >= 5:   # con meno stagioni la tendenza non è significativa

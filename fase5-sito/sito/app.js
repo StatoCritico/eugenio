@@ -16,7 +16,11 @@ const COV = {
 
 function el(tag, attrs = {}, parent) {
   const e = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  for (const [k, v] of Object.entries(attrs)) {
+    // colori "var(--…)": nello stile, così seguono da soli il cambio di tema o di vestito
+    if ((k === "fill" || k === "stroke") && typeof v === "string" && v.startsWith("var(")) e.style.setProperty(k, v);
+    else e.setAttribute(k, v);
+  }
   if (parent) parent.appendChild(e);
   return e;
 }
@@ -41,7 +45,7 @@ function rgb(c) {
   const m = c.match(/\d+(\.\d+)?/g);
   return m && m.length >= 3 ? m.slice(0, 3).map(Number) : [128, 128, 128];
 }
-let scala = null;   // [da, a], letti una volta: un cambio di tema o di vestito ricarica la pagina
+let scala = null;   // [da, a], letti alla prima occorrenza; si rileggono al cambio di tema o di vestito
 function colore(t) { // 0..1 → da --scala-da (pochi gradi giorno, chiaro) a --scala-a (molti, scuro)
   if (!scala) scala = [rgb(css("--scala-da")), rgb(css("--scala-a"))];
   const [a, b] = scala;
@@ -59,7 +63,7 @@ async function caricaMappa() {
   $("mappa").prepend(svg);
   const g = el("g", {}, svg);
   for (const c of m.comuni) {
-    const p = el("path", { d: c.d, fill: (window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : css("--linea")), tabindex: "-1" }, g);
+    const p = el("path", { d: c.d, fill: (window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : "var(--linea)"), tabindex: "-1" }, g);
     p.dataset.istat = c.istat;
     const t = el("title", {}, p); t.textContent = c.nome;
     stato.percorsi.set(c.istat, p);
@@ -86,6 +90,7 @@ async function caricaMappa() {
 }
 
 function coloraMappa(d) {
+  stato.mappa = d;
   const v = Object.values(d.comuni).map((x) => x.gg);
   if (!v.length) return;
   const min = Math.min(...v), max = Math.max(...v);
@@ -249,7 +254,7 @@ function mostraRisultato(r) {
     if (debole && inizio === null) inizio = i;
     if ((!debole || i === pr.t.length - 1) && inizio !== null) {
       const fine = debole ? i : i - 1;
-      el("rect", { x: X(n0 + inizio), y: su, width: X(n0 + fine) - X(n0 + inizio), height: H - su - gi, fill: css("--tinta"), opacity: .55 }, svg);
+      el("rect", { x: X(n0 + inizio), y: su, width: X(n0 + fine) - X(n0 + inizio), height: H - su - gi, fill: "var(--tinta)", opacity: .55 }, svg);
       const t = el("text", { x: X(n0 + inizio) + 4, y: su + 12 }, svg);
       t.textContent = pr.fonte_meteo[fine] === "climatologia" ? "meteo: climatologia" : "meteo: modello globale";
       inizio = null;
@@ -258,7 +263,7 @@ function mostraRisultato(r) {
   // griglia e assi
   for (let k = 0; k <= 4; k++) {
     const v = ymin + (ymax - ymin) * k / 4, y = Y(v);
-    el("line", { x1: sx, x2: W - dx, y1: y, y2: y, stroke: css("--linea"), "stroke-width": .6 }, svg);
+    el("line", { x1: sx, x2: W - dx, y1: y, y2: y, stroke: "var(--linea)", "stroke-width": .6 }, svg);
     const t = el("text", { x: sx - 6, y: y + 4, "text-anchor": "end" }, svg);
     t.textContent = v.toLocaleString("it-IT", { maximumFractionDigits: v < 10 ? 1 : 0 });
   }
@@ -273,7 +278,7 @@ function mostraRisultato(r) {
   }
   const area = (lo, hi, op) => {
     const su_ = pr[hi].map((v, i) => `${X(n0 + i)},${Y(v)}`), giu = pr[lo].map((v, i) => `${X(n0 + i)},${Y(v)}`).reverse();
-    el("polygon", { points: [...su_, ...giu].join(" "), fill: css("--serie-1"), opacity: op }, svg);
+    el("polygon", { points: [...su_, ...giu].join(" "), fill: "var(--serie-1)", opacity: op }, svg);
   };
   area("0.1", "0.9", .18); area("0.3", "0.7", .3);
   const linea = (vals, off, col, w, tratt) => {
@@ -281,16 +286,16 @@ function mostraRisultato(r) {
     vals.forEach((v, i) => { if (v === null) { su_ = false; return; } dpath += `${su_ ? "L" : "M"}${X(off + i)},${Y(v)}`; su_ = true; });
     el("path", { d: dpath, fill: "none", stroke: col, "stroke-width": w, "stroke-dasharray": tratt || "none", "stroke-linejoin": "round" }, svg);
   };
-  linea(st.v, 0, css("--inchiostro"), 1.3);
-  if (r.verifica) linea(r.verifica.reale, n0, css("--serie-2"), 1.6, "7 4");
-  linea(pr["0.5"], n0, css("--serie-1"), 2);
-  el("line", { x1: X(n0 - .5), x2: X(n0 - .5), y1: su, y2: H - gi, stroke: css("--tenue"), "stroke-dasharray": "2 3" }, svg);
+  linea(st.v, 0, "var(--inchiostro)", 1.3);
+  if (r.verifica) linea(r.verifica.reale, n0, "var(--serie-2)", 1.6, "7 4");
+  linea(pr["0.5"], n0, "var(--serie-1)", 2);
+  el("line", { x1: X(n0 - .5), x2: X(n0 - .5), y1: su, y2: H - gi, stroke: "var(--tenue)", "stroke-dasharray": "2 3" }, svg);
 
   const leg = document.createElement("div"); leg.className = "legenda";
-  leg.innerHTML = `<span><i class="linea" style="color:${css("--inchiostro")}"></i>dati caricati</span>` +
-    (r.verifica ? `<span><i class="linea tratto" style="color:${css("--serie-2")}"></i>valori reali nascosti al modello</span>` : "") +
-    `<span><i class="linea" style="color:${css("--serie-1")};border-top-width:3px"></i>previsione (mediana)</span>` +
-    `<span><i style="background:${css("--serie-1")};opacity:.45"></i>4 casi su 10 / 8 casi su 10</span>`;
+  leg.innerHTML = `<span><i class="linea" style="color:${"var(--inchiostro)"}"></i>dati caricati</span>` +
+    (r.verifica ? `<span><i class="linea tratto" style="color:${"var(--serie-2)"}"></i>valori reali nascosti al modello</span>` : "") +
+    `<span><i class="linea" style="color:${"var(--serie-1)"};border-top-width:3px"></i>previsione (mediana)</span>` +
+    `<span><i style="background:${"var(--serie-1)"};opacity:.45"></i>4 casi su 10 / 8 casi su 10</span>`;
   g.appendChild(leg);
 
   if (r.verifica) {
@@ -340,4 +345,13 @@ function mostraRisultato(r) {
 function corpoReport(r, richiesta) { return { ...r, richiesta: richiesta || null }; }
 
 disegnaCovariate();
+
+// cambio di tema o di vestito (aspetto.js, senza ricaricare la pagina): i grafici usano "var(--…)" e cambiano da
+// soli; qui si rifanno i colori calcolati della mappa (fondo dei comuni e scala dei gradi giorno)
+document.addEventListener("eugenio:aspetto", () => {
+  scala = null;
+  const fondo = window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : css("--linea");
+  stato.percorsi.forEach((p) => p.setAttribute("fill", fondo));
+  if (stato.mappa) coloraMappa(stato.mappa);
+});
 caricaMappa().catch((e) => messaggio(`Mappa non disponibile: ${e.message}`, true));

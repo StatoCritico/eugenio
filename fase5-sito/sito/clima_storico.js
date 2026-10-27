@@ -22,7 +22,7 @@
     return m && m.length >= 3 ? m.slice(0, 3).map(Number) : [128, 128, 128];
   };
   function coloriZona() {
-    const a = rgb(css("--scala-da")), b = rgb(css("--scala-a")), z = { "-": css("--linea") };
+    const a = rgb(css("--scala-da")), b = rgb(css("--scala-a")), z = { "-": "var(--linea)" };
     "ABCDEF".split("").forEach((k, i) => { z[k] = `rgb(${a.map((x, j) => Math.round(x + (b[j] - x) * i / 5)).join(",")})`; });
     return z;
   }
@@ -31,7 +31,11 @@
   const segno = (x, dec = 0) => (x === null || x === undefined) ? "—" : `${x > 0 ? "+" : ""}${num(x, dec)}`;
   function el(tag, attrs = {}, parent) {
     const e = document.createElementNS(NS, tag);
-    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    for (const [k, v] of Object.entries(attrs)) {
+      // colori "var(--…)": nello stile, così seguono da soli il cambio di tema o di vestito
+      if ((k === "fill" || k === "stroke") && typeof v === "string" && v.startsWith("var(")) e.style.setProperty(k, v);
+      else e.setAttribute(k, v);
+    }
     if (parent) parent.appendChild(e);
     return e;
   }
@@ -95,12 +99,12 @@
     const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
       "aria-label": `Gradi giorno per stagione dalla ${etichettaStagione(S.da)} alla ${etichettaStagione(x[x.length - 1])}` }, box);
     for (let q = ymin; q <= ymax; q += passoY) {
-      el("line", { x1: sx, x2: W - dx, y1: Y(q), y2: Y(q), stroke: css("--linea"), "stroke-width": .6 }, svg);
+      el("line", { x1: sx, x2: W - dx, y1: Y(q), y2: Y(q), stroke: "var(--linea)", "stroke-width": .6 }, svg);
       el("text", { x: sx - 6, y: Y(q) + 4, "text-anchor": "end" }, svg).textContent = num(q);
     }
     // confini di zona del DPR 412/93 che cadono nella scala
     for (const [s, t] of SOGLIE) if (s > ymin && s < ymax) {
-      el("line", { x1: sx, x2: W - dx, y1: Y(s), y2: Y(s), stroke: css("--tenue"), "stroke-width": .8, "stroke-dasharray": "1 3" }, svg);
+      el("line", { x1: sx, x2: W - dx, y1: Y(s), y2: Y(s), stroke: "var(--tenue)", "stroke-width": .8, "stroke-dasharray": "1 3" }, svg);
       el("text", { x: W - dx - 2, y: Y(s) - 3, "text-anchor": "end", class: "piccolo" }, svg).textContent = `zona ${t}`;
     }
     // barre sottili: stagioni ricostruite da ERA5 (prima del 1950) più chiare
@@ -108,37 +112,37 @@
     v.forEach((q, i) => {
       if (q === null) return;
       const r = el("rect", { x: X(i) - larg / 2, y: Y(q), width: larg, height: Y(ymin) - Y(q), rx: 1,
-        fill: css("--primario"), opacity: S.fonte[i] === "L" ? .55 : .3 }, svg);
+        fill: "var(--primario)", opacity: S.fonte[i] === "L" ? .55 : .3 }, svg);
       el("title", {}, r).textContent = `${etichettaStagione(x[i])}: ${num(q)} GG, zona ${S.zona[i]}`
         + (S.fonte[i] === "L" ? "" : " (ERA5 raccordato)");
     });
     // media mobile su 10 stagioni
     const mm = mediaMobile(v, 10);
     const pts = mm.map((q, i) => q === null ? null : `${X(i)},${Y(q)}`).filter(Boolean).join(" ");
-    el("polyline", { points: pts, fill: "none", stroke: css("--serie-2"), "stroke-width": 2.2 }, svg);
+    el("polyline", { points: pts, fill: "none", stroke: "var(--serie-2)", "stroke-width": 2.2 }, svg);
     // tendenza lineare su tutta la serie
     const rg = regressione(x, v);
     if (rg) el("line", { x1: X(0), x2: X(v.length - 1), y1: Y(rg.a + rg.b * x[0]), y2: Y(rg.a + rg.b * x[x.length - 1]),
-      stroke: css("--inchiostro"), "stroke-width": 1, "stroke-dasharray": "4 3" }, svg);
+      stroke: "var(--inchiostro)", "stroke-width": 1, "stroke-dasharray": "4 3" }, svg);
     if (ggDpr !== null && ggDpr !== undefined) {
-      el("line", { x1: sx, x2: W - dx, y1: Y(ggDpr), y2: Y(ggDpr), stroke: css("--segno"), "stroke-width": 2, "stroke-dasharray": "7 4", class: "legge" }, svg);
-      const t = el("text", { x: sx + 6, y: Y(ggDpr) - 6, class: "etichetta-legge" }, svg); t.textContent = `DPR 412/93 ${num(ggDpr)}`; t.style.fill = css("--segno");
+      el("line", { x1: sx, x2: W - dx, y1: Y(ggDpr), y2: Y(ggDpr), stroke: "var(--segno)", "stroke-width": 2, "stroke-dasharray": "7 4", class: "legge" }, svg);
+      const t = el("text", { x: sx + 6, y: Y(ggDpr) - 6, class: "etichetta-legge" }, svg); t.textContent = `DPR 412/93 ${num(ggDpr)}`; t.style.fill = "var(--segno)";
     }
     // asse delle stagioni ogni 10 anni e striscia delle zone
     const COLORI_ZONA = coloriZona();
     x.forEach((s, i) => {
       if (s % 10 === 0) el("text", { x: X(i), y: H - gi + 16, "text-anchor": "middle" }, svg).textContent = etichettaStagione(s);
       const r = el("rect", { x: X(i) - (W - sx - dx) / v.length / 2, y: H - 14, width: (W - sx - dx) / v.length + .3, height: 10,
-        fill: COLORI_ZONA[S.zona[i]] || COLORI_ZONA["-"] }, svg);
+        fill: COLORI_ZONA[S.zona[i]] || COLORI_ZONA["-"], "data-zona": S.zona[i] in COLORI_ZONA ? S.zona[i] : "-" }, svg);
       el("title", {}, r).textContent = `${etichettaStagione(s)}: zona ${S.zona[i]}`;
     });
     const leg = h("div", "legenda");
     const voce = (cl, colore, testo) => { const s = h("span"); const i = h("i", cl); i.style.color = colore;
       i.style.background = cl ? "" : colore; s.append(i, testo); leg.appendChild(s); };
-    voce(null, css("--primario"), "gradi giorno della stagione (più chiari: prima del 1950, da ERA5)");
-    voce("linea", css("--serie-2"), "media mobile su 10 stagioni");
-    voce("linea tratto", css("--inchiostro"), `tendenza: ${segno(d.tendenze.gg_per_decennio.tutta)} GG per decennio`);
-    if (ggDpr !== null && ggDpr !== undefined) voce("linea tratto", css("--segno"), `valore di legge: ${num(ggDpr)}`);
+    voce(null, "var(--primario)", "gradi giorno della stagione (più chiari: prima del 1950, da ERA5)");
+    voce("linea", "var(--serie-2)", "media mobile su 10 stagioni");
+    voce("linea tratto", "var(--inchiostro)", `tendenza: ${segno(d.tendenze.gg_per_decennio.tutta)} GG per decennio`);
+    if (ggDpr !== null && ggDpr !== undefined) voce("linea tratto", "var(--segno)", `valore di legge: ${num(ggDpr)}`);
     leg.appendChild(h("span", null, "striscia in basso: zona climatica che risulterebbe da ogni stagione, dalla A (chiara) alla F (scura)"));
     box.appendChild(leg);
   }
@@ -154,18 +158,18 @@
     const X = (i) => sx + (W - sx - dx) * i / Math.max(1, p.fine.length - 1);
     const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Temperature di progetto su finestre di 10 anni" }, box);
     for (let q = lo; q <= hi; q += 5) {
-      el("line", { x1: sx, x2: W - dx, y1: Y(q), y2: Y(q), stroke: css("--linea"), "stroke-width": .6 }, svg);
+      el("line", { x1: sx, x2: W - dx, y1: Y(q), y2: Y(q), stroke: "var(--linea)", "stroke-width": .6 }, svg);
       el("text", { x: sx - 6, y: Y(q) + 4, "text-anchor": "end" }, svg).textContent = `${q}°`;
     }
     // estiva nella serie 1 (linea continua), invernale nella serie 2 (tratto 7 4)
-    for (const [serie, colore, tratto] of [[p.est, css("--serie-1"), "none"], [p.inv, css("--serie-2"), "7 4"]])
+    for (const [serie, colore, tratto] of [[p.est, "var(--serie-1)", "none"], [p.inv, "var(--serie-2)", "7 4"]])
       el("polyline", { fill: "none", stroke: colore, "stroke-width": 2, "stroke-dasharray": tratto,
         points: serie.map((q, i) => q === null ? null : `${X(i)},${Y(q)}`).filter(Boolean).join(" ") }, svg);
     p.fine.forEach((a, i) => { if (a % 10 === 0) el("text", { x: X(i), y: H - 8, "text-anchor": "middle" }, svg).textContent = `${a - 9}–${String(a).slice(2)}`; });
     const leg = h("div", "legenda");
     const voce = (cl, colore, testo) => { const s = h("span"); const i = h("i", cl); i.style.color = colore; s.append(i, testo); leg.appendChild(s); };
-    voce("linea tratto", css("--serie-2"), `invernale (1° percentile dei minimi giornalieri), ultima finestra ${num(p.inv[p.inv.length - 1], 1)} °C`);
-    voce("linea", css("--serie-1"), `estiva (99° percentile dei massimi), ultima finestra ${num(p.est[p.est.length - 1], 1)} °C`);
+    voce("linea tratto", "var(--serie-2)", `invernale (1° percentile dei minimi giornalieri), ultima finestra ${num(p.inv[p.inv.length - 1], 1)} °C`);
+    voce("linea", "var(--serie-1)", `estiva (99° percentile dei massimi), ultima finestra ${num(p.est[p.est.length - 1], 1)} °C`);
     box.appendChild(leg);
   }
 
@@ -208,9 +212,15 @@
       cifra(segno(T.gg_per_decennio.tutta), "GG per decennio", `regressione su tutte le stagioni; dal 1981: ${segno(T.gg_per_decennio.dal_1981)}`),
       cifra(`${segno(T.t_media_annua_per_decennio, 2)} °C`, "temperatura media annua per decennio", null),
     );
-    // "DPR aggiornato": proposta da confermare, per ora non mostrata
-    if (false && c.dpr_aggiornato_10) cifre.appendChild(cifra(num(c.dpr_aggiornato_10), "GG del DPR aggiornati alle ultime 10 stagioni",
-      `GG di legge × variazione della serie rispetto al ${c.riferimento_rapporto}: zona ${c.zona_aggiornata_10}`));
+    // "DPR aggiornato" (decisione del 27/10/2026): una stima, non un valore di legge
+    if (c.dpr_aggiornato_10) {
+      const st = cifra(num(c.dpr_aggiornato_10), "GG di legge aggiornati al clima delle ultime 10 stagioni (stima)",
+        `GG del DPR × variazione della serie dal ${c.riferimento_rapporto}: zona ${c.zona_aggiornata_10}`
+        + (c.zona_dpr && c.zona_aggiornata_10 !== c.zona_dpr ? ` invece di ${c.zona_dpr}` : "") + ". Non ha valore normativo. ");
+      const a = h("a", null, "Cos'è"); a.href = "faq.html#dpr-stima";
+      st.querySelector("small").appendChild(a);
+      cifre.appendChild(st);
+    }
     box.appendChild(cifre);
     const g1 = h("div", "grafico"); box.appendChild(g1); graficoGG(g1, d, ggDpr);
     box.appendChild(h("p", "aiuto", `GG sul periodo di accensione della zona ${d.zona_riferimento} (${d.origine_zona}). `
@@ -251,6 +261,12 @@
       + "Copernicus Climate Change Service. Valori dal clima ricostruito: non sostituiscono quelli normativi.");
     box.appendChild(f);
   }
+
+  // cambio di tema o di vestito (aspetto.js, senza ricaricare): la striscia delle zone ha colori calcolati
+  document.addEventListener("eugenio:aspetto", () => {
+    const z = coloriZona();
+    document.querySelectorAll("rect[data-zona]").forEach((r) => { if (r.dataset.zona !== "-") r.setAttribute("fill", z[r.dataset.zona]); });
+  });
 
   window.EUGENIO_CLIMA = { mostra };
 })();
