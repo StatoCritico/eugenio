@@ -58,6 +58,25 @@ def libro_xlsx(b: bytes):
     return load_workbook(io.BytesIO(b))
 
 
+def odf_parti(b: bytes) -> dict[str, str]:
+    """Controlli del pacchetto OpenDocument (ODF 1.2): 'mimetype' primo e non compresso, manifest presente;
+    restituisce i file XML principali come testo."""
+    import zipfile
+    z = zipfile.ZipFile(io.BytesIO(b))
+    primo = z.infolist()[0]
+    assert primo.filename == "mimetype" and primo.compress_type == zipfile.ZIP_STORED
+    assert "META-INF/manifest.xml" in z.namelist()
+    return {n: z.read(n).decode("utf-8") for n in ("mimetype", "content.xml", "styles.xml", "meta.xml",
+                                                    "META-INF/manifest.xml")}
+
+
+def solo_testo_odf(xml: str) -> str:
+    """Testo visibile di un content.xml/styles.xml (senza tag, con le entità risolte)."""
+    import html
+    import re
+    return html.unescape(re.sub(r"<[^>]+>", " ", xml))
+
+
 def tutto_xlsx(wb) -> str:
     return "\n".join(str(c.value) for ws in wb.worksheets for r in ws.iter_rows() for c in r if c.value is not None)
 
@@ -139,6 +158,54 @@ def test_xlsx(doc):
     for atteso in ("Relazione di prova – Forlì", "Weather data by Open-Meteo.com (CC BY 4.0)", "UNI 10349",
                    "Prodotto da EuGEnio – eugenio.statocritico.it", "Zona climatica"):
         assert atteso in t, atteso
+
+
+def test_odt(doc):
+    p = odf_parti(R.genera(doc, "odt"))
+    assert p["mimetype"] == "application/vnd.oasis.opendocument.text"
+    t = " ".join(solo_testo_odf(p["content.xml"]).split())
+    for atteso in ("Relazione di prova – Forlì", "≥ 20 °C", "12 €", "1.234,5", "02/01/2026 08:00", "-5,3 °C",
+                   "prima voce già fatta", "UNI 10349", "Fonti e attribuzioni", "https://open-meteo.com/",
+                   "Grafico PNG", R.TITOLO_AVVERTENZE, R.CITAZIONE):
+        assert atteso in t, atteso
+    assert 'xlink:href="https://open-meteo.com/"' in p["content.xml"]
+    stili = p["styles.xml"]
+    testa = " ".join(solo_testo_odf(stili).split())
+    assert doc.titolo in testa and "Prodotto da EuGEnio – eugenio.statocritico.it" in testa
+    assert "<text:page-number" in stili and "<text:page-count" in stili
+    assert R.PIE_AVVERTENZA.split(":")[0] in testa
+    assert 'fo:page-width="21cm"' in stili and 'fo:page-height="29.7cm"' in stili     # A4 verticale
+    assert "#" + R.COLORE_LINK.lower() in (p["content.xml"] + stili).lower()             # collegamenti blu scuro
+    assert "Pictures/logo_eugenio.png" in stili and "Pictures/logo_eugenio.png" in p["META-INF/manifest.xml"]
+    assert "EuGEnio" in p["meta.xml"]
+
+
+def test_ods(doc):
+    p = odf_parti(R.genera(doc, "ods"))
+    assert p["mimetype"] == "application/vnd.oasis.opendocument.spreadsheet"
+    x = p["content.xml"]
+    assert 'table:name="Info"' in x and 'table:name="Consumi mensili"' in x
+    assert 'office:value-type="float" office:value="1234.5"' in x               # numero, non testo
+    assert 'office:value-type="date" office:date-value="2026-01-01"' in x
+    assert 'office:date-value="2026-01-02T08:00"' in x
+    assert "table:formula" not in x and "=1+1" in x                            # mai formule dai dati
+    t = " ".join(solo_testo_odf(x).split())
+    for atteso in ("Relazione di prova – Forlì", "Weather data by Open-Meteo.com (CC BY 4.0)", "UNI 10349",
+                   R.INTESTAZIONE, "Zona climatica", R.TITOLO_AVVERTENZE, R.CITAZIONE):
+        assert atteso in t, atteso
+    stili = " ".join(solo_testo_odf(p["styles.xml"]).split())
+    assert "EuGEnio" in stili and doc.titolo in stili and R.PIE_AVVERTENZA_XLSX in stili
+    assert "<text:page-number" in p["styles.xml"]
+    import pandas as pd                         # rilettura con il lettore ODF di pandas (odfpy)
+    fogli = pd.read_excel(io.BytesIO(R.genera(doc, "ods")), engine="odf", sheet_name=None)
+    assert list(fogli) == ["Info", "Consumi mensili"]
+    assert fogli["Consumi mensili"]["Energia (kWh)"].tolist()[:2] == [1234.5, 987]
+
+
+def test_odf_senza_logo(doc, monkeypatch):
+    monkeypatch.setattr(R, "LOGO_PNG", None)
+    assert "Pictures/logo" not in odf_parti(R.genera(doc, "odt"))["styles.xml"]
+    assert "Pictures/logo" not in odf_parti(R.genera(doc, "ods"))["content.xml"]
 
 
 def test_intestazione_e_avvertenze_docx(doc):
@@ -444,7 +511,9 @@ def test_report_indicatori():
 
 def test_rotta_generica(client):
     c, _ = client
-    for formato, tipo in R.FORMATI.items():
+    assert R.formati_attivi() == ("pdf", "xlsx", "ods")             # dal 28/10/2026: solo PDF e dati grezzi
+    for formato in R.formati_attivi():
+        tipo = R.FORMATI[formato]
         r = c.post(f"/api/report?formato={formato}", json=ESEMPIO)
         assert r.status_code == 200, r.text
         assert r.headers["content-type"] == tipo
@@ -458,7 +527,7 @@ def test_rotte_servizi(client):
             "patrimonio": (PATRIMONIO, "patrimonio_geolocalizzato"),
             "indicatori": (INDICATORI, "indicatori_energia_080_114")}
     for tipo, (corpo, nome) in casi.items():
-        for formato in R.FORMATI:
+        for formato in R.formati_attivi():
             r = c.post(f"/api/report/{tipo}?formato={formato}", json=corpo)
             assert r.status_code == 200, (tipo, formato, r.text)
             assert f'filename="{nome}.{formato}"' in r.headers["content-disposition"]
@@ -466,7 +535,7 @@ def test_rotte_servizi(client):
 
 def test_rotte_errori(client, monkeypatch):
     c, A = client
-    r = c.post("/api/report?formato=odt", json=ESEMPIO)
+    r = c.post("/api/report?formato=rtf", json=ESEMPIO)
     assert r.status_code == 400 and "Formato non supportato" in r.json()["detail"]
     r = c.post("/api/report/bolletta?formato=pdf", json={})
     assert r.status_code == 400 and "Tipo di report sconosciuto" in r.json()["detail"]
@@ -485,6 +554,26 @@ def test_rotte_errori(client, monkeypatch):
     assert c.post("/api/report?formato=xlsx", json=ESEMPIO).status_code == 200
     r = c.post("/api/report?formato=xlsx", json=ESEMPIO)
     assert r.status_code == 429 and "Troppe richieste" in r.json()["detail"]
+    A._storia.clear()
+
+
+def test_word_e_odt_spenti(client, monkeypatch):
+    """Word e ODT sono spenti: 410 con un messaggio che indica PDF e dati grezzi; si riaccendono con REPORT_FORMATI."""
+    c, A = client
+    A._storia.clear()
+    for formato in ("docx", "odt", "DOCX"):
+        for url in (f"/api/report?formato={formato}", f"/api/report/legge10?formato={formato}"):
+            r = c.post(url, json=ESEMPIO)
+            assert r.status_code == 410, (url, r.text)
+            det = r.json()["detail"]
+            assert "non è più disponibile" in det and "solo in PDF" in det and "Excel o ODS" in det
+    assert c.get("/api/report/schema").status_code == 200
+    monkeypatch.setattr(A.C, "REPORT_FORMATI", ("pdf", "xlsx", "ods", "docx", "odt"))
+    for formato in ("docx", "odt"):
+        r = c.post(f"/api/report?formato={formato}", json=ESEMPIO)
+        assert r.status_code == 200 and r.headers["content-type"] == R.FORMATI[formato]
+    monkeypatch.setattr(A.C, "REPORT_FORMATI", ("pdf", "rtf"))      # valori sconosciuti nel .env: ignorati
+    assert R.formati_attivi() == ("pdf",)
     A._storia.clear()
 
 

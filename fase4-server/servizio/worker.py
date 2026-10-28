@@ -51,7 +51,11 @@ def mercati() -> None:
     from mercati_energia import notturno
     from mercati_energia.config import carica
     esito = notturno.esegui(carica(C.MERCATI_CONFIG))
-    if esito["errori"]:
+    # credenziali GME non ancora inserite: è una configurazione, non un guasto, quindi niente email ogni notte
+    errori = [e for e in esito["errori"] if not str(e).startswith("Credenziali GME mancanti")]
+    if len(errori) < len(esito["errori"]):
+        log.info("Mercati: GME saltato, credenziali non configurate")
+    if errori:
         avvisi.invia("dati di mercato: aggiornamento incompleto", json.dumps(esito, indent=1, default=str))
     s = esito.get("sorveglianza") or {}
     if s.get("da_segnalare"):

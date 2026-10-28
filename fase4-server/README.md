@@ -61,7 +61,7 @@ Il primo avvio scarica i pesi di TiRex-2 da Hugging Face (in `dati/hf`).
 - 20 previsioni all'ora;
 - 120 ricerche Zornade all'ora;
 - 2.000 edifici all'ora per il patrimonio, contati in edifici e non in richieste.
-- 60 report scaricabili (docx, pdf, xlsx) all'ora.
+- 60 report scaricabili (pdf, xlsx, ods) all'ora.
 
 Il sito invia i file del patrimonio a blocchi di 40 righe, perché il tunnel Cloudflare chiude le richieste che durano più di 100 secondi.
 
@@ -218,12 +218,12 @@ Siccome il server riscrive `dati/indicatori/`, `dati/clima/` e i due CSV, **il s
 | GET | `/api/metodologia` | metriche della correzione ERA5 per la pagina del sito |
 | GET | `/api/clima-legge10/{istat}?anni=10` | dati climatici aggiornati per la Legge 10 dal clima reale del comune |
 | POST | `/api/patrimonio` | CSV di edifici → particella catastale, comune, punto (max 500 righe per richiesta, 2.000 edifici l'ora per IP; il sito manda blocchi di 40); indirizzi prima con ANNCSU, poi con Zornade; CSV in UTF-8 o nella codifica di Windows; la risposta porta `fonti` da citare |
-| POST | `/api/report?formato=docx\|pdf\|xlsx` | documento generico in JSON (schema in `/api/report/schema`) → file Word, PDF o Excel; vedi "Report" |
-| POST | `/api/report/{tipo}?formato=docx\|pdf\|xlsx` | `tipo` = `previsione`, `legge10`, `patrimonio`: il corpo è la risposta già ricevuta dal servizio → file del report |
+| POST | `/api/report?formato=pdf\|xlsx\|ods` | documento generico in JSON (schema in `/api/report/schema`) → file PDF, Excel o ODS; `docx` e `odt` rispondono 410 (spenti dal 28/10/2026); vedi "Report" |
+| POST | `/api/report/{tipo}?formato=pdf\|xlsx\|ods` | `tipo` = `previsione`, `legge10`, `patrimonio`, `indicatori`: il corpo è la risposta già ricevuta dal servizio → file del report |
 | GET | `/api/report/schema` | schema JSON del documento accettato da `/api/report` |
 | GET | `/api/storici/catalogo` | dataset scaricabili presenti sul server (grandezze, frequenze, periodo, fonte, licenza, limiti) |
-| POST | `/api/storici/stima?formato=csv\|xlsx` | JSON con i filtri → righe, colonne e dimensione stimate; se la richiesta è troppo grande, motivo e suggerimenti |
-| POST | `/api/storici/estrai?formato=csv\|xlsx` | stesso JSON → file CSV (in streaming) o Excel con foglio "Info" |
+| POST | `/api/storici/stima?formato=csv\|xlsx\|ods` | JSON con i filtri → righe, colonne e dimensione stimate; se la richiesta è troppo grande, motivo e suggerimenti |
+| POST | `/api/storici/estrai?formato=csv\|xlsx\|ods` | stesso JSON → file CSV (in streaming), Excel o OpenDocument (.ods) con foglio "Info" |
 
 ## Dati storici scaricabili (pagina "Dati storici")
 
@@ -244,8 +244,10 @@ Aggregazioni per giorno civile italiano: medie per temperatura, umidità, vento 
 stagioni (1 luglio – 30 giugno) interi; un periodo con meno della copertura scelta (predefinita 90%) resta vuoto e
 il file riporta `dati_validi` e `dati_attesi`. Area: regione, provincia, elenco di comuni, tutti; facoltativo solo
 capoluoghi. CSV con `;`, decimali con la virgola, UTF-8 con BOM, unità nelle intestazioni e fonti in righe `#` in
-fondo; Excel con fogli "Dati" e "Info" (filtri, fonti, licenze, data di estrazione, significato delle colonne).
-In entrambi ci sono anche le voci "Licenza EuGEnio" (elaborazioni e raccolte di EuGEnio con licenza CC BY 4.0:
+fondo; Excel e OpenDocument (.ods, dal 28/10/2026) con fogli "Dati" e "Info" (filtri, fonti, licenze, data di
+estrazione, significato delle colonne). L'ODS ha lo stesso contenuto dell'Excel: numeri come numeri, date come date,
+riga di intestazione ripetuta in stampa, intestazione e piè di stampa con la citazione; lo scrive `storici.py`
+direttamente in XML e in streaming nello zip (senza odfpy e senza tenere il foglio in memoria). In tutti ci sono anche le voci "Licenza EuGEnio" (elaborazioni e raccolte di EuGEnio con licenza CC BY 4.0:
 riuso libero, anche con modifiche, citando EuGEnio come fonte e mantenendo le fonti originali) e "Come citare"
 («Fonte: EuGEnio – eugenio.statocritico.it (dati estratti il gg/mm/aaaa)»); i testi sono `RIUSO` in `storici.py` e
 `CITAZIONE` in `report.py`.
@@ -254,7 +256,8 @@ riuso libero, anche con modifiche, citando EuGEnio come fonte e mantenendo le fo
 IGI), EEX/TTF e future, PFOR, PSV ARERA, dati Zornade, indirizzario ANNCSU. Nessun dato degli utenti viene salvato.
 
 Limiti (variabili d'ambiente): `STORICI_MAX_RIGHE_CSV` 500.000, `STORICI_MAX_RIGHE_XLSX` 300.000,
-`STORICI_MAX_CELLE_XLSX` 3.000.000 (~40 s di scrittura), `STORICI_MAX_COMUNI` 2.000 comuni elencati,
+`STORICI_MAX_CELLE_XLSX` 3.000.000 (~40 s di scrittura), `STORICI_MAX_RIGHE_ODS` 300.000,
+`STORICI_MAX_CELLE_ODS` 3.000.000 (~9 s per 300.000 righe × 10 colonne, ~5 MB), `STORICI_MAX_COMUNI` 2.000 comuni elencati,
 `STORICI_MAX_COMUNI_LEGGE10` 400, `STORICI_COPERTURA` 90, `STORICI_ESTRAZIONI_ORA` 30 e `STORICI_STIME_ORA` 600 per
 IP, `STORICI_PARALLELE` 2 estrazioni contemporanee. Tempi misurati: CSV da 500.000 righe ~8–10 s, Excel da 300.000
 righe × 13 colonne ~40 s. Prove: `python -m pytest tests/test_storici.py`.
@@ -269,8 +272,13 @@ Limiti per indirizzo IP: 20 previsioni/ora, 120 ricerche/ora, 60 report/ora, 30 
 
 ## Report
 
-Il servizio genera report scaricabili in **Word (.docx)**, **PDF** e **Excel (.xlsx)**; il CSV lo produce
-già il sito da sé. Il codice è in `servizio/report.py` (modello del documento e tre generatori) e
+**Formati offerti (decisione del 28/10/2026 sera)**: il servizio gratuito genera i report solo in **PDF** e i dati
+grezzi in **Excel (.xlsx)** e **ODS** (foglio di calcolo OpenDocument); il CSV lo produce già il sito da sé. I generatori
+**Word (.docx)** e **ODT** restano nel codice ma sono **spenti**: le rotte rispondono **410** con il messaggio «Il formato
+… non è più disponibile: il servizio gratuito genera i report solo in PDF e i dati grezzi in Excel o ODS». L'elenco
+dei formati accesi è la variabile `REPORT_FORMATI` (predefinita `pdf,xlsx,ods`; per riaccendere Word e ODT:
+`REPORT_FORMATI=pdf,xlsx,ods,docx,odt` nel `.env` e `docker compose up -d api`); `report.formati_attivi()` la legge.
+Le descrizioni di Word e ODT qui sotto valgono per quando si riaccendono. Il codice è in `servizio/report.py` (modello del documento e cinque generatori) e
 `servizio/report_servizi.py` (report dei servizi esistenti). Le usano i pulsanti "Scarica il report" di previsione, patrimonio, Legge 10 e indicatori (`sito/report.js`).
 
 **Modello del documento** (indipendente dal formato): `titolo`, `sottotitolo`, `data` (vuota = oggi),
@@ -310,6 +318,15 @@ corta perché in Excel intestazione e piè di stampa, codici di formato compresi
   coppie chiave/valore, avvertenze, fonti). Il testo che inizia con `=` non diventa mai una formula.
 - **Immagini**: PNG in Word e PDF; SVG solo nel PDF (in Word resta una nota, in Excel le immagini non entrano).
   SVG con immagini, script o riferimenti esterni sono rifiutati.
+- **ODT e ODS**: [odfpy](https://github.com/eea/odfpy) 1.4.1 (Python puro, licenza Apache 2.0 o GPL 2+, dipende solo
+  da defusedxml), versione fissata in `api/requirements.txt`. L'**ODT** ha le stesse sezioni del Word: A4
+  verticale, bordi neri sottili, niente fondi, collegamenti #1A3F8F sottolineati; intestazione con logo (E alta
+  `ALTEZZA_E_MM`, base sulla linea di base) a sinistra, titolo al centro e linea sotto; piè «Prodotto da EuGEnio –
+  eugenio.statocritico.it.» + `PIE_AVVERTENZA` e «Pagina N di M»; fonti, avvertenze complete e licenza in fondo.
+  L'**ODS** ha gli stessi fogli dell'Excel (Info con logo, fonti e licenza, poi un foglio per tabella), numeri come
+  numeri con formato italiano, date come date, nessuna formula, intestazione e piè di stampa come l'Excel. Il
+  `mimetype` è il primo elemento dello zip, non compresso, come vuole lo standard. Controllati con LibreOffice
+  headless (conversione in PDF) e riletti con pandas (`engine="odf"`).
 - **PDF**: [fpdf2](https://py-pdf.github.io/fpdf2/) (Python puro, nessuna libreria di sistema) con il font
   **DejaVu Sans** del pacchetto Debian `fonts-dejavu-core`, installato nel `Dockerfile` durante la build.
   Senza il font si ripiega su Helvetica e i simboli fuori dal latin-1 diventano testo (`≥` → `>=`, `€` → `EUR`).
@@ -320,7 +337,7 @@ corta perché in Excel intestazione e piè di stampa, codici di formato compresi
   10 immagini da 1,5 MB. 60 report all'ora per IP, al massimo due generati alla volta
   (5.000 righe: ~5 s in Word o PDF, meno di 1 s in Excel).
 - **Privacy**: tutto in memoria, nulla scritto su disco né registrato; risposta con `Cache-Control: no-store`.
-- **Errori**: 400 (formato o tipo sconosciuto, JSON non valido), 422 (documento non valido, con il motivo in
+- **Errori**: 410 (formato spento: docx, odt), 400 (formato sconosciuto, tipo sconosciuto, JSON non valido), 422 (documento non valido, con il motivo in
   italiano in `detail`), 413 (troppo grande), 429 (limite d'uso).
 - **Mai dati di mercato**: i report non contengono prezzi GME/EEX (PUN, PSV, IGI, TTF, PFOR); le funzioni
   dei servizi leggono solo campi noti e scartano comunque le colonne con quei nomi.
@@ -367,7 +384,8 @@ tratto e retino propri, adatte a chi confonde rosso e verde e leggibili anche st
   troppo lungo), "Prodotto da EuGEnio – eugenio.statocritico.it" a destra; la linea è sotto il testo;
 - PDF verticale e Word (A4 verticale): logo e titolo; il piè comincia con "Prodotto da EuGEnio –
   eugenio.statocritico.it." e prosegue con l'avvertenza, sulla stessa riga;
-- Excel (intestazione di stampa): "EuGEnio" a sinistra e titolo al centro; il piè comincia con "Prodotto da EuGEnio".
+- Excel e ODS (intestazione di stampa): "EuGEnio" a sinistra e titolo al centro; il piè comincia con "Prodotto da EuGEnio".
+- ODT: come il Word (logo e titolo al centro con la linea sotto; piè con avvertenza e «Pagina N di M»).
 
 ## Newsletter automatica dei dati
 
@@ -443,4 +461,4 @@ dell'indirizzario ANNCSU usa ~400 MB di memoria per un paio di minuti; il ricalc
 - "Dati elaborati da Zornade" (link a https://zornade.com) – catasto Agenzia delle Entrate, ISTAT, OpenStreetMap (ODbL).
 - Civici: ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0).
 - Confini comunali: ISTAT (CC BY 4.0) via Gramscii.
-- Report: python-docx (MIT), fpdf2 (LGPL-3.0), openpyxl (MIT), font DejaVu Sans (licenza libera Bitstream Vera/DejaVu).
+- Report: python-docx (MIT), fpdf2 (LGPL-3.0), openpyxl (MIT), odfpy (Apache 2.0 / GPL 2+), font DejaVu Sans (licenza libera Bitstream Vera/DejaVu).

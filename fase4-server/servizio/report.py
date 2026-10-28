@@ -1,4 +1,8 @@
-"""Report scaricabili: un modello di documento generico e tre renderer (docx, pdf, xlsx).
+"""Report scaricabili: un modello di documento generico e cinque renderer (docx, pdf, xlsx e i formati aperti
+OpenDocument odt e ods).
+
+Dal 28/10/2026 il servizio gratuito offre solo il PDF e i dati grezzi (xlsx, ods): i renderer docx e odt restano nel
+codice ma le rotte dell'API li rifiutano (vedi `formati_attivi()` e `config.REPORT_FORMATI`).
 
 Il documento è indipendente dal formato: titolo, sottotitolo, data, sezioni fatte di blocchi
 (paragrafo, elenco, tabella, coppie chiave/valore, immagine PNG o SVG, avvertenza) e, in fondo,
@@ -9,8 +13,8 @@ gli errori) con il numero di pagina e, in fondo al documento, il testo completo 
 Tutto avviene in memoria: `genera()` restituisce i byte del file e non scrive nulla su disco.
 
 Convenzioni:
-  * nei documenti (docx, pdf) numeri e date sono in formato italiano: 1.234,56 e 27/10/2026;
-  * in xlsx i numeri restano numeri (con formato di cella) e le date ISO diventano date di Excel;
+  * nei documenti (docx, pdf, odt) numeri e date sono in formato italiano: 1.234,56 e 27/10/2026;
+  * nei fogli di calcolo (xlsx, ods) i numeri restano numeri (con formato di cella) e le date ISO diventano date;
   * le stringhe di una tabella che sono date o date/ore ISO (2026-10-27, 2026-10-27T13:00+01:00)
     sono riconosciute e formattate; le date/ore con fuso sono riportate all'ora italiana.
 
@@ -115,7 +119,19 @@ FORMATI = {
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "pdf": "application/pdf",
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "odt": "application/vnd.oasis.opendocument.text",
+    "ods": "application/vnd.oasis.opendocument.spreadsheet",
 }
+NOMI_FORMATI = {"pdf": "PDF", "xlsx": "Excel (.xlsx)", "ods": "OpenDocument (.ods)", "docx": "Word (.docx)",
+                "odt": "OpenDocument testo (.odt)"}
+
+
+def formati_attivi() -> tuple[str, ...]:
+    """Formati offerti dalle rotte /api/report (config REPORT_FORMATI; dal 28/10/2026 solo pdf, xlsx e ods).
+    Gli altri renderer restano qui e `genera()` li sa ancora usare: sono spenti solo verso l'esterno."""
+    return tuple(f for f in C.REPORT_FORMATI if f in FORMATI)
+
+
 MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre",
         "ottobre", "novembre", "dicembre"]
 
@@ -1016,12 +1032,579 @@ def _xlsx(doc: Documento) -> bytes:
     return out.getvalue()
 
 
+# ============================================================================================ OpenDocument (odt, ods)
+# Formati aperti ISO/IEC 26300, letti da LibreOffice, OpenOffice e dagli altri programmi d'ufficio. Si scrivono con
+# odfpy (Python puro, licenza Apache 2.0 / GPL 2+). Lo stile è quello di Word ed Excel: testo nero, nessun fondo
+# colorato, bordi neri sottili, collegamenti blu scuro sottolineati; il logo è in testa alle pagine (odt) o in cima
+# al foglio Info (ods).
+def _png_dimensioni(b: bytes) -> tuple[int, int]:
+    """Larghezza e altezza in pixel di un PNG (dall'intestazione IHDR)."""
+    return int.from_bytes(b[16:20], "big"), int.from_bytes(b[20:24], "big")
+
+
+def _odf_stili_testo(od, prefisso: str = ""):
+    """Stili di carattere comuni a odt e ods: collegamento, grassetto, corsivo."""
+    from odf.style import Style, TextProperties
+    link = Style(name="Collegamento", family="text")
+    link.addElement(TextProperties(color="#" + COLORE_LINK, textunderlinestyle="solid", textunderlinewidth="auto",
+                                   textunderlinecolor="font-color"))
+    od.automaticstyles.addElement(link)
+    return link
+
+
+def _odt(doc: Documento) -> bytes:
+    from odf.draw import Frame, Image as DImage
+    from odf.opendocument import OpenDocumentText
+    from odf.style import (FontFace, Footer, GraphicProperties, Header, ListLevelProperties, MasterPage, PageLayout,
+                           PageLayoutProperties, ParagraphProperties, Style, TabStop, TabStops, TableCellProperties,
+                           TableColumnProperties, TableProperties, TableRowProperties, TextProperties)
+    from odf.table import Table, TableCell, TableColumn, TableHeaderRows, TableRow
+    from odf.text import (A, H, List, ListItem, ListLevelStyleBullet, ListLevelStyleNumber, ListStyle, P,
+                          PageCount, PageNumber, Span, Tab)
+    from odf.meta import Generator, InitialCreator
+    from odf.dc import Title as DcTitle, Description
+
+    od = OpenDocumentText()
+    od.meta.addElement(DcTitle(text=doc.titolo))
+    od.meta.addElement(InitialCreator(text="EuGEnio"))
+    od.meta.addElement(Description(text=PIE_DI_PAGINA))
+    CAR = "Liberation Sans"
+    od.fontfacedecls.addElement(FontFace(name=CAR, fontfamily=f"'{CAR}'", fontfamilygeneric="swiss", fontpitch="variable"))
+
+    # stili con nome (modificabili dall'utente in LibreOffice): testo nero, nessun colore di fondo
+    def stile_par(nome, dim, grassetto=False, corsivo=False, sopra="0cm", sotto="0.2cm", classe=None, livello=None,
+                  automatico=False, allinea=None, **altro):
+        s = Style(name=nome, family="paragraph", **({"defaultoutlinelevel": str(livello)} if livello else {}))
+        if classe:
+            s.setAttribute("class", classe)
+        tp = {"fontname": CAR, "fontsize": f"{dim}pt", "color": "#000000"}
+        if grassetto:
+            tp["fontweight"] = "bold"
+        if corsivo:
+            tp["fontstyle"] = "italic"
+        s.addElement(TextProperties(**tp))
+        pp = {"margintop": sopra, "marginbottom": sotto, **altro}
+        if allinea:
+            pp["textalign"] = allinea
+        s.addElement(ParagraphProperties(**pp))
+        (od.automaticstyles if automatico else od.styles).addElement(s)
+        return s
+
+    normale = stile_par("Testo", 10, sotto="0.15cm")
+    titolo_s = stile_par("Titolo", 22, grassetto=True, sotto="0.1cm", classe="chapter")
+    sottotitolo_s = stile_par("Sottotitolo", 13, corsivo=True, sotto="0.1cm")
+    h1 = stile_par("Titolo 1", 14, grassetto=True, sopra="0.45cm", sotto="0.15cm", livello=1, keepwithnext="always")
+    h2 = stile_par("Titolo 2", 11.5, grassetto=True, sopra="0.3cm", sotto="0.12cm", livello=2, keepwithnext="always")
+    nota_s = stile_par("Nota", 8, corsivo=True, sopra="0.05cm", sotto="0.3cm")
+    piccolo = stile_par("Avvertenze", 8.5, sotto="0.12cm")
+    cella_s = stile_par("Cella", 9, sopra="0cm", sotto="0cm", automatico=True)
+    cella_d = stile_par("CellaDestra", 9, sopra="0cm", sotto="0cm", automatico=True, allinea="end")
+    cella_p = stile_par("CellaPiccola", 8, sopra="0cm", sotto="0cm", automatico=True)
+    cella_pd = stile_par("CellaPiccolaDestra", 8, sopra="0cm", sotto="0cm", automatico=True, allinea="end")
+    centrato = stile_par("Centrato", 10, automatico=True, allinea="center")
+    didascalia = stile_par("Didascalia", 8, automatico=True, allinea="center", sotto="0.3cm")
+    riquadro = stile_par("Riquadro", 10, automatico=True, sopra="0.15cm", sotto="0.25cm", border="0.5pt solid #000000",
+                         padding="0.15cm")
+    vuoto = stile_par("Spazio", 6, automatico=True, sotto="0cm")
+
+    grassetto = Style(name="Grassetto", family="text")
+    grassetto.addElement(TextProperties(fontweight="bold"))
+    od.automaticstyles.addElement(grassetto)
+    link = _odf_stili_testo(od)
+
+    # elenchi puntati e numerati
+    def stile_elenco(nome, numerato):
+        ls = ListStyle(name=nome)
+        if numerato:
+            liv = ListLevelStyleNumber(level=1, numformat="1", numsuffix=".")
+        else:
+            liv = ListLevelStyleBullet(level=1, bulletchar="•")
+        liv.addElement(ListLevelProperties(spacebefore="0.3cm", minlabelwidth="0.5cm"))
+        ls.addElement(liv)
+        od.automaticstyles.addElement(ls)
+        return ls
+    el_punti, el_numeri = stile_elenco("Punti", False), stile_elenco("Numeri", True)
+
+    # pagina A4 verticale, margini di 2 cm; intestazione con logo e titolo, piè con l'avvertenza breve
+    pl = PageLayout(name="A4")
+    pl.addElement(PageLayoutProperties(pagewidth="21cm", pageheight="29.7cm", printorientation="portrait",
+                                       margintop="1.2cm", marginbottom="1.2cm", marginleft="2cm", marginright="2cm"))
+    from odf.style import HeaderStyle, FooterStyle, HeaderFooterProperties
+    hs = HeaderStyle()
+    hs.addElement(HeaderFooterProperties(minheight="0.6cm", marginbottom="0.5cm"))
+    fs = FooterStyle()
+    fs.addElement(HeaderFooterProperties(minheight="0.6cm", margintop="0.4cm"))
+    pl.addElement(hs)
+    pl.addElement(fs)
+    od.automaticstyles.addElement(pl)
+
+    testata = Style(name="Testata", family="paragraph")
+    testata.addElement(TextProperties(fontname=CAR, fontsize="10pt", fontweight="bold", color="#000000"))
+    pp = ParagraphProperties(borderbottom="0.5pt solid #000000", paddingbottom="0.12cm")
+    ts = TabStops()
+    ts.addElement(TabStop(position="8.5cm", type="center"))
+    pp.addElement(ts)
+    testata.addElement(pp)
+    od.automaticstyles.addElement(testata)
+    piede = Style(name="Piede", family="paragraph")
+    piede.addElement(TextProperties(fontname=CAR, fontsize="6.5pt", color="#000000"))
+    piede.addElement(ParagraphProperties(textalign="center", margintop="0cm", marginbottom="0.05cm"))
+    od.automaticstyles.addElement(piede)
+    piede_n = Style(name="PiedeNumero", family="paragraph")
+    piede_n.addElement(TextProperties(fontname=CAR, fontsize="7pt", color="#000000"))
+    piede_n.addElement(ParagraphProperties(textalign="center"))
+    od.automaticstyles.addElement(piede_n)
+    logo_s = Style(name="Logo", family="graphic")
+    # il PNG è tagliato sulla linea di base della scritta: poggiato sulla linea di base del titolo
+    logo_s.addElement(GraphicProperties(verticalpos="top", verticalrel="baseline", wrap="none",
+                                        border="none", padding="0cm"))
+    od.automaticstyles.addElement(logo_s)
+    imm_s = Style(name="Figura", family="graphic")
+    imm_s.addElement(GraphicProperties(verticalpos="top", verticalrel="baseline", horizontalpos="center",
+                                       horizontalrel="paragraph", wrap="none", border="none", padding="0cm"))
+    od.automaticstyles.addElement(imm_s)
+
+    mp = MasterPage(name="Standard", pagelayoutname=pl)
+    intest = Header()
+    pt = P(stylename=testata)
+    if LOGO_PNG:
+        w, h = _png_dimensioni(LOGO_PNG)
+        alto = ALTEZZA_E_MM / LOGO_MAIUSCOLA / 10          # cm
+        href = od.addPicture("Pictures/logo_eugenio.png", "image/png", LOGO_PNG)
+        fr = Frame(stylename=logo_s, anchortype="as-char", width=f"{alto * w / h:.3f}cm", height=f"{alto:.3f}cm",
+                   name="logo")
+        fr.addElement(DImage(href=href))
+        pt.addElement(fr)
+    pt.addElement(Tab())
+    pt.addText(doc.titolo)
+    intest.addElement(pt)
+    mp.addElement(intest)
+    pie = Footer()
+    pp1 = P(stylename=piede)
+    pp1.addText("Prodotto da EuGEnio – ")
+    a = A(href=SITO, type="simple")
+    a.addElement(Span(stylename=link, text="eugenio.statocritico.it"))
+    pp1.addElement(a)
+    pp1.addText(". " + PIE_AVVERTENZA)
+    pie.addElement(pp1)
+    pp2 = P(stylename=piede_n)
+    pp2.addText("Pagina ")
+    pp2.addElement(PageNumber(selectpage="current", numformat="1"))
+    pp2.addText(" di ")
+    pp2.addElement(PageCount(numformat="1"))
+    pie.addElement(pp2)
+    mp.addElement(pie)
+    od.masterstyles.addElement(mp)
+
+    # tabelle: bordi neri sottili, intestazione in grassetto con bordo inferiore più spesso, nessun fondo
+    tab_n = [0]
+
+    def tabella(intest: list[str], righe: list[list[str]], destra: list[bool], testata_riga: bool = True,
+                larghezze: list[float] | None = None, prima_grassetto: bool = False):
+        tab_n[0] += 1
+        n = len(intest)
+        nome = f"Tabella{tab_n[0]}"
+        larghezze = larghezze or [17 / n] * n
+        st = Style(name=nome, family="table")
+        st.addElement(TableProperties(width=f"{sum(larghezze):.2f}cm", align="center"))
+        od.automaticstyles.addElement(st)
+        t = Table(name=nome, stylename=st)
+        for j, wcm in enumerate(larghezze):
+            cs = Style(name=f"{nome}.C{j}", family="table-column")
+            cs.addElement(TableColumnProperties(columnwidth=f"{wcm:.2f}cm"))
+            od.automaticstyles.addElement(cs)
+            t.addElement(TableColumn(stylename=cs))
+        bordo = Style(name=f"{nome}.cella", family="table-cell")
+        bordo.addElement(TableCellProperties(border="0.5pt solid #000000", padding="0.06cm"))
+        od.automaticstyles.addElement(bordo)
+        testa_c = Style(name=f"{nome}.testa", family="table-cell")
+        testa_c.addElement(TableCellProperties(bordertop="0.5pt solid #000000", borderleft="0.5pt solid #000000",
+                                               borderright="0.5pt solid #000000", borderbottom="1.5pt solid #000000",
+                                               padding="0.06cm"))
+        od.automaticstyles.addElement(testa_c)
+        stretto = n > 6
+        ps, pd = (cella_p, cella_pd) if stretto else (cella_s, cella_d)
+
+        def riga(valori, grass=False, stile_cella=bordo):
+            tr = TableRow()
+            for j, v in enumerate(valori):
+                c = TableCell(stylename=stile_cella, valuetype="string")
+                p = P(stylename=pd if destra[j] else ps)
+                if grass or (prima_grassetto and j == 0):
+                    p.addElement(Span(stylename=grassetto, text=v))
+                else:
+                    p.addText(v)
+                c.addElement(p)
+                tr.addElement(c)
+            return tr
+
+        if testata_riga:
+            thr = TableHeaderRows()          # ripetuta in cima a ogni pagina
+            thr.addElement(riga(intest, True, testa_c))
+            t.addElement(thr)
+        for r in righe:
+            t.addElement(riga(r))
+        od.text.addElement(t)
+
+    def collegamento(p, testo: str, url: str):
+        a = A(href=url, type="simple")
+        a.addElement(Span(stylename=link, text=testo))
+        p.addElement(a)
+
+    def elenco(voci, numerato=False, fonti=False):
+        lst = List(stylename=el_numeri if numerato else el_punti)
+        for v in voci:
+            li = ListItem()
+            p = P(stylename=normale)
+            if fonti:
+                if v.url:
+                    p.addText(v.testo + " – ")
+                    collegamento(p, v.url, v.url)
+                else:
+                    p.addText(v.testo)
+            else:
+                p.addText(v)
+            li.addElement(p)
+            lst.addElement(li)
+        od.text.addElement(lst)
+
+    # contenuto
+    od.text.addElement(P(stylename=titolo_s, text=doc.titolo))
+    if doc.sottotitolo:
+        od.text.addElement(P(stylename=sottotitolo_s, text=doc.sottotitolo))
+    od.text.addElement(P(stylename=normale, text=data_it(doc.giorno(), estesa=True)))
+
+    for s in doc.sezioni:
+        if s.titolo:
+            od.text.addElement(H(outlinelevel=1, stylename=h1, text=s.titolo))
+        for b in s.blocchi:
+            if isinstance(b, Paragrafo):
+                od.text.addElement(P(stylename=normale, text=b.testo))
+            elif isinstance(b, Elenco):
+                elenco(b.voci, b.numerato)
+            elif isinstance(b, Tabella):
+                if b.titolo:
+                    od.text.addElement(H(outlinelevel=2, stylename=h2, text=b.titolo))
+                num = _colonne_numeriche(b)
+                righe = [[testo_cella(r[j] if j < len(r) else None, _dec(b, j)) for j in range(len(b.intestazioni))]
+                         for r in b.righe]
+                tabella(b.intestazioni, righe, num)
+                od.text.addElement(P(stylename=nota_s, text=b.nota) if b.nota else P(stylename=vuoto))
+            elif isinstance(b, ChiaveValore):
+                if b.titolo:
+                    od.text.addElement(H(outlinelevel=2, stylename=h2, text=b.titolo))
+                righe = [[v.chiave, _valore_voce(v)] for v in b.voci]
+                tabella(["", ""], righe, [False, False], testata_riga=False, larghezze=[7, 10], prima_grassetto=True)
+                od.text.addElement(P(stylename=vuoto))
+            elif isinstance(b, Immagine):
+                if b.formato == "png":
+                    dati = b.byte()
+                    w, h = _png_dimensioni(dati)
+                    href = od.addPicture(f"Pictures/immagine_{id(b)}.png", "image/png", dati)
+                    p = P(stylename=centrato)
+                    fr = Frame(stylename=imm_s, anchortype="as-char", width=f"{b.larghezza_cm:.2f}cm",
+                               height=f"{b.larghezza_cm * h / max(w, 1):.2f}cm")
+                    fr.addElement(DImage(href=href))
+                    p.addElement(fr)
+                    od.text.addElement(p)
+                else:
+                    p = P(stylename=nota_s, text="[Grafico vettoriale (SVG): incluso nella versione PDF del report]")
+                    od.text.addElement(p)
+                if b.didascalia:
+                    od.text.addElement(P(stylename=didascalia, text=b.didascalia))
+            elif isinstance(b, Avvertenza):
+                p = P(stylename=riquadro)
+                p.addElement(Span(stylename=grassetto, text="Attenzione: " if b.livello == "attenzione" else "Nota: "))
+                p.addText(b.testo)
+                od.text.addElement(p)
+
+    if doc.fonti:
+        od.text.addElement(H(outlinelevel=1, stylename=h1, text="Fonti e attribuzioni"))
+        elenco(doc.fonti, fonti=True)
+
+    od.text.addElement(H(outlinelevel=1, stylename=h1, text=TITOLO_AVVERTENZE))
+    for testo in AVVERTENZE:
+        od.text.addElement(P(stylename=piccolo, text=testo))
+
+    out = io.BytesIO()
+    od.write(out)
+    return out.getvalue()
+
+
+def _ods(doc: Documento) -> bytes:
+    from odf.draw import Frame, Image as DImage
+    from odf.number import (DateStyle, Day, Hours, Minutes, Month, NumberStyle, Number as NNumber, Text as NText,
+                            Year)
+    from odf.opendocument import OpenDocumentSpreadsheet
+    from odf.style import (FontFace, Footer, Header, MasterPage, PageLayout, PageLayoutProperties,
+                           ParagraphProperties, RegionCenter, RegionLeft, RegionRight, Style, TableCellProperties,
+                           TableColumnProperties, TableProperties, TableRowProperties, TextProperties)
+    from odf.table import CoveredTableCell, Table, TableCell, TableColumn, TableHeaderRows, TableRow
+    from odf.text import A, P, PageCount, PageNumber, Span
+    from odf.meta import InitialCreator
+    from odf.dc import Title as DcTitle
+
+    od = OpenDocumentSpreadsheet()
+    od.meta.addElement(DcTitle(text=doc.titolo))
+    od.meta.addElement(InitialCreator(text="EuGEnio"))
+    CAR = "Liberation Sans"
+    od.fontfacedecls.addElement(FontFace(name=CAR, fontfamily=f"'{CAR}'", fontfamilygeneric="swiss", fontpitch="variable"))
+    link = _odf_stili_testo(od)
+
+    # pagina di stampa: intestazione "EuGEnio" e titolo, piè con avvertenza breve e numero di pagina
+    pl = PageLayout(name="Stampa")
+    pl.addElement(PageLayoutProperties(pagewidth="21cm", pageheight="29.7cm", printorientation="portrait",
+                                       margintop="1cm", marginbottom="1cm", marginleft="1.5cm", marginright="1.5cm"))
+    from odf.style import FooterStyle, HeaderFooterProperties, HeaderStyle
+    for hf in (HeaderStyle(), FooterStyle()):
+        hf.addElement(HeaderFooterProperties(minheight="0.5cm", marginbottom="0.25cm", margintop="0.25cm"))
+        pl.addElement(hf)
+    od.automaticstyles.addElement(pl)
+    # numeri e date con le convenzioni italiane (1.234,56; 27/10/2026) in qualunque lingua sia impostato il programma
+    from odf.style import DefaultStyle
+    ds_c = DefaultStyle(family="table-cell")
+    ds_c.addElement(TextProperties(fontname=CAR, language="it", country="IT"))
+    od.styles.addElement(ds_c)
+    pic = Style(name="PiccoloStampa", family="text")
+    pic.addElement(TextProperties(fontsize="6pt"))
+    od.automaticstyles.addElement(pic)
+    mp = MasterPage(name="Default", pagelayoutname=pl)
+    hd = Header()
+    rl, rc = RegionLeft(), RegionCenter()
+    rl.addElement(P(text="EuGEnio"))
+    rc.addElement(P(text=doc.titolo[:120]))
+    hd.addElement(rl)
+    hd.addElement(rc)
+    mp.addElement(hd)
+    ft = Footer()                      # piè senza riquadri: l'avvertenza occupa tutta la larghezza
+    pf = P()
+    pf.addElement(Span(stylename=pic, text=PIE_AVVERTENZA_XLSX))
+    ft.addElement(pf)
+    pn = P(text="Pagina ")
+    pn.addElement(PageNumber(selectpage="current"))
+    pn.addText(" di ")
+    pn.addElement(PageCount())
+    ft.addElement(pn)
+    mp.addElement(ft)
+    od.masterstyles.addElement(mp)
+    st_tab = Style(name="Foglio", family="table", masterpagename=mp)
+    st_tab.addElement(TableProperties(display="true"))
+    od.automaticstyles.addElement(st_tab)
+
+    # formati dei numeri (1.234,56) e delle date (gg/mm/aaaa): uno stile di cella per ogni numero di decimali
+    stili_num: dict[int, Style] = {}
+
+    def stile_numero(dec: int) -> Style:
+        if dec not in stili_num:
+            ns = NumberStyle(name=f"N{dec}", language="it", country="IT")
+            ns.addElement(NNumber(decimalplaces=str(dec), minintegerdigits="1", grouping="true"))
+            od.automaticstyles.addElement(ns)
+            cs = Style(name=f"CN{dec}", family="table-cell", datastylename=f"N{dec}")
+            od.automaticstyles.addElement(cs)
+            stili_num[dec] = cs
+        return stili_num[dec]
+
+    def stile_data(con_ora: bool) -> Style:
+        nome = "DO" if con_ora else "D"
+        if nome not in stili_num:
+            ds = DateStyle(name=f"F{nome}", language="it", country="IT")
+            ds.addElement(Day(style="long"))
+            ds.addElement(NText(text="/"))
+            ds.addElement(Month(style="long"))
+            ds.addElement(NText(text="/"))
+            ds.addElement(Year(style="long"))
+            if con_ora:
+                ds.addElement(NText(text=" "))
+                ds.addElement(Hours(style="long"))
+                ds.addElement(NText(text=":"))
+                ds.addElement(Minutes(style="long"))
+            od.automaticstyles.addElement(ds)
+            cs = Style(name=f"C{nome}", family="table-cell", datastylename=f"F{nome}")
+            cs.addElement(ParagraphProperties(textalign="start"))
+            od.automaticstyles.addElement(cs)
+            stili_num[nome] = cs
+        return stili_num[nome]
+
+    def cella_stile(nome, grass=False, corsivo=False, dim=None, bordi=None, a_capo=False, colore=None):
+        s = Style(name=nome, family="table-cell")
+        tp = {}
+        if grass:
+            tp["fontweight"] = "bold"
+        if corsivo:
+            tp["fontstyle"] = "italic"
+        if dim:
+            tp["fontsize"] = f"{dim}pt"
+        if colore:
+            tp["color"] = colore
+        if tp:
+            s.addElement(TextProperties(**tp))
+        cp = {}
+        if bordi:
+            cp.update(bordi)
+        if a_capo:
+            cp.update(wrapoption="wrap", verticalalign="top")
+        if cp:
+            s.addElement(TableCellProperties(**cp))
+        od.automaticstyles.addElement(s)
+        return s
+
+    s_grass = cella_stile("Grassetto", grass=True)
+    s_titolo = cella_stile("Titolo", grass=True, dim=14)
+    s_sotto = cella_stile("Sottotitolo", dim=12)
+    s_sez = cella_stile("Sezione", grass=True, dim=12)
+    s_sez2 = cella_stile("Sezione2", grass=True, corsivo=True)
+    s_testo = cella_stile("Testo", a_capo=True)
+    s_nota = cella_stile("NotaInfo", corsivo=True, dim=9)
+    s_avv = cella_stile("Avvertenza", a_capo=True, bordi={"border": "0.5pt solid #000000"})
+    s_piccolo = cella_stile("Piccolo", dim=9, a_capo=True)
+    s_testa = cella_stile("Intestazione", grass=True, a_capo=True, bordi={"borderbottom": "1.5pt solid #000000"})
+
+    def colonna(t, larg_cm: float, n: int = 1):
+        cs = Style(name=f"col{len(od.automaticstyles.childNodes)}", family="table-column")
+        cs.addElement(TableColumnProperties(columnwidth=f"{larg_cm:.2f}cm"))
+        od.automaticstyles.addElement(cs)
+        t.addElement(TableColumn(stylename=cs, numbercolumnsrepeated=str(n)) if n > 1 else TableColumn(stylename=cs))
+
+    def cella(v=None, decimali=None, stile=None, url=None, span=1) -> list:
+        """Celle ODS: numeri come numeri, date ISO come date, testo come testo (mai formule)."""
+        kw = {}
+        if span > 1:
+            kw["numbercolumnsspanned"] = str(span)
+        if isinstance(v, bool):
+            v = "sì" if v else "no"
+        if isinstance(v, (int, float)) and not (isinstance(v, float) and not math.isfinite(v)):
+            d = decimali if decimali is not None else (0 if isinstance(v, int) else 2)
+            c = TableCell(valuetype="float", value=repr(float(v)) if isinstance(v, float) else str(v),
+                          stylename=stile or stile_numero(d), **kw)
+            c.addElement(P(text=numero(v, d)))
+        elif isinstance(v, str) and come_data(v) is not None:
+            d = come_data(v)
+            ora = isinstance(d, dt.datetime)
+            c = TableCell(valuetype="date", datevalue=d.isoformat(timespec="minutes") if ora else d.isoformat(),
+                          stylename=stile or stile_data(ora), **kw)
+            c.addElement(P(text=data_it(d)))
+        elif v is None or (isinstance(v, float)):
+            c = TableCell(**({"stylename": stile} if stile else {}), **kw)
+        else:
+            c = TableCell(valuetype="string", **({"stylename": stile} if stile else {}), **kw)
+            p = P()
+            if url:
+                p.addElement(A(href=url, type="simple", stylename=link, text=str(v)))
+            else:
+                p.addText(str(v))
+            c.addElement(p)
+        return [c] + [CoveredTableCell() for _ in range(span - 1)]
+
+    def riga(t, *celle, alto_cm=None):
+        if alto_cm:
+            rs = Style(name=f"riga{len(od.automaticstyles.childNodes)}", family="table-row")
+            rs.addElement(TableRowProperties(rowheight=f"{alto_cm:.2f}cm", useoptimalrowheight="false"))
+            od.automaticstyles.addElement(rs)
+            tr = TableRow(stylename=rs)
+        else:
+            tr = TableRow()
+        for cc in celle:
+            for c in cc:
+                tr.addElement(c)
+        t.addElement(tr)
+
+    info = Table(name="Info", stylename=st_tab)
+    colonna(info, 9.5)                 # 18 cm in tutto: il foglio Info sta nella larghezza di un A4 in stampa
+    colonna(info, 4.5)
+    colonna(info, 2, 2)
+    fogli = [info]
+    nomi_usati = {"info"}
+
+    def nome_foglio(t: str | None, n: int) -> str:
+        base = re.sub(r"[\[\]:*?/\\']", " ", t or f"Tabella {n}").strip()[:28] or f"Tabella {n}"
+        nome, k = base, 2
+        while nome.lower() in nomi_usati:
+            nome = f"{base[:25]} ({k})"
+            k += 1
+        nomi_usati.add(nome.lower())
+        return nome
+
+    if LOGO_PNG:
+        w, h = _png_dimensioni(LOGO_PNG)
+        alto = LOGO_ALTEZZA_CM
+        href = od.addPicture("Pictures/logo_eugenio.png", "image/png", LOGO_PNG)
+        c = TableCell()
+        fr = Frame(width=f"{alto * w / h:.3f}cm", height=f"{alto:.3f}cm", x="0.1cm", y="0.1cm", name="logo")
+        fr.addElement(DImage(href=href))
+        c.addElement(fr)
+        riga(info, [c], alto_cm=alto + 0.3)
+    riga(info, cella(INTESTAZIONE, url=SITO))
+    riga(info, cella(doc.titolo, stile=s_titolo))
+    if doc.sottotitolo:
+        riga(info, cella(doc.sottotitolo, stile=s_sotto))
+    riga(info, cella("Data", stile=s_grass), cella(doc.giorno().isoformat()))
+    riga(info, cella())
+
+    n_tab = 0
+    for s in doc.sezioni:
+        if s.titolo:
+            riga(info, cella(s.titolo, stile=s_sez))
+        for b in s.blocchi:
+            if isinstance(b, Paragrafo):
+                riga(info, cella(b.testo, stile=s_testo, span=4))
+            elif isinstance(b, Elenco):
+                for i, v in enumerate(b.voci, 1):
+                    riga(info, cella(f"{i}. {v}" if b.numerato else f"• {v}"))
+            elif isinstance(b, ChiaveValore):
+                if b.titolo:
+                    riga(info, cella(b.titolo, stile=s_sez2))
+                for v in b.voci:
+                    riga(info, cella(v.chiave, stile=s_grass), cella(v.valore, v.decimali), cella(v.unita))
+            elif isinstance(b, Avvertenza):
+                riga(info, cella(("Attenzione: " if b.livello == "attenzione" else "Nota: ") + b.testo, stile=s_avv,
+                                 span=4))
+            elif isinstance(b, Immagine):
+                riga(info, cella(f"[Immagine non inclusa nel foglio di calcolo"
+                                 f"{': ' + b.didascalia if b.didascalia else ''}]"))
+            elif isinstance(b, Tabella):
+                n_tab += 1
+                nome = nome_foglio(b.titolo, n_tab)
+                ws = Table(name=nome, stylename=st_tab)
+                larg = [len(x) for x in b.intestazioni]
+                for r in b.righe[:300]:
+                    for j, v in enumerate(r):
+                        larg[j] = max(larg[j], len(testo_cella(v, _dec(b, j))))
+                for wch in larg:
+                    colonna(ws, min(max(wch + 2, 8), 50) * 0.19)
+                thr = TableHeaderRows()          # ripetute in cima a ogni pagina stampata
+                riga(thr, *[cella(x, stile=s_testa) for x in b.intestazioni])
+                ws.addElement(thr)
+                for r in b.righe:
+                    riga(ws, *[cella(r[j] if j < len(r) else None, _dec(b, j)) for j in range(len(b.intestazioni))])
+                fogli.append(ws)
+                riga(info, cella(f"Tabella «{b.titolo or nome}»: foglio «{nome}»", url=f"#{nome}"))
+                if b.nota:
+                    riga(info, cella(b.nota, stile=s_nota))
+        riga(info, cella())
+
+    if doc.fonti:
+        riga(info, cella("Fonti e attribuzioni", stile=s_sez))
+        for f in doc.fonti:
+            riga(info, cella(f.testo), cella(f.url, url=f.url) if f.url else cella())
+        riga(info, cella())
+    riga(info, cella(TITOLO_AVVERTENZE, stile=s_sez))
+    for testo in AVVERTENZE:
+        riga(info, cella(testo, stile=s_piccolo, span=4))
+    riga(info, cella(CONTATTI, url=CONTATTI))
+
+    for t in fogli:
+        od.spreadsheet.addElement(t)
+    out = io.BytesIO()
+    od.write(out)
+    return out.getvalue()
+
+
 # ============================================================================================ ingresso
-RENDERER = {"docx": _docx, "pdf": _pdf, "xlsx": _xlsx}
+RENDERER = {"docx": _docx, "pdf": _pdf, "xlsx": _xlsx, "odt": _odt, "ods": _ods}
 
 
 def genera(doc: Documento, formato: str) -> bytes:
-    """Byte del file nel formato richiesto ('docx', 'pdf', 'xlsx'). Nulla viene scritto su disco."""
+    """Byte del file nel formato richiesto ('docx', 'pdf', 'xlsx', 'odt', 'ods'). Nulla viene scritto su disco."""
     if formato not in RENDERER:
         raise ValueError(f"formato non supportato: {formato} (ammessi: {', '.join(RENDERER)})")
     return RENDERER[formato](doc)

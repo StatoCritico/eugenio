@@ -305,6 +305,13 @@ def test_limiti_righe(cliente, monkeypatch):
     assert cliente.post("/api/storici/stima?formato=xlsx", json=ok).json()["consentito"]
     s = cliente.post("/api/storici/stima?formato=xlsx", json={**corpo, "dal": "2023-01-01", "al": "2023-06-30"}).json()
     assert not s["consentito"] and any("CSV" in x for x in s["suggerimenti"])
+    monkeypatch.setattr(C, "STORICI_MAX_RIGHE_ODS", 500)
+    assert cliente.post("/api/storici/stima?formato=ods", json=ok).json()["consentito"]
+    s = cliente.post("/api/storici/stima?formato=ods", json={**corpo, "dal": "2023-01-01", "al": "2023-06-30"}).json()
+    assert not s["consentito"] and "OpenDocument" in s["motivo"] and any("CSV" in x for x in s["suggerimenti"])
+    monkeypatch.setattr(C, "STORICI_MAX_CELLE_ODS", 100)
+    s = cliente.post("/api/storici/stima?formato=ods", json=ok).json()
+    assert not s["consentito"] and "celle" in s["motivo"]
 
 
 def test_limite_per_ip(cliente, monkeypatch):
@@ -324,7 +331,8 @@ def test_limite_per_ip(cliente, monkeypatch):
     {"dataset": "meteo_giornaliero", "variabili": ["t_media", "PUN"]},
 ])
 def test_dataset_vietati(cliente, corpo):
-    for rotta in ("/api/storici/stima", "/api/storici/estrai?formato=csv", "/api/storici/estrai?formato=xlsx"):
+    for rotta in ("/api/storici/stima", "/api/storici/estrai?formato=csv", "/api/storici/estrai?formato=xlsx",
+                  "/api/storici/stima?formato=ods", "/api/storici/estrai?formato=ods"):
         r = cliente.post(rotta, json={"area": {"tipo": "tutti"}, **corpo})
         assert r.status_code == 403, (rotta, corpo, r.text)
         assert "non è scaricabile" in r.json()["detail"]
@@ -373,6 +381,47 @@ def test_xlsx(cliente):
                                                      "area": {"tipo": "comuni", "comuni": ["033001"]}}, "xlsx").content))
     r1 = list(gio["Dati"].iter_rows(min_row=2, max_row=2, values_only=True))[0]
     assert r1[3] == dt.datetime(2022, 1, 1)   # data vera, non testo
+
+
+def test_ods(cliente):
+    import zipfile
+    corpo = {"dataset": "meteo_orario", "frequenza": "oraria", "dal": "2023-01-02", "al": "2023-01-02",
+             "variabili": ["temperature_2m"], "area": {"tipo": "comuni", "comuni": ["048017"]}}
+    r = _estrai(cliente, corpo, "ods")
+    assert r.headers["content-type"] == "application/vnd.oasis.opendocument.spreadsheet"
+    assert 'filename="eugenio_meteo_orario_oraria_20230102-20230102.ods"' in r.headers["content-disposition"]
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    primo = z.infolist()[0]
+    assert primo.filename == "mimetype" and primo.compress_type == zipfile.ZIP_STORED
+    assert z.read("mimetype") == b"application/vnd.oasis.opendocument.spreadsheet"
+    assert "META-INF/manifest.xml" in z.namelist()
+    x = z.read("content.xml").decode("utf-8")
+    assert "table:formula" not in x
+    fogli = pd.read_excel(io.BytesIO(r.content), engine="odf", sheet_name=None)
+    assert list(fogli) == ["Dati", "Info"]
+    dati = fogli["Dati"]
+    assert list(dati.columns) == ["istat", "comune", "provincia", "ora_utc (UTC)", "ora_locale (ora italiana)",
+                                  "temperatura (°C)"]
+    assert len(dati) == 24
+    assert dati["temperatura (°C)"].iloc[0] == pytest.approx(23 + 3)               # numero, non testo
+    assert pd.Timestamp(dati["ora_locale (ora italiana)"].iloc[0]) == pd.Timestamp(2023, 1, 2, 0, 0)  # data vera
+    assert 'office:value-type="date" office:date-value="2023-01-02T00:00:00"' in x
+    info = {a: b for a, b in fogli["Info"].iloc[:, :2].itertuples(index=False) if isinstance(a, str)}
+    assert info["Dataset"].startswith("Meteo orario") and "Open-Meteo" in info["Fonte"]
+    assert "CC BY 4.0" in info["Licenza EuGEnio"] and "citando EuGEnio come fonte" in info["Licenza EuGEnio"]
+    assert info["Come citare"].startswith("Fonte: EuGEnio – eugenio.statocritico.it (dati estratti il ")
+    stili = z.read("styles.xml").decode("utf-8")
+    assert "Fonte: EuGEnio – eugenio.statocritico.it" in stili and "<text:page-number" in stili
+
+
+def test_ods_testo_sicuro():
+    """Caratteri speciali e di controllo nel testo: XML sempre valido."""
+    import xml.dom.minidom
+    cella = storici._cella_ods('a<b & "c"\x01')
+    xml.dom.minidom.parseString(f'<r xmlns:table="t" xmlns:office="o" xmlns:text="x">{cella}</r>')
+    assert "&lt;b &amp; &quot;c&quot;" in cella and "\x01" not in cella
+    assert storici._cella_ods(float("nan")) == "<table:table-cell/>"
+    assert 'office:value="3"' in storici._cella_ods(3) and "sì" in storici._cella_ods(True)
 
 
 # ---------------------------------------------------------------------------------------------- DPR 412/93

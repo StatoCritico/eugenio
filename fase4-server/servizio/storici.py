@@ -1,9 +1,10 @@
-"""Dati storici scaricabili (pagina "Dati storici" del sito): catalogo, stima ed estrazione in CSV o Excel.
+"""Dati storici scaricabili (pagina "Dati storici" del sito): catalogo, stima ed estrazione in CSV, Excel o
+OpenDocument (ods).
 
 Rotte (da includere in app.py con `app.include_router(storici.router)`):
   GET  /api/storici/catalogo                  dataset presenti sul server, grandezze, periodi, limiti
   POST /api/storici/stima                     righe e dimensione del file per una selezione
-  POST /api/storici/estrai?formato=csv|xlsx   il file (CSV in streaming; Excel con foglio "Info")
+  POST /api/storici/estrai?formato=csv|xlsx|ods   il file (CSV in streaming; Excel e ods con foglio "Info")
 
 Si possono scaricare SOLO dati che le licenze permettono di ridistribuire, sempre con attribuzione:
   * meteo orario (ICON storico) e giornaliero (ERA5 corretto) e i loro derivati (gradi giorno, dati
@@ -18,7 +19,7 @@ quotazioni EEX/TTF e future, PFOR, PSV ARERA, dati Zornade, indirizzario ANNCSU 
 solo percorsi fissi della cartella dati (mai `mercati/` fuori da `mercati/eurostat/`).
 
 Nessun dato degli utenti viene salvato: le richieste contengono solo i filtri; il conteggio per il limite
-d'uso per IP sta in memoria e si azzera al riavvio. I file Excel passano da un file temporaneo cancellato
+d'uso per IP sta in memoria e si azzera al riavvio. I file Excel e ods passano da un file temporaneo cancellato
 subito dopo l'invio.
 """
 from __future__ import annotations
@@ -1055,7 +1056,7 @@ def _suggerimenti(p: Piano, limite: int, formato: str) -> list[str]:
                 s.append(f"accorcia il periodo a circa {giorni:,} giorni".replace(",", ".") + f" con {n} comuni")
     if n > 1:
         s.append(f"riduci i comuni (ora {n}): una provincia, solo i capoluoghi o un elenco")
-    if formato == "xlsx":
+    if formato in ("xlsx", "ods"):
         s.append(f"scegli il CSV, che arriva fino a {C.STORICI_MAX_RIGHE_CSV:,} righe".replace(",", "."))
     s.append("dividi la richiesta in più file, per esempio un anno o una provincia per volta")
     return s
@@ -1065,16 +1066,19 @@ def valuta(p: Piano, formato: str) -> dict:
     righe = int(p.righe)
     colonne = len(p.colonne)
     byte_csv = righe * _byte_riga(p)
-    stima = byte_csv if formato == "csv" else int(byte_csv * 0.75) + 8000   # misurato: Excel ≈ 3/4 del CSV
-    limite = C.STORICI_MAX_RIGHE_CSV if formato == "csv" else C.STORICI_MAX_RIGHE_XLSX
+    # misurati: Excel ≈ 3/4 del CSV, ods ≈ 2/5 (numeri senza testo ripetuto, compressione dello zip)
+    stima = {"csv": byte_csv, "xlsx": int(byte_csv * 0.75) + 8000, "ods": int(byte_csv * 0.4) + 6000}[formato]
+    limite = {"csv": C.STORICI_MAX_RIGHE_CSV, "xlsx": C.STORICI_MAX_RIGHE_XLSX, "ods": C.STORICI_MAX_RIGHE_ODS}[formato]
+    max_celle = {"xlsx": C.STORICI_MAX_CELLE_XLSX, "ods": C.STORICI_MAX_CELLE_ODS}.get(formato)
+    nome_formato = {"csv": "CSV", "xlsx": "Excel", "ods": "OpenDocument (ods)"}[formato]
     motivo = None
     if righe > limite:
         motivo = (f"La richiesta produrrebbe circa {righe:,} righe: il limite per un file "
-                  f"{'CSV' if formato == 'csv' else 'Excel'} è {limite:,}.").replace(",", ".")
-    elif formato == "xlsx" and righe * colonne > C.STORICI_MAX_CELLE_XLSX:
-        motivo = (f"Il file Excel avrebbe circa {righe * colonne:,} celle: il limite è "
-                  f"{C.STORICI_MAX_CELLE_XLSX:,}. Togli qualche grandezza o scegli il CSV.").replace(",", ".")
-        limite = C.STORICI_MAX_CELLE_XLSX // max(1, colonne)
+                  f"{nome_formato} è {limite:,}.").replace(",", ".")
+    elif max_celle and righe * colonne > max_celle:
+        motivo = (f"Il file {nome_formato} avrebbe circa {righe * colonne:,} celle: il limite è "
+                  f"{max_celle:,}. Togli qualche grandezza o scegli il CSV.").replace(",", ".")
+        limite = max_celle // max(1, colonne)
     elif righe == 0:
         motivo = "Nessuna riga da estrarre con questi filtri."
     return {
@@ -1238,6 +1242,181 @@ def xlsx_file(p: Piano) -> str:
     return percorso
 
 
+# ---------------------------------------------------------------------------------------------- OpenDocument (ods)
+# Il foglio di calcolo OpenDocument si scrive a flusso, riga per riga, dentro lo zip (content.xml compresso mentre
+# si scrive): niente albero XML in memoria, così anche centinaia di migliaia di righe restano leggere. Struttura:
+# foglio "Dati" (prima riga con le intestazioni, ripetuta in stampa) e foglio "Info" con fonte, licenza e citazione.
+_ODS_NS = ('xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" '
+           'xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" '
+           'xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" '
+           'xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" '
+           'xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" '
+           'xmlns:number="urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0" '
+           'xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" '
+           'xmlns:dc="http://purl.org/dc/elements/1.1/" '
+           'xmlns:xlink="http://www.w3.org/1999/xlink" office:version="1.2"')
+_ODS_MIME = "application/vnd.oasis.opendocument.spreadsheet"
+
+
+def _x(s) -> str:
+    """Testo per l'XML: caratteri speciali e caratteri di controllo (non ammessi in XML) tolti."""
+    s = str(s)
+    if any(ord(ch) < 32 and ch not in "\t\n\r" for ch in s):
+        s = "".join(ch for ch in s if ord(ch) >= 32 or ch in "\t\n\r")
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def _cella_ods(v) -> str:
+    """Una cella: numeri come numeri, date come date (gg/mm/aaaa), testo come testo; mai formule."""
+    if v is None:
+        return "<table:table-cell/>"
+    if isinstance(v, (bool, np.bool_)):
+        return f'<table:table-cell office:value-type="string"><text:p>{"sì" if v else "no"}</text:p></table:table-cell>'
+    if isinstance(v, (int, np.integer)):
+        return f'<table:table-cell office:value-type="float" office:value="{int(v)}"/>'
+    if isinstance(v, (float, np.floating)):
+        f = float(v)
+        if not math.isfinite(f):
+            return "<table:table-cell/>"
+        return f'<table:table-cell office:value-type="float" office:value="{f!r}"/>'
+    if isinstance(v, dt.datetime):
+        return (f'<table:table-cell table:style-name="cDO" office:value-type="date" '
+                f'office:date-value="{v.replace(tzinfo=None).isoformat(timespec="seconds")}"/>')
+    if isinstance(v, dt.date):
+        return f'<table:table-cell table:style-name="cD" office:value-type="date" office:date-value="{v.isoformat()}"/>'
+    if isinstance(v, pd.Timestamp):
+        return _cella_ods(v.to_pydatetime())
+    return f'<table:table-cell office:value-type="string"><text:p>{_x(v)}</text:p></table:table-cell>'
+
+
+def _testo_ods(v, stile: str | None = None, url: str | None = None) -> str:
+    st = f' table:style-name="{stile}"' if stile else ""
+    t = _x(v)
+    if url:
+        t = f'<text:a xlink:type="simple" xlink:href="{_x(url)}">{t}</text:a>'
+    return f'<table:table-cell{st} office:value-type="string"><text:p>{t}</text:p></table:table-cell>'
+
+
+def _stili_ods(titolo: str, piede: str) -> str:
+    return (f'<?xml version="1.0" encoding="UTF-8"?><office:document-styles {_ODS_NS}>'
+            '<office:styles><style:default-style style:family="table-cell">'
+            '<style:text-properties fo:language="it" fo:country="IT"/></style:default-style></office:styles>'
+            '<office:automatic-styles><style:page-layout style:name="pl">'
+            '<style:page-layout-properties fo:page-width="29.7cm" fo:page-height="21cm" style:print-orientation="landscape" '
+            'fo:margin-top="1cm" fo:margin-bottom="1cm" fo:margin-left="1.2cm" fo:margin-right="1.2cm"/>'
+            '<style:header-style><style:header-footer-properties fo:min-height="0.5cm" fo:margin-bottom="0.25cm"/>'
+            '</style:header-style><style:footer-style><style:header-footer-properties fo:min-height="0.5cm" '
+            'fo:margin-top="0.25cm"/></style:footer-style></style:page-layout>'
+            '<style:style style:name="piccolo" style:family="text"><style:text-properties fo:font-size="6pt"/></style:style>'
+            '</office:automatic-styles><office:master-styles>'
+            '<style:master-page style:name="Default" style:page-layout-name="pl"><style:header>'
+            f'<style:region-left><text:p>EuGEnio</text:p></style:region-left><style:region-center><text:p>{_x(titolo)}'
+            '</text:p></style:region-center></style:header><style:footer>'
+            f'<text:p><text:span text:style-name="piccolo">{_x(piede)}</text:span></text:p>'
+            '<text:p>Pagina <text:page-number text:select-page="current">1</text:page-number> di '
+            '<text:page-count>1</text:page-count></text:p></style:footer></style:master-page>'
+            '</office:master-styles></office:document-styles>')
+
+
+def _scrivi_ods(percorso: str, titolo: str, intestazioni: list[str], righe: Iterator[list],
+                info: list[tuple[str, str]], colonne_info: list[list[str]]) -> int:
+    """Scrive il file .ods a flusso: foglio "Dati" con `intestazioni` e `righe`, foglio "Info" con le coppie
+    `info` e la tabella delle colonne. Restituisce le righe di dati scritte."""
+    import zipfile
+    piede = f"{CITAZIONE}. Licenza {LICENZA_DATI[0]}: {LICENZA_PAGINA}. Vedi il foglio Info."
+    n = 0
+    with zipfile.ZipFile(percorso, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=5) as z:
+        zi = zipfile.ZipInfo("mimetype")
+        zi.compress_type = zipfile.ZIP_STORED            # primo file, non compresso (lo vuole il formato)
+        z.writestr(zi, _ODS_MIME)
+        z.writestr("META-INF/manifest.xml",
+                   '<?xml version="1.0" encoding="UTF-8"?><manifest:manifest '
+                   'xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.2">'
+                   f'<manifest:file-entry manifest:full-path="/" manifest:version="1.2" manifest:media-type="{_ODS_MIME}"/>'
+                   '<manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>'
+                   '<manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>'
+                   '<manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>'
+                   '</manifest:manifest>')
+        z.writestr("meta.xml", f'<?xml version="1.0" encoding="UTF-8"?><office:document-meta {_ODS_NS}><office:meta>'
+                               f'<dc:title>{_x(titolo)}</dc:title><meta:initial-creator>EuGEnio</meta:initial-creator>'
+                               f'<meta:generator>EuGEnio</meta:generator></office:meta></office:document-meta>')
+        z.writestr("styles.xml", _stili_ods(titolo, piede))
+        with z.open("content.xml", "w", force_zip64=True) as f:
+            def scrivi(s: str):
+                f.write(s.encode("utf-8"))
+            scrivi(f'<?xml version="1.0" encoding="UTF-8"?><office:document-content {_ODS_NS}><office:automatic-styles>'
+                   '<number:date-style style:name="fD" number:language="it" number:country="IT"><number:day number:style="long"/>'
+                   '<number:text>/</number:text><number:month number:style="long"/><number:text>/</number:text>'
+                   '<number:year number:style="long"/></number:date-style>'
+                   '<number:date-style style:name="fDO" number:language="it" number:country="IT"><number:day number:style="long"/>'
+                   '<number:text>/</number:text><number:month number:style="long"/><number:text>/</number:text>'
+                   '<number:year number:style="long"/><number:text> </number:text><number:hours number:style="long"/>'
+                   '<number:text>:</number:text><number:minutes number:style="long"/></number:date-style>'
+                   '<style:style style:name="cD" style:family="table-cell" style:data-style-name="fD"/>'
+                   '<style:style style:name="cDO" style:family="table-cell" style:data-style-name="fDO"/>'
+                   '<style:style style:name="g" style:family="table-cell"><style:table-cell-properties '
+                   'fo:border-bottom="1.5pt solid #000000" fo:wrap-option="wrap" style:vertical-align="top"/>'
+                   '<style:text-properties fo:font-weight="bold"/></style:style>'
+                   '<style:style style:name="b" style:family="table-cell"><style:text-properties fo:font-weight="bold"/></style:style>'
+                   '<style:style style:name="w" style:family="table-cell"><style:table-cell-properties '
+                   'fo:wrap-option="wrap" style:vertical-align="top"/></style:style>'
+                   '<style:style style:name="t" style:family="table" style:master-page-name="Default">'
+                   '<style:table-properties table:display="true"/></style:style>'
+                   '<style:style style:name="k1" style:family="table-column"><style:table-column-properties style:column-width="4.5cm"/></style:style>'
+                   '<style:style style:name="k2" style:family="table-column"><style:table-column-properties style:column-width="17cm"/></style:style>'
+                   '<style:style style:name="k3" style:family="table-column"><style:table-column-properties style:column-width="3cm"/></style:style>'
+                   '<style:style style:name="kd" style:family="table-column"><style:table-column-properties style:column-width="3.2cm"/></style:style>'
+                   '</office:automatic-styles><office:body><office:spreadsheet>')
+            # foglio Dati
+            scrivi(f'<table:table table:name="Dati" table:style-name="t">'
+                   f'<table:table-column table:style-name="kd" table:number-columns-repeated="{len(intestazioni)}"/>'
+                   '<table:table-header-rows><table:table-row>'
+                   + "".join(_testo_ods(h, "g") for h in intestazioni) + '</table:table-row></table:table-header-rows>')
+            buf = []
+            for r in righe:
+                buf.append("<table:table-row>" + "".join(map(_cella_ods, r)) + "</table:table-row>")
+                n += 1
+                if len(buf) >= 2000:
+                    scrivi("".join(buf))
+                    buf.clear()
+            scrivi("".join(buf) + "</table:table>")
+            # foglio Info
+            righe_info = [f'<table:table-row>{_testo_ods("EuGEnio – dati storici", "b")}</table:table-row>',
+                          "<table:table-row><table:table-cell/></table:table-row>"]
+            for k, v in info:
+                url = v if isinstance(v, str) and re.fullmatch(r"https?://\S+", v) else None
+                righe_info.append(f'<table:table-row>{_testo_ods(k, "b")}{_testo_ods(v, "w", url)}</table:table-row>')
+            righe_info.append("<table:table-row><table:table-cell/></table:table-row>")
+            righe_info.append("<table:table-row>" + "".join(_testo_ods(x, "b") for x in
+                              ("Colonna", "Descrizione", "Unità", "Aggregazione")) + "</table:table-row>")
+            for c in colonne_info:
+                righe_info.append("<table:table-row>" + "".join(_testo_ods(x or "", "w") for x in c) + "</table:table-row>")
+            scrivi('<table:table table:name="Info" table:style-name="t"><table:table-column table:style-name="k1"/>'
+                   '<table:table-column table:style-name="k2"/><table:table-column table:style-name="k3" '
+                   'table:number-columns-repeated="2"/>' + "".join(righe_info) + "</table:table>")
+            scrivi("</office:spreadsheet></office:body></office:document-content>")
+    return n
+
+
+def ods_file(p: Piano) -> str:
+    """Scrive il file OpenDocument (.ods) in un file temporaneo e ne restituisce il percorso."""
+    def righe():
+        for df in blocchi(p):
+            yield from _valori_xlsx(df)
+    info = list(_note(p)) + [("Nota", a) for a in p.avvisi]
+    aggr = {"mean": "media", "sum": "somma", "min": "minimo", "max": "massimo"}
+    colonne = [[c.nome, c.descrizione, c.unita, aggr.get(c.agg, "")] for c in p.colonne]
+    fd, percorso = tempfile.mkstemp(prefix="eugenio_", suffix=".ods")
+    os.close(fd)
+    try:
+        _scrivi_ods(percorso, f"EuGEnio – {p.info['titolo']}", [_intestazione(c) for c in p.colonne], righe(),
+                    info, colonne)
+    except Exception:
+        os.unlink(percorso)
+        raise
+    return percorso
+
+
 def _leggi_e_cancella(percorso: str) -> Iterator[bytes]:
     try:
         with open(percorso, "rb") as f:
@@ -1287,19 +1466,20 @@ def catalogo():
             "comuni": int(len(cm)),
             "copertura_predefinita": C.STORICI_COPERTURA,
             "limiti": {"righe_csv": C.STORICI_MAX_RIGHE_CSV, "righe_xlsx": C.STORICI_MAX_RIGHE_XLSX,
-                       "celle_xlsx": C.STORICI_MAX_CELLE_XLSX, "comuni_elenco": C.STORICI_MAX_COMUNI,
+                       "celle_xlsx": C.STORICI_MAX_CELLE_XLSX, "righe_ods": C.STORICI_MAX_RIGHE_ODS,
+                       "celle_ods": C.STORICI_MAX_CELLE_ODS, "comuni_elenco": C.STORICI_MAX_COMUNI,
                        "comuni_legge10": C.STORICI_MAX_COMUNI_LEGGE10, "download_ora": C.STORICI_ESTRAZIONI_ORA},
             "non_scaricabili": NON_SCARICABILI}
 
 
 @router.post("/stima")
-def stima(request: Request, richiesta: Richiesta, formato: Literal["csv", "xlsx"] = Query("csv")):
+def stima(request: Request, richiesta: Richiesta, formato: Literal["csv", "xlsx", "ods"] = Query("csv")):
     _limita(request, "stima")
     return valuta(pianifica(richiesta), formato)
 
 
 @router.post("/estrai")
-async def estrai(request: Request, richiesta: Richiesta, formato: Literal["csv", "xlsx"] = Query("csv")):
+async def estrai(request: Request, richiesta: Richiesta, formato: Literal["csv", "xlsx", "ods"] = Query("csv")):
     _controlla_nomi(richiesta)
     p = await run_in_threadpool(pianifica, richiesta)
     v = valuta(p, formato)
@@ -1320,10 +1500,9 @@ async def estrai(request: Request, richiesta: Richiesta, formato: Literal["csv",
                 _in_corso.release()
         return StreamingResponse(flusso(), media_type="text/csv; charset=utf-8", headers=intest)
     try:
-        percorso = await run_in_threadpool(xlsx_file, p)
+        percorso = await run_in_threadpool(xlsx_file if formato == "xlsx" else ods_file, p)
     finally:
         _in_corso.release()
     intest["Content-Length"] = str(os.path.getsize(percorso))
-    return StreamingResponse(_leggi_e_cancella(percorso),
-                             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                             headers=intest)
+    tipo = ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if formato == "xlsx" else _ODS_MIME)
+    return StreamingResponse(_leggi_e_cancella(percorso), media_type=tipo, headers=intest)

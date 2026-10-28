@@ -92,7 +92,7 @@ $("anni").addEventListener("change", () => stato.istat && calcola());
 // funziona lo stesso senza il confronto.
 let tabellaDPR = null;
 function caricaDPR() {
-  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261027t")
+  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261028d")
     .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   return tabellaDPR;
 }
@@ -383,7 +383,7 @@ $("scarica-json").addEventListener("click", () => {
   scarica(`clima_legge10_${stato.dati.istat}.json`, JSON.stringify({ licenza: LICENZA, citazione: citazione(), ...corpoReport() }, null, 2), "application/json");
 });
 
-// report (Excel, Word, PDF): il corpo è la risposta di /api/clima-legge10/{istat} con, se c'è,
+// report (PDF, Excel, ODS): il corpo è la risposta di /api/clima-legge10/{istat} con, se c'è,
 // il campo dpr412 {gg, zona, alt, nome, nota, origini} (il server ricalcola differenza e confronto)
 function corpoReport() {
   return stato.dpr ? { ...stato.dati, dpr412: { ...stato.dpr, fonte: "DPR 26 agosto 1993, n. 412, Allegato A (Normattiva)", url: DPR_URL } } : stato.dati;

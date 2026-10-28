@@ -4,23 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EuGEnio – dati storici</title>
-<meta name="description" content="Scarica in CSV o Excel il meteo orario e giornaliero, i gradi giorno, i dati climatici per la Legge 10, l'elenco dei comuni e i prezzi Eurostat dell'energia per le PMI, con fonti e licenze.">
+<meta name="description" content="Scarica in CSV, Excel o OpenDocument (ods) il meteo orario e giornaliero, i gradi giorno, i dati climatici per la Legge 10, l'elenco dei comuni e i prezzi Eurostat dell'energia per le PMI, con fonti e licenze.">
 <!-- testa -->
 <script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
 try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261027t";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<link rel="stylesheet" href="stile.css?v=20261027t">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261027t">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261027t">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261028d";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<link rel="stylesheet" href="stile.css?v=20261028d">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261028d">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261028d">
 <!-- /testa -->
 </head>
 <body>
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261027t" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261028d" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <details class="menu-tutto">
@@ -80,7 +80,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <section class="mappa-area" aria-label="Mappa dei comuni">
     <h1>Dati storici da scaricare</h1>
     <p class="sotto">Meteo ora per ora e giorno per giorno, gradi giorno, dati climatici per la Legge 10, comuni e
-      prezzi Eurostat dell'energia: scegli cosa, quando e dove, poi scarica un CSV o un file Excel con fonti e licenze.
+      prezzi Eurostat dell'energia: scegli cosa, quando e dove, poi scarica un CSV, un file Excel o un foglio OpenDocument (ods) con fonti e licenze.
       Tocca i comuni sulla mappa per sceglierli uno per uno.</p>
     <div class="mappa" id="mappa"><div class="etichetta-mappa" id="etichetta"></div></div>
     <div class="legenda" id="legenda-mappa"><span><i style="background:var(--freddo)"></i>compresi nell'estrazione</span>
@@ -88,6 +88,16 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   </section>
 
   <section class="pannello" aria-label="Scelta dei dati da scaricare">
+    <!-- sperimentale -->
+    <div class="messaggio attenzione sperimentale" role="note">
+      <div><b>Attenzione! Servizio sperimentale non ancora verificato.</b>
+        EuGEnio è appena nato: i calcoli e i risultati di questa pagina non sono ancora stati validati con verifiche
+        sistematiche su dati reali e possono contenere errori. Usali per farti un'idea e confrontali con altre fonti
+        prima di prendere decisioni; non sostituiscono i valori ufficiali né il giudizio di un professionista. Se trovi
+        qualcosa che non torna, <a href="contatti.html">scrivici</a> (vedi anche <a href="faq.html#garanzia">«I dati
+        sono garantiti?»</a>).</div>
+    </div>
+    <!-- /sperimentale -->
     <div class="passo" id="passo-dataset">
       <h2><span class="n">1</span>Quali dati</h2>
       <div class="dataset-elenco" id="dataset" role="radiogroup" aria-label="Dataset"></div>
@@ -174,6 +184,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <div class="scelta" role="radiogroup" aria-label="Formato del file">
         <label><input type="radio" name="formato" value="csv" checked><span>CSV</span></label>
         <label><input type="radio" name="formato" value="xlsx"><span>Excel (.xlsx)</span></label>
+        <label><input type="radio" name="formato" value="ods"><span>OpenDocument (.ods)</span></label>
       </div>
       <p class="aiuto" id="aiuto-formato"></p>
       <div class="cifre stima" id="stima" aria-live="polite"></div>
@@ -208,12 +219,12 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     ai sensi della Legge 10/1991 restano obbligatori i valori normativi (UNI 10349, DPR 412/93).</p>
   </div>
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261027t" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261028d" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
   <!-- /piede -->
 </footer>
-<script src="aspetto.js?v=20261027t"></script>
-<script src="minimappa.js?v=20261027t"></script>
-<script src="dati.js?v=20261027t"></script>
+<script src="aspetto.js?v=20261028d"></script>
+<script src="minimappa.js?v=20261028d"></script>
+<script src="dati.js?v=20261028d"></script>
 </body>
 </html>

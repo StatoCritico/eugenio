@@ -92,7 +92,7 @@ I caratteri sono in `font/`. Hanken Grotesk, variabile, è usato per il testo. B
 5. **In `aspetto.js`**, aggiungi il nome in `VESTITI`.
 6. **Versione nella cache:** aumenta il numero `?v=` in tutte le pagine.
 
-I report Word, PDF ed Excel non cambiano con il vestito. Usano:
+I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
 
 - testo nero;
 - link in blu scuro #1A3F8F;

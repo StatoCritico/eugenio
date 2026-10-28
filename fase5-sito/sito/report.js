@@ -1,15 +1,22 @@
 "use strict";
-// Report scaricabili (Excel, Word, PDF), parte comune alle pagine delle funzioni (previsione, Legge 10, patrimonio).
+// Report scaricabili, parte comune alle pagine delle funzioni (previsione, Legge 10, patrimonio, indicatori).
+// Dal 28/10/2026 il servizio gratuito genera solo il report in PDF e i dati grezzi in Excel (.xlsx) o ODS: Word e ODT
+// sono spenti anche sul server (rispondono 410; config REPORT_FORMATI).
 // Il server riceve la stessa risposta che la pagina ha avuto dalla sua API e restituisce il file già pronto.
-// Contratto: POST /api/report/{tipo}?formato=xlsx|docx|pdf, corpo JSON, risposta binaria con Content-Disposition.
+// Contratto: POST /api/report/{tipo}?formato=pdf|xlsx|ods, corpo JSON, risposta binaria con Content-Disposition.
 // Se il contratto cambia, si adatta qui: indirizzoReport() per l'URL, le pagine passano il corpo con corpo().
 (function () {
   const API = "/api";
   const FORMATI = [
-    ["xlsx", "Excel (.xlsx)"],
-    ["docx", "Word (.docx)"],
     ["pdf", "PDF"],
+    ["xlsx", "Excel (.xlsx)"],
+    ["ods", "ODS (LibreOffice)"],
   ];
+  const SUGGERIMENTI = {
+    pdf: "Il report impaginato, pronto da leggere, stampare o allegare",
+    xlsx: "I dati grezzi in un foglio di calcolo Excel: numeri come numeri, con fonti e licenza nel foglio Info",
+    ods: "I dati grezzi nel formato aperto OpenDocument: si apre con LibreOffice, Collabora o OnlyOffice, e anche con Excel",
+  };
 
   function indirizzoReport(tipo, formato) {
     return `${API}/report/${encodeURIComponent(tipo)}?formato=${encodeURIComponent(formato)}`;
@@ -59,7 +66,7 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
-  // Aggiunge i tre pulsanti a `contenitore`.
+  // Aggiunge i pulsanti dei formati a `contenitore`.
   //   tipo:      "previsione" | "legge10" | "patrimonio"
   //   corpo():   oggetto da inviare (letto al momento del clic, così vale sempre l'ultimo risultato)
   //   nome(ext): nome di riserva se il server non manda Content-Disposition
@@ -89,6 +96,7 @@
       b.className = "bottone secondario";
       b.textContent = etichetta;
       b.dataset.formato = formato;
+      if (SUGGERIMENTI[formato]) b.title = SUGGERIMENTI[formato];
       b.addEventListener("click", async () => {
         const area_ = area && document.getElementById(area);
         if (mio !== null && area_ && area_.textContent === mio) messaggio("");
@@ -130,6 +138,14 @@
       bottoni.push(b);
       gruppo.appendChild(b);
     }
+    const nota = document.createElement("p");
+    nota.className = "report-nota";
+    nota.append("Il servizio gratuito genera il report in PDF e i dati grezzi in Excel o ODS. ");
+    const perche = document.createElement("a");
+    perche.href = "faq.html#formati-report";
+    perche.textContent = "Perché solo questi formati?";
+    nota.appendChild(perche);
+    gruppo.appendChild(nota);
     contenitore.appendChild(gruppo);
     return gruppo;
   }

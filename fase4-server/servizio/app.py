@@ -180,15 +180,21 @@ async def patrimonio_edifici(request: Request, file: UploadFile = File(...)):
 
 
 # ---------------------------------------------------------------------------------------------- report
-# File docx, pdf o xlsx generati in memoria dal documento ricevuto (o dalla risposta di un servizio):
-# niente viene salvato su disco. Al massimo due report alla volta, per lasciare spazio alle previsioni.
+# File pdf, xlsx o ods generati in memoria dal documento ricevuto (o dalla risposta di un servizio): niente viene
+# salvato su disco. Word (docx) e ODT sono spenti dal 28/10/2026 (config REPORT_FORMATI): rispondono 410.
+# Al massimo due report alla volta, per lasciare spazio alle previsioni.
 _report_in_corso = asyncio.Semaphore(2)
 
 
 def _formato_report(formato: str) -> str:
     f = (formato or "").lower().strip()
-    if f not in report.FORMATI:
-        raise HTTPException(400, f"Formato non supportato: scegliere tra {', '.join(report.FORMATI)}")
+    attivi = report.formati_attivi()
+    if f in report.FORMATI and f not in attivi:
+        nomi = ", ".join(report.NOMI_FORMATI[x] for x in attivi)
+        raise HTTPException(410, f"Il formato {report.NOMI_FORMATI[f]} non è più disponibile: il servizio gratuito "
+                                 f"genera i report solo in PDF e i dati grezzi in Excel o ODS (formati: {nomi})")
+    if f not in attivi:
+        raise HTTPException(400, f"Formato non supportato: scegliere tra {', '.join(attivi)}")
     return f
 
 
@@ -225,8 +231,8 @@ async def _file_report(doc: report.Documento, formato: str) -> Response:
             contenuto = await run_in_threadpool(report.genera, doc, formato)
         except (ValueError, OSError) as e:
             raise HTTPException(422, f"Impossibile generare il report: {e}")
-        except Exception as e:  # immagini non leggibili e simili (python-docx, fpdf2)
-            if type(e).__module__.split(".")[0] in ("docx", "fpdf", "PIL"):
+        except Exception as e:  # immagini non leggibili e simili (python-docx, fpdf2, odfpy)
+            if type(e).__module__.split(".")[0] in ("docx", "fpdf", "PIL", "odf"):
                 raise HTTPException(422, f"Impossibile generare il report: {e}")
             raise
     nome = report.nome_file(doc, formato)
@@ -243,7 +249,7 @@ def report_schema():
 
 @app.post("/api/report")
 async def report_generico(request: Request, formato: str = "pdf"):
-    """Documento generico (JSON, vedi /api/report/schema) → file docx, pdf o xlsx."""
+    """Documento generico (JSON, vedi /api/report/schema) → file pdf, xlsx o ods (docx e odt spenti: 410)."""
     formato = _formato_report(formato)
     _limita(request, "report")
     corpo = await _corpo_limitato(request)

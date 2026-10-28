@@ -26,7 +26,7 @@ sito/
   dati.html         Dati storici (dati.js): scelta di dataset (meteo orario ICON, giornaliero ERA5 corretto, gradi
                     giorno, dati per la Legge 10, comuni, prezzi Eurostat), periodo, frequenza, copertura minima e
                     zona (regione, provincia, comuni dalla ricerca o dalla mappa); stima delle dimensioni e download
-                    CSV o Excel da /api/storici/... Mai dati GME, EEX, PFOR, Zornade o ANNCSU
+                    CSV, Excel o OpenDocument (.ods) da /api/storici/... Mai dati GME, EEX, PFOR, Zornade o ANNCSU
   contatti.html     Contattaci: modulo (nome, email, ente, ruolo, tipo, oggetto, descrizione) che prepara l'email
                     per eugenio@statocritico.it nel programma di posta di chi scrive (mailto) o la copia negli
                     appunti; il sito non riceve né salva niente (contatti.js)
@@ -36,7 +36,8 @@ sito/
                     (docker-compose.override.yml con la porta 8080), messa online, personalizzazione, regole
   privacy.html      informativa privacy (titolare: Paolo Bianco; email in arrivo via Cloudflare Email Routing e Gmail)
   app.js, patrimonio.js, legge10.js, contatti.js, stile.css
-  report.js         pulsanti "Scarica il report" (Excel, Word, PDF) su previsione, patrimonio e Legge 10: manda i
+  report.js         pulsanti "Scarica il report" (PDF, Excel, ODS; dal 28/10/2026 niente Word né ODT) su previsione, patrimonio, Legge 10 e
+                    indicatori: manda i
                     risultati già mostrati a POST /api/report/{tipo}?formato=… e scarica il file (corpoReport() in
                     ogni script di pagina)
   indice.js         indice laterale di Come funziona, F.A.Q. e Sitografia: a sinistra, fermo mentre il testo scorre,
@@ -95,7 +96,7 @@ tema e del vestito, foglio di stile, icone) si modificano **solo** in `parti/`; 
 da sé la voce di menu della pagina (`aria-current="page"`). Le fonti di ogni pagina strumento (`.piede-fonti`) restano
 nella pagina, sopra la riga finale. Prima di ogni pubblicazione che cambia stile, script o pagine:
 ```bash
-python costruisci_pagine.py --versione 20261028a   # aaaammgg + lettera: nuova versione in pagine e script
+python costruisci_pagine.py --versione 20261028d   # aaaammgg + lettera: nuova versione in pagine e script
 python costruisci_pagine.py --controlla            # 0 = tutto aggiornato (lo usano anche i test)
 python -m pytest tests                             # idempotenza, voce attiva, versione
 ```
@@ -113,7 +114,7 @@ scp ..\..\sito.tar.gz eugenio:~/
 ssh eugenio "tar -xzmf ~/sito.tar.gz --no-overwrite-dir -C /srv/energia/sito && rm ~/sito.tar.gz"
 ```
 Caddy lo serve subito, senza riavvii. Le pagine richiamano `stile.css` e gli script con un numero di versione
-(`?v=20261027t`): quando si cambiano stile o script, si aumenta con `costruisci_pagine.py --versione …`, così i
+(`?v=20261028d`): quando si cambiano stile o script, si aumenta con `costruisci_pagine.py --versione …`, così i
 browser e Cloudflare non usano la copia vecchia rimasta in memoria.
 
 Per vedere solo la grafica in locale: `python -m http.server -d sito 8000` (mappe visibili, dati no: servono le API).
@@ -218,3 +219,30 @@ Se il comune non ha una stagione completa, la pagina mostra il messaggio dell'AP
     Dati storici cambiano senza ricaricare). Con `?vista=italia` nell'indirizzo la mappa grande si apre già su tutta
     l'Italia. Alla prima visita si apre ancora l'Emilia-Romagna (unica con il meteo completo); per aprire invece
     l'Italia basta `ITALIA_ALLA_PRIMA_VISITA = true` in `minimappa.js`.
+
+## Aggiornamento del 28/10/2026 – formati aperti OpenDocument (da pubblicare; Word e ODT tolti la sera stessa, vedi sotto)
+
+- `report.js`: due pulsanti in più, «ODT (LibreOffice)» e «ODS (LibreOffice)» (`formato=odt|ods`), con un suggerimento
+  al passaggio del mouse; i pulsanti dei report sono ora separati e vanno a capo ordinatamente (`stile.css`), su
+  telefono due per riga.
+- `dati.html` / `dati.js`: nel passo «Formato e download» la scelta **OpenDocument (.ods)** accanto a CSV ed Excel,
+  con il suo testo d'aiuto e il limite di righe del catalogo (`limiti.righe_ods`).
+- Testi: nuova F.A.Q. `#formati-report` («In che formati posso scaricare i report e i dati?»), licenza dei report e
+  dei file in `faq.html` e `licenza.html`, Dati storici in `metodo.html`, odfpy nella Sitografia («Dati e documenti»).
+- Versione cache: `?v=20261028b`. Provato con Playwright: 12 pagine a 1440 e 390 px senza errori né scorrimento
+  orizzontale; download ODT/ODS dai pulsanti e scelta ODS in Dati storici (schermate in `vestiti/schermate5`).
+
+## Aggiornamento del 28/10/2026 sera – solo PDF e dati grezzi (da pubblicare)
+
+Decisione di Paolo: **il servizio gratuito genera solo il PDF e i dati grezzi**; niente più report in Word (.docx) né
+in ODT. Sul server i due formati sono spenti (rispondono 410, variabile `REPORT_FORMATI`, README della fase 4).
+- `report.js`: tre pulsanti, nell'ordine **PDF**, **Excel (.xlsx)**, **ODS (LibreOffice)**, ognuno con un suggerimento
+  al passaggio del mouse; sotto, una riga «Il servizio gratuito genera il report in PDF e i dati grezzi in Excel o ODS.
+  Perché solo questi formati?» con il collegamento a `faq.html#formati-report` (`.report-nota` in `stile.css`).
+- F.A.Q. `#formati-report` riscritta («In che formati posso scaricare i report e i dati? Perché non in Word?»: PDF =
+  report impaginato, Excel/ODS = dati grezzi, come costruire una relazione propria citando EuGEnio); `#licenza-report`
+  (PDF ed Excel/ODS; vale anche per i Word e ODT scaricati prima); `licenza.html` (`#dati`, `#report`); Sitografia
+  (python-docx «spento dal 28/10/2026», odfpy per l'ODS); commenti di `patrimonio.js`, `legge10.js`, `indicatori.js` e
+  `README_stile.md`.
+- Versione cache: `?v=20261028d`. Provato con Playwright: pulsanti a 1440 e 390 px (tema scuro e chiaro), nessun
+  errore né scorrimento orizzontale, clic su ODS → `formato=ods`; F.A.Q. aperta da `#formati-report`.

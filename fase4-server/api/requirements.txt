@@ -11,6 +11,7 @@ pypdf==6.17.0       # sorveglianza delle convenzioni: testo dei PDF
 openpyxl==3.1.5     # sorveglianza delle convenzioni (listini in Excel) e report scaricabili in Excel
 python-docx==1.2.0  # report scaricabili in Word (dipende da lxml)
 fpdf2==2.8.9        # report scaricabili in PDF, Python puro (dipende da Pillow, fonttools, defusedxml)
+odfpy==1.4.1        # report (odt, ods) e Dati storici (ods) nei formati aperti OpenDocument; Python puro, Apache 2.0/GPL 2+
 # clima dal 1940 (fase 9): lettura dei file .om di Open-Meteo dal bucket pubblico AWS (~100 MB installati)
 omfiles==1.2.0
 fsspec==2026.9.0

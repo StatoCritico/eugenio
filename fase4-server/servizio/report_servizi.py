@@ -1,7 +1,7 @@
 """Report dei servizi di EuGEnio: dalle risposte JSON delle API a un `report.Documento`.
 
 Ogni funzione riceve la risposta già ottenuta dal sito (o calcolata dal server) e costruisce il
-documento; il formato (docx, pdf, xlsx) lo sceglie `report.genera`. Le funzioni sono difensive:
+documento; il formato (pdf, xlsx, ods; docx e odt spenti dal 28/10/2026) lo sceglie `report.genera`. Le funzioni sono difensive:
 un campo mancante o di tipo inatteso viene saltato, non fa fallire il report.
 
 Nuovo tipo di report: scrivere `def report_xxx(d: dict, **kw) -> Documento` e aggiungerlo a `TIPI`;

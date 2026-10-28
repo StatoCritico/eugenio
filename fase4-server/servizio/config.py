@@ -51,7 +51,7 @@ CLIMA_DATE = [tuple(int(x) for x in d.split("/")) for d in os.environ.get("CLIMA
 CLIMA_LAVORO = Path(os.environ.get("CLIMA_LAVORO", str(DATI / "clima_lavoro")))   # comuni.parquet, cache, registri
 CLIMA_CODICE = Path(os.environ.get("CLIMA_CODICE", "/app/clima_storico"))           # script della fase 9
 
-# report scaricabili (docx, pdf, xlsx): limiti del documento ricevuto e font per il PDF
+# report scaricabili (pdf, xlsx, ods; docx e odt spenti dal 28/10/2026): limiti del documento ricevuto e font per il PDF
 REPORT_MAX_MB = float(os.environ.get("REPORT_MAX_MB", "5"))                    # corpo JSON della richiesta
 REPORT_MAX_SEZIONI = int(os.environ.get("REPORT_MAX_SEZIONI", "50"))
 REPORT_MAX_BLOCCHI = int(os.environ.get("REPORT_MAX_BLOCCHI", "100"))          # blocchi per sezione
@@ -62,6 +62,11 @@ REPORT_MAX_TESTO = int(os.environ.get("REPORT_MAX_TESTO", "20000"))            #
 REPORT_MAX_IMMAGINI = int(os.environ.get("REPORT_MAX_IMMAGINI", "10"))
 REPORT_MAX_IMMAGINE_KB = int(os.environ.get("REPORT_MAX_IMMAGINE_KB", "1500"))
 REPORT_FONT_DIR = Path(os.environ.get("REPORT_FONT_DIR", "/usr/share/fonts/truetype/dejavu"))  # fonts-dejavu-core
+# Formati dei report offerti dalle rotte /api/report (decisione del 28/10/2026): il servizio gratuito produce solo il
+# PDF e i dati grezzi (Excel .xlsx e OpenDocument .ods). Word (docx) e ODT restano nel codice ma sono spenti: le rotte
+# rispondono 410. Per riaccenderli basta, nel .env, REPORT_FORMATI=pdf,xlsx,ods,docx,odt (poi riavviare l'api).
+REPORT_FORMATI = tuple(f.strip().lower() for f in os.environ.get("REPORT_FORMATI", "pdf,xlsx,ods").split(",")
+                       if f.strip())
 
 # newsletter automatica dei dati (listmonk) e avvisi all'amministratore
 LISTMONK_URL = os.environ.get("LISTMONK_URL", "http://listmonk:9000")
@@ -83,6 +88,10 @@ NOTIZIE_URL = os.environ.get("NOTIZIE_URL", "https://notizie.statocritico.it")
 STORICI_MAX_RIGHE_CSV = int(os.environ.get("STORICI_MAX_RIGHE_CSV", "500000"))     # righe per file CSV
 STORICI_MAX_RIGHE_XLSX = int(os.environ.get("STORICI_MAX_RIGHE_XLSX", "300000"))   # righe per file Excel
 STORICI_MAX_CELLE_XLSX = int(os.environ.get("STORICI_MAX_CELLE_XLSX", "3000000"))  # righe × colonne in Excel (~40 s di scrittura)
+# OpenDocument (ods): scritto a flusso, ~9 s per 3 milioni di celle sul PC di prova (più lento sul server ARM);
+# lo stesso tetto dell'Excel tiene il file apribile senza fatica in LibreOffice
+STORICI_MAX_RIGHE_ODS = int(os.environ.get("STORICI_MAX_RIGHE_ODS", "300000"))     # righe per file ods
+STORICI_MAX_CELLE_ODS = int(os.environ.get("STORICI_MAX_CELLE_ODS", "3000000"))    # righe × colonne in ods
 STORICI_MAX_COMUNI = int(os.environ.get("STORICI_MAX_COMUNI", "2000"))             # comuni elencati uno per uno
 STORICI_MAX_COMUNI_LEGGE10 = int(os.environ.get("STORICI_MAX_COMUNI_LEGGE10", "400"))
 STORICI_COPERTURA = int(os.environ.get("STORICI_COPERTURA", "90"))      # % minima di dati per un periodo valido

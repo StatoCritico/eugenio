@@ -1,6 +1,6 @@
 "use strict";
 // Dati storici: catalogo (/api/storici/catalogo) → scelta di dataset, grandezze, periodo, frequenza e area →
-// stima (/api/storici/stima) → file CSV o Excel (/api/storici/estrai). Nessun dato dell'utente viene inviato
+// stima (/api/storici/stima) → file CSV, Excel o OpenDocument ods (/api/storici/estrai). Nessun dato dell'utente viene inviato
 // oltre ai filtri scelti.
 const API = "/api/storici";
 const $ = (id) => document.getElementById(id);
@@ -472,7 +472,9 @@ function aiutoFormato(formato) {
   const lim = stato.catalogo ? stato.catalogo.limiti : null;
   $("aiuto-formato").textContent = formato === "csv"
     ? `CSV per Excel italiano: separatore punto e virgola, decimali con la virgola, UTF-8; unità nelle intestazioni, fonti in fondo al file${lim ? `. Fino a ${num(lim.righe_csv)} righe` : ""}.`
-    : `Un foglio "Dati" e un foglio "Info" con filtri scelti, fonti, licenze e significato delle colonne${lim ? `. Fino a ${num(lim.righe_xlsx)} righe` : ""}.`;
+    : formato === "ods"
+      ? `Formato aperto OpenDocument (LibreOffice, ma si apre anche con Excel): un foglio "Dati" e un foglio "Info" con filtri scelti, fonti, licenze, citazione e significato delle colonne${lim && lim.righe_ods ? `. Fino a ${num(lim.righe_ods)} righe` : ""}.`
+      : `Un foglio "Dati" e un foglio "Info" con filtri scelti, fonti, licenze e significato delle colonne${lim ? `. Fino a ${num(lim.righe_xlsx)} righe` : ""}.`;
 }
 document.querySelectorAll('input[name="formato"]').forEach((i) => i.addEventListener("change", aggiornaStima));
 

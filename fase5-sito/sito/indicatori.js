@@ -549,7 +549,7 @@ $("scarica-regione").addEventListener("click", () => {
   scarica(`indicatori_energia_regione_${stato.regione}.csv`, "﻿" + righe.join("\r\n"), "text/csv;charset=utf-8");
 });
 
-// report (Excel, Word, PDF): il server riceve i valori già calcolati e li impagina (tipo "indicatori")
+// report (PDF, Excel, ODS): il server riceve i valori già calcolati e li impagina (tipo "indicatori")
 function corpoReport() {
   const t = terne(); if (!t) return null;
   const cols = nomiColonne(t);

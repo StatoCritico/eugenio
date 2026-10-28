@@ -403,10 +403,10 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--primario); wid
 .scarica .formato { font: 600 var(--c-xs)/1 var(--titoli); letter-spacing: .06em; padding: .2rem .4rem; border-radius: var(--r-s);
   background: var(--rialzo); color: var(--tenue); }
 .report-titolo { flex-basis: 100%; margin-top: var(--s4); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; color: var(--tenue); }
-.scarica.report { gap: 0; }
-.scarica.report .bottone { border-radius: 0; margin-left: -1px; min-width: 6.5rem; }
-.scarica.report .bottone:first-of-type { border-radius: var(--r) 0 0 var(--r); margin-left: 0; }
-.scarica.report .bottone:last-of-type { border-radius: 0 var(--r) var(--r) 0; }
+/* cinque formati: pulsanti separati che vanno a capo ordinatamente quando la colonna è stretta */
+.scarica.report { gap: var(--s2); }
+.scarica.report .bottone { min-width: 6.5rem; }
+.report-nota { flex-basis: 100%; margin: var(--s1) 0 0; font-size: var(--c-xs); color: var(--tenue); }
 .scarica.report .bottone::before { display: none; }
 .scarica.report .bottone:hover, .scarica.report .bottone:focus-visible { position: relative; z-index: 1; }
 
@@ -775,7 +775,7 @@ table.ind-confronto th small, table.ind-confronto td small { display: block; fon
   .indice-laterale details[open] summary::after { content: "▴"; }
   .indice-laterale ol { margin: 0 var(--margine) var(--s3); }
   .piede { grid-template-columns: minmax(0, 1fr); }
-  .scarica.report .bottone { flex: 1; min-width: 0; }
+  .scarica.report .bottone { flex: 1 1 calc(50% - var(--s2)); min-width: 0; }
 }
 @media (min-width: 861px) { .indice-laterale summary { pointer-events: none; } }
 
@@ -804,3 +804,7 @@ table.confronto-cti thead th:last-child small { font-weight: 400; }
 /* mappa di Dati storici: comuni fuori dalla selezione (grigio medio nel tema scuro, chiaro nel chiaro) */
 :root { --comune-fuori: var(--bordo); }
 :root[data-theme="light"] { --comune-fuori: var(--linea); }
+
+/* avviso «servizio sperimentale» in cima al pannello delle cinque pagine dei servizi (28/10/2026) */
+.messaggio.sperimentale { margin: 0 0 var(--s5); }
+.messaggio.sperimentale b { font: 700 calc(var(--c-xl) * 1.5)/1.15 var(--titoli); margin-bottom: var(--s2); }   /* 50 % più grande dei titoli dei passi */

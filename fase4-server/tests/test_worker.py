@@ -143,3 +143,23 @@ def test_clima_senza_comuni(sito, tmp_path, monkeypatch):
 
 def test_date_del_clima():
     assert (10, 7) in C.CLIMA_DATE and (10, 1) in C.CLIMA_DATE
+
+
+def test_mercati_senza_credenziali_gme_non_manda_email(monkeypatch):
+    """Credenziali GME mancanti: nessun avviso; un errore vero invece sì."""
+    import sys, types
+    from servizio import worker as W
+    inviati = []
+    monkeypatch.setattr(W.avvisi, "invia", lambda o, t, *a, **k: inviati.append(o) or True)
+    esiti = [{"errori": ["Credenziali GME mancanti (GME_UTENTE / GME_PASSWORD o password_file)"], "sorveglianza": {}},
+             {"errori": ["Credenziali GME mancanti (x)", "EEX: timeout"], "sorveglianza": {}}]
+    notturno = types.SimpleNamespace(esegui=lambda cfg: esiti.pop(0))
+    pacchetto = types.ModuleType("mercati_energia"); pacchetto.notturno = notturno
+    config = types.ModuleType("mercati_energia.config"); config.carica = lambda p: {}
+    monkeypatch.setitem(sys.modules, "mercati_energia", pacchetto)
+    monkeypatch.setitem(sys.modules, "mercati_energia.notturno", notturno)
+    monkeypatch.setitem(sys.modules, "mercati_energia.config", config)
+    W.mercati()
+    assert inviati == []
+    W.mercati()
+    assert inviati == ["dati di mercato: aggiornamento incompleto"]

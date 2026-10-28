@@ -288,7 +288,7 @@ $("scarica-geojson").addEventListener("click", () => {
   scarica("patrimonio_punti.geojson", JSON.stringify(g), "application/geo+json");
 });
 
-// report (Excel, Word, PDF): le righe di tutti i blocchi unite e le fonti, come una sola risposta di /api/patrimonio
+// report (PDF, Excel, ODS): le righe di tutti i blocchi unite e le fonti, come una sola risposta di /api/patrimonio
 function corpoReport() { return stato.righe.length ? { righe: stato.righe, fonti: [...stato.fonti] } : null; }
 if (window.EUGENIO_REPORT) window.EUGENIO_REPORT.pulsanti($("report"), {
   tipo: "patrimonio",
