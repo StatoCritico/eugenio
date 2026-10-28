@@ -52,33 +52,42 @@ attiva = true
 #   python -m mercati_energia istat cerca FOI
 #   python -m mercati_energia istat struttura <id>
 # e correggere qui. `filtri` seleziona le righe dopo il download (nomi delle dimensioni SDMX).
+# `base`: serie unica nella base più recente (decisione del 28/10/2026). I periodi pubblicati solo nella base
+# precedente (DATA_TYPE `precedente`) si dividono per il coefficiente di raccordo = media dell'anno `anno` nella base
+# precedente / 100 (FOI 2025 in base 2015 = 121,4 → 1,214); `coefficiente = 1.214` lo impone se ISTAT ne pubblica
+# uno diverso. Verificato il 28/10/2026: FOI e NIC in base 2025 (dimensione ECOICOP_2), prezzi alla produzione in
+# base 2021. "00ST" è il FOI SENZA tabacchi ("00" è con i tabacchi).
 [istat.foi_annuale]
-descrizione = "FOI senza tabacchi – indice generale, medie annue"
-dataflow = "169_746"
-chiave = ""
+descrizione = "FOI senza tabacchi – indice generale, medie annue (base 2025=100)"
+dataflow = "169_750"
+chiave = "A.IT..4.00ST"
 dal = "2016"
-filtri = { E_COICOP_REV_ISTAT = "00" }
+filtri = { ECOICOP_2 = "00ST" }
+base = { tipo = "102", precedente = "56", anno = 2025, nome = "2025=100" }   # 102: da confermare con il 2026
 
 [istat.foi_mensile]
-descrizione = "FOI senza tabacchi – indice generale, mensile"
-dataflow = "169_745"
-chiave = ""
+descrizione = "FOI senza tabacchi – indice generale, mensile (base 2025=100)"
+dataflow = "169_748"
+chiave = "M.IT..4.00ST"
 dal = "2016-01"
-filtri = { E_COICOP_REV_ISTAT = "00" }
+filtri = { ECOICOP_2 = "00ST" }
+base = { tipo = "101", precedente = "55", anno = 2025, nome = "2025=100" }
 
 [istat.nic_energia]
-descrizione = "NIC – energia elettrica, gas e altri combustibili (COICOP 045), mensile"
-dataflow = "167_744"
-chiave = ""
+descrizione = "NIC – elettricità, gas e altri combustibili (ECOICOP 045), mensile (base 2025=100)"
+dataflow = "167_745"
+chiave = "M.IT..4.045"
 dal = "2016-01"
-filtri = { E_COICOP_REV_ISTAT = "045" }
+filtri = { ECOICOP_2 = "045" }
+base = { tipo = "85", precedente = "39", anno = 2025, nome = "2025=100" }
 
 [istat.prezzi_produzione_energia]
-descrizione = "Prezzi alla produzione dell'industria – fornitura di energia elettrica e gas (ATECO D35)"
+descrizione = "Prezzi alla produzione dell'industria – fornitura di energia elettrica e gas (ATECO D), mercato totale (base 2021=100)"
 dataflow = "145_360"
-chiave = ""
+chiave = "M.IT..N.T.D"
 dal = "2016-01"
-filtri = { ATECO_2007 = "D" }
+filtri = { ADJUSTMENT = "N", MARKET = "T", ECON_ACTIVITY_NACE_2007 = "D" }
+base = { tipo = "IND_PRIC_2021", precedente = "IND_PRIC2", anno = 2021, nome = "2021=100" }
 
 # ---------------------------------------------------------------- Eurostat (su richiesta)
 [eurostat.elettricita_pmi]

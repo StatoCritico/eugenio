@@ -19,9 +19,19 @@
 all'indietro nel tempo per al massimo un'ora (`max_minuti_storico`), finché arriva all'inizio di
 ciascuna serie: PUN e prezzi zonali dal 1° aprile 2004, PSV dall'avvio dell'MGP-GAS, IGI dalla prima
 pubblicazione. Le date di inizio non vanno indovinate: quando il GME smette di restituire dati per sei
-blocchi di fila, la serie si considera iniziata lì (`storico.json` registra fin dove è arrivato). Con le
-quote dell'API (non pubblicate dal GME: il programma le legge con `GetMyQuotas` e aspetta quando
-servono) lo storico completo dovrebbe arrivare in qualche notte; `stato` mostra il primo giorno
+blocchi di fila, la serie si considera iniziata lì (`storico.json` registra fin dove è arrivato).
+
+**Limiti dell'API GME** (letti con `quote-gme` il 28/10/2026; la guida tecnica non li pubblica): 5 connessioni
+contemporanee, **10 al minuto, 100 all'ora**, 2,25 MB di dati al minuto, 350 MB all'ora. Ogni chiamata è una
+connessione, comprese `Auth`, `GetMyQuotas` e le richieste respinte con 429. La finestra oraria parte dalla prima
+connessione (`lastModifiedHour`): superate le 100, il GME risponde 429 fino alla sua scadenza e ogni tentativo in più
+conta. Per questo il client (`gme.ClientGME`) legge le quote **una sola volta** all'avvio, conta in locale ogni
+chiamata e **aspetta prima** di superare 8 connessioni al minuto e 90 all'ora (margini in `MARGINE_CONNESSIONI`);
+se le quote dicono che la finestra in corso è già piena, aspetta che scada. Dopo un 429 aspetta 65 s, poi
+15 minuti a tentativo (o quanto dice `Retry-After`), al massimo 6 tentativi. Primo uso, 28/10/2026: la versione
+precedente leggeva le quote prima di ogni richiesta (due connessioni a richiesta) e riprovava ogni 65 s, quindi
+ha esaurito le 100 connessioni orarie e ha continuato a ricevere 429. Con ~90 richieste all'ora e un'ora a notte
+(`max_minuti_storico`), lo storico completo (~800 blocchi) richiede circa **9–10 notti**; `stato` mostra il primo giorno
 disponibile di ogni serie. Da verificare alla prima esecuzione: che lo storico precedente al 2025 del
 PUN sia restituito con la zona `PUN` come quello attuale (la guida tecnica descrive solo il PUN Index).
 
@@ -120,15 +130,28 @@ python -m mercati_energia importa psv_da.csv       # indici mensili da CSV: indi
 python -m mercati_energia quote-gme                # quote residue dell'API GME
 
 python -m mercati_energia istat cerca FOI          # trova i dataflow (gli id cambiano quando ISTAT ribasa)
-python -m mercati_energia istat struttura 169_746  # dimensioni e codici per costruire la chiave
+python -m mercati_energia istat struttura 169_748  # dimensioni e codici per costruire la chiave
 python -m mercati_energia istat scarica foi_annuale --forza
 python -m mercati_energia eurostat scarica elettricita_pmi gas_pmi --csv pmi.csv
 ```
 
-Verifica fatta il 25/10/2026: EEX (TTF, 60 giorni; future trimestrali), ARERA (PSV day-ahead) ed Eurostat rispondono e sono integrati; il servizio
-SDMX dell'ISTAT era fuori servizio (errore del loro database), quindi gli identificativi dei dataflow
-in `config.example.toml` vanno confermati con `istat cerca` alla prima esecuzione. L'API GME non è
-stata provata dal vivo (servono le tue credenziali): il codice segue la guida tecnica del 15/10/2025.
+Verifica fatta il 25/10/2026: EEX (TTF, 60 giorni; future trimestrali), ARERA (PSV day-ahead) ed Eurostat rispondono e sono integrati.
+
+**ISTAT, verifica del 28/10/2026** (SDMX di nuovo raggiungibile): FOI e NIC sono passati alla **base 2025** da gennaio
+2026 (dataflow FOI mensile `169_748`, FOI medie annue `169_750`, NIC `167_745`; dimensione `ECOICOP_2` al posto di
+`E_COICOP_REV_ISTAT`); i prezzi alla produzione (`145_360`) hanno la dimensione `ECON_ACTIVITY_NACE_2007` e dal 2026 solo
+la **base 2021** (`DATA_TYPE = IND_PRIC_2021`). Corretto anche il codice del FOI **senza tabacchi**: `00ST` (`00` è con i
+tabacchi). **Decisione di Paolo (28/10/2026): serie unica nella base più recente.** Con `base = {tipo, precedente, anno}`
+in configurazione, `istat.raccorda` tiene i valori della base nuova e riporta gli altri dividendo per il coefficiente di
+raccordo (media dell'anno di base nella base vecchia / 100: FOI 2025 = 121,4 → 1,214); ogni riga ha `raccordato`,
+`coefficiente`, `valore_originale` e `base`. Spiegato nella F.A.Q. `#istat-base`. Il comando `istat struttura` ora legge
+la DSD (`references=all` sul dataflow risponde 501); l'elenco completo dei dataflow può richiedere oltre 3 minuti.
+La cache delle serie ha l'id del dataflow nel nome, quindi cambiando dataflow si riscarica. 5 test in
+`tests/test_istat_raccordo.py`. L'API GME è stata provata
+dal vivo il 28/10/2026 (autenticazione, `GetMyQuotas`, prime richieste): limiti nella sezione sullo storico.
+
+Sul server il comando va lanciato con la configurazione della cartella dati, per esempio:
+`docker compose run --rm worker python -m mercati_energia -c /dati/mercati/config.toml quote-gme`.
 
 ## Convenzioni regionali
 

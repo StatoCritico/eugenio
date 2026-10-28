@@ -285,6 +285,23 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="licenza.html#dati">Licenza</a>.</p>
   </details>
 
+  <details id="istat-base">
+    <summary>Come trattate i cambi di base degli indici ISTAT?</summary>
+    <p>Ogni tanto l'<a href="https://www.istat.it/">ISTAT</a> cambia l'anno di riferimento dei suoi indici dei prezzi,
+      quello in cui l'indice vale 100. Da gennaio 2026 l'indice FOI (prezzi al consumo per le famiglie di operai e
+      impiegati, senza tabacchi) e il NIC sono in <strong>base 2025</strong>; prima erano in base 2015. I prezzi alla
+      produzione dell'industria sono in base 2021. I numeri delle due basi non si possono confrontare direttamente:
+      a dicembre 2025 il FOI valeva 121,5 in base 2015, a gennaio 2026 100,4 in base 2025.</p>
+    <p>Nelle nostre elaborazioni usiamo una <strong>serie unica nella base più recente</strong>. I mesi pubblicati solo
+      nella base vecchia si dividono per il <strong>coefficiente di raccordo</strong>, cioè la media dell'anno di base
+      calcolata nella base vecchia, divisa per 100. Per il FOI la media del 2025 in base 2015 è 121,4, quindi il
+      coefficiente è 1,214: dicembre 2025 diventa 121,5 / 1,214 = 100,1 in base 2025. Ogni valore porta con sé
+      l'indicazione se è originale o raccordato e il coefficiente usato.</p>
+    <p>Per l'adeguamento di un canone o di un prezzo in un contratto valgono le regole del contratto e i coefficienti
+      pubblicati dall'ISTAT (per esempio sul servizio <a href="https://rivaluta.istat.it/">Rivaluta</a>): il nostro
+      raccordo serve per analisi e confronti, e può differire dall'arrotondamento usato nei calcoli ufficiali.</p>
+  </details>
+
   <details id="formati-report">
     <summary>In che formati posso scaricare i report e i dati? Perché non in Word?</summary>
     <p><strong>Il servizio gratuito genera solo il PDF e i dati grezzi.</strong> I report delle pagine Previsione,

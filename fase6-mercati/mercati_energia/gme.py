@@ -10,6 +10,10 @@ Documentazione: "Servizio API del GME – Guida tecnica" (15/10/2025).
   POST /api/v1/RequestData   {"Platform","Segment","DataName","IntervalStart","IntervalEnd","Attributes"}
                              → {"ContentResponse": base64(zip(json))}
   GET  /api/v1/GetMyQuotas
+
+Limiti (GetMyQuotas, 28/10/2026): 5 connessioni contemporanee, 10 al minuto, 100 all'ora, 2,25 MB di dati al minuto,
+350 MB all'ora. Ogni chiamata è una connessione (anche Auth, GetMyQuotas e le risposte 429): il client le conta
+in locale e aspetta prima di superare i limiti (vedi ClientGME).
 """
 from __future__ import annotations
 
@@ -20,6 +24,7 @@ import json
 import logging
 import time
 import zipfile
+from collections import deque
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -35,17 +40,89 @@ class ErroreGME(RuntimeError):
     pass
 
 
+# Limiti letti dal vivo con GetMyQuotas il 28/10/2026 (la guida tecnica non li pubblica). Il client li rilegge
+# all'avvio e usa questi solo se la lettura fallisce. Ogni chiamata conta come connessione: Auth, GetMyQuotas e
+# RequestData, comprese quelle respinte con 429.
+LIMITI_PREDEFINITI = {"minuto": 10, "ora": 100, "dati_minuto": 2_250_000, "dati_ora": 350_000_000}
+MARGINE_CONNESSIONI = (2, 10)      # connessioni lasciate libere: al minuto, all'ora (8/min e 90/ora con i limiti di oggi)
+MARGINE_DATI = 0.9                 # frazione della quota di dati usata
+
+# sostituibili nei test
+_adesso = time.time
+_dormi = time.sleep
+
+
 class ClientGME:
-    def __init__(self, utente: str, password: str, timeout: float = 120):
+    """Client dell'API GME con un limitatore delle chiamate.
+
+    Il GME conta una finestra oraria che parte dalla prima connessione (`lastModifiedHour` di GetMyQuotas): oltre le
+    100 connessioni risponde 429 finché la finestra non scade, e ogni nuovo tentativo conta anch'esso. Per questo il
+    client tiene in locale l'istante di ogni chiamata e aspetta *prima* di superare il limite, invece di riprovare dopo
+    il 429. Le quote si leggono una sola volta, all'avvio, e servono anche a sapere quante connessioni sono già state
+    usate nella finestra in corso (per esempio da un'esecuzione precedente).
+    """
+
+    def __init__(self, utente: str, password: str, timeout: float = 120, transport: httpx.BaseTransport | None = None):
         if not utente or not password:
             raise ErroreGME("Credenziali GME mancanti (GME_UTENTE / GME_PASSWORD o password_file)")
         self.utente, self._pw = utente, password
-        self.http = httpx.Client(timeout=timeout, headers={"User-Agent": "progetto-energia/1.0"})
+        self.http = httpx.Client(timeout=timeout, headers={"User-Agent": "progetto-energia/1.0"}, transport=transport)
         self.token: str | None = None
+        self.limiti = dict(LIMITI_PREDEFINITI)
+        self._conn: deque[float] = deque()              # istanti delle connessioni dell'ultima ora
+        self._dati: deque[tuple[float, int]] = deque()  # (istante, byte ricevuti) dell'ultima ora
+        self._quote_lette = False
+
+    # ------------------------------------------------------------------ limitatore
+    def _max_minuto(self) -> int:
+        return max(1, int(self.limiti["minuto"]) - MARGINE_CONNESSIONI[0])
+
+    def _max_ora(self) -> int:
+        return max(1, int(self.limiti["ora"]) - MARGINE_CONNESSIONI[1])
+
+    def _pulisci(self, ora: float) -> None:
+        while self._conn and self._conn[0] <= ora - 3600:
+            self._conn.popleft()
+        while self._dati and self._dati[0][0] <= ora - 3600:
+            self._dati.popleft()
+
+    def _attesa_necessaria(self, ora: float) -> tuple[float, str]:
+        """Secondi da aspettare prima della prossima connessione (0 = si può chiamare subito)."""
+        self._pulisci(ora)
+        if len(self._conn) >= self._max_ora():
+            return self._conn[len(self._conn) - self._max_ora()] + 3600 - ora + 1, "connessioni all'ora"
+        ultimo_minuto = [t for t in self._conn if t > ora - 60]
+        if len(ultimo_minuto) >= self._max_minuto():
+            return ultimo_minuto[len(ultimo_minuto) - self._max_minuto()] + 60 - ora + 1, "connessioni al minuto"
+        dati_ora = sum(n for _, n in self._dati)
+        if dati_ora >= MARGINE_DATI * self.limiti["dati_ora"]:
+            return self._dati[0][0] + 3600 - ora + 1, "dati all'ora"
+        dati_min = [(t, n) for t, n in self._dati if t > ora - 60]
+        if sum(n for _, n in dati_min) >= MARGINE_DATI * self.limiti["dati_minuto"]:
+            return dati_min[0][0] + 60 - ora + 1, "dati al minuto"
+        return 0.0, ""
+
+    def _turno(self) -> None:
+        """Aspetta finché una nuova connessione resta nei limiti, poi la registra."""
+        while True:
+            ora = _adesso()
+            attesa, motivo = self._attesa_necessaria(ora)
+            if attesa <= 0:
+                self._conn.append(ora)
+                return
+            livello = logging.INFO if attesa > 120 else logging.DEBUG
+            log.log(livello, "GME: limite di %s raggiunto in locale, attendo %d s", motivo, attesa)
+            _dormi(attesa)
+
+    def _chiama(self, metodo: str, url: str, **kw) -> httpx.Response:
+        self._turno()
+        r = self.http.request(metodo, url, **kw)
+        self._dati.append((_adesso(), len(r.content)))
+        return r
 
     # ------------------------------------------------------------------ base
     def _auth(self) -> None:
-        r = self.http.post(f"{URL}/Auth", json={"Login": self.utente, "Password": self._pw})
+        r = self._chiama("POST", f"{URL}/Auth", json={"Login": self.utente, "Password": self._pw})
         d = _json_ci(r)
         if r.status_code != 200 or not d.get("success"):
             motivo = d.get("reason") or r.text[:200]
@@ -59,64 +136,109 @@ class ClientGME:
         return {"Authorization": f"Bearer {self.token}"}
 
     def quote(self) -> dict:
-        r = self.http.get(f"{URL}/GetMyQuotas", headers=self._intestazioni())
+        """Quote dell'API (una connessione). Aggiorna i limiti e il conto delle connessioni già usate."""
+        r = self._chiama("GET", f"{URL}/GetMyQuotas", headers=self._intestazioni())
         if r.status_code == 401:
             self.token = None
-            r = self.http.get(f"{URL}/GetMyQuotas", headers=self._intestazioni())
-        return _json_ci(r)
+            r = self._chiama("GET", f"{URL}/GetMyQuotas", headers=self._intestazioni())
+        if r.status_code != 200:
+            raise ErroreGME(f"GME GetMyQuotas: risposta {r.status_code} {r.text[:200]}")
+        d = _json_ci(r)
+        self._quote_lette = True
+        self._usa_quote(d)
+        return d
 
-    def _attendi_quote(self, dati_stimati: int) -> None:
-        """Se la richiesta farebbe superare la quota oraria di dati, aspetta l'ora successiva."""
-        try:
-            q = self.quote()
-        except Exception:  # la verifica delle quote non deve bloccare il download
+    def _usa_quote(self, d: dict) -> None:
+        lim = {k.lower(): v for k, v in (d.get("limits") or {}).items()}
+        for chiave, nome in (("minuto", "maxconnectionsperminute"), ("ora", "maxconnectionsperhour"),
+                             ("dati_minuto", "maxdataperminute"), ("dati_ora", "maxdataperhour")):
+            if lim.get(nome):
+                self.limiti[chiave] = int(lim[nome])
+        # connessioni già usate nella finestra oraria del GME, oltre a quelle contate qui
+        usate = int(d.get("connectionsperhour") or 0) - len(self._conn)
+        if usate <= 0:
             return
-        lim = {k.lower(): v for k, v in (q.get("limits") or {}).items()}
-        usati_h = q.get("dataperhour") or 0
-        max_h = lim.get("maxdataperhour")
-        if max_h and usati_h + dati_stimati > max_h:
-            ora = dt.datetime.now()
-            attesa = 3600 - (ora.minute * 60 + ora.second) + 5
-            log.info("Quota oraria GME quasi esaurita (%s/%s): attendo %d s", usati_h, max_h, attesa)
-            time.sleep(attesa)
+        ora = _adesso()
+        inizio = _istante_roma(d.get("lastmodifiedhour"))
+        if inizio is None or inizio > ora:
+            inizio = ora                        # non si sa quando scade la finestra: la si considera appena iniziata
+        if inizio <= ora - 3600:
+            return                              # finestra già scaduta: il contatore del GME si azzera alla prossima chiamata
+        self._conn.extendleft([inizio] * usate)
+        self._conn = deque(sorted(self._conn))
+        log.info("GME: %d connessioni già usate nella finestra oraria iniziata alle %s",
+                 int(d.get("connectionsperhour") or 0), dt.datetime.fromtimestamp(inizio, ROMA).strftime("%H:%M"))
+
+    def _assicura_quote(self) -> None:
+        if self._quote_lette:
+            return
+        self._quote_lette = True
+        self._intestazioni()                # credenziali sbagliate o scadute: errore subito, con il suo messaggio
+        try:
+            self.quote()
+        except Exception as e:  # senza quote si usano i limiti predefiniti
+            log.warning("GME: quote non lette (%s), uso i limiti predefiniti %s", e, self.limiti)
+
+    @staticmethod
+    def _attesa_dopo_429(r: httpx.Response, volte: int) -> float:
+        """Il primo 429 può essere il limite al minuto (65 s); se si ripete è quello orario: si riprova ogni 15 minuti,
+        perché ogni tentativo conta come connessione e non ha senso consumarne altre a vuoto."""
+        try:
+            return float(r.headers["Retry-After"]) + 1
+        except (KeyError, ValueError):
+            return 65 if volte == 1 else 900
 
     def richiesta(self, segmento: str, nome: str, dal: dt.date, al: dt.date, attributi: dict | None = None,
                   piattaforma: str = "PublicMarketResults", dati_stimati: int = 0) -> list[dict]:
+        """`dati_stimati` non serve più (il limitatore conta i byte ricevuti): resta per compatibilità."""
         corpo = {"Platform": piattaforma, "Segment": segmento, "DataName": nome,
                  "IntervalStart": int(dal.strftime("%Y%m%d")), "IntervalEnd": int(al.strftime("%Y%m%d")),
                  "Attributes": attributi or {}}
+        self._assicura_quote()
+        respinte = 0
         for tentativo in range(6):
-            if dati_stimati:
-                self._attendi_quote(dati_stimati)
             try:
-                r = self.http.post(f"{URL}/RequestData", json=corpo, headers=self._intestazioni())
+                r = self._chiama("POST", f"{URL}/RequestData", json=corpo, headers=self._intestazioni())
             except httpx.HTTPError as e:
                 log.warning("GME: errore di rete (%s), riprovo", e)
-                time.sleep(30 * (tentativo + 1))
+                _dormi(30 * (tentativo + 1))
                 continue
             if r.status_code == 401:
                 self.token = None
                 continue
             if r.status_code == 429:
-                log.warning("GME: limite di richieste, attendo 65 s")
-                time.sleep(65)
+                respinte += 1
+                attesa = self._attesa_dopo_429(r, respinte)
+                log.warning("GME: limite di richieste superato (429, %d° volta), attendo %d s", respinte, attesa)
+                _dormi(attesa)
                 continue
             if r.status_code >= 500:
-                time.sleep(30 * (tentativo + 1))
+                _dormi(30 * (tentativo + 1))
                 continue
             d = _json_ci(r)
             contenuto = d.get("contentresponse")
             if not contenuto:
                 motivo = d.get("resultrequest") or r.text[:300]
                 if "quot" in str(motivo).lower() or "limit" in str(motivo).lower():
-                    log.warning("GME: %s – attendo l'ora successiva", motivo)
-                    time.sleep(3600 - dt.datetime.now().minute * 60 + 5)
+                    log.warning("GME: %s – attendo 15 minuti", motivo)
+                    _dormi(900)
                     continue
                 if "nessun" in str(motivo).lower() or "no data" in str(motivo).lower():
                     return []
                 raise ErroreGME(f"GME {nome} {segmento} {dal}–{al}: {motivo}")
             return _decodifica(contenuto)
         raise ErroreGME(f"GME {nome}: troppi tentativi falliti")
+
+
+def _istante_roma(testo) -> float | None:
+    """'2026-10-28T19:44:13.08' (ora italiana, senza fuso) → istante Unix."""
+    if not testo:
+        return None
+    try:
+        t = dt.datetime.fromisoformat(str(testo))
+    except ValueError:
+        return None
+    return (t if t.tzinfo else t.replace(tzinfo=ROMA)).timestamp()
 
 
 def _json_ci(r: httpx.Response) -> dict:
