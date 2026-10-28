@@ -92,7 +92,7 @@ $("anni").addEventListener("change", () => stato.istat && calcola());
 // funziona lo stesso senza il confronto.
 let tabellaDPR = null;
 function caricaDPR() {
-  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261028d")
+  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261028e")
     .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   return tabellaDPR;
 }
@@ -266,11 +266,18 @@ function confronto(calc, legge, diff) {
   return d;
 }
 
+// nella pagina col pulsante del riquadro (grafici.js); disegnaGG fa il disegno, con le misure del riquadro se servono
 function graficoGG(gg, ggLegge = null) {
-  const box = $("grafico-gg"); box.innerHTML = "";
+  const box = $("grafico-gg");
+  if (!Object.keys(gg.per_stagione).length) { box.innerHTML = ""; return; }
+  const disegna = (dest, misure) => disegnaGG(dest, misure, gg, ggLegge);
+  if (window.EUGENIO_GRAFICI) window.EUGENIO_GRAFICI.registra(box, disegna, { titolo: `Gradi giorno per stagione: ${$("titolo-comune").textContent}` });
+  else { box.innerHTML = ""; disegna(box, null); }
+}
+function disegnaGG(box, misure, gg, ggLegge) {
   const voci = Object.entries(gg.per_stagione);
-  if (!voci.length) return;
-  const W = 640, H = 220, sx = 44, dx = 8, su = 16, gi = 26;
+  const W = misure && misure.riquadro ? misure.larghezza : 640, H = misure && misure.riquadro ? misure.altezza : 220;
+  const sx = 44, dx = 8, su = 16, gi = 26;
   const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
     "aria-label": `Gradi giorno per stagione, da ${num(gg.minimo)} a ${num(gg.massimo)}`
       + (ggLegge !== null ? `; valore del DPR 412/93 ${num(ggLegge)}` : "") }, box);
@@ -283,11 +290,15 @@ function graficoGG(gg, ggLegge = null) {
     el("line", { x1: sx, x2: W - dx, y1: y, y2: y, stroke: "var(--linea)", "stroke-width": .6 }, svg);
     el("text", { x: sx - 6, y: y + 4, "text-anchor": "end" }, svg).textContent = num(v);
   }
-  const passo = (W - sx - dx) / voci.length, larg = Math.min(passo * 0.62, 46);
+  const passo = (W - sx - dx) / voci.length, larg = Math.min(passo * 0.62, misure && misure.riquadro ? 72 : 46);
+  const punti = [];
   voci.forEach(([st, v], i) => {
     const x = sx + passo * i + (passo - larg) / 2;
     const r = el("rect", { x, y: Y(v), width: larg, height: Y(0) - Y(v), fill: "var(--primario)", rx: 2, class: "barra" }, svg);
-    el("title", {}, r).textContent = `${st}: ${num(v)} GG`;
+    const righe = [["var(--primario)", `Gradi giorno: ${num(v)} GG`]];
+    const diff = differenza(v, ggLegge);
+    if (diff !== null) righe.push(["var(--segno)", `rispetto al DPR 412/93 (${num(ggLegge)}): ${diff > 0 ? "+" : ""}${num(diff, 1)} %`]);
+    punti.push({ x: x + larg / 2, titolo: `Stagione ${st}`, righe, elementi: [r] });
     if (i % Math.ceil(voci.length / 8) === 0 || i === voci.length - 1)
       el("text", { x: x + larg / 2, y: H - 8, "text-anchor": "middle" }, svg).textContent = st;
   });
@@ -315,6 +326,7 @@ function graficoGG(gg, ggLegge = null) {
     leg.appendChild(h("span", null, "nessuna linea del DPR 412/93: il comune è nato da una fusione e la legge non ha un valore unico"));
   }
   box.appendChild(leg);
+  if (window.EUGENIO_GRAFICI) window.EUGENIO_GRAFICI.osserva(svg, punti, { area: [sx, su, W - dx, H - gi], guida: false });
 }
 
 const COLONNE = [

@@ -239,7 +239,18 @@ $("calcola").addEventListener("click", async () => {
 function mostraRisultato(r) {
   const box = $("risultato");
   const g = document.createElement("div"); g.className = "grafico"; box.appendChild(g);
-  const W = 640, H = 300, sx = 44, dx = 8, su = 12, gi = 28;
+  // nella pagina col pulsante del riquadro (grafici.js); disegnaPrevisione usa le misure del riquadro quando servono
+  const disegna = (dest, misure) => disegnaPrevisione(dest, misure, r);
+  const nome = (stato.comuni.get(r.istat) || {}).nome;
+  if (window.EUGENIO_GRAFICI) window.EUGENIO_GRAFICI.registra(g, disegna, { titolo: `Previsione dei consumi${nome ? ` – ${nome}` : ""}` });
+  else disegna(g, null);
+  mostraDettagli(r, box);
+}
+
+const numero = (x, dec = 2) => x === null || x === undefined ? "—" : Number(x).toLocaleString("it-IT", { maximumFractionDigits: dec });
+function disegnaPrevisione(g, misure, r) {
+  const W = misure && misure.riquadro ? misure.larghezza : 640, H = misure && misure.riquadro ? misure.altezza : 300;
+  const sx = 44, dx = 8, su = 12, gi = 28;
   const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Grafico della previsione" }, g);
   const st = r.storico, pr = r.previsione, n0 = st.t.length, n = n0 + pr.t.length;
   const tutti = [...st.v, ...pr["0.1"], ...pr["0.9"], ...((r.verifica && r.verifica.reale) || [])].filter((x) => x !== null);
@@ -267,7 +278,7 @@ function mostraRisultato(r) {
     const t = el("text", { x: sx - 6, y: y + 4, "text-anchor": "end" }, svg);
     t.textContent = v.toLocaleString("it-IT", { maximumFractionDigits: v < 10 ? 1 : 0 });
   }
-  const etich = [...st.t, ...pr.t], passi = 6;
+  const etich = [...st.t, ...pr.t], passi = Math.max(2, Math.min(12, Math.round((W - sx - dx) / 100)));
   for (let k = 0; k <= passi; k++) {
     const i = Math.round((n - 1) * k / passi), d = new Date(etich[i]);
     const t = el("text", { x: X(i), y: H - 8, "text-anchor": k === 0 ? "start" : k === passi ? "end" : "middle" }, svg);
@@ -297,6 +308,37 @@ function mostraRisultato(r) {
     `<span><i class="linea" style="color:${"var(--serie-1)"};border-top-width:3px"></i>previsione (mediana)</span>` +
     `<span><i style="background:${"var(--serie-1)"};opacity:.45"></i>4 casi su 10 / 8 casi su 10</span>`;
   g.appendChild(leg);
+
+  // valori al passaggio del mouse, al tocco o con le frecce (grafici.js)
+  if (window.EUGENIO_GRAFICI) {
+    const quando = (t) => {
+      const d = new Date(t);
+      return r.passo === "ora"
+        ? `${d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "long", year: "numeric" })}, ore ${d.getHours()}`
+        : d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
+    };
+    const punti = etich.map((t, i) => {
+      const righe = [], segni = [];
+      if (i < n0) {
+        if (st.v[i] !== null) { righe.push(["var(--inchiostro)", `dati caricati: ${numero(st.v[i])}`]); segni.push([X(i), Y(st.v[i]), "var(--inchiostro)"]); }
+      } else {
+        const k = i - n0, med = pr["0.5"][k];
+        if (med !== null) { righe.push(["var(--serie-1)", `previsione (mediana): ${numero(med)}`]); segni.push([X(i), Y(med), "var(--serie-1)"]); }
+        righe.push([null, `8 casi su 10 tra ${numero(pr["0.1"][k])} e ${numero(pr["0.9"][k])}`]);
+        righe.push([null, `4 casi su 10 tra ${numero(pr["0.3"][k])} e ${numero(pr["0.7"][k])}`]);
+        const vero = r.verifica && r.verifica.reale ? r.verifica.reale[k] : null;
+        if (vero !== null && vero !== undefined) { righe.push(["var(--serie-2)", `valore reale: ${numero(vero)}`]); segni.push([X(i), Y(vero), "var(--serie-2)"]); }
+        if (pr.fonte_meteo[k]) righe.push([null, `meteo: ${pr.fonte_meteo[k]}`]);
+      }
+      return { x: X(i), titolo: quando(t), righe, segni };
+    });
+    window.EUGENIO_GRAFICI.osserva(svg, punti, { area: [sx, su, W - dx, H - gi] });
+  }
+}
+
+// cifre della verifica, avvisi e pulsanti per scaricare, sotto il grafico
+function mostraDettagli(r, box) {
+  const pr = r.previsione;
 
   if (r.verifica) {
     const v = r.verifica, d = document.createElement("div"); d.className = "verifica";

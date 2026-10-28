@@ -14,6 +14,8 @@ import httpx
 
 log = logging.getLogger("indicatori_ssn")
 AGENTE = "EuGEnio-indicatori/1.0 (+https://eugenio.statocritico.it; dati aperti, senza scopo di lucro)"
+# errori che non passano riprovando dopo pochi secondi: inutile insistere
+DEFINITIVI = ("manutenzione", "servizio non disponibile")
 
 
 class FonteNonDisponibile(RuntimeError):
@@ -65,8 +67,9 @@ class Rete:
                 return r
             except FonteNonDisponibile as e:
                 ultimo = e
-                if "manutenzione" in str(e):
-                    break                     # inutile insistere
+                if any(d in str(e) for d in DEFINITIVI):
+                    log.warning("%s: %s", url, e)
+                    break
             except httpx.HTTPError as e:
                 ultimo = e
             log.warning("tentativo %d di %d non riuscito per %s: %s", n, self.tentativi, url, ultimo)
@@ -81,6 +84,17 @@ class Rete:
         if atteso and atteso not in tipo:
             if "html" in tipo:
                 raise FonteNonDisponibile("la fonte risponde con una pagina HTML (manutenzione o servizio sospeso)")
+            if "json" in tipo:
+                # OpenBDAP risponde 200 con {"success": false, "error": {"message": "Cannot convert data to csv"}}
+                # quando il suo archivio dati non funziona (28/10/2026): è un guasto del portale, non del file
+                try:
+                    r.read()
+                    d = r.json()
+                    msg = (d.get("error") or {}).get("message") if isinstance(d, dict) else None
+                except Exception:
+                    msg = None
+                raise FonteNonDisponibile(f"servizio non disponibile: il portale risponde con un errore invece dei "
+                                          f"dati ({msg or tipo})")
             raise FonteNonDisponibile(f"tipo di risposta inatteso: {tipo or 'nessuno'}")
 
     def json(self, metodo: str, url: str, corpo=None, *, chiave=None) -> dict:

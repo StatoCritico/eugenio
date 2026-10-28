@@ -63,6 +63,9 @@ sito/
   font/             caratteri ospitati sul sito (Barlow, Hanken Grotesk; licenza OFL)
   logo/             logo, scritta, simbolo e icone per ogni vestito (SVG, scuro e chiaro)
   aspetto.js        pulsanti del tema ◐ e del vestito ✱
+  grafici.js        modulo comune dei grafici: pulsante ↗ e riquadro flottante (zoom, trascinamento, ✱ e ◐),
+                    riquadretto dei valori sui grafici mensili e annuali (regole in README_stile.md § Grafici)
+  divisore.js       maniglia tra le due colonne delle pagine dei servizi: allarga o stringe il pannello di destra
   README_stile.md   vestiti, variabili CSS, colori delle regioni e delle serie
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
 costruisci_dpr412.py  rigenera dati/dpr412.* (Normattiva + elenchi ISTAT di comuni, soppressi e variazioni)
@@ -96,7 +99,7 @@ tema e del vestito, foglio di stile, icone) si modificano **solo** in `parti/`; 
 da sé la voce di menu della pagina (`aria-current="page"`). Le fonti di ogni pagina strumento (`.piede-fonti`) restano
 nella pagina, sopra la riga finale. Prima di ogni pubblicazione che cambia stile, script o pagine:
 ```bash
-python costruisci_pagine.py --versione 20261028d   # aaaammgg + lettera: nuova versione in pagine e script
+python costruisci_pagine.py --versione 20261028e   # aaaammgg + lettera: nuova versione in pagine e script
 python costruisci_pagine.py --controlla            # 0 = tutto aggiornato (lo usano anche i test)
 python -m pytest tests                             # idempotenza, voce attiva, versione
 ```
@@ -114,7 +117,7 @@ scp ..\..\sito.tar.gz eugenio:~/
 ssh eugenio "tar -xzmf ~/sito.tar.gz --no-overwrite-dir -C /srv/energia/sito && rm ~/sito.tar.gz"
 ```
 Caddy lo serve subito, senza riavvii. Le pagine richiamano `stile.css` e gli script con un numero di versione
-(`?v=20261028d`): quando si cambiano stile o script, si aumenta con `costruisci_pagine.py --versione …`, così i
+(`?v=20261028e`): quando si cambiano stile o script, si aumenta con `costruisci_pagine.py --versione …`, così i
 browser e Cloudflare non usano la copia vecchia rimasta in memoria.
 
 Per vedere solo la grafica in locale: `python -m http.server -d sito 8000` (mappe visibili, dati no: servono le API).
@@ -244,5 +247,6 @@ in ODT. Sul server i due formati sono spenti (rispondono 410, variabile `REPORT_
   (PDF ed Excel/ODS; vale anche per i Word e ODT scaricati prima); `licenza.html` (`#dati`, `#report`); Sitografia
   (python-docx «spento dal 28/10/2026», odfpy per l'ODS); commenti di `patrimonio.js`, `legge10.js`, `indicatori.js` e
   `README_stile.md`.
-- Versione cache: `?v=20261028d`. Provato con Playwright: pulsanti a 1440 e 390 px (tema scuro e chiaro), nessun
+- Versione cache: `?v=20261028e` (28/10/2026 notte: grafici nel riquadro flottante e osservabili, pannelli
+  ridimensionabili, freccia ↓ della piccola mappa corretta). Provato con Playwright: pulsanti a 1440 e 390 px (tema scuro e chiaro), nessun
   errore né scorrimento orizzontale, clic su ODS → `formato=ods`; F.A.Q. aperta da `#formati-report`.

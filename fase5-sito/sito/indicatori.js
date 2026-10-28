@@ -280,13 +280,19 @@ function confronto(t) {
 const nomeComp = () => NOMI_COMP[stato.comp];
 
 // ------------------------------------------------------------------ grafici
-function contenitore(id, etichetta) {
-  const box = $(id); box.innerHTML = ""; box.classList.add("ind-grafico");
-  // larghezza del disegno vicina a quella vera, così su un telefono le scritte restano leggibili
-  const W = Math.round(Math.max(340, Math.min(640, box.clientWidth || 640))), H = W < 480 ? 220 : 240;
-  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": etichetta }, box);
-  const tip = h("div", "ind-suggerimento"); tip.setAttribute("aria-hidden", "true"); box.appendChild(tip);
-  return { box, svg, tip, W, H };
+// dest: dove disegnare (il box della pagina o il corpo del riquadro di grafici.js), già vuoto; misure: da grafici.js
+function contenitore(dest, misure, etichetta) {
+  // larghezza del disegno vicina a quella vera, così su un telefono le scritte restano leggibili; nel riquadro tutta
+  const W = misure && misure.riquadro ? misure.larghezza : Math.round(Math.max(340, Math.min(640, (misure && misure.larghezza) || 640)));
+  const H = misure && misure.riquadro ? misure.altezza : (W < 480 ? 220 : 240);
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": etichetta }, dest);
+  return { box: dest, svg, W, H };
+}
+// disegno nella pagina col pulsante del riquadro (grafici.js); si rifà da sé quando il box cambia larghezza
+function registraGrafico(id, titolo, disegna) {
+  const box = $(id);
+  if (window.EUGENIO_GRAFICI) window.EUGENIO_GRAFICI.registra(box, disegna, { titolo, adatta: true });
+  else { box.innerHTML = ""; disegna(box, { larghezza: box.clientWidth, altezza: null, riquadro: false }); }
 }
 function passoTondo(max) {
   if (!(max > 0)) return 1;
@@ -309,35 +315,14 @@ function assi(g, max, fmt) {
   });
   return { X, Y, larg, sx, dx, su, gi };
 }
-function suggerimento(g, i, righe, x) {
-  const { tip, box, svg } = g;
-  tip.innerHTML = "";
-  tip.appendChild(h("b", null, `${anni()[i]}${provvisorio(anni()[i]) ? " (provvisorio)" : ""}`));
-  for (const [colore, testo] of righe) {
-    const d = h("div"); const q = h("i"); q.style.background = colore; d.append(q, testo); tip.appendChild(d);
-  }
-  tip.style.display = "block";
-  const r = svg.getBoundingClientRect(), b = box.getBoundingClientRect();
-  const px = (x / g.W) * r.width + (r.left - b.left);
-  const sinistra = px + 14 + tip.offsetWidth > b.width ? px - 14 - tip.offsetWidth : px + 14;
-  tip.style.left = `${Math.max(0, sinistra)}px`;
-  tip.style.top = `${r.top - b.top + 8}px`;
-}
-function bersagli(g, a, testo, guida) {
-  const n = anni().length;
-  const linea = guida ? el("line", { class: "guida", y1: a.su, y2: g.H - a.gi, x1: 0, x2: 0, visibility: "hidden" }, g.svg) : null;
-  for (let i = 0; i < n; i++) {
-    const r = el("rect", { x: a.X(i) - a.larg / 2, y: a.su, width: a.larg, height: g.H - a.su - a.gi, class: "bersaglio" }, g.svg);
-    const entra = () => {
-      const righe = testo(i);
-      if (!righe.length) return;
-      if (linea) { linea.setAttribute("x1", a.X(i)); linea.setAttribute("x2", a.X(i)); linea.setAttribute("visibility", "visible"); }
-      suggerimento(g, i, righe, a.X(i));
-    };
-    r.addEventListener("pointerenter", entra);
-    r.addEventListener("pointermove", entra);
-    r.addEventListener("pointerleave", () => { g.tip.style.display = "none"; if (linea) linea.setAttribute("visibility", "hidden"); });
-  }
+// valori anno per anno al passaggio del mouse, al tocco o con le frecce (grafici.js, EUGENIO_GRAFICI.osserva):
+// testo(i) → righe [colore, testo]; segni(i) → punti da evidenziare [x, y, colore]; elementi(i) → barre da evidenziare
+function bersagli(g, a, testo, { segni = () => [], elementi = () => [], guida = true } = {}) {
+  if (!window.EUGENIO_GRAFICI) return;
+  const punti = anni().map((anno, i) => ({
+    x: a.X(i), titolo: `${anno}${provvisorio(anno) ? " (provvisorio)" : ""}`, righe: testo(i), segni: segni(i), elementi: elementi(i),
+  }));
+  window.EUGENIO_GRAFICI.osserva(g.svg, punti, { area: [a.sx, a.su, g.W - a.dx, g.H - a.gi], guida });
 }
 function legenda(box, voci) {
   const leg = h("div", "legenda");
@@ -350,13 +335,19 @@ function legenda(box, voci) {
 }
 
 function graficoSpesa(t) {
+  const n = anni().length;
+  registraGrafico("grafico-spesa", `Spesa per ${nomeComp()} di ${t.ente.nome}, dal ${anni()[0]} al ${anni()[n - 1]}`,
+    (dest, misure) => disegnaSpesa(dest, misure, t));
+}
+function disegnaSpesa(dest, misure, t) {
   const u = t.ente, n = anni().length;
   const parti = stato.mostra ? PARTI.filter(([k]) => COMPONENTI[stato.comp].includes(k)) : null;
   const tot = anni().map((_, i) => spesa(u, i));
   const max = Math.max(0, ...tot.filter((x) => x !== null));
-  const g = contenitore("grafico-spesa", `Spesa per ${nomeComp()} di ${u.nome}, dal ${anni()[0]} al ${anni()[n - 1]}`);
+  const g = contenitore(dest, misure, `Spesa per ${nomeComp()} di ${u.nome}, dal ${anni()[0]} al ${anni()[n - 1]}`);
   const a = assi(g, max || 1, euroBreve);
-  const larg = Math.min(a.larg * 0.6, 38);
+  const larg = Math.min(a.larg * 0.6, misure && misure.riquadro ? 64 : 38);
+  const barre = anni().map(() => []);
   anni().forEach((anno, i) => {
     if (tot[i] === null) return;
     const x = a.X(i) - larg / 2;
@@ -369,6 +360,7 @@ function graficoSpesa(t) {
       const gap = base > 0 ? 1 : 0;                       // 2px di stacco tra i segmenti
       const r = el("rect", { x, y: y1, width: larg, height: Math.max(0, y0 - y1 - gap), fill: colore, rx: alto ? 3 : 0 }, g.svg);
       if (provvisorio(anno)) r.setAttribute("fill-opacity", ".55");
+      barre[i].push(r);
       base += v;
     });
   });
@@ -380,7 +372,7 @@ function graficoSpesa(t) {
     const comb = u.v.BA0340[i];
     if (comb !== null && comb !== undefined) righe.push(["var(--linea)", `Combustibili e carburanti, esclusi: ${valore("spesa", comb)}`]);
     return righe;
-  }, false);
+  }, { elementi: (i) => barre[i], guida: false });
   if (parti) legenda(g.box, parti.map(([, nome, c]) => [`var(${c})`, nome]));
   g.box.appendChild(h("p", "aiuto", `In euro all'anno. ${anni().filter(provvisorio).map((x) => `${x}*`).join(", ")} provvisorio, su fondo grigio. `
     + "I combustibili e carburanti (voce BA0340, comprende il carburante degli automezzi) non sono nel totale: si vedono passando sulle colonne."));
@@ -415,13 +407,17 @@ function notaPopolazione(t) {
 }
 
 function graficoLinee(id, ind, t) {
+  registraGrafico(id, `${INDICATORI[ind].nome} dal ${anni()[0]} al ${anni()[anni().length - 1]}`,
+    (dest, misure) => disegnaLinee(dest, misure, ind, t));
+}
+function disegnaLinee(dest, misure, ind, t) {
   const cols = nomiColonne(t);
   const serie = SERIE.filter(([k]) => t[k]).map(([k, c, tratto]) => ({ k, nome: k === "ente" && !t.consolidato ? t.ente.nome : cols[k], colore: `var(${c})`, tratto,
     v: anni().map((_, i) => { const x = indicatori(t[k], i)[ind]; return x === undefined ? null : x; }) }))
     .filter((s) => s.v.some((x) => x !== null));
   const d = INDICATORI[ind], scala = d.perc ? 100 : 1;
   const tutti = serie.flatMap((s) => s.v.filter((x) => x !== null).map((x) => x * scala));
-  const g = contenitore(id, `${d.nome} dal ${anni()[0]} al ${anni()[anni().length - 1]}: ${serie.map((s) => s.nome).join(", ")}`);
+  const g = contenitore(dest, misure, `${d.nome} dal ${anni()[0]} al ${anni()[anni().length - 1]}: ${serie.map((s) => s.nome).join(", ")}`);
   if (!tutti.length) { g.box.appendChild(h("p", "aiuto", "Nessun dato per questo indicatore.")); return; }
   const fmt = (v) => d.perc ? `${num(v, v < 10 && v % 1 ? 1 : 0)} %` : ind === "leva" ? `${num(v, 0)}x` : euroBreve(v);
   const a = assi(g, Math.max(...tutti) * 1.05, fmt);
@@ -440,7 +436,8 @@ function graficoLinee(id, ind, t) {
       if (provvisorio(anni()[i])) { c.style.fill = "var(--foglio)"; c.style.stroke = s.colore; }
     });
   }
-  bersagli(g, a, (i) => serie.filter((s) => s.v[i] !== null).map((s) => [s.colore, `${s.nome}: ${valore(ind, s.v[i])}`]), true);
+  bersagli(g, a, (i) => serie.filter((s) => s.v[i] !== null).map((s) => [s.colore, `${s.nome}: ${valore(ind, s.v[i])}`]),
+    { segni: (i) => serie.filter((s) => s.v[i] !== null).map((s) => [a.X(i), a.Y(s.v[i] * scala), s.colore]) });
   legenda(g.box, serie.map((s) => [s.colore, s.nome, s.tratto ? (s.tratto === "2 3" ? "linea punti" : "linea tratto") : "linea"]));
   const mancano = SERIE.filter(([k]) => t[k] && !serie.some((s) => s.k === k)).map(([k]) => cols[k]);
   if (mancano.length) g.box.appendChild(h("p", "aiuto", `Non disponibile per: ${mancano.join(", ")}.`));
@@ -583,11 +580,6 @@ function fonti() {
   f.append(`${stato.indice.elaborazione} Dati aggiornati al ${new Date(stato.indice.aggiornato).toLocaleDateString("it-IT")}.`);
 }
 
-let ultimaLarghezza = innerWidth;
-addEventListener("resize", () => {
-  if (Math.abs(innerWidth - ultimaLarghezza) < 40 || !stato.chiave) return;
-  ultimaLarghezza = innerWidth;
-  mostra();
-});
+// i grafici si adattano da soli alla larghezza del loro box (finestra o divisore delle colonne): grafici.js
 
 carica().catch((e) => messaggio(`Indicatori non disponibili: ${e.message}`, true));

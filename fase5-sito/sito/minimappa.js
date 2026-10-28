@@ -219,7 +219,8 @@
         box.classList.toggle("ingrandita", frazione < 0.999);
       },
     });
-    box.querySelectorAll(".minimappa-comandi button").forEach((b) => b.addEventListener("click", () => z.zoom(+b.dataset.z)));
+    // solo +, − e ⟲: la freccia ↓ non ha data-z e non deve toccare la piccola mappa (prima la zoomava con NaN)
+    box.querySelectorAll(".minimappa-comandi button[data-z]").forEach((b) => b.addEventListener("click", () => z.zoom(+b.dataset.z)));
   }
 
   // cambio di regione dalla piccola mappa o da una regione vicina nella mappa grande: stessa strada per entrambe

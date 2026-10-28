@@ -30,18 +30,41 @@ def scrivi_json(f: Path, dati) -> int:
     return len(testo.encode())
 
 
+GUASTI_DI_FILA = 2          # anni del CE di fila senza risposta: OpenBDAP è giù, inutile provare gli altri
+
+
+def scarica_ce(rete: Rete, anni, cartella: Path) -> tuple[dict, list[str], bool]:
+    """CE di ogni anno. Se OpenBDAP non risponde si usa la copia in cache (ce_<anno>.csv) quando c'è; dopo
+    GUASTI_DI_FILA anni di fila senza risposta non si provano gli altri (si usa solo la cache).
+    Restituisce (righe per anno, anni mancanti, portale giù)."""
+    righe, mancanti, di_fila, giu = {}, [], 0, False
+    for a in anni:
+        cache = cartella / f"ce_{a}.csv"
+        if not giu:
+            try:
+                righe[a] = bdap.leggi(bdap.scarica_anno(rete, a, cartella))
+                di_fila = 0
+                continue
+            except FonteNonDisponibile as e:
+                di_fila += 1
+                log.error("CE %d non disponibile: %s", a, e)
+                if di_fila >= GUASTI_DI_FILA:
+                    giu = True
+                    log.error("OpenBDAP non disponibile (%d anni di fila senza risposta): non provo gli altri anni",
+                              di_fila)
+        if cache.exists():
+            log.warning("CE %d: uso la copia già scaricata (%s)", a, cache.name)
+            righe[a] = bdap.leggi(cache)
+        else:
+            mancanti.append(f"CE {a}")
+    return righe, mancanti, giu
+
+
 def aggiorna(out: Path, cache: Path, *, rinnova=False, pausa=2.0, parziale=False, anni=None) -> dict:
     anni = anni or K.ANNI
     rete = Rete(cache / "http", pausa=pausa, rinnova=rinnova)
-    mancanti = []
     try:
-        righe = {}
-        for a in anni:
-            try:
-                righe[a] = bdap.leggi(bdap.scarica_anno(rete, a, cache / "bdap"))
-            except FonteNonDisponibile as e:
-                log.error("CE %d non disponibile: %s", a, e)
-                mancanti.append(f"CE {a}")
+        righe, mancanti, giu = scarica_ce(rete, anni, cache / "bdap")
         rep = reporter.scarica(rete, anni)
         for m, per_anno in rep["dati"].items():
             mancanti += [f"ReportER {m} {a}" for a in anni if a not in per_anno]
@@ -50,7 +73,8 @@ def aggiorna(out: Path, cache: Path, *, rinnova=False, pausa=2.0, parziale=False
     finally:
         rete.chiudi()
     if mancanti and not parziale:
-        raise FonteNonDisponibile("dati mancanti, file del sito non aggiornati: " + ", ".join(mancanti))
+        motivo = "OpenBDAP non disponibile; " if giu else ""
+        raise FonteNonDisponibile(f"{motivo}dati mancanti, file del sito non aggiornati: " + ", ".join(mancanti))
     if not righe:
         raise FonteNonDisponibile("nessun anno del CE disponibile")
     r = calcolo.costruisci(calcolo.raccogli_ce(righe), rep, pop, anni)

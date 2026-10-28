@@ -501,9 +501,6 @@ table.mensili td.nd { color: var(--tenue); }
 .legenda i.linea { width: 24px; height: 0; border-top: 2px solid currentColor; border-radius: 0; background: none; }
 .legenda i.linea.tratto { border-top-style: dashed; }
 .legenda i.linea.punti { border-top-style: dotted; border-top-width: 3px; }
-.ind-suggerimento { position: absolute; z-index: 2; pointer-events: none; min-width: 10rem; max-width: 18rem; background: var(--foglio);
-  border: 1px solid var(--linea); border-radius: var(--r); padding: .45rem .65rem; font-size: var(--c-xs); box-shadow: var(--ombra-2);
-  display: none; font-variant-numeric: tabular-nums; }
 
 /* ------------------------------------------------------------------------------------------- pagine di testo */
 .articolo { padding: var(--s5) var(--margine) var(--s7); }
@@ -725,10 +722,6 @@ table.ind-confronto tbody th { white-space: normal; min-width: 8rem; }
 table.ind-confronto td.meno { color: var(--serie-2); font-weight: 700; }
 table.ind-confronto td.piu { color: var(--errore); font-weight: 700; }
 table.ind-confronto th small, table.ind-confronto td small { display: block; font-weight: 400; color: var(--tenue); font-size: var(--c-xs); white-space: normal; }
-.grafico .bersaglio { fill: transparent; cursor: crosshair; }
-.ind-grafico { position: relative; }
-.ind-suggerimento b { display: block; margin-bottom: .15rem; font-family: var(--titoli); }
-.ind-suggerimento i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: .35rem; vertical-align: -1px; }
 @media (max-width: 560px) {
   table.ind-confronto { font-size: var(--c-xs); }
   table.ind-confronto td.num, table.ind-confronto th.num { min-width: 0; }
@@ -808,3 +801,76 @@ table.confronto-cti thead th:last-child small { font-weight: 400; }
 /* avviso «servizio sperimentale» in cima al pannello delle cinque pagine dei servizi (28/10/2026) */
 .messaggio.sperimentale { margin: 0 0 var(--s5); }
 .messaggio.sperimentale b { font: 700 calc(var(--c-xl) * 1.5)/1.15 var(--titoli); margin-bottom: var(--s2); }   /* 50 % più grande dei titoli dei passi */
+
+/* ------------------------------------------------------------------------------------------- colonne ridimensionabili
+   divisore.js (28/10/2026): maniglia sul confine tra .mappa-area e .pannello; la larghezza scelta del pannello è in
+   --larghezza-pannello su main (classe .ridimensionato). Sotto gli 861 px c'è una colonna sola e la maniglia sparisce. */
+.strumento { position: relative; }
+.divisore { position: absolute; top: 0; bottom: 0; left: 0; width: 14px; margin-left: -7px; z-index: 4; cursor: col-resize;
+  touch-action: none; outline: none; }
+.divisore::before { content: ""; position: absolute; top: 0; bottom: 0; left: 6px; width: 2px; background: transparent; transition: background .15s; }
+.divisore-presa { position: sticky; top: calc(50vh + var(--alto-testata) / 2 - 22px); display: block; width: 6px; height: 44px; margin: 0 auto;
+  border-radius: var(--r-tondo); background: var(--bordo); opacity: .55; transition: opacity .15s, background .15s; }
+.divisore:hover::before, .divisore.attivo::before, .divisore:focus-visible::before { background: var(--primario); }
+.divisore:hover .divisore-presa, .divisore.attivo .divisore-presa, .divisore:focus-visible .divisore-presa { background: var(--primario); opacity: 1; }
+.divisore:focus-visible .divisore-presa { outline: 3px solid var(--inchiostro); outline-offset: 2px; }
+.ridimensiona-colonne, .ridimensiona-colonne * { cursor: col-resize !important; user-select: none !important; }
+@media (min-width: 861px) {
+  .strumento.ridimensionato { grid-template-columns: minmax(0, 1fr) var(--larghezza-pannello, 40%); }
+}
+@media (max-width: 860px) { .divisore { display: none; } }
+
+/* ------------------------------------------------------------------------------------------- grafici: riquadro e valori
+   grafici.js (28/10/2026), regole in README_stile.md, sezione «Grafici» */
+.grafico.con-riquadro { position: relative; padding-top: 34px; }
+.grafico-apri { position: absolute; top: 0; right: 0; display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0;
+  border: 1px solid var(--linea); border-radius: var(--r); background: var(--foglio); color: var(--tenue); cursor: pointer; z-index: 1; }
+.grafico-apri svg { width: 16px; height: 16px; }
+.grafico-apri:hover { color: var(--primario); border-color: var(--primario); background: var(--rialzo); }
+.grafico-apri:focus-visible { outline: 3px solid var(--inchiostro); outline-offset: 2px; }
+.grafico svg.osservabile { cursor: crosshair; }
+.grafico svg.osservabile:focus { outline: none; }
+.grafico svg.osservabile:focus-visible { outline: 2px solid var(--primario); outline-offset: 4px; border-radius: var(--r-s); }
+.grafico .osserva { pointer-events: none; }
+.grafico .osserva .guida { vector-effect: non-scaling-stroke; }
+.grafico .evidenziata { opacity: 1 !important; fill-opacity: 1 !important; stroke: var(--inchiostro); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.grafico-suggerimento { position: fixed; z-index: 60; pointer-events: none; min-width: 9rem; max-width: 20rem; background: var(--foglio); color: var(--inchiostro);
+  border: 1px solid var(--bordo); border-radius: var(--r); padding: .45rem .65rem; font-size: var(--c-xs); line-height: 1.4; box-shadow: var(--ombra-2);
+  display: none; font-variant-numeric: tabular-nums; }
+.grafico-suggerimento b { display: block; margin-bottom: .15rem; font: 700 var(--c-s)/1.25 var(--titoli); }
+.grafico-suggerimento i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: .4rem; vertical-align: -1px; }
+.grafico-suggerimento i.vuoto { background: none; width: 0; margin-right: 0; }
+
+/* il riquadro flottante: <dialog> a tutta pagina con sfondo scurito e la finestra al centro */
+.riquadro-grafico { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
+  background: transparent; color: var(--inchiostro); overflow: hidden; }
+.riquadro-grafico[open] { display: grid; place-items: center; }
+.riquadro-grafico::backdrop { background: rgb(8 6 10 / .72); }
+[data-theme="light"] .riquadro-grafico::backdrop { background: rgb(28 24 32 / .55); }
+.riquadro-aperto { overflow: hidden; }
+.riquadro-finestra { display: flex; flex-direction: column; width: min(1280px, calc(100vw - 2 * var(--s5))); height: min(860px, calc(100vh - 2 * var(--s5)));
+  background: var(--foglio); border: 1px solid var(--linea); border-radius: var(--r-l); box-shadow: var(--ombra-2); padding: var(--s3) var(--s5) var(--s3); }
+.riquadro-testa { display: flex; align-items: center; gap: var(--s3); padding-bottom: var(--s3); border-bottom: 1px solid var(--linea); }
+.riquadro-titolo { flex: 1 1 auto; min-width: 0; margin: 0; font: 700 var(--c-l)/1.25 var(--titoli); color: var(--profondo); overflow-wrap: anywhere; }
+.riquadro-comandi { display: flex; align-items: center; gap: var(--s2); flex: none; }
+.riquadro-comandi .vestito { margin: 0; }
+.riquadro-comandi .tema { display: inline-grid; margin: 0; }
+.riquadro-vista, .riquadro-chiudi { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; height: 40px; min-width: 40px; padding: 0 .75rem;
+  border: 1px solid var(--bordo); border-radius: var(--r-tondo); background: transparent; color: var(--inchiostro); font: 600 var(--c-s)/1 var(--testo); cursor: pointer; }
+.riquadro-chiudi { padding: 0; width: 40px; }
+.riquadro-vista svg, .riquadro-chiudi svg { width: 18px; height: 18px; flex: none; }
+.riquadro-vista:hover, .riquadro-chiudi:hover { background: var(--rialzo); border-color: var(--inchiostro); }
+.riquadro-vista:focus-visible, .riquadro-chiudi:focus-visible { outline: 3px solid var(--inchiostro); outline-offset: 2px; }
+.riquadro-corpo { flex: 1 1 auto; min-height: 0; margin-top: var(--s3); overflow: auto; }
+.riquadro-corpo svg.nel-riquadro { overflow: hidden; touch-action: none; cursor: grab; user-select: none; }
+.riquadro-corpo svg.nel-riquadro.trascina { cursor: grabbing; }
+.riquadro-corpo svg.nel-riquadro * { vector-effect: non-scaling-stroke; }   /* con lo zoom le linee restano sottili */
+.riquadro-corpo .legenda { margin-top: var(--s2); }
+.riquadro-aiuto { margin: var(--s2) 0 0; font-size: var(--c-xs); color: var(--tenue); }
+@media (max-width: 560px) {
+  .riquadro-finestra { width: 100vw; height: 100dvh; max-height: 100vh; border-radius: 0; border: 0; padding: var(--s2) var(--s3); }
+  .riquadro-testa { flex-wrap: wrap; gap: var(--s2); }
+  .riquadro-titolo { flex-basis: 100%; font-size: var(--c-m); }
+  .riquadro-comandi { width: 100%; }
+  .riquadro-vista { margin-right: auto; }
+}

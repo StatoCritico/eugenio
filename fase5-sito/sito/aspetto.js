@@ -95,16 +95,16 @@
     document.querySelectorAll(".tema").forEach((b) => { b.setAttribute("aria-label", testo); b.title = testo; });
   }
   etichetteTema();
-  document.querySelectorAll(".tema").forEach((b) => {
-    b.addEventListener("click", () => {
-      cambiaAspetto(() => {
-        chiaro = !chiaro;
-        if (chiaro) radice.dataset.theme = "light"; else delete radice.dataset.theme;
-        salva("tema", chiaro ? "light" : "dark");
-      });
-      etichetteTema();
+  function cambiaTema() {
+    cambiaAspetto(() => {
+      chiaro = !chiaro;
+      if (chiaro) radice.dataset.theme = "light"; else delete radice.dataset.theme;
+      salva("tema", chiaro ? "light" : "dark");
     });
-  });
+    etichetteTema();
+  }
+  function collegaTema(b) { b.addEventListener("click", cambiaTema); }
+  document.querySelectorAll(".tema").forEach(collegaTema);
 
   // ------------------------------------------------------------------ vestito
   const aggiornatori = [];        // un aggiornamento per ogni elenco dei vestiti (testata e menu del telefono)
@@ -183,10 +183,20 @@
     });
   }
 
-  document.querySelectorAll(".vestito").forEach((box) => {
+  function collegaVestito(box) {
     const ul = box.querySelector(".vestito-elenco");
     if (ul) elenco(ul, box.querySelector(".vestito-pulsante"));
-  });
+  }
+  document.querySelectorAll(".vestito").forEach(collegaVestito);
+
+  // per gli altri script (per esempio il riquadro dei grafici di grafici.js, che ha i suoi ✱ e ◐): le stesse funzioni
+  // dei pulsanti della testata, così il cambio vale per tutta la pagina
+  //  - collegaTema(pulsante): un nuovo pulsante ◐ (classe .tema, per le etichette «Passa al tema …»)
+  //  - collegaVestito(box): un nuovo blocco .vestito con .vestito-pulsante e .vestito-elenco (id propri)
+  window.EUGENIO_ASPETTO = {
+    cambiaTema, scegliVestito: scegli, collegaTema, collegaVestito, etichetteTema,
+    vestito: () => attivo, chiaro: () => chiaro, VESTITI: { ...VESTITI },
+  };
 
   // menu del telefono: Esc lo chiude e rimette il fuoco sul pulsante «Menu»
   document.addEventListener("keydown", (e) => {

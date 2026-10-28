@@ -85,10 +85,17 @@
     return { b, a: my - b * mx };
   }
 
-  function graficoGG(box, d, ggDpr) {
-    box.innerHTML = "";
+  // grafici nella pagina col pulsante del riquadro (grafici.js); misure: quelle del riquadro, oppure null nella pagina
+  function registra(box, titolo, disegna) {
+    if (window.EUGENIO_GRAFICI) window.EUGENIO_GRAFICI.registra(box, disegna, { titolo });
+    else { box.innerHTML = ""; disegna(box, null); }
+  }
+  const nelRiquadro = (misure) => !!(misure && misure.riquadro);
+
+  function graficoGG(box, d, ggDpr, misure) {
     const S = d.stagioni, v = S.gg_zona, x = v.map((_, i) => S.da + i);
-    const W = 720, H = 260, sx = 46, dx = 10, su = 14, gi = 40;
+    const W = nelRiquadro(misure) ? misure.larghezza : 720, H = nelRiquadro(misure) ? misure.altezza : 260;
+    const sx = 46, dx = 10, su = 14, gi = 40;
     const validi = v.filter((q) => q !== null);
     const lo = Math.min(...validi, ggDpr ?? Infinity), hi = Math.max(...validi, ggDpr ?? -Infinity);
     const passoY = [50, 100, 250, 500].find((s) => (hi - lo) * 1.2 / s <= 6) || 500;
@@ -109,12 +116,11 @@
     }
     // barre sottili: stagioni ricostruite da ERA5 (prima del 1950) più chiare
     const larg = Math.max(1.5, (W - sx - dx) / v.length * .7);
+    const barre = [];
     v.forEach((q, i) => {
       if (q === null) return;
-      const r = el("rect", { x: X(i) - larg / 2, y: Y(q), width: larg, height: Y(ymin) - Y(q), rx: 1,
+      barre[i] = el("rect", { x: X(i) - larg / 2, y: Y(q), width: larg, height: Y(ymin) - Y(q), rx: 1,
         fill: "var(--primario)", opacity: S.fonte[i] === "L" ? .55 : .3 }, svg);
-      el("title", {}, r).textContent = `${etichettaStagione(x[i])}: ${num(q)} GG, zona ${S.zona[i]}`
-        + (S.fonte[i] === "L" ? "" : " (ERA5 raccordato)");
     });
     // media mobile su 10 stagioni
     const mm = mediaMobile(v, 10);
@@ -132,10 +138,20 @@
     const COLORI_ZONA = coloriZona();
     x.forEach((s, i) => {
       if (s % 10 === 0) el("text", { x: X(i), y: H - gi + 16, "text-anchor": "middle" }, svg).textContent = etichettaStagione(s);
-      const r = el("rect", { x: X(i) - (W - sx - dx) / v.length / 2, y: H - 14, width: (W - sx - dx) / v.length + .3, height: 10,
+      el("rect", { x: X(i) - (W - sx - dx) / v.length / 2, y: H - 14, width: (W - sx - dx) / v.length + .3, height: 10,
         fill: COLORI_ZONA[S.zona[i]] || COLORI_ZONA["-"], "data-zona": S.zona[i] in COLORI_ZONA ? S.zona[i] : "-" }, svg);
-      el("title", {}, r).textContent = `${etichettaStagione(s)}: zona ${S.zona[i]}`;
     });
+    // valori stagione per stagione al passaggio del mouse, al tocco o con le frecce
+    if (window.EUGENIO_GRAFICI) window.EUGENIO_GRAFICI.osserva(svg, x.map((s, i) => {
+      const righe = [];
+      if (v[i] !== null) righe.push(["var(--primario)", `Gradi giorno: ${num(v[i])} GG` + (S.fonte[i] === "L" ? "" : " (ERA5 raccordato)")]);
+      if (mm[i] !== null) righe.push(["var(--serie-2)", `media delle 10 stagioni: ${num(mm[i])} GG`]);
+      if (rg) righe.push(["var(--inchiostro)", `tendenza: ${num(rg.a + rg.b * s)} GG`]);
+      righe.push([COLORI_ZONA[S.zona[i]] || COLORI_ZONA["-"], `zona climatica: ${S.zona[i] === "-" ? "stagione incompleta" : S.zona[i]}`]);
+      const segni = [];
+      if (mm[i] !== null) segni.push([X(i), Y(mm[i]), "var(--serie-2)"]);
+      return { x: X(i), titolo: `Stagione ${etichettaStagione(s)}`, righe, segni, elementi: barre[i] ? [barre[i]] : [] };
+    }), { area: [sx, su, W - dx, H - gi] });
     const leg = h("div", "legenda");
     const voce = (cl, colore, testo) => { const s = h("span"); const i = h("i", cl); i.style.color = colore;
       i.style.background = cl ? "" : colore; s.append(i, testo); leg.appendChild(s); };
@@ -148,10 +164,10 @@
   }
 
   // ------------------------------------------------------------------ temperature di progetto (finestre mobili)
-  function graficoProgetto(box, p) {
-    box.innerHTML = "";
+  function graficoProgetto(box, p, misure) {
     if (!p.fine.length) return;
-    const W = 720, H = 200, sx = 46, dx = 10, su = 12, gi = 26;
+    const W = nelRiquadro(misure) ? misure.larghezza : 720, H = nelRiquadro(misure) ? misure.altezza : 200;
+    const sx = 46, dx = 10, su = 12, gi = 26;
     const tutte = [...p.inv, ...p.est].filter((q) => q !== null);
     const lo = Math.floor(Math.min(...tutte) / 5) * 5 - 5, hi = Math.ceil(Math.max(...tutte) / 5) * 5 + 5;
     const Y = (q) => su + (H - su - gi) * (1 - (q - lo) / (hi - lo));
@@ -166,6 +182,12 @@
       el("polyline", { fill: "none", stroke: colore, "stroke-width": 2, "stroke-dasharray": tratto,
         points: serie.map((q, i) => q === null ? null : `${X(i)},${Y(q)}`).filter(Boolean).join(" ") }, svg);
     p.fine.forEach((a, i) => { if (a % 10 === 0) el("text", { x: X(i), y: H - 8, "text-anchor": "middle" }, svg).textContent = `${a - 9}–${String(a).slice(2)}`; });
+    if (window.EUGENIO_GRAFICI) window.EUGENIO_GRAFICI.osserva(svg, p.fine.map((a, i) => {
+      const righe = [], segni = [];
+      if (p.est[i] !== null) { righe.push(["var(--serie-1)", `estiva: ${num(p.est[i], 1)} °C`]); segni.push([X(i), Y(p.est[i]), "var(--serie-1)"]); }
+      if (p.inv[i] !== null) { righe.push(["var(--serie-2)", `invernale: ${num(p.inv[i], 1)} °C`]); segni.push([X(i), Y(p.inv[i]), "var(--serie-2)"]); }
+      return { x: X(i), titolo: `Finestra ${a - 9}–${a}`, righe, segni };
+    }), { area: [sx, su, W - dx, H - gi] });
     const leg = h("div", "legenda");
     const voce = (cl, colore, testo) => { const s = h("span"); const i = h("i", cl); i.style.color = colore; s.append(i, testo); leg.appendChild(s); };
     voce("linea tratto", "var(--serie-2)", `invernale (1° percentile dei minimi giornalieri), ultima finestra ${num(p.inv[p.inv.length - 1], 1)} °C`);
@@ -222,7 +244,8 @@
       cifre.appendChild(st);
     }
     box.appendChild(cifre);
-    const g1 = h("div", "grafico"); box.appendChild(g1); graficoGG(g1, d, ggDpr);
+    const g1 = h("div", "grafico"); box.appendChild(g1);
+    registra(g1, `Gradi giorno per stagione, dalla ${S.prima} in poi`, (dest, misure) => graficoGG(dest, d, ggDpr, misure));
     box.appendChild(h("p", "aiuto", `GG sul periodo di accensione della zona ${d.zona_riferimento} (${d.origine_zona}). `
       + "Le stagioni vanno dal 1° luglio al 30 giugno."));
     // tabella mensile
@@ -254,7 +277,8 @@
       r.append(h("td", "num", num(c.gg_dpr)), h("td", "num", "—"), h("td", "num", c.zona_dpr), h("td", "num", "—"), h("td", "num", "—")); }
     const sp = h("div", "tabella-scorre"); sp.appendChild(tp); box.appendChild(sp);
     box.appendChild(h("h3", null, "Temperature di progetto su finestre mobili di 10 anni"));
-    const g2 = h("div", "grafico"); box.appendChild(g2); graficoProgetto(g2, d.progetto);
+    const g2 = h("div", "grafico"); box.appendChild(g2);
+    registra(g2, "Temperature di progetto su finestre mobili di 10 anni", (dest, misure) => graficoProgetto(dest, d.progetto, misure));
     const f = h("p", "fonti");
     const a = h("a", null, "Weather data by Open-Meteo.com"); a.href = "https://open-meteo.com/";
     f.append(a, " (CC BY 4.0), da ERA5 ed ERA5-Land senza correzione verso ICON. Contiene informazioni modificate del "

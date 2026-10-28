@@ -188,5 +188,11 @@ Istruzioni di prima installazione (permessi della cartella, cron provvisorio) ne
 
 ## Stato
 
+28/10/2026: **OpenBDAP in disservizio** (ogni `datastore/dump/<ID>.csv` risponde 200 con il JSON «Cannot convert data to
+csv», l'OData 503). Da allora: quell'errore del portale si riconosce subito e non si riprova (`rete.py`); dopo **2 anni di
+fila** senza risposta non si provano gli altri (`cli.scarica_ce`); per ogni anno senza risposta si usa la copia già
+scaricata `cache/bdap/ce_<anno>.csv` se c'è (anche con `--rinnova`, che è quello del worker); il messaggio finale
+inizia con «OpenBDAP non disponibile». 4 test in `tests/test_openbdap_giu.py`.
+
 27/10/2026: prima versione; aggiornamento mensile automatico dal worker (il 5 del mese). Dati 2015–2025 scaricati (CE OpenBDAP, ReportER, ISTAT), JSON scritti in
 `fase5-sito/sito/dati/indicatori/`, valori di controllo 2024 verificati, prove Python e Playwright superate.

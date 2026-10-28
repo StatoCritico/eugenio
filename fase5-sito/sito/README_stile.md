@@ -25,6 +25,75 @@ Nota tecnica sullo stile grafico di EuGEnio (27/10/2026). Il progetto è di Clau
   nello stile), oppure ascoltare `eugenio:aspetto`. Se il browser non salva le scelte, il cambio vale per la pagina
   aperta.
 
+## Grafici (regole dal 28/10/2026)
+
+Valgono per **tutti** i grafici del sito, anche quelli futuri. Il modulo comune è `grafici.js` (oggetto
+`window.EUGENIO_GRAFICI`), incluso nelle cinque pagine dei servizi dopo `aspetto.js`; il divisore delle colonne è in
+`divisore.js`. Nessuna libreria esterna: SVG scritto a mano, colori come `"var(--…)"`.
+
+1. **Pulsante con la freccina e riquadro flottante.** Ogni grafico ha in alto a destra un piccolo pulsante
+   (`.grafico-apri`, aria-label «Apri il grafico in un riquadro») che apre il grafico in un riquadro sopra la pagina
+   (`<dialog>` modale, sfondo scurito). Nel riquadro:
+   - il grafico è ridisegnato con le misure del riquadro (le scritte restano di 12 px) e si rifà se la finestra cambia;
+   - zoom con la rotella del mouse o con due dita, trascinamento col mouse o col dito, doppio clic o «Vista iniziale»
+     per tornare all'inizio; da tastiera `+`, `-` e `0`;
+   - ci sono **✱** e **◐**, che fanno esattamente quello che fanno nella testata (sono gli stessi comandi di
+     `aspetto.js`, esposti in `window.EUGENIO_ASPETTO`): cambiano vestito e tema di tutta la pagina e il grafico nel
+     riquadro si aggiorna mantenendo lo zoom;
+   - si chiude con ×, con Esc (se l'elenco dei vestiti è aperto, Esc chiude prima quello) o con un clic fuori.
+2. **Grafici osservabili.** I grafici a barre o a linee con dati mensili, annuali o per stagione (e anche la
+   previsione oraria) mostrano i valori: passando il mouse vicino a una barra o a un punto, la barra si evidenzia
+   (classe `.evidenziata`), i punti delle curve prendono un cerchio, compare una linea guida verticale e un
+   suggerimento con l'etichetta (mese, anno, stagione) e i valori **formattati all'italiana** (virgola decimale,
+   punto per le migliaia, unità: `toLocaleString("it-IT")`). Funziona nella pagina e nel riquadro, col tocco (si
+   tocca il grafico; un tocco fuori lo spegne) e con la tastiera (l'SVG prende il fuoco; frecce, Inizio e Fine; il
+   valore è letto anche dai lettori di schermo). Non usare `<title>` sulle barre: il suggerimento lo sostituisce.
+3. **Pannelli ridimensionabili.** Nelle pagine dei servizi il confine tra la colonna di sinistra (`.mappa-area`) e il
+   pannello di destra (`.pannello`) ha una maniglia (`.divisore`, `role="separator"`, cursore col-resize): si
+   trascina col mouse o col dito, oppure con le frecce quando ha il fuoco (Maiuscolo per passi grandi, Inizio e Fine
+   per i limiti, Canc o doppio clic per la larghezza predefinita). Limiti: pannello almeno 340 px, sinistra almeno
+   300 px. La larghezza si ricorda per pagina nel browser (`localStorage`, chiave `larghezza-pannello:<pagina>`, come
+   frazione della larghezza). Sotto gli 861 px la colonna è una sola e la maniglia sparisce. A ogni cambio
+   `divisore.js` emette `eugenio:ridimensiona` su `document`; mappe e grafici con viewBox si adattano da soli, quelli
+   registrati con `adatta: true` si ridisegnano col loro ResizeObserver.
+
+### Come aggiungere un grafico
+
+La funzione di disegno riceve **dove** disegnare e **le misure**: nella pagina `misure.riquadro` è `false` e il grafico
+usa le sue misure solite (o `misure.larghezza`, la larghezza del box); nel riquadro usa `misure.larghezza` e
+`misure.altezza` come viewBox. La legenda (HTML) va nella stessa destinazione, sotto l'SVG: il riquadro la misura e
+dà al grafico l'altezza che resta.
+
+```js
+const G = window.EUGENIO_GRAFICI;
+function disegnaConsumi(dest, misure, dati) {          // dati: [{ mese: "gen", kwh: 1234.5 }, …]
+  const W = misure && misure.riquadro ? misure.larghezza : 640, H = misure && misure.riquadro ? misure.altezza : 240;
+  const sx = 48, dx = 8, su = 12, gi = 26;
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Consumi mensili" }, dest);
+  const max = Math.max(...dati.map((d) => d.kwh)), passo = (W - sx - dx) / dati.length;
+  const Y = (v) => su + (H - su - gi) * (1 - v / max);
+  const punti = dati.map((d, i) => {
+    const x = sx + passo * (i + .5);
+    const barra = el("rect", { x: x - passo * .3, y: Y(d.kwh), width: passo * .6, height: Y(0) - Y(d.kwh), fill: "var(--primario)" }, svg);
+    return { x, titolo: d.mese, elementi: [barra],
+      righe: [["var(--primario)", `consumo: ${d.kwh.toLocaleString("it-IT", { maximumFractionDigits: 1 })} kWh`]] };
+  });
+  G.osserva(svg, punti, { area: [sx, su, W - dx, H - gi], guida: false });   // guida: false per le sole barre
+  // legenda, se serve: dest.appendChild(…)
+}
+G.registra(document.getElementById("grafico-consumi"), (dest, misure) => disegnaConsumi(dest, misure, dati),
+  { titolo: "Consumi mensili", adatta: false });
+```
+
+- `registra(box, disegna, { titolo, adatta })` svuota il box, disegna, aggiunge il pulsante con la freccina; si
+  richiama ogni volta che i dati cambiano (sostituisce il disegno precedente). `adatta: true` se il disegno nella
+  pagina usa `misure.larghezza` (come gli Indicatori).
+- `osserva(svg, punti, { area, guida })`: un elemento di `punti` per ogni mese/anno, con `x` in coordinate SVG,
+  `titolo`, `righe` (`[colore, testo]`, colore `null` per una riga senza campione), `segni` (`[x, y, colore]`, i
+  cerchi sulle curve) ed `elementi` (le barre da evidenziare). Si chiama alla fine del disegno.
+- I colori calcolati (non `var(--…)`) vanno rifatti all'evento `eugenio:aspetto`, come già scritto sopra: il riquadro
+  aperto ridisegna comunque il suo grafico a ogni cambio di tema o di vestito.
+
 ## Loghi
 
 I loghi sono in `logo/<vestito>/`, in versione `_scuro` e `_chiaro`:

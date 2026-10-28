@@ -112,9 +112,20 @@ def prepara(s: pd.Series, modalita: str, tipo: str) -> pd.Series:
 
 
 # ---------------------------------------------------------------------------------------------- covariate
+class MeteoMancante(Exception):
+    """Nessun dato meteo del comune sul server (archivio della fase 3 o previsioni non ancora presenti)."""
+
+
+def _utc(indice) -> pd.DatetimeIndex:
+    """Indice orario in UTC anche quando una delle parti concatenate era vuota (indice di tipo object)."""
+    return pd.DatetimeIndex(pd.to_datetime(indice, utc=True))
+
+
 def _meteo_orario(istat: str) -> tuple[pd.DataFrame, pd.Series]:
     st = meteo.storico_orario(istat)
     pr = meteo.previsioni(istat)
+    if not len(st) and not len(pr):
+        raise MeteoMancante(istat)
     fonte = pd.concat([pd.Series("osservato (ICON)", index=pd.DatetimeIndex(st.time)),
                        pd.Series(np.where(pr.peso_icon2i >= 0.999, "previsione ICON-2I",
                                           np.where(pr.peso_icon2i <= 0.001, "previsione IFS", "miscela ICON-2I/IFS")),
@@ -122,13 +133,19 @@ def _meteo_orario(istat: str) -> tuple[pd.DataFrame, pd.Series]:
     df = pd.concat([st.set_index("time"), pr.drop(columns="peso_icon2i").set_index("time")])
     df = df[~df.index.duplicated(keep="last")].sort_index()
     fonte = fonte[~fonte.index.duplicated(keep="last")].sort_index()
-    df.index = df.index.tz_convert("UTC").tz_localize(None)
-    fonte.index = fonte.index.tz_convert("UTC").tz_localize(None)
+    df.index = _utc(df.index).tz_localize(None)
+    fonte.index = _utc(fonte.index).tz_localize(None)
     return df, fonte
 
 
 def _meteo_giornaliero(istat: str, fino_a: pd.Timestamp) -> tuple[pd.DataFrame, pd.Series]:
-    st = meteo.storico_giornaliero(istat).set_index("data")
+    try:
+        st = meteo.storico_giornaliero(istat)
+    except FileNotFoundError as e:
+        raise MeteoMancante(istat) from e
+    if not len(st):
+        raise MeteoMancante(istat)
+    st = st.set_index("data")
     st.index = pd.DatetimeIndex(st.index)
     fonte = pd.Series("osservato (ERA5 corretto)", index=st.index)
     # ERA5 arriva con ~6 giorni di ritardo: i giorni mancanti si prendono dallo storico ICON
@@ -216,12 +233,19 @@ def prevedi(s: pd.Series, istat: str, modalita: str, orizzonte: int, tipo: str =
         serie = serie.iloc[:-orizzonte]
     idx_fut = pd.date_range(serie.index.max() + pd.Timedelta(1, unit=freq), periods=orizzonte, freq=freq)
     idx_tot = serie.index.append(idx_fut)
+    cov = None
     if scelte:
-        cov, fonte, mancanti = _covariate(modalita, istat, idx_tot, scelte)
-        for k, q in mancanti.items():
-            if q > 0.2:
-                avvisi.append(f"Meteo '{k}' mancante per il {q:.0%} del periodo: valori interpolati.")
-    else:
+        try:
+            cov, fonte, mancanti = _covariate(modalita, istat, idx_tot, scelte)
+            for k, q in mancanti.items():
+                if q > 0.2:
+                    avvisi.append(f"Meteo '{k}' mancante per il {q:.0%} del periodo: valori interpolati.")
+        except MeteoMancante:
+            # finché i dati meteo del comune non sono sul server si prevede col solo calendario, dicendolo
+            avvisi.append("I dati meteo di questo comune non sono ancora sul server: la previsione usa solo il "
+                          "calendario (ora, giorno della settimana, festività), senza meteo. Arriveranno nei "
+                          "prossimi giorni.")
+    if cov is None:
         cal_idx = idx_tot.tz_localize("UTC").tz_convert("Europe/Rome") if modalita == "breve" else idx_tot
         cov = calendario.caratteristiche(pd.DatetimeIndex(cal_idx), orario=(modalita == "breve"))
         cov.index = idx_tot

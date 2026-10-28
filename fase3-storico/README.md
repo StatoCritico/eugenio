@@ -175,10 +175,15 @@ pacchetto_server/                    da copiare sul server (fase 4)
 
 Spazio: ~6 MB per comune con ERA5 dal 2015 (ER ≈ 2 GB, Italia ≈ 50 GB; circa metà sono i pezzi annuali in `grezzi/`, che servono per riprendere e aggiornare). Il pacchetto per il server dell'ER è ~170 MB.
 
-Copia sul server:
+Copia sul server (corretta il 28/10/2026: con `scp -r pacchetto_server ...:/srv/energia/dati` i file finivano in
+`/srv/energia/dati/pacchetto_server/` invece che nella cartella dati):
 ```powershell
-scp -i $HOME\.ssh\oracle_energia -r E:\meteo\pacchetto_server ubuntu@IP:/srv/energia/dati
+tar -czf meteo_pacchetto.tar.gz -C pacchetto_server .
+scp meteo_pacchetto.tar.gz eugenio:~/
+# sul server:
+tar -xzmf ~/meteo_pacchetto.tar.gz -C /srv/energia/dati
 ```
+Procedura completa, con l'accensione del worker: `AGGIORNAMENTO_meteo_fase3.md` nella cartella principale.
 
 ## Licenze e attribuzioni
 
