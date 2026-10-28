@@ -4,3 +4,6 @@ pandas>=2.2
 pyarrow>=15
 shapely>=2.0
 pyproj>=3.6
+omfiles>=1.0
+fsspec>=2024.2
+s3fs>=2024.2

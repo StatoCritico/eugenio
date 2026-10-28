@@ -11,7 +11,12 @@ Il tempo è gestito in UTC (orario) o per giorno civile Europe/Rome (giornaliero
 from __future__ import annotations
 
 import logging
+import os
 import threading
+
+# TiRex-2 prova a compilare parti del modello con torch.compile, che sul server (immagine senza g++) fallisce con
+# «No working C++ compiler found»: si usa l'esecuzione normale, su CPU la differenza di velocità è trascurabile.
+os.environ.setdefault("TORCHDYNAMO_DISABLE", "1")
 
 import numpy as np
 import pandas as pd
@@ -44,6 +49,11 @@ def modello():
     global _modello
     with _carica:
         if _modello is None:
+            try:   # anche se torch era già stato importato prima di questo modulo
+                import torch._dynamo
+                torch._dynamo.config.disable = True
+            except Exception:  # versioni di torch senza questa opzione
+                pass
             from tirex2 import load_model
             log.info("Carico %s su %s", C.MODELLO, C.DISPOSITIVO)
             _modello = load_model(C.MODELLO, device=C.DISPOSITIVO)

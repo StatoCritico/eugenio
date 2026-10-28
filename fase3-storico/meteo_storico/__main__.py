@@ -1,7 +1,8 @@
 """python -m meteo_storico <comando> [opzioni]
 
   comuni     costruisce l'elenco NAZIONALE dei comuni e i punti meteo (una volta; ~730 MB di sezioni ISTAT)
-  scarica    scarica ERA5 e/o ICON storico (riprende da dove si era interrotto)
+  scarica    scarica ERA5 e/o ICON storico dall'API (riprende da dove si era interrotto)
+  scarica-s3 come `scarica`, ma leggendo direttamente i file di Open-Meteo su AWS: tutta Italia in poche ore
   correggi   stima e applica la correzione ERA5 → ICON, con validazione
   esporta    prepara la cartella da copiare sul server
   stato      quanto è stato scaricato e consumo dell'API
@@ -35,7 +36,7 @@ def _regioni(v: str | None):
 def main(argv=None):
     p = argparse.ArgumentParser(prog="meteo_storico", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("comando", choices=["comuni", "scarica", "correggi", "esporta", "stato", "tutto", "legge10",
+    p.add_argument("comando", choices=["comuni", "scarica", "scarica-s3", "correggi", "esporta", "stato", "tutto", "legge10",
                                           "territorio-verifica", "territorio-blocca"])
     p.add_argument("--archivio", default="archivio", help="cartella dell'archivio (anche su disco esterno)")
     p.add_argument("--regioni", default="08", help='codici ISTAT separati da virgola, o "tutte" (predefinito 08 = ER)')
@@ -46,6 +47,7 @@ def main(argv=None):
     p.add_argument("--al", help="fine (predefinito: ultimo giorno disponibile)")
     p.add_argument("--locale", help="URL di un'istanza Open-Meteo propria, es. http://127.0.0.1:8080 (niente limiti)")
     p.add_argument("--punti-per-richiesta", type=int, default=5)
+    p.add_argument("--per-gruppo", type=int, default=400, help="scarica-s3: comuni letti insieme (memoria ~ gruppo)")
     p.add_argument("--senza-sezioni", action="store_true", help="non scaricare le sezioni di censimento")
     p.add_argument("--dest", default="pacchetto_server", help="cartella di destinazione di `esporta`")
     p.add_argument("--anni", type=int, default=10, help="legge10: stagioni da usare")
@@ -73,6 +75,16 @@ def main(argv=None):
             dal = dt.date.fromisoformat(a.dal) if f == "era5" else FONTI[f]["inizio"]
             s.scarica(cm, dal, dt.date.fromisoformat(a.al) if a.al else None)
             s.unisci(cm)
+    if cmd == "scarica-s3":
+        from . import s3
+        cm = comuni.carica(arch, reg, sel)
+        fonti = {"entrambe": ["era5", "icon"]}.get(a.fonte, [a.fonte])
+        for f in fonti:
+            if f not in ("era5", "icon"):
+                raise SystemExit("scarica-s3: --fonte era5, icon o entrambe")
+            dal = dt.date.fromisoformat(a.dal) if f == "era5" else s3.INIZIO_ICON
+            s3.scarica(arch, cm, f, dal, dt.date.fromisoformat(a.al) if a.al else None, a.per_gruppo)
+            Scaricatore(arch, f, "http://locale-non-usato", a.punti_per_richiesta).unisci(cm)
     if cmd in ("correggi", "tutto"):
         cm = comuni.carica(arch, reg, sel)
         for sorgente, mesi in (("era5", 12), ("icon2i", 6), ("ifs", 6)):

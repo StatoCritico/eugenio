@@ -115,7 +115,38 @@ in pausa) e **riprende da dove si era fermato**:
 Si può lasciare il PC acceso, oppure eseguirlo sul server Oracle in una sessione `tmux`.
 Download dell'Emilia-Romagna avviato sul PC il 25/10/2026 (prova su Bologna e Ravenna riuscita).
 
-### Istanza Open-Meteo propria (consigliata per tutta Italia)
+### Tutta Italia: lettura diretta dei file su AWS (`scarica-s3`, dal 29/10/2026)
+
+Per tutta Italia (7.896 comuni) l'API gratuita non basta (~2,6 milioni di chiamate) e un'istanza Open-Meteo propria è
+troppo lenta (prova del 28/10/2026 sul server: ERA5 ~12 s per anno e per richiesta fino al 2021, ~2,5 min dal 2022,
+ICON storico in timeout, perché ogni punto apre centinaia di file). `scarica-s3` legge invece **direttamente i file
+`.om` di Open-Meteo sul bucket pubblico AWS** (`s3://openmeteo`, accesso anonimo, nessuna quota), per righe di griglia e
+per gruppi di comuni vicini, come la fase 9. Scrive gli stessi file di `scarica` (`grezzi/` e `orario/`), quindi
+`correggi` ed `esporta` non cambiano.
+
+```bash
+python -m meteo_storico scarica-s3 --archivio /srv/lavoro/archivio --regioni tutte --dal 2015-01-01 --per-gruppo 800
+python -m meteo_storico correggi   --archivio /srv/lavoro/archivio --regioni tutte
+python -m meteo_storico esporta    --archivio /srv/lavoro/archivio --regioni tutte --dest /srv/lavoro/pacchetto
+```
+
+Stesse regole dell'API (modulo `meteo_storico/s3.py`), verificate il 28–29/10/2026 su Trento, Bologna, Firenze, Roma,
+Bari e Palermo contro l'API:
+- **ERA5-Seamless**: temperatura e punto di rugiada da ERA5-Land (0,1°), il resto da ERA5 (0,25°), cella più vicina;
+  temperatura e punto di rugiada riportati alla quota del comune con 6,5 °C/km (quota dal Copernicus DEM 90 m di
+  Open-Meteo, `data/copernicus_dem90`); umidità da temperatura e punto di rugiada; diffusa = globale − diretta; vento
+  da u e v; neve = acqua equivalente × 0,7. Scarto dall'API: solo arrotondamenti.
+- **ICON seamless**: ICON-D2 (2 km) dove copre, altrimenti ICON-EU (7 km), ora per ora; tra le 3×3 celle vicine quella
+  con la quota più simile al comune; temperatura riportata alla quota del comune; globale = diretta + diffusa. Su S3
+  c'è **dal 24/05/2023** (con l'API dal 14/11/2022). Confronto su 1.251 giorni per 6 comuni
+  (`statocritico\pacchetti\confronta_icon.py`): ICON-EU uguale all'API, ICON-D2 uguale tranne il file del
+  13–15/01/2024 (chunk 3914), lasciato vuoto.
+- Riprendibile: un pezzo comune × anno completo non si rifà. `--per-gruppo` regola la memoria (800 comuni ≈ 2 GB).
+- File di lavoro: `celle_s3.parquet` (quota e celle di ogni comune). Dipendenze in più: `omfiles`, `fsspec`, `s3fs`
+  (già nell'immagine del server per la fase 9).
+
+### Istanza Open-Meteo propria (superata da `scarica-s3`)
+
 
 Open-Meteo è open source (AGPL-3.0): un container Docker legge i dati direttamente dall'archivio
 pubblico su AWS S3 e li tiene in cache, **senza limiti di chiamate**. Sul server Oracle (Docker è già

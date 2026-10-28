@@ -445,7 +445,7 @@ Per tutta Italia serve l'istanza Open-Meteo propria (`--profile open-meteo`).
 
 ## Risorse
 
-TiRex-2 su CPU: ~1,2 GB di RAM (misurati) per il processo API. Totale stimato con tutti i servizi:
+TiRex-2 su CPU: ~1,2 GB di RAM (misurati) per il processo API. `torch.compile` è spento (`TORCHDYNAMO_DISABLE=1` in `modello.py`): l'immagine non ha `g++`. Se il meteo del comune non è sul server la previsione usa il solo calendario e lo dice in un avviso. Totale stimato con tutti i servizi:
 ~3,5 GB su 12. Disco: vedi la tabella "Spazio" nel README principale (~15 GB, ~35 GB con Open-Meteo).
 Una previsione alla volta (le altre attendono in coda) per non saturare i 2 core. La conversione mensile
 dell'indirizzario ANNCSU usa ~400 MB di memoria per un paio di minuti; il ricalcolo del clima dal 1940
