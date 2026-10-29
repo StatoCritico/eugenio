@@ -140,7 +140,8 @@ def leggi(fs: FSBlocchi, dominio: str, var: str, celle: np.ndarray, h0: int, h1:
     g = GRIGLIE[dominio]
     righe: dict[int, list] = {}
     for k, (i, j) in enumerate(celle):
-        righe.setdefault(int(i), []).append((k, int(j)))
+        if 0 <= i < g["ny"] and 0 <= j < g["nx"]:      # cella fuori dalla griglia: resta vuota
+            righe.setdefault(int(i), []).append((k, int(j)))
     out = np.full((len(celle), h1 - h0), np.nan, dtype=np.float32)
 
     def una(arg):
@@ -215,15 +216,42 @@ def _vicina(dom, lat, lon):
 
 
 def _per_quota(h: np.ndarray, dom: str, lat: float, lon: float, z: float):
-    """Tra le 3×3 celle attorno al punto, quella con quota più simile (come l'API per ICON); None se fuori."""
+    """Tra le 3×3 celle attorno al punto, quella di terra con quota più simile (come l'API per ICON).
+    Isole piccole e lagune (nessuna cella di terra, quota −999 = mare): la cella più vicina, come fa l'API.
+    None solo se il punto è fuori dal dominio del modello (quota NaN: fuori dall'area calcolata)."""
     g = GRIGLIE[dom]
     i0, j0 = _vicina(dom, lat, lon)
+    if not (0 <= i0 < g["ny"] and 0 <= j0 < g["nx"]):
+        return None
     cand = [(i, j) for i in range(i0 - 1, i0 + 2) for j in range(j0 - 1, j0 + 2)
             if 0 <= i < g["ny"] and 0 <= j < g["nx"] and np.isfinite(h[i, j]) and h[i, j] > -999]
-    if not cand or not (0 <= i0 < g["ny"] and 0 <= j0 < g["nx"]):
-        return None
+    if not cand:
+        return (i0, j0) if np.isfinite(h[i0, j0]) else None
     a, b = (lat - g["lat0"]) / g["res"], (lon - g["lon0"]) / g["res"]
     return min(cand, key=lambda c: (abs(h[c] - z), (c[0] - a) ** 2 + (c[1] - b) ** 2))
+
+
+VERSIONE_CELLE = 2   # 29/10/2026: isole e lagune prendono la cella più vicina invece di restare senza ICON
+
+
+def _togli_cambiati(archivio: Path, vecchie: pd.DataFrame, nuove: pd.DataFrame) -> None:
+    """Se la cella di un comune è cambiata, i pezzi già scaricati per quella fonte vanno rifatti."""
+    import shutil
+    v = vecchie.set_index("istat")
+    for fonte, domini in (("era5", ("era5_land", "era5")), ("icon", ("icon_d2", "icon_eu"))):
+        cambiati = []
+        for r in nuove.itertuples():
+            if r.istat not in v.index:
+                continue
+            if any((v.at[r.istat, f"{d}_i"], v.at[r.istat, f"{d}_j"]) != (getattr(r, f"{d}_i"), getattr(r, f"{d}_j"))
+                   for d in domini):
+                cambiati.append(r.istat)
+        for istat in cambiati:
+            shutil.rmtree(archivio / "grezzi" / fonte / istat, ignore_errors=True)
+            (archivio / "orario" / fonte / f"{istat}.parquet").unlink(missing_ok=True)
+        if cambiati:
+            log.info("%s: celle cambiate per %d comuni, i loro pezzi si rifanno (%s…)", fonte, len(cambiati),
+                     ", ".join(cambiati[:5]))
 
 
 def celle(fs: FSBlocchi, comuni: pd.DataFrame, archivio: Path) -> pd.DataFrame:
@@ -232,9 +260,12 @@ def celle(fs: FSBlocchi, comuni: pd.DataFrame, archivio: Path) -> pd.DataFrame:
     f = archivio / "celle_s3.parquet"
     if f.exists():
         c = pd.read_parquet(f)
+        if "versione" not in c.columns:
+            c["versione"] = 1
         prima = c.set_index("istat")[["lat", "lon"]]
         ora = comuni.set_index("istat")[["lat", "lon"]]
-        if ora.index.isin(prima.index).all() and np.allclose(prima.loc[ora.index].to_numpy(), ora.to_numpy()):
+        if (int(c.versione.iloc[0]) == VERSIONE_CELLE and ora.index.isin(prima.index).all()
+                and np.allclose(prima.loc[ora.index].to_numpy(), ora.to_numpy())):
             return c[c.istat.isin(comuni.istat)].set_index("istat").loc[comuni.istat].reset_index()
     out = comuni[["istat", "lat", "lon"]].copy().reset_index(drop=True)
     log.info("Quote del DEM per %d comuni…", len(out))
@@ -250,7 +281,10 @@ def celle(fs: FSBlocchi, comuni: pd.DataFrame, archivio: Path) -> pd.DataFrame:
         ij = [_per_quota(h, dom, a, b, z) for a, b, z in zip(out.lat, out.lon, out.quota)]
         out[f"{dom}_i"] = [x[0] if x else -1 for x in ij]
         out[f"{dom}_j"] = [x[1] if x else -1 for x in ij]
-        out[f"{dom}_h"] = [float(h[x]) if x else np.nan for x in ij]
+        out[f"{dom}_h"] = [max(float(h[x]), 0.0) if x else np.nan for x in ij]     # mare (−999): quota 0
+    out["versione"] = VERSIONE_CELLE
+    if f.exists():
+        _togli_cambiati(archivio, pd.read_parquet(f), out)
     archivio.mkdir(parents=True, exist_ok=True)
     out.to_parquet(f, index=False)
     log.info("Celle: ICON-D2 per %d comuni su %d", int((out.icon_d2_i >= 0).sum()), len(out))

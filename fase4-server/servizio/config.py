@@ -98,3 +98,29 @@ STORICI_COPERTURA = int(os.environ.get("STORICI_COPERTURA", "90"))      # % mini
 STORICI_ESTRAZIONI_ORA = int(os.environ.get("STORICI_ESTRAZIONI_ORA", "30"))   # download per IP all'ora
 STORICI_STIME_ORA = int(os.environ.get("STORICI_STIME_ORA", "600"))            # stime per IP all'ora
 STORICI_PARALLELE = int(os.environ.get("STORICI_PARALLELE", "2"))              # estrazioni contemporanee
+
+# protezione dell'API (servizio/protezione.py): limiti per IP (gli IPv6 contano per rete /64), tetti per tutti gli
+# utenti insieme, verifica anti-robot Cloudflare Turnstile sulle rotte che costano, avvisi all'amministratore
+LIMITE_DATI_ORA = int(os.environ.get("LIMITE_DATI_ORA", "600"))          # meteo, Legge 10, mappa, comuni per IP all'ora
+ZORNADE_TETTO_ORA = int(os.environ.get("ZORNADE_TETTO_ORA", "6000"))     # chiamate Zornade all'ora per tutto il sito
+ZORNADE_AVVISO_QUOTA = float(os.environ.get("ZORNADE_AVVISO_QUOTA", "0.7"))   # email quando l'ora supera il 70 %
+PREVISIONI_PARALLELE = int(os.environ.get("PREVISIONI_PARALLELE", "2"))  # ammesse insieme: modello.py ne calcola una, l'altra in fila
+PREVISIONI_ATTESA_S = float(os.environ.get("PREVISIONI_ATTESA_S", "30"))  # attesa massima in coda, poi 503
+# Turnstile: chiave del sito (pubblica) e chiave segreta (solo nel .env). Senza le due chiavi la verifica è spenta
+# (prove, mirror). TURNSTILE_HOSTNAME: nomi accettati nella risposta di Cloudflare (vuoto = nessun controllo).
+TURNSTILE_SITEKEY = os.environ.get("TURNSTILE_SITEKEY", "")
+TURNSTILE_SECRET = os.environ.get("TURNSTILE_SECRET", "")
+TURNSTILE_HOSTNAME = [h.strip() for h in os.environ.get("TURNSTILE_HOSTNAME", "eugenio.statocritico.it").split(",")
+                      if h.strip()]
+TURNSTILE_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+# gettone di sessione rilasciato dopo la verifica: firmato con SESSIONE_CHIAVE (vuota = chiave casuale a ogni avvio,
+# le sessioni aperte si rinnovano da sole), valido SESSIONE_MINUTI e legato alla rete di chi l'ha chiesto
+SESSIONE_CHIAVE = os.environ.get("SESSIONE_CHIAVE", "")
+SESSIONE_MINUTI = int(os.environ.get("SESSIONE_MINUTI", "30"))
+SESSIONI_ORA = int(os.environ.get("SESSIONI_ORA", "60"))                 # verifiche per IP all'ora
+# avviso email solo quando la stessa rete supera i limiti almeno AVVISO_429_SOGLIA volte al giorno per
+# AVVISO_429_GIORNI giorni consecutivi; i conteggi (con gli IP) restano AVVISO_429_CONSERVA_GIORNI giorni
+AVVISO_429_SOGLIA = int(os.environ.get("AVVISO_429_SOGLIA", "20"))
+AVVISO_429_GIORNI = int(os.environ.get("AVVISO_429_GIORNI", "3"))
+AVVISO_429_CONSERVA_GIORNI = int(os.environ.get("AVVISO_429_CONSERVA_GIORNI", "7"))
+PROTEZIONE_DIR = Path(os.environ.get("PROTEZIONE_DIR", str(DATI / "protezione")))

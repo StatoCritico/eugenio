@@ -272,11 +272,11 @@
     comandi.appendChild(chiudi);
     testa.append(titolo, comandi);
     const corpo = h("div", "riquadro-corpo grafico");
-    const aiuto = h("p", "riquadro-aiuto", "Rotella del mouse o due dita per ingrandire, trascina per spostarti; passa sopra il grafico o toccalo per leggere i valori.");
+    const aiuto = h("p", "riquadro-aiuto", AIUTO_GRAFICO);
     fin.append(testa, corpo, aiuto);
     d.appendChild(fin);
     document.body.appendChild(d);
-    riq = { dialogo: d, corpo, titolo, reg: null, svg: null, vb0: null };
+    riq = { dialogo: d, corpo, titolo, reg: null, svg: null, vb0: null, aiuto, finestra: fin, tabella: null };
 
     vista.addEventListener("click", () => vistaIniziale());
     chiudi.addEventListener("click", () => d.close());
@@ -296,6 +296,7 @@
     d.addEventListener("cancel", (e) => { if (escElenco) e.preventDefault(); escElenco = false; });
     d.addEventListener("close", () => {
       nascondiSuggerimento();
+      rimettiTabella();                 // la tabella torna al suo posto nella pagina prima di svuotare il riquadro
       corpo.innerHTML = "";
       riq.svg = null;
       riq.reg = null;
@@ -318,6 +319,7 @@
 
   function apri(reg) {
     if (!riq) creaRiquadro();
+    modoGrafico();
     riq.reg = reg;
     const svg = reg.box.querySelector("svg:not(.grafico-apri svg)");
     riq.titolo.textContent = reg.opz.titolo || (svg && svg.getAttribute("aria-label")) || "Grafico";
@@ -440,6 +442,106 @@
     corpo.addEventListener("dblclick", (e) => { if (riq.svg && riq.svg.contains(e.target)) { e.preventDefault(); vistaIniziale(); } });
   }
 
+  // ------------------------------------------------------------------ tabelle nel riquadro (29/10/2026)
+  // Ogni tabella dei dati (i contenitori .tabella-scorre e gli elementi con data-riquadro-tabella, anche quelli creati
+  // dopo dagli script) ha in alto a destra lo stesso pulsante con la freccina dei grafici: apre la tabella nel riquadro
+  // flottante, larga quanto le serve se sta nella finestra (altrimenti il 95 % della finestra, con scorrimento interno)
+  // e alta al massimo il 95 % della finestra; ✱ e ◐ come per i grafici. La tabella vera si sposta nel riquadro e torna
+  // al suo posto alla chiusura, così caselle e pulsanti continuano a funzionare. Titolo: data-titolo, <caption> o il
+  // titolo (h2, h3) che la precede.
+  const AIUTO_GRAFICO = "Rotella del mouse o due dita per ingrandire, trascina per spostarti; passa sopra il grafico o toccalo per leggere i valori.";
+  const AIUTO_TABELLA = "Scorri la tabella se non sta tutta nella finestra; chiudi con ×, con Esc o con un clic fuori.";
+  function modoGrafico() {
+    rimettiTabella();
+    riq.dialogo.classList.remove("con-tabella");
+    riq.finestra.style.width = ""; riq.finestra.style.height = "";
+    riq.aiuto.textContent = AIUTO_GRAFICO;
+  }
+  function rimettiTabella() {
+    const t = riq && riq.tabella;
+    if (!t) return;
+    t.box.style.width = "";
+    t.segnaposto.replaceWith(t.box);
+    riq.tabella = null;
+  }
+  function titoloTabella(box) {
+    if (box.dataset.titolo) return box.dataset.titolo;
+    const cap = box.querySelector("caption");
+    if (cap && cap.textContent.trim()) return cap.textContent.trim();
+    const pulito = (t) => { const c = t.cloneNode(true); c.querySelectorAll(".n").forEach((n) => n.remove()); return c.textContent.trim(); };
+    // il titolo (h2 o h3) più vicino che precede la tabella, risalendo fino al passo o alla sezione
+    for (let e = box; e && !e.matches(".pannello, main, body"); e = e.parentElement) {
+      for (let p = e.previousElementSibling; p; p = p.previousElementSibling) {
+        if (/^H[23]$/.test(p.tagName)) return pulito(p);
+        const dentro = p.querySelectorAll ? p.querySelectorAll("h2, h3") : [];
+        if (dentro.length) return pulito(dentro[dentro.length - 1]);
+      }
+    }
+    return "Tabella";
+  }
+  function dimensionaTabella() {
+    const { box } = riq.tabella, fin = riq.finestra;
+    const max = Math.floor(innerWidth * 0.95);
+    fin.style.width = `${max}px`;
+    box.style.width = "max-content";
+    const cs = getComputedStyle(fin);
+    const extra = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+    const naturale = Math.ceil(box.getBoundingClientRect().width) + extra + 2;
+    box.style.width = "";
+    fin.style.width = `${Math.min(max, Math.max(360, naturale))}px`;
+  }
+  function apriTabella(box) {
+    if (!riq) creaRiquadro();
+    if (riq.dialogo.open) riq.dialogo.close();
+    modoGrafico();
+    nascondiSuggerimento();
+    riq.reg = null; riq.svg = null;
+    const segnaposto = h("div", "tabella-segnaposto");
+    segnaposto.style.height = `${box.offsetHeight}px`;
+    box.replaceWith(segnaposto);
+    riq.tabella = { box, segnaposto };
+    riq.corpo.innerHTML = "";
+    riq.corpo.appendChild(box);
+    riq.dialogo.classList.add("con-tabella");
+    riq.titolo.textContent = titoloTabella(box);
+    riq.aiuto.textContent = AIUTO_TABELLA;
+    document.documentElement.classList.add("riquadro-aperto");
+    riq.dialogo.showModal();
+    dimensionaTabella();
+    const chiudi = riq.dialogo.querySelector(".riquadro-chiudi");
+    if (chiudi) chiudi.focus();
+  }
+  function registraTabella(box) {
+    if (!box || box.dataset.riquadroPronto || box.closest("dialog")) return;
+    box.dataset.riquadroPronto = "1";
+    if (!box.dataset.titolo) box.dataset.titolo = titoloTabella(box);
+    const contenitore = h("div", "tabella-con-riquadro");
+    box.before(contenitore);
+    contenitore.appendChild(box);
+    const b = h("button", "grafico-apri");
+    b.type = "button";
+    b.innerHTML = ICONA_APRI;
+    b.setAttribute("aria-label", "Apri la tabella in un riquadro");
+    b.title = "Apri la tabella in un riquadro";
+    b.setAttribute("aria-haspopup", "dialog");
+    b.addEventListener("click", () => apriTabella(box));
+    contenitore.prepend(b);
+  }
+  function cercaTabelle(radice) {
+    (radice || document).querySelectorAll(".tabella-scorre, [data-riquadro-tabella]").forEach((x) => {
+      if (x.closest("[data-riquadro-tabella]") !== x && x.closest("[data-riquadro-tabella]")) return;   // già dentro un contenitore registrato
+      registraTabella(x);
+    });
+  }
+  addEventListener("resize", () => { if (riq && riq.tabella && riq.dialogo.open) dimensionaTabella(); });
+  const avviaTabelle = () => {
+    cercaTabelle(document);
+    let attesa = 0;
+    new MutationObserver(() => { cancelAnimationFrame(attesa); attesa = requestAnimationFrame(() => cercaTabelle(document)); })
+      .observe(document.body, { childList: true, subtree: true });
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", avviaTabelle); else avviaTabelle();
+
   document.body.appendChild(annuncio);
-  window.EUGENIO_GRAFICI = { registra, osserva, chiudiRiquadro: () => riq && riq.dialogo.open && riq.dialogo.close() };
+  window.EUGENIO_GRAFICI = { registra, osserva, registraTabella, chiudiRiquadro: () => riq && riq.dialogo.open && riq.dialogo.close() };
 })();

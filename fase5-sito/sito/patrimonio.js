@@ -1,12 +1,16 @@
 "use strict";
-// Patrimonio edilizio: CSV di edifici → /api/patrimonio (a blocchi) → mappa dei punti ed elenco con gli esiti.
+// Patrimonio edilizio: elenco di edifici (CSV, Excel o OpenDocument) → /api/patrimonio (a blocchi) → mappa dei punti
+// ed elenco con gli esiti. Dal 29/10/2026 la mappa è quella tridimensionale di mappa3d.js (solo la regione scelta,
+// che si cambia dalla piccola mappa) e la colonna di destra è un solo flusso di passi numerati: geolocalizzazione
+// (questo file), poi valori per sede (valori_sedi.js, che usa le funzioni esposte qui sotto in
+// window.EUGENIO_PATRIMONIO e, con i valori caricati, decide da sé il territorio mostrato dalla mappa).
 const API = "/api";
 const BLOCCO = 40;          // righe per richiesta: il tunnel Cloudflare chiude le richieste oltre i 100 secondi
 const MASSIMO = 2000;       // edifici all'ora accettati dal server per indirizzo IP
 const $ = (id) => document.getElementById(id);
 const NS = "http://www.w3.org/2000/svg";
 const ESITI = { ok: "trovato", verificare: "da verificare", non_trovato: "non trovato", errore: "errore" };
-const stato = { file: null, righe: [], fonti: new Set(), filtro: "", scelto: null, svg: null, punti: null, vb: null };
+const stato = { file: null, righe: [], fonti: new Set(), filtro: "", scelto: null, mappa: null };
 
 function el(tag, attrs = {}, parent) {
   const e = document.createElementNS(NS, tag);
@@ -37,71 +41,60 @@ function lonlatSvg(lon, lat) {
   return [S * E - 313.67365575107954, -S * No + 5226.851664605516];
 }
 
+// la mappa tridimensionale (mappa3d.js): comuni della sola regione scelta, contorno della regione, punti e barre
 async function caricaMappa() {
-  const r = await fetch("dati/mappa/italia.json");
-  if (!r.ok) throw new Error(`mappa non disponibile (${r.status})`);
-  const m = await r.json();
-  const svg = el("svg", { viewBox: m.viewBox.join(" "), role: "img", "aria-label": "Mappa d'Italia con gli edifici" });
-  $("mappa").prepend(svg);
   const E = window.EUGENIO;
-  stato.province = el("g", { class: "province" }, svg);
-  stato.punti = el("g", { class: "punti" }, svg);
-  stato.svg = svg;
-  stato.vb = m.viewBox;
-  if (E) {
-    // regioni colorate sotto, confini regionali sopra le province, punti sopra a tutto
-    await E.sfondoItalia(svg).catch(() => {});
-    svg.appendChild(stato.punti);
-    stato.zoom = E.mappaGrande(svg, m.viewBox);
-  }
-  await mostraRegione((E && E.regione) || "08");
-  // la piccola mappa accanto al titolo cambia regione senza ricaricare: i risultati restano
-  if (E) E.suRegione = (cod) => mostraRegione(cod, true).catch(() => {});
-}
-
-// inquadra una regione e ne disegna le province (dati/mappa/RR.json); i punti restano
-async function mostraRegione(cod, inquadra = !stato.righe.length) {
-  const r = await fetch(`dati/mappa/${cod}.json`);
-  if (!r.ok) return;
-  const m = await r.json();
-  stato.province.innerHTML = "";
-  for (const pr of m.province || []) el("title", {}, el("path", { d: pr.d }, stato.province)).textContent = pr.nome;
-  stato.vb = m.viewBox;
-  stato.svg.querySelectorAll(".italia-sfondo path").forEach((p) => p.classList.toggle("attiva", p.dataset.cod === cod));
-  if (inquadra) {
-    if (stato.zoom) stato.zoom.inquadra(m.viewBox); else stato.svg.setAttribute("viewBox", m.viewBox.join(" "));
-    stato.svg.style.setProperty("--tratto", (Math.max(m.viewBox[2], m.viewBox[3]) / 640).toFixed(3));
-  }
-}
-
-function disegnaPunti() {
-  if (!stato.svg) return;
-  stato.punti.innerHTML = "";
-  const con = stato.righe.map((r, i) => ({ r, i })).filter(({ r }) => r.lat !== null && r.lat !== undefined && r.lon !== null);
-  if (!con.length) { stato.svg.setAttribute("viewBox", stato.vb.join(" ")); return; }
-  const xy = con.map(({ r }) => lonlatSvg(+r.lon, +r.lat));
-  const xs = xy.map((p) => p[0]), ys = xy.map((p) => p[1]);
-  let [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  const lato = Math.max(x1 - x0, y1 - y0, 30), pad = lato * 0.12;
-  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, w = Math.max(x1 - x0, 30) + 2 * pad, hh = Math.max(y1 - y0, 30) + 2 * pad;
-  stato.svg.setAttribute("viewBox", `${cx - w / 2} ${cy - hh / 2} ${w} ${hh}`);
-  const raggio = Math.max(w, hh) / 160;
-  stato.svg.style.setProperty("--tratto", (raggio / 4).toFixed(3));
-  con.forEach(({ r, i }, k) => {
-    const c = el("circle", { cx: xy[k][0], cy: xy[k][1], r: raggio, class: `punto ${r.esito}`, tabindex: "0",
-                             role: "button", "aria-label": `${r.id} ${r.denominazione || ""}` }, stato.punti);
-    c.dataset.i = i;
-    el("title", {}, c).textContent = `${r.id}${r.denominazione ? " – " + r.denominazione : ""}`;
-    c.addEventListener("click", () => scegli(i, true));
-    c.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); scegli(i, true); } });
+  stato.mappa = window.EUGENIO_MAPPA3D.crea($("mappa"), {
+    // la vista delle barre cambia anche dalla mappa (Alt+trascinamento): i cursori della scheda «Valori per sede» la seguono
+    suCambio: (vista, barre) => document.dispatchEvent(new CustomEvent("eugenio:vista3d", { detail: { vista, barre } })),
   });
-  $("legenda-mappa").hidden = false;
+  // la piccola mappa accanto al titolo cambia regione senza ricaricare: i risultati restano
+  if (E) E.suRegione = (cod) => mostraRegione(cod).catch(() => {});
+  await mostraRegione((E && E.regione) || "08");
+}
+
+// comuni della regione (dati/mappa/RR.json) e il suo contorno (dati/mappa/italia.json); punti e barre restano
+async function mostraRegione(cod) {
+  const E = window.EUGENIO;
+  const [m, it] = await Promise.all([
+    fetch(`dati/mappa/${cod}.json`).then((r) => (r.ok ? r.json() : null)),
+    E ? E.italia().catch(() => null) : null,
+  ]);
+  if (!m) throw new Error("mappa della regione non disponibile");
+  const reg = it && it.regioni.find((x) => x.cod === cod);
+  // con i valori per sede caricati il territorio lo sceglie valori_sedi.js (le regioni delle sedi)
+  if (!window.EUGENIO_PATRIMONIO || !window.EUGENIO_PATRIMONIO.territorioAutomatico) {
+    stato.mappa.regione({ cod, comuni: m.comuni, contorno: reg ? reg.d : "", nome: m.nome || (reg && reg.nome) });
+    $("mappa").setAttribute("aria-label", `Mappa di ${m.nome || (reg && reg.nome) || "regione"}`);
+  }
+  disegnaPunti(false);
+}
+
+function disegnaPunti(inquadra = true) {
+  if (!stato.mappa) return;
+  const con = stato.righe.map((r, i) => ({ r, i })).filter(({ r }) => r.lat !== null && r.lat !== undefined && r.lon !== null && r.lon !== undefined);
+  const punti = con.map(({ r, i }) => {
+    const [x, y] = lonlatSvg(+r.lon, +r.lat);
+    return { x, y, i, classe: r.esito, etichetta: `${r.id}${r.denominazione ? " – " + r.denominazione : ""}` };
+  });
+  stato.mappa.punti(punti, (i) => scegli(i, true));
+  if (stato.scelto !== null) scegli(stato.scelto, false);
+  $("legenda-mappa").hidden = !punti.length;
+  if (inquadra && punti.length) stato.mappa.inquadra(riquadroDi(punti));
+}
+
+// riquadro dei punti con un po' di margine (almeno 30 unità di lato, come prima)
+function riquadroDi(punti) {
+  const xs = punti.map((p) => p.x), ys = punti.map((p) => p.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, w = Math.max(x1 - x0, 30) * 1.24, hh = Math.max(y1 - y0, 30) * 1.24;
+  return [cx - w / 2, cy - hh / 2, cx + w / 2, cy + hh / 2];
 }
 
 function scegli(i, scorri) {
   stato.scelto = i;
   document.querySelectorAll(".punto.scelto, .edificio.scelto").forEach((x) => x.classList.remove("scelto"));
-  const c = stato.punti && stato.punti.querySelector(`circle[data-i="${i}"]`);
+  const c = stato.mappa && stato.mappa.svg.querySelector(`.punti circle[data-i="${i}"]`);
   if (c) { c.classList.add("scelto"); c.parentNode.appendChild(c); }
   const card = document.querySelector(`.edificio[data-i="${i}"]`);
   if (card) {
@@ -111,18 +104,17 @@ function scegli(i, scorri) {
 }
 
 // ------------------------------------------------------------------ lettura e invio a blocchi
+// CSV e TXT letti qui; Excel (.xlsx) e OpenDocument (.ods) convertiti dal server (tabelle.js, primo foglio)
 async function testoDelFile(f) {
-  const buf = await f.arrayBuffer();
-  let t;
-  try { t = new TextDecoder("utf-8", { fatal: true }).decode(buf); }
-  catch { t = new TextDecoder("windows-1252").decode(buf); }   // CSV di Excel salvato con la codifica di Windows
-  return t.replace(/^﻿/, "");
+  return window.EUGENIO_TABELLE.leggi(f);
 }
 
 const norm = (c) => c.trim().toLowerCase().replace(/["']/g, "").replace(/[^a-z0-9àèéìòù_]/g, "_").replace(/^_+|_+$/g, "");
 
 function dividi(testo) {
+  // le righe di nota in cima al file (che cominciano con #, come nel file d'esempio dei valori) non sono edifici
   const righe = testo.split(/\r?\n/).filter((r) => r.trim() !== "");
+  while (righe.length && righe[0].trim().startsWith("#")) righe.shift();
   if (righe.length < 2) throw new Error("il file non contiene righe di dati");
   let testa = righe[0];
   const sep = (testa.match(/;/g) || []).length >= (testa.match(/,/g) || []).length ? ";" : ",";
@@ -153,29 +145,43 @@ async function invia(testo, nome) {
   }
 }
 
+// geolocalizzazione a blocchi di BLOCCO righe; avvisa(testo, errore) e barra(frazione) mostrano l'avanzamento.
+// Usata anche dalla scheda «Valori per sede». Restituisce { righe, fonti, interrotto }.
+async function geolocalizza(testo, nome, { avvisa, barra }) {
+  const { blocchi, n } = dividi(testo);
+  if (n > MASSIMO) throw new Error(`il file ha ${n} righe: il massimo è ${MASSIMO} all'ora, dividilo in più parti`);
+  const righe = [], fonti = new Set();
+  let interrotto = null;
+  for (let b = 0; b < blocchi.length; b++) {
+    avvisa(`Cerco gli edifici: ${Math.min(b * BLOCCO, n)} di ${n}…`);
+    barra(b / blocchi.length);
+    try {
+      const d = await invia(blocchi[b], nome);
+      righe.push(...d.righe);
+      (d.fonti || []).forEach((f) => fonti.add(f));
+    } catch (e) {
+      if (!righe.length) throw e;
+      interrotto = `Interrotto dopo ${righe.length} righe su ${n}: ${e.message}. Il risultato è parziale.`;
+      break;
+    }
+  }
+  barra(1);
+  return { righe, fonti, interrotto, n };
+}
+
 $("calcola").addEventListener("click", async () => {
   $("calcola").disabled = true;
   stato.righe = []; stato.fonti = new Set(); stato.scelto = null;
   $("passo-risultato").hidden = true;
   try {
-    const { blocchi, n } = dividi(await testoDelFile(stato.file));
-    if (n > MASSIMO) throw new Error(`il file ha ${n} edifici: il massimo è ${MASSIMO} all'ora, dividilo in più parti`);
+    messaggio("Lettura del file…");
+    const letto = await testoDelFile(stato.file);
     $("avanzamento").hidden = false;
-    for (let b = 0; b < blocchi.length; b++) {
-      messaggio(`Cerco gli edifici: ${Math.min(b * BLOCCO, n)} di ${n}…`);
-      $("barra").style.width = `${(100 * b / blocchi.length).toFixed(1)}%`;
-      try {
-        const d = await invia(blocchi[b], stato.file.name);
-        stato.righe.push(...d.righe);
-        (d.fonti || []).forEach((f) => stato.fonti.add(f));
-      } catch (e) {
-        if (!stato.righe.length) throw e;
-        messaggio(`Interrotto dopo ${stato.righe.length} edifici su ${n}: ${e.message}. Il risultato qui sotto è parziale.`, true);
-        break;
-      }
-      if (b === blocchi.length - 1) messaggio("");
-    }
-    $("barra").style.width = "100%";
+    const r = await geolocalizza(letto.testo, stato.file.name.replace(/\.(xlsx|ods)$/i, ".csv"), {
+      avvisa: (t) => messaggio(t), barra: (f) => { $("barra").style.width = `${(100 * f).toFixed(1)}%`; },
+    });
+    stato.righe = r.righe; stato.fonti = r.fonti;
+    messaggio([r.interrotto, letto.nota].filter(Boolean).join(" "), !!r.interrotto);
     mostra();
   } catch (e) {
     messaggio(`Non riuscito: ${e.message}`, true);
@@ -194,6 +200,7 @@ function conta() {
 
 function mostra() {
   $("passo-risultato").hidden = false;
+  numeraPassi();
   const c = conta(), box = $("conteggi");
   box.innerHTML = "";
   for (const [k, etichetta] of [["ok", "trovati"], ["verificare", "da verificare"], ["non_trovato", "non trovati"]]) {
@@ -306,9 +313,35 @@ function impostaFile(f) {
   messaggio("");
 }
 $("file").addEventListener("change", (e) => impostaFile(e.target.files[0]));
+$("file").setAttribute("accept", window.EUGENIO_TABELLE.ACCETTA);
 const zona = $("zona-file");
 ["dragover", "dragenter"].forEach((t) => zona.addEventListener(t, (e) => { e.preventDefault(); zona.classList.add("pieno"); }));
 zona.addEventListener("dragleave", () => zona.classList.toggle("pieno", !!stato.file));
 zona.addEventListener("drop", (e) => { e.preventDefault(); impostaFile(e.dataTransfer.files[0]); });
+
+// ------------------------------------------------------------------ passi numerati in sequenza
+// la colonna di destra è un solo flusso: si numerano di seguito i passi visibili (geolocalizzazione, poi valori)
+function numeraPassi() {
+  let n = 0;
+  document.querySelectorAll(".pannello .passo > h2 .n").forEach((x) => { if (!x.closest(".passo").hidden) x.textContent = ++n; });
+}
+numeraPassi();
+// #valori nell'indirizzo porta alla prima sezione dei valori per sede (anche dai vecchi collegamenti alla scheda)
+if (location.hash === "#valori") requestAnimationFrame(() => { const v = $("valori"); if (v) v.scrollIntoView({ block: "start" }); });
+
+// piè di pagina: sul computer in fondo alla colonna sinistra (che scorre da sola); sul telefono, dove le colonne sono
+// una sotto l'altra, torna in fondo alla pagina dopo la colonna destra
+(function piede() {
+  const p = $("piede"), area = document.querySelector(".mappa-area"), main = document.querySelector("main.strumento");
+  if (!p || !area || !main) return;
+  const telefono = window.matchMedia("(max-width: 860px)");
+  const sistema = () => { if (telefono.matches) { if (p.parentElement !== document.body) main.after(p); } else if (p.parentElement !== area) area.appendChild(p); };
+  sistema();
+  telefono.addEventListener("change", sistema);
+})();
+
+// per la sezione «Valori per sede» (valori_sedi.js)
+window.EUGENIO_PATRIMONIO = { geolocalizza, lonlatSvg, riquadroDi, scarica, mappa: () => stato.mappa, CITAZIONE, numeraPassi,
+  mostraRegione, territorioAutomatico: false };
 
 caricaMappa().catch((e) => messaggio(`Mappa non disponibile: ${e.message}`, true));

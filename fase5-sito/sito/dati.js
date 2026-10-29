@@ -1,5 +1,5 @@
 "use strict";
-// Dati storici: catalogo (/api/storici/catalogo) → scelta di dataset, grandezze, periodo, frequenza e area →
+// Dati climatici (ex Dati storici): catalogo (/api/storici/catalogo) → scelta di dataset, grandezze, periodo, frequenza e area →
 // stima (/api/storici/stima) → file CSV, Excel o OpenDocument ods (/api/storici/estrai). Nessun dato dell'utente viene inviato
 // oltre ai filtri scelti.
 const API = "/api/storici";
@@ -250,9 +250,9 @@ async function caricaRegione(cod) {
   const g = el("g", {}, svg);
   for (const c of m.comuni) {
     const p = el("path", { d: c.d, fill: "var(--comune-fuori)" }, g);
+    p.dataset.nome = c.nome;            // riquadretto comune a tutte le mappe (minimappa.js)
+    p.dataset.prov = c.prov;
     p.addEventListener("click", () => tocca(c));
-    p.addEventListener("mousemove", (e) => etichetta(e, `${c.nome} (${c.prov})`));
-    p.addEventListener("mouseleave", () => ($("etichetta").style.display = "none"));
     stato.percorsi.set(c.istat, p);
   }
   if (m.province) {
@@ -271,14 +271,6 @@ async function caricaRegione(cod) {
   stato.province.forEach((p) => { const o = h("option", null, `${p.nome} (${p.sigla})`); o.value = p.sigla; sel.appendChild(o); });
   areaTesti();
   colora();
-}
-
-function etichetta(e, testo) {
-  const et = $("etichetta"), box = $("mappa").getBoundingClientRect();
-  et.textContent = testo;
-  et.style.display = "block";
-  et.style.left = `${Math.max(0, Math.min(e.clientX - box.left + 12, box.width - et.offsetWidth))}px`;
-  et.style.top = `${e.clientY - box.top + 12}px`;
 }
 
 function tocca(c) {

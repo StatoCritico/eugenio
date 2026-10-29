@@ -66,6 +66,11 @@ sito/
   grafici.js        modulo comune dei grafici: pulsante ↗ e riquadro flottante (zoom, trascinamento, ✱ e ◐),
                     riquadretto dei valori sui grafici mensili e annuali (regole in README_stile.md § Grafici)
   divisore.js       maniglia tra le due colonne delle pagine dei servizi: allarga o stringe il pannello di destra
+  tabelle.js        file caricati: CSV letti nel browser, Excel (.xlsx) e OpenDocument (.ods) convertiti dal server
+                    (/api/converti, primo foglio); numeri all'italiana
+  mappa3d.js        mappa 3D di Patrimonio (rotazione su tre assi, zoom, barre a mattoncini, disegno SVG)
+  valori_sedi.js    scheda «Valori per sede» di Patrimonio: unità, scale, mattoncini, controlli per colonna, tabella
+  esempi/valori_sedi_esempio.csv  13 sedi con valori SINTETICI (riga delle unità: MWh, MWh, litri)
   README_stile.md   vestiti, variabili CSS, colori delle regioni e delle serie
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
 costruisci_dpr412.py  rigenera dati/dpr412.* (Normattiva + elenchi ISTAT di comuni, soppressi e variazioni)
@@ -99,7 +104,7 @@ tema e del vestito, foglio di stile, icone) si modificano **solo** in `parti/`; 
 da sé la voce di menu della pagina (`aria-current="page"`). Le fonti di ogni pagina strumento (`.piede-fonti`) restano
 nella pagina, sopra la riga finale. Prima di ogni pubblicazione che cambia stile, script o pagine:
 ```bash
-python costruisci_pagine.py --versione 20261028e   # aaaammgg + lettera: nuova versione in pagine e script
+python costruisci_pagine.py --versione 20261029a   # aaaammgg + lettera: nuova versione in pagine e script
 python costruisci_pagine.py --controlla            # 0 = tutto aggiornato (lo usano anche i test)
 python -m pytest tests                             # idempotenza, voce attiva, versione
 ```
@@ -117,7 +122,7 @@ scp ..\..\sito.tar.gz eugenio:~/
 ssh eugenio "tar -xzmf ~/sito.tar.gz --no-overwrite-dir -C /srv/energia/sito && rm ~/sito.tar.gz"
 ```
 Caddy lo serve subito, senza riavvii. Le pagine richiamano `stile.css` e gli script con un numero di versione
-(`?v=20261028e`): quando si cambiano stile o script, si aumenta con `costruisci_pagine.py --versione …`, così i
+(`?v=20261029a`): quando si cambiano stile o script, si aumenta con `costruisci_pagine.py --versione …`, così i
 browser e Cloudflare non usano la copia vecchia rimasta in memoria.
 
 Per vedere solo la grafica in locale: `python -m http.server -d sito 8000` (mappe visibili, dati no: servono le API).
@@ -247,6 +252,24 @@ in ODT. Sul server i due formati sono spenti (rispondono 410, variabile `REPORT_
   (PDF ed Excel/ODS; vale anche per i Word e ODT scaricati prima); `licenza.html` (`#dati`, `#report`); Sitografia
   (python-docx «spento dal 28/10/2026», odfpy per l'ODS); commenti di `patrimonio.js`, `legge10.js`, `indicatori.js` e
   `README_stile.md`.
-- Versione cache: `?v=20261028e` (28/10/2026 notte: grafici nel riquadro flottante e osservabili, pannelli
+- Versione cache: `?v=20261029a` (29/10/2026: riquadretti sulle mappe, Patrimonio 3D con Valori per sede, file
+  Excel/ODS). Prima: `?v=20261028e` (28/10/2026 notte: grafici nel riquadro flottante e osservabili, pannelli
   ridimensionabili, freccia ↓ della piccola mappa corretta). Provato con Playwright: pulsanti a 1440 e 390 px (tema scuro e chiaro), nessun
   errore né scorrimento orizzontale, clic su ODS → `formato=ods`; F.A.Q. aperta da `#formati-report`.
+
+## Aggiornamento del 29/10/2026 – verifica anti-robot (da pubblicare con `?v=20261029a`)
+
+- Nuovo `sito/protezione.js`, caricato nel `<head>` di tutte le pagine da `parti/testa.html` (dopo la modifica:
+  `python costruisci_pagine.py`, senza cambiare versione). Avvolge `window.fetch`: per previsione, patrimonio,
+  geocodifica, particella ed estrazione dei Dati climatici chiede al server `/api/protezione`; se la verifica è
+  accesa carica Cloudflare Turnstile da `challenges.cloudflare.com` (solo in quel momento), scambia il gettone con
+  `POST /api/sessione` e manda il gettone di sessione nell'intestazione `X-EuGEnio-Sessione`; a una risposta 401 con
+  `X-EuGEnio-Verifica` rifà la verifica una volta e ripete la richiesta. Le pagine non sono cambiate.
+- Il riquadro della verifica (in basso a destra, colori del vestito) compare solo se Cloudflare vuole un clic; il
+  gettone di sessione resta mezz'ora in `sessionStorage`.
+- Se Turnstile non si carica (blocco pubblicità) la pagina mostra l'errore come le altre risposte del server: «La
+  verifica anti-robot di Cloudflare non si è caricata…».
+- Senza le chiavi Turnstile nel `.env` del server (prove in locale, mirror) `protezione.js` non fa nulla.
+- Informativa privacy aggiornata (Turnstile tra i servizi di Cloudflare, conteggio dei 429 per 7 giorni, gettone nel
+  browser). Provato in Node con browser, Turnstile e server simulati: verifica spenta, una sola verifica per più
+  richieste anche contemporanee, rinnovo dopo un 401, errore leggibile se la verifica fallisce.

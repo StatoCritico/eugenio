@@ -3,31 +3,39 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EuGEnio – patrimonio edilizio</title>
-<meta name="description" content="Da un elenco di edifici (indirizzi, dati catastali o coordinate) alla particella catastale e al punto sulla mappa. Progetto open source.">
+<title>EuGEnio – patrimonio: edifici, consumi e costi</title>
+<meta name="description" content="Da un elenco di edifici (indirizzi, dati catastali o coordinate, in CSV, Excel o OpenDocument) alla particella catastale e al punto sulla mappa, e i valori di ogni sede come barre tridimensionali. Progetto open source.">
 <!-- testa -->
 <script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
 try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261028e";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<link rel="stylesheet" href="stile.css?v=20261028e">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261028e">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261028e">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261029b";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261029b"></script>
+<link rel="stylesheet" href="stile.css?v=20261029b">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261029b">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261029b">
 <!-- /testa -->
 </head>
 <body>
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261028e" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261029b" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Informazioni">
+      <a href="metodo.html">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+    </nav>
     <details class="menu-tutto">
       <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
       <nav class="menu-pannello" aria-label="Menu completo">
         <h2>Strumenti</h2>
-        <ul><li><a href="./">Previsioni</a></li><li><a href="patrimonio.html" aria-current="page">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
+        <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li><li><a href="patrimonio.html" aria-current="page">Patrimonio</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
         <h2>Informazioni</h2>
         <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
@@ -46,20 +54,13 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   </div>
   <div class="testata-menu">
     <nav class="menu-strumenti" aria-label="Strumenti">
+    <a href="dati.html">Dati climatici</a>
+    <a href="legge10.html">Legge 10</a>
     <a href="./">Previsioni</a>
     <a href="patrimonio.html" aria-current="page">Patrimonio</a>
-    <a href="legge10.html">Legge 10</a>
-    <a href="dati.html">Dati storici</a>
     <a href="indicatori.html">Indicatori</a>
     </nav>
-    <nav class="menu-info" aria-label="Informazioni">
-      <a href="metodo.html">Come funziona</a>
-      <a href="faq.html">F.A.Q.</a>
-      <a href="sitografia.html">Sitografia</a>
-      <a href="mirror.html">Mirror</a>
-      <a href="contatti.html">Contattaci</a>
-      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
-    </nav>
+    <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
     <div class="vestito">
       <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
         aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
@@ -76,19 +77,46 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </header>
 <!-- /testata -->
 
-<main class="strumento">
+<main class="strumento pagina-patrimonio">
   <section class="mappa-area" aria-label="Mappa degli edifici">
-    <h1>Dove sono i tuoi edifici, particella per particella</h1>
+    <h1>Localizza gli edifici e crea le mappe dei consumi e dei costi</h1>
     <p class="sotto">Carica l'elenco: per ogni edificio cerchiamo il punto (dall'indirizzo, dai dati catastali o dalle
-      coordinate) e la particella catastale che lo contiene.</p>
-    <div class="mappa" id="mappa"><div class="etichetta-mappa" id="etichetta"></div></div>
+      coordinate) e la particella catastale che lo contiene. Con i valori di ogni sede (consumi, costi…) la mappa
+      diventa un grafico a barre tridimensionale. Dopo aver caricato i dati scorri in basso per vedere i grafici.</p>
+    <div class="blocco-mappa" id="blocco-consumi">
+      <h2 class="titolo-mappa" id="titolo-consumi" hidden>Consumi</h2>
+      <div class="mappa mappa-3d" id="mappa" role="region" aria-label="Mappa della regione"><div class="etichetta-mappa" id="etichetta"></div></div>
+      <div class="legenda-colonne" id="legenda-consumi" hidden></div>
+    </div>
+    <div class="blocco-mappa" id="blocco-costi" hidden>
+      <h2 class="titolo-mappa">Costi</h2>
+      <div class="mappa mappa-3d" id="mappa-costi" role="region" aria-label="Mappa dei costi"><div class="etichetta-mappa"></div></div>
+      <div class="legenda-colonne" id="legenda-costi"></div>
+    </div>
+    <p class="aiuto mappa3d-aiuto">Col mouse: trascina per spostare la mappa; con Ctrl (o ⌘, o col tasto destro) la
+      ruoti e la inclini, con Ctrl e Maiuscolo la fai girare su se stessa, con Alt ruoti solo le barre; rotella per
+      ingrandire, doppio clic per la vista iniziale. Col dito: un dito sposta, due dita ingrandiscono e ruotano.
+      «Isometrica» è la vista dei videogiochi, senza prospettiva e con il nord in alto a destra. La regione si cambia
+      dalla piccola mappa qui sopra; con i valori per sede la mappa mostra da sola le regioni delle sedi.</p>
     <div class="legenda" id="legenda-mappa" hidden>
       <span><i class="pallino ok"></i>trovato</span>
       <span><i class="pallino verificare"></i>da verificare</span>
     </div>
+    <footer class="piede piede-colonna" id="piede" role="contentinfo">
+      <div class="piede-fonti">
+      <p>Particelle catastali e geocodifica: <a href="https://zornade.com">Dati elaborati da Zornade</a> (<a href="https://www.agenziaentrate.gov.it/">Agenzia delle Entrate</a>,
+        <a href="https://www.istat.it/">ISTAT</a>, © contributori OpenStreetMap, ODbL). Numeri civici: <a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a> – <a href="https://www.agenziaentrate.gov.it/">Agenzia delle Entrate</a> e <a href="https://www.istat.it/">ISTAT</a> (CC BY 4.0).
+        Confini: <a href="https://www.istat.it/">ISTAT</a> (CC BY 4.0) tramite Gramscii.</p>
+      <p>I punti sono stime automatiche: quelli segnati "da verificare" vanno controllati prima di usarli.</p>
+      </div>
+  <!-- piede -->
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261029b" alt="" width="44" height="44">
+  <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  <!-- /piede -->
+    </footer>
   </section>
 
-  <section class="pannello" aria-label="Geolocalizzazione del patrimonio">
+  <section class="pannello" aria-label="Patrimonio: geolocalizzazione e valori per sede">
     <!-- sperimentale -->
     <div class="messaggio attenzione sperimentale" role="note">
       <div><b>Attenzione! Servizio sperimentale non ancora verificato.</b>
@@ -100,9 +128,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     </div>
     <!-- /sperimentale -->
     <div class="passo">
-      <h2><span class="n">1</span>L'elenco degli edifici</h2>
-      <p class="aiuto">Un file CSV (separatore <code>;</code> o <code>,</code>, va bene quello salvato da Excel) con
-        una riga per edificio. Colonne facoltative: <code>id</code>, <code>denominazione</code> e qualsiasi altra, che
+      <h2><span class="n">1</span>Elenco degli edifici</h2>
+      <p class="aiuto">Un file CSV (separatore <code>;</code> o <code>,</code>), Excel (<code>.xlsx</code>) o
+        OpenDocument (<code>.ods</code>, si legge il primo foglio) con una riga per edificio. Colonne facoltative: <code>id</code>, <code>denominazione</code> e qualsiasi altra, che
         ritrovi nel risultato. Per ogni edificio serve almeno uno di questi gruppi:</p>
       <ul class="aiuto elenco">
         <li><code>indirizzo</code>, <code>civico</code>, <code>comune</code> (il civico può stare anche dentro l'indirizzo);</li>
@@ -111,7 +139,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       </ul>
       <p class="aiuto">Prova con il <a href="esempi/patrimonio_esempio.csv" download>file di esempio</a> (i 13 ospedali dell'AUSL della Romagna: quasi tutti con l'indirizzo, due con foglio e particella, uno con le sole coordinate).</p>
       <label class="file" id="zona-file">
-        <input id="file" type="file" accept=".csv,.txt,text/csv">
+        <input id="file" type="file" accept=".csv,.txt,.xlsx,.ods">
         <span id="nome-file">Scegli il file o trascinalo qui</span>
       </label>
       <button class="bottone" id="calcola" disabled>Trova gli edifici</button>
@@ -123,7 +151,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     </div>
 
     <div class="passo" id="passo-risultato" hidden>
-      <h2><span class="n">2</span>Il risultato</h2>
+      <h2><span class="n">2</span>Risultato</h2>
       <div class="conteggi" id="conteggi"></div>
       <div class="filtri" role="group" aria-label="Mostra">
         <button type="button" class="filtro" data-esito="" aria-pressed="true">Tutti</button>
@@ -131,7 +159,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <button type="button" class="filtro" data-esito="verificare" aria-pressed="false">Da verificare</button>
         <button type="button" class="filtro" data-esito="non_trovato" aria-pressed="false">Non trovati</button>
       </div>
-      <div class="edifici" id="edifici"></div>
+      <div class="edifici" id="edifici" data-riquadro-tabella data-titolo="Risultato della geolocalizzazione"></div>
       <div class="scarica">
         <button class="bottone secondario" id="scarica-csv" type="button">Scarica il risultato (CSV)</button>
         <button class="bottone secondario" id="scarica-geojson" type="button">Scarica i punti (GeoJSON)</button>
@@ -139,26 +167,112 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <div id="report"></div>
       <p class="fonti" id="fonti"></p>
     </div>
+
+    <div class="passo" id="valori">
+      <h2><span class="n">3</span>Sedi e valori</h2>
+      <p class="aiuto">Un file CSV, Excel (<code>.xlsx</code>) o OpenDocument (<code>.ods</code>, si legge il primo
+        foglio) con le colonne della geolocalizzazione (<code>id</code>, <code>denominazione</code>,
+        <code>indirizzo</code>, <code>civico</code>, <code>comune</code>, <code>foglio</code>, <code>particella</code>,
+        <code>lat</code>, <code>lon</code>) e, in più, una colonna per ogni valore da mostrare, per esempio
+        «Energia elettrica 2025» o «Gas 2025». Se nella riga subito sotto i titoli scrivi le unità di misura (MWh, Smc,
+        m³, €…) la pagina le riconosce da sola; vanno bene anche i numeri all'italiana, come 1.234,5.</p>
+      <p class="aiuto">Le colonne in valuta (€, EUR, $, USD, £, GBP, CHF, ¥…, nell'unità o accanto ai numeri) sono
+        <b>costi</b> e vanno su una seconda mappa e in una seconda tabella; le altre sono <b>consumi</b>.
+        <b>Abbinamento per posizione:</b> la prima colonna di consumo da sinistra va con la prima colonna di costo da
+        sinistra, la seconda con la seconda e così via; così la pagina calcola i costi unitari medi (per esempio €/MWh).
+        Metti quindi i costi nello stesso ordine dei consumi.</p>
+      <p class="aiuto">Prova con il <a href="esempi/valori_sedi_esempio.csv" download>file di esempio</a>: le stesse
+        13 sedi della geolocalizzazione con energia elettrica (kWh), gas (Smc) e acqua (m³) e i rispettivi costi (€).</p>
+      <div class="messaggio attenzione avviso-esempio-fisso" role="note"><div><b>Dati di esempio non reali</b>
+        Il file di esempio usa i nomi e gli indirizzi dei 13 ospedali dell'AUSL della Romagna solo per mostrare come funziona la pagina: consumi e costi sono numeri inventati, generati a caso entro intervalli plausibili, e non rappresentano in alcun modo i consumi o le spese reali di queste strutture. Non citarli e non usarli per confronti.</div></div>
+      <label class="file" id="zona-valori">
+        <input id="file-valori" type="file" accept=".csv,.txt,.xlsx,.ods">
+        <span id="nome-valori">Scegli il file o trascinalo qui</span>
+      </label>
+      <button class="bottone" id="calcola-valori" disabled>Trova le sedi e disegna le barre</button>
+      <div class="messaggio" id="messaggio-valori" role="status" aria-live="polite"></div>
+      <div class="avanzamento" id="avanzamento-valori" hidden><span id="barra-valori"></span></div>
+      <p class="aiuto">I valori restano nel tuo browser: al server vanno solo le colonne che servono a trovare le sedi
+        (indirizzo, dati catastali o coordinate), come nella geolocalizzazione. Se una riga ha già <code>lat</code> e
+        <code>lon</code> si usano quelle.</p>
+    </div>
+
+    <div class="passo" id="passo-totali" hidden>
+      <h2><span class="n">4</span>Totali</h2>
+      <p class="aiuto">Le somme di ogni colonna su <b>tutte le sedi del file</b>, comprese quelle spente sulla mappa e
+        nelle tabelle: prima i consumi, poi i costi.</p>
+      <div id="totali" data-riquadro-tabella data-titolo="Totali"></div>
+    </div>
+
+    <div class="passo" id="passo-prezzi" hidden>
+      <h2><span class="n">5</span>Costi unitari medi</h2>
+      <p class="aiuto">Costo totale diviso consumo totale, per ogni coppia di colonne abbinate per posizione (la prima
+        colonna di consumo con la prima di costo, e così via), sulle sole sedi che hanno entrambi i valori.</p>
+      <div id="prezzi" data-riquadro-tabella data-titolo="Costi unitari medi"></div>
+    </div>
+
+    <div class="passo" id="passo-consumi" hidden>
+      <h2><span class="n">6</span>Consumi per sede</h2>
+      <p class="aiuto">La casella accanto al nome di una sede la accende o la spegne sulle mappe; quella nel titolo di
+        una colonna accende o spegne le sue barre. In un comune con più di tre sedi all'inizio sono accese le tre con il
+        consumo più alto (nella prima colonna di consumo), con le più piccole davanti; le altre restano qui, spente.</p>
+      <div class="tabella-scorre" data-titolo="Consumi per sede"><table class="mensili tabella-valori" id="tabella-consumi"></table></div>
+      <div class="comandi-tabella" id="comandi-consumi"></div>
+      <h3>Diagrammi di Pareto dei consumi</h3>
+      <div class="pareto" id="pareto-consumi"></div>
+    </div>
+
+    <div class="passo" id="passo-costi" hidden>
+      <h2><span class="n">7</span>Costi per sede</h2>
+      <div class="spunte"><label><input type="checkbox" id="prezzi-per-sede"> Mostra il costo unitario di ogni sede</label></div>
+      <div class="tabella-scorre" data-titolo="Costi per sede"><table class="mensili tabella-valori" id="tabella-costi"></table></div>
+      <div class="comandi-tabella" id="comandi-costi"></div>
+      <h3>Diagrammi di Pareto dei costi</h3>
+      <div class="pareto" id="pareto-costi"></div>
+    </div>
+
+    <div class="passo" id="passo-vista" hidden>
+      <h2><span class="n">8</span>Vista tridimensionale</h2>
+      <div class="cursori-barre">
+        <label for="rotazione-barre">Rotazione delle barre <output id="rotazione-barre-valore"></output></label>
+        <input id="rotazione-barre" type="range" min="-180" max="180" step="1">
+        <label for="inclinazione-barre">Inclinazione delle barre <output id="inclinazione-barre-valore"></output></label>
+        <input id="inclinazione-barre" type="range" min="5" max="80" step="1">
+        <label for="altezza-barre">Altezza delle barre <output id="altezza-barre-valore"></output></label>
+        <input id="altezza-barre" type="range" min="30" max="250" step="5">
+      </div>
+      <div class="spunte">
+        <label><input type="checkbox" id="segue-barre"> Le barre ruotano insieme alla mappa</label>
+      </div>
+      <div class="scarica"><button class="bottone secondario piccolo" id="barre-di-fronte" type="button">Barre di fronte</button></div>
+      <p class="aiuto">Le barre restano sempre in piedi, come grattacieli. Con la casella spenta (all'inizio) girando la
+        mappa le barre restano di fronte a te, in fila, con lo stesso orientamento; con la casella accesa girano insieme
+        alla mappa. Con Alt e il trascinamento sulla mappa (o con i cursori qui sopra, che valgono per tutte e due le
+        mappe) giri soltanto le barre; «Barre di fronte» le rimette in fila di fronte a te. I colori delle colonne si
+        scelgono sotto ogni mappa.</p>
+      <div class="scarica" id="scarica-disegni"></div>
+      <p class="aiuto">Il disegno è un file piatto, così come vedi la mappa adesso, da inserire in un documento.</p>
+    </div>
+
+    <div class="passo" id="passo-report" hidden>
+      <h2><span class="n">9</span>Generazione del report</h2>
+      <div id="report-valori"></div>
+      <p class="aiuto">Il report contiene totali e costi unitari medi, le mappe, i diagrammi di Pareto (prima i consumi,
+        poi i costi) e le tabelle; in Excel e ODS solo totali e tabelle.</p>
+      <p class="fonti" id="fonti-valori"></p>
+    </div>
   </section>
 </main>
 
-<footer class="piede">
-  <div class="piede-fonti">
-  <p>Particelle catastali e geocodifica: <a href="https://zornade.com">Dati elaborati da Zornade</a> (<a href="https://www.agenziaentrate.gov.it/">Agenzia delle Entrate</a>,
-    <a href="https://www.istat.it/">ISTAT</a>, © contributori OpenStreetMap, ODbL). Numeri civici: <a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a> – <a href="https://www.agenziaentrate.gov.it/">Agenzia delle Entrate</a> e <a href="https://www.istat.it/">ISTAT</a> (CC BY 4.0).
-    Confini: <a href="https://www.istat.it/">ISTAT</a> (CC BY 4.0) tramite Gramscii.</p>
-  <p>I punti sono stime automatiche: quelli segnati "da verificare" vanno controllati prima di usarli.</p>
-  </div>
-  <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261028e" alt="" width="44" height="44">
-  <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
-  <!-- /piede -->
-</footer>
-<script src="aspetto.js?v=20261028e"></script>
-<script src="grafici.js?v=20261028e"></script>
-<script src="divisore.js?v=20261028e"></script>
-<script src="minimappa.js?v=20261028e"></script>
-<script src="report.js?v=20261028e"></script>
-<script src="patrimonio.js?v=20261028e"></script>
+
+<script src="aspetto.js?v=20261029b"></script>
+<script src="grafici.js?v=20261029b"></script>
+<script src="divisore.js?v=20261029b"></script>
+<script src="minimappa.js?v=20261029b"></script>
+<script src="report.js?v=20261029b"></script>
+<script src="tabelle.js?v=20261029b"></script>
+<script src="mappa3d.js?v=20261029b"></script>
+<script src="patrimonio.js?v=20261029b"></script>
+<script src="valori_sedi.js?v=20261029b"></script>
 </body>
 </html>

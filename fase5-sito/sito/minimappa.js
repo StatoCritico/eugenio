@@ -4,7 +4,9 @@
 //    rotella (+, −, doppio clic per tornare), clic = regione della mappa grande;
 //  - la regione scelta (?regione=RR nell'indirizzo, ricordata nel browser, predefinita l'Emilia-Romagna);
 //  - gli strumenti per la mappa grande: Italia intera sotto la regione scelta, confini delle regioni sopra a
-//    tutto, zoom e trascinamento.
+//    tutto, zoom e trascinamento;
+//  - i riquadretti col nome di regioni e comuni al passaggio del mouse o al tocco (suggerimenti), per tutte le mappe
+//    grandi, anche quella tridimensionale del patrimonio (mappa3d.js).
 (function () {
   const NS = "http://www.w3.org/2000/svg";
   const PREDEFINITA = "08";
@@ -102,6 +104,103 @@
     return { imposta, zoom };
   }
 
+  // ------------------------------------------------------------------ riquadretti della mappa grande (29/10/2026)
+  // Un solo meccanismo per tutte le mappe grandi: passando col mouse sopra una regione non selezionata compare il suo
+  // nome, sopra un comune della regione scelta il nome del comune con la sigla della provincia (e una riga in più se la
+  // pagina la mette in data-dettaglio). Gli elementi si descrivono con gli attributi data-nome, data-prov e
+  // data-dettaglio; chi vuole altro passa { contenuto(elemento) } che restituisce { titolo, righe: [[colore, testo]] }
+  // oppure null. Col tocco il riquadretto compare dove si tocca e resta qualche secondo; su una regione vicina il primo
+  // tocco mostra solo il nome e il secondo la apre (così sul telefono non si cambia regione per sbaglio). Durante il
+  // trascinamento e lo zoom il riquadretto si spegne.
+  const tocchiRegione = new WeakMap();      // svg → regione appena toccata una volta (attende il secondo tocco)
+  function contenutoPredefinito(t, tocco) {
+    if (!t || !t.dataset || !t.dataset.nome) return null;
+    if (t.closest(".italia-sfondo")) {
+      // la regione scelta: sopra ci sono i suoi comuni; dove non ce ne sono (province non disegnate, piccoli vuoti
+      // lungo i confini) compare comunque il nome della regione
+      if (t.classList.contains("attiva")) return { titolo: t.dataset.nome, righe: [[null, "regione scelta"]] };
+      return { titolo: t.dataset.nome, righe: [[null, tocco ? "regione: tocca di nuovo per aprirla" : "regione: clic per aprirla"]] };
+    }
+    const righe = [];
+    if (t.dataset.dettaglio) t.dataset.dettaglio.split("\n").forEach((r) => righe.push([null, r]));
+    return { titolo: t.dataset.prov ? `${t.dataset.nome} (${t.dataset.prov})` : t.dataset.nome, righe };
+  }
+  function suggerimenti(svg, opz = {}) {
+    if (!svg || svg.__suggerimenti) return svg && svg.__suggerimenti;
+    const box = svg.closest(".mappa") || svg.parentNode;
+    let et = box.querySelector(".etichetta-mappa");
+    if (!et) { et = document.createElement("div"); et.className = "etichetta-mappa"; box.appendChild(et); }
+    et.setAttribute("aria-hidden", "true");
+    const trova = (bersaglio) => (bersaglio && bersaglio.closest ? bersaglio.closest(opz.selettore || "[data-nome], [data-barra]") : null);
+    let attivo = null, timer = 0;
+    function contenuto(t, tocco) {
+      if (opz.contenuto) { const c = opz.contenuto(t, tocco); if (c !== undefined) return c; }
+      return contenutoPredefinito(t, tocco);
+    }
+    function mostra(t, x, y, tocco) {
+      const c = t && contenuto(t, tocco);
+      if (!c) { nascondi(); return; }
+      if (t !== attivo) {
+        et.innerHTML = "";
+        const b = document.createElement("b"); b.textContent = c.titolo; et.appendChild(b);
+        for (const [colore, testo] of c.righe || []) {
+          const d = document.createElement("div");
+          if (colore) { const q = document.createElement("i"); q.style.background = colore; d.appendChild(q); }
+          d.append(testo);
+          et.appendChild(d);
+        }
+        if (attivo && attivo.classList) attivo.classList.remove("sotto-mouse");
+        attivo = t;
+        if (opz.evidenzia !== false && t.classList) t.classList.add("sotto-mouse");
+      }
+      et.style.display = "block";
+      const r = box.getBoundingClientRect(), w = et.offsetWidth, h = et.offsetHeight;
+      let sx = x - r.left + 14, sy = y - r.top + 16;
+      if (sx + w > r.width - 4) sx = x - r.left - 14 - w;
+      if (sy + h > r.height - 4) sy = y - r.top - 16 - h;
+      et.style.left = `${Math.max(4, Math.min(sx, r.width - w - 4))}px`;
+      et.style.top = `${Math.max(4, sy)}px`;
+    }
+    function nascondi() {
+      clearTimeout(timer);
+      et.style.display = "none";
+      if (attivo && attivo.classList) attivo.classList.remove("sotto-mouse");
+      attivo = null;
+    }
+    const trascina = () => svg.classList.contains("trascina");
+    svg.addEventListener("pointermove", (e) => {
+      if (e.pointerType === "touch") return;                 // col dito vale il tocco
+      if (e.buttons || trascina()) { if (attivo) nascondi(); return; }
+      mostra(trova(e.target), e.clientX, e.clientY, false);
+    });
+    svg.addEventListener("pointerleave", (e) => { if (e.pointerType !== "touch") nascondi(); });
+    svg.addEventListener("wheel", () => nascondi(), { passive: true });
+    let giu = null;
+    svg.addEventListener("pointerdown", (e) => { giu = { x: e.clientX, y: e.clientY, t: e.pointerType }; if (e.pointerType === "touch") nascondi(); });
+    svg.addEventListener("pointerup", (e) => {
+      if (e.pointerType !== "touch" || !giu || Math.hypot(e.clientX - giu.x, e.clientY - giu.y) > 8 || trascina()) return;
+      const t = trova(e.target);
+      // regione vicina: il primo tocco mostra il nome, il secondo (entro 4 secondi) la apre
+      if (t && t.closest(".italia-sfondo") && !t.classList.contains("attiva")) {
+        const prima = tocchiRegione.get(svg);
+        tocchiRegione.set(svg, prima && prima.el === t && Date.now() - prima.quando < 4000 ? { el: t, conferma: true } : { el: t, quando: Date.now() });
+      }
+      mostra(t, e.clientX, e.clientY, true);
+      clearTimeout(timer);
+      timer = setTimeout(nascondi, 3500);
+    });
+    addEventListener("scroll", () => { if (attivo) nascondi(); }, { passive: true, capture: true });
+    svg.__suggerimenti = { nascondi, mostra };
+    return svg.__suggerimenti;
+  }
+  // per il clic su una regione vicina: col tocco vale solo il secondo tocco
+  function toccoConfermato(svg, p, e) {
+    if (!e || e.pointerType !== "touch") return true;       // click col mouse (pointerType "mouse" o vuoto)
+    const t = tocchiRegione.get(svg);
+    if (t && t.el === p && t.conferma) { tocchiRegione.delete(svg); return true; }
+    return false;
+  }
+
   // sotto la mappa grande: tutte le regioni (colore tenue); sopra: i loro confini, più spessi delle province
   async function sfondoItalia(svg) {
     const m = await italia();
@@ -111,12 +210,13 @@
     for (const r of m.regioni) {
       const p = el("path", { d: r.d, fill: `var(--reg-${r.cod})` }, sotto);
       p.dataset.cod = r.cod;
+      p.dataset.nome = r.nome;            // riquadretto col nome (suggerimenti), al posto del vecchio <title>
       if (r.cod === regione) p.classList.add("attiva");
-      el("title", {}, p).textContent = r.nome;
       // clic su una regione vicina: diventa la regione della mappa grande, come dalla piccola mappa
-      p.addEventListener("click", () => { if (r.cod !== regione) cambiaRegione(r.cod, r.nome); });
+      p.addEventListener("click", (e) => { if (r.cod !== regione && toccoConfermato(svg, p, e)) cambiaRegione(r.cod, r.nome); });
       el("path", { d: r.d }, sopra);
     }
+    suggerimenti(svg);
     return m;
   }
 
@@ -126,6 +226,7 @@
     let riquadro = riquadroRegione;
     svg.setAttribute("viewBox", riquadro.join(" "));
     const z = zoomabile(svg, { limiti: () => ITALIA, ritorno: () => riquadro });
+    suggerimenti(svg);                     // nomi di regioni e comuni al passaggio del mouse o al tocco
     const mappa = {
       ...z,
       inquadra(r) { riquadro = r; svg.setAttribute("viewBox", r.join(" ")); },
@@ -256,7 +357,7 @@
     aggiornaCollegamenti(cod);
   }
 
-  window.EUGENIO = { regione, colore, fondoComuni, italia, zoomabile, sfondoItalia, mappaGrande, el, seleziona };
+  window.EUGENIO = { regione, colore, fondoComuni, italia, zoomabile, sfondoItalia, mappaGrande, el, seleziona, suggerimenti };
   window.EUGENIO_REGIONE = regione;     // compatibilità
   aggiornaCollegamenti(regione);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => piccola().catch(() => {}));

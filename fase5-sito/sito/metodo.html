@@ -10,24 +10,32 @@
 try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261028e";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<link rel="stylesheet" href="stile.css?v=20261028e">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261028e">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261028e">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261029b";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261029b"></script>
+<link rel="stylesheet" href="stile.css?v=20261029b">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261029b">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261029b">
 <!-- /testa -->
 </head>
 <body>
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261028e" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261029b" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Informazioni">
+      <a href="metodo.html" aria-current="page">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+    </nav>
     <details class="menu-tutto">
       <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
       <nav class="menu-pannello" aria-label="Menu completo">
         <h2>Strumenti</h2>
-        <ul><li><a href="./">Previsioni</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="dati.html">Dati storici</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
+        <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="indicatori.html">Indicatori</a></li></ul>
         <h2>Informazioni</h2>
         <ul><li><a href="metodo.html" aria-current="page">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
@@ -46,20 +54,13 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   </div>
   <div class="testata-menu">
     <nav class="menu-strumenti" aria-label="Strumenti">
+    <a href="dati.html">Dati climatici</a>
+    <a href="legge10.html">Legge 10</a>
     <a href="./">Previsioni</a>
     <a href="patrimonio.html">Patrimonio</a>
-    <a href="legge10.html">Legge 10</a>
-    <a href="dati.html">Dati storici</a>
     <a href="indicatori.html">Indicatori</a>
     </nav>
-    <nav class="menu-info" aria-label="Informazioni">
-      <a href="metodo.html" aria-current="page">Come funziona</a>
-      <a href="faq.html">F.A.Q.</a>
-      <a href="sitografia.html">Sitografia</a>
-      <a href="mirror.html">Mirror</a>
-      <a href="contatti.html">Contattaci</a>
-      <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
-    </nav>
+    <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
     <div class="vestito">
       <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
         aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
@@ -89,18 +90,97 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     registrazione. Il tutto nel rispetto delle licenze e delle condizioni di ciascun servizio. Puoi usarli anche tu
     seguendo i link della sezione <a href="#fonti">Fonti</a>.</p>
 
-  <h3>I tuoi dati</h3>
+  <h3>Dati degli utenti</h3>
   <p>Il file che carichi viene letto in memoria, usato per la previsione e scartato. Non viene salvato né
     registrato. La ricerca degli indirizzi passa dal nostro server verso <a href="https://zornade.com">Zornade</a>, che riceve solo il testo
     cercato. Dettagli nell'<a href="privacy.html">informativa privacy</a>.</p>
 
+  <h2 id="dati-storici">Dati climatici</h2>
+  <h3>Cosa si può scaricare</h3>
+  <p>La pagina <a href="dati.html">Dati climatici</a> permette di scaricare, in CSV, Excel o OpenDocument (ods), i dati che le licenze ci
+    permettono di ridistribuire: il meteo orario (archivio delle previsioni ICON, da novembre 2022) e giornaliero (ERA5
+    corretto, dal 2015), i gradi giorno, i dati climatici per la Legge 10, l'elenco dei comuni e i prezzi dell'energia
+    di <a href="https://ec.europa.eu/eurostat/">Eurostat</a>. Si scelgono il periodo, la frequenza (dall'ora all'anno o
+    alla stagione di riscaldamento) e la zona: regione, provincia o singoli comuni.</p>
+  <h3>Cosa non si può scaricare</h3>
+  <p>I prezzi del GME e le quotazioni EEX restano solo per uso interno, come richiedono le loro condizioni; le
+    particelle di <a href="https://zornade.com">Zornade</a> e l'archivio <a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a>
+    si consultano dalla pagina del patrimonio ma non si scaricano in blocco. Ogni file riporta le fonti e le
+    attribuzioni richieste dalle licenze.</p>
+  <h3>Medie e completezza</h3>
+  <p>Giorni, mesi e anni sono quelli del calendario italiano. Un periodo compare solo se ha abbastanza dati (di
+    norma il 90 %, si può cambiare): il file indica sempre quanti dati erano attesi e quanti validi.</p>
+
+  <h2 id="legge-10">Legge 10</h2>
+  <h3>Dati per la Relazione Legge 10/91</h3>
+  <p>La <a href="legge10.html">pagina della Legge 10</a> usa la stessa serie storica corretta, giorno per giorno,
+    sulle ultime stagioni di riscaldamento complete (1 luglio – 30 giugno). Calcola i dati mensili con
+    l'impostazione della UNI 10349-1 (temperature medie, minime e massime, irradiazione globale e diffusa su piano
+    orizzontale, pressione del vapore, vento), i gradi giorno a 20 °C sul periodo di accensione di ogni zona
+    (DPR 412/93), la zona che ne risulta, la tendenza in gradi giorno per decennio e una stima statistica delle
+    temperature di progetto (1° percentile dei minimi e 99° dei massimi giornalieri). Non sostituisce i valori
+    normativi: serve a capire quanto il clima reale se ne discosta.</p>
+  <h3>Confronto con il DPR 412/93</h3>
+  <p>Per ogni comune la pagina mostra anche i valori di legge dell'<a href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.del.presidente.della.repubblica:1993-08-26;412!vig=">Allegato A del DPR 412/93</a>:
+    gradi giorno, zona climatica e altitudine della casa comunale. Sono i valori da usare nella relazione tecnica,
+    fissati nel 1993 sul clima dei decenni precedenti; il nostro calcolo descrive invece il clima reale delle
+    ultime stagioni. La pagina riporta la differenza in percentuale tra i gradi giorno calcolati e quelli di legge,
+    dice se la zona coincide e nel grafico stagione per stagione traccia il valore del DPR come linea tratteggiata.</p>
+  <p>Il testo del DPR, preso dalla versione vigente su Normattiva, elenca 8.106 righe con i comuni del 1993.
+    Le abbiamo abbinate ai codici ISTAT di oggi seguendo cambi di nome, di provincia e di regione e i comuni
+    soppressi, e correggendo i refusi del testo (per esempio la lettera O al posto dello zero). Un comune che ne ha
+    incorporati altri tiene il proprio valore; per un comune nato da una fusione il DPR non ha un valore unico e la
+    pagina mostra quelli dei comuni d'origine; i pochi comuni nati dopo per distacco da altri non sono nel DPR.
+    Dal 1994 al 2016 l'Allegato A è stato cambiato da 58 decreti ministeriali, che hanno modificato i valori di
+    circa 120 comuni, il nome di altri 17 e aggiunto 17 righe: il testo vigente li contiene già e li abbiamo
+    verificati versione per versione sul testo multivigente di Normattiva. Per questi comuni la pagina riporta in
+    nota il decreto, la data da cui vale e il valore originario del 1993.
+    L'elenco completo si scarica in <a href="dati/dpr412.csv" download>dpr412.csv</a> o dalla pagina dei
+    <a href="dati.html">dati storici</a>. I dati della UNI 10349 e gli anni tipo del CTI non si possono pubblicare:
+    il perché è nelle <a href="faq.html#uni-cti">domande frequenti</a>.</p>
+  <h3 id="anno-tipo-cti">Anno tipo del CTI</h3>
+  <p>Gli <a href="https://try.cti2000.it/">anni tipo climatici del CTI</a> (Comitato Termotecnico Italiano) descrivono
+    con un anno di dati orari il clima di 110 località, una o due per provincia, e sono la base della UNI 10349:2016.
+    Il CTI li distribuisce gratis a chi si registra, ma ne permette l'uso solo fuori rete, a scopo scientifico,
+    didattico o documentario e citando la fonte, e vieta di ripubblicarli su altri siti. Per questo la
+    <a href="legge10.html">pagina della Legge 10</a> non mostra i dati del CTI ma solo <strong>indicatori calcolati da
+    noi</strong> per ogni comune, accanto ai valori di legge del DPR 412/93 e al clima reale delle ultime stagioni.</p>
+  <p>Come li calcoliamo: leggiamo i file del CTI sul nostro computer e, per ogni comune, seguiamo il metodo del
+    «foglio elettronico interpolatore» che il CTI stesso distribuisce. Prendiamo le due località CTI più vicine
+    <strong>della stessa regione</strong> del comune (come fa la UNI 10349 per i comuni senza località propria, per non
+    scavalcare i crinali tra una regione e l'altra), facciamo la media ora per ora delle due serie con pesi
+    proporzionali a 1/distanza² e riportiamo la temperatura alla quota della casa comunale con
+    <strong>6,5 °C ogni 1000 m</strong>; se il comune è più lontano da entrambe di quanto lo siano tra loro, usiamo
+    solo la più vicina. Dalla serie così ottenuta calcoliamo, con le stesse regole delle altre sezioni, i gradi giorno sul
+    periodo di accensione della zona, la zona che ne risulta, le temperature di progetto (1° percentile delle minime
+    e 99° delle massime giornaliere) e le medie mensili (temperature, irradiazione globale e diffusa, pressione del
+    vapore, umidità, vento). La pagina dice sempre quali località sono state usate, a che distanza e con che peso.</p>
+  <p>Cosa non pubblichiamo: i file del CTI e i dati orari, né sul sito né in download; i valori CTI non sono nel
+    file CSV della pagina né nel report. Abbiamo scritto al CTI e all'UNI per chiedere l'autorizzazione e spiegare
+    cosa facciamo; finché il CTI non risponde, questi valori <strong>non hanno la licenza CC BY 4.0</strong> del
+    resto del sito: si possono solo citare, con la fonte «elaborazione EuGEnio su anni tipo climatici CTI – Comitato
+    Termotecnico Italiano». Se il CTI ci chiedesse di toglierli o di cambiare qualcosa, lo faremo subito. Il perché
+    di queste scelte è nelle <a href="faq.html#cti-elaborazioni">domande frequenti</a>.</p>
+  <p>Perché lo mostriamo solo per confronto: il metodo del CTI ha <strong>limiti noti</strong>, che la pagina segnala
+    comune per comune. La correzione di quota fissa di 6,5 °C ogni 1000 m è troppo forte d'inverno in montagna, dove
+    il freddo ristagna nelle valli: con dislivelli tra 500 e 1000 m dalla località CTI i gradi giorno escono in media
+    il 13 % sopra il DPR 412/93, oltre i 1000 m il 21 % (Sestola, Cortina, Bardonecchia). Le località sono una o due per
+    provincia e spesso sulla costa o in aeroporto, così un comune oltre un crinale eredita un clima che non è il suo:
+    i comuni del versante padano della Liguria escono tra il 23 e il 27 % sotto il DPR. Non correggiamo questi valori
+    perché il loro senso è proprio mostrare cosa dà il metodo ufficiale; i valori che EuGEnio calcola da sé, per ogni
+    comune e da dati aperti, sono quelli del clima reale (ERA5) delle altre sezioni della pagina.</p>
+
   <h2 id="previsione">Previsione dei consumi</h2>
+  <p>La mappa della pagina mostra, comune per comune, quanto servirà scaldare o raffrescare nei prossimi 7 giorni:
+    d'inverno i <b>gradi giorno</b> di riscaldamento (base 20 °C), d'estate i <b>gradi giorno estivi</b> di raffrescamento
+    (base 24 °C). Il titolo passa da «Il freddo…» a «Il caldo…» da solo, secondo quale dei due prevale nelle previsioni
+    di tutti i comuni; se le previsioni non ci sono decide la stagione (da giugno a settembre, il caldo).</p>
   <p>Carichi i consumi di un edificio, scegli dove si trova, e il servizio stima i consumi futuri tenendo
     conto del meteo previsto per quel comune e del calendario (festivi, fine settimana, ponti). Il risultato
     non è un numero solo ma una fascia: dove cadrà il consumo con buona probabilità.</p>
   <p>Si usa dalla pagina <a href="./">Previsioni</a>.</p>
 
-  <h3>Il modello</h3>
+  <h3>Modello</h3>
   <p><a href="https://huggingface.co/NX-AI/TiRex-2">TiRex-2</a> di NX-AI è un modello di previsione di serie
     temporali già addestrato su moltissime serie diverse: non serve allenarlo sui tuoi dati, li legge e
     prosegue la serie (previsione <em>zero-shot</em>). Accetta variabili esterne note anche nel futuro –
@@ -175,87 +255,48 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   </ul>
 
   <h2 id="patrimonio">Patrimonio</h2>
-  <h3>Gli edifici sul catasto</h3>
+  <h3>Edifici sul catasto</h3>
   <p>La <a href="patrimonio.html">pagina del patrimonio</a> trova il punto di ogni edificio e la particella catastale
     che lo contiene. Gli indirizzi si cercano prima nell'archivio nazionale dei numeri civici (<a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a>, <a href="https://www.agenziaentrate.gov.it/">Agenzia delle
     Entrate</a> e <a href="https://www.istat.it/">ISTAT</a>), aggiornato ogni mese sul nostro server; quello che manca si cerca con <a href="https://zornade.com">Zornade</a>, che fornisce anche
     le particelle. Il punto dell'<a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a> è l'accesso dell'edificio, che spesso cade sulla strada: in quel caso si usa
     la particella edificata più vicina, entro 16 metri.</p>
+  <p>Il file si può caricare in CSV, in Excel (<code>.xlsx</code>) o in OpenDocument (<code>.ods</code>): dei fogli di
+    calcolo si legge il primo foglio. La mappa mostra i comuni della sola regione scelta (si cambia dalla piccola mappa
+    accanto al titolo) e si può guardare in tre dimensioni: trascinando la si sposta, con Ctrl (o col tasto destro) la si
+    ruota e la si inclina, con la rotella si ingrandisce. Le viste predefinite (dall'alto, 3D, isometrica con il nord in
+    alto a destra) inquadrano da sole mappa e barre, con un po' di bordo; le regioni restano colorate (grigie se sono più di dieci) e le barre prendono colori lontani dai
+    loro: verdi per l'elettricità, gialli, arancioni e rossi per gas ed energia termica, azzurri per l'acqua, marroni per rifiuti, combustibili ed emissioni.</p>
 
-  <h2 id="legge-10">Legge 10</h2>
-  <h3>I dati per la Relazione Legge 10/91</h3>
-  <p>La <a href="legge10.html">pagina della Legge 10</a> usa la stessa serie storica corretta, giorno per giorno,
-    sulle ultime stagioni di riscaldamento complete (1 luglio – 30 giugno). Calcola i dati mensili con
-    l'impostazione della UNI 10349-1 (temperature medie, minime e massime, irradiazione globale e diffusa su piano
-    orizzontale, pressione del vapore, vento), i gradi giorno a 20 °C sul periodo di accensione di ogni zona
-    (DPR 412/93), la zona che ne risulta, la tendenza in gradi giorno per decennio e una stima statistica delle
-    temperature di progetto (1° percentile dei minimi e 99° dei massimi giornalieri). Non sostituisce i valori
-    normativi: serve a capire quanto il clima reale se ne discosta.</p>
-  <h3>Il confronto con il DPR 412/93</h3>
-  <p>Per ogni comune la pagina mostra anche i valori di legge dell'<a href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.del.presidente.della.repubblica:1993-08-26;412!vig=">Allegato A del DPR 412/93</a>:
-    gradi giorno, zona climatica e altitudine della casa comunale. Sono i valori da usare nella relazione tecnica,
-    fissati nel 1993 sul clima dei decenni precedenti; il nostro calcolo descrive invece il clima reale delle
-    ultime stagioni. La pagina riporta la differenza in percentuale tra i gradi giorno calcolati e quelli di legge,
-    dice se la zona coincide e nel grafico stagione per stagione traccia il valore del DPR come linea tratteggiata.</p>
-  <p>Il testo del DPR, preso dalla versione vigente su Normattiva, elenca 8.106 righe con i comuni del 1993.
-    Le abbiamo abbinate ai codici ISTAT di oggi seguendo cambi di nome, di provincia e di regione e i comuni
-    soppressi, e correggendo i refusi del testo (per esempio la lettera O al posto dello zero). Un comune che ne ha
-    incorporati altri tiene il proprio valore; per un comune nato da una fusione il DPR non ha un valore unico e la
-    pagina mostra quelli dei comuni d'origine; i pochi comuni nati dopo per distacco da altri non sono nel DPR.
-    Dal 1994 al 2016 l'Allegato A è stato cambiato da 58 decreti ministeriali, che hanno modificato i valori di
-    circa 120 comuni, il nome di altri 17 e aggiunto 17 righe: il testo vigente li contiene già e li abbiamo
-    verificati versione per versione sul testo multivigente di Normattiva. Per questi comuni la pagina riporta in
-    nota il decreto, la data da cui vale e il valore originario del 1993.
-    L'elenco completo si scarica in <a href="dati/dpr412.csv" download>dpr412.csv</a> o dalla pagina dei
-    <a href="dati.html">dati storici</a>. I dati della UNI 10349 e gli anni tipo del CTI non si possono pubblicare:
-    il perché è nelle <a href="faq.html#uni-cti">domande frequenti</a>.</p>
-  <h3 id="anno-tipo-cti">L'anno tipo del CTI</h3>
-  <p>Gli <a href="https://try.cti2000.it/">anni tipo climatici del CTI</a> (Comitato Termotecnico Italiano) descrivono
-    con un anno di dati orari il clima di 110 località, una o due per provincia, e sono la base della UNI 10349:2016.
-    Il CTI li distribuisce gratis a chi si registra, ma ne permette l'uso solo fuori rete, a scopo scientifico,
-    didattico o documentario e citando la fonte, e vieta di ripubblicarli su altri siti. Per questo la
-    <a href="legge10.html">pagina della Legge 10</a> non mostra i dati del CTI ma solo <strong>indicatori calcolati da
-    noi</strong> per ogni comune, accanto ai valori di legge del DPR 412/93 e al clima reale delle ultime stagioni.</p>
-  <p>Come li calcoliamo: leggiamo i file del CTI sul nostro computer e, per ogni comune, seguiamo il metodo del
-    «foglio elettronico interpolatore» che il CTI stesso distribuisce. Prendiamo le due località CTI più vicine
-    <strong>della stessa regione</strong> del comune (come fa la UNI 10349 per i comuni senza località propria, per non
-    scavalcare i crinali tra una regione e l'altra), facciamo la media ora per ora delle due serie con pesi
-    proporzionali a 1/distanza² e riportiamo la temperatura alla quota della casa comunale con
-    <strong>6,5 °C ogni 1000 m</strong>; se il comune è più lontano da entrambe di quanto lo siano tra loro, usiamo
-    solo la più vicina. Dalla serie così ottenuta calcoliamo, con le stesse regole delle altre sezioni, i gradi giorno sul
-    periodo di accensione della zona, la zona che ne risulta, le temperature di progetto (1° percentile delle minime
-    e 99° delle massime giornaliere) e le medie mensili (temperature, irradiazione globale e diffusa, pressione del
-    vapore, umidità, vento). La pagina dice sempre quali località sono state usate, a che distanza e con che peso.</p>
-  <p>Cosa non pubblichiamo: i file del CTI e i dati orari, né sul sito né in download; i valori CTI non sono nel
-    file CSV della pagina né nel report. Abbiamo scritto al CTI e all'UNI per chiedere l'autorizzazione e spiegare
-    cosa facciamo; finché il CTI non risponde, questi valori <strong>non hanno la licenza CC BY 4.0</strong> del
-    resto del sito: si possono solo citare, con la fonte «elaborazione EuGEnio su anni tipo climatici CTI – Comitato
-    Termotecnico Italiano». Se il CTI ci chiedesse di toglierli o di cambiare qualcosa, lo faremo subito. Il perché
-    di queste scelte è nelle <a href="faq.html#cti-elaborazioni">domande frequenti</a>.</p>
-  <p>Perché lo mostriamo solo per confronto: il metodo del CTI ha <strong>limiti noti</strong>, che la pagina segnala
-    comune per comune. La correzione di quota fissa di 6,5 °C ogni 1000 m è troppo forte d'inverno in montagna, dove
-    il freddo ristagna nelle valli: con dislivelli tra 500 e 1000 m dalla località CTI i gradi giorno escono in media
-    il 13 % sopra il DPR 412/93, oltre i 1000 m il 21 % (Sestola, Cortina, Bardonecchia). Le località sono una o due per
-    provincia e spesso sulla costa o in aeroporto, così un comune oltre un crinale eredita un clima che non è il suo:
-    i comuni del versante padano della Liguria escono tra il 23 e il 27 % sotto il DPR. Non correggiamo questi valori
-    perché il loro senso è proprio mostrare cosa dà il metodo ufficiale; i valori che EuGEnio calcola da sé, per ogni
-    comune e da dati aperti, sono quelli del clima reale (ERA5) delle altre sezioni della pagina.</p>
-
-  <h2 id="dati-storici">Dati storici</h2>
-  <h3>Cosa si può scaricare</h3>
-  <p>La pagina <a href="dati.html">Dati storici</a> permette di scaricare, in CSV, Excel o OpenDocument (ods), i dati che le licenze ci
-    permettono di ridistribuire: il meteo orario (archivio delle previsioni ICON, da novembre 2022) e giornaliero (ERA5
-    corretto, dal 2015), i gradi giorno, i dati climatici per la Legge 10, l'elenco dei comuni e i prezzi dell'energia
-    di <a href="https://ec.europa.eu/eurostat/">Eurostat</a>. Si scelgono il periodo, la frequenza (dall'ora all'anno o
-    alla stagione di riscaldamento) e la zona: regione, provincia o singoli comuni.</p>
-  <h3>Cosa non si può scaricare</h3>
-  <p>I prezzi del GME e le quotazioni EEX restano solo per uso interno, come richiedono le loro condizioni; le
-    particelle di <a href="https://zornade.com">Zornade</a> e l'archivio <a href="https://anncsu.open.agenziaentrate.gov.it/">ANNCSU</a>
-    si consultano dalla pagina del patrimonio ma non si scaricano in blocco. Ogni file riporta le fonti e le
-    attribuzioni richieste dalle licenze.</p>
-  <h3>Medie e completezza</h3>
-  <p>Giorni, mesi e anni sono quelli del calendario italiano. Un periodo compare solo se ha abbastanza dati (di
-    norma il 90 %, si può cambiare): il file indica sempre quanti dati erano attesi e quanti validi.</p>
+  <h3 id="valori-per-sede">Valori per sede</h3>
+  <p>La seconda parte della pagina, «Valori per sede», disegna sulla mappa i valori di ogni sede (consumi, costi,
+    superfici…) come barre tridimensionali. Il file ha le stesse colonne della geolocalizzazione e, in più, una colonna
+    per ogni valore. Se la riga subito sotto i titoli contiene le unità di misura (MWh, Smc, litri…) la pagina la
+    riconosce da sola e non la tratta come una sede; l'unità può stare anche nel titolo, tra parentesi. Al server
+    vanno solo le colonne che servono a trovare le sedi; i valori restano nel browser.</p>
+  <p>Le colonne in valuta (€, EUR, $, USD, £, GBP, CHF, ¥ e simili, scritti nell'unità, nel titolo o accanto ai
+    numeri) sono costi; le altre sono consumi. Se ci sono entrambi la pagina mostra due mappe, sopra i consumi e sotto i
+    costi (con un pulsante per copiare la vista dall'una all'altra), e due tabelle. Consumi e costi si abbinano <b>per
+    posizione</b>: la prima colonna di consumo da sinistra va con la prima colonna di costo da sinistra, la seconda con
+    la seconda e così via. Il costo unitario medio di ogni coppia è la somma dei costi divisa per la somma dei consumi,
+    sulle sole sedi che hanno entrambi i valori, nell'unità composta che ne risulta (per esempio €/MWh, €/Smc, €/m³); per l'energia il prezzo è sempre in €/MWh, con due decimali, anche se i
+    consumi sono in kWh.</p>
+  <p>Con i valori la mappa mostra le regioni che contengono sedi e, dentro, i confini dei comuni delle sole province
+    con sedi; le sedi senza coordinate ma con il comune riconosciuto vanno al centro del comune. Ogni sede e ogni colonna
+    si accendono e si spengono dalle tabelle; in un comune con più di tre sedi all'inizio sono accese le tre con il
+    consumo più alto (nella prima colonna di consumo), messe in fila con le più piccole davanti. I totali e i
+    <b>diagrammi di Pareto</b> (le sedi in ordine decrescente, con la percentuale cumulata e la linea dell'80 %: quante
+    sedi fanno la gran parte del totale) usano sempre tutte le sedi del file.</p>
+  <p>Le colonne con la stessa unità (anche con multipli diversi, come kWh e MWh) hanno la stessa scala; con unità
+    diverse ogni unità ha la sua scala e un colore diverso, e il suo valore più alto arriva all'altezza massima. Le
+    barre sono fatte di mattoncini cubici: un mattoncino vale un numero tondo (1, 2, 2,5 o 5 per una potenza di dieci,
+    con l'unità più comoda, per esempio 1 GWh invece di 1.000 MWh) scelto in modo che il valore più alto stia in 20
+    mattoncini al massimo; l'ultimo in cima può essere parziale. Le barre restano sempre in piedi, come grattacieli:
+    si possono girare insieme alla mappa o da sole. Il pulsante «Scarica il disegno (SVG)» salva la vista così com'è
+    in un disegno piatto, con legenda, valore del mattoncino e fonti, da inserire in un documento. Oltre alla vista
+    dall'alto e a quella in 3D c'è una vista «isometrica», come nei videogiochi: senza prospettiva, con la mappa vista a
+    2:1. Il report (PDF, Excel o ODS) contiene, nell'ordine, i totali e i costi unitari medi, le mappe, i diagrammi di
+    Pareto dei consumi e poi dei costi, le tabelle dei consumi e poi dei costi; in Excel e ODS solo totali e tabelle.</p>
 
   <h2 id="indicatori">Indicatori</h2>
   <p>La pagina <a href="indicatori.html">Indicatori</a> mostra quanto spendono per l'energia gli enti del Servizio
@@ -275,7 +316,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     regionale; le aziende di ReportER sono abbinate ai codici del modello CE (per esempio ROMAGNA → 114, IRCCS
     S. Orsola → 908, I.O.R. → 960). La popolazione di Italia, regioni e province autonome è quella
     <a href="https://demo.istat.it/">ISTAT</a> al 1° gennaio dell'anno dopo, cioè al 31 dicembre dell'anno del bilancio.</p>
-  <h3>Gli indicatori</h3>
+  <h3>Indicatori calcolati</h3>
   <table>
     <thead><tr><th>Indicatore</th><th>Come si calcola</th><th>Come si legge</th></tr></thead>
     <tbody>
@@ -414,11 +455,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 
 <footer class="piede">
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261028e" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261029b" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
   <!-- /piede -->
 </footer>
-<script src="aspetto.js?v=20261028e"></script>
+<script src="aspetto.js?v=20261029b"></script>
 <script>
 "use strict";
 const NOMI = {
@@ -448,6 +489,6 @@ fetch("/api/metodologia").then((r) => r.json()).then((d) => {
   document.getElementById("metriche").innerHTML = "<p class='aiuto'>Risultati non disponibili in questo momento.</p>";
 });
 </script>
-<script src="indice.js?v=20261028e"></script>
+<script src="indice.js?v=20261029b"></script>
 </body>
 </html>

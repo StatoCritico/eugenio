@@ -16,7 +16,10 @@ import math
 import re
 from collections.abc import Callable
 
-from .report import Avvertenza, ChiaveValore, Documento, Elenco, Fonte, Paragrafo, Sezione, Tabella
+from pydantic import ValidationError
+
+from . import config as C
+from .report import Avvertenza, ChiaveValore, Documento, Elenco, Fonte, Immagine, Paragrafo, Sezione, Tabella, Voce
 
 # ---------------------------------------------------------------------------------------------- attribuzioni
 OPEN_METEO = Fonte(testo="Weather data by Open-Meteo.com (CC BY 4.0)", url="https://open-meteo.com/")
@@ -509,9 +512,158 @@ def report_indicatori(d: dict, **_) -> Documento:
         fonti=_fonti(OPENBDAP, extra=extra))
 
 
+# ---------------------------------------------------------------------------------------------- valori per sede
+CONVENZIONE_ABBINAMENTI = (
+    "Abbinamento dei consumi ai costi per posizione: la prima colonna di consumo da sinistra va con la prima colonna "
+    "di costo da sinistra, la seconda con la seconda e così via. Il costo unitario medio è la somma dei costi divisa "
+    "per la somma dei consumi, sulle sole sedi che hanno entrambi i valori.")
+
+
+def _testo(x, n: int = 300) -> str:
+    return str(x if x is not None else "")[:n]
+
+
+def _immagine_svg(x, titolo_predefinito: str) -> Immagine | None:
+    """{titolo, svg (base64)} → Immagine SVG; None se manca o non è valida (un'immagine sbagliata non ferma il report)."""
+    x = _diz(x)
+    dati = x.get("svg")
+    if not isinstance(dati, str) or not dati:
+        return None
+    try:
+        return Immagine(formato="svg", dati=dati, didascalia=_testo(x.get("titolo") or titolo_predefinito) or None,
+                        larghezza_cm=17)
+    except ValidationError:
+        return None
+
+
+def _tabella_valori(t) -> Tabella | None:
+    """{titolo, intestazioni, righe, decimali} dal sito → Tabella, senza colonne con nomi di dati di mercato."""
+    t = _diz(t)
+    intest = [_testo(h, 300) for h in _lista(t.get("intestazioni"))][:C.REPORT_MAX_COLONNE]
+    tenere = [j for j, h in enumerate(intest) if _ammessa(h)]
+    if not tenere:
+        return None
+    dec = _lista(t.get("decimali"))
+
+    def cella(v):
+        if isinstance(v, bool) or v is None:
+            return v
+        if isinstance(v, (int, float)):
+            return _num(v)
+        return _testo(v, 1000)
+
+    righe = []
+    for r in _lista(t.get("righe"))[:C.REPORT_MAX_RIGHE]:
+        r = _lista(r)
+        righe.append([cella(r[j]) if j < len(r) else None for j in tenere])
+    decimali = [dec[j] if j < len(dec) and isinstance(dec[j], int) and 0 <= dec[j] <= 8 else None for j in tenere]
+    return Tabella(titolo=_testo(t.get("titolo")) or None, intestazioni=[intest[j] for j in tenere], righe=righe,
+                   decimali=decimali, nota=_testo(t.get("nota"), 2000) or None)
+
+
+def report_valori_sedi(d: dict, formato: str = "pdf", **_) -> Documento:
+    """Corpo mandato da fase5-sito/sito/valori_sedi.js (pagina Patrimonio, «Valori per sede»):
+    titolo, sottotitolo, totali [{colonna, tipo: consumo|costo, totale, unita, sedi}],
+    prezzi [{consumo, costo, valore, unita, sedi}], mappe [{titolo, svg}], pareto [{titolo, tipo, svg}]
+    (SVG piatti in base64, colori risolti), tabelle [{titolo, tipo, intestazioni, righe, decimali, nota}], note, fonti,
+    avviso {titolo, testo} facoltativo (file d'esempio: va in cima al report).
+    Ordine (richiesta di Paolo): totali e costi unitari medi, mappe tridimensionali, Pareto dei consumi e poi dei
+    costi, tabelle dei consumi e poi dei costi. Nel PDF le immagini SVG; in Excel e ODS solo totali e tabelle.
+    I valori sono quelli del file dell'utente: qui si impagina soltanto."""
+    d = _diz(d)
+    pdf = formato == "pdf"
+    sezioni: list[Sezione] = []
+    note = [_testo(x, 2000) for x in _lista(d.get("note")) if isinstance(x, str) and x.strip()][:10]
+
+    # 1. totali, prima i consumi e poi i costi
+    blocchi = []
+    for tipo, titolo in (("consumo", "Consumi"), ("costo", "Costi")):
+        righe = [[_testo(x.get("colonna")), _num(x.get("totale")), _testo(x.get("unita"), 40) or None,
+                  int(x["sedi"]) if isinstance(x.get("sedi"), int) else None]
+                 for x in map(_diz, _lista(d.get("totali")))
+                 if x.get("tipo") == tipo and _ammessa(x.get("colonna", ""))]
+        if righe:
+            # decimali: nessuno se tutti i totali superano 1.000 (MWh, Smc, €…), altrimenti due
+            dec = 0 if all(r[1] is None or abs(r[1]) >= 1000 for r in righe) else 2
+            blocchi.append(Tabella(titolo=f"Totali dei {titolo.lower()}", intestazioni=["Colonna", "Totale", "Unità", "Sedi"],
+                                   righe=righe[:C.REPORT_MAX_COLONNE * 4], decimali=[None, dec, None, 0]))
+    if blocchi:
+        blocchi.append(Paragrafo(testo="I totali sono calcolati su tutte le sedi del file, anche quelle spente sulla mappa."))
+        sezioni.append(Sezione(titolo="Totali", blocchi=blocchi))
+    # costi unitari medi: una voce per abbinamento, ognuna coi suoi decimali (2 per l'energia in €/MWh, decisione di
+    # Paolo del 29/10/2026; quelli indicati dalla pagina, altrimenti 3)
+    voci = []
+    for x in map(_diz, _lista(d.get("prezzi"))):
+        if not (_ammessa(x.get("consumo", "")) and _ammessa(x.get("costo", ""))):
+            continue
+        dx = x.get("decimali")
+        n = x.get("sedi") if isinstance(x.get("sedi"), int) else None
+        chiave = f"{_testo(x.get('consumo'))} ← {_testo(x.get('costo'))}" + (f" ({n} {'sede' if n == 1 else 'sedi'})" if n else "")
+        voci.append(Voce(chiave=chiave[:200], valore=_num(x.get("valore")), unita=_testo(x.get("unita"), 40) or None,
+                         decimali=dx if isinstance(dx, int) and 0 <= dx <= 4 else 3))
+    if voci:
+        if formato in ("xlsx", "ods"):   # nei fogli una tabella vera (un foglio a sé, numeri come numeri)
+            dd = {v.decimali for v in voci}
+            blocco = Tabella(titolo="Costi unitari medi", intestazioni=["Abbinamento", "Costo unitario medio", "Unità"],
+                             righe=[[v.chiave, v.valore, v.unita] for v in voci[:100]],
+                             decimali=[None, dd.pop() if len(dd) == 1 else 3, None])
+        else:                             # nel PDF ogni voce coi suoi decimali
+            blocco = ChiaveValore(titolo="Costi unitari medi", voci=voci[:100])
+        sezioni.append(Sezione(titolo="Costi unitari medi", blocchi=[
+            blocco,
+            Paragrafo(testo=CONVENZIONE_ABBINAMENTI)]))
+
+    # 2-3. immagini (solo PDF): mappe, poi Pareto dei consumi e dei costi, entro il limite di immagini del documento
+    if pdf:
+        posti = C.REPORT_MAX_IMMAGINI
+        saltate = 0
+        gruppi = [("Mappe tridimensionali", [_immagine_svg(m, "Mappa") for m in _lista(d.get("mappe"))[:4]])]
+        for tipo, titolo in (("consumo", "Diagrammi di Pareto dei consumi"), ("costo", "Diagrammi di Pareto dei costi")):
+            gruppi.append((titolo, [_immagine_svg(p, "Diagramma di Pareto") for p in _lista(d.get("pareto"))
+                                    if _diz(p).get("tipo") == tipo and _ammessa(_diz(p).get("titolo", ""))][:20]))
+        for titolo, immagini in gruppi:
+            immagini = [i for i in immagini if i is not None]
+            tenute, saltate = immagini[:posti], saltate + max(0, len(immagini) - posti)
+            posti -= len(tenute)
+            if tenute:
+                sezioni.append(Sezione(titolo=titolo, blocchi=tenute))
+        if saltate:
+            note.append(f"{saltate} grafici non sono entrati nel report (massimo {C.REPORT_MAX_IMMAGINI} immagini).")
+
+    # 4. tabelle: prima i consumi, poi i costi
+    tabelle = [t for t in map(_diz, _lista(d.get("tabelle")))]
+    for tipo, titolo in (("consumo", "Valori per sede: consumi"), ("costo", "Valori per sede: costi")):
+        for t in tabelle:
+            if t.get("tipo") == tipo:
+                tab = _tabella_valori(t)
+                if tab is not None:
+                    sezioni.append(Sezione(titolo=titolo, blocchi=[tab]))
+    if note:
+        sezioni.append(Sezione(titolo="Note", blocchi=[Elenco(voci=note)]))
+    if not sezioni:
+        sezioni.append(Sezione(titolo="Nessun dato", blocchi=[Paragrafo(testo="Il corpo non conteneva totali né tabelle.")]))
+    avviso = _diz(d.get("avviso"))           # file d'esempio: avviso «Dati di esempio non reali» in cima
+    primi = []
+    if avviso.get("testo"):
+        primi.append(Avvertenza(livello="attenzione", testo=f"{_testo(avviso.get('titolo'), 200) or 'Attenzione'}. {_testo(avviso.get('testo'), 2000)}"))
+    sezioni.insert(0, Sezione(titolo=None, blocchi=primi + [Avvertenza(livello="info", testo=(
+        "I valori sono quelli del file caricato, non verificati da EuGEnio. La posizione delle sedi è una stima "
+        "automatica: le sedi senza coordinate sono poste al centro del loro comune."))]))
+    return Documento(
+        titolo=_testo(d.get("titolo")) or "Valori per sede",
+        sottotitolo=_testo(d.get("sottotitolo")) or None,
+        nome_file="valori_per_sede",
+        sezioni=sezioni[:C.REPORT_MAX_SEZIONI],
+        fonti=_fonti(*([ZORNADE] if any("anncsu" in str(x).lower() for x in _lista(d.get("fonti"))) else [ZORNADE, ANNCSU]),
+                     ISTAT, extra=d.get("fonti")))
+
+
 TIPI: dict[str, Callable[..., Documento]] = {
     "previsione": report_previsione,
     "legge10": report_legge10,
     "patrimonio": report_patrimonio,
     "indicatori": report_indicatori,
+    "valori_sedi": report_valori_sedi,
 }
+# tipi che ricevono anche il formato (per esempio per lasciare le immagini fuori da Excel e ODS)
+CON_FORMATO = {"valori_sedi"}

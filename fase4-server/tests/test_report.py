@@ -596,3 +596,111 @@ def test_legge10_senza_archivio_meteo(client, monkeypatch):
     monkeypatch.setattr(sys.modules["meteo_storico"], "legge10", finto, raising=False)
     r = c.get("/api/clima-legge10/037006")
     assert r.status_code == 503 and "non sono ancora sul server" in r.json()["detail"]
+
+
+# ---------------------------------------------------------------------------------------------- valori per sede
+def _svg_mappa(n_comuni=40, testo="Consumi per sede – 1 mattoncino = 2 GWh · 250.000 €") -> str:
+    """SVG piatto come quello che manda il sito: percorsi, poligoni delle barre, tratteggi in px, testo con € e –."""
+    parti = ['<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" '
+             'viewBox="0 0 600 400"><title>Mappa</title><rect x="0" y="0" width="600" height="400" fill="rgb(247,246,248)"/>']
+    for i in range(n_comuni):
+        x, y = 20 + (i % 10) * 50, 40 + (i // 10) * 60
+        parti.append(f'<path d="M{x},{y}L{x + 45},{y + 5}L{x + 40},{y + 50}L{x + 3},{y + 45}Z" fill="rgb(225,221,230)" '
+                     f'stroke="rgb(247,246,248)" stroke-width="0.5px"/>')
+    parti.append('<polygon points="300,300 320,290 320,150 300,160" fill="rgb(196,60,18)" stroke="rgb(90,20,5)" stroke-width="0.5px"/>')
+    parti.append('<line x1="10" y1="20" x2="590" y2="20" stroke="rgb(63,75,208)" stroke-dasharray="7px, 4px" stroke-width="1.5px"/>')
+    parti.append(f'<text x="12" y="390" font-family="Hanken Grotesk, Helvetica, Arial, sans-serif" font-size="12px" '
+                 f'fill="rgb(28,24,32)">{testo}</text></svg>')
+    return base64.b64encode("".join(parti).encode()).decode()
+
+
+def corpo_valori(n_mappe=2, n_pareto=6, n_comuni=40):
+    sedi = [f"H{i:02d} · Ospedale {i}" for i in range(1, 14)]
+    return {
+        "titolo": "Valori per sede", "sottotitolo": "13 sedi – Emilia-Romagna",
+        "totali": [{"colonna": "Energia elettrica 2025", "tipo": "consumo", "totale": 85637.8, "unita": "MWh", "sedi": 13},
+                   {"colonna": "Gas 2025", "tipo": "consumo", "totale": 20984431, "unita": "Smc", "sedi": 13},
+                   {"colonna": "Costo energia elettrica 2025", "tipo": "costo", "totale": 25895164.8, "unita": "€", "sedi": 13},
+                   {"colonna": "PUN medio", "tipo": "costo", "totale": 120.5, "unita": "€/MWh", "sedi": 13}],
+        "prezzi": [{"consumo": "Energia elettrica 2025", "costo": "Costo energia elettrica 2025", "valore": 302.38,
+                    "unita": "€/MWh", "sedi": 13}],
+        "mappe": [{"titolo": f"Mappa {i}", "svg": _svg_mappa(n_comuni)} for i in range(n_mappe)],
+        "pareto": [{"titolo": f"Pareto: colonna {i}", "tipo": "consumo" if i % 2 == 0 else "costo", "svg": _svg_mappa(5, "80 %")}
+                   for i in range(n_pareto)],
+        "tabelle": [{"titolo": "Consumi per sede", "tipo": "consumo", "intestazioni": ["Sede", "Comune", "Energia (MWh)", "PSV"],
+                     "righe": [[s, "Ravenna", 1000.5 + i, 7] for i, s in enumerate(sedi)], "decimali": [None, None, 0, 2]},
+                    {"titolo": "Costi per sede", "tipo": "costo", "intestazioni": ["Sede", "Comune", "Costo (€)"],
+                     "righe": [[s, "Ravenna", 300000 + i] for i, s in enumerate(sedi)], "decimali": [None, None, 0]}],
+        "note": ["Nota di prova."], "fonti": ["Numeri civici: ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)"],
+        "avviso": {"titolo": "Dati di esempio non reali", "testo": "Consumi e costi sono numeri inventati."},
+    }
+
+
+def test_report_valori_sedi_pdf_ordine_e_immagini():
+    doc = RS.report_valori_sedi(corpo_valori(), formato="pdf")
+    titoli = [s.titolo for s in doc.sezioni]
+    attesi = ["Totali", "Costi unitari medi", "Mappe tridimensionali", "Diagrammi di Pareto dei consumi",
+              "Diagrammi di Pareto dei costi", "Valori per sede: consumi", "Valori per sede: costi"]
+    assert [t for t in titoli if t in attesi] == attesi          # l'ordine chiesto da Paolo
+    immagini = [b for s in doc.sezioni for b in s.blocchi if isinstance(b, R.Immagine)]
+    assert len(immagini) == 8 and all(i.formato == "svg" for i in immagini)
+    pdf = R.genera(doc, "pdf")
+    t = leggi_pdf(pdf)
+    for atteso in ("Dati di esempio non reali", "85.638", "20.984.431", "302,38", "€/MWh", "Costi unitari medi", "Abbinamento",
+                   "Dati elaborati da Zornade", "Ospedale 13"):
+        assert atteso in t, atteso
+    assert "[Immagine non riproducibile" not in t                # fpdf2 legge i nostri SVG (px, €, tratteggi)
+    assert "PUN" not in t and "PSV" not in t                      # nessun dato di mercato, nemmeno per nome di colonna
+    assert t.count("ANNCSU") == 1                                 # la fonte ANNCSU arrivata dal sito non si ripete
+
+
+def test_report_valori_sedi_fogli_senza_immagini():
+    doc = RS.report_valori_sedi(corpo_valori(), formato="xlsx")
+    assert not any(isinstance(b, R.Immagine) for s in doc.sezioni for b in s.blocchi)
+    wb = libro_xlsx(R.genera(doc, "xlsx"))
+    nomi = [ws.title for ws in wb.worksheets]
+    assert "Consumi per sede" in nomi and "Costi per sede" in nomi and "Costi unitari medi" in nomi
+    testo = "\n".join(str(c.value) for ws in wb.worksheets for r in ws.iter_rows() for c in r if c.value is not None)
+    assert "Immagine non inclusa" not in testo and "PUN" not in testo and "PSV" not in testo
+    assert wb["Consumi per sede"]["C2"].value == 1000.5           # i numeri restano numeri
+    assert R.genera(RS.report_valori_sedi(corpo_valori(), formato="ods"), "ods")[:2] == b"PK"
+
+
+def test_report_valori_sedi_difensivo():
+    assert RS.report_valori_sedi({}).titolo == "Valori per sede"            # corpo vuoto: nessun errore
+    c = corpo_valori(n_mappe=1, n_pareto=0)
+    c["mappe"].append({"titolo": "rotta", "svg": "non base64 !"})
+    c["mappe"].append({"titolo": "esterna", "svg": base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg"><image href="http://x/y.png"/></svg>').decode()})
+    doc = RS.report_valori_sedi(c)
+    assert sum(isinstance(b, R.Immagine) for s in doc.sezioni for b in s.blocchi) == 1   # le immagini non valide si saltano
+    molte = RS.report_valori_sedi(corpo_valori(n_mappe=2, n_pareto=12))
+    assert sum(isinstance(b, R.Immagine) for s in molte.sezioni for b in s.blocchi) == R.C.REPORT_MAX_IMMAGINI
+    assert "non sono entrati" in leggi_pdf(R.genera(molte, "pdf"))
+
+
+def test_svg_per_pdf_senza_dejavu():
+    s = R._svg_per_pdf(base64.b64decode(_svg_mappa(1)), "helvetica", False).decode()
+    assert 'font-family="helvetica"' in s and "<title>" not in s and "EUR" in s and "px" not in s.split("<text")[0].split("stroke-dasharray")[1][:12]
+
+
+def test_rotta_valori_sedi_dimensioni(client):
+    """2 mappe grandi (come una regione intera, ~300 comuni) + 6 Pareto stanno nei limiti attuali (REPORT_MAX_MB)."""
+    c, _ = client
+    import json
+    corpo = json.dumps(corpo_valori(n_mappe=2, n_pareto=6, n_comuni=1500)).encode()
+    assert len(corpo) < R.C.REPORT_MAX_MB * 1024 * 1024
+    r = c.post("/api/report/valori_sedi?formato=pdf", content=corpo, headers={"Content-Type": "application/json"})
+    assert r.status_code == 200 and r.content[:4] == b"%PDF"
+    assert "valori_per_sede" in r.headers["content-disposition"]
+    r = c.post("/api/report/valori_sedi?formato=xlsx", content=corpo, headers={"Content-Type": "application/json"})
+    assert r.status_code == 200 and r.content[:2] == b"PK"
+
+
+def test_report_valori_sedi_decimali_dei_prezzi():
+    """Elettricità in €/MWh con 2 decimali, gas e acqua con i decimali indicati dalla pagina (o 3)."""
+    c = corpo_valori()
+    c["prezzi"] = [{"consumo": "Energia elettrica 2025", "costo": "Costo energia elettrica 2025", "valore": 302.384,
+                    "unita": "€/MWh", "sedi": 13, "decimali": 2},
+                   {"consumo": "Gas 2025", "costo": "Costo gas 2025", "valore": 1.03149, "unita": "€/Smc", "sedi": 13}]
+    t = leggi_pdf(R.genera(RS.report_valori_sedi(c, formato="pdf"), "pdf"))
+    assert "302,38" in t and "302,384" not in t and "1,031" in t

@@ -874,3 +874,196 @@ table.confronto-cti thead th:last-child small { font-weight: 400; }
   .riquadro-comandi { width: 100%; }
   .riquadro-vista { margin-right: auto; }
 }
+
+/* ------------------------------------------------------------------------------------------- riquadretti delle mappe
+   minimappa.js, suggerimenti() (29/10/2026): nome della regione non scelta, nome e provincia del comune, valori delle
+   barre del patrimonio; stesso aspetto dei riquadretti dei grafici (grafici.js) */
+.etichetta-mappa { white-space: normal; max-width: min(20rem, 80%); min-width: 7rem; font-size: var(--c-xs); line-height: 1.4;
+  padding: .4rem .65rem; border-color: var(--bordo); font-variant-numeric: tabular-nums; }
+.etichetta-mappa b { display: block; font: 700 var(--c-s)/1.25 var(--titoli); white-space: nowrap; }
+.etichetta-mappa b:only-child { margin: 0; }
+.etichetta-mappa div { color: var(--tenue); }
+.etichetta-mappa i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: .4rem; vertical-align: -1px; }
+
+/* ------------------------------------------------------------------------------------------- Patrimonio: mappa 3D
+   mappa3d.js (29/10/2026): solo la regione scelta, vista ruotabile, barre a mattoncini */
+.pagina-patrimonio .minimappa-su { display: none; }          /* la mappa grande mostra solo la regione scelta */
+.mappa svg.mappa3d { width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+.mappa svg.mappa3d:focus { outline: none; }
+.mappa svg.mappa3d:focus-visible { outline: 3px solid var(--primario); outline-offset: -3px; }
+.mappa3d .comuni path { cursor: inherit; stroke-linejoin: round; }
+.mappa3d .comuni path.sotto-mouse { stroke: var(--inchiostro); stroke-width: 1.2; }
+.mappa3d .zoccolo path { fill: var(--bordo); fill-opacity: .55; stroke: none; pointer-events: none; }
+.mappa3d .confini-regioni path { stroke-width: 1.8; }
+.mappa3d .punto { stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.mappa3d .punto.scelto { stroke-width: 3; }
+.mappa3d .punto.sotto-mouse { stroke: var(--inchiostro); stroke-width: 2.5; }
+.mappa3d .barra { cursor: pointer; }
+.mappa3d .barra path { pointer-events: none; }
+.mappa3d .barra.sotto-mouse polygon { stroke: var(--inchiostro); stroke-width: 1.4; }
+.mappa-3d { min-height: 320px; }
+.mappa3d-comandi { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: center; }
+.mappa3d-gruppo { display: inline-flex; align-items: center; gap: 3px; }
+.mappa3d-nome { font: 600 var(--c-xs)/1 var(--titoli); letter-spacing: .04em; color: var(--tenue); margin-right: .2rem; }
+.mappa3d-comandi button { min-width: 32px; height: 32px; padding: 0 .55rem; border: 1px solid var(--bordo); border-radius: var(--r);
+  background: var(--foglio); color: var(--inchiostro); font: 700 .9rem/1 var(--testo); cursor: pointer; box-shadow: var(--ombra-1); }
+.mappa3d-comandi button:hover { background: var(--rialzo); border-color: var(--inchiostro); }
+.mappa3d-comandi button:focus-visible { outline: 3px solid var(--primario); outline-offset: 1px; }
+.mappa3d-aiuto { margin: 0; font-size: var(--c-xs); }
+@media (max-width: 860px) {
+  .pagina-patrimonio .mappa { height: min(112vw, 72vh); }
+  .mappa3d-comandi button { min-width: 38px; height: 38px; }
+}
+
+/* schede della colonna di destra (Patrimonio: «Geolocalizzazione» e «Valori per sede») */
+.schede { display: flex; gap: 0; margin: 0 0 var(--s5); border-bottom: 1px solid var(--linea); }
+.schede [role="tab"] { flex: 1 1 0; min-height: var(--tocco); padding: .5rem .8rem; border: 0; border-bottom: 3px solid transparent;
+  margin-bottom: -1px; background: none; color: var(--tenue); font: 700 var(--c-m)/1.2 var(--titoli); cursor: pointer; }
+.schede [role="tab"]:hover { color: var(--inchiostro); background: var(--rialzo); }
+.schede [role="tab"][aria-selected="true"] { color: var(--inchiostro); border-bottom-color: var(--primario); }
+.schede [role="tab"]:focus-visible { outline: 3px solid var(--primario); outline-offset: -3px; }
+
+/* Valori per sede: controlli per colonna, cursori della vista delle barre, tabella */
+.colonne-valori { display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s3); }
+.colonna-valore { border: 1px solid var(--linea); border-radius: var(--r); padding: var(--s2) var(--s3); background: var(--carta); }
+.colonna-valore.spenta { opacity: .6; }
+.colonna-testa { display: flex; gap: var(--s3); align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.colonna-mostra { display: flex; gap: .5rem; align-items: center; margin: 0; font-size: var(--c-m); cursor: pointer; min-height: 2.25rem; }
+.colonna-mostra .campione { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+.colonna-testa select { width: auto; min-width: 12rem; min-height: 2.25rem; padding-top: .3rem; padding-bottom: .3rem; font-size: var(--c-s); }
+.colonna-info { margin: .25rem 0 0; font-size: var(--c-xs); color: var(--tenue); }
+.cursori-barre { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+.cursori-barre label { display: flex; justify-content: space-between; margin: var(--s2) 0 0; }
+.cursori-barre output { font-weight: 400; color: var(--tenue); font-variant-numeric: tabular-nums; }
+.cursori-barre input[type="range"] { width: 100%; accent-color: var(--primario); }
+.tabella-valori td.esito-ok { color: var(--serie-2); }
+.tabella-valori td.esito-verificare { color: var(--attenzione); }
+.tabella-valori td.esito-non_trovato, .tabella-valori td.esito-errore { color: var(--errore); }
+.tabella-valori tbody th { white-space: normal; min-width: 11rem; max-width: 16rem; }
+.tabella-valori tbody th small { display: block; font-weight: 400; color: var(--tenue); font-size: var(--c-xs); }
+.tabella-scorre:has(.tabella-valori) { max-height: 60vh; overflow: auto; }
+
+/* Patrimonio, valori per sede (seconda versione, 29/10/2026): due mappe, legende con colori, totali, tabelle con
+   interruttori, Pareto a schede */
+.blocco-mappa { display: flex; flex-direction: column; gap: var(--s2); flex: 1 1 auto; min-height: 0; }
+.blocco-mappa[hidden] { display: none; }
+.blocco-mappa .mappa { flex: 1 1 auto; }
+.titolo-mappa { font: 700 var(--c-l)/1.2 var(--titoli); margin: 0; color: var(--profondo); }
+.mappa-area.due-mappe { position: static; height: auto; }
+.mappa-area.due-mappe .blocco-mappa { flex: none; }
+.mappa-area.due-mappe .blocco-mappa .mappa { flex: none; height: min(64vh, 600px); }
+.blocco-mappa .messaggio { margin: 0; }
+.mappa3d .sagome path { stroke: var(--carta); stroke-width: .6; cursor: inherit; }
+.mappa3d .sagome path:hover { stroke: var(--carta); stroke-width: .6; }
+.mappa3d-copia { font-size: var(--c-s) !important; font-weight: 600 !important; }
+.legenda-colonne { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); }
+.legenda-colonne[hidden] { display: none; }
+.legenda-colonna { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .6rem; }
+.legenda-colonna.spenta { opacity: .55; }
+.legenda-colonna select { width: auto; min-height: 2rem; padding-top: .15rem; padding-bottom: .15rem; font-size: var(--c-xs); }
+.legenda-colonna .colonna-info { color: var(--tenue); font-size: var(--c-xs); flex-basis: 100%; padding-left: 1.6rem; margin-top: -.2rem; }
+.legenda-colonna .colonna-mostra { font-size: var(--c-s); min-height: 2rem; }
+table.totali { width: 100%; border-collapse: collapse; margin: var(--s3) 0; font-variant-numeric: tabular-nums; }
+table.totali caption { text-align: left; font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; color: var(--tenue); padding-bottom: var(--s1); }
+table.totali th, table.totali td { padding: .55rem .4rem; border-bottom: 1px solid var(--linea); text-align: left; vertical-align: baseline; }
+table.totali th { font: 600 var(--c-m)/1.3 var(--titoli); }
+table.totali th small { display: block; font: 400 var(--c-xs) var(--testo); color: var(--tenue); }
+table.totali td.num { text-align: right; white-space: nowrap; }
+table.totali td b { font: 700 var(--c-xl)/1.1 var(--titoli); }
+table.totali .unita { color: var(--tenue); font-size: var(--c-s); }
+table.totali td.sedi { color: var(--tenue); font-size: var(--c-xs); width: 1%; }
+.comandi-tabella .filtri { margin: var(--s2) 0; align-items: center; }
+.comandi-nome { font: 600 var(--c-xs)/1 var(--titoli); letter-spacing: .06em; text-transform: uppercase; color: var(--tenue); min-width: 4.5rem; }
+.tabella-valori label { display: flex; align-items: center; gap: .4rem; margin: 0; font: inherit; cursor: pointer; }
+.tabella-valori thead label { justify-content: flex-end; font-weight: 600; white-space: normal; }
+.tabella-valori .campione { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.tabella-valori tr.spenta > * { color: var(--tenue); }
+.tabella-valori tr.spenta > th span { text-decoration: line-through; text-decoration-color: var(--bordo); }
+.tabella-valori td.posizione { white-space: normal; min-width: 8rem; font-size: var(--c-xs); }
+.pareto { margin-top: var(--s2); }
+.pareto .schede { margin-bottom: var(--s3); overflow-x: auto; }
+.pareto .schede [role="tab"] { flex: 0 0 auto; font-size: var(--c-s); }
+.pareto .grafico svg text.piccolo { font-size: 10px; }
+.pareto-sintesi { margin-top: var(--s2); }
+.fuori-schermo { position: absolute; left: -10000px; top: 0; width: 760px; }
+.senza-transizioni *, .senza-transizioni *::before, .senza-transizioni *::after { transition: none !important; }   /* esportazione del report */
+@media (max-width: 860px) {
+  .mappa-area.due-mappe .blocco-mappa .mappa { height: min(95vw, 60vh); }
+}
+
+/* ------------------------------------------------------------------------------------------- testata (terza versione, 29/10/2026)
+   riga 1: marchio, «un servizio per uno Stato Critico» e, a destra sulla stessa riga, le voci informative;
+   riga 2: le voci dei servizi alte quanto il pulsante Iscriviti, poi Iscriviti, ✱ e ◐ con cerchi della stessa altezza */
+:root { --alto-comando: 2.25rem; }   /* 36 px: Iscriviti, ✱, ◐ e voci dei servizi */
+@media (min-width: 861px) {
+  .testata-alta { align-items: center; padding-bottom: var(--s1); }
+  .testata-alta .sezione { margin-right: auto; padding-top: 0; }
+  .testata-alta .menu-info { display: flex; flex-wrap: nowrap; gap: 0; align-items: center; }
+  .testata-alta .menu-info a { padding: .25rem .55rem; white-space: nowrap; }
+  .testata-alta .menu-info a:last-child { padding-right: 0; }
+  .menu-tutto { display: none; }
+  .testata-menu { align-items: center; gap: var(--s2); }
+  .menu-strumenti a { min-height: var(--alto-comando); }
+  .testata-menu .iscriviti {
+    flex: none; display: inline-flex; align-items: center; height: var(--alto-comando); padding: 0 .95rem; margin-left: var(--s2);
+    border: 1px solid var(--bordo); border-radius: var(--r-tondo); color: var(--inchiostro); text-decoration: none;
+    font: 600 var(--c-s)/1 var(--testo); white-space: nowrap;
+  }
+  .testata-menu .iscriviti:hover { border-color: var(--primario); color: var(--primario); }
+  .testata-menu .iscriviti:focus-visible { outline: 3px solid var(--inchiostro); outline-offset: 2px; }
+  .testata-menu .vestito { margin: 0; }
+  .testata-menu .vestito-pulsante, .testata-menu .tema { width: var(--alto-comando); height: var(--alto-comando); margin: 0; }
+  .testata-menu .vestito-pulsante .asterisco, .testata-menu .tema svg { width: 18px; height: 18px; }
+}
+/* schermi medi: frase e voci informative più piccole, per stare sulla stessa riga del marchio */
+@media (min-width: 861px) and (max-width: 1060px) {
+  .testata-alta .sezione, .testata-alta .menu-info { font-size: var(--c-xs); }
+  .testata-alta .menu-info a { padding: .25rem .4rem; }
+}
+@media (max-width: 860px) { .testata-menu .iscriviti { display: none; } }
+
+/* ------------------------------------------------------------------------------------------- terza versione (29/10/2026) */
+/* legende sotto le mappe 3D: una riga per colonna (casella, colore, nome, valore del mattoncino) */
+.legenda-colonna { flex-wrap: nowrap; }
+.legenda-colonna .colonna-info { flex-basis: auto; padding-left: 0; margin-top: 0; white-space: nowrap; }
+.legenda-colonne { flex-direction: column; gap: var(--s1); }
+@media (max-width: 560px) { .legenda-colonna { flex-wrap: wrap; } }
+/* «Consumi» e «Costi» sopra le mappe come i titoli dei passi della colonna destra */
+.titolo-mappa { font: 700 var(--c-xl)/1.25 var(--titoli); color: var(--inchiostro); }
+/* pulsanti accendi/spegni/ripristina sotto le tabelle, in piccolo */
+.comandi-tabella { margin-top: var(--s2); }
+.comandi-tabella .filtri { margin: var(--s1) 0; gap: var(--s1); }
+.comandi-tabella .filtro { font-size: var(--c-xs); min-height: 1.75rem; padding: .15rem .6rem; }
+.comandi-tabella .comandi-nome { font-size: .7rem; min-width: 4rem; }
+/* schede dei Pareto: vanno a capo, nessuna barra di scorrimento */
+.pareto .schede { flex-wrap: wrap; overflow: visible; }
+.pareto .schede [role="tab"] { flex: 0 1 auto; white-space: normal; text-align: left; min-height: 2.5rem; }
+/* colonne della pagina con scorrimento indipendente sotto la testata fissa (computer); sul telefono una sola colonna */
+/* (quarta versione) solo nella pagina Patrimonio: nelle altre la mappa a sinistra resta fissa e la pagina scorre */
+@media (min-width: 861px) {
+  main.strumento.pagina-patrimonio { height: calc(100vh - var(--alto-testata)); overflow: hidden; }
+  main.pagina-patrimonio > .mappa-area, main.pagina-patrimonio > .pannello { height: 100%; max-height: none; overflow-y: auto;
+    position: relative; top: auto; align-self: stretch; }
+  /* barra di scorrimento nascosta solo nella colonna della mappa; la colonna di destra la mostra */
+  main.pagina-patrimonio > .mappa-area { scrollbar-width: none; }
+  main.pagina-patrimonio > .mappa-area::-webkit-scrollbar { display: none; }
+  main.pagina-patrimonio > .mappa-area { min-height: 0; }
+  /* nella colonna che scorre nessun blocco si restringe: la mappa riempie lo spazio libero ma resta alta almeno 60vh */
+  main.pagina-patrimonio > .mappa-area > * { flex-shrink: 0; }
+  main.pagina-patrimonio > .mappa-area > .blocco-mappa { flex: 1 0 auto; }
+  .pagina-patrimonio .blocco-mappa .mappa { min-height: min(60vh, 560px); }
+  .pagina-patrimonio .mappa-area.due-mappe { height: 100%; }
+  /* piè di pagina in fondo alla colonna sinistra */
+  .mappa-area > .piede-colonna { margin: auto calc(-1 * var(--margine)) calc(-1 * var(--s6)); padding: var(--s5) var(--margine) var(--s5);
+    grid-template-columns: auto minmax(0, 1fr); font-size: var(--c-xs); }
+  .mappa-area > .piede-colonna .piede-simbolo { width: 36px; }
+}
+/* tabelle con il pulsante del riquadro (grafici.js, registraTabella) */
+.tabella-con-riquadro { position: relative; padding-top: 34px; }
+.tabella-con-riquadro > .tabella-scorre { margin-top: 0; }
+.riquadro-grafico.con-tabella .riquadro-finestra { height: auto; max-height: 95vh; max-width: 95vw; }
+.riquadro-grafico.con-tabella .riquadro-corpo { overflow: auto; flex: 0 1 auto; }
+.riquadro-grafico.con-tabella .riquadro-vista { display: none; }
+.riquadro-grafico.con-tabella .tabella-scorre, .riquadro-grafico.con-tabella .edifici { max-height: none; overflow: visible; margin: 0; }
+.riquadro-grafico.con-tabella table.mensili thead th { top: 0; }
+@media (max-width: 560px) { .riquadro-grafico.con-tabella .riquadro-finestra { max-height: 95vh; border-radius: var(--r-l); border: 1px solid var(--linea); } }

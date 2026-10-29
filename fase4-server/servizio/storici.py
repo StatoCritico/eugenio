@@ -32,7 +32,6 @@ import re
 import tempfile
 import threading
 import time
-from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -48,7 +47,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from . import config as C
+from . import config as C, protezione as P
 from .report import CITAZIONE, LICENZA_DATI, LICENZA_PAGINA
 
 router = APIRouter(prefix="/api/storici", tags=["dati storici"])
@@ -463,26 +462,14 @@ def _grandezze(ds: str) -> list[Grandezza]:
 
 
 # ---------------------------------------------------------------------------------------------- limiti d'uso
-_storia: dict[tuple[str, str], deque] = defaultdict(deque)
-_blocco_storia = threading.Lock()
+# limiti per indirizzo (IPv6 per rete /64) comuni a tutta l'API: servizio/protezione.py (STORICI_STIME_ORA e
+# STORICI_ESTRAZIONI_ORA all'ora); l'estrazione chiede anche la verifica anti-robot (gettone di sessione)
+_storia = P.limiti
 _in_corso = threading.BoundedSemaphore(max(1, C.STORICI_PARALLELE))
 
 
-def _ip(req: Request) -> str:
-    return req.headers.get("x-forwarded-for", req.client.host if req.client else "?").split(",")[0].strip()
-
-
 def _limita(req: Request, tipo: str) -> None:
-    n = {"stima": C.STORICI_STIME_ORA, "estrazione": C.STORICI_ESTRAZIONI_ORA}[tipo]
-    with _blocco_storia:
-        q = _storia[(_ip(req), tipo)]
-        ora = time.time()
-        while q and ora - q[0] > 3600:
-            q.popleft()
-        if len(q) >= n:
-            cosa = "download" if tipo == "estrazione" else "stime"
-            raise HTTPException(429, f"Troppe richieste: massimo {n} {cosa} all'ora. Riprova più tardi.")
-        q.append(ora)
+    P.limita(req, tipo)
 
 
 # ---------------------------------------------------------------------------------------------- richiesta
@@ -1480,6 +1467,7 @@ def stima(request: Request, richiesta: Richiesta, formato: Literal["csv", "xlsx"
 
 @router.post("/estrai")
 async def estrai(request: Request, richiesta: Richiesta, formato: Literal["csv", "xlsx", "ods"] = Query("csv")):
+    P.richiedi_sessione(request)
     _controlla_nomi(richiesta)
     p = await run_in_threadpool(pianifica, richiesta)
     v = valuta(p, formato)

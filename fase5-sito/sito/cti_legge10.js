@@ -10,7 +10,7 @@
 // CC BY 4.0: si possono solo citare, finché il CTI non risponde alla richiesta di autorizzazione.
 // Uso: EUGENIO_CTI.mostra(contenitore, { istat, regione, dpr }) -> Promise<boolean> (false se il comune non c'è)
 (function () {
-  const V = "20261028e";
+  const V = "20261029b";
   const MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
   const FAQ = "faq.html#cti-elaborazioni";
   const CTI = "https://try.cti2000.it/";

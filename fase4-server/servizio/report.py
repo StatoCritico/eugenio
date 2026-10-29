@@ -628,6 +628,24 @@ def _font_pdf() -> dict[str, str] | None:
     return trovati if "" in trovati else None
 
 
+def _svg_per_pdf(dati: bytes, famiglia: str, unicode: bool) -> bytes:
+    """SVG pronto per fpdf2: i testi usano il font registrato nel PDF (DejaVu, o Helvetica se manca), il <title>
+    (che fpdf2 non conosce) si toglie; con Helvetica i simboli fuori dal latin-1 si sostituiscono (€ → EUR)."""
+    s = dati.decode("utf-8", "replace")
+    s = re.sub(r"<title>.*?</title>", "", s, flags=re.S)
+    s = re.sub(r'font-family\s*=\s*"[^"]*"', f'font-family="{famiglia}"', s)
+    s = re.sub(r"font-family\s*=\s*'[^']*'", f'font-family="{famiglia}"', s)
+    s = re.sub(r"font-family\s*:\s*[^;\"']+", f"font-family: {famiglia}", s)
+    # tratteggi e spessori scritti dai browser con le unità («7px, 4px»): fpdf2 vuole numeri
+    s = re.sub(r'(stroke-dasharray|stroke-width|font-size)="([^"]*)"',
+               lambda m: f'{m.group(1)}="{re.sub(r"px", "", m.group(2)).replace(",", " ")}"', s)
+    if not unicode:
+        for a, b in _SOSTITUZIONI.items():
+            s = s.replace(a, b)
+        s = s.encode("latin-1", "replace").decode("latin-1")
+    return s.encode("utf-8")
+
+
 def _pdf(doc: Documento) -> bytes:
     from fpdf import FPDF
     from fpdf.enums import ResourceAccessPolicy
@@ -660,10 +678,10 @@ def _pdf(doc: Documento) -> bytes:
             destra = self.w - self.r_margin
             if orizzontale:
                 self.set_font(famiglia, "", 7.5)
-                largh = self.get_string_width("Prodotto da EuGEnio – eugenio.statocritico.it")
+                largh = self.get_string_width(t("Prodotto da EuGEnio – eugenio.statocritico.it"))
                 self.set_xy(destra - largh, base - 3.2)
                 self.set_text_color(0, 0, 0)
-                self.cell(self.get_string_width("Prodotto da EuGEnio – "), 4, t("Prodotto da EuGEnio – "))
+                self.cell(self.get_string_width(t("Prodotto da EuGEnio – ")), 4, t("Prodotto da EuGEnio – "))
                 self.set_text_color(*COLORE_LINK_RGB)
                 self.cell(self.get_string_width("eugenio.statocritico.it"), 4, "eugenio.statocritico.it", link=SITO)
                 destra -= largh + 6
@@ -805,8 +823,15 @@ def _pdf(doc: Documento) -> bytes:
                     tabella_pdf(None, [[v.chiave, _valore_voce(v)] for v in b.voci], [False, False], (40, 60))
             elif isinstance(b, Immagine):
                 larg = min(b.larghezza_cm * 10, epw)
-                pdf.image(io.BytesIO(b.byte()), x=pdf.l_margin + (epw - larg) / 2, w=larg,
-                          resource_access_policy=ResourceAccessPolicy(0))
+                dati = _svg_per_pdf(b.byte(), famiglia, bool(font)) if b.formato == "svg" else b.byte()
+                try:
+                    pdf.image(io.BytesIO(dati), x=pdf.l_margin + (epw - larg) / 2, w=larg,
+                              resource_access_policy=ResourceAccessPolicy(0))
+                except Exception as e:          # un'immagine che fpdf2 non sa leggere non deve far fallire il report
+                    log.warning("Immagine non inserita nel PDF: %s", e)
+                    pdf.set_font(famiglia, corsivo, 9)
+                    pdf.multi_cell(0, 5, t("[Immagine non riproducibile nel PDF]"), align="C", new_x="LMARGIN", new_y="NEXT")
+                    pdf.set_font(famiglia, "", 10)
                 if b.didascalia:
                     pdf.set_font(famiglia, corsivo, 8)
                     pdf.multi_cell(0, 4, t(b.didascalia), align="C", new_x="LMARGIN", new_y="NEXT")

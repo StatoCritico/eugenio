@@ -65,12 +65,11 @@ async function caricaMappa() {
   for (const c of m.comuni) {
     const p = el("path", { d: c.d, fill: (window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : "var(--linea)"), tabindex: "-1" }, g);
     p.dataset.istat = c.istat;
-    const t = el("title", {}, p); t.textContent = c.nome;
+    p.dataset.nome = c.nome;            // nome e provincia nel riquadretto comune a tutte le mappe (minimappa.js)
+    p.dataset.prov = c.prov;
     stato.percorsi.set(c.istat, p);
     stato.comuni.set(c.istat, { ...stato.comuni.get(c.istat), nome: c.nome, prov: c.prov, x: c.x, y: c.y });
     p.addEventListener("click", () => scegli(c.istat));
-    p.addEventListener("mousemove", (e) => mostraEtichetta(e, c.istat));
-    p.addEventListener("mouseleave", () => ($("etichetta").style.display = "none"));
   }
   if (m.province) {   // confini provinciali sopra i comuni, senza intercettare i clic
     const gp = el("g", { class: "province" }, svg);
@@ -89,28 +88,49 @@ async function caricaMappa() {
   try { coloraMappa(await json(`${API}/mappa?giorni=7`)); } catch { $("scala-min").textContent = "previsioni meteo non disponibili"; }
 }
 
+// Freddo o caldo: la mappa mostra i gradi giorno di riscaldamento (base 20 °C) o quelli estivi di raffrescamento
+// (base 24 °C), secondo quale dei due prevale nei prossimi 7 giorni su tutti i comuni; senza previsioni decide la
+// stagione (giugno–settembre = caldo).
+const STAGIONI = {
+  freddo: { titolo: "Il freddo dei prossimi 7 giorni, comune per comune", campo: "gg", nome: "gradi giorno",
+    sotto: "Gradi giorno previsti (base 20 °C): più il colore è scuro, più servirà riscaldare. Tocca un comune per sceglierlo." },
+  caldo: { titolo: "Il caldo dei prossimi 7 giorni, comune per comune", campo: "gc", nome: "gradi giorno estivi",
+    sotto: "Gradi giorno estivi previsti (base 24 °C): più il colore è scuro, più servirà raffrescare. Tocca un comune per sceglierlo." },
+};
+
+function stagione(d) {
+  const c = d ? Object.values(d.comuni || {}) : [];
+  if (c.length && c[0].gc !== undefined) {
+    const somma = (k) => c.reduce((a, x) => a + (x[k] || 0), 0);
+    return somma("gc") > somma("gg") ? "caldo" : "freddo";
+  }
+  const mese = new Date().getMonth() + 1;
+  return mese >= 6 && mese <= 9 ? "caldo" : "freddo";
+}
+
+function titolaMappa(s) {
+  $("titolo-mappa").textContent = STAGIONI[s].titolo;
+  $("sotto-mappa").textContent = STAGIONI[s].sotto;
+}
+titolaMappa(stagione(null));
+
 function coloraMappa(d) {
   stato.mappa = d;
-  const v = Object.values(d.comuni).map((x) => x.gg);
+  const s = STAGIONI[stagione(d)];
+  titolaMappa(stagione(d));
+  const v = Object.values(d.comuni).map((x) => x[s.campo]);
   if (!v.length) return;
   const min = Math.min(...v), max = Math.max(...v);
   for (const [istat, x] of Object.entries(d.comuni)) {
     const p = stato.percorsi.get(istat);
     if (!p) continue;
-    p.setAttribute("fill", colore((x.gg - min) / (max - min || 1)));
-    Object.assign(stato.comuni.get(istat), x);
+    p.setAttribute("fill", colore((x[s.campo] - min) / (max - min || 1)));
+    p.dataset.dettaglio = `Prossimi 7 giorni: ${x[s.campo]} ${s.nome}\ntemperatura media ${x.t} °C`;
+    Object.assign(stato.comuni.get(istat), x, { sintesi: `${x[s.campo]} ${s.nome}` });
   }
   $("scala-min").textContent = `${min.toFixed(0)} GG`;
   $("scala-max").textContent = `${max.toFixed(0)} GG`;
   $("scala-barra").style.background = `linear-gradient(90deg, ${colore(0)}, ${colore(1)})`;
-}
-
-function mostraEtichetta(e, istat) {
-  const c = stato.comuni.get(istat), et = $("etichetta"), box = $("mappa").getBoundingClientRect();
-  et.textContent = c.gg !== undefined ? `${c.nome}: ${c.gg} GG, media ${c.t} °C` : c.nome;
-  et.style.display = "block";
-  et.style.left = `${Math.min(e.clientX - box.left + 12, box.width - et.offsetWidth)}px`;
-  et.style.top = `${e.clientY - box.top + 12}px`;
 }
 
 function scegli(istat, punto) {
@@ -126,7 +146,7 @@ function scegli(istat, punto) {
   s.innerHTML = "";
   s.append(c.nome);
   const sm = document.createElement("small");
-  sm.textContent = c.gg !== undefined ? `Prossimi 7 giorni: ${c.gg} gradi giorno, temperatura media ${c.t} °C` : `Provincia di ${c.prov}`;
+  sm.textContent = c.sintesi ? `Prossimi 7 giorni: ${c.sintesi}, temperatura media ${c.t} °C` : `Provincia di ${c.prov}`;
   s.append(sm);
   stato.svg.querySelectorAll(".segnaposto").forEach((x) => x.remove());
   if (punto) el("circle", { class: "segnaposto", cx: punto[0], cy: punto[1], r: 1.6 }, stato.svg);
@@ -180,13 +200,23 @@ function lonlatSvg(lon, lat) {
 }
 
 // ------------------------------------------------------------------ file e opzioni
-function impostaFile(f) {
+// CSV, Excel (.xlsx) e OpenDocument (.ods) vanno al server così come sono (/api/previsione li legge tutti, primo
+// foglio); il vecchio .xls si ferma qui con un messaggio chiaro (tabelle.js)
+async function impostaFile(f) {
+  if (f && window.EUGENIO_TABELLE && await window.EUGENIO_TABELLE.tipo(f) === "xls") {
+    messaggio(window.EUGENIO_TABELLE.MSG_XLS, true);
+    $("file").value = "";
+    f = null;
+  } else if (f && window.EUGENIO_TABELLE && /^(xlsx|ods|foglio)$/.test(await window.EUGENIO_TABELLE.tipo(f))) {
+    messaggio("Foglio di calcolo: il server leggerà il primo foglio.");
+  } else if (f) messaggio("");
   stato.file = f;
   $("nome-file").textContent = f ? `${f.name} · ${(f.size / 1024).toFixed(0)} kB` : "Scegli il file o trascinalo qui";
   $("zona-file").classList.toggle("pieno", !!f);
   aggiornaBottone();
 }
 $("file").addEventListener("change", (e) => impostaFile(e.target.files[0]));
+if (window.EUGENIO_TABELLE) $("file").setAttribute("accept", window.EUGENIO_TABELLE.ACCETTA);
 const zona = $("zona-file");
 ["dragover", "dragenter"].forEach((t) => zona.addEventListener(t, (e) => { e.preventDefault(); zona.classList.add("pieno"); }));
 zona.addEventListener("dragleave", () => zona.classList.toggle("pieno", !!stato.file));

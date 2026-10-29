@@ -41,10 +41,9 @@ async function caricaMappa() {
   const g = el("g", {}, svg);
   for (const c of m.comuni) {
     const p = el("path", { d: c.d, fill: (window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : "var(--linea)") }, g);
-    el("title", {}, p).textContent = c.nome;
+    p.dataset.nome = c.nome;            // riquadretto comune a tutte le mappe (minimappa.js)
+    p.dataset.prov = c.prov;
     p.addEventListener("click", () => scegli(c.istat));
-    p.addEventListener("mousemove", (e) => etichetta(e, c.nome));
-    p.addEventListener("mouseleave", () => ($("etichetta").style.display = "none"));
     stato.percorsi.set(c.istat, p);
     stato.comuni.set(c.istat, c);
   }
@@ -66,14 +65,6 @@ async function caricaMappa() {
   if (dalLink && stato.comuni.has(dalLink)) scegli(dalLink);
 }
 
-function etichetta(e, testo) {
-  const et = $("etichetta"), box = $("mappa").getBoundingClientRect();
-  et.textContent = testo;
-  et.style.display = "block";
-  et.style.left = `${Math.min(e.clientX - box.left + 12, box.width - et.offsetWidth)}px`;
-  et.style.top = `${e.clientY - box.top + 12}px`;
-}
-
 function scegli(istat) {
   if (!stato.comuni.has(istat)) return;
   stato.istat = istat;
@@ -92,7 +83,7 @@ $("anni").addEventListener("change", () => stato.istat && calcola());
 // funziona lo stesso senza il confronto.
 let tabellaDPR = null;
 function caricaDPR() {
-  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261028e")
+  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261029b")
     .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   return tabellaDPR;
 }
@@ -193,7 +184,7 @@ function confrontoDPR(gg, dpr) {
   const box = $("dpr"); box.innerHTML = "";
   box.hidden = !dpr;
   if (!dpr) return;
-  box.appendChild(h("h3", null, "Il confronto con il DPR 412/93"));
+  box.appendChild(h("h3", null, "Confronto con il DPR 412/93"));
   const cifre = h("div", "cifre");
   const zonaOk = ZONE.includes(dpr.zona) && ZONE.includes(gg.zona_risultante);
   if (Number.isFinite(dpr.gg)) {

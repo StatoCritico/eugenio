@@ -1,0 +1,16 @@
+# Dati di esempio non reali: Il file di esempio usa i nomi e gli indirizzi dei 13 ospedali dell'AUSL della Romagna solo per mostrare come funziona la pagina: consumi e costi sono numeri inventati, generati a caso entro intervalli plausibili, e non rappresentano in alcun modo i consumi o le spese reali di queste strutture. Non citarli e non usarli per confronti.
+id;denominazione;indirizzo;civico;comune;foglio;particella;lat;lon;Energia elettrica 2025;Gas 2025;Acqua 2025;Costo energia elettrica 2025;Costo gas 2025;Costo acqua 2025
+;;;;;;;;;kWh;Smc;m³;€;€;€
+H01;Ospedale Santa Maria delle Croci;Viale Vincenzo Randi;5;Ravenna;;;;;2.035.601;710.366;32.947;574.461,82;823.978,21;95.636,75
+H02;Ospedale degli Infermi;Viale Stradone;9;Faenza;;;;;962.281;708.499;22.600;297.215,67;633.810,95;70.731,97
+H03;Ospedale Umberto I;Viale Dante;10;Lugo;;;;;6.891.930;1.729.970;84.960;1.961.647,55;1.608.531,11;296.561,43
+H04;Ospedale Angioloni;Via Marconi;38;Bagno di Romagna;;;;;10.729.585;2.310.912;121.788;3.290.964,59;2.729.868,80;382.614,82
+H05;Ospedale Bufalini;Viale Ghirotti;286;Cesena;;;;;13.191.196;3.024.696;122.612;3.765.196,25;2.726.549,87;343.402,84
+H06;Ospedale Marconi;;;Cesenatico;22;111;;;4.150.657;1.048.121;47.316;1.288.829,66;1.091.034,41;138.422,47
+H07;Ospedale Morgagni-Pierantoni;;;Forlì;216;27;;;4.193.109;1.285.659;55.143;1.303.700,81;1.077.430,97;184.860,49
+H08;Ospedale Nefetti;;;;;;43.942496;11.901527;2.416.986;433.442;28.736;717.036,08;480.240,61;88.880,99
+H09;Ospedale Cervesi;Via Beethoven;1;Cattolica;;;;;4.833.705;1.424.210;73.298;1.521.714,20;1.263.668,16;255.112,73
+H10;Ospedale Sacra Famiglia;Via XXIV Maggio;174;Novafeltria;;;;;7.161.926;1.957.582;89.857;2.174.348,82;2.208.519,98;310.862,78
+H11;Ospedale Ceccarini;Corso Fratelli Cervi;48;Riccione;;;;;13.730.000;3.024.379;136.349;4.382.298,59;3.489.860,67;409.798,84
+H12;Ospedale degli Infermi;Viale Luigi Settembrini;2;Rimini;;;;;7.199.385;1.402.977;63.293;2.248.733,02;1.486.915,04;183.431,33
+H13;Ospedale Franchini;Via Pedrignone;3;Santarcangelo di Romagna;;;;;8.141.376;1.923.618;112.327;2.369.017,74;2.018.019,24;339.036,67

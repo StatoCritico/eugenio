@@ -57,11 +57,12 @@ Il primo avvio scarica i pesi di TiRex-2 da Hugging Face (in `dati/hf`).
 - gli IP stanno solo nel registro di Caddy, `/data/log/accessi.log` nel volume `caddy-dati`, a rotazione e cancellato dopo 14 giorni (`roll_keep_for 336h`);
 - il worker, una volta al mese insieme all'indirizzario ANNCSU, cancella dalla cache Zornade le risposte più vecchie di 12 mesi.
 
-**Limiti d'uso per IP**:
+**Limiti d'uso per IP** (IPv6 contati per rete /64; dettagli e verifica anti-robot in "Protezione dell'API"):
 - 20 previsioni all'ora;
 - 120 ricerche Zornade all'ora;
 - 2.000 edifici all'ora per il patrimonio, contati in edifici e non in richieste.
-- 60 report scaricabili (pdf, xlsx, ods) all'ora.
+- 60 report scaricabili (pdf, xlsx, ods) all'ora;
+- 600 richieste all'ora alle rotte dei dati (meteo, Legge 10, mappa, comuni, metodologia).
 
 Il sito invia i file del patrimonio a blocchi di 40 righe, perché il tunnel Cloudflare chiude le richieste che durano più di 100 secondi.
 
@@ -210,6 +211,8 @@ Siccome il server riscrive `dati/indicatori/`, `dati/clima/` e i due CSV, **il s
 | Metodo | Percorso | Descrizione |
 |---|---|---|
 | GET | `/api/salute` | stato e ultimo aggiornamento delle previsioni |
+| GET | `/api/protezione` | chiave pubblica di Turnstile (`null` = verifica spenta) e rotte che chiedono il gettone di sessione |
+| POST | `/api/sessione` | JSON `{"token": "…"}` con il gettone Turnstile → gettone di sessione da mandare in `X-EuGEnio-Sessione` |
 | GET | `/api/comuni` | comuni disponibili (ISTAT, catastale, coordinate, posizione sulla mappa) |
 | GET | `/api/meteo/{istat}?modalita=breve\|lungo&giorni=N` | meteo storico e previsto del comune |
 | POST | `/api/previsione` | multipart: `file` (CSV), `istat`, `modalita`, `orizzonte` (ore o giorni), `tipo` (`energia` = somma, `potenza` = media), `covariate` (es. `temperatura,radiazione`; vuoto = solo calendario), `verifica` |
@@ -219,7 +222,7 @@ Siccome il server riscrive `dati/indicatori/`, `dati/clima/` e i due CSV, **il s
 | GET | `/api/clima-legge10/{istat}?anni=10` | dati climatici aggiornati per la Legge 10 dal clima reale del comune |
 | POST | `/api/patrimonio` | CSV di edifici → particella catastale, comune, punto (max 500 righe per richiesta, 2.000 edifici l'ora per IP; il sito manda blocchi di 40); indirizzi prima con ANNCSU, poi con Zornade; CSV in UTF-8 o nella codifica di Windows; la risposta porta `fonti` da citare |
 | POST | `/api/report?formato=pdf\|xlsx\|ods` | documento generico in JSON (schema in `/api/report/schema`) → file PDF, Excel o ODS; `docx` e `odt` rispondono 410 (spenti dal 28/10/2026); vedi "Report" |
-| POST | `/api/report/{tipo}?formato=pdf\|xlsx\|ods` | `tipo` = `previsione`, `legge10`, `patrimonio`, `indicatori`: il corpo è la risposta già ricevuta dal servizio → file del report |
+| POST | `/api/report/{tipo}?formato=pdf\|xlsx\|ods` | `tipo` = `previsione`, `legge10`, `patrimonio`, `indicatori`, `valori_sedi`: il corpo è la risposta già ricevuta dal servizio → file del report |
 | GET | `/api/report/schema` | schema JSON del documento accettato da `/api/report` |
 | GET | `/api/storici/catalogo` | dataset scaricabili presenti sul server (grandezze, frequenze, periodo, fonte, licenza, limiti) |
 | POST | `/api/storici/stima?formato=csv\|xlsx\|ods` | JSON con i filtri → righe, colonne e dimensione stimate; se la richiesta è troppo grande, motivo e suggerimenti |
@@ -268,7 +271,9 @@ analisi (fase 6), non si possono scaricare dal sito.
 Formato CSV: due colonne, data/ora e valore; separatore `;` `,` o tab; decimali con virgola o punto;
 date `GG/MM/AAAA hh:mm` o `AAAA-MM-GG hh:mm`, in ora italiana.
 
-Limiti per indirizzo IP: 20 previsioni/ora, 120 ricerche/ora, 60 report/ora, 30 download di dati storici/ora. File fino a 5 MB / 200.000 righe.
+Limiti per indirizzo IP: 20 previsioni/ora, 120 ricerche/ora, 60 report/ora, 30 download di dati storici/ora, 600
+richieste/ora alle rotte dei dati. File fino a 5 MB / 200.000 righe. Previsione, patrimonio, geocodifica, particella ed
+estrazione dei dati storici chiedono anche il gettone di sessione (vedi "Protezione dell'API").
 
 ## Report
 
@@ -339,6 +344,13 @@ corta perché in Excel intestazione e piè di stampa, codici di formato compresi
 - **Privacy**: tutto in memoria, nulla scritto su disco né registrato; risposta con `Cache-Control: no-store`.
 - **Errori**: 410 (formato spento: docx, odt), 400 (formato sconosciuto, tipo sconosciuto, JSON non valido), 422 (documento non valido, con il motivo in
   italiano in `detail`), 413 (troppo grande), 429 (limite d'uso).
+- **Immagini SVG nel PDF** (29/10/2026): prima di `pdf.image` gli SVG passano da `_svg_per_pdf` (il `font-family`
+  diventa quello registrato nel PDF, DejaVu o Helvetica; via il `<title>`; `7px, 4px` → `7 4` in tratteggi, spessori e
+  corpi; con Helvetica `€` → `EUR`); un'immagine che fpdf2 non riesce a leggere diventa la scritta «[Immagine non
+  riproducibile nel PDF]» invece di far fallire il report. Verificato con le mappe 3D e i diagrammi di Pareto del sito:
+  300 sedi × 6 colonne in Lombardia (1.812 comuni, due mappe + 6 Pareto) = corpo di circa 3,3 MB, PDF in circa 7 s,
+  dentro i limiti attuali (5 MB di corpo, 1,5 MB per immagine): non è servito alzarli. Il sito manda le mappe del
+  report «leggere» (coordinate intere, punti a meno di un pixel tolti, attributi comuni sul gruppo).
 - **Mai dati di mercato**: i report non contengono prezzi GME/EEX (PUN, PSV, IGI, TTF, PFOR); le funzioni
   dei servizi leggono solo campi noti e scartano comunque le colonne con quei nomi.
 
@@ -349,12 +361,13 @@ corta perché in Excel intestazione e piè di stampa, codici di formato compresi
 | `previsione` | risposta di `/api/previsione` più `richiesta` facoltativa (`comune`, `modalita`, `orizzonte`, `covariate`, `tipo`, `unita`) | `previsione_037006_breve.pdf` |
 | `legge10` | risposta di `/api/clima-legge10/{istat}`, più il campo facoltativo `dpr412` {gg, zona, alt, nome, nota, origini} aggiunto dal sito (sezione "Confronto con il DPR 412/93"; differenza e zona ricalcolate dal server) | `clima_legge10_037006.pdf` |
 | `patrimonio` | `{"righe": [...], "fonti": [...]}` con le righe unite di tutti i blocchi | `patrimonio_geolocalizzato.pdf` |
+| `valori_sedi` (29/10/2026) | composto da `sito/valori_sedi.js` (Patrimonio, «Valori per sede»): `titolo`, `sottotitolo`, `totali` [{colonna, tipo: consumo\|costo, totale, unita, sedi}], `prezzi` [{consumo, costo, valore, unita, sedi}] (costo unitario medio = Σ costi / Σ consumi, colonne abbinate per posizione), `mappe` e `pareto` [{titolo, tipo, svg}] con gli **SVG piatti in base64** (colori di stampa già risolti nel browser), `tabelle` [{titolo, tipo, intestazioni, righe, decimali}], `note`, `fonti`, `avviso` {titolo, testo} facoltativo (file d'esempio, in cima). Ordine: totali, costi unitari medi, mappe, Pareto dei consumi, Pareto dei costi, tabella dei consumi, tabella dei costi. Le immagini solo nel PDF (la rotta passa `formato` ai tipi in `CON_FORMATO`); Excel e ODS hanno solo totali e tabelle. Immagini non valide saltate, al massimo `REPORT_MAX_IMMAGINI` (le altre segnalate in «Note») | `valori_per_sede.pdf` |
 | `indicatori` | valori già calcolati da `sito/indicatori.js` (fase 8): `ente`, `regione`, `italia` {nome, codice, regione_ce, fonte_residenti, anni [{anno, provvisorio, spesa, leva, incidenza, peso, per_giornata, per_posto, per_cittadino, AZ9999, BZ9999, …}]}, `componente`, `anno_confronto`, `avvertenze`, `fonti`, `elaborazione`; il server impagina soltanto | `indicatori_energia_080_114.pdf` |
 
 Attribuzioni sempre incluse: "Weather data by Open-Meteo.com (CC BY 4.0)" e ISTAT (CC BY 4.0) per previsione e
 Legge 10, TiRex-2 per la previsione, "Dati elaborati da Zornade" con link a https://zornade.com e "ANNCSU –
 Agenzia delle Entrate e ISTAT (CC BY 4.0)" per il patrimonio, OpenBDAP della Ragioneria Generale dello Stato
-(CC BY 4.0) per gli indicatori. Il report Legge 10 apre con l'avvertenza che i
+(CC BY 4.0) per gli indicatori; Zornade, ANNCSU e ISTAT per i valori per sede. Il report Legge 10 apre con l'avvertenza che i
 dati non sostituiscono i valori normativi (UNI 10349, DPR 412/93).
 
 **Nuovo tipo di report**: in `servizio/report_servizi.py` scrivere `def report_xxx(d: dict, **kw) -> Documento`
@@ -443,13 +456,86 @@ Emilia-Romagna (330 comuni): previsioni ogni 6 ore ~2.200 chiamate/giorno, stori
 download della fase 3 sullo stesso server, conviene sospendere quelli o usare l'istanza locale.
 Per tutta Italia serve l'istanza Open-Meteo propria (`--profile open-meteo`).
 
+## File in Excel e OpenDocument (dal 29/10/2026)
+
+Chi carica i dati può usare anche **.xlsx** (Excel) e **.ods** (OpenDocument), oltre a CSV: `servizio/tabelle.py`
+riconosce il formato dal contenuto, legge il **primo foglio** con pandas (openpyxl e odfpy, già nell'immagine) e lo
+trasforma nel CSV che il resto del codice già capisce (punto e virgola, punto decimale, date AAAA-MM-GG[ hh:mm:ss]).
+`/api/previsione` e `/api/patrimonio` lo fanno da sé; le pagine che leggono il file nel browser chiamano
+`POST /api/converti` (risponde `{formato, fogli, foglio_usato, csv}`, 200 conversioni l'ora per IP). Il vecchio
+.xls risponde 422 con l'invito a salvarlo in .xlsx. Tutto in memoria, niente su disco. Test: `tests/test_tabelle.py`.
+
 ## Risorse
 
 TiRex-2 su CPU: ~1,2 GB di RAM (misurati) per il processo API. `torch.compile` è spento (`TORCHDYNAMO_DISABLE=1` in `modello.py`): l'immagine non ha `g++`. Se il meteo del comune non è sul server la previsione usa il solo calendario e lo dice in un avviso. Totale stimato con tutti i servizi:
 ~3,5 GB su 12. Disco: vedi la tabella "Spazio" nel README principale (~15 GB, ~35 GB con Open-Meteo).
-Una previsione alla volta (le altre attendono in coda) per non saturare i 2 core. La conversione mensile
+Una previsione alla volta (`modello.py`) per non saturare i 2 core; dal 29/10/2026 ne entrano al massimo due
+(una in calcolo, una in fila) e le altre ricevono 503 dopo 30 secondi (`protezione.py`). La conversione mensile
 dell'indirizzario ANNCSU usa ~400 MB di memoria per un paio di minuti; il ricalcolo del clima dal 1940
 (gennaio e luglio) ~1,5 GB per ~5 minuti.
+
+## Protezione dell'API
+
+Codice in `servizio/protezione.py` (decisione del 29/10/2026), prove in `tests/test_protezione.py`.
+
+**Primo filtro: Cloudflare.** Il server non ha porte aperte (tunnel) e Cloudflare blocca gli attacchi di massa. Una
+regola gratuita di rate limiting (il piano Free ne ha una: finestra di 10 secondi, conteggio per IP, blocco) ferma
+le raffiche su `/api/`: Security → WAF → Rate limiting rules, `URI Path` inizia con `/api/`, 60 richieste in
+10 secondi, azione Block per 10 secondi. Bot Fight Mode resta **spento**: sul piano Free non ammette eccezioni e
+bloccherebbe anche chi usa le API dei dati aperti con uno script.
+
+**Limiti per indirizzo** (finestra mobile di un'ora, in memoria, azzerati a ogni riavvio):
+
+| Tipo | Rotte | Limite per IP all'ora |
+|---|---|---|
+| `previsione` | `/api/previsione` | 20 |
+| `zornade` | `/api/geocodifica`, `/api/particella` | 120 |
+| `patrimonio` | `/api/patrimonio` | 2.000 edifici |
+| `report` | `/api/report`, `/api/report/{tipo}` | 60 |
+| `converti` | `/api/converti` | 200 |
+| `dati` | `/api/meteo`, `/api/clima-legge10`, `/api/mappa`, `/api/comuni`, `/api/metodologia` | `LIMITE_DATI_ORA` (600) |
+| `stima`, `estrazione` | `/api/storici/stima`, `/api/storici/estrai` | `STORICI_STIME_ORA` (600), `STORICI_ESTRAZIONI_ORA` (30) |
+| `sessione` | `/api/sessione` | `SESSIONI_ORA` (60) |
+
+L'indirizzo è quello che Caddy mette in `X-Forwarded-For` (il `CF-Connecting-IP` di Cloudflare, non falsificabile
+perché il server si raggiunge solo dal tunnel). Gli IPv4 contano uno per uno, gli **IPv6 per rete /64**: chi ha IPv6
+ha miliardi di indirizzi e potrebbe cambiarli a ogni richiesta. Le code vuote si cancellano ogni 10 minuti.
+
+**Tetti per tutto il sito**:
+- **Zornade**: al massimo `ZORNADE_TETTO_ORA` (6.000) chiamate all'ora per tutti gli utenti insieme, contate davvero
+  (la cache non consuma quota); il patrimonio controlla prima il caso peggiore (2 chiamate per edificio). Oltre il
+  tetto: 503 «quota di quest'ora esaurita». La chiave gratuita ne ha 10.000 e le condizioni vietano l'estrazione
+  massiva: il margine resta per le prove sul PC. Email all'amministratore, una volta al giorno, quando l'ora supera
+  il 70 % del tetto (`ZORNADE_AVVISO_QUOTA`).
+- **Previsioni**: `modello.py` ne calcola una alla volta; ne entrano al massimo `PREVISIONI_PARALLELE` (2: una in
+  calcolo e una in fila), chi aspetta più di `PREVISIONI_ATTESA_S` (30 s; il tunnel chiude dopo 100 s) riceve 503
+  «riprova tra un minuto» invece di restare appeso.
+- Report: 2 alla volta (già prima); estrazioni dei dati storici: `STORICI_PARALLELE` (2).
+
+**Verifica anti-robot (Cloudflare Turnstile)** su previsione, patrimonio, geocodifica, particella ed estrazione dei
+dati storici:
+1. `protezione.js` (nel `<head>` di tutte le pagine, da `parti/testa.html`) avvolge `fetch`: alla prima richiesta
+   protetta legge `/api/protezione`, carica Turnstile e ottiene un gettone (di solito senza chiedere nulla; se
+   Cloudflare vuole un clic compare un riquadro in basso a destra);
+2. `POST /api/sessione` verifica il gettone con Cloudflare (`siteverify`, con l'IP del visitatore; il nome del sito
+   deve essere tra `TURNSTILE_HOSTNAME`) e restituisce un **gettone di sessione** firmato con HMAC
+   (`SESSIONE_CHIAVE`), valido `SESSIONE_MINUTI` (30) e legato alla rete di chi l'ha chiesto (IPv4 o /64);
+3. le rotte protette vogliono il gettone nell'intestazione `X-EuGEnio-Sessione`, altrimenti 401 con
+   `X-EuGEnio-Verifica: 1`; il sito allora rifà la verifica una volta e ripete la richiesta.
+
+Senza `TURNSTILE_SITEKEY` e `TURNSTILE_SECRET` nel `.env` la verifica è spenta (prove, mirror): restano i limiti.
+Le rotte dei dati aperti (meteo, Legge 10, catalogo e stime dei dati storici, report) restano usabili da script, con
+i loro limiti. Configurazione: Cloudflare → Turnstile → Add widget, nome `eugenio`, dominio
+`eugenio.statocritico.it`, modalità *Managed*; la Site Key va in `TURNSTILE_SITEKEY`, la Secret Key in
+`TURNSTILE_SECRET`; `SESSIONE_CHIAVE` si genera con `openssl rand -hex 32` (se manca, a ogni riavvio dell'api le
+sessioni aperte si rinnovano da sole con una nuova verifica).
+
+**Avviso per i 429 ripetuti**: ogni rifiuto per limite si conta per giorno e per rete in
+`/dati/protezione/429.json` (scritto al massimo ogni minuto). L'email all'amministratore parte **solo** quando la
+stessa rete supera i limiti almeno `AVVISO_429_SOGLIA` (20) volte al giorno per `AVVISO_429_GIORNI` (3) giorni
+consecutivi, una volta per serie di giorni, con i conteggi e la strada per bloccarla in Cloudflare (Security → WAF →
+Tools → IP Access Rules). I conteggi si cancellano dopo `AVVISO_429_CONSERVA_GIORNI` (7) giorni, come dice
+l'informativa privacy.
 
 ## Licenze e attribuzioni (da mostrare sul sito)
 
