@@ -1,0 +1,4 @@
+# costruzione di EuGEnioVisure.exe (Windows, Python 3.13)
+-r ../requirements.txt
+-r ../requirements-modelli.txt
+pyinstaller==6.16.0      # GPL-2.0 con eccezione per i programmi costruiti: l'.exe resta AGPL-3.0

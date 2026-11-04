@@ -6,8 +6,8 @@ Cosa fa (decisione del 29/10/2026):
     l'indirizzo arriva da Caddy, che mette in X-Forwarded-For il CF-Connecting-IP di Cloudflare (non falsificabile:
     il server è raggiungibile solo dal tunnel). I conteggi stanno in memoria e si azzerano a ogni riavvio; le chiavi
     vuote si cancellano ogni 10 minuti;
-  * **tetti per tutti gli utenti insieme**: chiamate Zornade all'ora (la chiave gratuita ne ha 10.000 e le condizioni
-    vietano l'estrazione massiva: oltre ZORNADE_TETTO_ORA si risponde 503) e previsioni ammesse insieme
+  * **tetti per tutti gli utenti insieme**: chiamate Zornade all'ora (la chiave gratuita ne ha 10.000; per i termini del
+    18/09/2026 estrazione massiva e carichi eccessivi fanno sospendere il token: oltre ZORNADE_TETTO_ORA si risponde 503) e previsioni ammesse insieme
     (PREVISIONI_PARALLELE: modello.py ne calcola una alla volta, le altre aspettano al massimo PREVISIONI_ATTESA_S
     secondi, poi 503);
   * **verifica Cloudflare Turnstile** sulle rotte che costano o consumano quote (previsione, patrimonio,
@@ -138,8 +138,11 @@ limiti = Limitatore()
 LIMITI: dict[str, tuple[int, int]] = {"converti": (200, 3600), "previsione": (20, 3600), "zornade": (120, 3600),
                                       "patrimonio": (2000, 3600), "report": (60, 3600)}
 _DINAMICI = {"dati": lambda: C.LIMITE_DATI_ORA, "sessione": lambda: C.SESSIONI_ORA,
-             "stima": lambda: C.STORICI_STIME_ORA, "estrazione": lambda: C.STORICI_ESTRAZIONI_ORA}
-_UNITA = {"patrimonio": "edifici", "estrazione": "download", "stima": "stime", "sessione": "verifiche"}
+             "stima": lambda: C.STORICI_STIME_ORA, "estrazione": lambda: C.STORICI_ESTRAZIONI_ORA,
+             "ortofoto": lambda: C.ORTOFOTO_ORA, "pvgis": lambda: C.PVGIS_ORA, "orizzonte": lambda: C.ORIZZONTE_ORA,
+             "interno": lambda: C.INTERNO_ORA}
+_UNITA = {"patrimonio": "edifici", "estrazione": "download", "stima": "stime", "sessione": "verifiche",
+          "ortofoto": "tessere di ortofoto", "pvgis": "confronti PVGIS", "orizzonte": "profili d'orizzonte"}
 
 
 def soglia(tipo: str) -> tuple[int, int]:
@@ -222,6 +225,14 @@ async def turno_previsione():
 
 
 # ---------------------------------------------------------------------------------------------- Turnstile e sessione
+def previsioni_in_corso() -> int:
+    """Previsioni ammesse in questo momento (in calcolo o in fila): la pipeline notturna degli edifici si ferma finché
+    sono più di zero (campo previsioni_in_corso di /api/salute)."""
+    if _previsioni is None:
+        return 0
+    return max(0, max(1, C.PREVISIONI_PARALLELE) - _previsioni._value)
+
+
 def turnstile_attivo() -> bool:
     return bool(C.TURNSTILE_SITEKEY and C.TURNSTILE_SECRET)
 

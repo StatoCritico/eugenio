@@ -1,0 +1,29 @@
+# Ortofoto della Provincia autonoma di Bolzano (fase 10, Fase E, § 6). Stessi campi di emilia_romagna.toml.
+#
+# Verifica del 04/11/2026 (Fase E, fonti per regione in ../fonti/regioni.toml): scheda RNDT
+# p_bz:Orthoimagery:Aerial-2023-RGB «Ortofoto 2023», risoluzione 20 cm, «L'utilizzo dei dati è vincolato dal rispetto
+# delle condizioni di cui al modello di licenza Creative Commons BY 4.0»; WMS mapproxy della Provincia (strato
+# p_bz-Orthoimagery:Aerial-2023-RGB, AccessConstraints e Fees «none», EPSG:3857 tra i sistemi), GetMap 256×256 in
+# EPSG:3857 provato su Bolzano e Merano (200 image/jpeg). Esclusi lo strato CIR (infrarosso) e le ortofoto AGEA
+# (2008, 2011, 2014) servite dallo stesso WMS.
+
+regione = "04"
+nome = "Provincia autonoma di Bolzano"
+
+[[fonte]]
+id = "bolzano2023"
+nome = "Ortofoto Provincia di Bolzano 2023 (20 cm)"
+tipo = "wms"
+url = "https://geoservices.buergernetz.bz.it/mapproxy/ows"
+livello = "p_bz-Orthoimagery:Aerial-2023-RGB"
+formato = "image/jpeg"
+licenza = "CC BY 4.0"
+citazione = "Provincia autonoma di Bolzano – Ortofoto 2023, 20 cm (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/p_bz:Orthoimagery:Aerial-2023-RGB"
+stato = "confermata"               # licenza nella scheda RNDT, come la Toscana 2023
+attiva = true
+cache = true
+zoom = [12, 20]
+riquadro = [10.35, 46.17, 12.53, 47.15]
+ritmo = { al_secondo = 4, all_ora = 6000 }
+priorita = 1

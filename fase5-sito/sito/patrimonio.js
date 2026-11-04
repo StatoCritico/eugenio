@@ -1,6 +1,6 @@
 "use strict";
 // Patrimonio edilizio: elenco di edifici (CSV, Excel o OpenDocument) → /api/patrimonio (a blocchi) → mappa dei punti
-// ed elenco con gli esiti. Dal 29/10/2026 la mappa è quella tridimensionale di mappa3d.js (solo la regione scelta,
+// ed elenco con gli esiti (dal 04/11/2026 anche con le visure di EuGEnio Visure, visure_patrimonio.js). Dal 29/10/2026 la mappa è quella tridimensionale di mappa3d.js (solo la regione scelta,
 // che si cambia dalla piccola mappa) e la colonna di destra è un solo flusso di passi numerati: geolocalizzazione
 // (questo file), poi valori per sede (valori_sedi.js, che usa le funzioni esposte qui sotto in
 // window.EUGENIO_PATRIMONIO e, con i valori caricati, decide da sé il territorio mostrato dalla mappa).
@@ -170,18 +170,32 @@ async function geolocalizza(testo, nome, { avvisa, barra }) {
 }
 
 $("calcola").addEventListener("click", async () => {
+  try {
+    messaggio("Lettura del file…");
+    const letto = await testoDelFile(stato.file);
+    await esegui(letto.testo, stato.file.name.replace(/\.(xlsx|ods)$/i, ".csv"), letto.nota, letto.formato === "csv");
+  } catch (e) {
+    messaggio(`Non riuscito: ${e.message}`, true);
+  }
+});
+
+// geolocalizzazione di un testo CSV; la usano il pulsante qui sopra e il passo «Visure catastali» (visure_patrimonio.js).
+// I file di EuGEnio Visure (fase 11) si riconoscono qui: al server vanno solo id, comune, sezione, foglio e particella
+// (o le colonne del patrimonio senza quelle delle visure), le colonne delle visure restano nel browser.
+async function esegui(testo, nome, nota = "", locale = true) {
   $("calcola").disabled = true;
   stato.righe = []; stato.fonti = new Set(); stato.scelto = null;
   $("passo-risultato").hidden = true;
   try {
-    messaggio("Lettura del file…");
-    const letto = await testoDelFile(stato.file);
+    const V = window.EUGENIO_VISURE_UI;
+    const ingresso = V && locale ? V.ingresso(testo, nome) : null;
+    if (ingresso) { testo = ingresso.testo; nota = [nota, ingresso.nota].filter(Boolean).join(" "); }
     $("avanzamento").hidden = false;
-    const r = await geolocalizza(letto.testo, stato.file.name.replace(/\.(xlsx|ods)$/i, ".csv"), {
+    const r = await geolocalizza(testo, nome, {
       avvisa: (t) => messaggio(t), barra: (f) => { $("barra").style.width = `${(100 * f).toFixed(1)}%`; },
     });
     stato.righe = r.righe; stato.fonti = r.fonti;
-    messaggio([r.interrotto, letto.nota].filter(Boolean).join(" "), !!r.interrotto);
+    messaggio([r.interrotto, nota].filter(Boolean).join(" "), !!r.interrotto);
     mostra();
   } catch (e) {
     messaggio(`Non riuscito: ${e.message}`, true);
@@ -189,7 +203,7 @@ $("calcola").addEventListener("click", async () => {
     $("avanzamento").hidden = true;
     $("calcola").disabled = !stato.file;
   }
-});
+}
 
 // ------------------------------------------------------------------ risultato
 function conta() {
@@ -220,6 +234,8 @@ function mostra() {
   a.href = "https://zornade.com";
   p.append("Fonti: ", a, ". ", [...stato.fonti].join("; "), ".");
   disegnaPunti();
+  // il passo «Visure catastali» abbina le unità alle righe nuove (visure_patrimonio.js)
+  document.dispatchEvent(new CustomEvent("eugenio:patrimonio-risultato", { detail: { righe: stato.righe } }));
   elenco();
 }
 
@@ -245,6 +261,8 @@ function elenco() {
       art.appendChild(h("p", "catasto", `Catasto: ${parti.join(", ")}`));
     }
     if (r.nota) art.appendChild(h("p", "nota", r.nota));
+    const vis = window.EUGENIO_VISURE_UI && window.EUGENIO_VISURE_UI.dettaglio(i);
+    if (vis) art.appendChild(vis);
     art.addEventListener("click", () => scegli(i, false));
     art.addEventListener("keydown", (e) => { if (e.key === "Enter") scegli(i, false); });
     box.appendChild(art);
@@ -260,7 +278,8 @@ const CITAZIONE = "Fonte: EuGEnio – eugenio.statocritico.it";
 const LICENZA = "Le colonne del file caricato restano di chi le ha fornite. Geolocalizzazione di EuGEnio con licenza CC BY 4.0 "
   + "(https://creativecommons.org/licenses/by/4.0/deed.it): si può riutilizzare citando EuGEnio come fonte. Particelle e indirizzi trovati con Zornade restano "
   + "soggetti alle condizioni di Zornade: citare «Dati elaborati da Zornade» con il collegamento a https://zornade.com, "
-  + "niente ridistribuzione in blocco dei dati grezzi. ANNCSU e ISTAT: CC BY 4.0. Dettagli: https://eugenio.statocritico.it/licenza.html#dati";
+  + "con le attribuzioni delle fonti originali, niente rivendita dei dati grezzi. I dati catastali non sostituiscono visure "
+  + "ed estratti ufficiali e non vanno usati per re-identificare persone. ANNCSU e ISTAT: CC BY 4.0. Dettagli: https://eugenio.statocritico.it/licenza.html#dati";
 const citazione = () => `${CITAZIONE} (dati estratti il ${new Date().toLocaleDateString("it-IT")})`;
 function scarica(nome, contenuto, tipo) {
   const a = document.createElement("a");
@@ -270,22 +289,27 @@ function scarica(nome, contenuto, tipo) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+// righe da scaricare: quelle della geolocalizzazione più, se caricate, le colonne visura_… (solo nel browser)
+const righeConVisure = () => stato.righe.map((r, i) => ({ ...r, ...(window.EUGENIO_VISURE_UI ? window.EUGENIO_VISURE_UI.colonne(i) : {}) }));
 $("scarica-csv").addEventListener("click", () => {
   const col = [];
-  stato.righe.forEach((r) => Object.keys(r).forEach((k) => { if (!col.includes(k)) col.push(k); }));
+  const tutte = righeConVisure();
+  tutte.forEach((r) => Object.keys(r).forEach((k) => { if (!col.includes(k)) col.push(k); }));
   const cella = (v) => {
     if (v === null || v === undefined) return "";
     const s = typeof v === "number" ? String(v).replace(".", ",") : String(v);
     return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const righe = [col.join(";"), ...stato.righe.map((r) => col.map((k) => cella(r[k])).join(";"))];
-  righe.push("", `Fonti: Dati elaborati da Zornade (https://zornade.com); ${[...stato.fonti].join("; ")}`,
+  const righe = [col.join(";"), ...tutte.map((r) => col.map((k) => cella(r[k])).join(";"))];
+  const conVisure = col.some((k) => k.startsWith("visura_"));
+  righe.push("", `Fonti: Dati elaborati da Zornade (https://zornade.com); ${[...stato.fonti].join("; ")}`
+    + (conVisure ? "; colonne visura_: visure catastali lette da EuGEnio Visure sul PC dell'utente (non sostituiscono le visure ufficiali)" : ""),
     cella(`Licenza: ${LICENZA}`), `Come citare: ${citazione()}`);
   scarica("patrimonio_geolocalizzato.csv", "﻿" + righe.join("\r\n"), "text/csv;charset=utf-8");
 });
 
 $("scarica-geojson").addEventListener("click", () => {
-  const feats = stato.righe.filter((r) => r.lat !== null && r.lat !== undefined).map((r) => {
+  const feats = righeConVisure().filter((r) => r.lat !== null && r.lat !== undefined).map((r) => {
     const { lat, lon, ...prop } = r;
     return { type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] }, properties: prop };
   });
@@ -342,6 +366,6 @@ if (location.hash === "#valori") requestAnimationFrame(() => { const v = $("valo
 
 // per la sezione «Valori per sede» (valori_sedi.js)
 window.EUGENIO_PATRIMONIO = { geolocalizza, lonlatSvg, riquadroDi, scarica, mappa: () => stato.mappa, CITAZIONE, numeraPassi,
-  mostraRegione, territorioAutomatico: false };
+  mostraRegione, territorioAutomatico: false, esegui, righe: () => stato.righe, elenco, messaggio };
 
 caricaMappa().catch((e) => messaggio(`Mappa non disponibile: ${e.message}`, true));

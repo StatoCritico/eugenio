@@ -1,0 +1,28 @@
+# Ortofoto della Toscana (fase 10, Fase B, § 6). Stessi campi di emilia_romagna.toml.
+#
+# Verifica del 04/11/2026: scheda RNDT r_toscan:66ca3807-815a-4bd1-b626-98ca240d72a2 «Ortofoto anno 2023», GSD 20 cm,
+# copertura completa, «La risorsa è liberamente accessibile e usabile con licenza CC BY 4.0»; WMS Geoscopio OFC_RT
+# (strato rt_ofc.5k23.32bit, RGB 2023, AccessConstraints e Fees «none»), GetMap in EPSG:3857 provato su Firenze.
+# Non si usano gli strati 2024 e 2025: la scheda del servizio dice «realizzate a partire da fotogrammi di proprietà
+# AGEA» e la loro licenza non è stata verificata; né gli strati in falsi colori e NIR (infrarosso: escluso).
+
+regione = "09"
+nome = "Toscana"
+
+[[fonte]]
+id = "toscana2023"
+nome = "Ortofoto Regione Toscana 2023 (20 cm)"
+tipo = "wms"
+url = "https://www502.regione.toscana.it/ows_ofc/com.rt.wms.RTmap/wms?map=owsofc_rt"
+livello = "rt_ofc.5k23.32bit"
+formato = "image/jpeg"
+licenza = "CC BY 4.0"
+citazione = "Regione Toscana – Ortofoto 2023, 20 cm (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/r_toscan:66ca3807-815a-4bd1-b626-98ca240d72a2"
+stato = "confermata"               # licenza nella scheda RNDT; il proxy con copia non richiede altro
+attiva = true
+cache = true
+zoom = [12, 20]
+riquadro = [9.68, 42.23, 12.38, 44.48]
+ritmo = { al_secondo = 4, all_ora = 6000 }
+priorita = 1

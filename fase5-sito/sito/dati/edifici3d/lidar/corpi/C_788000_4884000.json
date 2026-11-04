@@ -1,0 +1,261 @@
+{
+ "tessera": "C_788000_4884000",
+ "crs": "EPSG:7791",
+ "corpi": {
+  "C1": {
+   "punti": 456,
+   "copertura": 1.0,
+   "quota_terreno": 8.0,
+   "stato": "ok",
+   "tetto": "capanna",
+   "modello": "capanna",
+   "falde": [
+    {
+     "id": "F1",
+     "pendenza": 23.3,
+     "orientamento": 0.0,
+     "settore": "N",
+     "area_pianta": 280.0,
+     "superficie": 304.9,
+     "alto": 12.97,
+     "basso": 9.95,
+     "rmse": 0.033,
+     "punti": 228,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         788000.0,
+         4884014.0
+        ],
+        [
+         788040.0,
+         4884014.01
+        ],
+        [
+         788040.0,
+         4884007.01
+        ],
+        [
+         788000.0,
+         4884007.0
+        ],
+        [
+         788000.0,
+         4884014.0
+        ]
+       ]
+      ]
+     }
+    },
+    {
+     "id": "F2",
+     "pendenza": 23.4,
+     "orientamento": 180.0,
+     "settore": "S",
+     "area_pianta": 280.0,
+     "superficie": 305.1,
+     "alto": 12.99,
+     "basso": 9.95,
+     "rmse": 0.034,
+     "punti": 228,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         788040.0,
+         4884000.01
+        ],
+        [
+         788000.0,
+         4884000.0
+        ],
+        [
+         788000.0,
+         4884007.0
+        ],
+        [
+         788040.0,
+         4884007.01
+        ],
+        [
+         788040.0,
+         4884000.01
+        ]
+       ]
+      ]
+     }
+    }
+   ],
+   "gronda": 9.95,
+   "colmo": 12.99,
+   "altezza_mediana": 11.65,
+   "rmse": 0.034,
+   "qualita": "buona",
+   "note": [],
+   "prove": {
+    "piano": 0.738,
+    "monofalda": 0.738,
+    "capanna": 0.034,
+    "padiglione": 0.203
+   },
+   "id": "C1",
+   "edificio": "E-DEMO",
+   "fonte": "campione_dsm",
+   "descrizione_fonte": "Campione LiDAR sintetico – DSM (prova)",
+   "versione": "campione_dsm:40986:1793756856",
+   "fonte_dtm": "campione_dtm",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "elaborato": "2026-11-04T01:47:37+00:00",
+   "altezza_dbtr": 10.0,
+   "sintetico": true
+  },
+  "C2": {
+   "punti": 288,
+   "copertura": 1.0,
+   "quota_terreno": 8.1,
+   "stato": "ok",
+   "tetto": "piano",
+   "modello": "piano",
+   "falde": [
+    {
+     "id": "F1",
+     "pendenza": 0.0,
+     "orientamento": 180.0,
+     "settore": "—",
+     "area_pianta": 364.0,
+     "superficie": 364.0,
+     "alto": 10.0,
+     "basso": 10.0,
+     "rmse": 0.006,
+     "punti": 288,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         1576021.0,
+         9768041.01
+        ],
+        [
+         1576021.0,
+         9768067.0
+        ],
+        [
+         1576007.0,
+         9768067.0
+        ],
+        [
+         1576007.0,
+         9768041.01
+        ],
+        [
+         1576021.0,
+         9768041.01
+        ]
+       ]
+      ]
+     }
+    }
+   ],
+   "gronda": 10.0,
+   "colmo": 10.0,
+   "altezza_mediana": 9.9,
+   "rmse": 0.006,
+   "qualita": "buona",
+   "note": [],
+   "prove": {
+    "piano": 0.006,
+    "monofalda": 0.006,
+    "capanna": 0.006,
+    "padiglione": 0.006
+   },
+   "id": "C2",
+   "edificio": "E-DEMO",
+   "fonte": "campione_dsm",
+   "descrizione_fonte": "Campione LiDAR sintetico – DSM (prova)",
+   "versione": "campione_dsm:40986:1793756856",
+   "fonte_dtm": "campione_dtm",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "elaborato": "2026-11-04T01:47:37+00:00",
+   "altezza_dbtr": 10.0,
+   "sintetico": true
+  },
+  "C3": {
+   "punti": 100,
+   "copertura": 1.0,
+   "quota_terreno": 8.1,
+   "stato": "ok",
+   "tetto": "piano",
+   "modello": "piano",
+   "falde": [
+    {
+     "id": "F1",
+     "pendenza": 0.0,
+     "orientamento": 180.0,
+     "settore": "—",
+     "area_pianta": 144.0,
+     "superficie": 144.0,
+     "alto": 22.0,
+     "basso": 22.0,
+     "rmse": 0.1,
+     "punti": 100,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         1576046.0,
+         9768034.0
+        ],
+        [
+         1576046.0,
+         9768046.0
+        ],
+        [
+         1576034.0,
+         9768046.0
+        ],
+        [
+         1576034.01,
+         9768034.01
+        ],
+        [
+         1576046.0,
+         9768034.0
+        ]
+       ]
+      ]
+     }
+    }
+   ],
+   "gronda": 22.0,
+   "colmo": 22.0,
+   "altezza_mediana": 22.0,
+   "rmse": 0.099,
+   "qualita": "buona",
+   "note": [],
+   "prove": {
+    "piano": 0.099,
+    "monofalda": 0.095,
+    "capanna": 0.084,
+    "padiglione": 0.089
+   },
+   "id": "C3",
+   "edificio": "E-DEMO",
+   "fonte": "campione_dsm",
+   "descrizione_fonte": "Campione LiDAR sintetico – DSM (prova)",
+   "versione": "campione_dsm:40986:1793756856",
+   "fonte_dtm": "campione_dtm",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "elaborato": "2026-11-04T01:47:37+00:00",
+   "altezza_dbtr": 22.0,
+   "sintetico": true
+  }
+ }
+}

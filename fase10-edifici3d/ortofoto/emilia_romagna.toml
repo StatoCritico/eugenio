@@ -1,0 +1,40 @@
+# Ortofoto dell'Emilia-Romagna (fase 10, Fase B, § 6 della proposta). Un file per regione; il proxy del server
+# (fase4-server/servizio/ortofoto.py) legge tutti i *.toml di questa cartella. Gli URL si cambiano qui, mai nel codice.
+#
+# Campi di ogni [[fonte]]:
+#   id          nome breve, usato nella rotta /api/ortofoto/<id>/<z>/<x>/<y>.<ext>
+#   tipo        "wms" (GetMap 1.3.0 su tessere 256×256 in EPSG:3857) o "xyz" (tessere già pronte, {z}/{x}/{y})
+#   url, livello, formato   indirizzo del servizio, strato WMS, formato delle immagini
+#   licenza, citazione, scheda   mostrate sotto la mappa e messe in ogni report con l'ortofoto
+#   stato       "confermata" | "da confermare" | "spenta": con "spenta" il proxy risponde 404 per quella fonte
+#   cache       true = copia su disco sul server (CARTELLA_ORTOFOTO); false = solo dal vivo (passa senza copia)
+#   attiva      false spegne la fonte anche se lo stato è "confermata" (interruttore rapido; anche ORTOFOTO_SPENTE nel .env)
+#   zoom        [minimo, massimo] delle tessere servite
+#   riquadro    [lon_min, lat_min, lon_max, lat_max] WGS84: fuori dal riquadro il proxy non chiama la fonte
+#   ritmo       chiamate al secondo verso la fonte (tutti gli utenti insieme) e massimo all'ora
+#
+# Prova dal container di sviluppo del 04/11/2026: GetCapabilities e GetMap del WMS rer2023_24_rgb rispondono (JPEG
+# 256×256 su Rimini, strato RER2023_24_RGB, EPSG:3857 tra i sistemi offerti, AccessConstraints e Fees vuoti). La
+# licenza CC BY 4.0 è quella della scheda del catalogo; l'uso tramite proxy con copia è in attesa della risposta
+# dell'Archivio Cartografico (email inviata, § 14.1): finché non arriva lo stato resta «da confermare».
+
+regione = "08"
+nome = "Emilia-Romagna"
+
+[[fonte]]
+id = "rer2023"
+nome = "Ortofoto RER 2023-24 (20 cm)"
+tipo = "wms"
+url = "https://servizigis.regione.emilia-romagna.it/wms/rer2023_24_rgb"
+livello = "RER2023_24_RGB"
+formato = "image/jpeg"
+licenza = "CC BY 4.0"
+citazione = "Regione Emilia-Romagna – Ortofoto RER 2023-24 (CC BY 4.0)"
+scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/immagini/layer-14"
+stato = "da confermare"            # in attesa della risposta dell'Archivio Cartografico (§ 14.1)
+attiva = true
+cache = true
+zoom = [12, 20]
+riquadro = [9.19, 43.73, 12.84, 45.16]
+ritmo = { al_secondo = 4, all_ora = 6000 }
+priorita = 1

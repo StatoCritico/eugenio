@@ -1,0 +1,6 @@
+# solo per sviluppo e test (non servono all'.exe né all'immagine Docker)
+-r requirements.txt
+-r requirements-modelli.txt
+reportlab==5.0.1         # PDF sintetici delle prove (BSD)
+pytest>=8
+pandas>=2                # un test controlla che il CSV arricchito resti leggibile dalla fase 7

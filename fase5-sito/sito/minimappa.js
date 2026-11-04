@@ -357,7 +357,21 @@
     aggiornaCollegamenti(cod);
   }
 
-  window.EUGENIO = { regione, colore, fondoComuni, italia, zoomabile, sfondoItalia, mappaGrande, el, seleziona, suggerimenti };
+  // Secondo clic sul comune già scelto = lo si toglie (04/11/2026), uguale in tutte le pagine con un solo comune
+  // scelto (previsioni, Legge 10). alterna(istat, attuale, scegli, togli): chiama togli() se istat è quello già
+  // scelto, altrimenti scegli(istat); restituisce true se il comune resta scelto. togliScelto(percorsi): toglie
+  // l'evidenziazione (classe "scelto") da tutti i comuni della mappa.
+  function alterna(istat, attuale, scegli, togli) {
+    if (istat && istat === attuale) { togli(); return false; }
+    scegli(istat);
+    return true;
+  }
+  function togliScelto(percorsi) {
+    (percorsi && percorsi.forEach ? percorsi : []).forEach((p) => p.classList.remove("scelto"));
+  }
+
+  window.EUGENIO = { regione, colore, fondoComuni, italia, zoomabile, sfondoItalia, mappaGrande, el, seleziona, suggerimenti,
+    alterna, togliScelto };
   window.EUGENIO_REGIONE = regione;     // compatibilità
   aggiornaCollegamenti(regione);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => piccola().catch(() => {}));

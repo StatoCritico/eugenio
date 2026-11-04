@@ -1,0 +1,50 @@
+# Ortofoto per tutta Italia (fase 10, Fase B, § 6): contesto di zona e servizio nazionale. Stessi campi di
+# emilia_romagna.toml.
+#
+# Sentinel-2 cloudless **2016** di EOX: CC BY 4.0 (pagina «Pricing» di cloudless.eox.at, letta il 04/11/2026: «CC BY
+# 4.0 for 2016»; dal 2018 CC BY-NC-SA 4.0, **esclusi**). Strato WMTS s2cloudless_3857, matrice «g» (web mercator):
+# le tessere hanno già la numerazione {z}/{y}/{x} di Google, servite con copia.
+#
+# WMS del Geoportale Nazionale (MASE, ortofoto AGEA 2012 a colori, 50 cm): risponde dal container (GetMap in EPSG:3857
+# su Rimini, 04/11/2026; AccessConstraints «Nessuno», Fees «Nessuna condizione applicata»). La licenza dell'immagine
+# resta ambigua: **solo dal vivo, senza copia** (cache = false) e senza figure nei report. L'https rimanda all'http.
+
+regione = "00"
+nome = "Italia"
+
+[[fonte]]
+id = "s2cloudless2016"
+nome = "Sentinel-2 cloudless 2016 (10 m)"
+tipo = "xyz"
+url = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg"
+formato = "image/jpeg"
+licenza = "CC BY 4.0"
+citazione = "Sentinel-2 cloudless – https://s2maps.eu by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016) (CC BY 4.0)"
+scheda = "https://cloudless.eox.at/pricing"
+stato = "confermata"
+attiva = true
+cache = true
+zoom = [5, 15]
+riquadro = [6.6, 35.4, 18.6, 47.1]
+ritmo = { al_secondo = 4, all_ora = 3000 }
+priorita = 9
+
+[[fonte]]
+id = "pcn2012"
+nome = "Geoportale Nazionale – ortofoto AGEA 2012 (50 cm, solo consultazione)"
+tipo = "wms"
+url = "http://wms.pcn.minambiente.it/ogc?map=/ms_ogc/WMS_v1.3/raster/ortofoto_colore_12.map"
+# il servizio divide l'Italia in due strati (fusi 32 e 33): chiesti insieme coprono tutto (provato su Bari)
+livello = "OI.ORTOIMMAGINI.2012.32,OI.ORTOIMMAGINI.2012.33"
+formato = "image/jpeg"
+licenza = "condizioni del servizio (licenza delle immagini non chiarita)"
+citazione = "Geoportale Nazionale – Ministero dell'Ambiente e della Sicurezza Energetica, ortofoto AGEA 2012 (consultazione dal vivo)"
+scheda = "https://gn.mase.gov.it/portale/servizio-di-consultazione-wms"
+stato = "confermata"               # confermata come sola consultazione dal vivo: niente copia, niente report
+attiva = true
+cache = false
+nei_report = false
+zoom = [12, 19]
+riquadro = [6.6, 35.4, 18.6, 47.1]
+ritmo = { al_secondo = 2, all_ora = 2000 }
+priorita = 8

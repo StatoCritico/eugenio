@@ -43,7 +43,7 @@ async function caricaMappa() {
     const p = el("path", { d: c.d, fill: (window.EUGENIO && window.EUGENIO.fondoComuni ? window.EUGENIO.fondoComuni(REGIONE) : "var(--linea)") }, g);
     p.dataset.nome = c.nome;            // riquadretto comune a tutte le mappe (minimappa.js)
     p.dataset.prov = c.prov;
-    p.addEventListener("click", () => scegli(c.istat));
+    p.addEventListener("click", () => alterna(c.istat));   // secondo clic sullo stesso comune = lo si toglie
     stato.percorsi.set(c.istat, p);
     stato.comuni.set(c.istat, c);
   }
@@ -60,9 +60,32 @@ async function caricaMappa() {
   [...m.comuni].sort((a, b) => a.nome.localeCompare(b.nome, "it")).forEach((c) => {
     const o = document.createElement("option"); o.value = c.istat; o.textContent = `${c.nome} (${c.prov})`; sel.appendChild(o);
   });
-  sel.addEventListener("change", () => sel.value && scegli(sel.value));
+  sel.addEventListener("change", () => (sel.value ? scegli(sel.value) : togli()));   // «Scegli…» = nessun comune
   const dalLink = new URLSearchParams(location.search).get("comune");
   if (dalLink && stato.comuni.has(dalLink)) scegli(dalLink);
+}
+
+// secondo clic sul comune già scelto = lo si toglie (funzione comune in minimappa.js, qui una copia se manca)
+function alterna(istat) {
+  if (window.EUGENIO && window.EUGENIO.alterna) return window.EUGENIO.alterna(istat, stato.istat, scegli, togli);
+  if (istat === stato.istat) togli(); else scegli(istat);
+}
+
+// nessun comune scelto: via l'evidenziazione, il comune dall'indirizzo e i risultati (anche quelli ancora in arrivo)
+function togli() {
+  if (!stato.istat) return;
+  stato.istat = null;
+  stato.dati = null;
+  stato.dpr = null;
+  stato.richiesta++;
+  if (window.EUGENIO && window.EUGENIO.togliScelto) window.EUGENIO.togliScelto(stato.percorsi);
+  else stato.percorsi.forEach((p) => p.classList.remove("scelto"));
+  $("comune").value = "";
+  const u = new URL(location.href);
+  u.searchParams.delete("comune");
+  history.replaceState(null, "", u);
+  ["passo-risultato", "passo-cti", "passo-storico"].forEach((id) => { if ($(id)) $(id).hidden = true; });
+  messaggio("");
 }
 
 function scegli(istat) {
@@ -83,7 +106,7 @@ $("anni").addEventListener("change", () => stato.istat && calcola());
 // funziona lo stesso senza il confronto.
 let tabellaDPR = null;
 function caricaDPR() {
-  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261029b")
+  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261104c")
     .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   return tabellaDPR;
 }

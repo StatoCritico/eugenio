@@ -49,7 +49,7 @@ def test_riferimento():
 
 
 def test_patrimonio():
-    df = patrimonio.leggi(Path(__file__).parent.parent / "esempi" / "patrimonio_esempio.csv")
+    df = patrimonio.leggi(Path(__file__).parent / "dati" / "patrimonio_prova.csv")
     r = patrimonio.geolocalizza(df, Finto(), COMUNI).set_index("id")
     assert r.loc["E01", "metodo"] == "indirizzo" and r.loc["E01", "istat"] == "037006" and r.loc["E01", "esito"] == "ok"
     assert r.loc["E01", "foglio_catasto"] == "190" and r.loc["E01", "fonte_punto"] == "Zornade"
@@ -62,7 +62,7 @@ def test_patrimonio():
 
 
 def test_civico_mancante():
-    df = patrimonio.leggi(Path(__file__).parent.parent / "esempi" / "patrimonio_esempio.csv").head(1)
+    df = patrimonio.leggi(Path(__file__).parent / "dati" / "patrimonio_prova.csv").head(1)
     z = Finto(civico_noto=False)
     r = patrimonio.geolocalizza(df, z, COMUNI).iloc[0]
     assert z.query == ["Via Zamboni 33 Bologna", "Via Zamboni Bologna"]
@@ -76,7 +76,7 @@ class FintoAllegato(Finto):
 
 
 def test_allegato_non_e_un_dubbio():
-    df = patrimonio.leggi(Path(__file__).parent.parent / "esempi" / "patrimonio_esempio.csv").head(1)
+    df = patrimonio.leggi(Path(__file__).parent / "dati" / "patrimonio_prova.csv").head(1)
     r = patrimonio.geolocalizza(df, FintoAllegato(), COMUNI).iloc[0]
     assert r.esito == "ok" and "allegato A" in r.nota
 
@@ -100,3 +100,14 @@ def test_pulizia_cache(tmp_path):
     with sqlite3.connect(f) as db:
         assert [r[0] for r in db.execute("SELECT k FROM cache")] == ["nuova"]
     assert pulisci_cache(tmp_path / "manca.sqlite") == 0
+
+
+def test_colonne_facoltative_edificio():
+    """Fase 10, § 8: colonne facoltative di piani e superfici con nomi alternativi; i CSV vecchi non cambiano."""
+    from territorio import patrimonio as PT
+    df = PT.leggi("id;indirizzo;comune;Piani;SLP;Sup. netta (m²);Anno di costruzione\nA;Via Roma 1;Rimini;3;1.200;980;1965\n".encode())
+    for c in ("piani_fuori_terra", "superficie_lorda", "superficie_netta", "anno_costruzione"):
+        assert c in df.columns, c
+    assert df.loc[0, "superficie_lorda"] == "1.200"
+    vecchio = PT.leggi("id;denominazione;indirizzo;civico;comune\nE01;Sede;Via Zamboni;33;Bologna\n".encode())
+    assert list(vecchio.columns) == ["id", "denominazione", "indirizzo", "civico", "comune"]

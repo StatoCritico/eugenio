@@ -1,0 +1,2 @@
+# fase 11 – EuGEnio Visure, lettore locale delle visure; versioni provate il 04/11/2026 (Python 3.13)
+pypdf==6.17.0            # testo dei PDF con le posizioni (BSD-3-Clause, puro Python)

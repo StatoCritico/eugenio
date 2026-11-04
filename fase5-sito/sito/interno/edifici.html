@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>EuGEnio – stato interno degli edifici</title>
+<!-- Pagina interna (fase 10, Fase C, § 12): fuori da menu e mappa del sito, non nel robots.txt, X-Robots-Tag noindex
+     da Caddy. Accesso solo con Cloudflare Access (Caddy rifiuta le richieste senza l'intestazione, l'api verifica il
+     JWT). Sola lettura: i comandi si danno via ssh. -->
+<script>try{if(localStorage.getItem("tema")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
+<link rel="stylesheet" href="../stile.css?v=20261104c">
+<link rel="stylesheet" href="interno.css?v=20261104c">
+</head>
+<body>
+<main class="interno">
+  <header>
+    <p class="gruppo-servizio">Pagina interna</p>
+    <h1>Stato della pipeline degli edifici</h1>
+    <p class="sotto">Tessere LiDAR, ultime notti, errori, spazio su disco e fonti. Sola lettura: i comandi si danno sul
+      server (<code>docker compose --profile edifici run --rm edifici-lidar …</code>). <span id="utente"></span></p>
+  </header>
+  <div class="messaggio" id="messaggio" role="status" aria-live="polite">Carico lo stato…</div>
+  <section id="disco" aria-label="Spazio su disco" hidden><h2>Spazio su disco</h2><div class="schede" id="schede-disco"></div></section>
+  <div id="zone"></div>
+  <p class="aiuto">Aggiornato: <span id="generato">—</span>. <button class="bottone secondario" id="ricarica" type="button">Ricarica</button></p>
+</main>
+<script src="edifici.js?v=20261104c"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Ortofoto della Provincia autonoma di Trento (fase 10, Fase E, § 6). Stessi campi di emilia_romagna.toml.
+#
+# Verifica del 04/11/2026 (Fase E, fonti per regione in ../fonti/regioni.toml): scheda RNDT
+# p_TN:f2e88f1b-05d9-4942-93ee-857a0a9e1f0b «Ortofoto PAT 2015 RGB», 20 cm, intera provincia (Piano straordinario di
+# Telerilevamento), licenza «Creative Commons Attribuzione 4.0 Internazionale (CC BY 4.0)»; WMS del SIAT (strato
+# ecw-rgb-2015, AccessConstraints e Fees «NONE», EPSG:3857 tra i sistemi), GetMap 256×256 in EPSG:3857 provato su
+# Trento (200 image/jpeg). Esclusa la versione RGBIr (infrarosso). Nel catalogo non risultano ortofoto PAT più recenti.
+
+regione = "04"
+nome = "Provincia autonoma di Trento"
+
+[[fonte]]
+id = "trento2015"
+nome = "Ortofoto Provincia di Trento 2015 (20 cm)"
+tipo = "wms"
+url = "https://siat.provincia.tn.it/geoserver/stem/ecw-rgb-2015/wms"
+livello = "ecw-rgb-2015"
+formato = "image/jpeg"
+licenza = "CC BY 4.0"
+citazione = "Provincia autonoma di Trento – Ortofoto PAT 2015, 20 cm (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/p_TN:f2e88f1b-05d9-4942-93ee-857a0a9e1f0b"
+stato = "confermata"
+attiva = true
+cache = true
+zoom = [12, 20]
+riquadro = [10.44, 45.67, 11.98, 46.54]
+ritmo = { al_secondo = 4, all_ora = 6000 }
+priorita = 1

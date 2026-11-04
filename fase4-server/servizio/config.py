@@ -5,13 +5,8 @@ import os
 from pathlib import Path
 
 DATI = Path(os.environ.get("DATI", "/dati"))
-# regioni servite dal sito (dati storici, Legge 10, previsioni); vuoto = tutta Italia
 REGIONI = [r.strip().zfill(2) for r in os.environ.get("REGIONI", "08").split(",") if r.strip()]
 SOLO_COMUNI = [c.strip() for c in os.environ.get("SOLO_COMUNI", "").split(",") if c.strip()]  # per prove
-# regioni aggiornate ogni giorno (storico recente e previsioni) con l'API gratuita di Open-Meteo: per tutta Italia
-# (7.896 comuni) servirebbero più delle 10.000 chiamate al giorno concesse. "tutte" = tutte le regioni servite.
-_agg = os.environ.get("REGIONI_AGGIORNATE", "08").strip()
-REGIONI_AGGIORNATE = [] if _agg.lower() == "tutte" else [r.strip().zfill(2) for r in _agg.split(",") if r.strip()]
 ORE_PREVISIONI = int(os.environ.get("ORE_PREVISIONI", "6"))          # ogni quante ore aggiornare le previsioni
 ORA_STORICO_UTC = int(os.environ.get("ORA_STORICO_UTC", "5"))        # aggiornamento giornaliero dello storico
 ZORNADE_API_KEY = os.environ.get("ZORNADE_API_KEY", "")
@@ -129,3 +124,36 @@ AVVISO_429_SOGLIA = int(os.environ.get("AVVISO_429_SOGLIA", "20"))
 AVVISO_429_GIORNI = int(os.environ.get("AVVISO_429_GIORNI", "3"))
 AVVISO_429_CONSERVA_GIORNI = int(os.environ.get("AVVISO_429_CONSERVA_GIORNI", "7"))
 PROTEZIONE_DIR = Path(os.environ.get("PROTEZIONE_DIR", str(DATI / "protezione")))
+
+# ortofoto (fase 10, Fase B; servizio/ortofoto.py): TOML delle fonti (copiati nell'immagine da fase10-edifici3d/ortofoto),
+# copia su disco delle tessere, fonti spente senza toccare i TOML, limite per IP
+_FONTI_REPO = Path(__file__).resolve().parents[2] / "fase10-edifici3d" / "ortofoto"
+ORTOFOTO_FONTI = Path(os.environ.get("ORTOFOTO_FONTI") or ("/app/ortofoto_fonti" if Path("/app/ortofoto_fonti").exists()
+                                                           else str(_FONTI_REPO)))
+CARTELLA_ORTOFOTO = Path(os.environ.get("CARTELLA_ORTOFOTO_INTERNA", str(DATI / "ortofoto")))
+ORTOFOTO_SPENTE = {s.strip() for s in os.environ.get("ORTOFOTO_SPENTE", "").split(",") if s.strip()}
+ORTOFOTO_SOLO_CONFERMATE = os.environ.get("ORTOFOTO_SOLO_CONFERMATE", "false").lower() == "true"
+ORTOFOTO_GIORNI = int(os.environ.get("ORTOFOTO_GIORNI", "180"))          # validità della copia di una tessera
+ORTOFOTO_MAX_GB = float(os.environ.get("ORTOFOTO_MAX_GB", "15"))          # tetto della copia su disco
+ORTOFOTO_CACHE_S = int(os.environ.get("ORTOFOTO_CACHE_S", "2592000"))     # Cache-Control verso browser e Cloudflare (30 giorni)
+ORTOFOTO_ORA = int(os.environ.get("ORTOFOTO_ORA", "3000"))                # tessere per IP all'ora
+ORTOFOTO_ATTESA_S = float(os.environ.get("ORTOFOTO_ATTESA_S", "6"))       # attesa massima del turno verso la fonte
+
+# confronto PVGIS (fase 10, Fase B; servizio/pvgis.py): chiamato dal server (PVGIS non ha CORS), con copia delle risposte
+PVGIS_URL = os.environ.get("PVGIS_URL", "https://re.jrc.ec.europa.eu/api/v5_3/PVcalc")
+PVGIS_AL_SECONDO = float(os.environ.get("PVGIS_AL_SECONDO", "20"))       # il JRC ammette 30 chiamate/s per IP: margine
+PVGIS_ORA = int(os.environ.get("PVGIS_ORA", "60"))                        # confronti per IP all'ora
+PVGIS_CACHE_GIORNI = int(os.environ.get("PVGIS_CACHE_GIORNI", "90"))
+# orizzonte lontano dal Copernicus DEM 90 m (servizio/orizzonte.py, stessi file .om su S3 della fase 3)
+ORIZZONTE_RAGGIO_KM = float(os.environ.get("ORIZZONTE_RAGGIO_KM", "25"))
+ORIZZONTE_ORA = int(os.environ.get("ORIZZONTE_ORA", "120"))               # profili per IP all'ora
+
+# pagina di stato interna degli edifici (fase 10, Fase C; servizio/interno.py): Cloudflare Access verificato sul server.
+# Team domain (es. <team>.cloudflareaccess.com) e audience (AUD tag dell'applicazione Access) solo nel .env; senza i due
+# valori le rotte /api/interno/* rispondono 503. CF_ACCESS_EMAIL: email ammesse (facoltativo, separate da virgola).
+CF_ACCESS_TEAM_DOMAIN = os.environ.get("CF_ACCESS_TEAM_DOMAIN", "")
+CF_ACCESS_AUD = os.environ.get("CF_ACCESS_AUD", "")
+CF_ACCESS_EMAIL = os.environ.get("CF_ACCESS_EMAIL", "")
+EDIFICI_STATO = Path(os.environ.get("EDIFICI_STATO", str(DATI / "edifici_stato")))          # stato.json della pipeline
+CARTELLA_EDIFICI_INTERNA = Path(os.environ.get("CARTELLA_EDIFICI_INTERNA", str(DATI / "edifici")))
+INTERNO_ORA = int(os.environ.get("INTERNO_ORA", "300"))                   # richieste per IP all'ora alle rotte interne

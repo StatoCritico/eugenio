@@ -1,0 +1,16 @@
+# fase 10 – edifici 3D (Fasi A, B e C); versioni provate il 04/11/2026 (Python 3.13; ruote anche per Linux ARM e Python 3.12)
+shapely==2.2.0
+pyproj==3.8.0
+rasterio==1.5.2          # COG del DTM, quota dei corpi, tessere Terrarium (GDAL incluso nella ruota)
+pyogrio==0.13.0          # lettura del GeoPackage UVL e del PBF OSM (GDAL incluso)
+pmtiles==3.8.1           # scrittura dei PMTiles
+mapbox-vector-tile==2.2.0
+httpx>=0.27              # scaricamento con ripresa
+numpy>=2
+pillow>=10               # PNG Terrarium
+scipy>=1.13              # Fase C: terreno dai punti LAS (riempimento dei vuoti sotto gli edifici)
+laspy==2.7.0             # Fase C: nuvole di punti LAS (BSD-2); per i LAZ serve anche lazrs
+# import dei modelli dell'utente (Fase C, comando importa-modello; servono solo lì)
+ezdxf==1.4.5             # DXF (MIT)
+ifcopenshell==0.9.0.post1  # IFC (LGPL-3.0-or-later, compatibile con l'AGPL)
+pytest>=8

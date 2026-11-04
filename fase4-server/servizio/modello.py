@@ -225,6 +225,16 @@ def _esegui(target: pd.Series, cov: pd.DataFrame, orizzonte: int, freq: str) -> 
     return out
 
 
+def _clima_affiancato(cov: pd.DataFrame, idx_st: pd.DatetimeIndex, idx_fut: pd.DatetimeIndex, scelte: list[str],
+                      modalita: str) -> dict:
+    """{variabile: {unita, storico, previsione}} nell'ordine delle scelte (quello della pagina); solo le variabili
+    meteo davvero presenti tra le covariate (senza meteo sul server resta vuoto)."""
+    unita = UNITA_ORARIE if modalita == "breve" else UNITA_GIORNALIERE
+    num = lambda s: [None if pd.isna(x) else round(float(x), 2) for x in s]
+    return {k: {"unita": unita.get(k, ""), "storico": num(cov[k].reindex(idx_st)), "previsione": num(cov[k].reindex(idx_fut))}
+            for k in (scelte or []) if k in cov.columns and k in unita}
+
+
 def prevedi(s: pd.Series, istat: str, modalita: str, orizzonte: int, tipo: str = "energia",
             covariate: list[str] | None = None, verifica: bool = False) -> dict:
     if modalita not in ("breve", "lungo"):
@@ -286,6 +296,8 @@ def prevedi(s: pd.Series, istat: str, modalita: str, orizzonte: int, tipo: str =
                        **{q: [round(float(x), 4) for x in out[q]] for q in QUANTILI if q in out},
                        "fonte_meteo": f_fut},
         "avvisi": avvisi,
+        # variabili meteo usate dal modello, negli stessi passi di storico e previsione (schede della pagina e report)
+        "clima": _clima_affiancato(cov, mostra.index, idx_fut, scelte, modalita),
     }
     if verifica:
         med = out["0.5"].to_numpy()
@@ -300,3 +312,73 @@ def prevedi(s: pd.Series, istat: str, modalita: str, orizzonte: int, tipo: str =
             "bias": float(err.mean()), "copertura_80": float(dentro),
         }
     return ris
+
+
+# ---------------------------------------------------------------------------------------------- solo clima
+# «Solo clima» della pagina Previsioni (dal 04/11/2026): le stesse variabili meteo che il modello usa come covariate,
+# per il comune scelto, senza consumi e senza TiRex-2. Gli ultimi giorni osservati e poi il futuro, con la stessa
+# catena di fonti della previsione (ICON-2I → IFS in orario; previsione → climatologia in giornaliero).
+UNITA_ORARIE = {"temperatura": "°C", "umidita": "%", "radiazione": "W/m²", "diffusa": "W/m²", "vento": "km/h",
+                "nuvolosita": "%", "pioggia": "mm", "neve": "cm"}
+UNITA_GIORNALIERE = {"temperatura": "°C", "gradi_giorno": "GG", "gradi_raffrescamento": "GG", "umidita": "%",
+                     "radiazione": "kWh/m²", "diffusa": "kWh/m²", "vento": "km/h", "nuvolosita": "%",
+                     "pioggia": "mm", "neve": "cm"}
+STORICO_SOLO_CLIMA = {"breve": 48, "lungo": 30}      # passi osservati mostrati prima del futuro (ore, giorni)
+
+
+def solo_clima(istat: str, modalita: str = "breve", orizzonte: int = 72, covariate: list[str] | None = None) -> dict:
+    """Variabili climatiche previste per il comune, senza consumi. Solleva MeteoMancante se il comune non ha meteo."""
+    if modalita not in ("breve", "lungo"):
+        raise ValueError("modalita deve essere 'breve' o 'lungo'")
+    massimo = C.MAX_ORIZZONTE_ORE if modalita == "breve" else C.MAX_ORIZZONTE_GIORNI
+    orizzonte = int(min(max(orizzonte, 1), massimo))
+    nomi = COVARIATE_ORARIE if modalita == "breve" else COVARIATE_GIORNALIERE
+    unita = UNITA_ORARIE if modalita == "breve" else UNITA_GIORNALIERE
+    scelte = [k for k in (covariate if covariate else PREDEFINITE[modalita]) if k in nomi]
+    if not scelte:
+        raise ValueError("Nessuna variabile climatica valida tra quelle scelte")
+    avvisi = []
+    if modalita == "breve":
+        met, fonte = _meteo_orario(istat)
+        osservato = fonte.str.startswith("osservato")
+        fine_oss = fonte.index[osservato].max() if osservato.any() else None
+        fut = met.index[met.index > fine_oss] if fine_oss is not None else met.index
+        if not len(fut):
+            raise MeteoMancante(istat)
+        if len(fut) < orizzonte:
+            avvisi.append(f"Le previsioni meteo sul server arrivano a {len(fut)} ore: il grafico si ferma lì.")
+        fut = fut[:orizzonte]
+        passato = met.index[met.index < fut[0]][-STORICO_SOLO_CLIMA["breve"]:]
+        if any(fonte.reindex(fut).isin(["previsione IFS", "miscela ICON-2I/IFS"])):
+            avvisi.append("Oltre le 72 ore il meteo proviene dal modello globale ECMWF IFS (0,25°): "
+                          "l'incertezza cresce rapidamente con l'orizzonte.")
+    else:
+        oggi = pd.Timestamp.now(tz="Europe/Rome").tz_localize(None).normalize()
+        met, fonte = _meteo_giornaliero(istat, oggi + pd.Timedelta(days=orizzonte + 10))
+        osservato = fonte.str.startswith("osservato")
+        fine_oss = fonte.index[osservato].max()
+        fut = met.index[met.index > fine_oss][:orizzonte]
+        passato = met.index[osservato & (met.index <= fine_oss)][-STORICO_SOLO_CLIMA["lungo"]:]
+        if "climatologia" in set(fonte.reindex(fut)):
+            avvisi.append("Oltre i 15 giorni il meteo non è prevedibile: si usa la climatologia (media degli "
+                          "anni precedenti per lo stesso periodo). È uno scenario 'anno tipo'.")
+    if modalita == "breve":
+        etich = lambda ix: [x.isoformat() for x in _utc(ix).tz_convert("Europe/Rome")]
+    else:
+        etich = lambda ix: [x.date().isoformat() for x in ix]
+    num = lambda s: [None if pd.isna(x) else round(float(x), 2) for x in s]
+    clima = {}
+    for k in scelte:
+        col = nomi[k]
+        s = met[col] if col in met.columns else pd.Series(np.nan, index=met.index)
+        st, pr = s.reindex(passato), s.reindex(fut)
+        if pr.isna().mean() > 0.2:
+            avvisi.append(f"Meteo '{k}' mancante per il {pr.isna().mean():.0%} del periodo.")
+        clima[k] = {"unita": unita[k], "storico": num(st), "previsione": num(pr)}
+    # stessa forma della risposta di /api/previsione, senza consumi: la pagina e il report la trattano allo stesso modo
+    return {"modalita": modalita, "passo": "ora" if modalita == "breve" else "giorno", "istat": istat,
+            "solo_clima": True, "covariate": scelte,
+            "storico": {"t": etich(passato)},
+            "previsione": {"t": etich(fut), "fonte_meteo": fonte.reindex(fut).fillna("—").tolist()},
+            "fonte_storico": fonte.reindex(passato).fillna("—").tolist(),
+            "clima": clima, "avvisi": avvisi}

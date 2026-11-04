@@ -1,0 +1,10 @@
+# Contesto di build delle immagini della fase 4 e della pipeline della fase 10 (cartella principale del progetto).
+# Mai nelle immagini: la fase 2 (personale), il modulo privato delle metodiche UNI, segreti e ambienti locali.
+fase2-gradi-giorno/
+fase10-edifici3d/uni_privato/
+**/.env
+**/.venv
+**/venv
+**/__pycache__
+**/.pytest_cache
+iscrizioni/

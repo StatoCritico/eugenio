@@ -6,7 +6,9 @@ Sito statico (HTML, CSS e JavaScript senza librerie esterne), servito da Caddy n
 sito/
   index.html        mappa dei comuni colorata con i gradi giorno previsti a 7 giorni, ricerca indirizzo
                     (Zornade), caricamento CSV, scelta della modalità, grafico con le fasce di probabilità
-  patrimonio.html   elenco di edifici (CSV) → punto e particella catastale, mappa dei punti, esiti, download
+  patrimonio.html   elenco di edifici (CSV) → punto e particella catastale, mappa dei punti, esiti, download; dal
+                    04/11/2026 passo «Visure catastali» con i file di EuGEnio Visure (visure_abbina.js,
+                    visure_patrimonio.js), abbinati solo nel browser
   legge10.html      dati climatici del comune per la Legge 10, con il confronto con l'Allegato A del DPR 412/93
                     (gradi giorno, zona e altitudine di legge, differenza %, linea del DPR nel grafico; per i comuni
                     nati da fusione i valori dei comuni d'origine): gradi giorno, zona, temperature di progetto,
@@ -34,6 +36,10 @@ sito/
                     installa, condizioni delle fonti di dati
   mirror.html       come fare un mirror: requisiti, codice, dati meteo di un'altra regione, .env, prova in locale
                     (docker-compose.override.yml con la porta 8080), messa online, personalizzazione, regole
+  importa-dxf-ifc.html  Patrimonio › Importa DXF/IFC (04/11/2026): DXF e IFC letti nel browser (importa_modello.js nella
+                    pagina, modelli_worker.js nel Web Worker, modelli_import.js con la logica di `importa-modello`);
+                    librerie in lib/ (dxf-parser, web-ifc, clipper-lib, proj4) caricate solo qui; posa dal file, da un
+                    sistema di riferimento o con due punti noti; risultato a modelli3d.html?modello=locale o .geojson
   privacy.html      informativa privacy (titolare: Paolo Bianco; email in arrivo via Cloudflare Email Routing e Gmail)
   app.js, patrimonio.js, legge10.js, contatti.js, stile.css
   report.js         pulsanti "Scarica il report" (PDF, Excel, ODS; dal 28/10/2026 niente Word né ODT) su previsione, patrimonio, Legge 10 e
@@ -273,3 +279,202 @@ in ODT. Sul server i due formati sono spenti (rispondono 410, variabile `REPORT_
 - Informativa privacy aggiornata (Turnstile tra i servizi di Cloudflare, conteggio dei 429 per 7 giorni, gettone nel
   browser). Provato in Node con browser, Turnstile e server simulati: verifica spenta, una sola verifica per più
   richieste anche contemporanee, rinnovo dopo un 401, errore leggibile se la verifica fallisce.
+
+## Aggiornamento del 04/11/2026 notte – menu fissabile e voci GME non cliccabili (`?v=20261104c`, che sostituisce `?v=20261104b`)
+
+Richiesta di Paolo del 04/11/2026; regole grafiche in `sito/README_stile.md` § «Menu a gruppi».
+- **Cinque gruppi principali** (Clima e meteo, Patrimonio, Edificio, Cogenerazione, Fotovoltaico): il mouse o il fuoco da
+  tastiera sul titolo apre la tendina verticale a scomparsa; il **clic sul titolo fissa il gruppo**: le voci compaiono in
+  orizzontale nella riga nera `nav.riga-fissata` sotto la barra dei menu. Clic su un altro gruppo: la riga cambia; secondo
+  clic sullo stesso: la riga sparisce e torna la tendina. Suggerimento «Clicca qui per …» che cambia con lo stato. La
+  scelta resta al cambio di pagina (`localStorage` «menu-fissato»). «Altre pagine» (Indicatori, Come funziona, F.A.Q. …)
+  e il piè restano come prima.
+- **Voci «licenza GME»** (5 di Cogenerazione, 1 di Fotovoltaico): non più collegamenti ma `span.voce-gme` con
+  «In attesa di autorizzazione dal GME», nella tendina, nella riga, nel menu del telefono e negli elenchi «Nello stesso
+  gruppo» delle pagine segnaposto (7 pagine toccate). Le pagine restano (raggiungibili solo scrivendo l'indirizzo); nessun
+  altro collegamento interno porta lì, salvo quello di ogni pagina a sé stessa (test).
+- File: `parti/testata.html` (span delle voci GME, `nav.riga-fissata`), `parti/testa.html` (`data-menu-fissato` prima del
+  CSS), `costruisci_pagine.py` (`aria-current` anche sugli span GME, così il gruppo resta segnato sulla loro pagina),
+  `sito/aspetto.js` (comportamento del menu), `sito/stile.css` (sezioni «menu fissato» e «voci in attesa della licenza
+  GME»), le pagine `cog-*.html` e `fv-leed.html` (elenchi «Nello stesso gruppo»), tutte le pagine rigenerate e
+  `interno/edifici.html` (versione a mano: la pagina interna non passa da `costruisci_pagine.py`).
+- Test: 3 nuovi in `tests/test_costruisci_pagine.py` (voci GME non collegate, nessun collegamento interno alle pagine GME,
+  riga e script del `<head>`) e 2 in `tests/test_menu_browser.py` (Chromium headless a 1366 e 375 px: tendina al
+  passaggio del mouse, fissaggio, cambio di gruppo, secondo clic, persistenza, voci GME, tastiera, ×, nessun errore JS;
+  si salta senza Playwright); **19 test** in tutto.
+- Solo file statici: nessun rebuild dell'api né riavvio di Caddy (il sito è montato in sola lettura in `/srv/sito`).
+
+## Aggiornamento del 04/11/2026 notte – Importa DXF/IFC (da pubblicare con `?v=20261104b`, che sostituisce `?v=20261104a`)
+
+Decisione del 04/11/2026: disegni DXF e modelli IFC letti **direttamente nel browser**, in una pagina separata.
+- `importa-dxf-ifc.html` (menu Patrimonio, accanto a Modelli 3D): file → pianta dei corpi → posa → risultato sulla mappa
+  → «Apri nella pagina Modelli 3D» (passaggio nella `sessionStorage` della scheda, `modelli3d.html?modello=locale`) o
+  «Scarica il modello (.geojson)»; si riapre anche un `.geojson` già convertito. Passo 5: istruzioni per i file pesanti
+  (oltre 30 MB) con `EuGEnioVisure.exe`, Python o Docker.
+- `modelli_import.js`: la stessa logica di `fase10-edifici3d/edifici3d/importa.py` (controlli, tetti sul file, tetti e
+  corpi dai triangoli, posa, GeoJSON «eugenio-modello-1»), con dxf-parser, web-ifc, Clipper (al posto di shapely) e
+  proj4js (al posto di pyproj; sistemi italiani definiti nel file). Gira nel Web Worker `modelli_worker.js` e in node per
+  i test di parità; web-ifc (7 MB) si carica solo quando arriva un IFC, con un solo thread.
+- Limiti: 50 MB (avviso oltre 30), 180 s (poi il worker si chiude), 200.000 entità, 2 milioni di triangoli, 1 GB di
+  memoria per web-ifc; DXF solo di testo, IFC solo STEP; 3DSOLID non letti (avviso).
+- La pagina non manda niente al server: le sue sole richieste sono le librerie e le tessere dell'ortofoto di sfondo
+  (`/api/ortofoto/…`). Nessun'altra pagina scarica le librerie dei modelli (test in `tests/test_costruisci_pagine.py` e
+  prova nel browser in `fase10-edifici3d/tests/test_importa_browser.py`).
+- Pagine 3D: «Usa il tuo modello» rimanda alla pagina nuova; `edificio3d.js` apre `?modello=locale`.
+
+## Aggiornamento del 04/11/2026 notte – analisi 5 e 7–13, ortofoto di Bolzano e Trento, Fase E (da pubblicare con `?v=20261104a`)
+
+- `analisi_uni.js` (nuovo): nelle pagine Edificio › Fabbisogno, › Comunità energetiche, › Facciate e tetti, › Pompe di
+  calore e solare termico, › Clima che cambia e Fotovoltaico › Prefattibilità LEED, una riga per analisi
+  (`[data-analisi="N"]`) che parte da «analisi non disponibile in questa installazione» (vale anche senza JavaScript e sui
+  mirror senza la rotta) e chiede `GET /api/analisi/stato`; se il modulo privato del server rende disponibile l'analisi,
+  la riga diventa verde e dice che il modulo è installato e la pagina di calcolo non è ancora pubblicata. Le pagine restano
+  segnaposto: nessun contenuto delle norme UNI.
+- `ortofoto.html` e `sitografia.html`: fonti nuove di Bolzano 2023 e Trento 2015 (il selettore della pagina le prende dal
+  server). Prova: `ortofoto.html?lat=46.4983&lon=11.3548&z=17`.
+- Test nuovo `test_pagine_fase_e_aggancio_analisi` (13 test in tutto). Provato in Chromium headless con le rotte vere
+  `analisi` e `ortofoto` della fase 4: senza modulo, con un modulo finto, pagina Ortofoto su Bolzano e Trento.
+
+## Aggiornamento del 04/11/2026 – Previsioni: schede, «Solo clima», comune deselezionabile (da pubblicare con `?v=20261104a`)
+
+- **Cambio di comune** (`app.js`, `azzeraPerComune`): il file dei consumi caricato, i risultati e una risposta ancora in
+  arrivo appartengono al comune di prima e si tolgono, con il messaggio «Comune cambiato: il file dei consumi caricato è
+  stato tolto…». Anche un file ancora in lettura (controllo `.xls`) viene scartato.
+- **Secondo clic sul comune scelto = lo si toglie** (evidenziazione, elenco su «Scegli…», riquadro del comune; nella
+  previsione anche file e risultati; nella Legge 10 anche `?comune=` e i passi dei risultati). Funzione comune
+  `EUGENIO.alterna(istat, attuale, scegli, togli)` e `EUGENIO.togliScelto(percorsi)` in `minimappa.js`, usata da
+  `app.js` e `legge10.js` (con una copia minima se `minimappa.js` manca). Nella pagina Dati (scelta multipla) la mappa
+  alternava già; ora anche un comune già scelto nei risultati della ricerca si toglie. Patrimonio e pagine 3D scelgono
+  edifici, non comuni: invariate.
+- **«Cosa prevedere»** al passo 2: «I consumi, con il meteo» (come prima) o «Solo il clima, senza consumi»: niente
+  file, niente «Modo» (verifica), pulsante «Mostra le previsioni del clima» → `GET /api/clima-previsto/{istat}` con
+  modalità, orizzonte e variabili spuntate.
+- **Risultato a schede** (`.schede.schede-previsione`): «Consumo» (spenta, con una nota, in Solo clima) e una scheda per
+  ogni variabile meteo attiva nell'ordine delle opzioni della pagina (`COV`). Ogni scheda ha il suo grafico (con la
+  freccina del riquadro di `grafici.js`, valori al passaggio del mouse, zone del meteo meno affidabile), le cifre della
+  verifica (Consumo), gli avvisi e «Scarica la previsione (CSV)»; sotto le schede i pulsanti dei report.
+- **CSV con tutti i valori** in colonne affiancate: `data;parte;consumo;q01…q09;[reale];<variabili meteo>;fonte_meteo`,
+  con le righe del passato («dati caricati» o «osservato») e quelle della previsione; in Solo clima file
+  `clima_previsto_<istat>_<modalita>.csv` senza le colonne dei consumi. Report PDF/Excel/ODS: vedi il README della fase 4
+  (colonne affiancate, grafici in sequenza nel PDF).
+- Provato in Chromium headless (Playwright) con le rotte simulate dal codice vero della fase 4: schede e riquadro,
+  CSV, PDF ed Excel, Solo clima in lungo termine, cambio e deselezione del comune, Legge 10.
+
+## Aggiornamento del 04/11/2026 sera – visure catastali in Patrimonio, Fase D (da pubblicare con `?v=20261104a`)
+
+Importazione dei file di **EuGEnio Visure** (fase 11, lettore delle visure che gira sul PC dell'utente):
+- `visure_abbina.js` (nuovo, senza DOM, gira anche in node): lettura di `indice.csv`, `edifici_visure.csv`,
+  `patrimonio_con_visure.csv`, `visure.json` (e di un elenco JSON generico di unità), scarto delle colonne con dati
+  personali, abbinamento delle unità agli edifici e colonne `visura_…`; **stessa logica** di
+  `fase11-visure/visure/arricchisci.py` e `piani.py`, controllata da un test che fa girare il file con node;
+- `visure_patrimonio.js` (nuovo): passo «Visure catastali (facoltativo)» in `patrimonio.html` (dopo il Risultato), riga
+  «Visura» nelle schede, conteggi, unità senza edificio, «Cerca gli edifici delle visure», «Togli le visure»;
+- `patrimonio.js`: funzione `esegui` (geolocalizzazione riutilizzabile), evento `eugenio:patrimonio-risultato`, colonne
+  `visura_…` nel CSV e nel GeoJSON scaricati (non nel report, che si fa sul server); i file di EuGEnio Visure caricati
+  al passo 1 mandano al server solo `id;comune;sezione;foglio;particella` (o il file senza le colonne delle visure);
+- `patrimonio.html` (passo nuovo, testo del passo 1, due script), `stile.css` (`.edificio .visura`, `.non-abbinate`),
+  `visure.html` (pagina rifatta: cosa fa, come si usa, condizioni d'uso dei dati catastali, fonti; resta «in sviluppo»
+  nel menu finché l'.exe non è pubblicato), `sitografia.html` (pypdf per le visure, PyInstaller).
+- Prova in Chromium headless: `fase11-visure/tests/test_patrimonio_browser.py` (5 casi, sito vero e `/api/patrimonio`
+  simulata; controlla anche che al server non arrivi nulla delle visure).
+
+## Aggiornamento del 04/11/2026 sera – edifici 3D, Fase C (da pubblicare con `?v=20261104a`)
+
+- **Pagina 3D** (`edificio3d.js` e le 9 pagine 3D): se l'archivio ha `lidar/indice.json`, le falde misurate dal LiDAR
+  sostituiscono le stime del DBTR (gronda, colmo, tetto; fonte «LiDAR – …» con la qualità); tabella «Falde dei tetti»
+  (pendenza, orientamento, superficie inclinata e in pianta); falde inclinate disegnate a gradini colorati per
+  orientamento; un'area FV disegnata su una falda ne prende inclinazione e orientamento; sezione «Falde dei tetti» nel
+  report. «Usa il tuo modello (DXF o IFC)»: apre il GeoJSON prodotto sul PC con `importa-modello` (fase 10), **solo nel
+  browser**, senza inviarlo al server; gli edifici dell'archivio sotto il modello si nascondono.
+- **Demo sintetica** (`dati/edifici3d/lidar/`): falde del campione LiDAR sintetico, dichiarate come inventate.
+- **Pagina interna** `interno/edifici.html` (+ `edifici.js`, `interno.css`): stato della pipeline notturna; fuori da
+  menu, testata (`costruisci_pagine.py` lavora solo sulle pagine della cartella principale) e robots.txt, `noindex`.
+  Protetta da Cloudflare Access (Caddy e api, README della fase 4).
+- `stile.css`: legenda delle falde, blocchi «Falde dei tetti» e «Usa il tuo modello».
+- Prove: 12 test (uno nuovo, `test_pagine_fase_c`); Chromium headless (Playwright, servito da Caddy per i Range dei
+  PMTiles): falde del campione sul corpo C1 (capanna, 2 falde, fonte LiDAR), falde a gradini sulla mappa, area FV sulla falda
+  sud (23°, 180°, aderente), report con le falde, modello DXF aperto senza nessuna richiesta POST, pagina interna con
+  dati simulati (zone, fonti in attesa, notti, disco) e con 403.
+
+## Aggiornamento del 04/11/2026 – edifici 3D, Fase B (da pubblicare con `?v=20261104a`)
+
+- **Patrimonio › Ortofoto** non è più un segnaposto: `ortofoto.html` + `ortofoto.js`, mappa MapLibre con le ortofoto del
+  proxy del server (`/api/ortofoto/fonti`, tessere `/api/ortofoto/<fonte>/<z>/<x>/<y>.jpg`), selettore delle fonti che
+  coprono la zona (stato: «licenza verificata», «uso da confermare», «solo consultazione»), **licenza e citazione sempre
+  sotto la mappa**, contorni degli edifici se c'è l'archivio 3D (non sulla demo sintetica), ortofoto AGEA dei siti da
+  `/edifici3d/cc-by/ortofoto_siti/indice.json`; `?lat=&lon=&z=` e `?fonte=`.
+- **Pagina 3D** (`edificio3d.js`, `edifici_calcoli.js`, `ombre_worker.js`), passi nuovi: Obblighi di legge (D.Lgs. 199/2021,
+  Allegato III; zona e GG del DPR 412/93; S/V e H'T della Tabella 10 del DM requisiti minimi aggiornato), Facciate al sole
+  (pezzi esposti, tabella per orientamento, grafico, lastre colorate sulla mappa da giallo chiaro a blu scuro), Confronto
+  con PVGIS (tabella e grafico mensile), Classifica di priorità del patrimonio (edifici aggiunti dalla pagina o file di
+  sedi, pesi modificabili, lista nel browser); sfondo «ortofoto» sotto la mappa con l'attribuzione; orizzonte del terreno
+  fino a 25 km unito a quello degli edifici (FV, facciate, PVGIS); quote dei corpi relative al terreno dell'edificio
+  scelto. Report `edificio` con le sezioni nuove e la vista con l'ortofoto (PNG) con licenza e citazione nella didascalia.
+- **Pagine nuove** dello strumento 3D (generate dallo stesso corpo di `modelli3d.html`, `data-vista`): Fotovoltaico ›
+  Sole e irradiazione (`facciate`), › Confronto con PVGIS (`pvgis`), › D.Lgs. 199/2021 (`dlgs199`), Edificio › Obblighi
+  di legge (`obblighi`); Edificio › Consumi, firma energetica e priorità ha anche la classifica. Nel menu le cinque voci
+  passano a «sperimentale». Edificio › Facciate e tetti resta segnaposto con un rimando alla pagina delle facciate.
+- Sitografia: ortofoto regionali, EOX 2016, PVGIS, Copernicus DEM, D.Lgs. 199/2021 e DM 28/10/2025.
+- Test: 2 nuovi (pagine e menu della Fase B; calcoli di facciate, orizzonte unito, obblighi e classifica con node), 11 in
+  tutto. Prova in Chrome headless (Playwright, WebGL software) con il server vero della fase 4 e le fonti dal vivo:
+  Ortofoto (RER, EOX, PCN), pagina 3D completa (obblighi, facciate, FV, PVGIS, classifica, sfondo, PDF con la figura).
+
+## Aggiornamento del 04/11/2026 – edifici 3D, Fase A (da pubblicare con `?v=20261103a`)
+
+- **Strumento 3D** in cinque pagine (stessa pagina, apertura diversa con `data-vista`): Patrimonio › Modelli 3D,
+  Edificio › Geometria e luce naturale, Edificio › Consumi, firma energetica e priorità, Fotovoltaico › Ombre e
+  percorso del sole, Fotovoltaico › Producibilità con le ombre. Nel menu l'etichetta passa da «in sviluppo» a
+  «sperimentale». Passi: edificio (clic sulla mappa), corpi (gronda, colmo, tetto, piani correggibili; divisione con una
+  linea), piani e superfici (valori dell'utente → stima), indicatori geometrici (con il grafico delle pareti per
+  orientamento), ombre (giorno, ora, ciclo animato), aree FV (rettangolo sul tetto con fascia di rispetto, inclinazione,
+  orientamento e montaggio precompilati e modificabili, moduli e kWp), consumi e firma energetica, report.
+- File: `edificio3d.js` (pagina), `edifici_calcoli.js` (calcoli senza DOM: piani, superfici, indicatori, sole NOAA,
+  ombre, orizzonte, FV, firma; usato anche da `valori_sedi.js` e dal worker), `ombre_worker.js` (profilo d'orizzonte),
+  `lib/maplibre-gl/` (MapLibre GL JS 5.24.0) e `lib/pmtiles/` (PMTiles 4.4.1), con licenze e `lib/README.md`.
+- Dati: da `/edifici3d/cc-by/er/prodotti/` (Caddy) o, se non ci sono, dalla **demo sintetica** `dati/edifici3d/`
+  (isolato inventato vicino a Rimini, avviso «Dati sintetici di esempio» in pagina e nel report); `?archivio=demo` la
+  forza. Clima dalle rotte `/api/edifici/…`; se mancano, producibilità con un anno di cielo sereno ridotto (dichiarato) e
+  firma solo con i consumi d'esempio.
+- **Patrimonio**: colonne facoltative `piani_fuori_terra`, `piani_interrati`, `superficie_lorda`, `superficie_netta`,
+  `superficie_catastale`, `anno_costruzione` (con nomi alternativi) escluse dai valori da disegnare; nuovo passo
+  «Consumi per metro quadro» (e tabella nel report) quando c'è una superficie. I file vecchi non cambiano.
+- Sitografia: MapLibre, PMTiles, Shapely, pyproj, rasterio e GDAL. Stile: sezione «edifici 3D» in fondo a `stile.css`.
+- Test: 2 nuovi (pagine 3D con librerie locali e licenze, niente CDN; calcoli JS con node), 9 in tutto. Prova in Chrome
+  headless (Playwright, WebGL software): selezione, divisione, aree FV, producibilità, firma, report.
+
+## Aggiornamento del 03/11/2026 – menu a cinque gruppi e pagine segnaposto (da pubblicare con `?v=20261103a`)
+
+**Nuovo menu principale** (`parti/testata.html`, regole in `sito/README_stile.md` § «Menu a gruppi»): cinque gruppi
+con un sottomenu a tendina ciascuno (`<details class="voce-gruppo">`: si apre con clic, Invio o Spazio anche senza
+JavaScript; `aspetto.js` tiene aperto un gruppo alla volta, chiude con Esc o un clic fuori, frecce ↓ ↑ Inizio Fine tra
+le voci, ← → tra i gruppi, Tab fuori dal gruppo lo chiude). Sul telefono gli stessi gruppi sono elenchi richiudibili
+nel pulsante Menu, con il gruppo della pagina già aperto. `costruisci_pagine.py` segna il gruppo della pagina con
+`data-attivo` (tre test nuovi in `tests/test_costruisci_pagine.py`, 7 in tutto).
+
+| Gruppo | Voci |
+|---|---|
+| Clima e meteo | Dati climatici (`dati.html`), Legge 10 (`legge10.html`), Previsioni (`./`) |
+| Patrimonio | Patrimonio (`patrimonio.html`), Ortofoto, LiDAR, Modelli 3D, Visure |
+| Edificio | Geometria e luce naturale; Consumi, firma energetica e priorità; Fabbisogno con le metodiche UNI; Facciate e tetti (sole, tetti freddi e verdi); Pompe di calore e solare termico; Comunità energetiche; Clima che cambia; Obblighi di legge |
+| Cogenerazione | Spark spread; Cogeneratore sull'edificio con FV e accumulo; Confronto tra alternative e trigenerazione; Emissioni; Rischio prezzo; Budget di dissipazione CAR (report 13–20) |
+| Fotovoltaico | Ombre e percorso del sole; Sole e irradiazione su tetti e facciate; Producibilità con le ombre; Confronto con PVGIS; D.Lgs. 199/2021 Allegato III; Prefattibilità LEED; Prezzo catturato, accumuli e mercato (report 1–12, in attesa della licenza GME) |
+
+Le voci che non rientrano nei gruppi sono nella riga in alto a destra («Altre pagine»): **Indicatori** (prima voce),
+Come funziona, F.A.Q., Sitografia, Mirror, Contattaci; Iscriviti, ✱ e ◐ restano nella seconda riga; Privacy e Licenza
+restano nel piè. Sul telefono le stesse voci sono nel Menu sotto «Altre pagine».
+
+**25 pagine segnaposto** (classe `articolo segnaposto`): gruppo, titolo, stato («in sviluppo» oppure «In attesa della
+licenza GME»), cosa farà, come funzionerà, fonti previste con la licenza, collegamenti alle altre pagine del gruppo.
+Nessun dato né risultato; le pagine dei gruppi Cogenerazione e del mercato FV hanno l'avviso sul GME (collegato a
+`faq.html#dati-mercato`, nuova ancora). File: `ortofoto.html`, `lidar.html`, `modelli3d.html`, `visure.html`,
+`edificio-*.html` (8), `cog-*.html` (6), `fv-*.html` (7). Progetti in `fase10-edifici3d`, `fase11-visure`,
+`fase12-gme-fotovoltaico`, `fase13-cogenerazione`.
+
+**Allineamento ai termini di Zornade del 18/09/2026**: nuova F.A.Q. `#zornade` (riuso con attribuzione e fonti, niente
+rivendita dei dati grezzi, niente re-identificazione, estrazione massiva = sospensione della chiave, cache a 12 mesi come
+scelta di privacy, dati catastali non ufficiali), `licenza.html` (fonti e tabella del mirror), `patrimonio.html` (avviso
+nelle fonti) e `patrimonio.js` (testo di licenza nei file scaricati).
+
+Provato con Chrome senza interfaccia (Playwright) a 1440, 1000 e 390 px: nessun errore, nessuno scorrimento
+orizzontale, tastiera sui gruppi (↓ apre e porta alla prima voce, → passa al gruppo accanto, Esc chiude).
+Pubblicazione: `AGGIORNAMENTO_2026-11-03.md`.

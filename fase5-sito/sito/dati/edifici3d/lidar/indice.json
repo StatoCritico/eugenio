@@ -1,0 +1,28 @@
+{
+ "cella": 0.01,
+ "attribuzioni": {
+  "campione_dsm": {
+   "descrizione": "Campione LiDAR sintetico – DSM (prova)",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "scheda": "",
+   "tessere": 7
+  },
+  "campione_las": {
+   "descrizione": "Campione LiDAR sintetico – LAS classificato (prova)",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "scheda": "",
+   "tessere": 1
+  }
+ },
+ "zone": {
+  "campione": {
+   "nome": "Campione sintetico (prova)",
+   "aggiornato": "2026-11-04T01:47:37+00:00"
+  }
+ },
+ "aggiornato": "2026-11-04T01:47:37+00:00",
+ "sintetico": true,
+ "avviso": "Rilievo LiDAR sintetico di esempio: falde e altezze sono inventate e non rappresentano edifici reali."
+}

@@ -1,0 +1,24 @@
+{
+ "corpi": 10,
+ "tessere_corpi": 5,
+ "celle": 1,
+ "licenza": "CC BY 4.0",
+ "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+ "centro": [
+  12.595647,
+  44.052692
+ ],
+ "riquadro": [
+  12.594812,
+  44.052157,
+  12.596482,
+  44.053226
+ ],
+ "cella": 0.01,
+ "nomi_celle": [
+  "1259_4405"
+ ],
+ "tessere_terreno": 11,
+ "sintetico": true,
+ "avviso": "Dati sintetici di esempio: sagome, altezze e terreno sono inventati per mostrare come funziona la pagina; non rappresentano edifici reali."
+}

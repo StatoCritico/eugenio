@@ -1,0 +1,23 @@
+# EuGEnio Visure in Docker: pagina locale su http://127.0.0.1:8770 (solo da questo computer).
+#   docker compose -f docker/docker-compose.yml up --build
+# Il lettore non apre connessioni verso l'esterno; la porta è pubblicata solo su 127.0.0.1. Per le letture in blocco
+# senza alcuna rete usare `docker run --network none …` (vedi il Dockerfile e il README della fase 11).
+services:
+  visure:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      additional_contexts:
+        fase10: ../../fase10-edifici3d      # convertitore dei modelli DXF/IFC (edifici3d/importa.py)
+    image: eugenio-visure:0.1.0
+    ports:
+      - "127.0.0.1:8770:8770"
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 3g                           # la conversione dei modelli usa fino a 2 GB (8 con --grande: alzare)
+    volumes:
+      - ./lavoro:/lavoro
+    restart: unless-stopped

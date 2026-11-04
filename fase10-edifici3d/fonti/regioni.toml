@@ -1,0 +1,1015 @@
+# Fonti per regione (fase 10, Fase E, § 15 della proposta: «verifica regione per regione di DB topografici con altezze
+# e ortofoto in CC BY»). Un blocco per regione o provincia autonoma, quattro temi:
+#   edifici   DB topografico con sagome e, se c'è, altezza per corpo (unità volumetriche) o modello 3D
+#   dtm       modello del terreno
+#   dsm       modello delle superfici o nuvola LiDAR (altezze e falde dei tetti)
+#   ortofoto  ortofoto a colori (solo RGB: l'infrarosso è sempre escluso)
+#
+# Campi di ogni [[regione.fonte]]:
+#   tema, nome, licenza, stato, verifica (data), scheda (pagina o scheda RNDT), servizio (URL del servizio o del
+#   download, se c'è), prova (esito della prova dal vivo), url_prova (URL che `python -m edifici3d regioni --prova`
+#   ricontrolla), altezza (solo edifici: campo dell'altezza o «no»), motivo, usata_in (file di EuGEnio che la usano).
+#
+# Stati:
+#   "attiva"          licenza aperta verificata e compatibile con la CC BY 4.0 di EuGEnio (CC BY 4.0, CC0, IODL 2.0,
+#                     CC BY 3.0) scritta in una scheda ufficiale (RNDT o portale della Regione) E servizio o download
+#                     provato dal vivo il giorno della verifica. Solo queste si possono accendere nei TOML di EuGEnio.
+#   "in attesa"       il dato c'è ma manca qualcosa: licenza non scritta o «dato pubblico» senza licenza, accesso solo su
+#                     richiesta, servizio non raggiungibile dal container di sviluppo (da riprovare dal server), oppure
+#                     manca ancora l'adattatore del formato. Il motivo è scritto.
+#   "non disponibile" nessun dato trovato, oppure licenza incompatibile (non commerciale, condivisione allo stesso modo,
+#                     «tutti i diritti riservati», ortofoto AGEA concesse in licenza alla Regione).
+#
+# Metodo del 04/11/2026: ricerca nel catalogo nazionale RNDT (CSW di geodati.gov.it, schede ISO lette per licenza e
+# collegamenti), siti delle Regioni, prove dal vivo dal container di sviluppo (GetCapabilities, GetMap in EPSG:3857,
+# DescribeFeatureType, query ArcGIS, richieste di 1 kB sui download). **Nessun blocco aggirato**: dove un sito chiude la
+# connessione, risponde 502/503 o chiede un captcha, la fonte resta «in attesa» con il motivo. Alcuni portali (Piemonte,
+# Umbria, Calabria, Molise, Basilicata, Campania, Abruzzo, Marche) chiudono le connessioni dal container (fuori Italia):
+# vanno riprovati dal server di Milano con `python -m edifici3d regioni --prova`.
+#
+# Fonti nazionali (valgono per tutte le regioni) in fondo, sotto [nazionale].
+
+verificato = "2026-11-04"
+licenze_compatibili = ["CC BY 4.0", "CC0 1.0", "IODL 2.0", "CC BY 3.0", "CC BY 2.5"]
+
+# ============================================================================================== Nord-Ovest
+[[regione]]
+codice = "01"
+nome = "Piemonte"
+nota = "Portali regionali (geoportale.piemonte.it, geomap.reteunitaria.piemonte.it, geoservices.csi.it) chiudono la connessione dal container: tutte le prove dal vivo da rifare dal server."
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "BDTRE – Unità volumetrica (UN_VOL)"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_piemon:6dacd512-8862-491a-a37b-c032cd54d081"
+servizio = "https://geoservices.csi.it/ms/wfs/taims/rp-01/taimswfs/bdtre_imm?service=WFS&version=1.0.0&request=GetCapabilities"
+url_prova = "https://geoservices.csi.it/ms/wfs/taims/rp-01/taimswfs/bdtre_imm?service=WFS&version=1.0.0&request=GetCapabilities"
+altezza = "da verificare (classe UN_VOL delle specifiche nazionali)"
+prova = "connessione chiusa dal server (container)"
+motivo = "licenza CC BY 4.0 nella scheda generale BDTRE (r_piemon:903f1ad3-…), «condizioni sconosciute» in quella di UN_VOL; WFS non raggiungibile dal container"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "Ripresa aerea ICE 2009-2011 – DTM 5 m"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_piemon:224de2ac-023e-441c-9ae0-ea493b217a8e"
+motivo = "licenza CC BY 4.0 nella scheda RNDT; download non provato (portale non raggiungibile dal container)"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "Ripresa aerea ICE 2009-2011 – DSM"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_piemon:12a0bdd2-166a-4825-8645-1a4605b70f48"
+motivo = "licenza CC BY 4.0 nella scheda RNDT; download non provato; rilievo del 2009-2011"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ripresa aerea ICE 2009-2011 – Ortofoto RGB (WMS)"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_piemon:ec27a3da-2bd8-4f7d-8905-3ac28f488943"
+servizio = "https://geomap.reteunitaria.piemonte.it/ws/taims/rp-01/taimsortoregp/wms_ortoregp2010"
+url_prova = "https://geomap.reteunitaria.piemonte.it/ws/taims/rp-01/taimsortoregp/wms_ortoregp2010?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities"
+prova = "connessione chiusa dal server (container)"
+motivo = "licenza CC BY 4.0 nella scheda RNDT; WMS da provare dal server, poi TOML in ortofoto/. Le AGEA 2015 e 2024 sono «tutti i diritti riservati»: escluse"
+
+[[regione]]
+codice = "02"
+nome = "Valle d'Aosta"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "CTRN – Fabbricati; Edificato 2018 da ortofoto"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_vda:01533-META:20160908:170944"
+altezza = "no (sagome)"
+motivo = "licenza CC BY (repertorio SCT Outil) nelle schede RNDT; senza altezze: servono le altezze dal DSM LiDAR; download non provato"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM LiDAR 2005/2008, passo 2 m"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_vda:04387-META:20240110:164800"
+motivo = "licenza CC BY nella scheda RNDT (CC_BY_DTM_v2.pdf); download non provato"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM LiDAR 2005 passo 0,5 m e 2008 passo 2 m"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_vda:04324-META:20220916:094600"
+motivo = "licenza CC BY nella scheda RNDT (CC_BY_DSM_v2.pdf); download non provato; rilievi del 2005-2008"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto 2012 (e AGEA 2009, 2015)"
+licenza = "CC BY-NC 4.0 (2012); AGEA a discrezione dell'ente"
+stato = "non disponibile"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_vda:00030-META:20160908:170935"
+motivo = "la 2012 è non commerciale, le AGEA hanno condizioni dell'ente proprietario; restano in CC BY solo le ortofoto 2005/06 e dell'alluvione 2000, troppo vecchie"
+
+[[regione]]
+codice = "03"
+nome = "Lombardia"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "DBGT – Tema Edificato, classe 020101 Unità volumetrica"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_lombar:3493af32-587c-4bca-92a4-ea717ea1a617"
+servizio = "https://www.cartografia.servizirl.it/arcgis5/rest/services/BaseMap/DBGT_Tema0201_Edificato/MapServer/0"
+url_prova = "https://www.cartografia.servizirl.it/arcgis5/rest/services/BaseMap/DBGT_Tema0201_Edificato/MapServer/0?f=json"
+altezza = "UN_VOL_AV («altezza volume»); UN_VOL_QE quota di estrusione"
+prova = "ArcGIS REST 200, query di 3 unità volumetriche con UN_VOL_AV (es. 3,1 m); anche WFS"
+motivo = "fonte aperta e provata; manca l'adattatore DBGT → corpi (oggi c'è solo quello delle UVL dell'ER)"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM 5×5 m (ed. 2015)"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_lombar:dfc98d60-5f02-4a2b-8113-5ad24cc53a9c"
+servizio = "https://www.cartografia.servizirl.it/download/DTM5_RL.zip"
+url_prova = "https://www.cartografia.servizirl.it/download/DTM5_RL.zip"
+prova = "206 application/x-zip-compressed (primo kB)"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "Copertura rilievi LiDAR regionali"
+licenza = "copyright"
+stato = "non disponibile"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_lombar:975979a7-68e8-4524-b759-0db4d8284939"
+motivo = "nessun DSM regionale in licenza aperta nel catalogo: restano PST e LiDAR PNRR (nazionali)"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto 2018-19, 2021, 2024"
+licenza = "copyright AGEA, licenza d'uso concessa a Regione Lombardia"
+stato = "non disponibile"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_lombar:bca4e4bb-88fe-4683-8ace-8330a5f403a6"
+motivo = "ortofoto AGEA concesse alla Regione: non riutilizzabili da terzi"
+
+# ============================================================================================== Nord-Est
+[[regione]]
+codice = "04.1"
+nome = "Provincia autonoma di Bolzano"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "edifici con altezza"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessuna scheda di edifici con altezza nel RNDT; le altezze si possono ricavare da DSM − DTM a 0,5 m (CC0) con sagome OSM o aggregati"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM 0,5 m (aree insediative) e 2,5 m"
+licenza = "CC0 1.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/p_bz:Elevation:DigitalTerrainModel-0.5m"
+servizio = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1"
+url_prova = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1&request=GetCapabilities"
+prova = "WCS 2.0.1 GetCapabilities 200, coperture p_bz-Elevation__DigitalTerrainModel-0.5m e -2.5m"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM 0,5 m e 2,5 m"
+licenza = "CC0 1.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/p_bz:Elevation:DigitalElevationModel-0.5m"
+servizio = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1"
+url_prova = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1&request=GetCapabilities"
+prova = "WCS 2.0.1 GetCapabilities 200, copertura p_bz-Elevation__DigitalElevationModel-0.5m (anche Adige 0,2 m 2024)"
+motivo = "pronta per una zona della pipeline (TOML in zone/): manca solo il TOML della zona"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto 2023 (20 cm)"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/p_bz:Orthoimagery:Aerial-2023-RGB"
+servizio = "https://geoservices.buergernetz.bz.it/mapproxy/ows"
+url_prova = "https://geoservices.buergernetz.bz.it/mapproxy/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities"
+prova = "GetMap EPSG:3857 su Bolzano e Merano: 200 image/jpeg"
+usata_in = "ortofoto/bolzano.toml (bolzano2023)"
+
+[[regione]]
+codice = "04.2"
+nome = "Provincia autonoma di Trento"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "Edifici P.A.T. 3D (sagome alla gronda)"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/p_TN:6a7806d8-63fa-4445-b009-9412c99d8fd2"
+servizio = "https://siatservices.provincia.tn.it/idt/vector/p_TN_6a7806d8-63fa-4445-b009-9412c99d8fd2.zip"
+url_prova = "https://siatservices.provincia.tn.it/idt/vector/p_TN_6a7806d8-63fa-4445-b009-9412c99d8fd2.zip"
+altezza = "da verificare nel file (edifici 3D)"
+prova = "206 application/zip (primo kB)"
+motivo = "fonte aperta e provata; manca l'adattatore del formato → corpi"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "LiDAR DTM PAT 2006/2009, 1 m e 2 m"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/p_TN:2989b73f-f243-4fac-b1d0-6464863a7d1d"
+servizio = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dtm_1mX1m/"
+url_prova = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dtm_1mX1m/"
+prova = "200 text/html (cartella dei file)"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "LiDAR DSM PAT 2006/2009, 1 m"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/p_TN:06df5d0a-f8e8-402b-9a5a-7e92bf75929f"
+servizio = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dsm_1mX1m/"
+url_prova = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dsm_1mX1m/"
+prova = "200 text/html (cartella dei file)"
+motivo = "rilievo 2006-2009: edifici più recenti assenti"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto PAT 2015 RGB (20 cm)"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/p_TN:f2e88f1b-05d9-4942-93ee-857a0a9e1f0b"
+servizio = "https://siat.provincia.tn.it/geoserver/stem/ecw-rgb-2015/wms"
+url_prova = "https://siat.provincia.tn.it/geoserver/stem/ecw-rgb-2015/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities"
+prova = "GetMap EPSG:3857 su Trento: 200 image/jpeg"
+usata_in = "ortofoto/trento.toml (trento2015)"
+
+[[regione]]
+codice = "05"
+nome = "Veneto"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "Edifici del Veneto (feb. 2022, da CTR e DB geotopografici)"
+licenza = "IODL 2.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_veneto:edifici_veneto"
+servizio = "https://idt2-geoserver.regione.veneto.it/geoserver/wfs?typeName=rv:edifici_veneto_feb2022"
+url_prova = "https://idt2-geoserver.regione.veneto.it/geoserver/wfs?service=WFS&version=1.1.0&request=DescribeFeatureType&typeName=rv:edifici_veneto_feb2022"
+altezza = "no (campi edi_ty, edi_uso, edi_stat: solo sagome)"
+prova = "DescribeFeatureType 200"
+motivo = "sagome aperte (IODL 2.0, compatibile con CC BY); le altezze vanno prese dal LiDAR (PST, PNRR) o da Zornade (ODbL)"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM 5 m da voli LiDAR (quadro d'unione)"
+licenza = "IODL 2.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_veneto:c0101071_Lidar5m"
+motivo = "licenza IODL 2.0; il servizio dà il quadro d'unione, il download per tessera non è stato provato"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM regionale"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessun DSM regionale nel catalogo: restano PST e LiDAR PNRR"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto regionali"
+licenza = "tutti i diritti riservati"
+stato = "non disponibile"
+verifica = "2026-11-04"
+scheda = "https://www.regione.veneto.it/web/ambiente-e-territorio/ortofoto"
+motivo = "«Tutti i diritti riservati» (verifica del § 6 della proposta); nessuna ortofoto aperta nel RNDT"
+
+[[regione]]
+codice = "06"
+nome = "Friuli Venezia Giulia"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "IRDAT – Edificato CTRN (per elemento)"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_friuve:m10812-cc-i11555"
+servizio = "https://serviziogc.regione.fvg.it/geoserver/EDIFICI/wfs"
+url_prova = "https://serviziogc.regione.fvg.it/geoserver/EDIFICI/wfs?request=GetCapabilities&version=2.0.0"
+altezza = "ALTEZZA, QUOTA_PIEDE, QUOTA_GRONDA, VOLUME"
+prova = "WFS 2.0.0 GetCapabilities 200 (AccessConstraints e Fees NONE), DescribeFeatureType con ALTEZZA e QUOTA_GRONDA"
+motivo = "CC BY 4.0 nella scheda del servizio di download (le schede dei singoli strati dicono «Non indicato»); manca l'adattatore → corpi"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "Modelli altimetrici rilievo LiDAR RAFVG 2017-2020 (DTM 0,5 m)"
+licenza = "non indicata"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://irdat.regione.fvg.it/consultatore-dati-ambientali-territoriali/detail/irdat/dataset/11826"
+servizio = "https://eaglefvg.regione.fvg.it/eagle/main.aspx?configuration=guest"
+motivo = "scaricabili da Eagle.fvg (ospite), ma la scheda non indica la licenza («Use constraints: -»): da chiedere alla Regione"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM primo e ultimo impulso 0,5 m e nuvole LAS RAFVG 2017-2020"
+licenza = "non indicata"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://irdat.regione.fvg.it/consultatore-dati-ambientali-territoriali/detail/irdat/dataset/11647"
+motivo = "come il DTM: licenza da chiedere; ottima fonte (tutta la regione, 2017-2020)"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "True ortofoto RAFVG 2017-2020"
+licenza = "non indicata (servizio WMS: CC BY 4.0)"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_friuve:m10414-cc-i11641"
+servizio = "https://serviziogc.regione.fvg.it/geoserver/ORTOFOTO/wms"
+prova = "WMS ORTOFOTO 200 ma con soli quadri d'unione e fotogrammi, senza EPSG:3857"
+motivo = "licenza del dato non indicata e nessun WMS dell'ortofoto trovato"
+
+[[regione]]
+codice = "07"
+nome = "Liguria"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "Edifici e manufatti – CTR 1:5000 2007/2013, II edizione 3D/DB topografico"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_liguri:D.2237"
+servizio = "https://geoservizi.regione.liguria.it/geoserver/M2237/wfs"
+url_prova = "https://geoservizi.regione.liguria.it/geoserver/M2237/wfs?version=2.0.0&request=getcapabilities"
+altezza = "dalle coordinate z degli elementi 3D (nessun campo di altezza)"
+prova = "WFS 2.0.0 GetCapabilities 200 (AccessConstraints e Fees NONE), strati M2237:L8178 (edificato) e L8177"
+motivo = "fonte aperta e provata; altezza da ricavare dalla z: manca l'adattatore"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM – Modello digitale del terreno Liguria ed. 2023"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_liguri:D.2056"
+servizio = "https://geoservizi.regione.liguria.it/geoserver/M2056/wms"
+url_prova = "https://geoservizi.regione.liguria.it/geoserver/M2056/wms?version=1.3.0&request=GetCapabilities"
+prova = "WMS GetCapabilities 200; download dalla pagina srvcarto (D.2056.DS)"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM regionale"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessun DSM regionale nel catalogo (solo derivati LiDAR 2008): restano PST e LiDAR PNRR"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto regionali recenti"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "in CC BY solo ortofoto vecchie o locali (1986, Parco di Portofino): nessuna ortofoto recente dell'intera regione"
+
+[[regione]]
+codice = "08"
+nome = "Emilia-Romagna"
+nota = "Fonti già nel progetto (Fasi A–C): fonti/emilia_romagna.toml, zone/rimini.toml, ortofoto/emilia_romagna.toml."
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "DBTR – Unità volumetrica (UVL)"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/database-topografico-regionale/immobili-e-antropizzazioni/edificato/layer-6"
+altezza = "H_uvl (gronda o colmo da verificare)"
+usata_in = "fonti/emilia_romagna.toml (dbtr_uvl)"
+motivo = "GeoPackage da scaricare a mano la prima volta (Fase A)"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM 5×5 m (2025) e DTM 0,5 m RER 2022, 2023-24, 2025-26"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_emiro:2024-01-31T143925"
+servizio = "https://servizigis.regione.emilia-romagna.it/wcs/dtmrer2023_24"
+url_prova = "https://servizigis.regione.emilia-romagna.it/wcs/dtmrer2023_24?service=WCS&version=1.0.0&request=GetCapabilities"
+prova = "WCS GetCapabilities 200"
+usata_in = "zone/rimini.toml (rer_dtm05, rer_dtm5)"
+motivo = "nuova nel catalogo la scheda del DTM 0,5 m RER 2025-26 (r_emiro:2026-09-03T160720)"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM First/Last 0,5 m RER 2023-24 e RER 2022; DSM della costa 2019 (1 m)"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_emiro:2026-10-23T134125"
+servizio = "https://servizigis.regione.emilia-romagna.it/wcs/dsmfirst2023_24"
+prova = "WCS dsmfirst2023_24: 401 (non pubblico); DSMCosta_Lidar2019 exportImage 200"
+usata_in = "zone/rimini.toml (rer_dsm, rer_dsm_costa_2019, entrambe spente)"
+motivo = "licenza CC BY 4.0 ora scritta nelle schede RNDT (DSM 2023-24 del 23/10/2026; costa 2019: r_emiro:2022-02-08T110323); il DSM 2023-24 resta su richiesta; la costa 2019 resta spenta finché la pipeline non limita la fonte alla sua copertura"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto RER 2023-24 (20 cm) e RER 2022"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/immagini/layer-14"
+usata_in = "ortofoto/emilia_romagna.toml (rer2023, stato «da confermare» per la copia: decisione del § 6)"
+motivo = "AGEA 2008, 2020 e 2023 dei WMS regionali: «utilizzo ristretto», escluse"
+
+# ============================================================================================== Centro
+[[regione]]
+codice = "09"
+nome = "Toscana"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "Edificato – unità volumetriche al 2023 (versione 1.0, ottobre 2026)"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_toscan:294be9db-ba10-4e2d-a890-89f87d00f30a"
+servizio = "https://www502.regione.toscana.it/geoscopio/ctr.html"
+altezza = "da verificare (unità volumetriche della CTR 1:10.000)"
+motivo = "licenza CC BY nella scheda RNDT; servizio di download non individuato (solo il visualizzatore Geoscopio)"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM regionale"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://www502.regione.toscana.it/geoscopio/cartoteca.html"
+motivo = "nessuna scheda DTM regionale trovata nel RNDT con le ricerche fatte; la cartoteca Geoscopio risponde: da cercare lì"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM 2021 (1 m, fotogrammetrico)"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_toscan:c5c907bf-50cc-4a76-8787-abc547509c8d"
+servizio = "https://www502.regione.toscana.it/geoscopio/cartoteca.html"
+motivo = "licenza CC BY nella scheda RNDT; download dalla cartoteca non provato per tessera"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto 2023 (20 cm)"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_toscan:66ca3807-815a-4bd1-b626-98ca240d72a2"
+usata_in = "ortofoto/toscana.toml (toscana2023)"
+
+[[regione]]
+codice = "10"
+nome = "Umbria"
+nota = "umbriageo.regione.umbria.it e dati.umbria.it non raggiungibili dal container (connessione chiusa, 502)."
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "Fabbricati – Sistema ecografico catastale 2005-2010"
+licenza = "CC BY 3.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_umbria:00000:20160905:112000"
+altezza = "no (sagome)"
+motivo = "licenza CC BY 3.0 nella scheda; portale non raggiungibile dal container"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM regionale"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "nessuna scheda nel RNDT; portale da provare dal server"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM regionale"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessun DSM regionale trovato: PST e LiDAR PNRR"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto 1977, 1997"
+licenza = "uso non commerciale / vendita vietata"
+stato = "non disponibile"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_umbria:00000:20160205:141500"
+motivo = "condizioni non compatibili e ortofoto vecchie"
+
+[[regione]]
+codice = "11"
+nome = "Marche"
+nota = "Pagina Cartografia della Regione (07/07/2026): «Dove non diversamente specificato, i dati sono distribuiti secondo la Licenza CC-BY 4.0». La pagina dei servizi WMS risponde con un captcha anti-robot: verifica interrotta (nessun aggiramento)."
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "DBT / CTR regionale"
+licenza = "CC BY 4.0 (dichiarazione generale)"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://www.regione.marche.it/Regione-Utile/Paesaggio-Territorio-Urbanistica/Cartografia"
+motivo = "nessuna scheda nel RNDT; servizi protetti da captcha: da verificare a mano dal browser"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM regionale (Orografia 2019)"
+licenza = "CC BY 4.0 (dichiarazione generale)"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://www.regione.marche.it/Portals/0/Paesaggio_Territorio_Urbanistica/Cartografia/Banche_dati/Orografia-2019-Specifiche.pdf"
+motivo = "specifiche pubblicate; download non provato (captcha)"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM regionale"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessun DSM regionale trovato: PST e LiDAR PNRR"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto regionali"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "nessuna scheda nel RNDT; servizi protetti da captcha"
+
+[[regione]]
+codice = "12"
+nome = "Lazio"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "CTRN 2002-2003 1:5.000 (per provincia); DBGT 2014"
+licenza = "CC BY (dati.lazio.it)"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://dati.lazio.it/en/dataset/carta-tecnica-regionale-2002-2003-5k-viterbo"
+altezza = "da verificare (CTRN con quote)"
+motivo = "licenza «Creative Commons Attribution» su dati.lazio.it (CKAN, provato); DBGT 2014 «unico vincolo: nominare la fonte»; formato DXF per provincia: adattatore da fare"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM 5 m (DXF, dalla CTRN 2002-2003)"
+licenza = "CC BY (versione non indicata: cc-by di CKAN)"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://dati.lazio.it/en/dataset/carta-tecnica-regionale-2002-2003-5k-viterbo/resource/07af9ff9-2f8c-4535-939f-e2785889ef1a"
+url_prova = "https://dati.lazio.it/api/3/action/package_search?q=DTM&rows=5"
+prova = "CKAN dati.lazio.it 200: 5 pacchetti CTRN con DTM, license_id «cc-by» senza versione"
+motivo = "versione della CC BY da confermare (CKAN dice solo «cc-by»); DTM vecchio (2002-2003) e in DXF: utile solo dove non c'è altro"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM regionale"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessun DSM regionale trovato: PST e LiDAR PNRR"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto AGEA 2008, 2011; CGR 1994, 2002-03; IT2000NR 2005"
+licenza = "dato di AGEA o della CGR"
+stato = "non disponibile"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_lazio:eb519f30-d2c9-430f-9e96-74d0"
+motivo = "ortofoto di proprietà AGEA o CGR: non riutilizzabili"
+
+# ============================================================================================== Sud e isole
+[[regione]]
+codice = "13"
+nome = "Abruzzo"
+nota = "opendata.regione.abruzzo.it chiude la connessione; geoportale.regione.abruzzo.it risponde 503."
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "DBT / CTR regionale"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "nessuna scheda di edifici nel RNDT; portali non raggiungibili dal container"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM regionale"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "nessuna scheda nel RNDT; portali non raggiungibili dal container"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM regionale"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessun DSM regionale trovato: PST e LiDAR PNRR"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto 2007 e 2001-2005 (WMS)"
+licenza = "«dato pubblico», licenza non indicata"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_abruzz:00151:20120710:152430"
+motivo = "«dato pubblico» non è una licenza; ortofoto vecchie"
+
+[[regione]]
+codice = "14"
+nome = "Molise"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "DBT / CTR regionale"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "nessuna scheda nel RNDT; geoportale non raggiungibile dal container (502)"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM (WMS)"
+licenza = "non indicata"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_molise:00020:20120413:113457"
+motivo = "solo consultazione WMS, licenza non indicata"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM regionale"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessun DSM regionale trovato: PST e LiDAR PNRR"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto 2007 (WMS)"
+licenza = "«dato pubblico», licenza non indicata"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_molise:00022:20120413:115401"
+motivo = "«dato pubblico» non è una licenza; ortofoto vecchia"
+
+[[regione]]
+codice = "15"
+nome = "Campania"
+nota = "Nessuna scheda regionale nel RNDT; geoportale.regione.campania.it e dati.regione.campania.it non raggiungibili dal container (502)."
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "DBT / CTR regionale"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "da verificare dal server o dal browser"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM regionale"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "da verificare; intanto PST (coste e fiumi)"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM regionale"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessun DSM regionale trovato: PST e LiDAR PNRR"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto regionali"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "da verificare dal server o dal browser"
+
+[[regione]]
+codice = "16"
+nome = "Puglia"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "DBT / CTR regionale"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "nessuna scheda di edifici nel RNDT; sit.puglia.it risponde (302): da cercare lì"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "Modello digitale del terreno (8 m)"
+licenza = "IODL 2.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_puglia:85898eba-d4b0-4c3b-a2c7-6ea666522591"
+motivo = "licenza IODL 2.0 nella scheda; download non provato"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM regionale"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessun DSM regionale trovato: PST e LiDAR PNRR"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto 2015 (15 cm, province di Brindisi, Lecce e Taranto) e 2006"
+licenza = "IODL 2.0 (2011: licenza multi-user)"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_puglia:1de1e983-7933-4e2e-8865-b6128ac05e08"
+motivo = "licenza IODL 2.0 nella scheda; WMS non indicato nella scheda: da trovare sul SIT e provare"
+
+[[regione]]
+codice = "17"
+nome = "Basilicata"
+nota = "rsdi.regione.basilicata.it risponde 503 e geoportale.regione.basilicata.it 502 dal container."
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "DBGT – Unità volumetrica (UN_VOL 020101)"
+licenza = "IODL 2.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_basili:26e21af8:14ff44204d8:214c"
+altezza = "da verificare (classe UN_VOL)"
+motivo = "licenza IODL 2.0 nella scheda; WFS del DBGT da provare dal server (503 dal container)"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM 5 m"
+licenza = "IODL 2.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_basili:9EE9C09A-7091-D8A2-A41D-F28191B86C4F"
+motivo = "licenza IODL 2.0; servizio da provare dal server"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM 5 m"
+licenza = "IODL 2.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_basili:28FFB196-1EAA-49B4-769D-78C030B75042"
+motivo = "licenza IODL 2.0; a 5 m serve solo per edifici grandi; servizio da provare dal server"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto CTR 2013 (20 cm)"
+licenza = "IODL 2.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/r_basili:2c0bff85-88f3-4814-a1ee-de7f6025c9de"
+servizio = "http://rsdi.regione.basilicata.it/rbgeoserver2016/maps_orto2013/OI.OrthoimageCoverage/wms"
+url_prova = "http://rsdi.regione.basilicata.it/rbgeoserver2016/maps_orto2013/OI.OrthoimageCoverage/wms?service=wms&version=1.3.0&request=GetCapabilities"
+prova = "503 Service Unavailable (container)"
+motivo = "licenza IODL 2.0; WMS da riprovare dal server, poi TOML in ortofoto/"
+
+[[regione]]
+codice = "18"
+nome = "Calabria"
+nota = "Nessuna scheda regionale nel RNDT; geoportale.regione.calabria.it chiude la connessione dal container."
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "DBT / CTR regionale"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "da verificare dal server o dal browser"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM regionale"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "da verificare; intanto PST (coste e fiumi)"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM regionale"
+licenza = ""
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "nessun DSM regionale trovato: PST e LiDAR PNRR"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto regionali"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "da verificare dal server o dal browser"
+
+[[regione]]
+codice = "19"
+nome = "Sicilia"
+nota = "SITR: dal 02/02/2021 i dati scaricabili senza costi di cessione sono in CC BY 4.0 (pagina «Licenza d'uso», letta il 04/11/2026). Le riprese ATA 2007-08 e 2012-13 e la cartografia a pagamento passano da «Richiesta cartografia / costi di cessione»."
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "CTR 1:10.000 (download SITR)"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://www.sitr.regione.sicilia.it/download/download-carta-tecnica-regionale-10000/"
+altezza = "no (CTR)"
+motivo = "licenza CC BY 4.0 del SITR; formato e altezze da verificare"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM LiDAR ATA 2007-08 (2 m)"
+licenza = "CC BY 4.0 se scaricabile senza costi"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://www.sitr.regione.sicilia.it/licenza-duso/"
+motivo = "non trovato tra i download gratuiti; PST MASE ha DTM LiDAR 1–2 m della Sicilia (nazionale, sotto)"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM LiDAR ATA 2007-08"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+motivo = "come il DTM"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto ATA 2012-2013"
+licenza = ""
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://www.sitr.regione.sicilia.it/"
+motivo = "WMS del SITR non individuato; condizioni da verificare (possibili costi di cessione)"
+
+[[regione]]
+codice = "20"
+nome = "Sardegna"
+
+[[regione.fonte]]
+tema = "edifici"
+nome = "DBGT 10k 2020 – Edificio, edificio minore"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/R_SARDEG:2c842f2a-d268-45e4-a68c-6cff2070bd28"
+altezza = "da verificare"
+motivo = "licenza CC BY 4.0 nelle schede; download dal geoportale non provato per tema"
+
+[[regione.fonte]]
+tema = "dtm"
+nome = "DTM 1 m (costa 2008, centri urbani 2013, fasce fluviali), DTM 10 m"
+licenza = "CC BY 4.0 (fasce fluviali: CC BY-SA 3.0, esclusa)"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/R_SARDEG:e2327002-a91f-4e77-a0b8-6518c020d2c2"
+servizio = "https://www.sardegnageoportale.it/webgis2/sardegnamappe/?map=download_raster"
+prova = "pagina di download 301 (rimando)"
+motivo = "licenza CC BY 4.0; download da una mappa interattiva, non automatizzabile senza un elenco dei file"
+
+[[regione.fonte]]
+tema = "dsm"
+nome = "DSM 1 m (costa 2008, centri urbani interni 2013)"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/R_SARDEG:7f606501-8ef8-4fa0-99ad-54811f370308"
+motivo = "licenza CC BY 4.0; copre coste e centri urbani; stesso canale di download del DTM"
+
+[[regione.fonte]]
+tema = "ortofoto"
+nome = "Ortofoto AGEA 2016 e 2019 (20 cm); 2004, 2008 e centri matrice in CC BY"
+licenza = "AGEA: uso istituzionale della Regione; altre CC BY 4.0"
+stato = "non disponibile"
+verifica = "2026-11-04"
+scheda = "https://geodati.gov.it/resource/id/R_SARDEG:c82b8535-50b8-4f00-8a5e-a3ae24c33030"
+motivo = "le recenti sono AGEA con autorizzazione dell'ente proprietario; in CC BY solo ortofoto vecchie o parziali"
+
+# ============================================================================================== nazionali
+[[nazionale]]
+tema = "lidar"
+nome = "PST MASE – DTM e DSM LiDAR 1 m (2008-2013, coste e fiumi)"
+licenza = "CC BY 4.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://sim.mase.gov.it/portalediaccesso/mappe/#/viewer/new"
+motivo = "download dal visualizzatore, non automatizzabile; portale offline fino al 7/11/2026 (§ 3)"
+
+[[nazionale]]
+tema = "lidar"
+nome = "LiDAR nazionale PNRR (DTM e DSM 25 cm)"
+licenza = "da verificare"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://www.gisinfrastrutture.it/2026/04/ottime-notizie-per-il-dtm-ad-alta-precisione-di-tutta-litalia/"
+motivo = "pubblicazione a blocchi nell'app PST; licenza e interfaccia da verificare dopo il 7/11/2026"
+
+[[nazionale]]
+tema = "edifici"
+nome = "Aggregati strutturali – Protezione Civile"
+licenza = "CC BY 4.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://rischi.protezionecivile.gov.it/en/approfondimento/national-dataset-italian-structural-aggregates/"
+altezza = "no (sagome; edifici adiacenti spesso uniti)"
+usata_in = "fonti/emilia_romagna.toml (aggregati)"
+motivo = "base nazionale delle sagome in CC BY (§ 3); il file della regione si sceglie a mano"
+
+[[nazionale]]
+tema = "edifici"
+nome = "OpenStreetMap – edifici"
+licenza = "ODbL 1.0"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://www.openstreetmap.org/copyright"
+altezza = "height o building:levels (rari)"
+usata_in = "edifici3d/osm.py (archivio odbl/)"
+motivo = "solo nell'archivio ODbL separato"
+
+[[nazionale]]
+tema = "edifici"
+nome = "Zornade – altezze degli edifici (LiDAR, sagome OSM)"
+licenza = "ODbL 1.0"
+stato = "in attesa"
+verifica = "2026-11-04"
+scheda = "https://zornade.com/llms.txt"
+altezza = "colonna dell'estratto (height_lidar o simile)"
+usata_in = "edifici3d/zornade.py (archivio odbl/, solo da estratto consegnato, mai via API)"
+motivo = "lettore e confronto pronti e provati su un campione sintetico; il blocco «buildings» dell'API non ha altezze; in attesa dell'estratto con le altezze LiDAR (risposta a Zornade, § 14.2)"
+
+[[nazionale]]
+tema = "edifici"
+nome = "GlobalBuildingAtlas"
+licenza = "CC BY-NC"
+stato = "non disponibile"
+verifica = "2026-11-04"
+motivo = "non commerciale: escluso (anche quando arriva tramite Zornade)"
+
+[[nazionale]]
+tema = "ortofoto"
+nome = "Sentinel-2 cloudless 2016 (EOX) e Geoportale Nazionale (solo dal vivo)"
+licenza = "CC BY 4.0 / condizioni del servizio"
+stato = "attiva"
+verifica = "2026-11-04"
+usata_in = "ortofoto/italia.toml"
+
+[[nazionale]]
+tema = "ortofoto"
+nome = "AGEA 2022-2024 RGB (GeoPortale AGEA, a mano per siti puntuali)"
+licenza = "CC BY 4.0 (Reg. UE 2023/138)"
+stato = "attiva"
+verifica = "2026-11-04"
+scheda = "https://geoportale.agea.gov.it/legal-notes"
+usata_in = "edifici3d/ortofoto_sito.py (comando ortofoto-sito)"
+motivo = "fuori dalla pipeline: scaricamento a mano con codice via email"

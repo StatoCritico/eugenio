@@ -84,7 +84,134 @@ def _codice(s) -> str:
 NOMI_MODALITA = {"breve": "breve termine (passo orario)", "lungo": "lungo termine (passo giornaliero)"}
 
 
-def report_previsione(d: dict, nome_comune: Callable[[str], str | None] | None = None) -> Documento:
+# variabili meteo delle schede della pagina (fase5-sito/sito/app.js, COV), nello stesso ordine delle opzioni
+NOMI_CLIMA = {"temperatura": "Temperatura", "gradi_giorno": "Gradi giorno", "gradi_raffrescamento": "Gradi giorno estivi",
+              "radiazione": "Radiazione solare", "diffusa": "Radiazione diffusa", "umidita": "Umidità", "vento": "Vento",
+              "nuvolosita": "Nuvolosità", "pioggia": "Pioggia", "neve": "Neve"}
+ORDINE_CLIMA = {"breve": ["temperatura", "radiazione", "umidita", "diffusa", "vento", "nuvolosita", "pioggia", "neve"],
+                "lungo": ["temperatura", "gradi_giorno", "gradi_raffrescamento", "radiazione", "umidita", "vento", "pioggia"]}
+# colori fissi dei grafici del PDF (tema chiaro, vestito corallo): niente trasparenze, che fpdf2 non rende sempre
+_COL = {"inchiostro": "#2b2730", "serie1": "#c43c12", "serie2": "#2f6db5", "banda1": "#f6d9cc", "banda2": "#eeb39b",
+        "linea": "#dddae0", "tenue": "#6b6670", "debole": "#f1eff3"}
+
+
+def _nome_clima(k: str, modalita: str) -> str:
+    return "Temperatura media" if (k == "temperatura" and modalita == "lungo") else NOMI_CLIMA.get(k, k)
+
+
+def _ordine_clima(clima: dict, richieste, modalita: str) -> list[str]:
+    """Variabili meteo della risposta nell'ordine delle opzioni della pagina (quello delle covariate richieste,
+    poi quello predefinito della modalità, poi le altre)."""
+    rich = richieste.split(",") if isinstance(richieste, str) else richieste if isinstance(richieste, list) else []
+    ordine = [str(k) for k in rich] + ORDINE_CLIMA.get(modalita, []) + list(clima)
+    out = []
+    for k in ordine:
+        if k in clima and k not in out and _ammessa(k):
+            out.append(k)
+    return out[:C.REPORT_MAX_COLONNE - 6]
+
+
+def _etichetta_t(x: str, passo: str) -> str:
+    x = str(x)
+    if len(x) >= 10 and x[4] == "-" and x[7] == "-":
+        g = f"{x[8:10]}/{x[5:7]}"
+        return f"{g} {x[11:13]}h" if passo == "ora" and len(x) >= 13 else f"{g}/{x[2:4]}"
+    return x[:16]
+
+
+def _svg_serie(t: list[str], n0: int, linee: list[tuple], bande: list[tuple] = (), deboli: list[bool] | None = None,
+               unita: str | None = None, passo: str = "ora", legenda: list[tuple] | None = None) -> str:
+    """Grafico a linee piatto (SVG senza CSS né trasparenze) per il PDF: t = etichette di tutti i passi, n0 = passi
+    osservati prima del futuro; linee = [(valori sui passi, colore, spessore, tratteggio|None)], bande = [(basso, alto,
+    colore)] sui soli passi futuri, deboli = passi futuri con meteo meno affidabile (fondo grigio)."""
+    from xml.sax.saxutils import escape
+    W, H, sx, dx, su, gi = 760, 300, 56, 12, 14, 52
+    n = max(len(t), 2)
+    vals = [v for serie in linee for v in serie[0] if v is not None]
+    vals += [v for b in bande for lst in b[:2] for v in lst if v is not None]
+    if not vals:
+        vals = [0.0, 1.0]
+    lo, hi = min(vals), max(vals)
+    pad = (hi - lo) * 0.08 or 1
+    lo, hi = lo - pad, hi + pad
+    X = lambda i: sx + (W - sx - dx) * i / (n - 1)
+    Y = lambda v: su + (H - su - gi) * (1 - (v - lo) / (hi - lo))
+    o = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
+         f'<rect x="0" y="0" width="{W}" height="{H}" fill="#ffffff"/>']
+    if deboli:
+        i = 0
+        while i < len(deboli):
+            if deboli[i]:
+                j = i
+                while j + 1 < len(deboli) and deboli[j + 1]:
+                    j += 1
+                o.append(f'<rect x="{X(n0 + i):.1f}" y="{su}" width="{max(X(n0 + j) - X(n0 + i), 1):.1f}" '
+                         f'height="{H - su - gi}" fill="{_COL["debole"]}"/>')
+                i = j + 1
+            else:
+                i += 1
+    for k in range(5):
+        v = lo + (hi - lo) * k / 4
+        y = Y(v)
+        o.append(f'<line x1="{sx}" y1="{y:.1f}" x2="{W - dx}" y2="{y:.1f}" stroke="{_COL["linea"]}" stroke-width="0.8"/>')
+        dec = 1 if abs(hi - lo) < 20 else 0
+        o.append(f'<text x="{sx - 6}" y="{y + 4:.1f}" font-size="11" fill="{_COL["tenue"]}" font-family="DejaVu Sans" '
+                 f'text-anchor="end">{escape(f"{v:,.{dec}f}".replace(",", " ").replace(".", ",").replace(" ", "."))}</text>')
+    if unita:
+        o.append(f'<text x="{sx}" y="{su - 3}" font-size="10" fill="{_COL["tenue"]}" font-family="DejaVu Sans">'
+                 f'{escape(unita)}</text>')
+    passi = 6
+    for k in range(passi + 1):
+        i = round((n - 1) * k / passi)
+        anc = "start" if k == 0 else "end" if k == passi else "middle"
+        o.append(f'<text x="{X(i):.1f}" y="{H - gi + 16}" font-size="11" fill="{_COL["tenue"]}" font-family="DejaVu Sans" '
+                 f'text-anchor="{anc}">{escape(_etichetta_t(t[i], passo) if i < len(t) else "")}</text>')
+    for basso, alto, col in bande:
+        su_ = [(X(n0 + i), Y(v)) for i, v in enumerate(alto) if v is not None]
+        giu = [(X(n0 + i), Y(v)) for i, v in enumerate(basso) if v is not None][::-1]
+        if su_ and giu:
+            o.append(f'<polygon points="{" ".join(f"{a:.1f},{b:.1f}" for a, b in su_ + giu)}" fill="{col}"/>')
+    if 0 < n0 < n:
+        o.append(f'<line x1="{X(n0 - 0.5):.1f}" y1="{su}" x2="{X(n0 - 0.5):.1f}" y2="{H - gi}" stroke="{_COL["tenue"]}" '
+                 f'stroke-width="0.8" stroke-dasharray="2 3"/>')
+    for valori, col, w, tratt, inizio in linee:
+        d, giu = "", False
+        for i, v in enumerate(valori):
+            if v is None:
+                giu = False
+                continue
+            d += f'{"L" if giu else "M"}{X(inizio + i):.1f},{Y(v):.1f}'
+            giu = True
+        if d:
+            o.append(f'<path d="{d}" fill="none" stroke="{col}" stroke-width="{w}"'
+                     + (f' stroke-dasharray="{tratt}"' if tratt else "") + ' stroke-linejoin="round"/>')
+    x = sx
+    for col, testo, tipo in legenda or []:
+        if tipo == "banda":
+            o.append(f'<rect x="{x}" y="{H - 16}" width="16" height="9" fill="{col}"/>')
+        else:
+            o.append(f'<line x1="{x}" y1="{H - 11}" x2="{x + 16}" y2="{H - 11}" stroke="{col}" stroke-width="2.5"'
+                     + (' stroke-dasharray="5 3"' if tipo == "tratto" else "") + "/>")
+        o.append(f'<text x="{x + 21}" y="{H - 7}" font-size="11" fill="{_COL["inchiostro"]}" font-family="DejaVu Sans">'
+                 f'{escape(testo)}</text>')
+        x += 30 + 6.3 * len(testo)
+    o.append("</svg>")
+    return "".join(o)
+
+
+def _immagine_grafico(svg: str, didascalia: str) -> Immagine | None:
+    import base64
+    try:
+        return Immagine(formato="svg", dati=base64.b64encode(svg.encode("utf-8")).decode("ascii"),
+                        didascalia=didascalia[:300], larghezza_cm=17)
+    except ValidationError:
+        return None
+
+
+DEBOLI = {"previsione IFS", "miscela ICON-2I/IFS", "climatologia"}
+
+
+def report_previsione(d: dict, nome_comune: Callable[[str], str | None] | None = None, formato: str = "pdf") -> Documento:
     """Risposta di POST /api/previsione (modello.prevedi) più il campo facoltativo `richiesta`.
 
     Forma attesa (da servizio/modello.py): modalita, passo, istat, covariate,
@@ -93,6 +220,10 @@ def report_previsione(d: dict, nome_comune: Callable[[str], str | None] | None =
     `richiesta` (aggiunto dal sito, facoltativo): comune, istat, modalita, orizzonte, covariate, tipo, unita.
     Ipotesi: `richiesta.comune` è il nome del comune (se è un codice numerico si tratta come ISTAT);
     `unita` (es. "kWh") non arriva dall'API e, se manca, i valori restano senza unità.
+    Dal 04/11/2026: `clima` {variabile: {unita, storico, previsione}} con le variabili meteo negli stessi passi, e
+    `solo_clima` true per la risposta di GET /api/clima-previsto/{istat} (nessun consumo, nessun quantile). Le tabelle
+    mettono consumi e variabili meteo in colonne affiancate (CSV, Excel, ODS); nel PDF i grafici in sequenza, prima i
+    consumi e poi le variabili nell'ordine delle opzioni della pagina.
     """
     d = _diz(d)
     rq = _diz(d.get("richiesta"))
@@ -115,6 +246,13 @@ def report_previsione(d: dict, nome_comune: Callable[[str], str | None] | None =
     ver = _diz(d.get("verifica"))
     reale = _lista(ver.get("reale"))
     n = len(t)
+    solo = bool(d.get("solo_clima"))
+    clima = {k: _diz(v) for k, v in _diz(d.get("clima")).items() if isinstance(k, str)}
+    chiavi = _ordine_clima(clima, rq.get("covariate", d.get("covariate")), modalita)
+    cl_pr = {k: _lista(clima[k].get("previsione")) for k in chiavi}
+    cl_st = {k: _lista(clima[k].get("storico")) for k in chiavi}
+    un_cl = {k: str(clima[k].get("unita") or "")[:20] for k in chiavi}
+    testa_cl = [_nome_clima(k, modalita) + (f" ({un_cl[k]})" if un_cl[k] else "") for k in chiavi]
 
     def val(lst, i):
         return _num(lst[i]) if i < len(lst) else None
@@ -124,13 +262,14 @@ def report_previsione(d: dict, nome_comune: Callable[[str], str | None] | None =
             ("Modalità", NOMI_MODALITA.get(modalita, modalita or None)),
             ("Orizzonte", f"{n} {passo if n == 1 else {'ora': 'ore', 'giorno': 'giorni'}.get(passo, passo)}" if n else None),
             ("Primo passo previsto", t[0] if t else None), ("Ultimo passo previsto", t[-1] if t else None),
-            ("Tipo di serie", {"energia": "energia (somma nel passo)", "potenza": "potenza (media nel passo)"}.get(tipo, tipo or None)),
-            ("Unità di misura", unita)]
+            ("Cosa si prevede", "solo il clima (variabili meteo, senza consumi)" if solo else None),
+            ("Tipo di serie", None if solo else {"energia": "energia (somma nel passo)", "potenza": "potenza (media nel passo)"}.get(tipo, tipo or None)),
+            ("Unità di misura", None if solo else unita)]
     cov = rq.get("covariate", d.get("covariate"))
     if isinstance(cov, str):
         cov = [c for c in cov.split(",") if c]
     if isinstance(cov, list):
-        voci.append(("Covariate", ", ".join(str(c) for c in cov) or "solo calendario"))
+        voci.append(("Variabili meteo" if solo else "Covariate", ", ".join(str(c) for c in cov) or "solo calendario"))
     parametri = ChiaveValore(titolo=None, voci=[{"chiave": k, "valore": v} for k, v in voci if v not in (None, "")])
 
     # sintesi sulla mediana
@@ -142,6 +281,12 @@ def report_previsione(d: dict, nome_comune: Callable[[str], str | None] | None =
                    {"chiave": "Massimo della mediana", "valore": max(med), "unita": unita}]
         if tipo != "potenza":
             sintesi.append({"chiave": "Totale della mediana sull'orizzonte", "valore": sum(med), "unita": unita})
+    if solo:
+        for k, nome in zip(chiavi, testa_cl):
+            v = [x for x in (val(cl_pr[k], i) for i in range(n)) if x is not None]
+            if v:
+                sintesi.append({"chiave": f"{_nome_clima(k, modalita)}: media prevista", "valore": sum(v) / len(v),
+                                "unita": un_cl[k] or None, "decimali": 1})
     sezioni = [Sezione(titolo="Parametri", blocchi=[parametri])]
     if sintesi:
         sezioni.append(Sezione(titolo="Sintesi", blocchi=[ChiaveValore(voci=sintesi)]))
@@ -161,33 +306,92 @@ def report_previsione(d: dict, nome_comune: Callable[[str], str | None] | None =
                             "osservato; il confronto con i valori reali misura l'affidabilità attesa."),
             ChiaveValore(voci=v)]))
 
+    st = _diz(d.get("storico"))
+    ts, vs = [str(x) for x in _lista(st.get("t"))], _lista(st.get("v"))
+
+    # grafici in sequenza (solo PDF): prima i consumi, poi le variabili meteo nell'ordine delle opzioni della pagina
+    if formato == "pdf" and n:
+        tutti = ts + t
+        deboli = [i < len(meteo) and str(meteo[i]) in DEBOLI for i in range(n)]
+        imm = []
+        if not solo and q50:
+            linee = [([val(vs, i) for i in range(len(ts))], _COL["inchiostro"], 1.3, None, 0)]
+            if reale:
+                linee.append(([val(reale, i) for i in range(n)], _COL["serie2"], 1.6, "7 4", len(ts)))
+            linee.append(([val(q50, i) for i in range(n)], _COL["serie1"], 2, None, len(ts)))
+            bande = [([val(q10, i) for i in range(n)], [val(q90, i) for i in range(n)], _COL["banda1"]),
+                     ([val(_lista(pr.get("0.3")), i) for i in range(n)], [val(_lista(pr.get("0.7")), i) for i in range(n)],
+                      _COL["banda2"])]
+            if not _lista(pr.get("0.3")):
+                bande = bande[:1]
+            leg = [(_COL["inchiostro"], "dati caricati", "linea"), (_COL["serie1"], "previsione (mediana)", "linea"),
+                   (_COL["banda1"], "8 casi su 10", "banda")] + ([(_COL["serie2"], "valori reali", "tratto")] if reale else [])
+            g = _immagine_grafico(_svg_serie(tutti, len(ts), linee, bande, deboli, unita, passo, leg),
+                                  "Consumi" + (f" ({unita})" if unita else "") + ": dati caricati e previsione")
+            if g:
+                imm.append(g)
+        for k, nome in zip(chiavi, testa_cl):
+            linee = [([val(cl_st[k], i) for i in range(len(ts))], _COL["inchiostro"], 1.3, None, 0),
+                     ([val(cl_pr[k], i) for i in range(n)], _COL["serie1"], 2, None, len(ts))]
+            leg = [(_COL["inchiostro"], "osservato" if solo else "nel periodo dei dati", "linea"),
+                   (_COL["serie1"], "previsto", "linea")]
+            g = _immagine_grafico(_svg_serie(tutti, len(ts), linee, (), deboli, un_cl[k], passo, leg), nome)
+            if g:
+                imm.append(g)
+        if imm:
+            imm = imm[:C.REPORT_MAX_IMMAGINI]
+            sezioni.append(Sezione(titolo="Grafici", blocchi=[
+                Paragrafo(testo="Prima i consumi, poi le variabili meteo nell'ordine della pagina. La linea tratteggiata "
+                                "verticale separa il passato dal futuro; il fondo grigio segna il meteo meno affidabile "
+                                "(modello globale o climatologia).")] + imm))
+
     avvisi = [Avvertenza(testo=str(a)[:2000]) for a in _lista(d.get("avvisi")) if isinstance(a, str) and a.strip()]
     avvisi.append(Avvertenza(livello="info", testo=(
+        "Variabili meteo previste per il comune, senza consumi: osservate fino all'ultimo dato disponibile, poi "
+        "previste (ICON-2I, ECMWF IFS) e, nel lungo termine, climatologia. Le ore sono in ora italiana." if solo else
         "La previsione è probabilistica: la mediana (P50) è il valore centrale, la banda P10–P90 contiene il valore "
         "reale in circa 8 casi su 10 se il modello è ben calibrato. Le ore sono in ora italiana.")))
     sezioni.append(Sezione(titolo="Avvertenze", blocchi=avvisi))
 
-    intest = ["Data e ora" if passo == "ora" else "Giorno", "P10", "P50 (mediana)", "P90"]
-    if reale:
-        intest.append("Valore reale")
-    intest.append("Meteo usato")
+    # tabelle: consumi e variabili meteo in colonne affiancate
+    intest = ["Data e ora" if passo == "ora" else "Giorno"]
+    if not solo:
+        intest += ["P10", "P50 (mediana)", "P90"] + (["Valore reale"] if reale else [])
+    intest += testa_cl + ["Meteo usato"]
     righe = []
     for i in range(n):
-        r = [t[i], val(q10, i), val(q50, i), val(q90, i)]
-        if reale:
-            r.append(val(reale, i))
+        r = [t[i]]
+        if not solo:
+            r += [val(q10, i), val(q50, i), val(q90, i)] + ([val(reale, i)] if reale else [])
+        r += [val(cl_pr[k], i) for k in chiavi]
         r.append(str(meteo[i]) if i < len(meteo) and meteo[i] is not None else None)
         righe.append(r)
-    titolo_tab = "Previsione" + (f" ({unita})" if unita else "")
+    titolo_tab = ("Clima previsto" if solo else "Previsione") + (f" ({unita})" if unita and not solo else "")
+    dec_cons = [] if solo else [2, 2, 2] + ([2] if reale else [])
     blocchi = [Tabella(titolo=titolo_tab, intestazioni=intest, righe=righe,
-                       decimali=[None, 2, 2, 2] + ([2] if reale else []) + [None])]
-    st = _diz(d.get("storico"))
-    ts, vs = _lista(st.get("t")), _lista(st.get("v"))
+                       decimali=[None] + dec_cons + [2] * len(chiavi) + [None])]
     if ts:
-        blocchi.append(Tabella(titolo="Ultimi dati caricati", intestazioni=[intest[0], "Valore"],
-                               righe=[[str(ts[i]), val(vs, i)] for i in range(len(ts))], decimali=[None, 2]))
+        fst = _lista(d.get("fonte_storico"))
+        testa_st = [intest[0]] + ([] if solo else ["Valore"]) + testa_cl + (["Meteo"] if solo else [])
+        righe_st = []
+        for i in range(len(ts)):
+            r = [ts[i]] + ([] if solo else [val(vs, i)]) + [val(cl_st[k], i) for k in chiavi]
+            if solo:
+                r.append(str(fst[i]) if i < len(fst) and fst[i] is not None else None)
+            righe_st.append(r)
+        blocchi.append(Tabella(titolo="Ultimi giorni osservati" if solo else "Ultimi dati caricati", intestazioni=testa_st,
+                               righe=righe_st,
+                               decimali=[None] + ([] if solo else [2]) + [2] * len(chiavi) + ([None] if solo else [])))
     sezioni.append(Sezione(titolo="Dati", blocchi=blocchi))
 
+    if solo:
+        return Documento(
+            titolo="Previsione del clima",
+            sottotitolo=" – ".join(x for x in (comune or (f"Comune ISTAT {istat}" if istat else None),
+                                                NOMI_MODALITA.get(modalita)) if x) or None,
+            nome_file="_".join(x for x in ("clima_previsto", istat, modalita) if x),
+            sezioni=sezioni,
+            fonti=_fonti(OPEN_METEO, MODELLI_METEO, ISTAT))
     return Documento(
         titolo="Previsione dei consumi energetici",
         sottotitolo=" – ".join(x for x in (comune or (f"Comune ISTAT {istat}" if istat else None),
@@ -658,12 +862,221 @@ def report_valori_sedi(d: dict, formato: str = "pdf", **_) -> Documento:
                      ISTAT, extra=d.get("fonti")))
 
 
+def _riga_valori(d: dict, chiavi: list[tuple[str, str, str | None, int]]) -> list[Voce]:
+    out = []
+    for k, etichetta, unita, dec in chiavi:
+        x = _diz(d.get(k))
+        v = _num(x.get("valore")) if x else _num(d.get(k))
+        if v is None:
+            continue
+        fonte = _testo(x.get("fonte"), 60) if x else ""
+        out.append(Voce(chiave=etichetta + (f" ({fonte})" if fonte else ""), valore=v, unita=unita, decimali=dec))
+    return out
+
+
+def report_edificio(d: dict, formato: str = "pdf", **_) -> Documento:
+    """Corpo mandato da fase5-sito/sito/edificio3d.js (pagine Modelli 3D, Geometria, Consumi, Producibilità):
+    titolo, edificio {id, nome, comune}, sintetico (bool), superfici {piani_fuori_terra: {valore, fonte}, …},
+    geometria {volume_lordo, superficie_disperdente, s_su_v, pareti_per_orientamento {N: m², …}, …},
+    corpi [{id, area, gronda, colmo, tetto, piani, fonte_sagoma, fonte_altezza, licenza, qualita}],
+    falde [{corpo, falda, pendenza, orientamento, superficie, area_pianta, fonte}] (Fase C),
+    firma {base, pendenza, r2, unita, mesi [{mese, consumo, gg20}]}, consumi_normalizzati [{voce, valore, unita}],
+    fv {aree [{nome, area, inclinazione, orientamento, moduli, kwp, kwh_anno, perdita_ombre}], totale_kwh, anno_clima},
+    immagini [{titolo, svg}] (solo nel PDF), note, fonti. Nessun dato di mercato: le colonne con quei nomi si scartano."""
+    d = _diz(d)
+    pdf = formato == "pdf"
+    sezioni: list[Sezione] = []
+    e = _diz(d.get("edificio"))
+    primi = []
+    if d.get("sintetico"):
+        primi.append(Avvertenza(livello="attenzione", testo=(
+            "Dati sintetici di esempio: sagome, altezze, terreno e consumi sono inventati per mostrare come funziona la "
+            "pagina e non rappresentano edifici reali.")))
+    primi.append(Avvertenza(livello="info", testo=(
+        "Geometria ricostruita da dati topografici con altezze approssimate (DBTR: circa ±3 m): piani e superfici sono "
+        "stime se non sono stati indicati nel file o nelle visure. Non sostituisce un rilievo né una diagnosi energetica.")))
+    sezioni.append(Sezione(titolo=None, blocchi=primi))
+    voci = [Voce(chiave=k, valore=_testo(e.get(c), 200)) for k, c in (("Edificio", "nome"), ("Codice", "id"), ("Comune", "comune")) if e.get(c)]
+    voci += _riga_valori(_diz(d.get("superfici")), [
+        ("piani_fuori_terra", "Piani fuori terra", None, 0), ("piani_interrati", "Piani interrati", None, 0),
+        ("superficie_lorda", "Superficie lorda", "m²", 0), ("superficie_netta", "Superficie netta", "m²", 0),
+        ("superficie_catastale", "Superficie catastale", "m²", 0), ("anno_costruzione", "Anno di costruzione", None, 0)])
+    if voci:
+        sezioni.append(Sezione(titolo="Edificio, piani e superfici", blocchi=[ChiaveValore(voci=voci[:30])]))
+    g = _diz(d.get("geometria"))
+    gv = _riga_valori(g, [("volume_lordo", "Volume lordo", "m³", 0), ("superficie_disperdente", "Superficie disperdente", "m²", 0),
+                          ("s_su_v", "Rapporto S/V", "m⁻¹", 2), ("superficie_tetti", "Tetti", "m²", 0),
+                          ("superficie_pavimento_terra", "Pavimento a terra", "m²", 0), ("pareti_esposte", "Pareti esposte", "m²", 0),
+                          ("pareti_in_comune_tra_corpi", "Pareti in comune tra corpi", "m²", 0),
+                          ("pareti_in_comune_con_vicini", "Pareti in comune con edifici vicini", "m²", 0)])
+    blocchi = [ChiaveValore(voci=gv)] if gv else []
+    po = _diz(g.get("pareti_per_orientamento"))
+    if po:
+        blocchi.append(Tabella(titolo="Pareti esposte per orientamento", intestazioni=["Orientamento", "Superficie (m²)"],
+                               righe=[[_testo(k, 4), _num(v)] for k, v in list(po.items())[:8]], decimali=[None, 0]))
+    if blocchi:
+        sezioni.append(Sezione(titolo="Indicatori geometrici", blocchi=blocchi))
+    corpi = [_diz(c) for c in _lista(d.get("corpi"))][:C.REPORT_MAX_RIGHE]
+    if corpi:
+        sezioni.append(Sezione(titolo="Corpi", blocchi=[Tabella(
+            intestazioni=["Corpo", "Area (m²)", "Gronda (m)", "Colmo (m)", "Tetto", "Piani", "Sagoma", "Altezza", "Licenza", "Qualità"],
+            righe=[[_testo(c.get("id"), 60), _num(c.get("area")), _num(c.get("gronda")), _num(c.get("colmo")),
+                    _testo(c.get("tetto"), 20), _num(c.get("piani")), _testo(c.get("fonte_sagoma"), 80),
+                    _testo(c.get("fonte_altezza"), 120), _testo(c.get("licenza"), 20), _testo(c.get("qualita"), 120)] for c in corpi],
+            decimali=[None, 0, 1, 1, None, 0, None, None, None, None])]))
+    falde = [_diz(f) for f in _lista(d.get("falde"))][:C.REPORT_MAX_RIGHE]
+    if falde:   # fase 10, Fase C: falde misurate dal LiDAR o lette dal modello dell'utente
+        sezioni.append(Sezione(titolo="Falde dei tetti", blocchi=[Tabella(
+            intestazioni=["Corpo", "Falda", "Pendenza (°)", "Orientamento (°)", "Superficie (m²)", "In pianta (m²)", "Fonte"],
+            righe=[[_testo(f.get("corpo"), 60), _testo(f.get("falda"), 12), _num(f.get("pendenza")), _num(f.get("orientamento")),
+                    _num(f.get("superficie")), _num(f.get("area_pianta")), _testo(f.get("fonte"), 160)] for f in falde],
+            decimali=[None, None, 1, 0, 0, 0, None]),
+            Paragrafo(testo="Falde ricavate dal rilievo LiDAR (punti del DSM dentro il corpo, piano, capanna o padiglione ai minimi "
+                            "quadrati) o dal modello dell'utente; orientamento in gradi da nord in senso orario (180 = sud), vuoto "
+                            "per i tetti piani.")]))
+    cn = [x for x in map(_diz, _lista(d.get("consumi_normalizzati"))) if _ammessa(x.get("voce", "")) and _ammessa(x.get("unita", ""))]
+    if cn:
+        sezioni.append(Sezione(titolo="Consumi normalizzati", blocchi=[Tabella(
+            intestazioni=["Voce", "Valore", "Unità"], righe=[[_testo(x.get("voce")), _num(x.get("valore")), _testo(x.get("unita"), 40)] for x in cn[:50]],
+            decimali=[None, 2, None])]))
+    f = _diz(d.get("firma"))
+    if f.get("mesi"):
+        u = _testo(f.get("unita"), 20)
+        bl = [ChiaveValore(voci=[v for v in (
+            Voce(chiave="Carico di base (gradi giorno = 0)", valore=_num(f.get("base")), unita=f"{u}/mese", decimali=0),
+            Voce(chiave="Sensibilità al clima", valore=_num(f.get("pendenza")), unita=f"{u}/(°C·giorno)", decimali=2),
+            Voce(chiave="R²", valore=_num(f.get("r2")), decimali=2)) if v.valore is not None])]
+        bl.append(Tabella(titolo="Consumi mensili e gradi giorno reali", intestazioni=["Mese", f"Consumo ({u})", "Gradi giorno (20 °C)", "Atteso dalla firma"],
+                          righe=[[_testo(m.get("mese"), 10), _num(m.get("consumo")), _num(m.get("gg20")), _num(m.get("atteso"))]
+                                 for m in map(_diz, _lista(f.get("mesi")))][:240], decimali=[None, 0, 0, 0]))
+        bl.append(Paragrafo(testo="Firma energetica: retta dei minimi quadrati tra consumo mensile e gradi giorno reali del "
+                                   "comune (base 20 °C, archivio meteo di EuGEnio)."))
+        sezioni.append(Sezione(titolo="Firma energetica", blocchi=bl))
+    fv = _diz(d.get("fv"))
+    if fv.get("aree"):
+        sezioni.append(Sezione(titolo="Fotovoltaico sui tetti", blocchi=[Tabella(
+            intestazioni=["Area", "Superficie (m²)", "Inclinazione (°)", "Orientamento (°)", "Moduli", "Potenza (kWp)",
+                          "Producibilità (kWh/anno)", "Perdita per ombre (%)"],
+            righe=[[_testo(a.get("nome"), 60), _num(a.get("area")), _num(a.get("inclinazione")), _num(a.get("orientamento")),
+                    _num(a.get("moduli")), _num(a.get("kwp")), _num(a.get("kwh_anno")), _num(a.get("perdita_ombre"))]
+                   for a in map(_diz, _lista(fv.get("aree")))][:200], decimali=[None, 1, 0, 0, 0, 2, 0, 1]),
+            Paragrafo(testo=f"Totale: {_num(fv.get('totale_kwh')) or 0:,.0f} kWh/anno".replace(",", ".")
+                      + (f" con il clima orario del {_testo(fv.get('anno_clima'), 10)}." if fv.get("anno_clima") else ".")
+                      + " Modello semplificato (trasposizione isotropa, perdite di sistema 14 %, temperatura delle celle)"
+                        "; orientamento in gradi da nord in senso orario (180 = sud).")]))
+    sezioni += _sezioni_fase_b(d)
+    fonti_ortofoto: list[Fonte] = []
+    if pdf:
+        imm = [i for i in (_immagine_svg(x, "Figura") for x in _lista(d.get("immagini"))[:C.REPORT_MAX_IMMAGINI]) if i]
+        for x in _lista(d.get("immagini_png"))[:max(0, C.REPORT_MAX_IMMAGINI - len(imm))]:
+            i, f = _immagine_ortofoto(x)
+            if i is not None:
+                imm.append(i)
+                fonti_ortofoto.append(f)
+        if imm:
+            sezioni.append(Sezione(titolo="Figure", blocchi=imm))
+    note = [_testo(x, 2000) for x in _lista(d.get("note")) if isinstance(x, str) and x.strip()][:10]
+    if note:
+        sezioni.append(Sezione(titolo="Note", blocchi=[Elenco(voci=note)]))
+    return Documento(titolo=_testo(d.get("titolo")) or "Edificio in 3D", sottotitolo=_testo(e.get("nome")) or None,
+                     nome_file="edificio", sezioni=sezioni[:C.REPORT_MAX_SEZIONI],
+                     fonti=_fonti(OPEN_METEO, *fonti_ortofoto, extra=d.get("fonti")))
+
+
+def _immagine_ortofoto(x) -> tuple[Immagine | None, Fonte | None]:
+    """{titolo, png (base64), ortofoto {id, licenza, citazione, scheda}} → immagine con licenza e citazione nella
+    didascalia. Regola del § 6: ogni figura con ortofoto porta licenza e citazione; senza, la figura non entra. Le fonti
+    «solo dal vivo» (Geoportale Nazionale) non entrano mai nei report."""
+    x = _diz(x)
+    o = _diz(x.get("ortofoto"))
+    cit, lic = _testo(o.get("citazione"), 400).strip(), _testo(o.get("licenza"), 80).strip()
+    if not (cit and lic) or _testo(o.get("id"), 40) in _ORTOFOTO_SOLO_DAL_VIVO or not isinstance(x.get("png"), str):
+        return None, None
+    titolo = _testo(x.get("titolo"), 200).split(". ")[0] or "Vista dell'edificio con l'ortofoto"
+    try:
+        i = Immagine(formato="png", dati=x["png"], didascalia=f"{titolo}. Ortofoto: {cit} – licenza {lic}."[:300], larghezza_cm=17)
+    except ValidationError:
+        return None, None
+    url = o.get("scheda") if isinstance(o.get("scheda"), str) and re.match(r"^https?://\S+$", o["scheda"]) else None
+    return i, Fonte(testo=f"Ortofoto: {cit}", url=url)
+
+
+_ORTOFOTO_SOLO_DAL_VIVO = {"pcn2012"}
+
+
+def _sezioni_fase_b(d: dict) -> list[Sezione]:
+    """Obblighi di legge, sole sulle facciate, orizzonte lontano, confronto PVGIS e classifica di priorità (Fase B)."""
+    out: list[Sezione] = []
+    o = _diz(d.get("obblighi"))
+    righe = [x for x in map(_diz, _lista(o.get("righe")))][:30]
+    if righe:
+        out.append(Sezione(titolo="Obblighi di legge", blocchi=[
+            Paragrafo(testo=f"Intervento: {_testo(o.get('intervento'), 80)}" + ("; edificio pubblico." if o.get("pubblico") else ".")),
+            Tabella(intestazioni=["Voce", "Valore", "Riferimento"],
+                    righe=[[_testo(r.get("voce"), 200), _testo(r.get("valore"), 200), _testo(r.get("riferimento"), 200)] for r in righe]),
+            Paragrafo(testo="Potenza minima: D.Lgs. 199/2021, Allegato III, sezione B, punto 3 (P = k · S, k = 0,025 per gli "
+                            "edifici esistenti e 0,05 per i nuovi; S = superficie in pianta dell'edificio al livello del terreno) "
+                            "e punto 5 (edifici pubblici: +10 % e +5 punti). Le quote del punto 1 si verificano sui consumi del "
+                            "progetto. H'T: DM 26/6/2015, Allegato 1, Appendice A, Tabella 10, nel testo del DM 28/10/2025. "
+                            "Promemoria, non sostituisce la relazione tecnica del progettista (art. 26, comma 5).")]))
+    f = _diz(d.get("facciate"))
+    po = [x for x in map(_diz, _lista(f.get("per_orientamento")))][:8]
+    if po:
+        bl = [Tabella(intestazioni=["Orientamento", "Esposta (m²)", "kWh/m² anno", "kWh anno", "Estate giu–ago (kWh)",
+                                    "Inverno dic–feb (kWh)", "Perdita per ombre (%)"],
+                      righe=[[_testo(x.get("orientamento"), 4), _num(x.get("area")), _num(x.get("kwh_m2")), _num(x.get("kwh")),
+                              _num(x.get("estate")), _num(x.get("inverno")), _num(x.get("perdita"))] for x in po],
+                      decimali=[None, 0, 0, 0, 0, 0, 1])]
+        bl.append(Paragrafo(testo=f"Sole sulle sole parti esposte delle facciate, in {int(_num(f.get('parti')) or 0)} pezzi di circa "
+                                  "4 × 3 m (le parti in comune con altri corpi o con edifici confinanti non ricevono sole), con "
+                                  "le ombre degli edifici entro 250 m" + (" e l'orizzonte del terreno" if f.get("orizzonte_lontano") else "")
+                                  + (f"; clima orario del {_testo(f.get('anno_clima'), 10)}." if f.get("anno_clima") else ".")
+                                  + " Irradiazione sul piano verticale, modello isotropo."))
+        out.append(Sezione(titolo="Sole sulle facciate", blocchi=bl))
+    z = _diz(d.get("orizzonte_lontano"))
+    if _num(z.get("massimo")) is not None:
+        it = lambda v, d=1: f"{v:.{d}f}".replace(".", ",")
+        out.append(Sezione(titolo="Orizzonte lontano", blocchi=[Paragrafo(testo=(
+            f"Orizzonte del terreno fino a {it(_num(z.get('raggio')) or 25, 0)} km dal Copernicus DEM 90 m: angolo massimo "
+            f"{it(_num(z.get('massimo')))}°; quota del terreno nel punto {it(_num(z.get('quota')) or 0, 0)} m. Unito, direzione "
+            "per direzione, all'orizzonte degli edifici vicini."))]))
+    p = _diz(d.get("pvgis"))
+    pa = [x for x in map(_diz, _lista(p.get("aree")))][:50]
+    if pa:
+        def diff(x):
+            e, v = _num(x.get("eugenio_kwh")), _num(x.get("pvgis_kwh"))
+            return 100 * (e - v) / v if e is not None and v else None
+        out.append(Sezione(titolo="Confronto con PVGIS", blocchi=[
+            Tabella(intestazioni=["Area", "EuGEnio (kWh/anno)", "PVGIS con orizzonte", "PVGIS senza", "Differenza (%)", "Dati PVGIS"],
+                    righe=[[_testo(x.get("id"), 40), _num(x.get("eugenio_kwh")), _num(x.get("pvgis_kwh")), _num(x.get("pvgis_senza_kwh")),
+                            diff(x), f"{_testo(x.get('banca_dati'), 30)} {'–'.join(str(int(a)) for a in _lista(x.get('anni')) if isinstance(a, (int, float)))}"]
+                           for x in pa], decimali=[None, 0, 0, 0, 1, None]),
+            Paragrafo(testo="PVGIS chiamato dal server di EuGEnio con l'orizzonte calcolato da EuGEnio (userhorizon) e senza; "
+                            "PVGIS usa i suoi dati di radiazione, non il clima orario di EuGEnio.")]))
+    pr = _diz(d.get("priorita"))
+    sedi = [x for x in map(_diz, _lista(pr.get("sedi")))][:C.REPORT_MAX_RIGHE]
+    if sedi:
+        crit = ["intensita", "sensibilita", "base", "costo", "fv"]
+        pesi = _diz(pr.get("pesi"))
+        out.append(Sezione(titolo="Classifica di priorità del patrimonio", blocchi=[
+            Tabella(intestazioni=["Posto", "Sede", "Punteggio", "Consumo/m²", "Sensibilità", "Carico di base", "Costo/m²", "FV/m²", "kWh/m²"],
+                    righe=[[_num(x.get("posto")), _testo(x.get("nome"), 80), _num(x.get("punteggio"))]
+                           + [_num(_diz(x.get("punteggi")).get(k)) for k in crit] + [_num(x.get("kwh_m2"))] for x in sedi],
+                    decimali=[0, None, 0, 0, 0, 0, 0, 0, 0]),
+            Paragrafo(testo="Punteggi da 0 a 100 per criterio (rango della sede tra quelle in classifica), poi media pesata dei "
+                            "criteri disponibili; pesi: " + ", ".join(f"{k} {(_num(pesi.get(k)) or 0):.2f}".replace(".", ",") for k in crit)
+                            + ". Più alto = intervenire prima. Costi inseriti dall'utente (bollette o convenzioni); nessun prezzo "
+                              "di borsa.")]))
+    return out
+
+
 TIPI: dict[str, Callable[..., Documento]] = {
     "previsione": report_previsione,
     "legge10": report_legge10,
     "patrimonio": report_patrimonio,
     "indicatori": report_indicatori,
     "valori_sedi": report_valori_sedi,
+    "edificio": report_edificio,
 }
 # tipi che ricevono anche il formato (per esempio per lasciare le immagini fuori da Excel e ODS)
-CON_FORMATO = {"valori_sedi"}
+CON_FORMATO = {"valori_sedi", "edificio", "previsione"}   # previsione: i grafici solo nel PDF (04/11/2026)

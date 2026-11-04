@@ -11,7 +11,8 @@
 È un **servizio open source** di previsione dei consumi energetici con TiRex-2, meteo per comune, dati
 climatici per la Legge 10 (con i valori del DPR 412/93 e il clima dal 1940), patrimonio edilizio,
 indicatori di spesa energetica degli enti sanitari, dati di mercato per simulazioni interne e convenzioni
-regionali. Gira su un server gratuito Oracle Cloud (fase 1). Le cartelle sono numerate per fase; la
+regionali; in progetto (dal 03/11/2026) edifici 3D, fotovoltaico con le ombre, visure, analisi di mercato e
+cogenerazione. Gira su un server gratuito Oracle Cloud (fase 1). Le cartelle sono numerate per fase; la
 numerazione ha un buco (la 2) perché quella fase non fa parte del servizio pubblico.
 
 | Fase | Cartella | Cosa contiene | Dove si esegue |
@@ -24,6 +25,11 @@ numerazione ha un buco (la 2) perché quella fase non fa parte del servizio pubb
 | 8 | `fase8-indicatori/` | **indicatori di spesa energetica degli enti SSN** (OpenBDAP, ReportER, ISTAT) per la pagina Indicatori | server (mensile) |
 | 9 | `fase9-clima-storico/` | **clima dal 1940** per tutti i comuni (ERA5/ERA5-Land), indicatori alla UNI 10349 e al DPR 412/93 | cloud o PC, una volta l'anno |
 | 7 | `fase7-territorio/` | **patrimonio edilizio diffuso**: geolocalizzazione in blocco con **ANNCSU** (civici ufficiali) e Zornade (catasto); scelta su come usare i confini Gramscii | server o PC |
+| 10 | `fase10-edifici3d/` | **edifici 3D** (DBTR, aggregati, OSM), ortofoto, LiDAR, pipeline notturna a tessere, pagina di stato nascosta, ombre, fotovoltaico e analisi energetiche; **Fase A e Fase B in codice dal 04/11/2026** (pacchetto `edifici3d`, PMTiles/COG, pagina 3D su demo sintetica; ortofoto con proxy e copia, facciate, orizzonte lontano, PVGIS, obblighi D.Lgs. 199/2021 e classifica di priorità; **Fase C** dal 04/11/2026 sera: pipeline LiDAR notturna a tessere con TOML per zona, falde per corpo, pagina di stato nascosta con Cloudflare Access, import DXF/IFC; **Fase E** dal 04/11/2026 notte: fonti verificate regione per regione in `fonti/regioni.toml`, ortofoto di Bolzano e Trento, altezze di Zornade nell'archivio ODbL, aggancio facoltativo al modulo privato delle analisi 5 e 7–13; **Importa DXF/IFC** dal 04/11/2026 notte: DXF e IFC letti nel browser in una pagina separata con dxf-parser e web-ifc, stessa logica di `importa-modello`, file pesanti convertiti sul PC), dati veri degli edifici da scaricare, fonti DSM/LAS in attesa | sito + server |
+| 11 | `fase11-visure/` | **EuGEnio Visure**: programma a parte (.exe personale e Docker per enti) per le visure catastali e il CSV arricchito; **Fase D in codice dal 04/11/2026**: lettore locale delle visure in PDF (nessuna credenziale, nessun accesso a SISTER, dati personali esclusi), importazione nella pagina Patrimonio solo nel browser, avviatore `EuGEnioVisure.exe` con versioni approvate (impronte SHA-256) e workflow `.github/workflows/visure-windows.yml` con firma SignPath predisposta, immagine Docker; dal 04/11/2026 notte anche la **conversione dei modelli DXF/IFC** pesanti (`EuGEnioVisure.exe modello`, scheda «Modelli DXF/IFC»); scaricamento con `visura-api` non attivo finché l'Agenzia non chiarisce i termini | PC dell'utente o server dell'ente |
+| 12 | `fase12-gme-fotovoltaico/` | analisi sui **dati GME quartorari** (FV, BESS, CER, offerte, flessibilità, zone, rischio, costo per POD): **uso interno finché non c'è la licenza GME**; registro della call `DOMANDE_CALL_GME.md` | server |
+| 13 | `fase13-cogenerazione/` | **cogenerazione** in autoconsumo, report 13–20 con il budget di dissipazione CAR: **uso interno finché non c'è la licenza GME**; regole CAR dagli atti normativi, niente contenuti GSE | server |
+| — | `documenti/` | documenti di progetto: proposta 3D e visure, riepilogo GME, scaletta della call GME, bozza dell'articolo per Stato Critico sugli edifici 3D (Fase E) | — |
 
 ## Ordine consigliato
 
@@ -32,6 +38,8 @@ numerazione ha un buco (la 2) perché quella fase non fa parte del servizio pubb
    Nel frattempo: chiedere le eventuali credenziali (API del GME per la fase 6, chiave Zornade per la
    fase 7) e preparare il dominio su Cloudflare (fase 4).
 3. Fasi 4, 5, 6, 7 quando il pacchetto meteo è pronto; fasi 8 e 9 quando servono.
+4. Fasi 10–13 (dal 03/11/2026, progetti): 10 e 11 secondo il programma A–E della proposta; 12 e 13 solo dopo la
+   licenza scritta del GME.
 
 ## Spazio su disco e memoria
 
@@ -80,4 +88,16 @@ da `.gitignore`.
   ricostruito: servono a simulazioni e analisi, non si pubblicano e non si scaricano dal sito.
   I future trimestrali TTF si leggono dal sito EEX, che li mostra a scopo informativo, solo per
   calcolare il PFOR.
+- **Licenza GME per le analisi delle fasi 12 e 13**: serve una licenza scritta; fino ad allora le pagine restano
+  segnaposto. Tariffe ARERA in CC BY-SA 4.0, fattori ISPRA in CC BY 4.0 (in una cartella separata con la loro
+  licenza, se entrano nel repository); nessun contenuto GSE (CC BY-NC-SA 3.0 IT) e nessun estratto di norme UNI.
+- **Norme UNI**: coefficienti e prospetti in un modulo privato fuori dal repository (`fase10-edifici3d/uni_privato/`,
+  in `.gitignore`, fuori dallo zip pubblico e, con il `.dockerignore`, dalle immagini Docker; consegnato a parte). Senza
+  il modulo le analisi 5 e 7–13 dicono «analisi non disponibile in questa installazione».
+- **Fonti delle altre regioni**: licenza, stato e data della verifica di ogni fonte in `fase10-edifici3d/fonti/regioni.toml`;
+  si accendono solo quelle con licenza compatibile scritta e provate dal vivo.
+- **Zornade** (termini del 18/09/2026): uso libero anche commerciale con attribuzione e link; ridistribuzione non
+  vietata in generale (vietata la rivendita dei dati grezzi contro le licenze), vietate la re-identificazione di
+  persone e i carichi eccessivi (l'estrazione massiva fa sospendere il token). I dati catastali non sostituiscono
+  visure ed estratti ufficiali.
 - Modello TiRex-2: Apache 2.0. listmonk: AGPL-3.0.

@@ -1,0 +1,68 @@
+{
+ "sintetico": true,
+ "avviso": "Dati sintetici di esempio: sagome, altezze e terreno sono inventati per mostrare come funziona la pagina; non rappresentano edifici reali.",
+ "edificio": "E-DEMO",
+ "unita": "Smc",
+ "mesi": [
+  {
+   "mese": "2025-01",
+   "gas_smc": 4170.0,
+   "gg_esempio": 430
+  },
+  {
+   "mese": "2025-02",
+   "gas_smc": 3309.0,
+   "gg_esempio": 330
+  },
+  {
+   "mese": "2025-03",
+   "gas_smc": 2611.0,
+   "gg_esempio": 260
+  },
+  {
+   "mese": "2025-04",
+   "gas_smc": 1244.0,
+   "gg_esempio": 110
+  },
+  {
+   "mese": "2025-05",
+   "gas_smc": 295.0,
+   "gg_esempio": 0
+  },
+  {
+   "mese": "2025-06",
+   "gas_smc": 288.0,
+   "gg_esempio": 0
+  },
+  {
+   "mese": "2025-07",
+   "gas_smc": 301.0,
+   "gg_esempio": 0
+  },
+  {
+   "mese": "2025-08",
+   "gas_smc": 316.0,
+   "gg_esempio": 0
+  },
+  {
+   "mese": "2025-09",
+   "gas_smc": 294.0,
+   "gg_esempio": 0
+  },
+  {
+   "mese": "2025-10",
+   "gas_smc": 1082.0,
+   "gg_esempio": 90
+  },
+  {
+   "mese": "2025-11",
+   "gas_smc": 2692.0,
+   "gg_esempio": 260
+  },
+  {
+   "mese": "2025-12",
+   "gas_smc": 3956.0,
+   "gg_esempio": 400
+  }
+ ]
+}

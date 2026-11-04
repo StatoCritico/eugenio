@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EuGEnio – Ombre e percorso del sole</title>
+<meta name="description" content="Il percorso del sole sopra l&#x27;edificio e le ombre degli edifici vicini, ora per ora e giorno per giorno, in 3D.">
+<!-- testa -->
+<script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
+try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
+if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
+var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|cogenerazione|fotovoltaico)$/.test(f))d.dataset.menuFissato=f}catch(e){}
+function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261104c";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261104c"></script>
+<link rel="stylesheet" href="stile.css?v=20261104c">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261104c">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261104c">
+<!-- /testa -->
+<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261104c">
+</head>
+<body>
+<!-- testata -->
+<header class="testata">
+  <div class="testata-alta">
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261104c" alt="EuGEnio" width="153" height="28"></a>
+    <script>eugenioLoghi()</script>
+    <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Altre pagine">
+      <a href="indicatori.html">Indicatori</a>
+      <a href="metodo.html">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="contatti.html">Contattaci</a>
+    </nav>
+    <details class="menu-tutto">
+      <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
+      <nav class="menu-pannello" aria-label="Menu completo">
+        <h2>Servizi</h2>
+        <details class="pannello-gruppo" data-gruppo="clima"><summary>Clima e meteo</summary>
+          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li></ul>
+        </details>
+        <details class="pannello-gruppo" data-gruppo="patrimonio"><summary>Patrimonio</summary>
+          <ul><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="ortofoto.html">Ortofoto <span class="cantiere prova">sperimentale</span></a></li><li><a href="lidar.html">LiDAR <span class="cantiere">in sviluppo</span></a></li><li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova">sperimentale</span></a></li><li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova">sperimentale</span></a></li><li><a href="visure.html">Visure <span class="cantiere">in sviluppo</span></a></li></ul>
+        </details>
+        <details class="pannello-gruppo" data-gruppo="edificio"><summary>Edificio</summary>
+          <ul><li><a href="edificio-geometria.html">Geometria e luce naturale <span class="cantiere prova">sperimentale</span></a></li><li><a href="edificio-consumi.html">Consumi, firma energetica e priorità <span class="cantiere prova">sperimentale</span></a></li><li><a href="edificio-fabbisogno.html">Fabbisogno con le metodiche UNI <span class="cantiere">in sviluppo</span></a></li><li><a href="edificio-involucro.html">Facciate e tetti: sole, tetti freddi e verdi <span class="cantiere">in sviluppo</span></a></li><li><a href="edificio-impianti.html">Pompe di calore e solare termico <span class="cantiere">in sviluppo</span></a></li><li><a href="edificio-cer.html">Comunità energetiche <span class="cantiere">in sviluppo</span></a></li><li><a href="edificio-clima.html">Clima che cambia <span class="cantiere">in sviluppo</span></a></li><li><a href="edificio-obblighi.html">Obblighi di legge <span class="cantiere prova">sperimentale</span></a></li></ul>
+        </details>
+        <details class="pannello-gruppo" data-gruppo="cogenerazione"><summary>Cogenerazione</summary>
+          <ul><li><span class="voce-gme" data-pagina="cog-spark-spread.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Spark spread di autoconsumo</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme" data-pagina="cog-simulazione.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Cogeneratore sull'edificio, con FV e accumulo</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme" data-pagina="cog-confronto.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Confronto tra alternative e trigenerazione</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><a href="cog-emissioni.html">Emissioni <span class="cantiere">in sviluppo</span></a></li><li><span class="voce-gme" data-pagina="cog-rischio.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Rischio prezzo elettricità e gas</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme" data-pagina="cog-car.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Budget di dissipazione CAR</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li></ul>
+        </details>
+        <details class="pannello-gruppo" data-gruppo="fotovoltaico" data-attivo open><summary>Fotovoltaico</summary>
+          <ul><li><a href="fv-ombre.html" aria-current="page">Ombre e percorso del sole <span class="cantiere prova">sperimentale</span></a></li><li><a href="fv-irradiazione.html">Sole e irradiazione su tetti e facciate <span class="cantiere prova">sperimentale</span></a></li><li><a href="fv-producibilita.html">Producibilità con le ombre <span class="cantiere prova">sperimentale</span></a></li><li><a href="fv-pvgis.html">Confronto con PVGIS <span class="cantiere prova">sperimentale</span></a></li><li><a href="fv-dlgs199.html">D.Lgs. 199/2021, Allegato III <span class="cantiere prova">sperimentale</span></a></li><li><a href="fv-leed.html">Prefattibilità LEED <span class="cantiere">in sviluppo</span></a></li><li><span class="voce-gme" data-pagina="fv-mercato.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Prezzo catturato, accumuli e mercato</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li></ul>
+        </details>
+        <h2>Altre pagine</h2>
+        <ul><li><a href="indicatori.html">Indicatori</a></li><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <h2 id="aspetto-telefono">Aspetto</h2>
+        <div class="vestito">
+          <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
+      <li role="option" id="vestiti-telefono-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-telefono-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-telefono-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-telefono-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-telefono-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+          </ul>
+        </div>
+      </nav>
+    </details>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <div class="testata-menu">
+    <nav class="menu-strumenti" aria-label="Servizi">
+      <ul class="menu-gruppi">
+        <li><details class="voce-gruppo" data-gruppo="clima"><summary>Clima e meteo</summary>
+          <ul class="tendina">
+            <li><a href="dati.html">Dati climatici</a></li>
+            <li><a href="legge10.html">Legge 10</a></li>
+            <li><a href="./">Previsioni</a></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="patrimonio"><summary>Patrimonio</summary>
+          <ul class="tendina">
+            <li><a href="patrimonio.html">Patrimonio</a></li>
+            <li><a href="ortofoto.html">Ortofoto <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="lidar.html">LiDAR <span class="cantiere">in sviluppo</span></a></li>
+            <li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="visure.html">Visure <span class="cantiere">in sviluppo</span></a></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="edificio"><summary>Edificio</summary>
+          <ul class="tendina">
+            <li><a href="edificio-geometria.html">Geometria e luce naturale <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="edificio-consumi.html">Consumi, firma energetica e priorità <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="edificio-fabbisogno.html">Fabbisogno con le metodiche UNI <span class="cantiere">in sviluppo</span></a></li>
+            <li><a href="edificio-involucro.html">Facciate e tetti: sole, tetti freddi e verdi <span class="cantiere">in sviluppo</span></a></li>
+            <li><a href="edificio-impianti.html">Pompe di calore e solare termico <span class="cantiere">in sviluppo</span></a></li>
+            <li><a href="edificio-cer.html">Comunità energetiche <span class="cantiere">in sviluppo</span></a></li>
+            <li><a href="edificio-clima.html">Clima che cambia <span class="cantiere">in sviluppo</span></a></li>
+            <li><a href="edificio-obblighi.html">Obblighi di legge <span class="cantiere prova">sperimentale</span></a></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="cogenerazione"><summary>Cogenerazione</summary>
+          <ul class="tendina">
+            <li><span class="voce-gme" data-pagina="cog-spark-spread.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Spark spread di autoconsumo</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-simulazione.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Cogeneratore sull'edificio, con FV e accumulo</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-confronto.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Confronto tra alternative e trigenerazione</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><a href="cog-emissioni.html">Emissioni <span class="cantiere">in sviluppo</span></a></li>
+            <li><span class="voce-gme" data-pagina="cog-rischio.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Rischio prezzo elettricità e gas</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-car.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Budget di dissipazione CAR</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="fotovoltaico" data-attivo><summary>Fotovoltaico</summary>
+          <ul class="tendina">
+            <li><a href="fv-ombre.html" aria-current="page">Ombre e percorso del sole <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="fv-irradiazione.html">Sole e irradiazione su tetti e facciate <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="fv-producibilita.html">Producibilità con le ombre <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="fv-pvgis.html">Confronto con PVGIS <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="fv-dlgs199.html">D.Lgs. 199/2021, Allegato III <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="fv-leed.html">Prefattibilità LEED <span class="cantiere">in sviluppo</span></a></li>
+            <li><span class="voce-gme" data-pagina="fv-mercato.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Prezzo catturato, accumuli e mercato</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+          </ul></details></li>
+      </ul>
+    </nav>
+    <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
+    <div class="vestito">
+      <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
+        aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <ul class="vestito-elenco a-discesa" id="vestiti-elenco" role="listbox" aria-label="Vestito del sito" tabindex="-1" hidden>
+      <li role="option" id="vestiti-elenco-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-elenco-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-elenco-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-elenco-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-elenco-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+      </ul>
+    </div>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <nav class="riga-fissata" id="riga-fissata" aria-label="Menu fissato"></nav>
+</header>
+<!-- /testata -->
+
+<main class="strumento pagina-edificio3d" data-vista="ombre">
+  <section class="mappa-area" aria-label="Edificio in 3D">
+    <p class="gruppo-servizio">Fotovoltaico</p>
+    <h1>Ombre e percorso del sole</h1>
+    <p class="sotto">Scegli l'edificio e un giorno: le ombre degli edifici si muovono con il sole, ora per ora. Il calcolo del sole è fatto nel browser.</p>
+    <div class="mappa mappa-gl" id="mappa3d" role="region" aria-label="Mappa 3D degli edifici"></div>
+    <p class="aiuto mappa3d-aiuto">Trascina per spostare; col tasto destro (o Ctrl) ruoti e inclini; rotella per
+      ingrandire. Col dito: due dita ingrandiscono, ruotano e inclinano. Clic su un edificio per sceglierlo.</p>
+    <div class="riga-campi sfondo-3d">
+      <label>Sfondo della mappa <select id="sfondo-ortofoto"><option value="">nessuna ortofoto</option></select></label>
+    </div>
+    <p class="aiuto attribuzione-ortofoto" id="attribuzione-ortofoto" hidden></p>
+    <div class="legenda" id="legenda-3d">
+      <span><i class="pallino scelto"></i>edificio scelto</span>
+      <span><i class="pallino vicini"></i>edifici vicini</span>
+      <span><i class="pallino ombra"></i>ombre</span>
+      <span><i class="pallino falde"></i>falde LiDAR (dall'arancio, a sud, al blu, a nord)</span>
+      <span><i class="pallino fv"></i>aree FV</span>
+      <span><i class="pallino facciate"></i>facciate al sole (dal chiaro allo scuro: più kWh/m²)</span>
+    </div>
+    <footer class="piede piede-colonna" id="piede" role="contentinfo">
+      <div class="piede-fonti">
+      <p id="fonti-3d">Edifici: <a href="https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/database-topografico-regionale/immobili-e-antropizzazioni/edificato/layer-6">DBTR
+        Emilia-Romagna – Unità volumetrica</a> (CC BY 4.0); terreno: <a href="https://geoportale.regione.emilia-romagna.it/notizie/servizi-e-applicazioni/dtm-novita-2025">DTM
+        Emilia-Romagna 5×5 m</a> (CC BY 4.0); dove servono, edifici © <a href="https://www.openstreetmap.org/copyright">contributori OpenStreetMap</a>
+        (ODbL 1.0, archivio separato). Clima: <a href="https://open-meteo.com/">Open-Meteo.com</a> (ERA5/Copernicus, CC BY 4.0). Comuni:
+        <a href="https://www.istat.it/">ISTAT</a> (CC BY 4.0). Mappa: <a href="https://maplibre.org/">MapLibre GL JS</a> (BSD-3) e
+        <a href="https://github.com/protomaps/PMTiles">PMTiles</a> (BSD-3), ospitate su questo sito. Orizzonte lontano:
+        <a href="https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM">Copernicus
+        DEM GLO-90</a> (© DLR e Airbus) dai file di Open-Meteo.com (CC BY 4.0). Confronto: <a
+        href="https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis_en">PVGIS</a>
+        © Unione europea (riuso con citazione). Ortofoto: licenza e citazione sotto la mappa, secondo la fonte scelta. Falde dei tetti, dove ci sono: rilievi
+        LiDAR della <a href="https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/quadri-di-unione/layer-16">Regione
+        Emilia-Romagna</a> (CC BY 4.0) elaborati da EuGEnio; fonte e licenza di ogni falda nella tabella.</p>
+      <p>Altezze del DBTR approssimate (circa ±3 m): piani, superfici, ombre e producibilità sono stime e vanno
+        verificate prima di usarle in un progetto.</p>
+      </div>
+  <!-- piede -->
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261104c" alt="" width="44" height="44">
+  <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  <!-- /piede -->
+    </footer>
+  </section>
+
+  <section class="pannello" aria-label="Analisi dell'edificio">
+    <!-- sperimentale -->
+    <div class="messaggio attenzione sperimentale" role="note">
+      <div><b>Attenzione! Servizio sperimentale non ancora verificato.</b>
+        EuGEnio è appena nato: i calcoli e i risultati di questa pagina non sono ancora stati validati con verifiche
+        sistematiche su dati reali e possono contenere errori. Usali per farti un'idea e confrontali con altre fonti
+        prima di prendere decisioni; non sostituiscono i valori ufficiali né il giudizio di un professionista. Se trovi
+        qualcosa che non torna, <a href="contatti.html">scrivici</a> (vedi anche <a href="faq.html#garanzia">«I dati
+        sono garantiti?»</a>).</div>
+    </div>
+    <!-- /sperimentale -->
+
+    <div class="passo" id="passo-edificio">
+      <h2><span class="n">1</span>Edificio</h2>
+      <p class="aiuto">Fai clic su un edificio della mappa: si seleziona con tutti i suoi corpi. La mappa carica gli edifici nel
+        raggio di 250 m (servono per le ombre e per le pareti in comune).</p>
+      <div class="messaggio attenzione" id="avviso-sintetico" role="note" hidden><div><b>Dati sintetici di esempio</b>
+        Gli archivi degli edifici dell'Emilia-Romagna (DBTR) non sono ancora sul server: la pagina mostra un isolato
+        inventato vicino a Rimini, con sagome, altezze, terreno e consumi di prova, solo per far vedere come funziona.
+        Non rappresenta edifici reali.</div></div>
+      <div class="messaggio" id="messaggio" role="status" aria-live="polite"></div>
+      <dl class="scheda-edificio" id="scheda-edificio" hidden></dl>
+      <details class="modello-utente">
+        <summary>Usa il tuo modello (DXF o IFC)</summary>
+        <p class="aiuto">I disegni DXF e i modelli BIM IFC si aprono nella pagina <a href="importa-dxf-ifc.html">Importa DXF/IFC</a>:
+          la conversione avviene in questo browser e il file non va al server. I file pesanti (oltre 30 MB) si convertono sul PC
+          con EuGEnio Visure o con <code>python -m edifici3d importa-modello</code> (istruzioni nella stessa pagina). Qui apri il
+          modello convertito (<code>.geojson</code>): viene letto solo da questo browser. Corpi, altezze e falde del modello
+          prendono il posto di quelli dell'archivio.</p>
+        <label>Modello convertito (.geojson) <input id="modello-file" type="file" accept=".geojson,.json,application/geo+json,application/json"></label>
+      </details>
+    </div>
+
+    <div class="passo" id="passo-corpi" hidden>
+      <h2><span class="n">2</span>Corpi</h2>
+      <p class="aiuto">Ogni corpo è un prisma con altezza e tetto propri. Puoi correggere gronda, colmo, tetto e piani (il
+        valore diventa «dato dell'utente»), oppure dividere un corpo con una linea e dare un'altezza a ciascuna parte.</p>
+      <div class="tabella-scorre"><table class="corpi" id="tabella-corpi"></table></div>
+      <div class="falde-tetti" id="falde-tetti">
+        <h3>Falde dei tetti</h3>
+        <p class="aiuto">Dove c'è il rilievo LiDAR (o il tuo modello) ogni corpo ha le sue falde misurate: pendenza, orientamento
+          (gradi da nord, 180 = sud) e superficie inclinata; sulla mappa le falde inclinate si vedono a gradini, dal
+          giallo-arancio (verso sud) al blu (verso nord). Le aree FV disegnate su una falda ne prendono inclinazione e
+          orientamento. Se correggi un corpo, le sue falde misurate non valgono più.</p>
+        <div class="messaggio" id="messaggio-falde" role="status" aria-live="polite"></div>
+        <div class="tabella-scorre"><table class="corpi" id="tabella-falde"></table></div>
+      </div>
+      <div class="scarica">
+        <button class="bottone secondario" id="dividi" type="button" aria-pressed="false">Dividi un corpo con una linea</button>
+        <button class="bottone secondario" id="ripristina" type="button">Ripristina i corpi</button>
+      </div>
+      <p class="aiuto" id="aiuto-dividi" hidden>Fai clic su due punti della mappa: la linea che li unisce divide il corpo che
+        attraversa. Esc per annullare.</p>
+    </div>
+
+    <div class="passo" id="passo-superfici" hidden>
+      <h2><span class="n">3</span>Piani e superfici</h2>
+      <p class="aiuto">I valori che scrivi qui (o che arrivano dal file del Patrimonio, colonne facoltative) hanno la
+        precedenza sulle stime: file → visura → stima dall'altezza. Accanto a ogni numero c'è la sua fonte.</p>
+      <div class="riga-campi">
+        <label>Uso <select id="uso">
+          <option value="">dalla sagoma</option><option value="residenziale">residenziale (3,0 m)</option>
+          <option value="uffici">uffici (3,4 m)</option><option value="scuola">scuola (3,5 m)</option>
+          <option value="ospedale">ospedale (4,0 m)</option><option value="commerciale">commerciale (4,0 m)</option>
+          <option value="capannone">capannone o palestra (un piano)</option><option value="altro">altro (3,2 m)</option></select></label>
+        <label>Piani fuori terra <input id="csv-piani_fuori_terra" type="number" min="1" step="1"></label>
+        <label>Piani interrati <input id="csv-piani_interrati" type="number" min="0" step="1"></label>
+        <label>Superficie lorda (m²) <input id="csv-superficie_lorda" type="number" min="0"></label>
+        <label>Superficie netta (m²) <input id="csv-superficie_netta" type="number" min="0"></label>
+        <label>Superficie catastale (m²) <input id="csv-superficie_catastale" type="number" min="0"></label>
+        <label>Anno di costruzione <input id="csv-anno_costruzione" type="number" min="1000" max="2100"></label>
+      </div>
+      <div id="superfici" data-riquadro-tabella data-titolo="Piani e superfici"></div>
+    </div>
+
+    <div class="passo" id="passo-geometria" hidden>
+      <h2><span class="n">4</span>Indicatori geometrici</h2>
+      <p class="aiuto">Volume lordo, superficie disperdente (pareti esposte, tetti e pavimento a terra), rapporto S/V e pareti
+        per orientamento. Le pareti in comune con altri corpi non disperdono, tranne la parte che sporge sopra il corpo più
+        basso. Il tetto a falde conta con la sua superficie inclinata.</p>
+      <div id="geometria" data-riquadro-tabella data-titolo="Indicatori geometrici"></div>
+      <div id="grafico-orientamenti"></div>
+    </div>
+
+    <div class="passo" id="passo-obblighi" hidden>
+      <h2><span class="n">5</span>Obblighi di legge</h2>
+      <p class="aiuto">Potenza minima degli impianti a fonti rinnovabili sopra o dentro l'edificio (<a
+        href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2021-11-08;199!vig=">D.Lgs. 199/2021</a>,
+        art. 26 e Allegato III) e rapporto di forma S/V con la zona climatica del comune (DPR 412/93, Allegato A) per il
+        limite di H'T del DM 26/6/2015 aggiornato dal DM 28/10/2025.</p>
+      <div class="riga-campi">
+        <label>Intervento <select id="intervento-199">
+          <option value="nuovo">nuova costruzione</option>
+          <option value="primo" selected>ristrutturazione importante di primo livello</option>
+          <option value="secondo">ristrutturazione importante di secondo livello</option>
+          <option value="impianto">ristrutturazione dell'impianto termico</option></select></label>
+        <label class="casella"><input id="pubblico-199" type="checkbox"> edificio pubblico</label>
+      </div>
+      <div id="obblighi" data-riquadro-tabella data-titolo="Obblighi di legge"></div>
+      <p class="aiuto" id="nota-obblighi"></p>
+    </div>
+
+    <div class="passo" id="passo-ombre" hidden>
+      <h2><span class="n">5</span>Ombre e sole</h2>
+      <p class="aiuto">Scegli il giorno e l'ora (ora legale o solare italiana) oppure fai partire l'animazione del giorno.</p>
+      <div class="riga-campi">
+        <label>Giorno <input id="giorno" type="date"></label>
+        <label>Ora <input id="ora" type="range" min="0" max="1439" step="15"></label>
+        <button class="bottone secondario" id="anima" type="button" aria-pressed="false">▶ Ciclo del giorno</button>
+      </div>
+      <p class="sole" id="sole" aria-live="polite"></p>
+    </div>
+
+    <div class="passo" id="passo-facciate" hidden>
+      <h2><span class="n">7</span>Facciate al sole</h2>
+      <p class="aiuto">Ogni facciata è divisa in pezzi di circa 4 × 3 m; si calcola il sole solo sui pezzi esposti (le parti
+        in comune con altri corpi o con gli edifici confinanti non ricevono sole), con le ombre degli edifici entro 250 m e
+        l'orizzonte del terreno fino a 25 km. Sulla mappa i pezzi sono colorati per kWh/m² all'anno.</p>
+      <div class="scarica">
+        <button class="bottone" id="calcola-facciate" type="button">Calcola il sole sulle facciate</button>
+      </div>
+      <div class="messaggio" id="messaggio-facciate" role="status" aria-live="polite"></div>
+      <div id="facciate" data-riquadro-tabella data-titolo="Facciate al sole per orientamento"></div>
+      <div id="grafico-facciate"></div>
+    </div>
+
+    <div class="passo" id="passo-fv" hidden>
+      <h2><span class="n">6</span>Fotovoltaico sui tetti</h2>
+      <p class="aiuto">«Aggiungi un'area» e fai clic sul tetto di un corpo: il rettangolo si allinea ai lati del corpo, con
+        la fascia di rispetto. Inclinazione e orientamento sono precompilati (tetto piano: moduli su telai a 10° verso sud,
+        con la distanza tra le file; tetto a falde: la falda verso sud) e li puoi cambiare.</p>
+      <div class="scarica">
+        <button class="bottone secondario" id="aggiungi-fv" type="button" aria-pressed="false">Aggiungi un'area</button>
+        <button class="bottone" id="calcola-fv" type="button" disabled>Calcola la producibilità</button>
+      </div>
+      <div class="riga-campi">
+        <label>Modulo (W) <input id="modulo-w" type="number" value="430" min="100" max="800"></label>
+        <label>Lati del modulo (m) <input id="modulo-lati" type="text" value="1,13 × 1,72"></label>
+        <label>Fascia di rispetto (m) <input id="fascia" type="number" value="0.5" min="0" step="0.1"></label>
+      </div>
+      <div class="tabella-scorre"><table class="aree-fv" id="tabella-fv"></table></div>
+      <div class="messaggio" id="messaggio-fv" role="status" aria-live="polite"></div>
+      <div id="grafico-fv"></div>
+    </div>
+
+    <div class="passo" id="passo-pvgis" hidden>
+      <h2><span class="n">9</span>Confronto con PVGIS</h2>
+      <p class="aiuto">Le stesse aree calcolate da PVGIS (Centro comune di ricerca della Commissione europea), chiamato dal
+        nostro server con l'orizzonte di EuGEnio (parametro <code>userhorizon</code>: edifici vicini e terreno lontano) e
+        senza. PVGIS usa i suoi dati di radiazione satellitare (2005–2023), non il clima orario di EuGEnio: differenze
+        del 5–10 % sono normali.</p>
+      <div class="scarica">
+        <button class="bottone" id="calcola-pvgis" type="button" disabled>Confronta con PVGIS</button>
+      </div>
+      <div class="messaggio" id="messaggio-pvgis" role="status" aria-live="polite"></div>
+      <div id="pvgis" data-riquadro-tabella data-titolo="Confronto con PVGIS"></div>
+      <div id="grafico-pvgis"></div>
+    </div>
+
+    <div class="passo" id="passo-consumi" hidden>
+      <h2><span class="n">7</span>Consumi e firma energetica</h2>
+      <p class="aiuto">Incolla i consumi mensili (una riga per mese: <code>2025-01;4170</code>) o carica un CSV con le colonne
+        <code>mese</code> e <code>consumo</code>. Li confrontiamo con i gradi giorno reali del comune (base 20 °C,
+        archivio meteo di EuGEnio) e li dividiamo per superficie e volume.</p>
+      <div class="riga-campi">
+        <label>Vettore <select id="vettore"><option value="gas">gas</option><option value="termica">energia termica</option>
+          <option value="elettricita">energia elettrica</option></select></label>
+        <label>Unità <input id="unita-consumi" type="text" value="Smc"></label>
+      </div>
+      <label for="consumi">Consumi mensili</label>
+      <textarea id="consumi" rows="6" placeholder="2025-01;4170"></textarea>
+      <div class="scarica">
+        <button class="bottone" id="calcola-firma" type="button">Calcola la firma</button>
+        <button class="bottone secondario" id="esempio-consumi" type="button">Consumi di esempio (sintetici)</button>
+      </div>
+      <div class="messaggio" id="messaggio-firma" role="status" aria-live="polite"></div>
+      <div id="firma" data-riquadro-tabella data-titolo="Firma energetica"></div>
+      <div id="grafico-firma"></div>
+    </div>
+
+    <div class="passo" id="passo-priorita">
+      <h2><span class="n">11</span>Classifica di priorità del patrimonio</h2>
+      <p class="aiuto">Dove intervenire prima: ogni sede riceve un punteggio da 0 a 100 per ogni criterio (consumo per m²,
+        sensibilità al clima, quota del carico di base, costo per m², fotovoltaico possibile per m²) rispetto alle altre
+        sedi, poi la media pesata. Aggiungi gli edifici che hai analizzato qui sopra, oppure carica un file con una riga per
+        sede. Restano solo in questo browser.</p>
+      <div class="scarica">
+        <button class="bottone secondario" id="aggiungi-priorita" type="button" disabled>Aggiungi questo edificio</button>
+        <label class="bottone secondario carica-file">Carica un file di sedi<input id="file-priorita" type="file"
+          accept=".csv,.txt,.xlsx,.ods" hidden></label>
+        <button class="bottone secondario" id="svuota-priorita" type="button">Svuota la classifica</button>
+      </div>
+      <p class="aiuto">Colonne del file (CSV, Excel o ODS; titoli in qualunque ordine): <code>nome</code>,
+        <code>superficie</code> (m² lordi), <code>consumo_termico</code> e <code>unita_termico</code> (kWh o Smc),
+        <code>consumo_elettrico</code> (kWh), <code>costo</code> (€ all'anno, dalla tua convenzione o dalle bollette),
+        <code>fv_kwh</code> (kWh/anno possibili), <code>sensibilita</code> (kWh per grado giorno), <code>base</code> (quota
+        del carico di base, 0–1). Il gas si converte con il potere calorifico superiore convenzionale (0,03852 GJ/Smc ≈ 10,70 kWh/Smc).</p>
+      <div class="riga-campi">
+        <label>Costo annuo dell'energia di questo edificio (€) <input id="costo-edificio" type="number" min="0" step="100"></label>
+      </div>
+      <p class="aiuto">Il costo lo scrivi tu (bollette, o il prezzo della tua convenzione regionale per i consumi): EuGEnio non
+        lo calcola dai prezzi di borsa, che usa solo per uso interno.</p>
+      <details class="pesi-priorita"><summary>Pesi dei criteri</summary>
+        <div class="riga-campi" id="pesi-priorita"></div></details>
+      <div class="messaggio" id="messaggio-priorita" role="status" aria-live="polite"></div>
+      <div id="priorita" data-riquadro-tabella data-titolo="Classifica di priorità"></div>
+    </div>
+
+    <div class="passo" id="passo-report" hidden>
+      <h2><span class="n">8</span>Report</h2>
+      <p class="aiuto">Edificio, corpi, superfici, indicatori, obblighi di legge, facciate, fotovoltaico, confronto con
+        PVGIS, firma e classifica con le fonti di ogni dato. Se è acceso lo sfondo con l'ortofoto, la vista entra nel PDF con
+        la licenza e la citazione dell'ortofoto.</p>
+      <div id="report"></div>
+    </div>
+
+  </section>
+</main>
+
+<script src="aspetto.js?v=20261104c"></script>
+<script src="grafici.js?v=20261104c"></script>
+<script src="divisore.js?v=20261104c"></script>
+<script src="report.js?v=20261104c"></script>
+<script src="tabelle.js?v=20261104c"></script>
+<script src="lib/maplibre-gl/maplibre-gl.js?v=20261104c"></script>
+<script src="lib/pmtiles/pmtiles.js?v=20261104c"></script>
+<script src="edifici_calcoli.js?v=20261104c"></script>
+<script src="edificio3d.js?v=20261104c"></script>
+</body>
+</html>

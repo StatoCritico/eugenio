@@ -43,9 +43,7 @@ def testo_mensile(anno: int, mese: int) -> tuple[str, str]:
     nome_mese = f"{MESI[mese - 1]} {anno}"
     righe = [f"# Il freddo di {nome_mese}, comune per comune", ""]
     cap = _capoluoghi()
-    g = pd.read_parquet(C.DATI / "giornaliero.parquet", columns=["istat", "data", "gg20", "t_media"],
-                        filters=[("istat", "in", list(cap.istat))]) if len(cap) else pd.DataFrame(
-        columns=["istat", "data", "gg20", "t_media"])
+    g = pd.read_parquet(C.DATI / "giornaliero.parquet", columns=["istat", "data", "gg20", "t_media"])
     g["data"] = pd.to_datetime(g.data)
     g = g[g.istat.isin(cap.istat) & (g.data.dt.month == mese)]
     if not g.empty:

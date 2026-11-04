@@ -1,0 +1,125 @@
+# EuGEnio Visure (fase 11): test, pacchetto riproducibile del lettore (con il convertitore dei modelli DXF/IFC della
+# fase 10), EuGEnioVisure.exe per Windows (anche ezdxf e IfcOpenShell) e, con i
+# segreti di SignPath configurati, firma del codice. Con un tag visure-v<versione> pubblica la release con l'.exe,
+# lo zip del lettore e le impronte (l'avviatore scarica gli aggiornamenti da qui, solo se l'impronta è nell'elenco).
+#
+# Segreti (Settings → Secrets and variables → Actions), mai nel repository:
+#   SIGNPATH_API_TOKEN                  token di SignPath (dopo l'adesione a SignPath Foundation)
+# Variabili (non segrete):
+#   SIGNPATH_ORGANIZATION_ID, SIGNPATH_PROJECT_SLUG, SIGNPATH_POLICY_SLUG (es. release-signing)
+name: visure-windows
+
+on:
+  push:
+    tags: ["visure-v*"]
+  pull_request:
+    paths: ["fase11-visure/**", "fase10-edifici3d/edifici3d/importa.py", "fase10-edifici3d/edifici3d/__init__.py",
+            "fase10-edifici3d/tests/modelli_sintetici.py", ".github/workflows/visure-windows.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-linux:
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: fase11-visure } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q tests
+      # parità del convertitore dei modelli tra Python e la pagina del sito (node con le librerie di sito/lib)
+      - run: python -m pytest -q ../fase10-edifici3d/tests/test_importa_parita.py
+
+  exe:
+    needs: test-linux
+    runs-on: windows-2022
+    defaults: { run: { working-directory: fase11-visure, shell: pwsh } }
+    outputs:
+      artifact-id: ${{ steps.carica.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: pip install -r avviatore/requirements-build.txt -r requirements-dev.txt
+      - run: python -m pytest -q tests
+      - name: Pacchetto del lettore e controllo dell'impronta
+        run: |
+          python avviatore/costruisci_pacchetto.py
+          $v = (Select-String -Path visure/__init__.py -Pattern 'VERSIONE = "(.+)"').Matches[0].Groups[1].Value
+          $sha = (Get-FileHash "dist/visure-$v.zip" -Algorithm SHA256).Hash.ToLower()
+          $e = Get-Content avviatore/versioni_approvate.json -Raw | ConvertFrom-Json
+          $voce = $e.versioni | Where-Object { $_.versione -eq $v }
+          if (-not $voce -or $voce.sha256 -ne $sha) { throw "impronta $sha non nell'elenco delle versioni approvate" }
+          "VERSIONE=$v" | Out-File -Append $env:GITHUB_ENV
+      - run: pyinstaller --clean --noconfirm avviatore/eugenio_visure.spec
+      - name: Prova dell'.exe
+        run: |
+          dist/EuGEnioVisure.exe --non-aggiornare prova --modelli
+          if ($LASTEXITCODE -ne 0) { throw "controllo di avvio non superato" }
+          python -m visure esempi --uscita prova_esempi
+          dist/EuGEnioVisure.exe --non-aggiornare leggi prova_esempi --uscita prova_uscita
+          if (-not (Test-Path prova_uscita/indice.csv)) { throw "indice.csv mancante" }
+          # conversione dei modelli DXF/IFC sintetici (processo separato con «spawn», come sui PC degli utenti)
+          python ../fase10-edifici3d/tests/modelli_sintetici.py modelli_prova
+          dist/EuGEnioVisure.exe --non-aggiornare modello modelli_prova/casa_sito.ifc --uscita modelli_prova/casa_sito.geojson
+          if ($LASTEXITCODE -ne 0) { throw "IFC di prova non convertito" }
+          dist/EuGEnioVisure.exe --non-aggiornare modello modelli_prova/casa_utm.dxf --crs EPSG:7791 --uscita modelli_prova/casa_utm.geojson
+          if ($LASTEXITCODE -ne 0) { throw "DXF di prova non convertito" }
+          $g = Get-Content modelli_prova/casa_sito.geojson -Raw | ConvertFrom-Json
+          if ($g.formato -ne "eugenio-modello-1" -or $g.features.Count -ne 2) { throw "modello IFC convertito male" }
+      # due artefatti: l'.exe da solo (è quello che SignPath firma) e il pacchetto del lettore (non si firma: lo
+      # protegge l'impronta nell'elenco delle versioni approvate)
+      - id: carica
+        uses: actions/upload-artifact@v4
+        with:
+          name: eugenio-visure-non-firmato
+          path: fase11-visure/dist/EuGEnioVisure.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eugenio-visure-pacchetto
+          path: fase11-visure/dist/visure-*.zip
+
+  firma:
+    needs: exe
+    if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+    runs-on: windows-2022
+    steps:
+      - uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          github-artifact-id: ${{ needs.exe.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: firmato
+      - uses: actions/upload-artifact@v4
+        with: { name: eugenio-visure-firmato, path: firmato }
+
+  release:
+    needs: [exe, firma]
+    if: ${{ always() && startsWith(github.ref, 'refs/tags/visure-v') && needs.exe.result == 'success' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: art }
+      - name: Scelta dei file (firmati se ci sono)
+        run: |
+          mkdir uscita
+          if [ -d art/eugenio-visure-firmato ]; then cp art/eugenio-visure-firmato/* uscita/; else cp art/eugenio-visure-non-firmato/* uscita/; fi
+          cp art/eugenio-visure-pacchetto/visure-*.zip uscita/
+          cd uscita && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: uscita/*
+          body: |
+            EuGEnio Visure: lettore locale delle visure catastali in PDF (nessuna credenziale, nessun accesso a SISTER).
+            Impronte SHA-256 in SHA256SUMS.txt. L'avviatore usa solo i pacchetti elencati in
+            fase11-visure/avviatore/versioni_approvate.json.

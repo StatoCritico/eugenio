@@ -4,7 +4,9 @@ Ingresso: CSV con una riga per edificio e almeno una di queste informazioni, in 
   1. coordinate:        lat, lon
   2. dati catastali:    comune, foglio, particella (o mappale) [, sezione]
   3. indirizzo:         indirizzo [, civico], comune (il civico può anche stare in fondo all'indirizzo)
-Colonne facoltative: id, denominazione (e qualsiasi altra, riportata in uscita).
+Colonne facoltative: id, denominazione (e qualsiasi altra, riportata in uscita). Dal 04/11/2026 (fase 10, § 8) anche
+piani_fuori_terra, piani_interrati, superficie_lorda, superficie_netta, superficie_catastale, anno_costruzione: i
+nomi alternativi («Piani», «SLP», «Sup. netta (m²)»…) si riportano a questi; i file senza queste colonne non cambiano.
 
 Gli indirizzi si cercano prima nell'ANNCSU (archivio ufficiale dei civici, file locale, se fornito) e
 poi con la geocodifica di Zornade; il punto trovato si porta sulla particella con Zornade. Il punto di
@@ -44,11 +46,19 @@ SINONIMI = {
     "sezione": ["sezione", "sez"], "indirizzo": ["indirizzo", "via", "address", "ubicazione"],
     "civico": ["civico", "n_civico", "numero_civico"], "id": ["id", "codice", "cod", "codice_edificio"],
     "denominazione": ["denominazione", "nome", "descrizione", "edificio"],
+    # colonne facoltative dell'edificio (fase 10, § 8 della proposta 3D)
+    "piani_fuori_terra": ["piani_fuori_terra", "piani", "n_piani", "numero_piani", "piani_ft", "piani_f_t"],
+    "piani_interrati": ["piani_interrati", "interrati", "piani_entro_terra", "n_interrati"],
+    "superficie_lorda": ["superficie_lorda", "sup_lorda", "slp", "superficie_lorda_di_pavimento"],
+    "superficie_netta": ["superficie_netta", "sup_netta", "superficie_utile", "superficie_utile_netta"],
+    "superficie_catastale": ["superficie_catastale", "sup_catastale"],
+    "anno_costruzione": ["anno_costruzione", "anno_di_costruzione", "anno_costr", "epoca_costruzione"],
 }
 
 
 def _norm(c: str) -> str:
-    return re.sub(r"[^a-z0-9àèéìòù_]", "_", c.strip().lower()).strip("_")
+    c = re.sub(r"\s*[(\[][^()\[\]]*[)\]]\s*$", "", c.strip())        # unità tra parentesi: «Superficie lorda (m²)»
+    return re.sub(r"_+", "_", re.sub(r"[^a-z0-9àèéìòù_]", "_", c.lower())).strip("_")
 
 
 def leggi(file: Path | str | bytes) -> pd.DataFrame:

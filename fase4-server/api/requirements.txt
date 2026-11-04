@@ -16,3 +16,6 @@ odfpy==1.4.1        # report (odt, ods) e Dati storici (ods) nei formati aperti 
 omfiles==1.2.0
 fsspec==2026.9.0
 s3fs==2026.9.0
+# pagina di stato interna (fase 10, Fase C): verifica del JWT di Cloudflare Access (RS256) con le chiavi del team
+PyJWT==2.15.0
+cryptography==50.0.1

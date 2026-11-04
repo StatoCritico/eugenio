@@ -198,6 +198,202 @@
     vestito: () => attivo, chiaro: () => chiaro, VESTITI: { ...VESTITI },
   };
 
+  // menu dei servizi a gruppi (03/11/2026; comportamento nuovo del 04/11/2026): cinque <details class="voce-gruppo">
+  // con il sottomenu a tendina. Senza JavaScript si aprono e chiudono comunque con un clic. Con JavaScript:
+  //  - la tendina verticale si apre al passaggio del mouse e al fuoco da tastiera (Tab sul titolo), si chiude quando il
+  //    mouse esce (con un piccolo ritardo), con Esc (il fuoco torna sul titolo), con un clic fuori o quando il fuoco esce;
+  //    frecce ↓ ↑ Inizio Fine tra le voci, ← → tra i gruppi; un solo gruppo aperto alla volta;
+  //  - il clic (o Invio, Spazio) sul titolo NON apre la tendina: «fissa» il gruppo, cioè ne mostra le voci in
+  //    orizzontale nella riga nera sotto la barra dei menu (nav.riga-fissata, la riempie questo script copiando le voci
+  //    della tendina); la tendina di quel gruppo allora non si apre più. Clic su un altro gruppo: la riga passa a quello.
+  //    Secondo clic sullo stesso titolo: la riga sparisce e torna la tendina. Sul titolo aria-pressed dice se è fissato;
+  //    title e una descrizione per i lettori di schermo dicono cosa fa il clic;
+  //  - la scelta resta nel browser (localStorage «menu-fissato»): lo script nel <head> mette data-menu-fissato su <html>
+  //    prima del CSS, così la riga ha già il suo posto e la pagina non salta;
+  //  - sul telefono (sotto 861 px) la barra dei gruppi non c'è: la riga fissata resta visibile, scorre in orizzontale e ha
+  //    il pulsante × per richiuderla.
+  // Le voci in attesa della licenza GME sono <span class="voce-gme"> e non collegamenti: non si cliccano, non prendono il
+  // fuoco e hanno il suggerimento «In attesa di autorizzazione dal GME» (con un tocco la nota compare anche sul telefono).
+  const gruppi = [...document.querySelectorAll("details.voce-gruppo")];
+  const vociDi = (d) => [...d.querySelectorAll(".tendina a")];
+  const chiudiGruppi = (tranne) => gruppi.forEach((d) => { if (d !== tranne) d.open = false; });
+  const riga = document.querySelector("nav.riga-fissata");
+  const CHIAVE = "menu-fissato";
+  const nomeGruppo = (d) => {
+    const s = d.querySelector("summary");
+    return s ? (s.dataset.nome || s.textContent).trim() : "";
+  };
+  const gruppoDa = (id) => gruppi.find((d) => d.dataset.gruppo === id) || null;
+  let fissato = riga ? gruppoDa(radice.dataset.menuFissato) : null;
+
+  function suggerimento(d) {
+    const s = d.querySelector("summary"), nome = nomeGruppo(d), su = d === fissato;
+    const testo = su ? `Clicca qui per richiudere la barra di ${nome} e tornare al menu a tendina`
+                     : `Clicca qui per fissare il menu ${nome} sotto la barra`;
+    s.title = testo;
+    s.setAttribute("aria-pressed", String(su));
+    if (su && riga) s.setAttribute("aria-controls", riga.id); else s.removeAttribute("aria-controls");
+    const desc = document.getElementById(`suggerimento-${d.dataset.gruppo}`);
+    if (desc) desc.textContent = testo;
+    d.classList.toggle("fissato", su);
+  }
+
+  function riempiRiga() {
+    if (!riga) return;
+    riga.textContent = "";
+    if (!fissato) { delete radice.dataset.menuFissato; return; }
+    radice.dataset.menuFissato = fissato.dataset.gruppo;
+    const nome = nomeGruppo(fissato);
+    riga.setAttribute("aria-label", `Menu ${nome}, fissato`);
+    const dentro = document.createElement("div");
+    dentro.className = "riga-dentro";
+    const titolo = document.createElement("span");
+    titolo.className = "riga-titolo";
+    titolo.textContent = nome;
+    const ul = document.createElement("ul");
+    ul.className = "riga-voci";
+    fissato.querySelectorAll(".tendina > li").forEach((li) => {
+      const copia = li.cloneNode(true);
+      copia.querySelectorAll(".voce-gme").forEach((v) => { v.classList.remove("con-nota"); delete v.dataset.collegata; });
+      ul.appendChild(copia);
+    });
+    const chiudi = document.createElement("button");
+    chiudi.type = "button";
+    chiudi.className = "riga-chiudi";
+    chiudi.setAttribute("aria-label", `Chiudi la barra di ${nome}`);
+    chiudi.title = `Chiudi la barra di ${nome}`;
+    chiudi.textContent = "×";
+    chiudi.addEventListener("click", () => fissa(null));
+    dentro.append(titolo, ul, chiudi);
+    riga.appendChild(dentro);
+    collegaGme(riga);
+    // la voce della pagina aperta resta in vista quando la riga scorre (telefono)
+    const qui = ul.querySelector('[aria-current="page"]');
+    const mostra = () => {
+      if (!qui || ul.scrollWidth <= ul.clientWidth) return;
+      const x = qui.getBoundingClientRect().left - ul.getBoundingClientRect().left + ul.scrollLeft;
+      ul.scrollLeft = Math.max(0, x - 16);
+    };
+    mostra();
+    if (qui && document.fonts && document.fonts.ready) document.fonts.ready.then(mostra);   // le larghezze cambiano con i caratteri
+  }
+
+  function fissa(d) {
+    fissato = d;
+    try { if (d) localStorage.setItem(CHIAVE, d.dataset.gruppo); else localStorage.removeItem(CHIAVE); } catch (e) { /* niente */ }
+    chiudiGruppi(null);
+    gruppi.forEach(suggerimento);
+    riempiRiga();
+  }
+
+  gruppi.forEach((d, i) => {
+    const titolo = d.querySelector("summary"), li = d.parentElement;
+    titolo.dataset.nome = titolo.textContent.trim();
+    // descrizione per i lettori di schermo (fuori dal <details>, così si legge anche a tendina chiusa)
+    const desc = document.createElement("span");
+    desc.className = "solo-lettori";
+    desc.id = `suggerimento-${d.dataset.gruppo}`;
+    li.appendChild(desc);
+    titolo.setAttribute("aria-describedby", desc.id);
+    suggerimento(d);
+
+    d.addEventListener("toggle", () => { if (d.open) chiudiGruppi(d); });
+
+    // passaggio del mouse: apre la tendina (non quella del gruppo fissato), la chiude poco dopo l'uscita
+    let timer = 0;
+    const apri = () => { clearTimeout(timer); if (d !== fissato) d.open = true; };
+    li.addEventListener("mouseenter", apri);
+    li.addEventListener("mouseleave", () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const fuoco = d.contains(document.activeElement) && document.activeElement.matches(":focus-visible");
+        if (!li.matches(":hover") && !fuoco) d.open = false;
+      }, 180);
+    });
+    // fuoco da tastiera sul titolo: apre la tendina (il fuoco del clic del mouse non conta)
+    titolo.addEventListener("focus", () => { if (d !== fissato && titolo.matches(":focus-visible")) d.open = true; });
+
+    // clic, Invio o Spazio sul titolo: fissa o richiude la riga, non apre la tendina
+    titolo.addEventListener("click", (e) => {
+      if (!riga) return;
+      e.preventDefault();
+      if (d === fissato) {
+        fissa(null);
+        if (li.matches(":hover") || titolo.matches(":focus-visible")) d.open = true;   // torna il menu a tendina
+      } else {
+        fissa(d);
+      }
+    });
+
+    d.addEventListener("keydown", (e) => {
+      const voci = vociDi(d), qui = voci.indexOf(document.activeElement);
+      const vai = (n) => {
+        e.preventDefault();
+        if (d === fissato) {                      // gruppo fissato: le frecce portano nella riga
+          const r = riga ? [...riga.querySelectorAll(".riga-voci a")] : [];
+          if (r.length) r[n < 0 ? r.length - 1 : 0].focus();
+          return;
+        }
+        d.open = true;
+        voci[(n + voci.length) % voci.length].focus();
+      };
+      if (e.key === "Escape" && d.open) {
+        e.preventDefault(); e.stopPropagation(); d.open = false; titolo.focus();
+      } else if (e.key === "ArrowDown") vai(qui < 0 ? 0 : qui + 1);
+      else if (e.key === "ArrowUp") vai(qui < 0 ? -1 : qui - 1);
+      else if (e.key === "Home" && qui >= 0) vai(0);
+      else if (e.key === "End" && qui >= 0) vai(voci.length - 1);
+      else if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && gruppi.length > 1) {
+        e.preventDefault();
+        const altro = gruppi[(i + (e.key === "ArrowRight" ? 1 : -1) + gruppi.length) % gruppi.length];
+        const aperto = d.open;
+        d.open = false;
+        altro.querySelector("summary").focus();
+        altro.open = aperto && altro !== fissato;
+      }
+    });
+    // il fuoco che esce dal gruppo (Tab oltre l'ultima voce) lo chiude
+    d.addEventListener("focusout", (e) => { if (d.open && e.relatedTarget && !d.contains(e.relatedTarget)) d.open = false; });
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest || !e.target.closest("details.voce-gruppo")) chiudiGruppi(null); });
+
+  // riga fissata: frecce ← → tra le voci, Esc rimette il fuoco sul titolo del gruppo
+  if (riga) {
+    riga.addEventListener("keydown", (e) => {
+      const voci = [...riga.querySelectorAll(".riga-voci a")], qui = voci.indexOf(document.activeElement);
+      if (qui < 0) return;
+      let n = null;
+      if (e.key === "ArrowRight") n = qui + 1;
+      else if (e.key === "ArrowLeft") n = qui - 1;
+      else if (e.key === "Home") n = 0;
+      else if (e.key === "End") n = voci.length - 1;
+      else if (e.key === "Escape" && fissato) { e.preventDefault(); fissato.querySelector("summary").focus(); return; }
+      if (n === null) return;
+      e.preventDefault();
+      voci[(n + voci.length) % voci.length].focus();
+    });
+    if (fissato) fissato.open = false;
+    if (radice.dataset.menuFissato && !fissato) {   // valore salvato non valido
+      try { localStorage.removeItem(CHIAVE); } catch (e) { /* niente */ }
+    }
+    riempiRiga();
+  }
+
+  // voci in attesa della licenza GME: un tocco (o un clic) mostra la nota anche dove il title non compare
+  function collegaGme(dove) {
+    dove.querySelectorAll(".voce-gme").forEach((v) => {
+      if (v.dataset.collegata) return;
+      v.dataset.collegata = "1";
+      v.addEventListener("click", (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const prima = v.classList.contains("con-nota");
+        document.querySelectorAll(".voce-gme.con-nota").forEach((x) => x.classList.remove("con-nota"));
+        if (!prima) v.classList.add("con-nota");
+      });
+    });
+  }
+  collegaGme(document);
+
   // menu del telefono: Esc lo chiude e rimette il fuoco sul pulsante «Menu»
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;

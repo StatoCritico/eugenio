@@ -56,6 +56,11 @@ Un comune nuovo (fusione) richiede poi di scaricarne il meteo (fase 3 `scarica -
 
 ## Patrimonio edilizio diffuso
 
+**Colonne facoltative dell'edificio** (04/11/2026, fase 10 § 8): `piani_fuori_terra`, `piani_interrati`,
+`superficie_lorda`, `superficie_netta`, `superficie_catastale`, `anno_costruzione`; i nomi alternativi («Piani», «SLP»,
+«Sup. netta (m²)», «Anno di costruzione»…) si riportano a questi e passano in uscita come le altre colonne. Nelle pagine
+dell'edificio hanno la precedenza sulle visure e sulle stime. I CSV senza queste colonne non cambiano (test).
+
 Geolocalizza in blocco gli edifici di un ente (ASL, Comune, Università, …) a partire da un CSV.
 Per ogni riga usa, in ordine di affidabilità: coordinate → dati catastali (comune, foglio,
 particella, sezione) → indirizzo. Gli indirizzi si cercano **prima nell'ANNCSU**, poi con la
@@ -88,7 +93,8 @@ e rigenerata su app.zornade.com. Senza `--anncsu` gli indirizzi passano solo da 
 
 Escono `..._geolocalizzato.csv` e `..._punti.geojson` (da aprire in QGIS o sulla mappa del sito).
 La colonna `dettaglio` (con `--dettagli`) contiene la risposta grezza di Zornade: va bene per uso
-interno, ma il CSV non va pubblicato né condiviso (la licenza vieta la ridistribuzione dei dati grezzi).
+interno; prima di pubblicarlo o condividerlo vanno mantenute le attribuzioni (Zornade con link e fonti originali, per
+esempio OSM in ODbL) e non va rivenduto come dato grezzo (termini di Zornade del 18/09/2026, vedi sotto).
 
 Il CSV può essere in UTF-8 o nella codifica di Windows (quella di Excel "CSV separato da punto e virgola"):
 la lettura prova la prima e ripiega sulla seconda. La cache delle risposte Zornade (`cache_zornade.sqlite`) si
@@ -187,7 +193,24 @@ Attribuzioni obbligatorie dove si mostrano i risultati:
 - Zornade, piano gratuito: un **link cliccabile** a https://zornade.com,
   `<a href="https://zornade.com">Dati elaborati da Zornade</a>` (la sola scritta, o il dominio senza
   link, non soddisfa la licenza), più le fonti (catasto Agenzia delle Entrate CC BY 4.0, ISTAT,
-  OpenStreetMap ODbL). Vietate la ridistribuzione dei dati grezzi e l'estrazione massiva.
+  OpenStreetMap ODbL).
+- **Termini di Zornade del 18/09/2026** (sostituiscono quanto scritto qui prima): uso libero anche commerciale; dati
+  mostrabili e conservabili per il tempo che serve al servizio; la ridistribuzione **non è vietata in generale** (vietata
+  la rivendita dei dati grezzi senza attribuzione o contro le licenze delle fonti); vietati violazioni del GDPR,
+  **re-identificazione di persone** e carichi eccessivi. L'**estrazione massiva** (scraping) è motivo di **sospensione del
+  token**, non un divieto di conservare i dati. Limite **10.000 richieste/ora** per token; attribuzione con link nel
+  piano gratuito; le attribuzioni delle fonti restano sempre obbligatorie. La **pulizia della cache a 12 mesi** resta
+  una scelta di privacy di EuGEnio (informativa), non un obbligo di Zornade. Per questo EuGEnio non scarica in blocco
+  lo strato edifici di Zornade (fase 10).
+- **Altezze degli edifici di Zornade** (fase 10, Fase E, 04/11/2026): solo da un estratto consegnato da Zornade, mai
+  dall'API (il blocco `buildings` dell'API non ha altezze); con gli stessi termini: archivio **ODbL** separato da quello
+  CC BY, «© OpenStreetMap contributors (ODbL 1.0)» e «Dati elaborati da Zornade» con link, condivisione allo stesso modo
+  dei database derivati, nessuna re-identificazione. Dettagli in `fase10-edifici3d/README.md`, § «Altezze di Zornade».
+- Test (03/11/2026): le prove usano `tests/dati/patrimonio_prova.csv` (3 edifici: indirizzo, foglio e particella, sole
+  coordinate), non il file d'esempio del sito, che è cambiato il 27/10/2026.
+- **I dati catastali non sostituiscono visure ed estratti ufficiali** dell'Agenzia delle Entrate: particelle, fogli e
+  superfici servono a localizzare gli edifici. Vietato usarli, da soli o incrociati con altri dati, per
+  **re-identificare persone** (proprietari, intestatari, occupanti).
 - ANNCSU, quando un punto viene da lì: "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)".
 
 Il GeoJSON porta `attribution_html` e l'elenco `sources`; le risposte dell'API `fonte_url` e `fonti`.

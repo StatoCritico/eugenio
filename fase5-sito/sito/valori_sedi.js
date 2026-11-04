@@ -17,6 +17,7 @@
 //  - Mattoncini: come prima (numero tondo, 20 mattoncini al massimo, cubi, l'ultimo parziale).
 (function () {
   const P = window.EUGENIO_PATRIMONIO, T = window.EUGENIO_TABELLE, M3 = window.EUGENIO_MAPPA3D;
+  const ED = window.EUGENIO_EDIFICI;       // colonne facoltative di piani e superfici (fase 10, § 8), facoltativo
   if (!P || !T || !M3) return;
   const $ = (id) => document.getElementById(id);
   const NS = "http://www.w3.org/2000/svg";
@@ -202,8 +203,11 @@
     const num = (s) => T.numero(String(s || "").replace(SIMBOLI_VALUTA, ""), { decimalePunto });
     const conSimbolo = (s) => { SIMBOLI_VALUTA.lastIndex = 0; return SIMBOLI_VALUTA.test(String(s || "")); };
     const dati = righe.length > 2 ? righe.slice(2) : righe.slice(1);
+    // colonne facoltative di piani e superfici (§ 8 della proposta 3D): si leggono a parte, non sono valori da disegnare;
+    // i CSV vecchi, senza queste colonne, si leggono come prima
+    const facoltative = ED ? ED.mappaFacoltative(titoli) : {};
     const candidate = titoli.map((t, i) => i).filter((i) => {
-      if (!titoli[i] || MODELLO.has(chiavi[i])) return false;
+      if (!titoli[i] || MODELLO.has(chiavi[i]) || i in facoltative) return false;
       const celle = dati.map((r) => (r[i] || "").trim()).filter(Boolean);
       return celle.length && celle.filter((c) => num(c) !== null).length >= celle.length * 0.6;
     });
@@ -225,8 +229,9 @@
     });
     // colori provvisori: quelli veri li sceglie assegnaColori() quando si conoscono le regioni visibili
     colonne.forEach((c, k) => { c.colore = LIBERI[k % 5][0]; });
-    const sedi = corpo.map((r, n) => ({ riga: n, celle: r, valori: colonne.map((c) => num(r[c.indice])) }));
-    return { sep, titoli, chiavi, colonne, sedi, rigaUnita, esempio: note.includes(AVVISO_TITOLO) };
+    const sedi = corpo.map((r, n) => ({ riga: n, celle: r, valori: colonne.map((c) => num(r[c.indice])),
+      edificio: ED ? ED.leggiFacoltative(facoltative, r) : {} }));
+    return { sep, titoli, chiavi, colonne, sedi, rigaUnita, facoltative: Object.values(facoltative), esempio: note.includes(AVVISO_TITOLO) };
   }
 
   function csvPerServer(a) {
@@ -587,6 +592,43 @@
     if (resto) pz.appendChild(h("p", "aiuto", `${resto} ${resto === 1 ? "colonna è rimasta" : "colonne sono rimaste"} senza abbinamento (le colonne di consumo e di costo non sono lo stesso numero).`));
   }
 
+  // ------------------------------------------------------------------ consumi normalizzati (fase 10, § 9 analisi 2)
+  // consumo o costo di ogni sede diviso la superficie lorda o netta del file (colonne facoltative): kWh/m², Smc/m², €/m².
+  // Solo con le superfici dichiarate nel file: le stime dalla geometria 3D sono nella pagina Modelli 3D.
+  function normalizzati() {
+    const box = $("normalizzati"), passo = $("passo-normalizzati");
+    if (!box || !passo) return [];
+    box.innerHTML = "";
+    const basi = [["superficie_lorda", "m² lordi"], ["superficie_netta", "m² netti"]]
+      .filter(([k]) => stato.sedi.some((s) => s.edificio && s.edificio[k]));
+    passo.hidden = !basi.length;
+    if (!basi.length) return [];
+    const righe = [];
+    const t = h("table", "normalizzati");
+    const r1 = t.createTHead().insertRow();
+    r1.appendChild(h("th", null, "Sede"));
+    const combinazioni = [];
+    for (const c of stato.colonne) for (const [k, u] of basi) combinazioni.push({ c, k, u });
+    combinazioni.forEach(({ c, u }) => { const th = h("th", "num", c.nome); th.appendChild(h("small", null, `${testoUnita(c) || "—"}/${u}`)); r1.appendChild(th); });
+    const corpo = t.createTBody();
+    stato.sedi.forEach((s) => {
+      const r = corpo.insertRow();
+      r.appendChild(h("th", null, s.titolo || s.id));
+      const riga = { sede: s.titolo || s.id, valori: [] };
+      combinazioni.forEach(({ c, k }) => {
+        const v = s.valori[stato.colonne.indexOf(c)], a = s.edificio && s.edificio[k];
+        const x = v !== null && a ? v / a : null;
+        riga.valori.push(x);
+        r.appendChild(h("td", x === null ? "num nd" : "num", x === null ? "—" : fmt(x, Math.abs(x) < 10 ? 2 : 1)));
+      });
+      righe.push(riga);
+    });
+    box.appendChild(t);
+    stato.normalizzati = { intestazioni: ["Sede", ...combinazioni.map(({ c, u }) => `${c.nome} (${testoUnita(c) || "—"}/${u})`)],
+      righe: righe.map((r) => [r.sede, ...r.valori]) };
+    return righe;
+  }
+
   // ------------------------------------------------------------------ tabelle con gli interruttori
   function comandiTabella(tipo) {
     const box = $(tipo === "consumo" ? "comandi-consumi" : "comandi-costi");
@@ -892,6 +934,10 @@
       "Abbinamento per posizione: la prima colonna di consumo da sinistra va con la prima colonna di costo da sinistra, e così via."];
 
     const nomi = stato.regioni.map((r) => r.nome).join(", ");
+    if (stato.normalizzati && stato.normalizzati.righe.length)
+      tabelle.push({ titolo: "Consumi e costi per metro quadro", tipo: "consumo", intestazioni: stato.normalizzati.intestazioni,
+        righe: stato.normalizzati.righe, decimali: stato.normalizzati.intestazioni.map((x, i) => (i ? 2 : null)),
+        nota: "Valori del file divisi per la superficie lorda o netta dichiarata nel file." });
     return { titolo: "Valori per sede", sottotitolo: `${stato.sedi.length} sedi${nomi ? " – " + nomi : ""}`,
       totali, prezzi, ...immagini, tabelle, note, fonti: [...stato.fonti],
       ...(stato.esempio ? { avviso: { titolo: AVVISO_TITOLO, testo: AVVISO_TESTO } } : {}) };
@@ -974,6 +1020,7 @@
         unitaTesto, letto.nota, r.interrotto].filter(Boolean).join(" "), !!r.interrotto);
       totali();
       tabelle();
+      normalizzati();
       pareto();
       aggiornaDownload();
       ["passo-totali", "passo-vista", "passo-report"].forEach((id) => { $(id).hidden = false; });

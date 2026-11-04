@@ -356,3 +356,61 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
 - link in blu scuro #1A3F8F;
 - il logo Corallo chiaro;
 - `SERIE_STAMPA` in `report.py` per i grafici.
+
+## Menu a gruppi (dal 03/11/2026)
+
+- Seconda riga della testata: cinque gruppi di servizi (Clima e meteo, Patrimonio, Edificio, Cogenerazione,
+  Fotovoltaico), ognuno un `<details class="voce-gruppo">` con `<summary>` (titolo con la freccina) e
+  `<ul class="tendina">`. Il gruppo della pagina aperta ha `data-attivo` (sottolineato nel colore `--primario`), la voce
+  `aria-current="page"`: li mette `costruisci_pagine.py`.
+- La tendina è un riquadro `--foglio` con `--ombra-2`, voci alte almeno 2,6rem; gli ultimi due gruppi si aprono verso
+  sinistra per non uscire dalla finestra. Le voci non ancora pronte hanno l'etichetta `.cantiere` («in sviluppo» o
+  «licenza GME»).
+- **Comportamento dal 04/11/2026** (`aspetto.js`; senza JavaScript il clic apre e chiude la tendina come prima):
+  - **tendina a scomparsa**: si apre al passaggio del mouse sul gruppo e al fuoco da tastiera sul titolo (Tab), si chiude
+    quando il mouse esce (dopo 180 ms; un ponte invisibile `.tendina::before` copre lo spazio tra titolo e tendina), con
+    Esc, con un clic fuori o quando il fuoco esce;
+  - **clic sul titolo = fissa il gruppo** (anche Invio o Spazio): le voci compaiono **in orizzontale** in
+    `nav.riga-fissata`, una riga a tutta larghezza **nera** (`--nero-riga: #000`) sotto la barra dei menu, e il titolo
+    diventa una linguetta nera unita alla riga; la tendina di quel gruppo non si apre più. Clic su un altro gruppo: la
+    riga passa a quello. Secondo clic sullo stesso titolo: la riga sparisce e torna la tendina;
+  - la riga è nera in tutti e cinque i vestiti e in tutti e due i temi; testo `--testo-riga` (#f2f2f2, 19:1), voci GME
+    `--tenue-riga` (#a3a3a3, 8:1), accento `--accento-riga` = primario del vestito nel tema scuro (Corallo #ff7a50, Ambra
+    #f4b13e, Indaco #8aa4ff, Lime #c6e85a, Verde #2ecc7a: sul nero sempre ≥ 6:1) per la voce della pagina aperta
+    (sottolineata), l'etichetta «sperimentale» e il contorno del fuoco; etichette `.cantiere` più piccole (.62rem);
+  - sul computer le voci che non stanno in una riga vanno a capo (Edificio, 8 voci, a 1366 px: due righe); sotto gli
+    861 px la riga scorre in orizzontale **dentro di sé** (la pagina no), mostra il nome del gruppo e il pulsante × per
+    chiuderla, e parte già scorsa fino alla voce della pagina aperta;
+  - la scelta resta nel browser (`localStorage` «menu-fissato», sempre in try/catch): lo script del `<head>` mette
+    `data-menu-fissato` su `<html>` prima del CSS, così la riga ha il suo posto (2,75rem) e la pagina non salta;
+  - suggerimento sul titolo (`title` e descrizione per i lettori di schermo con `aria-describedby`), secondo lo stato:
+    «Clicca qui per fissare il menu Patrimonio sotto la barra» / «Clicca qui per richiudere la barra di Patrimonio e
+    tornare al menu a tendina»; `aria-pressed` dice se il gruppo è fissato, `aria-controls` punta alla riga;
+  - tastiera: ↓ e ↑ portano alle voci (sul gruppo fissato ↓ porta nella riga), Inizio e Fine alla prima e all'ultima;
+    ← e → passano al gruppo vicino (nella riga: tra le voci); Esc chiude la tendina (nella riga rimette il fuoco sul
+    titolo); Tab fuori dal gruppo e clic fuori lo chiudono. Un solo gruppo aperto alla volta.
+- **Voci in attesa della licenza GME** (dal 04/11/2026; Cogenerazione: Spark spread, Cogeneratore, Confronto, Rischio,
+  CAR; Fotovoltaico: Prezzo catturato): **non sono collegamenti** ma `<span class="voce-gme" data-pagina=…
+  aria-disabled="true" title="In attesa di autorizzazione dal GME">` con il nome in `.voce-nome`, l'etichetta «licenza
+  GME» a bordo tratteggiato e un testo per i lettori di schermo; colore `--tenue`, `cursor: not-allowed`, non prendono il
+  fuoco. Vale nella tendina, nella riga fissata, nel menu del telefono e negli elenchi «Nello stesso gruppo» delle pagine
+  segnaposto. Un tocco o un clic mostra la nota scritta (classe `con-nota`, per il telefono dove il `title` non compare).
+  Le pagine restano; sulla loro pagina la voce ha `aria-current` e il gruppo `data-attivo`.
+- Sotto gli 861 px la seconda riga sparisce: i gruppi sono `<details class="pannello-gruppo">` richiudibili dentro il
+  pulsante Menu, con quello della pagina già aperto; poi «Altre pagine» e «Aspetto».
+- Voci informative (Indicatori, Come funziona, F.A.Q., Sitografia, Mirror, Contattaci) nella prima riga a destra.
+- Pagine segnaposto: `<main class="articolo segnaposto">` con `.gruppo-servizio`, `.stato-pagina` (pallino nel colore
+  `--attenzione`), sezioni «Cosa farà», «Come funzionerà», «Fonti previste» (`.fonti-pagina`, licenza in
+  `.licenza`), «Nello stesso gruppo» (`.stesso-gruppo`, pillole). Mai dati inventati.
+
+## Ortofoto e pagina 3D, Fase B (04/11/2026)
+
+- **Attribuzione delle ortofoto sempre visibile**: sotto ogni mappa con un'ortofoto c'è `.attribuzione-ortofoto` con la
+  citazione, la licenza (collegamento alla scheda della fonte) e, se serve, «in attesa di conferma» o «solo
+  consultazione». Vale anche per le mappe future con ortofoto; nei report la stessa citazione va nella didascalia.
+- **Fonti** nella pagina Ortofoto: `fieldset.fonti-ortofoto` con una `label` per fonte (radio, nome in grassetto, dettagli
+  in `--tenue`), bordo `--primario` sulla scelta; etichetta di stato `.stato-fonte` (`confermata` in `--successo`,
+  `da-confermare` in `--attenzione`).
+- **Facciate al sole**: lastre sottili (0,4 m) davanti ai pezzi esposti, colori fissi da `#ffffcc` a `#41b6c4` a
+  `#253494` (più scuro = più kWh/m²), lontani dal corallo dell'edificio scelto; campione `.pallino.facciate` nella legenda.
+- `label.casella` (casella e testo sulla stessa riga, testo normale) e `.carica-file` (etichetta-pulsante per i file).

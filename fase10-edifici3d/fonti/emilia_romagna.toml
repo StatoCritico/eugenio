@@ -1,0 +1,74 @@
+# Fonti della zona Emilia-Romagna (fase 10, Fase A). Un file per zona: per un'altra regione si copia e si cambiano
+# URL e licenze. Gli URL si cambiano qui, mai nel codice. Prova di raggiungibilità del 03-04/11/2026 dal container di
+# sviluppo: WMS del DBTR raggiungibile (GetFeatureInfo in GeoJSON con tutti gli attributi UVL); WFS del DBTR e WCS del
+# DTM rispondono 401 (servono credenziali o non sono pubblici a quell'indirizzo); il link diretto al GeoPackage UVL
+# non compare nella scheda del catalogo (download dalla pagina «download-dbtopografico», da fare a mano la prima volta
+# e poi scrivere qui l'URL del file). Overpass non raggiungibile dal container.
+
+[zona]
+nome = "Emilia-Romagna"
+codice = "er"
+crs = "EPSG:7791"                       # RDN2008 / UTM 32N, sistema dei dati regionali
+# riquadro WGS84 della regione (lon_min, lat_min, lon_max, lat_max)
+riquadro = [9.19, 43.73, 12.76, 45.14]
+# coda della pipeline (§ 11): Rimini → Forlì-Cesena → Ravenna → resto ER
+coda = ["RN", "FC", "RA", "BO", "FE", "MO", "RE", "PR", "PC"]
+
+[archivi]
+# archivi separati per licenza: mai mescolare CC BY e ODbL nello stesso file
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.dbtr_uvl]
+descrizione = "DBTR Emilia-Romagna – Unità volumetrica (UVL)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Emilia-Romagna – Database Topografico Regionale (CC BY 4.0)"
+scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/database-topografico-regionale/immobili-e-antropizzazioni/edificato/layer-6"
+identificativo = "r_emiro:DBTR:UVL_GPG"
+# GeoPackage regionale: URL del file da completare dopo il primo download a mano dalla pagina qui sotto
+pagina_download = "https://geoportale.regione.emilia-romagna.it/download-data/download-dbtopografico"
+url = ""
+formato = "gpkg"
+strato = "UVL_Unita_volumetrica"
+# WMS pubblico: serve solo al controllo degli attributi su pochi punti (non per scaricare la regione)
+wms = "http://servizigis.regione.emilia-romagna.it/wms/dbtr"
+wms_strato = "UVL_Unita_volumetrica"
+# WFS: 401 al 03/11/2026
+wfs = "https://servizigis.regione.emilia-romagna.it/wfs/dbtr"
+
+[fonti.dtm5]
+descrizione = "DTM Emilia-Romagna 5×5 m (dicembre 2025, con LiDAR RER2022 e RER2023/24)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Emilia-Romagna – DTM 5×5 m (CC BY 4.0)"
+scheda = "https://geoportale.regione.emilia-romagna.it/notizie/servizi-e-applicazioni/dtm-novita-2025"
+crs = "EPSG:7791"
+formato = "tif"
+# quattro quadranti TIFF (~4,9 GB in tutto): URL da completare dalla scheda; in alternativa il WCS.
+# 04/11/2026 (Fase C): «wcs/dtm5» risponde 401, ma il WCS pubblico «wcs/dtm5x5» funziona (copertura DTM5X5_RDN32_RMD,
+# GetCoverage WCS 1.0.0 in GeoTIFF; il 2.0.1 dell'ArcGIS regionale risponde in multipart): fonti.url_wcs usa l'1.0.0.
+quadranti = []
+wcs = "https://servizigis.regione.emilia-romagna.it/wcs/dtm5x5"
+wcs_coverage = "DTM5X5_RDN32_RMD"
+wcs_passo = 5
+
+[fonti.aggregati]
+descrizione = "Aggregati strutturali – Dipartimento della Protezione Civile (Italia nord-orientale)"
+licenza = "CC BY 4.0"
+attribuzione = "Dipartimento della Protezione Civile – Aggregati strutturali (CC BY 4.0)"
+scheda = "https://rischi.protezionecivile.gov.it/en/approfondimento/national-dataset-italian-structural-aggregates/"
+# repository GitHub con gli shapefile della ripartizione (molto grande: si scarica solo il file della regione)
+repository = "https://github.com/pcm-dpc/DPC-Aggregati-Strutturali-ITH-NordEst"
+# file della regione nel repository (percorso da completare dopo aver visto l'elenco con `edifici3d elenca-aggregati`)
+url = ""
+formato = "zip"
+
+[fonti.osm]
+descrizione = "OpenStreetMap – edifici (solo costruzioni recenti non presenti nel DBTR)"
+licenza = "ODbL 1.0"
+attribuzione = "© OpenStreetMap contributors (ODbL 1.0)"
+scheda = "https://www.openstreetmap.org/copyright"
+# estratto Geofabrik dell'Italia nord-orientale (PBF, letto con GDAL/pyogrio, strato multipolygons)
+url = "https://download.geofabrik.de/europe/italy/nord-est-latest.osm.pbf"
+formato = "pbf"
+# alternativa per una sola zona piccola
+overpass = "https://overpass-api.de/api/interpreter"

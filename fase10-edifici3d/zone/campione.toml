@@ -1,0 +1,77 @@
+# Zona di PROVA con il campione LiDAR sintetico (edifici3d/campione.py): isolato inventato vicino a Rimini, tessere di
+# 50 m. Serve ai test, alla demo della pagina 3D e alla pagina di stato. Non entra mai nella coda notturna (prova = true).
+# {radice} è la cartella del campione (python -m edifici3d campione --uscita <cartella>; opzione --radice della pipeline).
+
+[zona]
+nome = "Campione sintetico (prova)"
+codice = "campione"
+ordine = 99
+prova = true
+archivio = "campione"
+crs = "EPSG:7791"
+riquadro = [787950, 4883950, 788150, 4884100]
+lato_tessera = 50
+nome_tessera = "C_{x0:.0f}_{y0:.0f}"
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"dati sintetici" = "sintetico"
+
+[edifici]
+contesto = "{radice}/prodotti/contesto"
+
+[limiti]
+max_minuti = 10
+min_gb_liberi = 0.1
+max_gb_notte = 1
+max_mb_tessera = 50
+max_tentativi = 2
+passo_dsm = 1.0
+maschera_m = 30
+
+[fonti.campione_dsm]
+tipo = "dsm"
+priorita = 1
+sintetico = true
+descrizione = "Campione LiDAR sintetico – DSM (prova)"
+licenza = "dati sintetici"
+licenza_confermata = true
+attiva = true
+attribuzione = "Dati sintetici di esempio (EuGEnio)"
+versione = "file"
+url = "file:{radice}/dsm/{tavola}.tif"
+
+[fonti.campione_las]
+tipo = "las"
+priorita = 2
+sintetico = true
+descrizione = "Campione LiDAR sintetico – LAS classificato (prova)"
+licenza = "dati sintetici"
+licenza_confermata = true
+attiva = true
+attribuzione = "Dati sintetici di esempio (EuGEnio)"
+versione = "file"
+url = "file:{radice}/las/{tavola}.las"
+
+[fonti.campione_dtm]
+tipo = "dtm"
+priorita = 1
+sintetico = true
+descrizione = "Campione LiDAR sintetico – DTM (prova)"
+licenza = "dati sintetici"
+licenza_confermata = true
+attiva = true
+attribuzione = "Dati sintetici di esempio (EuGEnio)"
+versione = "file"
+url = "file:{radice}/dtm/{tavola}.tif"
+
+[fonti.esempio_in_attesa]
+tipo = "dsm"
+priorita = 0
+descrizione = "Fonte d'esempio in attesa (mostra come appare nella pagina di stato)"
+licenza = "da confermare"
+licenza_confermata = false
+attiva = false
+stato = "in attesa"
+motivo = "esempio: URL e licenza non ancora arrivati"
+url = ""

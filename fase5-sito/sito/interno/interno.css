@@ -1,0 +1,19 @@
+/* pagina interna degli edifici (fase 10, Fase C): solo stili propri, il resto da ../stile.css */
+.interno { max-width: 1100px; margin: 0 auto; padding: var(--s5, 1.5rem) var(--s4, 1rem) 4rem; }
+.interno h2 { margin-top: 2rem; }
+.interno table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.interno th, .interno td { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid var(--linea); vertical-align: top; }
+.interno td.num, .interno th.num { text-align: right; }
+.interno .tabella-scorre { overflow-x: auto; }
+.interno .schede { display: flex; flex-wrap: wrap; gap: .75rem; }
+.interno .scheda { border: 1px solid var(--linea); border-radius: 10px; padding: .6rem .9rem; min-width: 10rem; background: var(--foglio); }
+.interno .scheda b { display: block; font-size: 1.4rem; }
+.interno .barra { height: .8rem; border-radius: 99px; background: var(--rialzo); overflow: hidden; display: flex; margin: .5rem 0; }
+.interno .barra i { display: block; height: 100%; }
+.interno .s-fatta { background: #2e8b57; } .interno .s-errore { background: #d08a00; } .interno .s-saltata { background: #c0392b; }
+.interno .s-senza { background: #7f8c8d; } .interno .s-dafare { background: transparent; }
+.interno .stato-fonte { font-weight: 600; }
+.interno .stato-fonte.attiva { color: #2e8b57; } .interno .stato-fonte.attesa { color: #d08a00; }
+.interno .legenda-barra { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .85rem; }
+.interno .legenda-barra i { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin-right: .3rem; vertical-align: -1px; border: 1px solid var(--linea); }
+.interno .prova { font-size: .8rem; border: 1px solid var(--linea); border-radius: 99px; padding: .05rem .5rem; margin-left: .5rem; }

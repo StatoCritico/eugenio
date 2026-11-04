@@ -1,0 +1,203 @@
+{
+ "tessera": "C_788000_4883950",
+ "crs": "EPSG:7791",
+ "corpi": {
+  "C7": {
+   "punti": 252,
+   "copertura": 1.0,
+   "quota_terreno": 7.6,
+   "stato": "ok",
+   "tetto": "padiglione",
+   "modello": "padiglione",
+   "falde": [
+    {
+     "id": "F1",
+     "pendenza": 20.5,
+     "orientamento": 89.3,
+     "settore": "E",
+     "area_pianta": 63.3,
+     "superficie": 67.5,
+     "alto": 21.02,
+     "basso": 17.99,
+     "rmse": 0.036,
+     "punti": 46,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         788050.0,
+         4883955.09
+        ],
+        [
+         788042.0,
+         4883963.0
+        ],
+        [
+         788050.0,
+         4883970.91
+        ],
+        [
+         788050.0,
+         4883955.09
+        ]
+       ]
+      ]
+     }
+    },
+    {
+     "id": "F2",
+     "pendenza": 20.2,
+     "orientamento": 270.3,
+     "settore": "O",
+     "area_pianta": 63.3,
+     "superficie": 67.4,
+     "alto": 20.98,
+     "basso": 18.03,
+     "rmse": 0.037,
+     "punti": 56,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         788030.0,
+         4883970.91
+        ],
+        [
+         788038.0,
+         4883963.0
+        ],
+        [
+         788030.0,
+         4883955.09
+        ],
+        [
+         788030.0,
+         4883970.91
+        ]
+       ]
+      ]
+     }
+    },
+    {
+     "id": "F3",
+     "pendenza": 20.5,
+     "orientamento": 359.9,
+     "settore": "N",
+     "area_pianta": 96.7,
+     "superficie": 103.2,
+     "alto": 21.02,
+     "basso": 18.02,
+     "rmse": 0.034,
+     "punti": 73,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         788030.0,
+         4883971.0
+        ],
+        [
+         788050.0,
+         4883971.0
+        ],
+        [
+         788050.0,
+         4883970.91
+        ],
+        [
+         788042.0,
+         4883963.0
+        ],
+        [
+         788038.0,
+         4883963.0
+        ],
+        [
+         788030.0,
+         4883970.91
+        ],
+        [
+         788030.0,
+         4883971.0
+        ]
+       ]
+      ]
+     }
+    },
+    {
+     "id": "F4",
+     "pendenza": 20.4,
+     "orientamento": 179.6,
+     "settore": "S",
+     "area_pianta": 96.7,
+     "superficie": 103.2,
+     "alto": 21.02,
+     "basso": 18.01,
+     "rmse": 0.034,
+     "punti": 77,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         788050.0,
+         4883955.0
+        ],
+        [
+         788030.0,
+         4883955.0
+        ],
+        [
+         788030.0,
+         4883955.09
+        ],
+        [
+         788038.0,
+         4883963.0
+        ],
+        [
+         788042.0,
+         4883963.0
+        ],
+        [
+         788050.0,
+         4883955.09
+        ],
+        [
+         788050.0,
+         4883955.0
+        ]
+       ]
+      ]
+     }
+    }
+   ],
+   "gronda": 17.99,
+   "colmo": 21.02,
+   "altezza_mediana": 19.2,
+   "rmse": 0.035,
+   "qualita": "buona",
+   "note": [],
+   "prove": {
+    "piano": 0.668,
+    "monofalda": 0.668,
+    "capanna": 0.487,
+    "padiglione": 0.035
+   },
+   "id": "C7",
+   "edificio": "E-VIC1",
+   "fonte": "campione_dsm",
+   "descrizione_fonte": "Campione LiDAR sintetico – DSM (prova)",
+   "versione": "campione_dsm:40986:1793756856",
+   "fonte_dtm": "campione_dtm",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "elaborato": "2026-11-04T01:47:37+00:00",
+   "altezza_dbtr": 18.0,
+   "sintetico": true
+  }
+ }
+}

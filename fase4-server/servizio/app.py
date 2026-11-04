@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
-from . import config as C, meteo, modello, protezione as P, report, storici, tabelle
+from . import analisi, config as C, edifici, interno, meteo, modello, orizzonte, ortofoto, protezione as P, pvgis, report, storici, tabelle
 from .report_servizi import CON_FORMATO as REPORT_CON_FORMATO, TIPI as TIPI_REPORT
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -29,6 +29,12 @@ if C.ORIGINI_CORS:
                        allow_headers=[P.INTESTAZIONE_SESSIONE, "Content-Type"])
 
 app.include_router(storici.router)   # pagina "Dati climatici": /api/storici/...
+app.include_router(edifici.router)   # edifici 3D (fase 10): gradi giorno mensili e clima orario per firma e FV
+app.include_router(ortofoto.router)  # ortofoto (fase 10, Fase B): proxy con copia su disco, una fonte per TOML
+app.include_router(pvgis.router)     # confronto PVGIS chiamato dal server (fase 10, Fase B)
+app.include_router(orizzonte.router) # orizzonte lontano dal Copernicus DEM 90 m (fase 10, Fase B)
+app.include_router(interno.router)   # pagina di stato nascosta degli edifici (fase 10, Fase C), con Cloudflare Access
+app.include_router(analisi.router)   # analisi 5 e 7–13 (fase 10, Fase E): modulo privato facoltativo, altrimenti «non disponibile»
 # limiti per indirizzo (IPv6 per rete /64) in finestra mobile di un'ora: previsioni (pesanti), geocodifica (quota
 # Zornade), patrimonio (contato in edifici: il sito invia i file grandi a blocchi, perché il tunnel Cloudflare chiude
 # le richieste che durano più di 100 secondi), report, conversioni e rotte dei dati (meteo, Legge 10, mappa, comuni)
@@ -48,7 +54,7 @@ def _istat_valido(istat: str) -> None:
 def salute():
     p = C.DATI / "previsioni" / "ultima.json"
     return {"stato": "ok", "previsioni": json.loads(p.read_text()) if p.exists() else None,
-            "modello_caricato": modello._modello is not None}
+            "modello_caricato": modello._modello is not None, "previsioni_in_corso": P.previsioni_in_corso()}
 
 
 # ---------------------------------------------------------------------------------------------- verifica anti-robot
@@ -126,6 +132,21 @@ def meteo_comune(request: Request, istat: str, modalita: str = "breve", giorni: 
     return {"storico": {"t": [str(x) for x in st.data],
                         **{c: [None if pd.isna(x) else round(float(x), 2) for x in st[c]]
                            for c in st.columns if c != "data"}}}
+
+
+@app.get("/api/clima-previsto/{istat}")
+def clima_previsto(request: Request, istat: str, modalita: str = "breve", orizzonte: int = 72,
+                   covariate: str | None = None):
+    """«Solo clima» della pagina Previsioni: variabili meteo previste per il comune, senza file dei consumi."""
+    _limita(request, "dati")
+    _istat_valido(istat)
+    scelte = None if covariate is None else [c for c in covariate.split(",") if c]
+    try:
+        return modello.solo_clima(istat, modalita, orizzonte, scelte)
+    except modello.MeteoMancante:
+        raise HTTPException(404, "I dati meteo di questo comune non sono ancora sul server")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
 
 
 @app.post("/api/previsione")

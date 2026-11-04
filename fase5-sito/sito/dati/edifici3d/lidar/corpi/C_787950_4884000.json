@@ -1,0 +1,189 @@
+{
+ "tessera": "C_787950_4884000",
+ "crs": "EPSG:7791",
+ "corpi": {
+  "C6": {
+   "punti": 80,
+   "copertura": 1.0,
+   "quota_terreno": 8.2,
+   "stato": "ok",
+   "tetto": "capanna",
+   "modello": "capanna",
+   "falde": [
+    {
+     "id": "F1",
+     "pendenza": 31.0,
+     "orientamento": 90.0,
+     "settore": "E",
+     "area_pianta": 60.0,
+     "superficie": 70.0,
+     "alto": 9.0,
+     "basso": 6.0,
+     "rmse": 0.0,
+     "punti": 40,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         787980.0,
+         4884042.0
+        ],
+        [
+         787980.0,
+         4884030.0
+        ],
+        [
+         787975.0,
+         4884030.0
+        ],
+        [
+         787975.0,
+         4884042.0
+        ],
+        [
+         787980.0,
+         4884042.0
+        ]
+       ]
+      ]
+     }
+    },
+    {
+     "id": "F2",
+     "pendenza": 31.0,
+     "orientamento": 270.0,
+     "settore": "O",
+     "area_pianta": 60.0,
+     "superficie": 70.0,
+     "alto": 9.0,
+     "basso": 6.0,
+     "rmse": 0.0,
+     "punti": 40,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         787970.0,
+         4884030.0
+        ],
+        [
+         787970.0,
+         4884042.0
+        ],
+        [
+         787975.0,
+         4884042.0
+        ],
+        [
+         787975.0,
+         4884030.0
+        ],
+        [
+         787970.0,
+         4884030.0
+        ]
+       ]
+      ]
+     }
+    }
+   ],
+   "gronda": 6.0,
+   "colmo": 9.0,
+   "altezza_mediana": 7.75,
+   "rmse": 0.0,
+   "qualita": "buona",
+   "note": [],
+   "prove": {
+    "piano": 0.671,
+    "monofalda": 0.671,
+    "capanna": 0.0,
+    "padiglione": 0.325
+   },
+   "id": "C6",
+   "edificio": "E-CASA",
+   "fonte": "campione_dsm",
+   "descrizione_fonte": "Campione LiDAR sintetico – DSM (prova)",
+   "versione": "campione_dsm:40986:1793756856",
+   "fonte_dtm": "campione_dtm",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "elaborato": "2026-11-04T01:47:37+00:00",
+   "altezza_dbtr": 6.0,
+   "sintetico": true
+  },
+  "C8": {
+   "punti": 196,
+   "copertura": 1.0,
+   "quota_terreno": 8.0,
+   "stato": "ok",
+   "tetto": "piano",
+   "modello": "piano",
+   "falde": [
+    {
+     "id": "F1",
+     "pendenza": 0.0,
+     "orientamento": 180.0,
+     "settore": "—",
+     "area_pianta": 255.9,
+     "superficie": 255.9,
+     "alto": 13.0,
+     "basso": 13.0,
+     "rmse": 0.007,
+     "punti": 196,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         1575992.0,
+         9768004.0
+        ],
+        [
+         1575992.0,
+         9768020.01
+        ],
+        [
+         1575976.0,
+         9768020.0
+        ],
+        [
+         1575976.0,
+         9768004.01
+        ],
+        [
+         1575992.0,
+         9768004.0
+        ]
+       ]
+      ]
+     }
+    }
+   ],
+   "gronda": 13.0,
+   "colmo": 13.0,
+   "altezza_mediana": 13.0,
+   "rmse": 0.007,
+   "qualita": "buona",
+   "note": [],
+   "prove": {
+    "piano": 0.007,
+    "monofalda": 0.007,
+    "capanna": 0.007,
+    "padiglione": 0.007
+   },
+   "id": "C8",
+   "edificio": "E-VIC2",
+   "fonte": "campione_dsm",
+   "descrizione_fonte": "Campione LiDAR sintetico – DSM (prova)",
+   "versione": "campione_dsm:40986:1793756856",
+   "fonte_dtm": "campione_dtm",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "elaborato": "2026-11-04T01:47:37+00:00",
+   "altezza_dbtr": 13.0,
+   "sintetico": true
+  }
+ }
+}

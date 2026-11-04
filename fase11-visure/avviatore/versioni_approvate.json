@@ -1,0 +1,22 @@
+{
+ "formato": 1,
+ "programma": "eugenio-visure",
+ "nota": "Versioni del lettore approvate da EuGEnio: l'avviatore usa solo pacchetti con queste impronte SHA-256. Si aggiorna con avviatore/costruisci_pacchetto.py --aggiorna-elenco.",
+ "versioni": [
+  {
+   "versione": "0.1.0",
+   "data": "2026-11-04",
+   "file": "visure-0.1.0.zip",
+   "sha256": "4540d527d0c40e47a69fbe1cb1ae29c5f873022908ce24c0b19883d1e5db4dec",
+   "url": "https://github.com/statocritico/eugenio/releases/download/visure-v0.1.0/visure-0.1.0.zip",
+   "minimo_avviatore": "0.1.0",
+   "stato": "approvata"
+  }
+ ],
+ "revocate": [],
+ "visura_api": {
+  "stato": "non attivo",
+  "nota": "Componente previsto dal § 13 (visure scaricate con visura-api di Zornade) e non attivo: prima vanno chiariti i termini di SISTER e dell'area riservata (README della fase 11, «Condizioni d'uso»). Le versioni approvate di visura-api andranno qui, con le loro impronte.",
+  "versioni": []
+ }
+}

@@ -1,0 +1,150 @@
+{
+ "tessera": "C_788050_4884000",
+ "crs": "EPSG:7791",
+ "corpi": {
+  "C4": {
+   "punti": 748,
+   "copertura": 1.0,
+   "quota_terreno": 7.7,
+   "stato": "ok",
+   "tetto": "monofalda",
+   "modello": "monofalda",
+   "falde": [
+    {
+     "id": "F1",
+     "pendenza": 6.2,
+     "orientamento": 180.1,
+     "settore": "S",
+     "area_pianta": 864.2,
+     "superficie": 869.2,
+     "alto": 10.5,
+     "basso": 7.9,
+     "rmse": 0.227,
+     "punti": 747,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         788096.0,
+         4883990.0
+        ],
+        [
+         788096.0,
+         4884014.0
+        ],
+        [
+         788060.0,
+         4884014.0
+        ],
+        [
+         788060.0,
+         4883990.0
+        ],
+        [
+         788096.0,
+         4883990.0
+        ]
+       ]
+      ]
+     }
+    }
+   ],
+   "gronda": 7.9,
+   "colmo": 10.5,
+   "altezza_mediana": 9.1,
+   "rmse": 0.227,
+   "qualita": "media",
+   "note": [],
+   "prove": {
+    "piano": 0.723,
+    "monofalda": 0.227,
+    "capanna": 0.225,
+    "padiglione": 0.225
+   },
+   "id": "C4",
+   "edificio": "E-CAP",
+   "fonte": "campione_dsm",
+   "descrizione_fonte": "Campione LiDAR sintetico – DSM (prova)",
+   "versione": "campione_dsm:40986:1793756856",
+   "fonte_dtm": "campione_dtm",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "elaborato": "2026-11-04T01:47:37+00:00",
+   "altezza_dbtr": 8.0,
+   "sintetico": true
+  },
+  "C5": {
+   "punti": 80,
+   "copertura": 1.0,
+   "quota_terreno": 7.9,
+   "stato": "ok",
+   "tetto": "piano",
+   "modello": "piano",
+   "falde": [
+    {
+     "id": "F1",
+     "pendenza": 0.0,
+     "orientamento": 180.0,
+     "settore": "—",
+     "area_pianta": 120.0,
+     "superficie": 120.0,
+     "alto": 7.1,
+     "basso": 7.1,
+     "rmse": 0.043,
+     "punti": 80,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         1576138.0,
+         9768033.0
+        ],
+        [
+         1576137.99,
+         9768043.0
+        ],
+        [
+         1576125.99,
+         9768043.01
+        ],
+        [
+         1576126.0,
+         9768033.0
+        ],
+        [
+         1576138.0,
+         9768033.0
+        ]
+       ]
+      ]
+     }
+    }
+   ],
+   "gronda": 7.1,
+   "colmo": 7.1,
+   "altezza_mediana": 7.0,
+   "rmse": 0.04,
+   "qualita": "buona",
+   "note": [],
+   "prove": {
+    "piano": 0.04,
+    "monofalda": 0.04,
+    "capanna": 0.038,
+    "padiglione": 0.036
+   },
+   "id": "C5",
+   "edificio": "E-CAP",
+   "fonte": "campione_las",
+   "descrizione_fonte": "Campione LiDAR sintetico – LAS classificato (prova)",
+   "versione": "campione_las:150375:1793756856",
+   "fonte_dtm": "campione_las (classe terreno)",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "elaborato": "2026-11-04T01:47:37+00:00",
+   "altezza_dbtr": 7.0,
+   "sintetico": true
+  }
+ }
+}

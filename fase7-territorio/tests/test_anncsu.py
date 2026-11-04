@@ -143,7 +143,7 @@ class FintoStrada(Finto):
 
 def test_patrimonio_con_anncsu(tmp_path):
     idx = Indirizzario(anncsu.scarica(tmp_path, zip_locale=_zip(tmp_path)))
-    df = patrimonio.leggi(Path(__file__).parent.parent / "esempi" / "patrimonio_esempio.csv").head(1)
+    df = patrimonio.leggi(Path(__file__).parent / "dati" / "patrimonio_prova.csv").head(1)
     z = Finto(civico_noto=False)
     r = patrimonio.geolocalizza(df, z, COMUNI, anncsu=idx).iloc[0]
     assert z.query == []                                  # Zornade geocodifica non serve

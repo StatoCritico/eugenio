@@ -336,10 +336,12 @@ $("cerca-comune").addEventListener("input", (e) => {
     .sort((a, b) => (b.chiave.startsWith(q) - a.chiave.startsWith(q)) || a.nome.localeCompare(b.nome, "it")).slice(0, 8);
   if (!trovati.length) { ul.appendChild(h("li", "aiuto", `Nessun comune trovato in ${stato.nomeRegione}.`)); return; }
   trovati.forEach((c) => {
-    const li = h("li"), b = h("button", null, `${c.nome} (${c.prov})${stato.scelti.has(c.istat) ? " – già scelto" : ""}`);
+    const li = h("li"), b = h("button", null, `${c.nome} (${c.prov})${stato.scelti.has(c.istat) ? " – già scelto, tocca per toglierlo" : ""}`);
     b.type = "button";
     b.addEventListener("click", () => {
-      stato.scelti.set(c.istat, { nome: c.nome, prov: c.prov });
+      // come sulla mappa: un comune già scelto si toglie (04/11/2026)
+      if (stato.scelti.has(c.istat)) stato.scelti.delete(c.istat);
+      else stato.scelti.set(c.istat, { nome: c.nome, prov: c.prov });
       $("cerca-comune").value = ""; ul.innerHTML = "";
       chips(); colora(); aggiornaStima();
       $("cerca-comune").focus();

@@ -1,0 +1,117 @@
+{
+ "tessera": "C_787950_4884050",
+ "crs": "EPSG:7791",
+ "corpi": {
+  "C9": {
+   "punti": 128,
+   "copertura": 1.0,
+   "quota_terreno": 8.4,
+   "stato": "ok",
+   "tetto": "capanna",
+   "modello": "capanna",
+   "falde": [
+    {
+     "id": "F1",
+     "pendenza": 26.6,
+     "orientamento": 0.0,
+     "settore": "N",
+     "area_pianta": 90.1,
+     "superficie": 100.7,
+     "alto": 11.55,
+     "basso": 9.05,
+     "rmse": 0.0,
+     "punti": 64,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         787960.0,
+         4884070.0
+        ],
+        [
+         787978.0,
+         4884070.0
+        ],
+        [
+         787978.0,
+         4884065.0
+        ],
+        [
+         787960.0,
+         4884065.0
+        ],
+        [
+         787960.0,
+         4884070.0
+        ]
+       ]
+      ]
+     }
+    },
+    {
+     "id": "F2",
+     "pendenza": 26.6,
+     "orientamento": 180.0,
+     "settore": "S",
+     "area_pianta": 90.1,
+     "superficie": 100.7,
+     "alto": 11.55,
+     "basso": 9.05,
+     "rmse": 0.0,
+     "punti": 64,
+     "geometria": {
+      "type": "Polygon",
+      "coordinates": [
+       [
+        [
+         787978.0,
+         4884060.0
+        ],
+        [
+         787960.0,
+         4884060.0
+        ],
+        [
+         787960.0,
+         4884065.0
+        ],
+        [
+         787978.0,
+         4884065.0
+        ],
+        [
+         787978.0,
+         4884060.0
+        ]
+       ]
+      ]
+     }
+    }
+   ],
+   "gronda": 9.05,
+   "colmo": 11.55,
+   "altezza_mediana": 10.45,
+   "rmse": 0.0,
+   "qualita": "buona",
+   "note": [],
+   "prove": {
+    "piano": 0.559,
+    "monofalda": 0.559,
+    "capanna": 0.0,
+    "padiglione": 0.162
+   },
+   "id": "C9",
+   "edificio": "E-VIC3",
+   "fonte": "campione_dsm",
+   "descrizione_fonte": "Campione LiDAR sintetico – DSM (prova)",
+   "versione": "campione_dsm:40986:1793756856",
+   "fonte_dtm": "campione_dtm",
+   "licenza": "dati sintetici",
+   "attribuzione": "Dati sintetici di esempio (EuGEnio)",
+   "elaborato": "2026-11-04T01:47:37+00:00",
+   "altezza_dbtr": 9.0,
+   "sintetico": true
+  }
+ }
+}

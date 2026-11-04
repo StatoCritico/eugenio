@@ -26,6 +26,24 @@ services:
     restart: unless-stopped
     mem_limit: 3g   # il ricalcolo del clima dal 1940 usa ~1,5 GB per qualche minuto
 
+  # pipeline notturna degli edifici (fase 10, Fase C): solo su richiesta, dal cron dell'host alle 3:30
+  #   docker compose --profile edifici run --rm edifici-lidar
+  # scrive i prodotti in CARTELLA_EDIFICI (serviti da Caddy in /edifici3d/) e lo stato in /dati/edifici_stato (letto
+  # dall'api per la pagina interna, mai servito come file statico)
+  edifici-lidar:
+    build: { context: .., dockerfile: fase10-edifici3d/Dockerfile }
+    image: energia-edifici
+    profiles: ["edifici"]
+    depends_on: [api]
+    volumes:
+      - ${CARTELLA_DATI:-/srv/energia/dati}:/dati
+      - ${CARTELLA_EDIFICI:-/srv/energia/dati/edifici}:/dati/edifici
+    environment:
+      TZ: Europe/Rome
+    cpus: 1
+    mem_limit: 4g
+    restart: "no"
+
   caddy:
     image: caddy:2
     depends_on: [api]
@@ -35,6 +53,8 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ${CARTELLA_SITO:-../fase5-sito/sito}:/srv/sito:ro
+      # prodotti degli edifici 3D (fase 10): <archivio>/cc-by/… e <archivio>/odbl/…
+      - ${CARTELLA_EDIFICI:-/srv/energia/dati/edifici}:/srv/edifici3d:ro
       - caddy-dati:/data
       - caddy-config:/config
     restart: unless-stopped

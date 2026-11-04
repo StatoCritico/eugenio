@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Configurazione dell'artefatto per SignPath (da copiare nel progetto su app.signpath.io dopo l'adesione a SignPath
+     Foundation): l'artefatto di GitHub è uno zip con il solo EuGEnioVisure.exe, firmato Authenticode con marca
+     temporale. Da verificare con la documentazione di SignPath al momento della configurazione. -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="EuGEnioVisure.exe">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

@@ -634,6 +634,12 @@ code { font: .9em var(--mono); background: var(--rialzo); padding: .05em .3em; b
 .edificio .catasto { color: var(--tenue); }
 .edificio .nota { display: block; margin: .2rem 0 0; padding: 0; border: 0; background: none; color: var(--tenue); font-size: var(--c-xs); }
 .edificio .nota::before { content: none; }
+/* visure catastali di EuGEnio Visure (fase 11), lette solo nel browser */
+.edificio .visura { padding-left: var(--s2); border-left: 2px solid var(--serie-2); }
+.edificio .visura.verificare { border-left-color: var(--attenzione); }
+.edificio .visura.nessuna_visura { border-left-color: var(--linea); color: var(--tenue); }
+.non-abbinate { margin-top: var(--s3); font-size: var(--c-s); }
+.non-abbinate summary { cursor: pointer; }
 .esito { font: 600 var(--c-xs)/1.4 var(--titoli); white-space: nowrap; padding: .05rem .5rem; border-radius: var(--r-tondo); border: 1px solid currentColor; }
 .esito.ok { color: var(--serie-2); }
 .esito.verificare { color: var(--attenzione); }
@@ -983,6 +989,12 @@ table.totali td.sedi { color: var(--tenue); font-size: var(--c-xs); width: 1%; }
 .pareto { margin-top: var(--s2); }
 .pareto .schede { margin-bottom: var(--s3); overflow-x: auto; }
 .pareto .schede [role="tab"] { flex: 0 0 auto; font-size: var(--c-s); }
+/* Previsioni: una scheda per i consumi e una per ogni variabile meteo attiva (04/11/2026); vanno a capo se sono tante */
+.schede.schede-previsione { flex-wrap: wrap; margin: var(--s4) 0 var(--s2); }
+.schede.schede-previsione [role="tab"] { flex: 0 1 auto; font-size: var(--c-s); min-height: 2.5rem; white-space: normal; text-align: left; }
+.schede.schede-previsione [role="tab"]:disabled { color: var(--tenue); opacity: .55; cursor: not-allowed; background: none; }
+.nota-schede { margin: 0 0 var(--s2); }
+.pannello-scheda[hidden] { display: none; }
 .pareto .grafico svg text.piccolo { font-size: 10px; }
 .pareto-sintesi { margin-top: var(--s2); }
 .fuori-schermo { position: absolute; left: -10000px; top: 0; width: 760px; }
@@ -1067,3 +1079,210 @@ table.totali td.sedi { color: var(--tenue); font-size: var(--c-xs); width: 1%; }
 .riquadro-grafico.con-tabella .tabella-scorre, .riquadro-grafico.con-tabella .edifici { max-height: none; overflow: visible; margin: 0; }
 .riquadro-grafico.con-tabella table.mensili thead th { top: 0; }
 @media (max-width: 560px) { .riquadro-grafico.con-tabella .riquadro-finestra { max-height: 95vh; border-radius: var(--r-l); border: 1px solid var(--linea); } }
+
+/* ------------------------------------------------------------------------------------------- menu a gruppi (03/11/2026)
+   cinque gruppi di servizi (Clima e meteo, Patrimonio, Edificio, Cogenerazione, Fotovoltaico) con un sottomenu a tendina
+   ciascuno: <details class="voce-gruppo"> (si apre con clic, Invio o Spazio anche senza JavaScript); aspetto.js chiude
+   gli altri gruppi, chiude con Esc o con un clic fuori e sposta il fuoco con le frecce. Il gruppo della pagina aperta ha
+   data-attivo (lo mette costruisci_pagine.py). Sul telefono i gruppi stanno nel pulsante Menu, come elenchi richiudibili. */
+.menu-strumenti { overflow: visible; }
+.menu-gruppi { display: flex; gap: var(--s1); list-style: none; margin: 0; padding: 0; }
+.menu-gruppi > li { position: relative; }
+.voce-gruppo > summary {
+  list-style: none; display: flex; align-items: center; gap: .35rem; min-height: var(--tocco); padding: 0 .85rem; cursor: pointer;
+  color: var(--tenue); font: 600 1.06rem/1 var(--titoli); white-space: nowrap; border-bottom: 3px solid transparent; letter-spacing: .005em;
+}
+.menu-gruppi > li:first-child .voce-gruppo > summary { padding-left: 0; }
+.voce-gruppo > summary::-webkit-details-marker { display: none; }
+.voce-gruppo > summary::after { content: ""; width: .42rem; height: .42rem; margin-top: -.2rem; border: solid currentColor; border-width: 0 2px 2px 0;
+  transform: rotate(45deg); transition: transform .2s ease; }
+.voce-gruppo[open] > summary::after { transform: rotate(-135deg); margin-top: .25rem; }
+.voce-gruppo > summary:hover, .voce-gruppo[open] > summary { color: var(--inchiostro); border-bottom-color: var(--linea); }
+.voce-gruppo[data-attivo] > summary { color: var(--inchiostro); border-bottom-color: var(--primario); }
+.voce-gruppo > summary:focus-visible { outline: 3px solid var(--inchiostro); outline-offset: 2px; border-radius: var(--r); }
+.tendina {
+  position: absolute; left: 0; top: calc(100% + 4px); z-index: 35; min-width: 17rem; max-width: min(26rem, 90vw); list-style: none; margin: 0;
+  padding: var(--s1); background: var(--foglio); border: 1px solid var(--linea); border-radius: var(--r-l); box-shadow: var(--ombra-2);
+}
+.menu-gruppi > li:nth-last-child(-n+2) .tendina { left: auto; right: 0; }   /* gli ultimi gruppi si aprono verso sinistra */
+.menu-strumenti .tendina a, .tendina a {
+  display: flex; border-bottom: 0; white-space: normal; letter-spacing: 0; align-items: center; justify-content: space-between; gap: var(--s3); min-height: 2.6rem; padding: .35rem .75rem;
+  border-radius: var(--r); color: var(--inchiostro); text-decoration: none; font: 600 var(--c-m)/1.25 var(--titoli);
+}
+.menu-strumenti .tendina a:first-child { padding-left: .75rem; }
+.tendina a:hover, .tendina a:focus-visible { border-bottom: 0; background: var(--rialzo); outline: none; }
+.tendina a:focus-visible { box-shadow: inset 0 0 0 2px var(--primario); }
+.tendina a[aria-current="page"] { color: var(--primario); box-shadow: inset 3px 0 0 var(--primario); }
+.tendina .cantiere, .menu-pannello .cantiere { flex: none; font: 500 .7rem/1 var(--testo); color: var(--tenue); border: 1px solid var(--linea);
+  border-radius: var(--r-tondo); padding: .15rem .4rem; white-space: nowrap; }
+/* menu del telefono: un gruppo richiudibile per servizio */
+.pannello-gruppo { border-bottom: 1px solid var(--linea); }
+.pannello-gruppo > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 var(--s2);
+  cursor: pointer; color: var(--inchiostro); font: 700 1.1rem/1.2 var(--titoli); }
+.pannello-gruppo > summary::-webkit-details-marker { display: none; }
+.pannello-gruppo > summary::after { content: "▾"; color: var(--primario); }
+.pannello-gruppo[open] > summary::after { content: "▴"; }
+.pannello-gruppo[data-attivo] > summary { color: var(--primario); }
+.pannello-gruppo ul { padding-left: var(--s3); }
+.pannello-gruppo li:last-child a { border-bottom: 0; }
+.menu-pannello .pannello-gruppo a { font-weight: 500; font-size: 1.02rem; }
+@media (max-width: 860px) {
+  .testata-menu { display: none; }   /* sul telefono servizi, Iscriviti, ✱ e ◐ stanno nel pulsante Menu e nella riga del marchio */
+}
+@media (min-width: 861px) {
+  .voce-gruppo > summary { min-height: var(--alto-comando); }
+}
+@media (min-width: 861px) and (max-width: 1060px) {
+  .voce-gruppo > summary { padding: 0 .55rem; font-size: 1rem; }
+}
+
+/* ------------------------------------------------------------------------------------------- menu fissato (04/11/2026)
+   Il mouse (o il fuoco da tastiera) sul titolo di un gruppo apre la tendina; il clic sul titolo «fissa» il gruppo: le sue
+   voci compaiono in orizzontale nella riga nera nav.riga-fissata sotto la barra dei menu (la riempie aspetto.js), e il
+   titolo diventa una linguetta nera unita alla riga. La riga è nera in tutti i vestiti e in tutti e due i temi; l'accento
+   (voce della pagina aperta, etichetta «sperimentale», contorno del fuoco) è il primario del vestito nel tema scuro, che
+   sul nero ha contrasto ≥ 6:1. data-menu-fissato su <html> (dallo script del <head>) riserva il posto prima di
+   aspetto.js, così la pagina non salta. Sul telefono la riga scorre in orizzontale dentro di sé e ha il pulsante ×. */
+:root { --nero-riga: #000; --testo-riga: #f2f2f2; --tenue-riga: #a3a3a3; --accento-riga: #ff7a50; }
+:root[data-vestito="ambra"] { --accento-riga: #f4b13e; }
+:root[data-vestito="indaco"] { --accento-riga: #8aa4ff; }
+:root[data-vestito="lime"] { --accento-riga: #c6e85a; }
+:root[data-vestito="verde"] { --accento-riga: #2ecc7a; }
+.riga-fissata { display: none; background: var(--nero-riga); color: var(--testo-riga); }
+:root[data-menu-fissato] .riga-fissata { display: block; min-height: 2.75rem; }
+.riga-dentro { display: flex; align-items: center; gap: var(--s3); min-height: 2.75rem; padding: 0 var(--margine); }
+.riga-titolo { display: none; flex: none; color: var(--tenue-riga); font: 600 var(--c-xs)/1 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
+.riga-voci { display: flex; flex: 1; min-width: 0; flex-wrap: nowrap; gap: var(--s1); list-style: none; margin: 0 0 0 -.7rem; padding: 0;
+  overflow-x: auto; scrollbar-width: thin; scrollbar-color: #555 transparent; }
+.riga-voci > li { flex: none; }
+.riga-voci a, .riga-voci .voce-gme {
+  display: inline-flex; align-items: center; gap: .4rem; min-height: 2.75rem; padding: 0 .7rem; white-space: nowrap; text-decoration: none;
+  color: var(--testo-riga); font: 600 var(--c-s)/1.2 var(--titoli); border-top: 3px solid transparent; border-bottom: 3px solid transparent;
+}
+.riga-voci a:hover { color: #fff; background: #222; text-decoration: none; }
+.riga-voci a:focus-visible { outline: 3px solid var(--accento-riga); outline-offset: -3px; border-radius: var(--r-s); }
+.riga-voci a[aria-current="page"], .riga-voci .voce-gme[aria-current="page"] { color: #fff; border-bottom-color: var(--accento-riga); }
+.riga-voci .voce-gme { color: var(--tenue-riga); cursor: not-allowed; }
+.riga-voci .cantiere { flex: none; font: 500 .62rem/1 var(--testo); color: #d0d0d0; border: 1px solid #6e6e6e; border-radius: var(--r-tondo); padding: .1rem .3rem; }
+.riga-voci .cantiere.prova { color: var(--accento-riga); border-color: var(--accento-riga); }
+.riga-chiudi { display: none; flex: none; place-items: center; width: var(--tocco); height: var(--tocco); margin: 0; padding: 0; border: 0;
+  background: none; color: var(--testo-riga); font: 400 1.6rem/1 var(--testo); cursor: pointer; border-radius: var(--r); }
+.riga-chiudi:hover { background: #222; }
+.riga-chiudi:focus-visible { outline: 3px solid var(--accento-riga); outline-offset: -3px; }
+/* il titolo del gruppo fissato: linguetta nera attaccata alla riga */
+.voce-gruppo.fissato > summary { color: var(--testo-riga); background: var(--nero-riga); border-bottom-color: var(--nero-riga); border-radius: var(--r) var(--r) 0 0; }
+.voce-gruppo.fissato > summary:hover { color: #fff; border-bottom-color: var(--nero-riga); }
+.voce-gruppo.fissato > summary::after { transform: rotate(-135deg); margin-top: .25rem; color: var(--accento-riga); }
+.menu-gruppi > li:first-child .voce-gruppo.fissato > summary { padding-left: .6rem; margin-left: -.6rem; }
+/* sul computer le voci che non stanno in una riga vanno a capo (Edificio, 8 voci, a 1366 px), niente scorrimento nascosto */
+@media (min-width: 861px) {
+  .riga-voci { flex-wrap: wrap; overflow: visible; row-gap: 0; }
+  .riga-voci a, .riga-voci .voce-gme { min-height: 2.5rem; }
+}
+/* ponte invisibile tra il titolo e la tendina: il mouse che scende non «esce» dal gruppo */
+.tendina::before { content: ""; position: absolute; left: 0; right: 0; top: -8px; height: 8px; }
+@media (max-width: 860px) {
+  .riga-titolo { display: block; }
+  .riga-chiudi { display: inline-grid; }
+  .riga-dentro { padding-right: 0; gap: var(--s2); }
+  .riga-voci { margin-left: 0; mask-image: linear-gradient(90deg, transparent, #000 .75rem, #000 88%, transparent); }
+}
+
+/* voci in attesa della licenza GME (04/11/2026): non sono collegamenti (span.voce-gme), aspetto attenuato, suggerimento
+   «In attesa di autorizzazione dal GME» nel title; con un tocco o un clic la nota compare anche scritta (classe con-nota) */
+.tendina .voce-gme, .menu-pannello .voce-gme, .stesso-gruppo .voce-gme {
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: var(--s3); color: var(--tenue); cursor: not-allowed; }
+.tendina .voce-gme { min-height: 2.6rem; padding: .35rem .75rem; border-radius: var(--r); font: 600 var(--c-m)/1.25 var(--titoli); opacity: .8; }
+.tendina .voce-gme[aria-current="page"] { box-shadow: inset 3px 0 0 var(--tenue); opacity: 1; }
+.menu-pannello .voce-gme { min-height: 48px; padding: 0 var(--s2); border-bottom: 1px solid var(--linea); font: 500 1.02rem/1.2 var(--titoli); opacity: .8; }
+.pannello-gruppo li:last-child .voce-gme { border-bottom: 0; }
+.voce-gme .voce-nome { flex: 1 1 auto; min-width: 0; }
+.riga-voci .voce-gme .voce-nome { flex: none; }
+.voce-gme .cantiere { border-style: dashed; }
+.voce-gme.con-nota::after { content: attr(title); position: absolute; left: .5rem; top: calc(100% - .2rem); z-index: 5; padding: .3rem .55rem;
+  border-radius: var(--r-s); background: var(--inchiostro); color: var(--carta); font: 500 var(--c-xs)/1.3 var(--testo); white-space: nowrap; box-shadow: var(--ombra-1); }
+.riga-voci .voce-gme.con-nota::after { position: static; padding: 0; background: none; box-shadow: none; color: var(--testo-riga); }
+.segnaposto .stesso-gruppo .voce-gme { display: inline-flex; min-height: 2.25rem; padding: 0 .9rem; border: 1px dashed var(--linea); border-radius: var(--r-tondo); }
+
+/* ------------------------------------------------------------------------------------------- pagine segnaposto (03/11/2026) */
+.segnaposto .stato-pagina { display: inline-flex; align-items: center; gap: .5rem; margin: 0 0 var(--s4); padding: .3rem .8rem; border: 1px solid var(--bordo);
+  border-radius: var(--r-tondo); font: 600 var(--c-s)/1.2 var(--testo); color: var(--inchiostro); }
+.segnaposto .stato-pagina::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--attenzione); }
+.segnaposto .gruppo-servizio { margin: var(--s2) 0 0; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
+.segnaposto .fonti-pagina li { margin: .45rem 0; }
+.segnaposto .stesso-gruppo { display: flex; flex-wrap: wrap; gap: var(--s2); padding: 0; list-style: none; }
+.segnaposto .stesso-gruppo li { margin: 0; }
+.segnaposto .stesso-gruppo a { display: inline-flex; min-height: 2.25rem; align-items: center; padding: 0 .9rem; border: 1px solid var(--linea);
+  border-radius: var(--r-tondo); text-decoration: none; color: var(--inchiostro); }
+.segnaposto .stesso-gruppo a:hover { border-color: var(--primario); color: var(--primario); }
+.segnaposto .stesso-gruppo a[aria-current="page"] { border-color: var(--primario); color: var(--primario); font-weight: 700; }
+
+/* ------------------------------------------------------------------------------------------- edifici 3D (fase 10, 04/11/2026) */
+.mappa-gl { height: min(68vh, 640px); min-height: 320px; }
+.mappa-gl .maplibregl-canvas { outline: none; }
+.mappa-gl .maplibregl-ctrl-group { background: var(--foglio); }
+.mappa-gl .maplibregl-ctrl-group button + button { border-top-color: var(--linea); }
+.mappa-gl .maplibregl-ctrl-icon { filter: var(--icone-mappa, none); }
+.mappa-gl .maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--foglio) 85%, transparent); color: var(--tenue); }
+.mappa-gl .maplibregl-ctrl-attrib a { color: var(--inchiostro); }
+.pagina-edificio3d .gruppo-servizio { margin: 0; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
+.pallino.scelto { background: var(--primario); } .pallino.vicini { background: var(--serie-6); }
+.pallino.ombra { background: #000; opacity: .45; } .pallino.fv { background: #1f4fa3; }
+.scheda-edificio { display: grid; grid-template-columns: auto 1fr; gap: .25rem var(--s3); margin: var(--s3) 0 0; }
+.scheda-edificio dt { color: var(--tenue); } .scheda-edificio dd { margin: 0; font-weight: 600; }
+.riga-campi { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: end; }
+.riga-campi label { margin: var(--s2) 0 0; }
+.riga-campi input, .riga-campi select { display: block; margin-top: var(--s1); max-width: 12rem; }
+table.corpi input, table.aree-fv input { width: 5.2rem; padding: .25rem .4rem; }
+table.corpi select, table.aree-fv select { padding: .25rem .4rem; }
+td.fonte { font-size: var(--c-s); color: var(--tenue); } td.fonte small { display: block; }
+.pagina-edificio3d .passo.in-evidenza { border-left: 3px solid var(--primario); padding-left: var(--s3); }
+.pagina-edificio3d .sole { color: var(--tenue); margin: var(--s2) 0 0; }
+.cantiere.prova { color: var(--primario); border-color: var(--primario); }
+@media (max-width: 860px) { .mappa-gl { height: 70vw; } }
+
+/* ------------------------------------------------------------------------------------------- Fase B (fase 10, 04/11/2026) */
+.attribuzione-ortofoto { font-size: var(--c-s); color: var(--tenue); margin: var(--s2) 0 0; }
+.attribuzione-ortofoto:empty { display: none; }
+.sfondo-3d label { margin-top: var(--s2); }
+.pallino.facciate { background: linear-gradient(90deg, #ffffcc, #41b6c4, #253494); }
+label.casella { display: flex; gap: var(--s2); align-items: center; font-weight: 400; }
+.carica-file { display: inline-flex; align-items: center; margin: 0; cursor: pointer; }
+.pesi-priorita { margin: var(--s3) 0; }
+.pesi-priorita summary { cursor: pointer; font-weight: 600; }
+.fonti-ortofoto { border: 0; padding: 0; margin: var(--s3) 0; display: grid; gap: var(--s2); }
+.fonti-ortofoto label { display: grid; grid-template-columns: auto 1fr; gap: .2rem var(--s2); align-items: start; margin: 0;
+  padding: var(--s2) var(--s3); border: 1px solid var(--linea); border-radius: var(--r); font-weight: 400; cursor: pointer; }
+.fonti-ortofoto label:has(input:checked) { border-color: var(--primario); }
+.fonti-ortofoto input { margin-top: .2rem; }
+.fonti-ortofoto .nome-fonte { font-weight: 700; }
+.fonti-ortofoto .dettagli-fonte { grid-column: 2; font-size: var(--c-s); color: var(--tenue); }
+.fonti-ortofoto .stato-fonte { display: inline-block; padding: 0 .45rem; border-radius: var(--r-tondo); border: 1px solid currentColor; font-size: var(--c-xs); }
+.fonti-ortofoto .stato-fonte.da-confermare { color: var(--attenzione); }
+.fonti-ortofoto .stato-fonte.confermata { color: var(--successo); }
+.pagina-ortofoto .gruppo-servizio { margin: 0; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
+/* Fase C (04/11/2026): falde dei tetti dal LiDAR e modello dell'utente nella pagina 3D */
+.pallino.falde { background: linear-gradient(90deg, #f4a261, #9c89b8, #457b9d); }
+.falde-tetti { margin-top: var(--s4, 1rem); }
+.falde-tetti h3 { margin: 0 0 .3rem; font-size: var(--c-m, 1rem); }
+.modello-utente { margin-top: var(--s3, .75rem); }
+.modello-utente summary { cursor: pointer; font-weight: 600; }
+.modello-utente code { word-break: break-all; }
+/* Importa DXF/IFC (04/11/2026): lettura dei modelli nel browser, pianta e posa con due punti noti */
+.pagina-importa .gruppo-servizio { margin: 0; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
+.pianta-modello { display: block; width: 100%; height: 260px; border: 1px solid var(--linea); border-radius: var(--r); background: var(--foglio); cursor: crosshair; touch-action: manipulation; }
+.pianta-modello .corpo { fill: color-mix(in srgb, var(--primario) 25%, transparent); stroke: var(--primario); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.pianta-modello .spigolo { fill: var(--inchiostro); }
+.pianta-modello .scelto { fill: var(--attenzione); stroke: var(--foglio); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.pianta-modello text { fill: var(--inchiostro); font: 600 12px var(--titoli); }
+.scelte-posa { border: 0; padding: 0; margin: 0 0 var(--s3); display: grid; gap: var(--s2); }
+.scelte-posa label { margin: 0; }
+.campi-posa { margin: var(--s2) 0; }
+.punti-posa input { width: 100%; min-width: 4.6rem; padding: .3rem .4rem; border: 1px solid var(--bordo); border-radius: var(--r); background: var(--foglio); color: var(--inchiostro); font: inherit; }
+.punti-posa td, .punti-posa th { padding: .3rem .3rem; }
+.punti-posa td:first-child { width: 1.5rem; }
+.punti-posa tr.in-scelta td { background: var(--rialzo); }
+.bottone.piccolo { padding: .3rem .6rem; font-size: var(--c-xs); }
+.avvisi { margin: var(--s2) 0; padding-left: 1.2rem; color: var(--tenue); font-size: var(--c-s); }
+.avvisi:empty { display: none; }
+#rotazione { max-width: 8rem; }

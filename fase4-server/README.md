@@ -162,23 +162,6 @@ cd ~/energia && git pull
 cd fase4-server && docker compose up -d --build
 ```
 
-## Meteo per tutta Italia (dal 4/11/2026)
-
-Sul server c'è l'archivio meteo di tutti i 7.896 comuni (fase 3, `scarica-s3` da S3, correzione ed esportazione).
-Due impostazioni del `.env`:
-
-| variabile | significato | sul server |
-|---|---|---|
-| `REGIONI` | regioni **servite** (comuni, Legge 10, Dati climatici, previsioni dei consumi); vuoto = tutta Italia | vuoto |
-| `REGIONI_AGGIORNATE` | regioni il cui meteo recente (ICON ed ERA5 degli ultimi giorni) e le cui previsioni si aggiornano ogni giorno con l'API gratuita di Open-Meteo; `tutte` = tutte le servite | `08` |
-
-Con l'API gratuita (10.000 chiamate al giorno) non si possono aggiornare ogni giorno 7.896 comuni: per le altre regioni
-restano lo storico esportato e, nella previsione dei consumi, la climatologia dopo l'ultimo giorno osservato.
-
-`giornaliero.parquet` (~34 milioni di righe) non si carica mai tutto: l'api legge il solo blocco del comune
-(`meteo.storico_giornaliero`, filtro sul parquet, 0,04 s) e il worker lo aggiorna un blocco alla volta
-(`meteo.aggiorna_giornaliero`, ~300 MB al massimo). Test: `tests/test_meteo_nazionale.py`.
-
 ## Lavori periodici sui file del sito (fasi 8 e 9)
 
 Il worker rifà da sé due gruppi di file statici del sito, montando in scrittura **solo**
@@ -232,14 +215,25 @@ Siccome il server riscrive `dati/indicatori/`, `dati/clima/` e i due CSV, **il s
 | POST | `/api/sessione` | JSON `{"token": "…"}` con il gettone Turnstile → gettone di sessione da mandare in `X-EuGEnio-Sessione` |
 | GET | `/api/comuni` | comuni disponibili (ISTAT, catastale, coordinate, posizione sulla mappa) |
 | GET | `/api/meteo/{istat}?modalita=breve\|lungo&giorni=N` | meteo storico e previsto del comune |
-| POST | `/api/previsione` | multipart: `file` (CSV), `istat`, `modalita`, `orizzonte` (ore o giorni), `tipo` (`energia` = somma, `potenza` = media), `covariate` (es. `temperatura,radiazione`; vuoto = solo calendario), `verifica` |
+| POST | `/api/previsione` | multipart: `file` (CSV), `istat`, `modalita`, `orizzonte` (ore o giorni), `tipo` (`energia` = somma, `potenza` = media), `covariate` (es. `temperatura,radiazione`; vuoto = solo calendario), `verifica`. Dal 04/11/2026 la risposta ha anche `clima` = `{variabile: {unita, storico, previsione}}`: le variabili meteo usate dal modello negli stessi passi di `storico` e `previsione`, nell'ordine delle covariate richieste (schede della pagina e report) |
+| GET | `/api/clima-previsto/{istat}?modalita=breve\|lungo&orizzonte=N&covariate=…` | (04/11/2026) «Solo clima» della pagina Previsioni: le variabili meteo scelte (stessi nomi delle covariate), ultimi passi osservati (48 ore o 30 giorni) e poi previsti, con la stessa catena di fonti della previsione (ICON-2I → IFS; previsione → climatologia), senza file né TiRex-2. Stessa forma della risposta di `/api/previsione` senza consumi (`solo_clima: true`, `storico.t`, `previsione.t`, `previsione.fonte_meteo`, `fonte_storico`, `clima`); 404 se il comune non ha meteo sul server. Limite «dati», senza verifica anti-robot (`modello.solo_clima`) |
 | GET | `/api/geocodifica?q=indirizzo` | ricerca indirizzi (Zornade) |
 | GET | `/api/particella?lat=&lon=` | particella catastale e comune nel punto (Zornade) |
 | GET | `/api/metodologia` | metriche della correzione ERA5 per la pagina del sito |
 | GET | `/api/clima-legge10/{istat}?anni=10` | dati climatici aggiornati per la Legge 10 dal clima reale del comune |
 | POST | `/api/patrimonio` | CSV di edifici → particella catastale, comune, punto (max 500 righe per richiesta, 2.000 edifici l'ora per IP; il sito manda blocchi di 40); indirizzi prima con ANNCSU, poi con Zornade; CSV in UTF-8 o nella codifica di Windows; la risposta porta `fonti` da citare |
 | POST | `/api/report?formato=pdf\|xlsx\|ods` | documento generico in JSON (schema in `/api/report/schema`) → file PDF, Excel o ODS; `docx` e `odt` rispondono 410 (spenti dal 28/10/2026); vedi "Report" |
-| POST | `/api/report/{tipo}?formato=pdf\|xlsx\|ods` | `tipo` = `previsione`, `legge10`, `patrimonio`, `indicatori`, `valori_sedi`: il corpo è la risposta già ricevuta dal servizio → file del report |
+| POST | `/api/report/{tipo}?formato=pdf\|xlsx\|ods` | `tipo` = `previsione`, `legge10`, `patrimonio`, `indicatori`, `valori_sedi`, `edificio` (dal 04/11/2026: pagina 3D, vedi `report_servizi.report_edificio`): il corpo è la risposta già ricevuta dal servizio → file del report |
+| GET | `/api/edifici/gradi-giorno/{istat}?dal=AAAA-MM&al=AAAA-MM` | (04/11/2026, fase 10) gradi giorno mensili reali (base 20 °C e 24 °C) e temperatura media dall'archivio giornaliero, per la firma energetica; 503 finché manca l'archivio |
+| GET | `/api/edifici/clima-orario/{istat}?anno=AAAA` | (04/11/2026, fase 10) un anno orario di radiazione globale e diffusa, temperatura e vento dall'archivio orario del comune, per la producibilità FV nel browser; 503 finché manca l'archivio |
+| GET | `/api/ortofoto/fonti` | (04/11/2026, Fase B) fonti delle ortofoto accese, con licenza, citazione, stato («confermata», «da confermare»), zoom, riquadro e modello d'indirizzo delle tessere |
+| GET | `/api/ortofoto/{fonte}/{z}/{x}/{y}.jpg` | (Fase B) tessera 256×256 in web mercator dal proxy con copia su disco (`servizio/ortofoto.py`); 404 fuori zona o per una fonte spenta, 502 se la fonte risponde con un errore, 503 se il ritmo verso la fonte è esaurito |
+| GET | `/api/edifici/orizzonte?lat=&lon=&h=&direzioni=72` | (Fase B) orizzonte del terreno fino a 25 km dal Copernicus DEM 90 m (file `.om` di Open-Meteo su S3, come la fase 3), angoli per direzione; copia su disco per punto (~100 m) |
+| POST | `/api/edifici/pvgis` | (Fase B) `{lat, lon, aree: [{id, kwp, inclinazione, orientamento, montaggio, perdite, orizzonte}]}` → PVGIS `PVcalc` chiamato dal server con `userhorizon` e senza, per area; massimo 12 aree; risposte copiate su disco |
+| GET | `/api/interno/edifici/stato` | (Fase C, **interna**) stato della pipeline notturna degli edifici (zone, tessere, ultime 30 notti, qualità, errori, disco, fonti); solo con il JWT di Cloudflare Access verificato (`servizio/interno.py`); 403 senza o con gettone non valido, 503 se `CF_ACCESS_TEAM_DOMAIN`/`CF_ACCESS_AUD` mancano nel `.env`; `X-Robots-Tag: noindex`, `no-store` |
+| GET | `/api/interno/verifica` | (Fase C, interna) 204 con un JWT valido: la usa Caddy (`forward_auth`) per la pagina `/interno/edifici.html` |
+| GET | `/api/analisi/stato` | (Fase E) per le analisi 5 e 7–13 del § 9 solo «disponibile» o «analisi non disponibile in questa installazione»; nulla sul contenuto o sul percorso del modulo privato (`servizio/analisi.py`) |
+| POST | `/api/analisi/{id}` | (Fase E) `{edificio: {corpi: […]}, clima, ipotesi, opzioni}` → risultato del modulo privato (solo `valori`, `tabelle`, `avvisi`, `fonti`, `stima`); 503 «analisi non disponibile in questa installazione» se il modulo manca o l'analisi non è pronta, 404 per un'analisi sconosciuta, 422 per una richiesta malformata; niente viene salvato |
 | GET | `/api/report/schema` | schema JSON del documento accettato da `/api/report` |
 | GET | `/api/storici/catalogo` | dataset scaricabili presenti sul server (grandezze, frequenze, periodo, fonte, licenza, limiti) |
 | POST | `/api/storici/stima?formato=csv\|xlsx\|ods` | JSON con i filtri → righe, colonne e dimensione stimate; se la richiesta è troppo grande, motivo e suggerimenti |
@@ -303,6 +297,14 @@ dei formati accesi è la variabile `REPORT_FORMATI` (predefinita `pdf,xlsx,ods`;
 Le descrizioni di Word e ODT qui sotto valgono per quando si riaccendono. Il codice è in `servizio/report.py` (modello del documento e cinque generatori) e
 `servizio/report_servizi.py` (report dei servizi esistenti). Le usano i pulsanti "Scarica il report" di previsione, patrimonio, Legge 10 e indicatori (`sito/report.js`).
 
+**Report della previsione (dal 04/11/2026)**: `report_servizi.report_previsione` riceve anche il formato
+(`CON_FORMATO`). Le tabelle mettono consumi (P10, P50, P90, valore reale) e **tutte le variabili meteo attive in colonne
+affiancate**, nell'ordine delle opzioni della pagina (quello di `richiesta.covariate`); nel **PDF** una sezione «Grafici»
+con i grafici in sequenza, prima i consumi e poi una variabile per grafico (SVG piatti disegnati dal server,
+`_svg_serie`, colori fissi senza trasparenze). Con `solo_clima: true` (risposta di `/api/clima-previsto`) il documento si
+chiama «Previsione del clima», file `clima_previsto_<istat>_<modalita>`, senza TiRex-2 tra le fonti. Prove:
+`tests/test_solo_clima.py` (10 test: funzione, rotta, colonne affiancate in Excel, ordine dei grafici nel PDF).
+
 **Modello del documento** (indipendente dal formato): `titolo`, `sottotitolo`, `data` (vuota = oggi),
 `nome_file` (facoltativo, senza estensione), `sezioni` con `titolo` e `blocchi`, `fonti` (`testo`, `url`).
 Blocchi (campo `tipo`):
@@ -327,8 +329,8 @@ deterministici; la licenza dei dati e dei report (CC BY 4.0, riuso citando «Fon
 eugenio.statocritico.it»); dove segnalare gli errori (`contatti.html`); più il numero di pagina ("Pagina 2 di 5").
 Le avvertenze complete in fondo al report comprendono il testo della licenza (`TESTO_LICENZA`): CC BY 4.0 per il
 report e i dati elaborati, obbligo di citare EuGEnio come fonte con la data del report, attribuzioni delle fonti
-originali da mantenere, dati di origine soggetti alle loro licenze (Zornade: link e niente ridistribuzione in
-blocco), testi normativi come atti pubblici, codice AGPL-3.0, rimando a `licenza.html#dati`. I testi sono
+originali da mantenere, dati di origine soggetti alle loro licenze (Zornade: link e fonti originali, niente
+rivendita dei dati grezzi), testi normativi come atti pubblici, codice AGPL-3.0, rimando a `licenza.html#dati`. I testi sono
 costanti in `report.py` (`INTESTAZIONE`, `CITAZIONE`, `LICENZA_DATI`, `PIE_AVVERTENZA`, `PIE_AVVERTENZA_XLSX` – più
 corta perché in Excel intestazione e piè di stampa, codici di formato compresi, non superano 255 caratteri –,
 `TESTO_LICENZA`, `AVVERTENZE`). **Logo**: per ora nessuno; per aggiungerlo basta assegnare i byte di un PNG a
@@ -521,8 +523,8 @@ ha miliardi di indirizzi e potrebbe cambiarli a ogni richiesta. Le code vuote si
 **Tetti per tutto il sito**:
 - **Zornade**: al massimo `ZORNADE_TETTO_ORA` (6.000) chiamate all'ora per tutti gli utenti insieme, contate davvero
   (la cache non consuma quota); il patrimonio controlla prima il caso peggiore (2 chiamate per edificio). Oltre il
-  tetto: 503 «quota di quest'ora esaurita». La chiave gratuita ne ha 10.000 e le condizioni vietano l'estrazione
-  massiva: il margine resta per le prove sul PC. Email all'amministratore, una volta al giorno, quando l'ora supera
+  tetto: 503 «quota di quest'ora esaurita». La chiave gratuita ne ha 10.000 e per i termini del 18/09/2026 l'estrazione
+  massiva e i carichi eccessivi fanno sospendere il token: il margine resta per le prove sul PC. Email all'amministratore, una volta al giorno, quando l'ora supera
   il 70 % del tetto (`ZORNADE_AVVISO_QUOTA`).
 - **Previsioni**: `modello.py` ne calcola una alla volta; ne entrano al massimo `PREVISIONI_PARALLELE` (2: una in
   calcolo e una in fila), chi aspetta più di `PREVISIONI_ATTESA_S` (30 s; il tunnel chiude dopo 100 s) riceve 503
@@ -554,6 +556,84 @@ consecutivi, una volta per serie di giorni, con i conteggi e la strada per blocc
 Tools → IP Access Rules). I conteggi si cancellano dopo `AVVISO_429_CONSERVA_GIORNI` (7) giorni, come dice
 l'informativa privacy.
 
+## Edifici 3D (fase 10, dal 04/11/2026)
+
+- `servizio/edifici.py`: le due rotte `/api/edifici/…` qui sopra (limite delle rotte dei dati, nessun dato di mercato,
+  mai i gradi giorno Arpae della fase 2). 5 test in `tests/test_edifici.py`.
+- Report `edificio` (PDF, Excel, ODS) in `report_servizi.py`: edificio, piani e superfici con la fonte, indicatori
+  geometrici, corpi con fonte e licenza della sagoma, consumi normalizzati, firma energetica, FV; avviso in cima se i
+  dati sono sintetici.
+- **Caddy** serve i prodotti della fase 10 come file statici da `/edifici3d/` (`handle_path`, Range, `Content-Type`
+  per `.pmtiles` e COG, cache di un giorno): cartella `CARTELLA_EDIFICI` del `.env` (predefinita
+  `/srv/energia/dati/edifici`, con le sottocartelle `cc-by/` e `odbl/`), montata in sola lettura nel servizio `caddy`.
+  Dopo l'aggiornamento: `docker compose up -d caddy` (la cartella può essere vuota: la pagina apre la demo sintetica).
+
+## Ortofoto, orizzonte lontano e PVGIS (fase 10, Fase B, dal 04/11/2026)
+
+- **`servizio/ortofoto.py`** – proxy delle ortofoto. Le fonti stanno nei TOML di `fase10-edifici3d/ortofoto/` (uno per
+  regione; nell'immagine in `/app/ortofoto_fonti`): RER 2023-24 (WMS `rer2023_24_rgb`, strato `RER2023_24_RGB`, stato
+  «da confermare» finché la Regione non risponde), Toscana 2023 (CC BY 4.0, confermata), Sentinel-2 cloudless 2016 (EOX,
+  CC BY 4.0) e WMS del Geoportale Nazionale (AGEA 2012, **solo dal vivo**, `cache = false`, mai nei report). Il proxy
+  rifiuta all'avvio le fonti con indirizzi esclusi (Google, Esri, Bing, EOX 2018+, WMS AGEA). Copia su disco in
+  `/dati/ortofoto/<fonte>/<z>/<x>/<y>.jpg` (`ORTOFOTO_GIORNI`, `ORTOFOTO_MAX_GB`, pulizia delle più vecchie), ritmo verso
+  la fonte dal TOML (`ritmo.al_secondo`, `ritmo.all_ora`, attesa del turno fino a `ORTOFOTO_ATTESA_S`), limite per IP
+  `ORTOFOTO_ORA`, intestazioni `Cache-Control: public, max-age=ORTOFOTO_CACHE_S` (così anche Cloudflare tiene la copia;
+  `no-store` per le fonti solo dal vivo), `ETag` e 304, `X-Ortofoto-Fonte`, `X-Ortofoto-Licenza`.
+  **Spegnere una fonte** senza toccare i TOML: `ORTOFOTO_SPENTE=rer2023` nel `.env` e riavvio dell'api; oppure
+  `ORTOFOTO_SOLO_CONFERMATE=true` (servite solo le fonti «confermata»); oppure `attiva = false`/`stato = "spenta"` nel TOML.
+- **`servizio/orizzonte.py`** – orizzonte lontano: finestra di ±25 km del Copernicus DEM GLO-90 dai file
+  `data/copernicus_dem90/static/lat_<grado>.om` di Open-Meteo (gli stessi che la fase 3 usa per la quota dei comuni,
+  letti con `meteo_storico.s3.FSBlocchi`), angolo massimo per direzione con curvatura e rifrazione (k = 0,13), da 250 m
+  in là (più vicino lavora la pagina con gli edifici). Copia in `/dati/orizzonte/`. ~1–4 s per punto la prima volta.
+- **`servizio/pvgis.py`** – confronto PVGIS: `PVcalc` della v5.3 chiamato dal server (PVGIS non ha CORS), con
+  `userhorizon` (36 direzioni, massimo dei gruppi) e senza; ritmo per tutto il sito sotto le 30 chiamate al secondo del JRC
+  (`PVGIS_AL_SECONDO=20`), limite per IP `PVGIS_ORA`, copia delle risposte in `/dati/pvgis/` per `PVGIS_CACHE_GIORNI`.
+- **Caddy**: `/api/ortofoto/*` ha un blocco suo (senza compressione, timeout di 30 s); le intestazioni di cache le scrive
+  l'api. **Cloudflare**: la regola di rate limiting su `/api/` (60 richieste in 10 s) va ristretta per non bloccare le
+  tessere: `URI Path starts with "/api/" and not URI Path starts with "/api/ortofoto/"` (passo manuale in
+  `AGGIORNAMENTO_2026-11-04.md`).
+- **Report `edificio`**: sezioni nuove Obblighi di legge, Sole sulle facciate, Orizzonte lontano, Confronto con PVGIS,
+  Classifica di priorità; figura con l'ortofoto (PNG) **solo** se porta licenza e citazione, che vanno nella didascalia e
+  tra le fonti; le fonti «solo dal vivo» non entrano mai.
+- Prove: `tests/test_ortofoto.py` (9, risposte simulate) e `tests/test_pvgis_orizzonte.py` (5, DEM sintetico e risposte
+  simulate); `tests/test_edifici.py` con il report della Fase B. Dal vivo, dal container di sviluppo il 04/11/2026: WMS RER
+  2023-24, WMS Toscana, EOX 2016, WMS del Geoportale Nazionale, PVGIS (con e senza `userhorizon`) e DEM su S3 rispondono.
+
+## Pipeline LiDAR e pagina di stato interna (fase 10, Fase C, dal 04/11/2026)
+
+- **Container `edifici-lidar`** (profilo `edifici` del compose, immagine `energia-edifici` da `fase10-edifici3d/Dockerfile`,
+  1 CPU, 4 GB): non resta acceso, lo lancia il cron dell'host alle 3:30 con `docker compose --profile edifici run --rm
+  edifici-lidar` e si ferma da solo alle 7:00 (finestra nel TOML della zona). Monta `/dati` (stato in
+  `/dati/edifici_stato`) e `CARTELLA_EDIFICI` (prodotti in `/dati/edifici`, serviti da Caddy in `/edifici3d/`).
+- **`/api/salute`** dà anche `previsioni_in_corso` (previsioni in calcolo o in fila): la pipeline aspetta finché è > 0.
+- **`servizio/interno.py`**: rotte `/api/interno/…` (tabella dell'API). Il JWT dell'intestazione `Cf-Access-Jwt-Assertion`
+  si verifica con PyJWT: firma RS256 con le chiavi del team (`https://<team>/cdn-cgi/access/certs`, in memoria un'ora),
+  `aud` = `CF_ACCESS_AUD`, `iss` = `https://<team>`, scadenza; `CF_ACCESS_EMAIL` facoltativo. Team e audience **solo nel
+  `.env`**; senza, 503 (chiuso anche nei mirror). Limite «interno»: `INTERNO_ORA` richieste per IP all'ora.
+- **Caddy**: `/api/interno/*` e `/interno/*` rispondono 403 senza l'intestazione di Access, mandano `X-Robots-Tag:
+  noindex, nofollow` e `Cache-Control: no-store`; la pagina statica passa da `forward_auth` verso `/api/interno/verifica`
+  (così anche l'HTML richiede un JWT valido); `/interno` porta a `/interno/edifici.html`. Provato con caddy 2.10 e
+  un'api simulata: 403 senza intestazione o con gettone falso, 200 con gettone valido.
+- **Report `edificio`**: sezione «Falde dei tetti» (falde dal LiDAR o dal modello dell'utente).
+- Prove: `tests/test_interno.py` (13: gettone valido, firma di un'altra chiave, audience, emittente, scaduto, HS256,
+  email ammesse, chiusura senza configurazione, Caddyfile, `.env.example`, report con le falde).
+
+## Analisi avanzate con il modulo privato (fase 10, Fase E, dal 04/11/2026)
+
+- **`servizio/analisi.py`**: rotte `/api/analisi/…` (tabella dell'API), limite «dati». Usa l'aggancio pubblico
+  `edifici3d/analisi.py` della fase 10 (copiato nell'immagine con il suo `__init__.py`, riga nuova di `api/Dockerfile`).
+- **Modulo privato** delle metodiche UNI (decisione del 03/11/2026): **mai nell'immagine né nel repository**. Sul server sta
+  in `/srv/energia/dati/uni_privato` e il container lo vede come `/dati/uni_privato` (o dove dice `UNI_PRIVATO` nel `.env`).
+  Senza modulo, o con le sue tabelle ancora da compilare, ogni analisi risponde «analisi non disponibile in questa
+  installazione» e il resto del servizio funziona come prima. Un modulo rotto o con un'altra versione dell'interfaccia
+  non fa cadere l'api (avviso nel registro, analisi spente).
+- **`.dockerignore`** nella cartella principale (nuovo): `fase2-gradi-giorno/`, `fase10-edifici3d/uni_privato/`, `.env`,
+  ambienti e cache non entrano mai nel contesto di build delle immagini (anche quella della pipeline, che copia tutta la
+  fase 10).
+- Ortofoto: due TOML nuovi copiati nell'immagine con gli altri, `bolzano.toml` (Ortofoto 2023) e `trento.toml` (PAT 2015).
+- Prove: `tests/test_analisi.py` (2: senza modulo tutto «non disponibile», con un modulo finto scritto nel test la sola
+  analisi pronta risponde e le chiavi interne non escono).
+
 ## Licenze e attribuzioni (da mostrare sul sito)
 
 - Codice di EuGEnio: AGPL-3.0. Dati elaborati e report prodotti da EuGEnio: CC BY 4.0, riuso citando
@@ -564,4 +644,6 @@ l'informativa privacy.
 - "Dati elaborati da Zornade" (link a https://zornade.com) – catasto Agenzia delle Entrate, ISTAT, OpenStreetMap (ODbL).
 - Civici: ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0).
 - Confini comunali: ISTAT (CC BY 4.0) via Gramscii.
+- Ortofoto (Fase B): la citazione e la licenza di ogni fonte stanno nel suo TOML e sotto la mappa; PVGIS © Unione europea
+  (riuso con citazione); Copernicus DEM GLO-90 © DLR e Airbus (licenza Copernicus DEM) dai file di Open-Meteo (CC BY 4.0).
 - Report: python-docx (MIT), fpdf2 (LGPL-3.0), openpyxl (MIT), odfpy (Apache 2.0 / GPL 2+), font DejaVu Sans (licenza libera Bitstream Vera/DejaVu).

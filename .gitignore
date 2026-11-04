@@ -16,3 +16,13 @@ RIEPILOGO.md
 DA_FARE.md
 fase6-mercati/mercati_energia/dati/
 fase8-indicatori/riepilogo_discussione.md
+# modulo privato con coefficienti e prospetti delle norme UNI (fase 10, decisione del 03/11/2026)
+fase10-edifici3d/uni_privato/
+# fase 11 – EuGEnio Visure: costruzioni e, soprattutto, visure e risultati con dati veri (mai nel repository)
+fase11-visure/dist/
+fase11-visure/build/
+.venv-build/
+fase11-visure/docker/lavoro/
+Visure_*/
+intestatari_DATI_PERSONALI.csv
+visure_vere/

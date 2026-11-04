@@ -1,0 +1,155 @@
+# Zona della pipeline notturna degli edifici (fase 10, Fase C, § 11): provincia di Rimini, prima della coda
+# Rimini → Forlì-Cesena → Ravenna → resto ER. Un file per zona: per la zona successiva si copia, si cambiano codice,
+# nome, riquadro e ordine. Gli URL stanno solo qui, mai nel codice. Una fonte si usa solo con attiva = true, un url e
+# licenza_confermata = true: finché manca una delle tre la pagina di stato la mostra «in attesa» con il motivo.
+#
+# Prove dal vivo del 04/11/2026 dal container di sviluppo (senza credenziali e senza aggirare blocchi):
+# - quadro di unione LiDAR RER 2023-24 (WMS metadati_raster, strato QU_LiDAR_RER2023_2024): raggiungibile; tessere di
+#   1×1 km con nome «32_EEEE0NNNN» (es. 32_78504884: angolo in basso a sinistra x = 785 km, y = 4884 km, EPSG:7791) e
+#   date di volo (Rimini: 25–27/03/2023); scheda: CC BY 4.0, «Download: No download» → DSM e LAS solo su richiesta;
+# - DTM 0,5 m RER 2023-24: WCS 1.0.0 pubblico (copertura «1», GeoTIFF float32 EPSG:7791), CC BY 4.0 dalla scheda;
+# - DSM della costa da LiDAR 2019 (ImageServer pubblico DSMCosta_Lidar2019, 1 m, copre Rimini e la costa): risponde,
+#   ma la licenza non è scritta nel servizio e la scheda INSPIRE non si apre (certificato scaduto): in attesa;
+# - DTM 5×5 m: WCS pubblico «dtm5x5», copertura DTM5X5_RDN32_RMD (il «dtm5» della Fase A risponde 401);
+# - portale PST/SIM del MASE (LiDAR PNRR): HTTP 500/503, offline fino al 7/11/2026; nessuna interfaccia automatica.
+
+[zona]
+nome = "Rimini"
+codice = "rn"
+ordine = 1
+archivio = "er"                    # archivio regionale dei prodotti: <archivio dati>/cc-by/er/prodotti/lidar/
+crs = "EPSG:7791"
+# riquadro in EPSG:7791 (x0, y0, x1, y1), a km interi; le tessere senza edifici della Fase A si saltano
+riquadro = [747000, 4843000, 807000, 4899000]
+lato_tessera = 1000
+# stesso nome delle tavole del quadro di unione RER (e_km, n_km = angolo in basso a sinistra in km)
+nome_tessera = "32_{e_km:03d}0{n_km:04d}"
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[edifici]
+# corpi della Fase A (celle di prodotti/contesto/ scritte da `python -m edifici3d prepara`), licenza dell'archivio
+licenza = "CC BY 4.0"
+
+[limiti]
+finestra = ["03:30", "07:00"]      # dopo i mercati (02:30); fuori finestra la pipeline non parte (salvo --subito)
+max_minuti = 210
+min_gb_liberi = 20
+max_gb_notte = 25
+max_mb_tessera = 2000
+max_tentativi = 3                  # poi la tessera è «saltata» e segnalata nella pagina di stato
+max_punti_las = 60000000
+passo_dsm = 1.0                    # DSM ridotto a 1 m, int16 in decimetri
+maschera_m = 30                    # il DSM ridotto tiene solo le celle entro 30 m dagli edifici
+aggiorna_giorni = 365              # aggiornamento annuale: si ricontrollano solo le tessere più vecchie di così
+tieni_grezzi = false
+# pausa finché il server calcola una previsione (campo previsioni_in_corso di /api/salute)
+pausa_url = "http://api:8000/api/salute"
+pausa_max_minuti = 20
+
+# ------------------------------------------------------------------------------------------------ fonti DSM e LAS
+# priorità: la più bassa vince (§ 4: PNRR → RER → PST). tipo: dsm (GeoTIFF), las (LAS/LAZ classificato), dtm.
+# url: modello con {tavola}, {x0} {y0} {x1} {y1} (riquadro della tessera in EPSG:7791), {e_km} {n_km}.
+
+[fonti.pnrr_dsm]
+tipo = "dsm"
+priorita = 1
+descrizione = "LiDAR nazionale PNRR (progetto SIM del MASE) – DSM 25 cm"
+licenza = "da confermare"
+licenza_confermata = false
+attiva = false
+stato = "in attesa"
+motivo = "dati pubblicati a blocchi nell'app PST, senza interfaccia automatica; licenza e copertura della Romagna da verificare dopo il 7/11/2026"
+attribuzione = "Ministero dell'Ambiente e della Sicurezza Energetica – LiDAR PNRR"
+scheda = "https://sim.mase.gov.it/portalediaccesso/mappe/#/viewer/new"
+verifica = "04/11/2026: sim.mase.gov.it risponde 500/503 (portale offline fino al 7/11/2026)"
+url = ""
+
+[fonti.rer_las]
+tipo = "las"
+priorita = 2
+descrizione = "Regione Emilia-Romagna – LAS classificati RER 2023-24 (classe Edifici)"
+licenza = "CC BY 4.0"
+licenza_confermata = false
+attiva = false
+stato = "in attesa"
+motivo = "LAS solo su richiesta all'Archivio Cartografico: in attesa della risposta (URL o consegna su disco)"
+attribuzione = "Regione Emilia-Romagna – Rilievo LiDAR RER 2023-24 (CC BY 4.0)"
+scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/quadri-di-unione/layer-16"
+verifica = "04/11/2026: quadro di unione raggiungibile (tavola 32_78504884, volo 25-27/03/2023); scheda «No download»"
+url = ""
+[fonti.rer_las.quadro_unione]
+wms = "http://servizigis.regione.emilia-romagna.it/wms/metadati_raster"
+strato = "QU_LiDAR_RER2023_2024"
+campi_versione = ["TAVOLA", "DATA_1", "DATA_2", "DATA_3", "DATA_4", "DATA_5"]
+
+[fonti.rer_dsm]
+tipo = "dsm"
+priorita = 3
+descrizione = "Regione Emilia-Romagna – DSM ultimo impulso RER 2023-24"
+licenza = "CC BY 4.0"
+licenza_confermata = false
+attiva = false
+stato = "in attesa"
+motivo = "DSM solo su richiesta all'Archivio Cartografico: in attesa della risposta (URL o consegna su disco)"
+attribuzione = "Regione Emilia-Romagna – Rilievo LiDAR RER 2023-24, DSM (CC BY 4.0)"
+scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/quadri-di-unione/layer-16"
+verifica = "04/11/2026: come rer_las; se la Regione consegna i file su disco: url = \"file:/srv/energia/dati/consegne/rer_dsm/{tavola}.tif\""
+url = ""
+# Fase E (04/11/2026): nel RNDT ci sono ora le schede «DSM First 0,5x0,5m - RER 2023-24» (r_emiro:2026-10-23T134125) e
+# «DSM Last 0,5x0,5m - RER 2023-24» (r_emiro:2026-10-23T141811), pubblicate il 23/10/2026, CC BY 4.0; il download resta
+# all'Archivio Cartografico e il WCS «dsmfirst2023_24» risponde 401: la fonte resta in attesa (URL o consegna).
+verifica_fase_e = "04/11/2026: licenza CC BY 4.0 nelle schede RNDT del 23/10/2026; nessun download pubblico (WCS 401)"
+[fonti.rer_dsm.quadro_unione]
+wms = "http://servizigis.regione.emilia-romagna.it/wms/metadati_raster"
+strato = "QU_LiDAR_RER2023_2024"
+campi_versione = ["TAVOLA", "DATA_1", "DATA_2", "DATA_3", "DATA_4", "DATA_5"]
+
+[fonti.rer_dsm_costa_2019]
+tipo = "dsm"
+priorita = 4
+descrizione = "Regione Emilia-Romagna – DSM della costa da rilievo LiDAR 2019 (1 m)"
+licenza = "CC BY 4.0"
+licenza_confermata = true          # Fase E, 04/11/2026: scheda RNDT r_emiro:2022-02-08T110323 «CC BY 4.0»
+attiva = false                     # copre solo la fascia costiera: da accendere quando la pipeline limita la fonte alla sua copertura
+stato = "in attesa"
+motivo = "licenza CC BY 4.0 verificata (scheda RNDT); resta spenta perché copre solo la costa e la pipeline non sa ancora limitare una fonte alla sua copertura; rilievo del 2019 (edifici più recenti assenti)"
+attribuzione = "Regione Emilia-Romagna – Rilievo LiDAR 2019 della costa"
+scheda = "https://servizigis.regione.emilia-romagna.it/arcgis/rest/services/public/DSMCosta_Lidar2019/ImageServer"
+verifica = "04/11/2026: exportImage risponde con quote 0,4–32,6 m a Rimini Marina; nessuna licenza nel servizio. Fase E, 04/11/2026: exportImage 200 (quote 1,1–31,0 m); licenza CC BY 4.0 nella scheda RNDT r_emiro:2022-02-08T110323, con download 7z del DSM First 1 m"
+versione = "fissa"
+versione_fissa = "2019"
+url = "https://servizigis.regione.emilia-romagna.it/arcgis/rest/services/public/DSMCosta_Lidar2019/ImageServer/exportImage?bbox={x0},{y0},{x1},{y1}&bboxSR=7791&imageSR=7791&size=1000,1000&format=tiff&pixelType=F32&noData=-9999&interpolation=RSP_NearestNeighbor&f=image"
+
+# ------------------------------------------------------------------------------------------------ fonti DTM
+[fonti.rer_dtm05]
+tipo = "dtm"
+priorita = 1
+descrizione = "Regione Emilia-Romagna – DTM 0,5 m RER 2023-24 (WCS, chiesto a 1 m)"
+licenza = "CC BY 4.0"
+licenza_confermata = true
+attiva = true
+stato = "attiva"
+attribuzione = "Regione Emilia-Romagna – DTM 0,5×0,5 m RER 2023-24 (CC BY 4.0)"
+scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/altimetria/layer-60"
+verifica = "04/11/2026: GetCoverage WCS 1.0.0 su 100×100 m a Rimini, 200 image/tiff, quote 2,7–9,7 m"
+versione = "fissa"
+versione_fissa = "RER2023-24"
+url = "https://servizigis.regione.emilia-romagna.it/wcs/dtmrer2023_24?service=WCS&version=1.0.0&request=GetCoverage&coverage=1&crs=EPSG:7791&bbox={x0},{y0},{x1},{y1}&resx=1&resy=1&format=GeoTIFF"
+
+[fonti.rer_dtm5]
+tipo = "dtm"
+priorita = 2
+descrizione = "Regione Emilia-Romagna – DTM 5×5 m (WCS)"
+licenza = "CC BY 4.0"
+licenza_confermata = true
+attiva = true
+stato = "attiva"
+attribuzione = "Regione Emilia-Romagna – DTM 5×5 m (CC BY 4.0)"
+scheda = "https://geoportale.regione.emilia-romagna.it/notizie/servizi-e-applicazioni/dtm-novita-2025"
+verifica = "04/11/2026: GetCoverage WCS 1.0.0 dtm5x5 su 1×1 km a Rimini, 200 image/tiff"
+versione = "fissa"
+versione_fissa = "dicembre 2025"
+url = "https://servizigis.regione.emilia-romagna.it/wcs/dtm5x5?service=WCS&version=1.0.0&request=GetCoverage&coverage=DTM5X5_RDN32_RMD&crs=EPSG:7791&bbox={x0},{y0},{x1},{y1}&resx=5&resy=5&format=GeoTIFF"

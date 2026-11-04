@@ -4,7 +4,11 @@ Piano gratuito: 10.000 richieste all'ora con chiave personale (https://app.zorna
 Attribuzione obbligatoria: con il piano gratuito deve essere un LINK cliccabile a https://zornade.com
 ("Dati elaborati da Zornade"); la sola scritta non basta. Più le fonti di ogni blocco (catasto Agenzia
 delle Entrate CC BY 4.0, ISTAT, ISPRA, INGV, OpenStreetMap ODbL, ...), riportate in meta.licenses.
-Vietate la ridistribuzione dei dati grezzi e l'estrazione massiva.
+Termini di Zornade del 18/09/2026: uso libero anche commerciale; dati mostrabili e conservabili per il tempo che
+serve al servizio; la ridistribuzione non è vietata in generale (vietata la rivendita dei dati grezzi senza
+attribuzione o contro le licenze delle fonti); vietati violazioni del GDPR, re-identificazione di persone e carichi
+eccessivi: l'estrazione massiva è motivo di sospensione del token, non un divieto di conservare. Limite 10.000
+richieste/ora per token. La pulizia della cache a 12 mesi è una scelta di privacy di EuGEnio.
 
 Comportamento verificato dal vivo il 25/10/2026:
   * /parcels/search vuole il NOME del comune (comune=Bologna), non il codice catastale, e il foglio

@@ -1,6 +1,3 @@
-> **Superato il 4/11/2026**: il meteo non si scarica più dal PC con l'API ma sul server da S3 per tutta Italia.
-> Procedura valida: `AGGIORNAMENTO_2026-11-04.md`.
-
 # Archivio meteo della fase 3: dal PC al server e accensione del worker
 
 Da fare **quando il download di ICON è finito** (stato al 28/10/2026 sera: anni 2022–2025 scaricati per tutti i 330
