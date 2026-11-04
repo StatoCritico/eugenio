@@ -7,6 +7,9 @@
 #   SIGNPATH_API_TOKEN                  token di SignPath (dopo l'adesione a SignPath Foundation)
 # Variabili (non segrete):
 #   SIGNPATH_ORGANIZATION_ID, SIGNPATH_PROJECT_SLUG, SIGNPATH_POLICY_SLUG (es. release-signing)
+#
+# Azioni fissate allo SHA del commit del tag (commento accanto), tutte su Node 24 (05/11/2026: le v4/v5 su Node 20
+# erano deprecate). Per aggiornarle: git ls-remote --tags https://github.com/<azione>.git e nuovo SHA del tag.
 name: visure-windows
 
 on:
@@ -25,10 +28,10 @@ jobs:
     runs-on: ubuntu-24.04
     defaults: { run: { working-directory: fase11-visure } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with: { node-version: "22" }
       - run: pip install -r requirements-dev.txt
       - run: python -m pytest -q tests
@@ -42,8 +45,8 @@ jobs:
     outputs:
       artifact-id: ${{ steps.carica.outputs.artifact-id }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with: { python-version: "3.13" }
       - run: pip install -r avviatore/requirements-build.txt -r requirements-dev.txt
       - run: python -m pytest -q tests
@@ -75,11 +78,11 @@ jobs:
       # due artefatti: l'.exe da solo (è quello che SignPath firma) e il pacchetto del lettore (non si firma: lo
       # protegge l'impronta nell'elenco delle versioni approvate)
       - id: carica
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: eugenio-visure-non-firmato
           path: fase11-visure/dist/EuGEnioVisure.exe
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: eugenio-visure-pacchetto
           path: fase11-visure/dist/visure-*.zip
@@ -89,7 +92,7 @@ jobs:
     if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
     runs-on: windows-2022
     steps:
-      - uses: signpath/github-action-submit-signing-request@v1
+      - uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
@@ -98,7 +101,7 @@ jobs:
           github-artifact-id: ${{ needs.exe.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: firmato
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: eugenio-visure-firmato, path: firmato }
 
   release:
@@ -108,7 +111,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: { path: art }
       - name: Scelta dei file (firmati se ci sono)
         run: |
@@ -116,7 +119,7 @@ jobs:
           if [ -d art/eugenio-visure-firmato ]; then cp art/eugenio-visure-firmato/* uscita/; else cp art/eugenio-visure-non-firmato/* uscita/; fi
           cp art/eugenio-visure-pacchetto/visure-*.zip uscita/
           cd uscita && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           files: uscita/*
           body: |

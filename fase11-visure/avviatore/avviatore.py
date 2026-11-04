@@ -205,6 +205,18 @@ def procura(v: dict, d: Path, aggiorna: bool) -> Path | None:
     return None
 
 
+def uscita_robusta() -> None:
+    """Uscita sempre in UTF-8 con «replace» (05/11/2026). Con l'uscita rediretta (GitHub Actions, `> file.txt`, un
+    altro programma che legge) Windows usa la codepage ANSI (cp1252) o OEM (850) e caratteri come «→», «–» o «·»
+    facevano fallire l'.exe con UnicodeEncodeError; nella console vera Python scrive già in UTF-16 e non cambia nulla.
+    Si chiama prima di freeze_support(), così vale anche nei processi figli creati con «spawn»."""
+    for flusso in (sys.stdout, sys.stderr):
+        try:
+            flusso.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001 – flusso assente (pythonw) o non riconfigurabile: si lascia com'è
+            pass
+
+
 def _dimentica_visure() -> None:
     for k in [k for k in sys.modules if k in ("visure", "edifici3d") or k.startswith(("visure.", "edifici3d."))]:
         del sys.modules[k]
@@ -285,6 +297,7 @@ def principale(argv: list[str] | None = None) -> int:
 if __name__ == "__main__":
     # la conversione dei modelli legge il file in un processo separato: nell'.exe (e su Windows) è «spawn», che
     # rilancia questo eseguibile; freeze_support() lo riconosce e fa partire solo il processo figlio
+    uscita_robusta()
     import multiprocessing
     multiprocessing.freeze_support()
     sys.exit(principale())

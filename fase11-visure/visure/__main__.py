@@ -24,6 +24,16 @@ from pathlib import Path
 from . import VERSIONE
 
 
+def uscita_robusta() -> None:
+    """UTF-8 con «replace» anche con l'uscita rediretta su Windows (cp1252/850): nessun UnicodeEncodeError per «→», «–»,
+    «·» (05/11/2026; lo stesso fa l'avviatore prima di freeze_support)."""
+    for flusso in (sys.stdout, sys.stderr):
+        try:
+            flusso.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+
+
 def pdf_da(percorsi: list[str]) -> list[Path]:
     out: list[Path] = []
     for p in map(Path, percorsi):
@@ -128,6 +138,7 @@ def cmd_modello(a) -> int:
 
 
 def principale(argv: list[str] | None = None) -> int:
+    uscita_robusta()
     ap = argparse.ArgumentParser(prog="visure", description="EuGEnio Visure: lettore locale delle visure catastali")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("leggi", help="legge PDF e cartelle di visure")

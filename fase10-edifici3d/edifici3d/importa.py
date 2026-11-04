@@ -131,7 +131,19 @@ def _limita_memoria_windows(byte: int) -> None:
         raise OSError(ctypes.get_last_error())
 
 
+def _uscita_robusta() -> None:
+    """Nel processo figlio («spawn» su Windows) l'uscita riparte con la codepage di sistema: UTF-8 con «replace», così
+    un avviso di una libreria con caratteri non rappresentabili non fa fallire la lettura (05/11/2026)."""
+    import sys
+    for flusso in (sys.stdout, sys.stderr):
+        try:
+            flusso.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+
+
 def _figlio(conn, percorso, tipo, unita, lim=None):
+    _uscita_robusta()
     g = globals()
     for k, v in (lim or {}).items():        # con «spawn» (Windows) il figlio riparte dai valori del modulo
         g[k] = v

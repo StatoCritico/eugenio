@@ -794,7 +794,7 @@ Cosa aspettarsi, comando per comando:
 |---|---|
 | dimensione | dell'ordine di 140 MB: la prova Linux pesa 137 MB. Annotala |
 | impronta dell'.exe | una stringa di 64 caratteri. Annotala: non è nell'elenco delle versioni approvate, che contiene l'impronta del **pacchetto del lettore**; quella dell'.exe va nel `SHA256SUMS.txt` della release |
-| avvio | le righe dell'avviatore, `· in uso la versione 0.1.0 (SHA-256 4540d527d0c40e47…)`, poi **due righe `OK:`** (lettore e conversione dei modelli). `Measure-Command` stampa il tempo (`TotalSeconds`): sotto Linux era ~2,5 s, annota quello di Windows |
+| avvio | le righe dell'avviatore, `· in uso la versione 0.1.0 (SHA-256 3fc84c6ae60536a1…)`, poi **due righe `OK:`** (lettore e conversione dei modelli). `Measure-Command` stampa il tempo (`TotalSeconds`): sotto Linux era ~2,5 s, annota quello di Windows |
 | IFC | `2 corpi → casa_sito.geojson` |
 | DXF | una riga `… corpi → casa_utm.geojson`, senza errori |
 
@@ -814,7 +814,7 @@ Fai anche doppio clic sull'.exe:
 (Get-Content C:\Users\ingpa\Documents\claude\pj\statocritico\eugenio\fase11-visure\avviatore\versioni_approvate.json -Raw | ConvertFrom-Json).versioni | Format-Table versione, sha256
 .\EuGEnioVisure.exe --non-aggiornare --stato
 ```
-Le tre impronte devono coincidere con `4540d527d0c40e47a69fbe1cb1ae29c5f873022908ce24c0b19883d1e5db4dec`:
+Le tre impronte devono coincidere con `3fc84c6ae60536a1554ef6af225cd0ff57eea3c4cbda83171a296f5410a80851`:
 - quella del pacchetto, per intero;
 - quella dell'elenco, per intero;
 - quella che `--stato` mostra, per i primi 16 caratteri.
