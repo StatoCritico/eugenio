@@ -159,7 +159,12 @@ def richiesta(http: httpx.Client, lim: Limitatore, url: str, punti: pd.DataFrame
             continue
         if r.status_code != 200:
             raise RuntimeError(f"Open-Meteo {r.status_code}: {r.text[:300]}")
-        dati = r.json()
+        try:
+            dati = r.json()
+        except ValueError as e:          # risposta troncata o malformata (4/11/2026: JSON interrotto a metà): si riprova
+            log.warning("Risposta Open-Meteo non leggibile (%s), riprovo", e)
+            time.sleep(min(300, 10 * 2 ** tentativo))
+            continue
         if isinstance(dati, dict):
             dati = [dati]
         out = []

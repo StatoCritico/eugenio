@@ -5,8 +5,13 @@ import os
 from pathlib import Path
 
 DATI = Path(os.environ.get("DATI", "/dati"))
+# regioni servite dal sito (dati storici, Legge 10, previsioni); vuoto = tutta Italia
 REGIONI = [r.strip().zfill(2) for r in os.environ.get("REGIONI", "08").split(",") if r.strip()]
 SOLO_COMUNI = [c.strip() for c in os.environ.get("SOLO_COMUNI", "").split(",") if c.strip()]  # per prove
+# regioni aggiornate ogni giorno (storico recente e previsioni) con l'API gratuita di Open-Meteo: per tutta Italia
+# (7.896 comuni) servirebbero più delle 10.000 chiamate al giorno concesse. "tutte" = tutte le regioni servite.
+_agg = os.environ.get("REGIONI_AGGIORNATE", "08").strip()
+REGIONI_AGGIORNATE = [] if _agg.lower() == "tutte" else [r.strip().zfill(2) for r in _agg.split(",") if r.strip()]
 ORE_PREVISIONI = int(os.environ.get("ORE_PREVISIONI", "6"))          # ogni quante ore aggiornare le previsioni
 ORA_STORICO_UTC = int(os.environ.get("ORA_STORICO_UTC", "5"))        # aggiornamento giornaliero dello storico
 ZORNADE_API_KEY = os.environ.get("ZORNADE_API_KEY", "")

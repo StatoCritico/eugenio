@@ -37,11 +37,18 @@ def _salva(df: pd.DataFrame, p: Path) -> None:
     tmp.replace(p)
 
 
-def comuni() -> pd.DataFrame:
+def comuni(aggiornati: bool = False) -> pd.DataFrame:
+    """Comuni serviti (REGIONI; vuoto = tutta Italia). Con `aggiornati=True` solo quelli il cui meteo recente e le cui
+    previsioni si aggiornano ogni giorno con l'API gratuita (REGIONI_AGGIORNATE): per gli altri restano lo storico
+    esportato dalla fase 3 e, nelle previsioni dei consumi, la climatologia."""
     df = pd.read_parquet(C.DATI / "comuni.parquet")
     if C.SOLO_COMUNI:
         return df[df.istat.isin(C.SOLO_COMUNI)]
-    return df[df.regione_cod.isin(C.REGIONI)] if C.REGIONI else df
+    if C.REGIONI:
+        df = df[df.regione_cod.isin(C.REGIONI)]
+    if aggiornati and C.REGIONI_AGGIORNATE:
+        df = df[df.regione_cod.isin(C.REGIONI_AGGIORNATE)]
+    return df
 
 
 @lru_cache(maxsize=1)
@@ -103,7 +110,7 @@ def miscela(breve: pd.DataFrame | None, lungo: pd.DataFrame | None, emissione: p
 
 
 def aggiorna_previsioni() -> Path:
-    cm = comuni()
+    cm = comuni(aggiornati=True)
     http, lim = client(), _lim()
     emissione = pd.Timestamp.now(tz="UTC").floor("D")
     parti = []
@@ -147,7 +154,7 @@ def previsioni(istat: str) -> pd.DataFrame:
 # ---------------------------------------------------------------------------------------------- storico
 def aggiorna_storico(giorni: int = 15) -> None:
     """Aggiunge gli ultimi giorni: ICON storico (orario) ed ERA5 corretto (giornaliero)."""
-    cm = comuni()
+    cm = comuni(aggiornati=True)
     http, lim = client(), _lim()
     oggi = dt.datetime.now(dt.timezone.utc).date()
     # ICON seamless storico → orario/<istat>.parquet
@@ -170,24 +177,53 @@ def aggiorna_storico(giorni: int = 15) -> None:
             g.insert(0, "istat", r.istat)
             nuovi.append(g)
     if nuovi:
-        p = C.DATI / "giornaliero.parquet"
         with _blocco:
-            vecchio = pd.read_parquet(p) if p.exists() else None
-            tutto = pd.concat([vecchio, *nuovi]) if vecchio is not None else pd.concat(nuovi)
-            tutto = tutto.drop_duplicates(["istat", "data"], keep="last").sort_values(["istat", "data"])
-            _salva(tutto, p)
+            aggiorna_giornaliero(C.DATI / "giornaliero.parquet", pd.concat(nuovi, ignore_index=True))
     log.info("Storico aggiornato (%s)", lim.riepilogo())
 
 
-@lru_cache(maxsize=2)
-def _giornaliero(mtime: float) -> pd.DataFrame:
-    return pd.read_parquet(C.DATI / "giornaliero.parquet")
+def aggiorna_giornaliero(p: Path, nuovi: pd.DataFrame) -> None:
+    """Unisce `nuovi` (istat, data, ...) a giornaliero.parquet un blocco (row group) alla volta: per tutta Italia il
+    file ha ~34 milioni di righe e non sta nella memoria del worker. I comuni nuovi vanno in coda."""
+    import pyarrow.parquet as pq
+    from meteo_storico.aggrega import scrivi_giornaliero
+    nuovi = nuovi.copy()
+    nuovi["data"] = pd.to_datetime(nuovi["data"]).dt.date        # stesso tipo del file (date32)
+    nuovi = nuovi.sort_values(["istat", "data"])
+    if not p.exists():
+        scrivi_giornaliero([nuovi.reset_index(drop=True)], p)
+        return
+    pf = pq.ParquetFile(p)
+    da_unire = set(nuovi.istat)
+    visti: set = set()
+
+    def blocchi():
+        for i in range(pf.num_row_groups):
+            df = pf.read_row_group(i).to_pandas()
+            df["data"] = pd.to_datetime(df["data"]).dt.date
+            qui = da_unire & set(df.istat.unique())
+            if qui:
+                df = pd.concat([df, nuovi[nuovi.istat.isin(qui)]], ignore_index=True)
+                df = df.drop_duplicates(["istat", "data"], keep="last").sort_values(["istat", "data"])
+                visti.update(qui)
+            yield df.reset_index(drop=True)
+        resto = nuovi[~nuovi.istat.isin(visti)]
+        if len(resto):
+            yield resto.reset_index(drop=True)
+
+    scrivi_giornaliero(blocchi(), p)
+
+
+@lru_cache(maxsize=64)
+def _giornaliero_comune(istat: str, mtime: float) -> pd.DataFrame:
+    """Solo il blocco del comune (filtro sul parquet): il file nazionale non si carica mai tutto in memoria."""
+    d = pd.read_parquet(C.DATI / "giornaliero.parquet", filters=[("istat", "=", istat)])
+    return d[d.istat == istat].drop(columns="istat").sort_values("data").reset_index(drop=True)
 
 
 def storico_giornaliero(istat: str) -> pd.DataFrame:
     p = C.DATI / "giornaliero.parquet"
-    d = _giornaliero(p.stat().st_mtime)
-    return d[d.istat == istat].drop(columns="istat").reset_index(drop=True)
+    return _giornaliero_comune(istat, p.stat().st_mtime).copy()
 
 
 def storico_orario(istat: str) -> pd.DataFrame:

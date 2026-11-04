@@ -162,6 +162,23 @@ cd ~/energia && git pull
 cd fase4-server && docker compose up -d --build
 ```
 
+## Meteo per tutta Italia (dal 4/11/2026)
+
+Sul server c'è l'archivio meteo di tutti i 7.896 comuni (fase 3, `scarica-s3` da S3, correzione ed esportazione).
+Due impostazioni del `.env`:
+
+| variabile | significato | sul server |
+|---|---|---|
+| `REGIONI` | regioni **servite** (comuni, Legge 10, Dati climatici, previsioni dei consumi); vuoto = tutta Italia | vuoto |
+| `REGIONI_AGGIORNATE` | regioni il cui meteo recente (ICON ed ERA5 degli ultimi giorni) e le cui previsioni si aggiornano ogni giorno con l'API gratuita di Open-Meteo; `tutte` = tutte le servite | `08` |
+
+Con l'API gratuita (10.000 chiamate al giorno) non si possono aggiornare ogni giorno 7.896 comuni: per le altre regioni
+restano lo storico esportato e, nella previsione dei consumi, la climatologia dopo l'ultimo giorno osservato.
+
+`giornaliero.parquet` (~34 milioni di righe) non si carica mai tutto: l'api legge il solo blocco del comune
+(`meteo.storico_giornaliero`, filtro sul parquet, 0,04 s) e il worker lo aggiorna un blocco alla volta
+(`meteo.aggiorna_giornaliero`, ~300 MB al massimo). Test: `tests/test_meteo_nazionale.py`.
+
 ## Lavori periodici sui file del sito (fasi 8 e 9)
 
 Il worker rifà da sé due gruppi di file statici del sito, montando in scrittura **solo**

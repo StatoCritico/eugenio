@@ -130,6 +130,10 @@ python -m meteo_storico correggi   --archivio /srv/lavoro/archivio --regioni tut
 python -m meteo_storico esporta    --archivio /srv/lavoro/archivio --regioni tutte --dest /srv/lavoro/pacchetto
 ```
 
+`esporta` scrive `giornaliero.parquet` **a blocchi di 25 comuni** (un row group ciascuno, ordinato per comune e data;
+`aggrega.scrivi_giornaliero`): per tutta Italia sono ~34 milioni di righe, che in una volta sola non stavano nella
+memoria del worker. Prima esportazione nazionale e pubblicazione: `AGGIORNAMENTO_2026-11-04.md`.
+
 Stesse regole dell'API (modulo `meteo_storico/s3.py`), verificate il 28–29/10/2026 su Trento, Bologna, Firenze, Roma,
 Bari e Palermo contro l'API:
 - **ERA5-Seamless**: temperatura e punto di rugiada da ERA5-Land (0,1°), il resto da ERA5 (0,25°), cella più vicina;
