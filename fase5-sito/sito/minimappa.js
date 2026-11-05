@@ -326,7 +326,13 @@
 
   // cambio di regione dalla piccola mappa o da una regione vicina nella mappa grande: stessa strada per entrambe
   function cambiaRegione(cod, nome) {
-    if (cod === regione || !VALIDE.test(cod)) return;
+    if (!VALIDE.test(cod)) return;
+    if (cod === regione) {
+      // secondo clic sulla regione già scelta (05/11/2026): solo le pagine con la mappa MapLibre (Ortofoto, Modelli 3D)
+      // lo usano, per togliere la scelta e tornare all'Italia; le altre pagine non cambiano
+      if (typeof window.EUGENIO.suStessaRegione === "function") window.EUGENIO.suStessaRegione(cod, nome);
+      return;
+    }
     regione = cod;
     window.EUGENIO.regione = cod;
     ricorda(cod);
@@ -370,8 +376,11 @@
     (percorsi && percorsi.forEach ? percorsi : []).forEach((p) => p.classList.remove("scelto"));
   }
 
+  // evidenziazione della piccola mappa senza cambiare la regione ricordata (null = nessuna regione evidenziata)
+  function evidenziaPiccola(cod) { if (evidenzia) evidenzia(cod); }
+
   window.EUGENIO = { regione, colore, fondoComuni, italia, zoomabile, sfondoItalia, mappaGrande, el, seleziona, suggerimenti,
-    alterna, togliScelto };
+    alterna, togliScelto, evidenziaPiccola };
   window.EUGENIO_REGIONE = regione;     // compatibilità
   aggiornaCollegamenti(regione);
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => piccola().catch(() => {}));

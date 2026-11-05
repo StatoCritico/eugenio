@@ -35,6 +35,13 @@ AVVERTENZA_LEGGE10 = ("I dati derivano dal clima reale osservato nel comune e se
 _VIETATE = re.compile(r"(?i)(^|[^a-z])(pun|psv|ttf|igi|pfor|gme|eex)([^a-z]|$)")
 
 
+
+def _modello_cielo(d) -> str:
+    """Modello del cielo diffuso dichiarato dalla pagina 3D (dal 05/11/2026 Perez; le pagine più vecchie: isotropo)."""
+    m = str((d or {}).get("modello_cielo") or "").strip().lower() if isinstance(d, dict) else ""
+    return "di Perez (1990)" if m.startswith("perez") else "isotropa"
+
+
 def _ammessa(chiave: str) -> bool:
     """False per le colonne con dati di mercato riservati (solo uso interno)."""
     return not _VIETATE.search(str(chiave))
@@ -962,7 +969,7 @@ def report_edificio(d: dict, formato: str = "pdf", **_) -> Documento:
                    for a in map(_diz, _lista(fv.get("aree")))][:200], decimali=[None, 1, 0, 0, 0, 2, 0, 1]),
             Paragrafo(testo=f"Totale: {_num(fv.get('totale_kwh')) or 0:,.0f} kWh/anno".replace(",", ".")
                       + (f" con il clima orario del {_testo(fv.get('anno_clima'), 10)}." if fv.get("anno_clima") else ".")
-                      + " Modello semplificato (trasposizione isotropa, perdite di sistema 14 %, temperatura delle celle)"
+                      + f" Modello semplificato (trasposizione {_modello_cielo(fv)}, perdite di sistema 14 %, temperatura delle celle)"
                         "; orientamento in gradi da nord in senso orario (180 = sud).")]))
     sezioni += _sezioni_fase_b(d)
     fonti_ortofoto: list[Fonte] = []
@@ -1031,7 +1038,7 @@ def _sezioni_fase_b(d: dict) -> list[Sezione]:
                                   "4 × 3 m (le parti in comune con altri corpi o con edifici confinanti non ricevono sole), con "
                                   "le ombre degli edifici entro 250 m" + (" e l'orizzonte del terreno" if f.get("orizzonte_lontano") else "")
                                   + (f"; clima orario del {_testo(f.get('anno_clima'), 10)}." if f.get("anno_clima") else ".")
-                                  + " Irradiazione sul piano verticale, modello isotropo."))
+                                  + f" Irradiazione sul piano verticale, trasposizione {_modello_cielo(f)}."))
         out.append(Sezione(titolo="Sole sulle facciate", blocchi=bl))
     z = _diz(d.get("orizzonte_lontano"))
     if _num(z.get("massimo")) is not None:

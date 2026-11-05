@@ -20,5 +20,6 @@
  ],
  "tessere_terreno": 11,
  "sintetico": true,
- "avviso": "Dati sintetici di esempio: sagome, altezze e terreno sono inventati per mostrare come funziona la pagina; non rappresentano edifici reali."
+ "avviso": "Dati sintetici di esempio: sagome, altezze e terreno sono inventati per mostrare come funziona la pagina; non rappresentano edifici reali.",
+ "crs": "EPSG:7791"
 }

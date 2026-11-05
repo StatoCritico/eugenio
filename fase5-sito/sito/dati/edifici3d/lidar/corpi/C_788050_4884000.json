@@ -66,11 +66,11 @@
    "edificio": "E-CAP",
    "fonte": "campione_dsm",
    "descrizione_fonte": "Campione LiDAR sintetico – DSM (prova)",
-   "versione": "campione_dsm:40986:1793756856",
+   "versione": "campione_dsm:40986:1793826407",
    "fonte_dtm": "campione_dtm",
    "licenza": "dati sintetici",
    "attribuzione": "Dati sintetici di esempio (EuGEnio)",
-   "elaborato": "2026-11-04T01:47:37+00:00",
+   "elaborato": "2026-11-04T21:06:48+00:00",
    "altezza_dbtr": 8.0,
    "sintetico": true
   },
@@ -138,11 +138,11 @@
    "edificio": "E-CAP",
    "fonte": "campione_las",
    "descrizione_fonte": "Campione LiDAR sintetico – LAS classificato (prova)",
-   "versione": "campione_las:150375:1793756856",
+   "versione": "campione_las:150375:1793826407",
    "fonte_dtm": "campione_las (classe terreno)",
    "licenza": "dati sintetici",
    "attribuzione": "Dati sintetici di esempio (EuGEnio)",
-   "elaborato": "2026-11-04T01:47:37+00:00",
+   "elaborato": "2026-11-04T21:06:48+00:00",
    "altezza_dbtr": 7.0,
    "sintetico": true
   }

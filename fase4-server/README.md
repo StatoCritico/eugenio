@@ -618,6 +618,11 @@ l'informativa privacy.
 - Prove: `tests/test_interno.py` (13: gettone valido, firma di un'altra chiave, audience, emittente, scaduto, HS256,
   email ammesse, chiusura senza configurazione, Caddyfile, `.env.example`, report con le falde).
 
+- **Stato della zona** (05/11/2026): ogni zona della risposta ha `situazione` = `{stato, testo}` coerente con l'esito
+  dell'ultima notte: `in attesa` (nessuna fonte DSM/LAS attiva e/o 0 corpi della Fase A: «manca prepara»), `non
+  avviata`, `fermata`, `completata`, `in corso`. Prima la pagina diceva «Zona in corso» anche con 0 tessere su 0. Test in
+  `tests/test_interno.py` (7 nuovi).
+
 ## Analisi avanzate con il modulo privato (fase 10, Fase E, dal 04/11/2026)
 
 - **`servizio/analisi.py`**: rotte `/api/analisi/…` (tabella dell'API), limite «dati». Usa l'aggancio pubblico

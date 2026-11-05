@@ -1,0 +1,29 @@
+# Fonti della zona Friuli Venezia Giulia (fase 10, Fase E, adattatore del 05/11/2026). Gli URL stanno qui, mai nel codice.
+# Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 04/11/2026: WFS 2.0.0 GetCapabilities 200, AccessConstraints e Fees NONE, CC BY 4.0 nella scheda del servizio di
+#   download (le schede dei singoli strati dicono «Non indicato»: annotato in fonti/regioni.toml);
+# - 05/11/2026: 44 strati, uno per foglio CTRN (EDIFICI:EDIFICATO_CTRN_ED1_018 … _ED2_…); GetFeature di 6 elementi del
+#   foglio 110 in GeoJSON EPSG:6708 (RDN2008 / UTM 33N): ALTEZZA, QUOTA_PIEDE, QUOTA_GRONDA, VOLUME, AREA, CODICE, NOME, ID;
+#   QUOTA_GRONDA − QUOTA_PIEDE = ALTEZZA in 6 su 6. Nessun identificativo d'edificio: ogni elemento è un corpo.
+
+[zona]
+nome = "Friuli Venezia Giulia"
+codice = "fvg"
+crs = "EPSG:6708"                       # RDN2008 / UTM 33N, sistema del servizio
+riquadro = [12.32, 45.58, 13.92, 46.65]
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "IRDAT FVG – Edificato CTRN (per elemento, con altezza e quote)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Autonoma Friuli Venezia Giulia – IRDAT, Edificato CTRN (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/r_friuve:m10812-cc-i11555"
+adattatore = "fvg_ctrn"
+servizio_tipo = "wfs"
+servizio = "https://serviziogc.regione.fvg.it/geoserver/EDIFICI/wfs"
+strato = "EDIFICI:EDIFICATO_CTRN_ED1_110"   # uno strato per foglio CTRN: si sceglie con --strato
+crs_servizio = "EPSG:6708"
+url = ""

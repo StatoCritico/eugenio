@@ -1,0 +1,29 @@
+# Fonti della zona Lombardia (fase 10, Fase E, adattatore del 05/11/2026). Stesso schema di emilia_romagna.toml: gli URL
+# stanno qui, mai nel codice. Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 04/11/2026: scheda RNDT CC BY 4.0, ArcGIS REST 200 (fonti/regioni.toml);
+# - 05/11/2026: query di 8 unità volumetriche a Milano (riquadro 514700 5034500 514800 5034600, EPSG:7791) con returnZ,
+#   in GeoJSON (WGS84): campi CLASSID, CEDIUV, UN_VOL_AV, UN_VOL_QE, UN_VOL_POR, UN_VOL_EX, SCRIL; UN_VOL_QE − z della
+#   base = UN_VOL_AV in 8 su 8. Su 1×1 km a Milano: 1000 volumi, UN_VOL_POR 01 (776), 04 (188), 03 (32), 02 (4);
+#   UN_VOL_AV da 0 a 64,6 m (gli 0 si scartano). maxRecordCount del servizio 2000.
+
+[zona]
+nome = "Lombardia"
+codice = "lom"
+crs = "EPSG:7791"                       # RDN2008 / UTM 32N, sistema del DBGT
+riquadro = [8.49, 44.67, 11.43, 46.64]  # WGS84 (lon_min, lat_min, lon_max, lat_max)
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "DBGT Lombardia – Tema Edificato, classe 020101 Unità volumetrica"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Lombardia – DBGT, Unità volumetrica (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/r_lombar:3493af32-587c-4bca-92a4-ea717ea1a617"
+adattatore = "lombardia_dbgt"
+servizio_tipo = "arcgis"
+servizio = "https://www.cartografia.servizirl.it/arcgis5/rest/services/BaseMap/DBGT_Tema0201_Edificato/MapServer/0"
+crs_servizio = "EPSG:7791"              # sistema del riquadro della query (il GeoJSON torna sempre in WGS84)
+# download completo della regione (GeoPackage o Shapefile del DBGT per provincia): da scrivere dopo il primo download
+url = ""

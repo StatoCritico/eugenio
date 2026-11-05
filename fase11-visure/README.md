@@ -8,6 +8,11 @@ le visure vere anonimizzate non sono ancora arrivate. Lo scaricamento automatico
 Documento di riferimento: [`../documenti/PROPOSTA_3D_EDIFICI_E_VISURE.md`](../documenti/PROPOSTA_3D_EDIFICI_E_VISURE.md),
 § 13 e § 15 «Fase D».
 
+**05/11/2026**: le colonne `visura_…` si usano anche nelle pagine dell'edificio (Modelli 3D e le altre pagine 3D, aperte
+dal pulsante «Apri in Modelli 3D» del Patrimonio: piani fuori terra e interrati, superficie catastale e uso, con la
+precedenza file → visura → stima) e in «Valori per sede» (superficie catastale come base dei consumi al m² quando il file
+non ha la sua colonna; le colonne `visura_…` non diventano valori da disegnare). Codice nel sito
+(`edifici_calcoli.js`: `daVisura`, `mappaVisura`, `leggiVisura`), nessuna modifica al lettore.
 ## Scopo
 
 Dal CSV geolocalizzato di Patrimonio (comune catastale, sezione, foglio, particella) ottenere tutte le visure in PDF
@@ -205,6 +210,55 @@ Passi con **SignPath Foundation** (da fare a mano, dopo la prima build riuscita 
 Con **Certum Open Source** (certificato nel cloud SimplySign o su chiavetta, mai esportato): installare SimplySign Desktop
 e Windows SDK, leggere l'impronta SHA-1 del certificato nel magazzino di Windows, poi `$env:EUGENIO_FIRMA_SHA1 = "<impronta>"`
 e `costruisci_windows.ps1 -Firma` (signtool con marca temporale `http://time.certum.pl`, poi `signtool verify`).
+
+### Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/).
+
+Si firma solo `EuGEnioVisure.exe` costruito da GitHub Actions (workflow `visure-windows`, job `exe` → `firma`) dal codice
+pubblico di questo repository, mai file costruiti a mano. Ruoli (05/11/2026):
+
+| Ruolo | Chi |
+|---|---|
+| Authors | Paolo Bianco – [StatoCritico su GitHub](https://github.com/statocritico) |
+| Reviewers | Paolo Bianco – [StatoCritico su GitHub](https://github.com/statocritico) |
+| Approvers | Paolo Bianco – [StatoCritico su GitHub](https://github.com/statocritico) |
+
+**Privacy**: il programma legge solo i file scelti dall'utente (PDF delle visure, file di Patrimonio, modelli DXF/IFC) e
+scrive solo nella cartella indicata. In rete contatta solo GitHub (`raw.githubusercontent.com`, `github.com`,
+`objects.githubusercontent.com`, `release-assets.githubusercontent.com`: `HOST_AMMESSI` di `avviatore.py`), per controllare
+l'elenco delle versioni approvate e scaricare i pacchetti approvati; con `--non-aggiornare` non contatta nemmeno GitHub.
+Nient'altro: nessun dato delle visure, nessuna statistica d'uso, nessun identificativo del computer. La pagina locale
+risponde solo su `127.0.0.1`. La stessa sezione è nella pagina del sito Patrimonio › Visure (`visure.html#code-signing-policy`)
+e nel testo di ogni release.
+
+**Metadati dell'.exe** (`avviatore/versione_windows.txt`, vincolati da SignPath): `ProductName` «EuGEnio Visure»,
+`ProductVersion` e `FileVersion` uguali a `VERSIONE` di `visure/__init__.py` e a `VERSIONE_AVVIATORE`, `filevers` e
+`prodvers` con gli stessi numeri, `OriginalFilename` `EuGEnioVisure.exe`; li controlla `tests/test_metadati_exe.py`. A ogni
+versione nuova si aggiornano insieme.
+
+### Disinstallare
+
+L'.exe non si installa (niente registro, niente Programmi): si cancellano `EuGEnioVisure.exe` e la cartella
+`%LOCALAPPDATA%\EuGEnio\Visure` (versioni scaricate, `stato.json`, `avviatore.log`). Le cartelle dei risultati restano dove
+l'utente le ha salvate. Lo dice anche la pagina del sito (`visure.html#disinstallare`).
+
+### Esito della prima build su GitHub Actions (05/11/2026)
+
+- Il job `exe` era fallito al passo «Prova dell'.exe»: con l'uscita rediretta Windows usa cp1252 e il carattere «→» dava
+  `UnicodeEncodeError`. Corretto (uscita in UTF-8 con `errors="replace"` nell'avviatore prima di `freeze_support`, in
+  `visure/__main__.py` e nel processo figlio di `edifici3d/importa.py`; `tests/test_codifica.py`), azioni del workflow
+  aggiornate a versioni correnti fissate allo SHA (Node 24); impronta della 0.1.0 `3fc84c6a…`. **Build verde il 05/11/2026.**
+- Sul PC di Paolo: l'.exe pesa **88,3 MB**; `prova --modelli` dura **7,9 s** alla prima esecuzione (estrazione del file
+  unico e controllo dell'antivirus; 2,5 s su Linux), meno alle successive; l'IFC e il DXF di prova danno 2 corpi;
+  l'impronta del pacchetto coincide e `--stato` mostra `3fc84c6ae60536a1`.
+- Difetto estetico noto: con l'uscita in una pipe **dentro PowerShell** (es. `| Out-Host`, `| Select-String`) i caratteri
+  accentati e i simboli appaiono come «ÔÇô», «├®», «┬À», perché PowerShell decodifica l'uscita dei programmi con la
+  codepage OEM (850). A video e su file (`> file.txt`) sono giusti. Rimedio, prima del comando:
+  `[Console]::OutputEncoding = [Text.Encoding]::UTF8`. Non si cambia il codice (né `visure/` né `importa.py`, per non
+  cambiare l'impronta; nemmeno l'avviatore, per non ricostruire l'.exe appena provato).
+- Restano a Paolo: domanda a SignPath Foundation (con questa sezione), poi tag `visure-v0.1.0` quando vorrà distribuirlo.
 
 ### Versione Docker
 

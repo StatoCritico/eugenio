@@ -136,8 +136,9 @@ scheda = "https://geodati.gov.it/resource/id/r_lombar:3493af32-587c-4bca-92a4-ea
 servizio = "https://www.cartografia.servizirl.it/arcgis5/rest/services/BaseMap/DBGT_Tema0201_Edificato/MapServer/0"
 url_prova = "https://www.cartografia.servizirl.it/arcgis5/rest/services/BaseMap/DBGT_Tema0201_Edificato/MapServer/0?f=json"
 altezza = "UN_VOL_AV («altezza volume»); UN_VOL_QE quota di estrusione"
-prova = "ArcGIS REST 200, query di 3 unità volumetriche con UN_VOL_AV (es. 3,1 m); anche WFS"
-motivo = "fonte aperta e provata; manca l'adattatore DBGT → corpi (oggi c'è solo quello delle UVL dell'ER)"
+prova = "ArcGIS REST 200, query di 3 unità volumetriche con UN_VOL_AV (es. 3,1 m); anche WFS. 05/11/2026: query di 60 volumi a Milano con returnZ, UN_VOL_QE − z = UN_VOL_AV in 51 (gli altri 9, porzione 03, con la base sotto terra)"
+motivo = "fonte aperta e provata; adattatore DBGT → corpi pronto (05/11/2026); manca il download completo (o i pezzi) per la prima zona"
+usata_in = "fonti/lombardia.toml, edifici3d/regionali.py (lombardia_dbgt)"
 
 [[regione.fonte]]
 tema = "dtm"
@@ -191,6 +192,7 @@ scheda = "https://geodati.gov.it/resource/id/p_bz:Elevation:DigitalTerrainModel-
 servizio = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1"
 url_prova = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1&request=GetCapabilities"
 prova = "WCS 2.0.1 GetCapabilities 200, coperture p_bz-Elevation__DigitalTerrainModel-0.5m e -2.5m"
+usata_in = "zone/bolzano.toml (bz_dtm05, bz_dtm25)"
 
 [[regione.fonte]]
 tema = "dsm"
@@ -201,8 +203,9 @@ verifica = "2026-11-04"
 scheda = "https://geodati.gov.it/resource/id/p_bz:Elevation:DigitalElevationModel-0.5m"
 servizio = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1"
 url_prova = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1&request=GetCapabilities"
-prova = "WCS 2.0.1 GetCapabilities 200, copertura p_bz-Elevation__DigitalElevationModel-0.5m (anche Adige 0,2 m 2024)"
-motivo = "pronta per una zona della pipeline (TOML in zone/): manca solo il TOML della zona"
+prova = "WCS 2.0.1 GetCapabilities 200, copertura p_bz-Elevation__DigitalElevationModel-0.5m (anche Adige 0,2 m 2024). 05/11/2026: GetCoverage di 1×1 km con scalefactor=0.5, 200 image/tiff"
+motivo = "zona della pipeline pronta (zone/bolzano.toml); mancano le sagome (nessun DB con altezze: corpi dal solo LiDAR o OSM)"
+usata_in = "zone/bolzano.toml (bz_dsm05)"
 
 [[regione.fonte]]
 tema = "ortofoto"
@@ -243,6 +246,7 @@ scheda = "https://geodati.gov.it/resource/id/p_TN:2989b73f-f243-4fac-b1d0-646486
 servizio = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dtm_1mX1m/"
 url_prova = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dtm_1mX1m/"
 prova = "200 text/html (cartella dei file)"
+usata_in = "zone/trento.toml (pat_dtm_2009)"
 
 [[regione.fonte]]
 tema = "dsm"
@@ -253,8 +257,9 @@ verifica = "2026-11-04"
 scheda = "https://geodati.gov.it/resource/id/p_TN:06df5d0a-f8e8-402b-9a5a-7e92bf75929f"
 servizio = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dsm_1mX1m/"
 url_prova = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dsm_1mX1m/"
-prova = "200 text/html (cartella dei file)"
-motivo = "rilievo 2006-2009: edifici più recenti assenti"
+prova = "200 text/html (cartella dei file). 05/11/2026: 1410 GeoTIFF di 2×2 km senza sistema dichiarato (ETRS89/UTM 32N), stessi riquadri del DTM; indice dalle intestazioni"
+motivo = "rilievo 2006-2009: edifici più recenti assenti; zona della pipeline pronta (zone/trento.toml), mancano i corpi della Fase A (adattatore Edifici P.A.T. 3D da scrivere)"
+usata_in = "zone/trento.toml (pat_dsm_2009)"
 
 [[regione.fonte]]
 tema = "ortofoto"
@@ -325,8 +330,9 @@ scheda = "https://geodati.gov.it/resource/id/r_friuve:m10812-cc-i11555"
 servizio = "https://serviziogc.regione.fvg.it/geoserver/EDIFICI/wfs"
 url_prova = "https://serviziogc.regione.fvg.it/geoserver/EDIFICI/wfs?request=GetCapabilities&version=2.0.0"
 altezza = "ALTEZZA, QUOTA_PIEDE, QUOTA_GRONDA, VOLUME"
-prova = "WFS 2.0.0 GetCapabilities 200 (AccessConstraints e Fees NONE), DescribeFeatureType con ALTEZZA e QUOTA_GRONDA"
-motivo = "CC BY 4.0 nella scheda del servizio di download (le schede dei singoli strati dicono «Non indicato»); manca l'adattatore → corpi"
+prova = "WFS 2.0.0 GetCapabilities 200 (AccessConstraints e Fees NONE), DescribeFeatureType con ALTEZZA e QUOTA_GRONDA. 05/11/2026: 44 strati (uno per foglio CTRN), GetFeature di 22 elementi del foglio 110 in EPSG:6708, QUOTA_GRONDA − QUOTA_PIEDE = ALTEZZA in 22 su 22"
+motivo = "CC BY 4.0 nella scheda del servizio di download (le schede dei singoli strati dicono «Non indicato»); adattatore → corpi pronto (05/11/2026)"
+usata_in = "fonti/friuli_venezia_giulia.toml, edifici3d/regionali.py (fvg_ctrn)"
 
 [[regione.fonte]]
 tema = "dtm"
@@ -372,8 +378,9 @@ scheda = "https://geodati.gov.it/resource/id/r_liguri:D.2237"
 servizio = "https://geoservizi.regione.liguria.it/geoserver/M2237/wfs"
 url_prova = "https://geoservizi.regione.liguria.it/geoserver/M2237/wfs?version=2.0.0&request=getcapabilities"
 altezza = "dalle coordinate z degli elementi 3D (nessun campo di altezza)"
-prova = "WFS 2.0.0 GetCapabilities 200 (AccessConstraints e Fees NONE), strati M2237:L8178 (edificato) e L8177"
-motivo = "fonte aperta e provata; altezza da ricavare dalla z: manca l'adattatore"
+prova = "WFS 2.0.0 GetCapabilities 200 (AccessConstraints e Fees NONE), strati M2237:L8178 (edificato) e L8177. 05/11/2026: z costante per poligono in 399 su 400 = quota di gronda (141,0 m contro 137 m del DTM 2023 nel primo edificio)"
+motivo = "fonte aperta e provata; adattatore pronto (05/11/2026): altezza = z di gronda − DTM (serve il DTM 2023, WCS M2056__L6952 provato)"
+usata_in = "fonti/liguria.toml, edifici3d/regionali.py (liguria_ctr3d)"
 
 [[regione.fonte]]
 tema = "dtm"
@@ -440,8 +447,8 @@ verifica = "2026-11-04"
 scheda = "https://geodati.gov.it/resource/id/r_emiro:2026-10-23T134125"
 servizio = "https://servizigis.regione.emilia-romagna.it/wcs/dsmfirst2023_24"
 prova = "WCS dsmfirst2023_24: 401 (non pubblico); DSMCosta_Lidar2019 exportImage 200"
-usata_in = "zone/rimini.toml (rer_dsm, rer_dsm_costa_2019, entrambe spente)"
-motivo = "licenza CC BY 4.0 ora scritta nelle schede RNDT (DSM 2023-24 del 23/10/2026; costa 2019: r_emiro:2022-02-08T110323); il DSM 2023-24 resta su richiesta; la costa 2019 resta spenta finché la pipeline non limita la fonte alla sua copertura"
+usata_in = "zone/rimini.toml (rer_dsm spenta; rer_dsm_costa_2019 accesa dal 05/11/2026 solo sulle tessere dentro la maschera zone/coperture/rimini_rer_dsm_costa_2019.geojson)"
+motivo = "licenza CC BY 4.0 ora scritta nelle schede RNDT (DSM 2023-24 del 23/10/2026; costa 2019: r_emiro:2022-02-08T110323); il DSM 2023-24 resta su richiesta; la costa 2019 è accesa dal 05/11/2026 solo dove copre (maschera della copertura)"
 
 [[regione.fonte]]
 tema = "ortofoto"

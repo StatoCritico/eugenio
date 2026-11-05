@@ -5,7 +5,13 @@
 > nei report o nella newsletter prima della licenza scritta. Le pagine del gruppo Cogenerazione del sito sono
 > segnaposto; solo «Emissioni» (fattori ISPRA) potrà partire prima, per la parte che non dipende dai prezzi.
 
-Stato al 03/11/2026: **progetto, nessun codice**. Fa parte della stessa richiesta di licenza della
+Stato al 05/11/2026: **report 18 (Emissioni) in codice e nel sito**, senza alcun dato GME o EEX: pagina Cogenerazione ›
+Emissioni (`fase5-sito/sito/cog-emissioni.html` + `emissioni_cog.js`, tutto nel browser) con i fattori ISPRA del Rapporto
+430/2026 in [`dati_terzi/`](dati_terzi/LEGGIMI.md) (CC BY 4.0, «riproduzione autorizzata citando la fonte»). CO₂ del
+cogeneratore (gas × fattore del gas naturale) contro l'alternativa separata (elettricità × fattore della rete scelto tra
+quattro di ISPRA + calore ÷ rendimento della caldaia dell'utente × fattore del gas), con la tabella di sensibilità e il
+«fattore della rete di pareggio». Fattori medi annui; i fattori orari e la ripartizione autoconsumo/immissione aspettano la
+simulazione del report 14 (prezzi GME). Gli altri report restano progetto. Prima, 03/11/2026: progetto, nessun codice. Fa parte della stessa richiesta di licenza della
 [fase 12](../fase12-gme-fotovoltaico/README.md) (domande in [`DOMANDE_CALL_GME.md`](../fase12-gme-fotovoltaico/DOMANDE_CALL_GME.md)).
 Documento di riferimento: [`../documenti/eugenio-gme-riepilogo.md`](../documenti/eugenio-gme-riepilogo.md) (§ 2,
 report 13–20; § 4; § 5).

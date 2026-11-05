@@ -103,7 +103,9 @@ def test_gruppo_attivo(sito):
 def test_segnaposto_senza_dati_gme(sito):
     C.main(["--sito", str(sito)])
     pagine = [f for f in sito.glob("*.html") if 'class="articolo segnaposto"' in f.read_text(encoding="utf-8")]
-    assert len(pagine) >= 15        # 20 al 03/11/2026; dal 04/11/2026 (Fase B) Ortofoto, Irradiazione, PVGIS, D.Lgs. 199 e Obblighi sono strumenti
+    # 20 al 03/11/2026; dal 04/11/2026 (Fase B) Ortofoto, Irradiazione, PVGIS, D.Lgs. 199 e Obblighi sono strumenti; dal
+    # 05/11/2026 anche Emissioni (blocco 3) e le pagine delle analisi senza UNI
+    assert len(pagine) >= 8
     for f in pagine:
         s = f.read_text(encoding="utf-8")
         assert 'class="stato-pagina"' in s and 'id="fonti"' in s, f.name
@@ -146,7 +148,7 @@ const f = E.firma([{ consumo: 300, gg: 0 }, { consumo: 1200, gg: 100 }, { consum
 console.log(JSON.stringify({ comune: i.pareti_in_comune_tra_corpi, o: i.pareti_per_orientamento.O, alt: s.altezza, base: f.base,
   pend: f.pendenza, div: E.dividi(sq(0, 0, 10, 10), [5, -1], [5, 11]).map(E.area), fac: E.mappaFacoltative(["id", "Piani", "SLP (m²)", "gas"]) }));
 '''
-    out = subprocess.run([node, "-e", prova, str(QUI / "sito" / "edifici_calcoli.js")], capture_output=True, text=True, check=True).stdout
+    out = subprocess.run([node, "-e", prova, str(QUI / "sito" / "edifici_calcoli.js")], capture_output=True, text=True, encoding="utf-8", check=True).stdout
     import json
     d = json.loads(out)
     assert d["comune"] == pytest.approx(60) and d["o"] == pytest.approx(150)
@@ -200,7 +202,7 @@ console.log(JSON.stringify({ esposta, comune: E.indicatori(corpi).pareti_esposte
   ht: E.htMassimo("E", 0.55), ht2: E.htMassimo("A", 0.8), htx: E.htMassimo("Z", 0.5),
   cl: E.priorita([{ id: 1, kwh_m2: 200, costo_m2: 30 }, { id: 2, kwh_m2: 100, costo_m2: 10 }, { id: 3, kwh_m2: 150 }]).map((x) => [x.id, x.posto]) }));
 '''
-    d = json.loads(subprocess.run([node, "-e", prova, str(QUI / "sito" / "edifici_calcoli.js")], capture_output=True, text=True,
+    d = json.loads(subprocess.run([node, "-e", prova, str(QUI / "sito" / "edifici_calcoli.js")], capture_output=True, text=True, encoding="utf-8",
                                   check=True).stdout)
     assert d["esposta"] == pytest.approx(d["comune"])            # stesse pareti esposte degli indicatori (§ 7)
     assert d["ombra"] < d["libero"] and d["perdita"] > 5          # l'edificio alto a sud fa ombra sulla facciata sud
@@ -233,8 +235,8 @@ def test_pagine_fase_c():
     assert 'content="noindex, nofollow"' in p and "/api/interno/edifici/stato" in (QUI / "sito" / "interno" / "edifici.js").read_text()
 
 
-ANALISI_PAGINE = {"edificio-fabbisogno.html": {"5"}, "edificio-cer.html": {"7"}, "edificio-involucro.html": {"8", "12"},
-                  "fv-leed.html": {"9"}, "edificio-impianti.html": {"10", "11"}, "edificio-clima.html": {"13"}}
+# dal 05/11/2026 le analisi 7, 9 e 13 (senza norme UNI) sono nel codice pubblico: le loro pagine non chiedono più lo stato
+ANALISI_PAGINE = {"edificio-fabbisogno.html": {"5"}, "edificio-involucro.html": {"8", "12"}, "edificio-impianti.html": {"10", "11"}}
 
 
 def test_pagine_fase_e_aggancio_analisi():
@@ -248,7 +250,7 @@ def test_pagine_fase_e_aggancio_analisi():
         assert s.count("analisi non disponibile in questa installazione") >= len(attese)
         assert re.search(r'<script src="analisi_uni\.js\?v=\d{8}[a-z]?"></script>', s), nome
         trovati |= ids
-    assert trovati == {"5", "7", "8", "9", "10", "11", "12", "13"}
+    assert trovati == {"5", "8", "10", "11", "12"}
     js = (QUI / "sito" / "analisi_uni.js").read_text(encoding="utf-8")
     assert "/api/analisi/stato" in js and "analisi non disponibile in questa installazione" in js
     assert "uni_privato" not in js
@@ -282,7 +284,8 @@ def test_pagina_importa_dxf_ifc_e_librerie_solo_li():
     w = (sito / "modelli_worker.js").read_text(encoding="utf-8")
     assert "fetch(" not in w and "XMLHttpRequest" not in w                      # il worker non parla con il server
     p = (sito / "importa_modello.js").read_text(encoding="utf-8")
-    assert "method: \"POST\"" not in p and "/api/" in p and p.count("fetch(") == 1   # solo /api/ortofoto/fonti
+    # solo /api/ortofoto/fonti e, dal 05/11/2026, i file statici dell'archivio degli edifici (posa «sagoma»), sempre in GET
+    assert "method: \"POST\"" not in p and "/api/" in p and p.count("fetch(") == 2 and "/edifici3d/cc-by/er/prodotti/" in p
     e = (sito / "edificio3d.js").read_text(encoding="utf-8")
     assert "modello=locale" in (sito / "importa_modello.js").read_text(encoding="utf-8") and '"modello") === "locale"' in e
 
@@ -332,3 +335,222 @@ def test_riga_fissata_nella_testata_e_nel_head():
         assert testo in js, testo
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
     assert "--nero-riga: #000" in css and ":root[data-menu-fissato] .riga-fissata" in css
+
+
+# ---------------------------------------------------------------- blocco 2 del 05/11/2026 (affinamenti Edificio)
+def _node(prova, *argomenti):
+    import json
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node non installato")
+    return json.loads(subprocess.run([node, "-e", prova, str(QUI / "sito" / "edifici_calcoli.js"), *argomenti],
+                                     capture_output=True, text=True, encoding="utf-8", check=True).stdout)
+
+
+def test_tabella_11_e_quota_vetrata():
+    d = _node(r'''
+const E = require(process.argv[1]);
+console.log(JSON.stringify({ e30: E.htMassimoPrimoLivello("E", 30), c9: E.htMassimoPrimoLivello("C", 9), a5: E.htMassimoPrimoLivello("A", 5),
+  f100: E.htMassimoPrimoLivello("F", 100), b52: E.htMassimoPrimoLivello("B", 52), x: E.htMassimoPrimoLivello("E", 120), z: E.htMassimoPrimoLivello("Z", 20),
+  n: [E.HT_TAB11_QUOTE.length, ...Object.values(E.HT_TAB11).map((r) => r.length)],
+  st: E.quotaVetrataStimata({ superficie_disperdente: 1000, pareti_esposte: 600 }, "uffici"), st0: E.quotaVetrataStimata(null) }));''')
+    # DM 26/6/2015 come modificato dal DM 28/10/2025, All. 1, App. A, § 2.1, Tabella 11 (GU n. 283 del 5/12/2025)
+    assert d["e30"]["valore"] == pytest.approx(0.58 + 0.4 * (0.62 - 0.58), abs=1e-3) and d["e30"]["interpolato"]
+    assert d["e30"]["colonne"] == [[28, 0.58], [33, 0.62]]
+    assert d["c9"] == {"valore": 0.6, "colonne": [[9, 0.6]], "interpolato": False, "nota": ""}
+    assert d["a5"]["valore"] == 0.72 and "prima colonna" in d["a5"]["nota"]
+    assert d["f100"]["valore"] == 0.96 and d["b52"]["valore"] == 1.47 and d["x"] is None and d["z"] is None
+    assert d["n"] == [20] * 7
+    assert d["st"]["quota"] == pytest.approx(18) and d["st0"] is None    # 30 % di 600 m² su 1000 m²
+
+
+def test_colonne_visura_e_precedenza():
+    d = _node(r'''
+const E = require(process.argv[1]);
+const v = E.daVisura({ visura_esito: "ok", visura_piani: "3", visura_superficie_catastale: "812,5", visura_uso: "uffici" });
+const nessuna = E.daVisura({ visura_esito: "nessuna_visura", visura_piani: "3" });
+const titoli = ["id", "Gas (Smc)", "visura_piani_fuori_terra", "visura_superficie_catastale", "visura_rendita_euro", "Superficie lorda"];
+const m = E.mappaVisura(titoli), l = E.leggiVisura(m, ["S1", "100", "4", "900", "1234", ""]);
+const sq = (x0, y0, w, h) => [[x0, y0], [x0 + w, y0], [x0 + w, y0 + h], [x0, y0 + h], [x0, y0]];
+const s = E.superfici([{ id: "a", ring: sq(0, 0, 20, 10), gronda: 9 }], { superficie_lorda: 700 }, l);
+console.log(JSON.stringify({ v, nessuna, m, l, piani: s.piani_fuori_terra, lorda: s.superficie_lorda, cat: s.superficie_catastale }));''')
+    assert d["v"] == {"superficie_catastale": 812.5, "piani_fuori_terra": 3, "uso": "uffici"} and d["nessuna"] == {}
+    assert d["m"] == {"2": "visura_piani_fuori_terra", "3": "visura_superficie_catastale", "4": "visura_rendita_euro"}
+    assert d["l"] == {"piani_fuori_terra": 4, "superficie_catastale": 900}
+    assert d["piani"] == {"valore": 4, "fonte": "visura"} and d["lorda"] == {"valore": 700, "fonte": "csv"}
+    assert d["cat"] == {"valore": 900, "fonte": "visura"}
+
+
+def test_perez_contro_pvgis():
+    """Trasposizione di Perez (1990) contro PVGIS 5.3 (SARAH3, 2020, Rimini; giorno 15 di ogni mese): sul piano a 30° e
+    sulla facciata sud la Perez sta entro il 3 % di PVGIS e più vicina dell'isotropa."""
+    d = _node(r'''
+const E = require(process.argv[1]); const P = JSON.parse(require("fs").readFileSync(process.argv[2]));
+const r = { iso30: 0, per30: 0, pv30: 0, iso90: 0, per90: 0, pv90: 0 };
+for (const [t, ghi, dhi, p30, p90] of P.righe) {
+  const d = new Date(Date.UTC(+t.slice(0, 4), +t.slice(4, 6) - 1, +t.slice(6, 8), +t.slice(9, 11), +t.slice(11, 13))), s = E.sole(d, 44.06, 12.57);
+  r.iso30 += E.trasponi(ghi, dhi, s, 30, 180, { modello: "isotropo" }).poa; r.per30 += E.trasponi(ghi, dhi, s, 30, 180).poa; r.pv30 += p30;
+  r.iso90 += E.trasponi(ghi, dhi, s, 90, 180, { modello: "isotropo" }).poa; r.per90 += E.trasponi(ghi, dhi, s, 90, 180).poa; r.pv90 += p90;
+}
+console.log(JSON.stringify(r));''', str(QUI / "tests" / "pvgis_rimini_2020_giorno15.json"))
+    for a in ("30", "90"):
+        per, iso, pv = d["per" + a], d["iso" + a], d["pv" + a]
+        assert abs(per / pv - 1) < 0.03, (a, per / pv)
+        assert abs(per / pv - 1) < abs(iso / pv - 1), a
+
+
+def test_perez_uguale_a_pvlib():
+    pvlib = pytest.importorskip("pvlib")
+    import json
+    import numpy as np
+    rng = np.random.default_rng(7)
+    casi = [dict(zen=float(rng.uniform(5, 85)), az=float(rng.uniform(60, 300)), dhi=float(rng.uniform(20, 400)), dni=float(rng.uniform(0, 900)),
+                 tilt=float(rng.uniform(0, 90)), saz=float(rng.uniform(90, 270)), extra=float(rng.uniform(1322, 1412))) for _ in range(100)]
+    out = _node(r'''
+const E = require(process.argv[1]); const c = JSON.parse(process.argv[2]); const G = Math.PI / 180;
+console.log(JSON.stringify(c.map((x) => { const a = 90 - x.zen;
+  const ca = Math.cos(a * G) * Math.sin(x.tilt * G) * Math.cos((x.az - x.saz) * G) + Math.sin(a * G) * Math.cos(x.tilt * G);
+  const p = E.perez(x.dhi, x.dni, x.zen, x.extra, ca, x.tilt); return p.isotropa + p.circumsolare + p.orizzonte; })));''', json.dumps(casi))
+    for x, v in zip(casi, out):
+        am = pvlib.atmosphere.get_relative_airmass(x["zen"], "kastenyoung1989")
+        ref = float(pvlib.irradiance.perez(x["tilt"], x["saz"], x["dhi"], x["dni"], x["extra"], x["zen"], x["az"], am))
+        assert v == pytest.approx(ref, abs=1e-6)
+
+
+def test_posa_sulla_sagoma():
+    d = _node(r'''
+const E = require(process.argv[1]); const G = Math.PI / 180;
+const L = [[0, 0], [30, 0], [30, 10], [10, 10], [10, 25], [0, 25], [0, 0]];
+const pr = E.proiezione(12.57, 44.06), rot = 37;
+const f = ([x, y]) => { const c = Math.cos(rot * G), s = Math.sin(rot * G); return [x * c + y * s + 15, -x * s + y * c - 4]; };
+const r = E.posaDaSagoma([L], [L.map((q) => pr.indietro(f(q)))]);
+const err = r.punti.map(([x, y, lon, lat]) => { const [X, Y] = pr.avanti([lon, lat]), [ex, ey] = f([x, y]); return Math.hypot(X - ex, Y - ey); });
+console.log(JSON.stringify({ rot: r.rotazione, iou: r.iou, aree: r.rapporto_aree, err, nulla: E.posaDaSagoma([], []) }));''')
+    assert d["rot"] == pytest.approx(37, abs=0.01) and d["iou"] > 0.98 and d["aree"] == pytest.approx(1, abs=1e-6)
+    assert max(d["err"]) < 0.01 and d["nulla"] is None
+
+
+def test_pagine_blocco_2():
+    for nome in PAGINE_3D:
+        s = (QUI / "sito" / nome).read_text(encoding="utf-8")
+        for id_ in ("quota-vetrata", "nota-sede"):
+            assert f'id="{id_}"' in s, (nome, id_)
+        assert "Tabella 11" in s and "alberi" in s, nome
+    js = (QUI / "sito" / "edificio3d.js").read_text(encoding="utf-8")
+    assert "eugenio-sede" in js and "lidar/alberi/" in js and "htMassimoPrimoLivello" in js and 'modello_cielo: "Perez (1990)"' in js
+    p = (QUI / "sito" / "patrimonio.js").read_text(encoding="utf-8")
+    assert "modelli3d.html?sede=locale" in p and "sessionStorage" in p
+    i = (QUI / "sito" / "importa-dxf-ifc.html").read_text(encoding="utf-8")
+    assert 'value="sagoma"' in i and 'id="campi-sagoma"' in i and "edifici_calcoli.js" in i
+    assert "posaDaSagoma" in (QUI / "sito" / "importa_modello.js").read_text(encoding="utf-8")
+    v = (QUI / "sito" / "valori_sedi.js").read_text(encoding="utf-8")
+    assert "mappaVisura" in v and "superficie_catastale" in v
+
+
+# ---------------------------------------------------------------- blocco 3 del 05/11/2026 (analisi senza GME e senza UNI)
+def test_pagine_blocco_3_senza_gme_ne_uni():
+    import json
+    for nome, script in (("cog-emissioni.html", "emissioni_cog.js"), ("edificio-clima.html", "analisi_pubbliche.js"),
+                         ("edificio-cer.html", "analisi_pubbliche.js"), ("fv-leed.html", None)):
+        s = (QUI / "sito" / nome).read_text(encoding="utf-8")
+        main = re.search(r"<main[^>]*>", s).group(0)
+        assert "segnaposto" not in main and "data-analisi" not in s and "sperimentale" in s, nome
+        if script:
+            assert f'src="{script}?v=' in s, nome
+        assert not any(v in s for v in VIETATI), nome          # nessun dato di mercato
+    js = (QUI / "sito" / "emissioni_cog.js").read_text(encoding="utf-8") + (QUI / "sito" / "analisi_pubbliche.js").read_text(encoding="utf-8")
+    assert not re.search(r"(?i)\b(pun|psv|igi|ttf|mgp)\b", js) and "gse.it" not in js.lower()
+    d = json.loads((QUI / "sito" / "dati" / "ispra_fattori_emissione.json").read_text(encoding="utf-8"))
+    terzi = json.loads((QUI.parent / "fase13-cogenerazione" / "dati_terzi" / "ispra_fattori_emissione.json").read_text(encoding="utf-8"))
+    assert d == terzi and "CC BY 4.0" in d["licenza"] and "430/26" in d["fonte"]
+    # Rapporto ISPRA 430/2026, Tabella 1.7 (2024: consumi 192,6; produzione lorda 209,4) e Tabella 1.4 (gas 2024)
+    assert d["elettrico_g_kwh"]["anni"]["2024"] == [418.1, 370.7, 209.4, 192.6]
+    assert d["gas_naturale"]["anni"]["2024"] == {"t_co2_tj": 59.089, "t_co2_1000_sm3": 2.026}
+    t = (QUI / "parti" / "testata.html").read_text(encoding="utf-8")
+    for href in ("cog-emissioni.html", "edificio-cer.html", "edificio-clima.html", "fv-leed.html"):
+        assert re.search(rf'href="{re.escape(href)}">[^<]*<span class="cantiere prova">sperimentale', t), href
+    l = (QUI / "sito" / "fv-leed.html").read_text(encoding="utf-8")
+    assert "non sono riprodotti" in l and "usgbc.org" in l
+
+
+def test_calcoli_blocco_3_con_node():
+    d = _node(r'''
+const E = require(process.argv[1].replace("edifici_calcoli.js", "emissioni_cog.js"));
+const A = require(process.argv[1].replace("edifici_calcoli.js", "analisi_pubbliche.js"));
+const fs = require("fs");
+const r = E.calcola({ elettrica_mwh: 1000, calore_mwh: 1150, gas_mwh_pci: 2650 }, { fattore_rete_g_kwh: 199.6, fattore_gas_t_tj: 59.089, rendimento_caldaia: 0.9 });
+const tg = E.daTaglia({ potenza_kwe: 200, ore: 5000, rendimento_elettrico: 0.38, rendimento_termico: 0.44 });
+const x = [...Array(60).keys()].map((i) => 1960 + i), y = x.map((v) => 2800 - 5 * (v - 1960));
+const t = A.tendenza(x, y), p = A.proietta(t, 2050);
+const cer = A.condivisa(A.leggiCer(fs.readFileSync(process.argv[2], "utf8")));
+const semplice = A.condivisa([{ ora: "1", sede: "a", cabina: "C", prelievo: 5, immissione: 0 }, { ora: "1", sede: "b", cabina: "C", prelievo: 0, immissione: 3 },
+  { ora: "2", sede: "a", cabina: "C", prelievo: 1, immissione: 0 }, { ora: "2", sede: "b", cabina: "C", prelievo: 0, immissione: 4 },
+  { ora: "1", sede: "z", cabina: "D", prelievo: 0, immissione: 9 }]);
+console.log(JSON.stringify({ r, tg, t: [t.pendenza, t.sen, t.mk.p], p, cer: cer.map((c) => [c.cabina, c.condivisa]), semplice: semplice.map((c) => [c.cabina, c.condivisa]),
+  annuo: A.consumoAnnuo({ base: 300, pendenza: 9 }, 2000) }));''', str(QUI / "sito" / "esempi" / "cer_esempio_sintetico.csv"))
+    kg = 59.089 * 1000 / 277.7778                                   # kg CO2 per MWh di gas
+    assert d["r"]["co2_chp_t"] == pytest.approx(2650 * kg / 1000, rel=1e-6)
+    assert d["r"]["co2_separata_t"] == pytest.approx(1000 * 0.1996 + 1150 / 0.9 * kg / 1000, rel=1e-6)
+    assert d["r"]["evitata_t"] == pytest.approx(d["r"]["co2_separata_t"] - d["r"]["co2_chp_t"])
+    # pareggio: con quel fattore della rete il cogeneratore emette quanto l'alternativa
+    s = d["r"]["soglia_rete_g_kwh"]
+    assert 1000 * s / 1000 + 1150 / 0.9 * kg / 1000 == pytest.approx(d["r"]["co2_chp_t"], rel=1e-6)
+    assert d["tg"]["elettrica_mwh"] == 1000 and d["tg"]["gas_mwh_pci"] == pytest.approx(1000 / 0.38)
+    assert d["t"][0] == pytest.approx(-5) and d["t"][1] == pytest.approx(-5) and d["t"][2] < 1e-6
+    assert d["p"]["valore"] == pytest.approx(2800 - 5 * 90)
+    assert d["semplice"] == [["C", 4], ["D", 0]]                     # ora 1: min(5, 3); ora 2: min(1, 4); D senza prelievi
+    assert [c for c, _ in d["cer"]] == ["CP-ESEMPIO-1", "CP-ESEMPIO-2"] and all(v > 0 for _, v in d["cer"])
+    assert d["annuo"] == 12 * 300 + 9 * 2000
+
+
+# ---------------------------------------------------------------- Ortofoto e Modelli 3D dopo le prove del 05/11/2026
+def test_ortofoto_e_modelli3d_05_11():
+    o = (QUI / "sito" / "ortofoto.html").read_text(encoding="utf-8")
+    for js in ("minimappa.js", "confini_gl.js", "esporta_mappa.js"):
+        assert f'src="{js}?v=' in o, js
+    assert o.index('src="minimappa.js') < o.index('src="ortofoto.js')         # window.EUGENIO prima della pagina
+    assert 'id="scarica-ortofoto"' in o and 'id="messaggio-immagine"' in o and "ISTAT" in o
+    m = (QUI / "sito" / "modelli3d.html").read_text(encoding="utf-8")
+    for id_ in ("cerca-indirizzo", "cerca-catasto", "genera-3d", "torna-2d", "apri-demo", "scarica-3d", "fonti-corpi", "aiuto-3d"):
+        assert f'id="{id_}"' in m, id_
+    assert 'href="modelli3d.html?archivio=demo"' in m
+    for js in ("minimappa.js", "confini_gl.js", "esporta_mappa.js"):
+        assert f'src="{js}?v=' in m, js
+    # le altre pagine 3D restano in un tempo solo e non caricano i moduli nuovi
+    for nome in PAGINE_3D[1:]:
+        s = (QUI / "sito" / nome).read_text(encoding="utf-8")
+        assert 'id="genera-3d"' not in s and "confini_gl.js" not in s, nome
+    # confini dai file già ospitati, nessun servizio esterno; PDF scritto nel browser, senza librerie
+    for js in ("confini_gl.js", "esporta_mappa.js"):
+        t = (QUI / "sito" / js).read_text(encoding="utf-8")
+        assert not re.search(r"https?://(?!eugenio\.statocritico\.it)[a-z0-9.-]+\.[a-z]{2,}/", t.replace("eugenio.statocritico.it", "")), js
+    assert "dati/mappa/italia.json" in (QUI / "sito" / "confini_gl.js").read_text(encoding="utf-8")
+    e = (QUI / "sito" / "edificio3d.js").read_text(encoding="utf-8")
+    assert "la demo sintetica non va sopra le foto vere" in e and "/api/patrimonio" in e
+
+
+def test_inversa_utm_dei_confini_con_node():
+    import shutil, subprocess
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node non installato")
+    prova = r'''
+global.window = {}; global.document = { currentScript: null, addEventListener() {} };
+require(process.argv[1]);
+const C = window.EUGENIO_CONFINI;
+// trasformazione diretta di comuni.py (fase 3): lon, lat → svg; qui si torna indietro
+const S = 0.0010012596459353985, AX = -313.67365575107954, AY = 5226.851664605516;
+const [lo, la] = C.utmLonlat(500000 + 3.5683 * 80180, 4879000);
+console.log(JSON.stringify({ lo, la, rimini: C.svgLonlat(S * 788000 + AX, -S * 4884000 + AY) }));
+'''
+    out = subprocess.run([node, "-e", prova, str(QUI / "sito" / "confini_gl.js")], capture_output=True, text=True, encoding="utf-8", check=True).stdout
+    import json
+    d = json.loads(out)
+    from pyproj import Transformer
+    t = Transformer.from_crs(32632, 4326, always_xy=True)
+    lon, lat = t.transform(788000, 4884000)
+    assert d["rimini"][0] == pytest.approx(lon, abs=2e-6) and d["rimini"][1] == pytest.approx(lat, abs=2e-6)
+    lon, lat = t.transform(500000 + 3.5683 * 80180, 4879000)
+    assert d["lo"] == pytest.approx(lon, abs=2e-6) and d["la"] == pytest.approx(lat, abs=2e-6)

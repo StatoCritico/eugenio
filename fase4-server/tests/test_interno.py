@@ -130,3 +130,32 @@ def test_report_edificio_con_falde():
          "fonte": "LiDAR – Regione Emilia-Romagna"}, {"corpo": "C2", "falda": "F1", "pendenza": 0, "orientamento": None}]})
     (sez,) = [x for x in doc.sezioni if x.titolo == "Falde dei tetti"]
     assert sez.blocchi[0].righe[0][:4] == ["C1", "F1", 23.2, 180.0] and len(sez.blocchi[0].righe) == 2
+
+
+@pytest.mark.parametrize("stato,atteso", [
+    # Rimini sul server il 05/11/2026: 0 tessere su 0, nessuna fonte DSM/LAS attiva → non «in corso»
+    ({"totale_tessere": 0, "corpi": 0, "fonti": [{"tipo": "dsm", "stato": "in attesa"}, {"tipo": "dtm", "stato": "attiva"}],
+      "esecuzioni": [{"esito": "in attesa", "motivo": "nessun corpo della Fase A per la zona (prodotti/contesto vuoto)"}]},
+     ("in attesa", "In attesa: nessuna fonte DSM o LAS attiva e 0 corpi della Fase A (manca prepara).")),
+    ({"totale_tessere": 4, "corpi": 30, "fonti": [{"tipo": "las", "stato": "in attesa"}]},
+     ("in attesa", "In attesa: nessuna fonte DSM o LAS attiva.")),
+    ({"totale_tessere": 0, "corpi": 0, "fonti": [{"tipo": "dsm", "stato": "attiva"}]},
+     ("in attesa", "In attesa: 0 corpi della Fase A (manca prepara).")),
+    ({"totale_tessere": 4, "corpi": 30, "fonti": [{"tipo": "dsm", "stato": "attiva"}],
+      "esecuzioni": [{"esito": "non avviata", "motivo": "previsione in corso"}]},
+     ("non avviata", "Non avviata: previsione in corso.")),
+    ({"totale_tessere": 4, "corpi": 30, "fonti": [{"tipo": "dsm", "stato": "attiva"}], "esecuzioni": [{"esito": "parziale"}]},
+     ("in corso", "Zona in corso.")),
+    ({"totale_tessere": 4, "corpi": 30, "fonti": [{"tipo": "dsm", "stato": "attiva"}], "completata": "2026-11-05T04:00:00"},
+     ("completata", "Zona completata.")),
+])
+def test_situazione_della_zona(stato, atteso):
+    s = I.situazione(stato)
+    assert (s["stato"], s["testo"]) == atteso
+
+
+def test_situazione_nella_risposta(client):
+    r = client.get("/api/interno/edifici/stato", headers={I.INTESTAZIONE: gettone()})
+    z = r.json()["zone"][0]
+    # la zona di prova ha 2 tessere ma nessuna fonte DSM/LAS attiva e nessun conteggio dei corpi
+    assert z["situazione"]["stato"] == "in attesa" and "nessuna fonte DSM o LAS attiva" in z["situazione"]["testo"]

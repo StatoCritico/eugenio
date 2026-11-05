@@ -1,0 +1,85 @@
+{
+ "fonte": "ISPRA (2026), Settore elettrico: emissioni di CO2 e altri impatti. Edizione 2026. Rapporti n. 430/26, ISPRA, Roma",
+ "url": "https://www.isprambiente.gov.it/it/pubblicazioni/rapporti/settore-elettrico-emissioni-di-co2-e-altri-impatti-edizione-2026",
+ "licenza": "CC BY 4.0 (dati ISPRA); il rapporto dice: «Riproduzione autorizzata citando la fonte»",
+ "citazione": "Fonte dei fattori di emissione: ISPRA, Rapporto 430/2026 (Tabelle 1.4 e 1.7)",
+ "letto": "2026-11-05",
+ "note": [
+  "2025: dati preliminari (Tabella 1.7)",
+  "consumi elettrici: incluse le perdite di rete e la quota importata (nota 3 della Tabella 1.7)",
+  "produzione elettrica lorda: incluse le rinnovabili, al netto di pompaggi e accumuli (nota 2)",
+  "gas naturale: pci 8190 kcal/m3, fattori per contenuto di energia primaria (Tabella 1.4)"
+ ],
+ "elettrico_g_kwh": {
+  "campi": [
+   "termoelettrica_lorda_solo_fossili",
+   "termoelettrica_lorda",
+   "produzione_elettrica_lorda",
+   "consumi_elettrici"
+  ],
+  "anni": {
+   "2015": [
+    547.6,
+    492.3,
+    335.8,
+    318.2
+   ],
+   "2020": [
+    454.4,
+    405.2,
+    263.7,
+    258.8
+   ],
+   "2021": [
+    456.8,
+    410.8,
+    271.6,
+    259.0
+   ],
+   "2022": [
+    477.3,
+    435.1,
+    307.3,
+    293.0
+   ],
+   "2023": [
+    460.2,
+    414.9,
+    256.3,
+    234.7
+   ],
+   "2024": [
+    418.1,
+    370.7,
+    209.4,
+    192.6
+   ],
+   "2025": [
+    413.3,
+    366.5,
+    213.8,
+    199.6
+   ]
+  },
+  "preliminari": [
+   "2025"
+  ]
+ },
+ "gas_naturale": {
+  "pci_kcal_sm3": 8190,
+  "anni": {
+   "2022": {
+    "t_co2_tj": 58.918,
+    "t_co2_1000_sm3": 2.02
+   },
+   "2023": {
+    "t_co2_tj": 59.205,
+    "t_co2_1000_sm3": 2.03
+   },
+   "2024": {
+    "t_co2_tj": 59.089,
+    "t_co2_1000_sm3": 2.026
+   }
+  }
+ }
+}

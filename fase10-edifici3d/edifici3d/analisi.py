@@ -23,6 +23,11 @@ Contratto con il modulo privato (versione 1):
 
 Il codice pubblico non legge mai le tabelle del modulo privato né le restituisce: il risultato contiene solo numeri
 calcolati per l'edificio dell'utente, con le fonti citate per nome (mai prospetti o estratti delle norme).
+
+**05/11/2026**: le analisi **7, 9 e 13** non usano norme UNI e sono passate al codice pubblico (`pubblica = True`): si
+calcolano nelle loro pagine del sito (`analisi_pubbliche.js`, tabella «Cielo visibile» delle facciate in
+`edifici_calcoli.js`), sono sempre disponibili, anche sui mirror, e il modulo privato non le contiene più. La rotta
+`POST /api/analisi/{id}` resta solo per le analisi con le metodiche UNI.
 """
 from __future__ import annotations
 
@@ -38,6 +43,7 @@ log = logging.getLogger(__name__)
 
 INTERFACCIA = 1
 NON_DISPONIBILE = "analisi non disponibile in questa installazione"
+PUBBLICA = "analisi del codice pubblico: si calcola nella sua pagina del sito"
 QUI = Path(__file__).resolve().parent.parent
 
 
@@ -54,6 +60,7 @@ class Analisi:
     dati: tuple[str, ...]               # dati d'ingresso, in parole
     uscite: tuple[str, ...]             # cosa restituisce, in parole
     avvertenze: tuple[str, ...] = field(default_factory=tuple)
+    pubblica: bool = False              # True: calcolata nel codice pubblico (pagina del sito), senza modulo privato
 
 
 # Elenco delle analisi del § 9 gestite dal modulo privato. Testi descrittivi scritti da EuGEnio: nessun contenuto delle
@@ -68,7 +75,8 @@ ANALISI: dict[str, Analisi] = {a.id: a for a in (
             ("producibilità FV per edificio (analisi 6)", "consumi orari o mensili delle sedi",
              "perimetro della cabina primaria (fonte con licenza compatibile da trovare)"),
             ("energia condivisa stimata per cabina", "autoconsumo e quota condivisa per sede"),
-            ("Nessun contenuto del GSE: i perimetri pubblicati dal GSE hanno licenza CC BY-NC-SA 3.0 IT, incompatibile.",)),
+            ("Nessun contenuto del GSE: i perimetri pubblicati dal GSE hanno licenza CC BY-NC-SA 3.0 IT, incompatibile.",
+             "Il codice della cabina primaria di ogni sede lo scrive l'utente; nessun prezzo né incentivo."), True),
     Analisi("8", "Apporti solari sulle facciate", "edificio-involucro.html", True,
             ("facciate esposte segmento per segmento (Fase B)", "ombre del contesto", "clima orario",
              "superfici vetrate e schermature indicate dall'utente"),
@@ -76,7 +84,7 @@ ANALISI: dict[str, Analisi] = {a.id: a for a in (
     Analisi("9", "Ostruzione del cielo e luce naturale", "fv-leed.html", False,
             ("scena 3D dei corpi entro 250 m", "orizzonte del terreno"),
             ("fattore di vista del cielo per facciata", "indicatori di prefattibilità LEED"),
-            ("La prefattibilità LEED è indicativa: non sostituisce la verifica di un professionista accreditato.",)),
+            ("La prefattibilità LEED è indicativa: non sostituisce la verifica di un professionista accreditato.",), True),
     Analisi("10", "Pompe di calore con le temperature orarie reali", "edificio-impianti.html", True,
             ("fabbisogno (analisi 5)", "temperature orarie dell'archivio meteo", "dati di targa della macchina"),
             ("COP orario e SCOP stagionale stimati", "energia elettrica assorbita")),
@@ -89,7 +97,7 @@ ANALISI: dict[str, Analisi] = {a.id: a for a in (
     Analisi("13", "Clima che cambia: tendenza dei gradi giorno dal 1940", "edificio-clima.html", False,
             ("clima dal 1940 del comune (fase 9)", "firma energetica (analisi 3)"),
             ("tendenza dei gradi giorno", "consumi attesi con il clima che cambia"),
-            ("Le proiezioni sono estrapolazioni della tendenza osservata, non scenari climatici ufficiali.",)),
+            ("Le proiezioni sono estrapolazioni della tendenza osservata, non scenari climatici ufficiali.",), True),
 )}
 
 
@@ -173,6 +181,10 @@ def stato() -> dict:
             interno = {}
     righe = []
     for a in ANALISI.values():
+        if a.pubblica:
+            righe.append({"id": a.id, "nome": a.nome, "pagina": a.pagina, "disponibile": True, "pubblica": True,
+                          "messaggio": PUBBLICA})
+            continue
         s = interno.get(a.id) or {}
         ok = bool(m is not None and s.get("disponibile"))
         righe.append({"id": a.id, "nome": a.nome, "pagina": a.pagina, "disponibile": ok,
@@ -210,6 +222,8 @@ def calcola(id: str, richiesta: dict) -> dict:
     """Esegue l'analisi `id` con il modulo privato. NonDisponibile se il modulo non c'è o l'analisi non è pronta."""
     if id not in ANALISI:
         raise KeyError(id)
+    if ANALISI[id].pubblica:
+        raise ValueError(f"l'analisi {id} si calcola nella sua pagina del sito ({ANALISI[id].pagina}), non sul server")
     m = carica()
     if m is None:
         raise NonDisponibile(NON_DISPONIBILE)

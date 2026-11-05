@@ -16,6 +16,20 @@
   const STATI = [["fatta", "s-fatta", "fatte"], ["errore", "s-errore", "con errore (da riprovare)"], ["saltata", "s-saltata", "saltate"],
     ["senza rilievo", "s-senza", "senza rilievo"], ["da fare", "s-dafare", "da fare"]];
 
+  // frase dello stato della zona: quella del server (situazione, dal 05/11/2026, coerente con l'ultima notte); con un'api
+  // più vecchia si ricava qui con la stessa regola
+  function testoSituazione(z) {
+    if (z.situazione && z.situazione.testo) {
+      return z.situazione.stato === "completata" && z.completata ? `Zona completata il ${data(z.completata)}.` : z.situazione.testo;
+    }
+    const dsm = (z.fonti || []).some((f) => (f.tipo === "dsm" || f.tipo === "las") && f.stato === "attiva");
+    const m = [];
+    if (!dsm) m.push("nessuna fonte DSM o LAS attiva");
+    if (!z.corpi || !z.totale_tessere) m.push(`${z.corpi || 0} corpi della Fase A (manca prepara)`);
+    if (m.length) return `In attesa: ${m.join(" e ")}.`;
+    return z.completata ? `Zona completata il ${data(z.completata)}.` : "Zona in corso.";
+  }
+
   function zona(z) {
     const s = h("section", "zona");
     const t = h("h2", null, z.nome || z.zona); if (z.prova) t.appendChild(h("span", "prova", "prova"));
@@ -23,7 +37,7 @@
     const c = z.conteggi || {}, tot = z.totale_tessere || 0;
     const fatte = (c.fatta || 0) + (c["senza rilievo"] || 0) + (c.saltata || 0);
     s.appendChild(h("p", null, `${fmt(fatte)} tessere su ${fmt(tot)} completate (${tot ? fmt(100 * fatte / tot) : 0} %), ${fmt(z.corpi)} corpi della Fase A nella zona. `
-      + (z.completata ? `Zona completata il ${data(z.completata)}.` : "Zona in corso.") + ` Ultimo aggiornamento: ${data(z.aggiornato)}.`));
+      + testoSituazione(z) + ` Ultimo aggiornamento: ${data(z.aggiornato)}.`));
     const barra = h("div", "barra"); barra.setAttribute("role", "img");
     barra.setAttribute("aria-label", STATI.map(([k, , n]) => `${c[k] || 0} ${n}`).join(", "));
     STATI.forEach(([k, cls]) => { if (c[k] && tot) { const i = h("i", cls); i.style.width = `${100 * c[k] / tot}%`; barra.appendChild(i); } });

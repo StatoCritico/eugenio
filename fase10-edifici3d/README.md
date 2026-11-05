@@ -1,6 +1,13 @@
 # Fase 10 – Edifici 3D, ortofoto, LiDAR e analisi energetiche
 
-Stato al 04/11/2026 (notte): **Fase E in codice** (sezione «Fase E – come si usa» qui sotto): verifica delle fonti
+Stato al 05/11/2026: **affinamenti Edificio** (sezione «Affinamenti Edificio – blocco 2»: Tabella 11 del DM requisiti
+minimi, trasposizione di Perez confrontata con PVGIS, colonne `visura_…`, Patrimonio → Modelli 3D, posa sulla sagoma
+dell'archivio, corpi dal solo LiDAR, ombre degli alberi); prima, lo stesso giorno, **edifici fuori dall'Emilia-Romagna** (sezione «Edifici fuori dall'Emilia-Romagna – come si usa»):
+adattatori dei DB topografici di Lombardia, FVG e Liguria → corpi, provati su piccoli campioni scaricati dal vivo; zone
+LiDAR di Bolzano e Trento in `zone/`; copertura delle fonti nella pipeline (maschera o riquadri) e fonti a più file con
+indice; DSM della costa 2019 acceso in `zone/rimini.toml` solo sulle tessere coperte.
+
+Stato precedente, 04/11/2026 (notte): **Fase E in codice** (sezione «Fase E – come si usa» qui sotto): verifica delle fonti
 regione per regione in `fonti/regioni.toml` (17 fonti attive, 48 in attesa, 19 non disponibili su 84; ortofoto nuove di
 Bolzano 2023 e Trento 2015), altezze di Zornade nell'archivio ODbL (`edifici3d/zornade.py`, provate su un campione
 sintetico), aggancio facoltativo al modulo privato delle analisi 5 e 7–13 (`edifici3d/analisi.py`; il modulo
@@ -224,8 +231,8 @@ lì e, se non ci sono, apre la demo sintetica con l'avviso.
 - Terreno in MapLibre: il COG non si legge direttamente, quindi si producono anche tessere Terrarium (PNG) in PMTiles.
 - MapLibre GL **5.24** (UMD, un solo file): la 6 è solo a moduli ES con il worker separato.
 - Sole: algoritmo NOAA in JS; ombre al suolo come inviluppo della base e della base proiettata (prismi); orizzonte di
-  ogni punto delle aree FV su 72 direzioni nel Web Worker; producibilità oraria con trasposizione **isotropa** (non Perez,
-  da aggiungere), perdite di sistema 14 %, temperatura delle celle con NOCT 45 °C, coefficiente −0,37 %/°C; diretta
+  ogni punto delle aree FV su 72 direzioni nel Web Worker; producibilità oraria con trasposizione **isotropa** (dal
+  05/11/2026 **Perez**, sezione «Affinamenti Edificio – blocco 2»), perdite di sistema 14 %, temperatura delle celle con NOCT 45 °C, coefficiente −0,37 %/°C; diretta
   ricavata come (GHI − DHI)/cos z. Telai su tetto piano a 10° verso sud con passo tra le file per il sole a 22,5°.
 - Firma energetica: minimi quadrati tra consumo mensile e gradi giorno reali del comune (base 20 °C) dalla rotta
   `/api/edifici/gradi-giorno/{istat}` (archivio meteo ERA5 corretto, **non** i dati Arpae personali della fase 2).
@@ -290,7 +297,8 @@ sud: 12.382 kWh/anno senza orizzonte dell'utente; con un orizzonte di 30° in og
 - **DPR 412/93, Allegato A**: zona climatica e gradi giorno del comune (`dati/dpr412.json`, già nel sito).
 - **DM 26/6/2015 come modificato dal DM 28/10/2025** (GU n. 283 del 5/12/2025, in vigore 180 giorni dopo): Allegato 1,
   Appendice A, § 2.1, **Tabella 10** (H'T massimo per nuova costruzione e demolizione e ricostruzione, per zona e S/V).
-  La Tabella 11 (ristrutturazioni di primo livello) dipende dal rapporto tra superfici vetrate e totali: non calcolata.
+  La Tabella 11 (ristrutturazioni di primo livello) dipende dal rapporto tra superfici vetrate e totali: **calcolata dal
+  05/11/2026** con la quota scritta dall'utente o stimata (sezione «Affinamenti Edificio – blocco 2»).
 
 ### Classifica di priorità (analisi 4)
 
@@ -549,9 +557,121 @@ Note principali:
   nuovo): un file per analisi con i passi descritti a parole e segnaposto `da_scrivere(...)`, 16 tabelle TOML **vuote**
   (`compilata = false`) da riempire a mano, `PRONTA = False`, test di struttura e test di calcolo che saltano. Nessun
   testo, prospetto, coefficiente o formula di norme vi è stato scritto. Istruzioni in `uni_privato/LEGGIMI.md`.
-- Le analisi 7, 9 e 13 non richiedono coefficienti UNI: stanno nel modulo per avere un solo aggancio, ma i loro passi
-  aperti si potranno spostare nel codice pubblico. L'analisi 7 non può usare i perimetri delle cabine primarie pubblicati
-  dal GSE (CC BY-NC-SA 3.0 IT): serve un'altra fonte.
+- Le analisi 7, 9 e 13 non richiedono coefficienti UNI: **dal 05/11/2026 sono nel codice pubblico** (`pubblica = True` in
+  `edifici3d/analisi.py`, sempre disponibili, anche sui mirror; tolte dal modulo privato con le loro tabelle vuote):
+  - **13, Clima che cambia** (`edificio-clima.html`, `analisi_pubbliche.js`): gradi giorno per stagione dal clima dal 1940
+    (fase 9), tendenza ai minimi quadrati, Theil–Sen e Mann–Kendall, estrapolazione al 2030/2040/2050 con l'intervallo al
+    95 % della previsione, consumo atteso con la firma energetica (12 × base + pendenza × GG);
+  - **7, Comunità energetiche** (`edificio-cer.html`): CSV orario per sede con la cabina primaria scritta dall'utente;
+    energia condivisa = minimo orario tra immissioni e prelievi per cabina (D.Lgs. 199/2021 artt. 31–32, DM MASE 414/2023),
+    ripartizione di esempio per sede; nessun prezzo né incentivo (dipendono dai prezzi GME). **Perimetri delle cabine
+    primarie**: nessuna fonte con licenza compatibile trovata il 05/11/2026 (solo quelli del GSE, CC BY-NC-SA 3.0 IT, non
+    usati): il codice della cabina lo scrive l'utente;
+  - **9, Cielo visibile** (colonna «Cielo visibile» della tabella delle facciate, `riepilogoFacciate`) e pagina
+    **Prefattibilità LEED** (`fv-leed.html`): temi del sistema LEED descritti con parole nostre e collegati alle pagine di
+    EuGEnio che danno i dati; **nessun testo, tabella o soglia LEED riprodotti** (protetti dall'USGBC), nessun punteggio.
+
+## Edifici fuori dall'Emilia-Romagna – come si usa (05/11/2026)
+
+### Contenuto
+
+| File | Cosa fa |
+|---|---|
+| `edifici3d/regionali.py` | adattatori dei DB topografici → corpi (stesso `modello.Corpo` della Fase A): **Lombardia** DBGT 020101 (`UN_VOL_AV`, `UN_VOL_QE`, z della base, `CEDIUV` come edificio), **FVG** Edificato CTRN (`ALTEZZA`, `QUOTA_PIEDE`, `QUOTA_GRONDA`), **Liguria** CTR 3D (z di gronda − DTM); controllo degli attributi e della coerenza delle quote; campione dal vivo a pagine (ArcGIS REST o WFS 2.0.0) |
+| `fonti/lombardia.toml`, `fonti/friuli_venezia_giulia.toml`, `fonti/liguria.toml` | fonti delle tre zone (servizio, strato, sistema, licenza, attribuzione), come `emilia_romagna.toml` |
+| `edifici3d/coperture.py` | maschera della copertura di una fonte da una sola immagine a passo grosso (`lidar-copertura`) e indice dei file di una fonte divisa in file irregolari, dalle sole intestazioni (`lidar-indice`) |
+| `zone/bolzano.toml`, `zone/trento.toml` | zone LiDAR fuori ER: Bolzano DSM/DTM 0,5 m (WCS, CC0, chiesti a 1 m) con il DTM 2,5 m per i vuoti; Trento DSM/DTM 1 m 2006-09 (1410 file per modello, indice in `zone/coperture/`) |
+| `zone/coperture/` | `rimini_rer_dsm_costa_2019.geojson` (fascia costiera coperta dal DSM 2019, 27,8 km²), `trento_pat_lidar_2009.json` (riquadri dei file del LiDAR PAT) |
+| `tests/dati/*_campione.geojson` | 8 volumi DBGT di Milano, 6 elementi CTRN del foglio 110, 5 edifici CTR della Liguria, scaricati dal vivo il 05/11/2026 (CC BY 4.0, fonte nel file) |
+
+### Comandi (dalla cartella `fase10-edifici3d`; `--zona` va prima del comando)
+
+```
+python -m edifici3d --zona lombardia regionale-campione --riquadro 514600 5034400 514900 5034700 --max 500 --uscita lom.geojson
+python -m edifici3d --zona friuli_venezia_giulia regionale-campione --strato EDIFICI:EDIFICATO_CTRN_ED1_110 --riquadro … --uscita fvg.geojson
+python -m edifici3d --zona liguria regionale-campione --riquadro 1388500 4858000 1388800 4858300 --uscita lig.geojson
+python -m edifici3d --zona lombardia controlla-regione --file lom.geojson          # campi, riempimento, coerenza delle quote
+python -m edifici3d --zona lombardia prepara-regione --file lom.geojson --archivio /srv/energia/dati/edifici [--dtm dtm.tif]
+python -m edifici3d --zona liguria prepara-regione --file lig.geojson --dtm dtm_7791.tif --archivio …   # il DTM serve
+python -m edifici3d lidar-copertura --zona rimini --fonte rer_dsm_costa_2019 --passo 50   # rifà la maschera (una richiesta)
+python -m edifici3d lidar-indice --zona trento --fonte pat_dsm_2009 [--max 200]          # indice dei file (riprende da dove era)
+```
+
+`prepara-regione` scrive in `<archivio>/cc-by/<lom|fvg|lig>/prodotti/` gli stessi prodotti di `prepara` (corpi.pmtiles,
+contesto/, indice.json con il sistema della zona e il resoconto dell'adattatore; con `--dtm` anche dtm_cog.tif e
+terreno.pmtiles). Il campione serve per le prove e per una prima zona piccola; per una provincia intera si scarica il file
+ufficiale della Regione (GeoPackage o Shapefile, URL da scrivere nel TOML) o il servizio a pezzi dal server.
+
+### Formati verificati dal vivo (05/11/2026, piccoli campioni, nessun blocco aggirato)
+
+- **Lombardia**: GeoJSON dell'ArcGIS sempre in WGS84 con le z (EPSG:4979); 60 volumi a Milano: `UN_VOL_QE − z =
+  UN_VOL_AV` in 51, nei 9 con porzione «03» la base sta 3,5 m sotto terra → terreno = `UN_VOL_QE − UN_VOL_AV` (o DTM).
+  `UN_VOL_AV` è alla sommità del volume: usata come gronda, «gronda o colmo da verificare» come le UVL dell'ER.
+- **FVG**: 44 strati WFS, uno per foglio CTRN; EPSG:6708 (asse nord prima: il riquadro della richiesta si scrive in forma
+  breve `x0,y0,x1,y1,EPSG:6708`); `QUOTA_GRONDA − QUOTA_PIEDE = ALTEZZA` in 22 su 22; nessun codice d'edificio.
+- **Liguria**: nessun campo d'altezza, z costante per poligono (399 su 400) = quota di gronda; DTM 2023 via WCS
+  (`M2056__L6952`, 5 m, EPSG:3003; `riproietta_dtm` lo porta nel sistema della zona). Scartati sotterranei, aggetti, ruderi.
+- **Edifici P.A.T. 3D (Trento)**: zip di 108 MB, non letto a distanza: adattatore **ancora da scrivere** dopo un download.
+
+### Copertura delle fonti nella pipeline
+
+`[fonti.<id>.copertura]` nel TOML della zona: `riquadri` (sistema della zona), `maschera` (GeoJSON in `zone/coperture/`),
+`minima` (quota dell'area degli edifici della tessera che deve cadere dentro, 0,95 se non detto). Fuori copertura la fonte
+«non copre» la tessera (come una tavola assente dal quadro di unione) e vince la successiva. Le fonti con `indice` danno
+la copertura dai riquadri dei file. **DSM della costa 2019** (Rimini): acceso, con `minima = 0.10` perché la fascia larga
+1–1,5 km taglia le tessere in diagonale: i corpi della tessera fuori dalla fascia risultano «non presente nel rilievo»;
+priorità più bassa delle fonti RER 2023-24, che vinceranno quando arrivano (con `--aggiorna`). Il DTM si compone: se la
+prima fonte lascia vuoti (Bolzano 0,5 m solo nelle aree insediative) si riempiono con le successive (2,5 m), poi DTM della
+Fase A. Una zona senza i corpi della Fase A resta «in attesa» e la scelta automatica (`--zona auto`) la salta.
+
+## Affinamenti Edificio – blocco 2 (05/11/2026)
+
+| Tema | Dove | Cosa fa |
+|---|---|---|
+| Tabella 11 del DM requisiti minimi | `edifici_calcoli.js` (`HT_TAB11`, `htMassimoPrimoLivello`, `quotaVetrataStimata`), pagine 3D › Obblighi di legge | H'T massimo per le ristrutturazioni importanti di primo livello, per zona e quota EX ANTE di superfici vetrate sul totale dei componenti dell'involucro (DM 26/6/2015, All. 1, App. A, § 2.1, Tab. 11, nel testo del DM 28/10/2025, GU n. 283 del 5/12/2025, pp. 39–40, letta il 05/11/2026). La norma dà 20 colonne (9 %…100 %): tra due colonne EuGEnio interpola in modo lineare (scelta dichiarata), sotto il 9 % vale la prima. Quota scritta dall'utente o **stimata** (finestre/pareti tipiche per uso, valori assunti da EuGEnio, × pareti esposte ÷ superficie disperdente), segnata come stima |
+| Trasposizione di Perez | `edifici_calcoli.js` (`perez`, `trasponi` con `modello: "perez"` predefinito) | Perez et al. 1990, coefficienti «allsitescomposite1990» come pvlib, massa d'aria di Kasten e Young; circumsolare persa quando il sole è dietro l'orizzonte del punto, isotropa e fascia dell'orizzonte ridotte dal fattore di vista del cielo; FV e facciate; il report dice «trasposizione di Perez (1990)» |
+| Colonne `visura_…` | `edifici_calcoli.js` (`daVisura`, `mappaVisura`, `leggiVisura`), `edificio3d.js`, `valori_sedi.js` | precedenza file → visura → stima nelle pagine dell'edificio (piani fuori terra e interrati, superficie catastale, uso); in «Valori per sede» le colonne `visura_…` non diventano valori da disegnare e la superficie catastale della visura (segnata «v») è una base dei consumi al m² se il file non ha la sua |
+| Patrimonio → Modelli 3D | `patrimonio.js` (pulsante «Apri in Modelli 3D»), `edificio3d.js` (`?sede=locale`) | la sede passa nella memoria della scheda (sessionStorage, mai al server): la pagina 3D apre l'edificio dell'archivio che contiene il punto (o il più vicino entro 30 m), mette le colonne facoltative nei campi e le visure nella precedenza |
+| Posa sulla sagoma | `edifici_calcoli.js` (`posaDaSagoma`), `importa_modello.js`, `importa-dxf-ifc.html` | quinta posa: clic sulla sagoma di un edificio dell'archivio; rotazione dai rettangoli minimi (quattro candidati a 90°), baricentri, scelta per sovrapposizione (IoU su griglia 80×80); nessuna scala, rapporto delle aree come controllo; la pagina usa poi la posa «due punti» |
+| Corpi dal solo LiDAR | `edifici3d/lidar_corpi.py`, `Pipeline.corpi_lidar`, comando `lidar-corpi` | per le zone senza sagome (§ 7): h = DSM − DTM ≥ 2,5 m, chiome tolte con la ruvidezza 3×3 (> 0,8 m), celle vicine unite se |Δh| < 1,25 m, corpi sotto 20 m² scartati, buchi sotto 25 m² chiusi, corpi che si toccano = un edificio; scrive i prodotti della Fase A, poi la pipeline stima le falde |
+| Ombre degli alberi | `lidar_corpi.alberi`, `Pipeline._alberi`, `edificio3d.js` | chiome del DSM entro 50 m dagli edifici → quadrati di 2 m in `lidar/alberi/<cella>.json` (per tessera); nella pagina 3D sono ostacoli dell'orizzonte (FV e facciate), fanno ombra al suolo e si vedono in verde |
+
+**Confronto con PVGIS (05/11/2026, dal vivo)**: PVGIS 5.3 `seriescalc`, SARAH3, anno 2020, Rimini (44,06; 12,57), sud;
+irradiazione sul piano dai GHI e DHI orizzontali di PVGIS con la trasposizione di EuGEnio, contro il piano inclinato di
+PVGIS (con il suo orizzonte del terreno, trascurabile a Rimini):
+
+| Piano | Isotropa | Perez | PVGIS | Scarto isotropa | Scarto Perez |
+|---|---|---|---|---|---|
+| 30° sud | 1.725 kWh/m² | 1.810 kWh/m² | 1.795 kWh/m² | −3,9 % | +0,8 % |
+| 90° sud (facciata) | 1.150 kWh/m² | 1.249 kWh/m² | 1.242 kWh/m² | −7,4 % | +0,5 % |
+
+Mese per mese la Perez resta entro pochi kWh/m² da PVGIS. Il test `test_perez_contro_pvgis` (fase 5) rifà il confronto
+sul giorno 15 di ogni mese (estratto in `fase5-sito/tests/pvgis_rimini_2020_giorno15.json`, © Unione europea, riuso
+con citazione) e `test_perez_uguale_a_pvlib` controlla che il codice JS dia gli stessi valori di pvlib (scarto < 1e-6
+W/m²; si salta se pvlib non c'è).
+
+**Corpi dal solo LiDAR sul campione sintetico**: 7 corpi in 5 edifici; C3, C6, C7, C9 ritrovati con IoU ≥ 0,97; C1, C2
+e C8 (10–13 m, a contatto) diventano un corpo solo perché le altezze ai confini differiscono meno di 1,25 m (limite del
+metodo: si dividono a mano nella pagina 3D); C10, demolito, non compare; nessun corpo sugli alberi.
+
+## Modelli 3D in due tempi e allineamento con le ortofoto (05/11/2026)
+
+- La pagina Modelli 3D si apre in 2D (ricerca, clic sull'edificio) e genera il 3D a richiesta; per ogni corpo usa la fonte
+  più affidabile tra gli archivi elencati in **`/edifici3d/archivi.json`** (servito da Caddy dalla cartella degli edifici):
+  ```json
+  {"archivi": [{"base": "/edifici3d/cc-by/er/prodotti/", "nome": "DBTR Emilia-Romagna"},
+               {"base": "/edifici3d/cc-by/bz/prodotti/", "nome": "Corpi dal LiDAR di Bolzano"},
+               {"base": "/edifici3d/odbl/er/prodotti/", "nome": "OpenStreetMap"}]}
+  ```
+  in ordine di affidabilità (se il file manca vale solo il DBTR dell'ER). I corpi di un archivio meno affidabile che cadono
+  dentro quelli di uno migliore non si usano; le falde LiDAR del primo archivio sostituiscono le altezze del DB. Il file si
+  scrive a mano quando c'è più di un archivio (da far scrivere a `prepara`/`prepara-regione`: in DA_FARE).
+- **Edifici «storti»**: la demo sintetica (`sintetico.py`) ha rettangoli allineati alla griglia UTM 32N posati vicino a
+  Rimini, senza legame con edifici veri: sopra l'ortofoto sembravano ruotati (convergenza della griglia ~2,5° e strade vere a
+  ~45°). La catena dei dati veri è corretta: le UVL del WMS DBTR e le sagome OSM vere (4326 → 7791 → `feature_da_corpi` →
+  PMTiles → pagina) coincidono con l'ortofoto RER 2023-24 entro circa 1 m. Ora la demo non va mai sopra una foto vera.
+- Il WMS della cartografia catastale dell'Agenzia delle Entrate (CC BY 4.0) non offre EPSG:3857 né CORS: per usarlo come
+  strato servirebbe la riproiezione nel proxy del server (rinviato).
 
 ## Piano di lavoro (§ 15)
 
@@ -586,12 +706,16 @@ Note principali:
       confermata (risposta della Regione; app PST dopo il 7/11/2026).
 - [x] Import DXF/IFC (comando sul PC, modello aperto solo nel browser). [x] Lettura diretta dei DXF/IFC nel browser
       (04/11/2026 notte: pagina Importa DXF/IFC con dxf-parser e web-ifc; file pesanti convertiti sul PC con EuGEnio Visure).
-- [ ] Corpi dal solo LiDAR (raggruppamento per altezza, § 7) per le zone senza UVL; ombre degli alberi dal DSM.
+- [x] Corpi dal solo LiDAR (raggruppamento per altezza, § 7) per le zone senza UVL; ombre degli alberi dal DSM
+      (05/11/2026, campione sintetico). [ ] Prova su una tessera vera (Bolzano, dal server).
 
 ### Fase E – Resto d'Italia e analisi avanzate
 - [x] Verifica regione per regione di DB topografici con altezze, DTM, DSM/LiDAR e ortofoto (04/11/2026,
       `fonti/regioni.toml`); ortofoto di Bolzano 2023 e Trento 2015 accese. [ ] Riprovare dal server le voci «in attesa»
-      per portale irraggiungibile; adattatori DBGT/BDTRE/CTR → corpi per le regioni con edifici attivi; zone LiDAR fuori ER.
+      per portale irraggiungibile.
+- [x] Adattatori DBGT Lombardia, CTRN FVG e CTR 3D Liguria → corpi; zone LiDAR di Bolzano e Trento; copertura delle fonti
+      e DSM della costa 2019 acceso solo dove copre (05/11/2026). [ ] Adattatori Edifici P.A.T. 3D e BDTRE Piemonte;
+      `prepara-regione` sulla prima zona vera di ogni regione; sagome per Bolzano.
 - [x] Altezze di Zornade (ODbL) in archivio separato, confronto e catena del § 4 (campione sintetico). [ ] Estratto vero
       di Zornade con le altezze LiDAR.
 - [x] Struttura del modulo privato delle metodiche UNI e aggancio facoltativo delle analisi 5, 7–13. [ ] Tabelle e passi

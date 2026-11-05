@@ -1286,3 +1286,34 @@ label.casella { display: flex; gap: var(--s2); align-items: center; font-weight:
 .avvisi { margin: var(--s2) 0; padding-left: 1.2rem; color: var(--tenue); font-size: var(--c-s); }
 .avvisi:empty { display: none; }
 #rotazione { max-width: 8rem; }
+.edificio .apri-3d { margin-top: var(--s2); }
+.riga-scelta th, .riga-scelta td { font-weight: 700; }
+/* Ortofoto e Modelli 3D (05/11/2026): avviso sulla mappa, immagine da scaricare, ricerca e flusso in due tempi */
+.avviso-mappa { position: absolute; z-index: 3; left: 10px; top: 10px; max-width: min(70%, 420px); padding: .35rem .6rem;
+  background: color-mix(in srgb, var(--foglio) 92%, transparent); color: var(--inchiostro); border: 1px solid var(--bordo);
+  border-left: 4px solid var(--attenzione); border-radius: var(--r); font-size: var(--c-s); line-height: 1.35; pointer-events: none; }
+.avviso-mappa[hidden] { display: none; }
+.scarica-vista { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin: var(--s3) 0 0; }
+.scarica-vista .scarica-titolo { font-weight: 600; margin-right: var(--s1, .25rem); }
+.scarica-vista .bottone { min-width: 3.4rem; }
+.cerca-edificio { margin: 0 0 var(--s3); display: grid; gap: var(--s2); }
+.cerca-edificio form { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: flex-end; margin: 0; }
+.cerca-edificio label { display: grid; gap: .15rem; margin: 0; font-weight: 600; font-size: var(--c-s); }
+.cerca-edificio input { min-width: 0; width: 100%; }
+.cerca-edificio #cerca-via { min-width: min(18rem, 100%); }
+.cerca-edificio .aiuto { margin: 0; }
+.comandi-edificio { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin: var(--s3) 0 var(--s2); }
+.comandi-edificio [hidden], .mappa3d-comandi[hidden], .fonti-corpi[hidden] { display: none; }
+.pagina-edificio3d .mappa3d-comandi { margin: 0 0 var(--s2); }
+.fonti-corpi { border-left: 3px solid var(--primario); padding-left: var(--s2); }
+@media (max-width: 600px) {
+  .cerca-edificio form > label { flex: 1 1 100%; }
+  .cerca-edificio form > label:has(#catasto-foglio), .cerca-edificio form > label:has(#catasto-particella) { flex: 1 1 40%; }
+  .avviso-mappa { max-width: calc(100% - 60px); }
+}
+/* sul computer la colonna della mappa di Modelli 3D e Ortofoto scorre da sola (ricerca, comandi e download in più non
+   restano tagliati sotto la finestra); la rotella sopra la mappa resta lo zoom della mappa */
+@media (min-width: 861px) {
+  main.pagina-edificio3d[data-vista="modelli"] > .mappa-area, main.pagina-ortofoto > .mappa-area { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  main.pagina-edificio3d[data-vista="modelli"] > .mappa-area > *, main.pagina-ortofoto > .mappa-area > * { flex-shrink: 0; }
+}

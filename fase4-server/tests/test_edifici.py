@@ -162,3 +162,15 @@ def test_report_edificio_fase_b():
     assert "Figure" not in [s.titolo for s in RS.report_edificio(pcn, formato="pdf").sezioni]
     # nei fogli niente immagini, ma le tabelle sì
     assert R.genera(RS.report_edificio(corpo, formato="xlsx"), "xlsx")[:2] == b"PK"
+
+
+# ---------------------------------------------------------------- blocco 2 (05/11/2026): modello del cielo nel report
+def test_report_edificio_dichiara_il_modello_del_cielo():
+    import copy
+    vecchio = leggi_pdf(R.genera(RS.report_edificio(CORPO, formato="pdf"), "pdf"))
+    assert "trasposizione isotropa" in vecchio                     # pagine di prima: nessun campo modello_cielo
+    c = copy.deepcopy(CORPO)
+    c["fv"]["modello_cielo"] = "Perez (1990)"
+    t = leggi_pdf(R.genera(RS.report_edificio(c, formato="pdf"), "pdf"))
+    assert "trasposizione di Perez (1990)" in t and "isotropa" not in t
+    assert RS._modello_cielo(None) == "isotropa" and RS._modello_cielo({"modello_cielo": "perez"}) == "di Perez (1990)"

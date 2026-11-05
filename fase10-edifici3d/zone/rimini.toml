@@ -113,15 +113,25 @@ priorita = 4
 descrizione = "Regione Emilia-Romagna – DSM della costa da rilievo LiDAR 2019 (1 m)"
 licenza = "CC BY 4.0"
 licenza_confermata = true          # Fase E, 04/11/2026: scheda RNDT r_emiro:2022-02-08T110323 «CC BY 4.0»
-attiva = false                     # copre solo la fascia costiera: da accendere quando la pipeline limita la fonte alla sua copertura
-stato = "in attesa"
-motivo = "licenza CC BY 4.0 verificata (scheda RNDT); resta spenta perché copre solo la costa e la pipeline non sa ancora limitare una fonte alla sua copertura; rilievo del 2019 (edifici più recenti assenti)"
+attiva = true                      # 05/11/2026: accesa solo sulle tessere coperte (maschera in coperture/)
+stato = "attiva"
+motivo = "licenza CC BY 4.0 verificata (scheda RNDT); copre solo la fascia costiera: si usa solo sulle tessere dentro la maschera di copertura; rilievo del 2019 (edifici più recenti assenti)"
 attribuzione = "Regione Emilia-Romagna – Rilievo LiDAR 2019 della costa"
 scheda = "https://servizigis.regione.emilia-romagna.it/arcgis/rest/services/public/DSMCosta_Lidar2019/ImageServer"
 verifica = "04/11/2026: exportImage risponde con quote 0,4–32,6 m a Rimini Marina; nessuna licenza nel servizio. Fase E, 04/11/2026: exportImage 200 (quote 1,1–31,0 m); licenza CC BY 4.0 nella scheda RNDT r_emiro:2022-02-08T110323, con download 7z del DSM First 1 m"
 versione = "fissa"
 versione_fissa = "2019"
 url = "https://servizigis.regione.emilia-romagna.it/arcgis/rest/services/public/DSMCosta_Lidar2019/ImageServer/exportImage?bbox={x0},{y0},{x1},{y1}&bboxSR=7791&imageSR=7791&size=1000,1000&format=tiff&pixelType=F32&noData=-9999&interpolation=RSP_NearestNeighbor&f=image"
+[fonti.rer_dsm_costa_2019.copertura]
+# maschera scritta da `python -m edifici3d lidar-copertura --zona rimini --fonte rer_dsm_costa_2019 --passo 50` (una
+# richiesta a 50 m sul riquadro della zona, celle valide ristrette di 25 m). La fascia coperta è larga 1–1,5 km e taglia le
+# tessere di 1 km in diagonale: una tessera usa questa fonte se almeno il 10 % dell'area dei suoi edifici cade dentro la
+# maschera (minima); i corpi della tessera che restano fuori risultano «non presente nel rilievo» (nessun dato del DSM).
+# Le tessere senza edifici nella fascia non usano la fonte (passano alla successiva o restano «senza rilievo»). La fonte ha
+# la priorità più bassa: quando arriveranno DSM/LAS RER 2023-24 vinceranno loro (con --aggiorna).
+maschera = "coperture/rimini_rer_dsm_costa_2019.geojson"
+minima = 0.10
+sorgente_url = "https://servizigis.regione.emilia-romagna.it/arcgis/rest/services/public/DSMCosta_Lidar2019/ImageServer/exportImage?bbox={x0},{y0},{x1},{y1}&bboxSR=7791&imageSR=7791&size={w},{h}&format=tiff&pixelType=F32&noData=-9999&interpolation=RSP_NearestNeighbor&f=image"
 
 # ------------------------------------------------------------------------------------------------ fonti DTM
 [fonti.rer_dtm05]

@@ -114,7 +114,7 @@ process.stdout.write(JSON.stringify(out));
     casi = {n: [str(p), posa] for n, (p, posa) in modelli.items() if n.endswith(".dxf")}
     (tmp_path / "casi.json").write_text(json.dumps(casi), encoding="utf-8")
     js = json.loads(subprocess.run(["node", str(script), str(SITO), str(tmp_path / "casi.json")], capture_output=True,
-                                   text=True, check=True).stdout)
+                                   text=True, encoding="utf-8", check=True).stdout)
     for n in casi:
         assert MS.confronta(risultati_py[n], js[n]) == [], n
 
@@ -131,7 +131,7 @@ const out = {{}};
 for (const [n, b] of Object.entries(casi)) {{ try {{ M.controllaFile(n, b.length, new Uint8Array(b)); out[n] = 'ok'; }} catch (e) {{ out[n] = e.message; }} }}
 try {{ M.controllaFile('g.ifc', 51 * 1024 * 1024, new TextEncoder().encode('ISO-10303-21;')); out.g = 'ok'; }} catch (e) {{ out.g = e.message; }}
 out.pulisci = M.pulisci('Sito <script>\\x00alert(1)');
-process.stdout.write(JSON.stringify(out));"""], capture_output=True, text=True, check=True).stdout
+process.stdout.write(JSON.stringify(out));"""], capture_output=True, text=True, encoding="utf-8", check=True).stdout
     r = json.loads(js)
     assert "STEP" in r["x.ifc"] and "formato" in r["x.ifczip"] and "DXF" in r["x.dxf"] and "binario" in r["b.dxf"]
     assert "50 MB" in r["g"] and "PC" in r["g"]

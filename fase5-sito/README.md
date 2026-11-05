@@ -280,6 +280,58 @@ in ODT. Sul server i due formati sono spenti (rispondono 410, variabile `REPORT_
   browser). Provato in Node con browser, Turnstile e server simulati: verifica spenta, una sola verifica per più
   richieste anche contemporanee, rinnovo dopo un 401, errore leggibile se la verifica fallisce.
 
+## Aggiornamento del 05/11/2026 – Ortofoto e Modelli 3D dopo le prove sul sito pubblicato (blocco 5, stessa versione `?v=20261105a`)
+
+- **Ortofoto** (`ortofoto.html`, `ortofoto.js`): contesto Sentinel-2 sempre sotto la fonte scelta, sovracampionamento
+  oltre lo zoom massimo (mappa fino a 21), `bounds` per sorgente, avviso sulla mappa (sotto lo zoom minimo, fuori dal
+  riquadro, oltre lo zoom massimo), confini di regioni, province (zoom ≥ 7) e comuni (zoom ≥ 9), piccola mappa d'Italia
+  (clic = va lì, secondo clic = torna all'Italia), clic su regione o comune sulla mappa grande, «Scarica l'immagine» in JPG,
+  PNG e PDF con le attribuzioni dentro l'immagine (rifiutato per le fonti «solo dal vivo»), colonna della mappa che scorre.
+  Prima, sotto lo zoom 12 delle ortofoto regionali la mappa restava nera: era il «sparisce tutto».
+- **Modelli 3D in due tempi** (`modelli3d.html`, `edificio3d.js` con `data-vista="modelli"`): mappa 2D con piccola mappa,
+  confini e ortofoto; ricerca per indirizzo o per comune, foglio e particella (una riga a `POST /api/patrimonio`, come la
+  pagina Patrimonio); clic sull'edificio (secondo clic lo toglie); «Genera il 3D» con la fonte più affidabile per corpo
+  (falde LiDAR → DB topografico → modello DXF/IFC → OSM → stima) scritta in pagina, nell'immagine e nelle note del report;
+  comandi della vista come `mappa3d.js` (barra Zoom · Vista · Ruota · Inclina · Rollio, tastiera, doppio clic); «Scarica
+  l'immagine»; «Torna alla mappa 2D». Senza archivio: «Prova la demo sintetica» (`?archivio=demo`); con `?sede=locale` o
+  `?edificio=` senza archivio vero si ripiega sulla demo dichiarata, come prima. Le altre 8 pagine 3D non cambiano.
+- La **demo sintetica non va mai sopra un'ortofoto vera** (selettore dello sfondo spento con il motivo): le sue sagome sono
+  inventate e allineate alla griglia UTM, ed erano gli edifici «storti» rispetto alla foto.
+- Moduli nuovi: `confini_gl.js` (confini ISTAT di `dati/mappa/` per MapLibre, inversa di Gauss–Krüger, clic su regione e
+  comune), `esporta_mappa.js` (vista della mappa + fascia delle attribuzioni → JPG, PNG, PDF scritto nel browser);
+  `minimappa.js` ha due agganci nuovi (`EUGENIO.suStessaRegione`, `EUGENIO.evidenziaPiccola`), usati solo da queste pagine.
+- `visure.html`: sezioni «Disinstallare» e «Code signing policy» (per SignPath Foundation); `interno/edifici.js`: frase
+  dello stato della zona dal server (`situazione`), «In attesa: …» invece di «Zona in corso».
+- Test: `tests/test_mappe_browser.py` (4 in Chromium: Ortofoto, Modelli 3D senza archivio, demo in due tempi, altre pagine
+  in un tempo) e 2 in `test_costruisci_pagine.py` (pagine, moduli senza servizi esterni, inversa UTM con node): 33 in tutto.
+
+## Aggiornamento del 05/11/2026 – analisi senza GME e senza UNI (blocco 3, stessa versione `?v=20261105a`)
+
+- `cog-emissioni.html` + `emissioni_cog.js`: Cogenerazione › Emissioni (report 18) con i fattori ISPRA in
+  `dati/ispra_fattori_emissione.json` (copia di `fase13-cogenerazione/dati_terzi/`), tutto nel browser, nessun dato GME;
+- `edificio-clima.html` e `edificio-cer.html` con `analisi_pubbliche.js` (analisi 13 e 7), esempio
+  `esempi/cer_esempio_sintetico.csv` (dati inventati); colonna «Cielo visibile» delle facciate (analisi 9);
+- `fv-leed.html`: prefattibilità LEED descrittiva, nessun contenuto del sistema LEED riprodotto;
+- menu: Emissioni, Comunità energetiche, Clima che cambia e Prefattibilità LEED passano da «in sviluppo» a «sperimentale»;
+  le loro pagine non usano più `analisi_uni.js`; 2 test nuovi, 2 nel browser in `fase10-edifici3d/tests/test_blocco2_browser.py`.
+
+## Aggiornamento del 05/11/2026 – affinamenti Edificio (versione `?v=20261105a`, che sostituisce `?v=20261104c`)
+
+Blocco 2 di `AGGIORNAMENTO_2026-11-05.md` (dettagli nel README della fase 10, «Affinamenti Edificio – blocco 2»):
+- `edifici_calcoli.js`: Tabella 11 del DM requisiti minimi (`htMassimoPrimoLivello`) con la quota vetrata scritta o stimata
+  (`quotaVetrataStimata`); trasposizione di **Perez** al posto dell'isotropa (FV e facciate, `modello: "isotropo"` per il
+  calcolo di prima); colonne `visura_…` (`daVisura`, `mappaVisura`, `leggiVisura`); posa sulla sagoma (`posaDaSagoma`);
+- 9 pagine 3D: campo «Superfici vetrate» nel passo Obblighi di legge, nota della sede aperta dal Patrimonio, alberi del
+  LiDAR come ostacoli e in verde sulla mappa (`lidar/alberi/` dell'archivio), apertura con `?sede=locale`;
+- `patrimonio.js`: pulsante «Apri in Modelli 3D» in ogni sede con le coordinate (dati nella memoria della scheda);
+- `valori_sedi.js`: colonne `visura_…` lette a parte (non diventano valori da disegnare), superficie catastale della
+  visura come base dei consumi al m² (segnata «v»);
+- `importa-dxf-ifc.html` e `importa_modello.js`: posa «agganciato alla sagoma di un edificio dell'archivio» (legge in GET
+  le celle statiche di `/edifici3d/…` o della demo; il modello non lascia il browser);
+- demo sintetica `dati/edifici3d/` rifatta (con `lidar/alberi/`); `tests/pvgis_rimini_2020_giorno15.json` (estratto PVGIS
+  per il confronto); 6 test nuovi in `tests/test_costruisci_pagine.py`, 3 nel browser in
+  `fase10-edifici3d/tests/test_blocco2_browser.py`.
+
 ## Aggiornamento del 04/11/2026 notte – menu fissabile e voci GME non cliccabili (`?v=20261104c`, che sostituisce `?v=20261104b`)
 
 Richiesta di Paolo del 04/11/2026; regole grafiche in `sito/README_stile.md` § «Menu a gruppi».

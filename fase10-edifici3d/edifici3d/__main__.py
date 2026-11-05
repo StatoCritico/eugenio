@@ -16,11 +16,17 @@ Fase C (LiDAR e pipeline notturna; zone in zone/*.toml):
   python -m edifici3d lidar-fonti --zona rimini [--prova]   # fonti, stato e motivo; --prova controlla dal vivo
   python -m edifici3d campione --uscita /tmp/campione       # campione LiDAR sintetico (prove)
   python -m edifici3d importa-modello edificio.ifc --uscita modello.geojson [--posa …]   # DXF/IFC dell'utente
+  python -m edifici3d lidar-copertura --zona rimini --fonte rer_dsm_costa_2019   # maschera della copertura (05/11/2026)
+  python -m edifici3d lidar-indice --zona trento --fonte pat_dsm_2009            # indice dei file di una fonte a più file
+  python -m edifici3d lidar-corpi --zona bolzano --archivio … --riquadro x0 y0 x1 y1   # corpi dal solo LiDAR (§ 7)
 
 Fase E (altezze di Zornade, solo nell'archivio ODbL; estratto consegnato da Zornade, mai l'API):
   python -m edifici3d zornade-altezze --file estratto.gpkg --archivio … [--confronta-con …/cc-by/er/prodotti/contesto]
   python -m edifici3d zornade-campione --uscita /tmp/zornade_campione.geojson   # estratto sintetico per le prove
   python -m edifici3d regioni [--prova] [--markdown]     # fonti per regione (fonti/regioni.toml)
+  python -m edifici3d --zona lombardia regionale-campione --riquadro x0 y0 x1 y1 --max 500 --uscita c.geojson
+  python -m edifici3d --zona lombardia controlla-regione --file c.geojson        # attributi e coerenza delle quote
+  python -m edifici3d --zona liguria prepara-regione --file c.geojson --dtm dtm.tif --archivio …   # corpi → prodotti
 
 `prepara` scrive, nell'archivio della licenza CC BY: corpi.pmtiles, contesto/<cella>.json, dtm_cog.tif e
 terreno.pmtiles (Terrarium); `prepara-osm` fa lo stesso per l'archivio ODbL. Caddy li serve da /edifici3d/ (vedi
@@ -52,8 +58,15 @@ def _corpi_uvl(righe, dtm_file: Path | None):
 
 
 def prepara(righe, dtm_file: Path | None, uscita: Path, licenza: str, attribuzione: str, sintetico: bool = False) -> dict:
-    corpi = _corpi_uvl(righe, dtm_file)
-    feat = T.feature_da_corpi(corpi, S.CRS)
+    return prepara_corpi(_corpi_uvl(righe, dtm_file), dtm_file, uscita, licenza, attribuzione, sintetico, S.CRS)
+
+
+def prepara_corpi(corpi, dtm_file: Path | None, uscita: Path, licenza: str, attribuzione: str, sintetico: bool = False,
+                  crs: str = "EPSG:7791", extra: dict | None = None) -> dict:
+    """Corpi già costruiti (UVL, adattatori regionali, …) nel sistema `crs` → PMTiles, celle di contesto, DTM e indice."""
+    if not corpi:
+        raise ValueError("nessun corpo da preparare")
+    feat = T.feature_da_corpi(corpi, crs)
     if sintetico:
         for f in feat:
             f["properties"]["sintetico"] = True
@@ -72,6 +85,9 @@ def prepara(righe, dtm_file: Path | None, uscita: Path, licenza: str, attribuzio
     if sintetico:
         esito["sintetico"] = True
         esito["avviso"] = S.AVVISO
+    esito["crs"] = crs
+    if extra:
+        esito.update(extra)
     (uscita / "indice.json").write_text(json.dumps(esito, ensure_ascii=False, indent=1), encoding="utf-8")
     return esito
 
@@ -104,6 +120,16 @@ def main(argv=None) -> int:
     li.add_argument("--aggiorna", action="store_true", help="ricontrolla le tessere fatte (aggiornamento annuale)")
     ls = sub.add_parser("lidar-stato"); ls.add_argument("--stato", type=Path, required=True)
     lf = sub.add_parser("lidar-fonti"); lf.add_argument("--zona", default="rimini"); lf.add_argument("--prova", action="store_true")
+    lc = sub.add_parser("lidar-copertura", help="maschera della copertura di una fonte (zone/coperture/), una richiesta")
+    lc.add_argument("--zona", required=True); lc.add_argument("--fonte", required=True); lc.add_argument("--passo", type=float, default=100.0)
+    lk = sub.add_parser("lidar-corpi", help="corpi dal solo LiDAR (raggruppamento per altezza) per una zona senza sagome")
+    lk.add_argument("--zona", required=True); lk.add_argument("--archivio", type=Path, required=True)
+    lk.add_argument("--stato", type=Path, default=Path("/tmp/edifici_stato")); lk.add_argument("--radice", type=Path)
+    lk.add_argument("--prodotti", type=Path); lk.add_argument("--tessere", nargs="+")
+    lk.add_argument("--riquadro", nargs=4, type=float, help="x0 y0 x1 y1 nel sistema della zona")
+    lx = sub.add_parser("lidar-indice", help="indice dei file di una fonte a più file (solo le intestazioni)")
+    lx.add_argument("--zona", required=True); lx.add_argument("--fonte", required=True)
+    lx.add_argument("--max", type=int, help="al più tanti file nuovi per volta"); lx.add_argument("--pausa", type=float, default=0.3)
     ca = sub.add_parser("campione", help="campione LiDAR sintetico con i prodotti della Fase A")
     ca.add_argument("--uscita", type=Path, required=True)
     im = sub.add_parser("importa-modello", help="DXF o IFC dell'utente → GeoJSON dei corpi con le falde")
@@ -127,6 +153,16 @@ def main(argv=None) -> int:
     rg.add_argument("--markdown", action="store_true", help="tabella per il README")
     zc = sub.add_parser("zornade-campione", help="estratto Zornade sintetico sull'isolato di prova")
     zc.add_argument("--uscita", type=Path, required=True)
+    rc = sub.add_parser("regionale-campione", help="piccolo campione dal servizio di una regione (fonti/<regione>.toml)")
+    rc.add_argument("--riquadro", nargs=4, type=float, required=True, help="x0 y0 x1 y1 nel sistema del servizio (crs_servizio)")
+    rc.add_argument("--max", type=int, default=500); rc.add_argument("--strato"); rc.add_argument("--uscita", type=Path, required=True)
+    for nome in ("controlla-regione", "prepara-regione"):
+        pr = sub.add_parser(nome, help="DB topografico regionale → corpi (adattatori di regionali.py)")
+        pr.add_argument("--file", type=Path, required=True); pr.add_argument("--strato")
+        pr.add_argument("--crs-file", help="sistema del file se non lo dichiara")
+        if nome == "prepara-regione":
+            pr.add_argument("--dtm", type=Path, help="DTM nel sistema della zona (obbligatorio per la Liguria)")
+            pr.add_argument("--archivio", type=Path, required=True); pr.add_argument("--riquadro", nargs=4, type=float)
     a = p.parse_args(argv)
     if a.cmd == "regioni":
         from . import regioni as RG
@@ -146,6 +182,8 @@ def main(argv=None) -> int:
         return 1 if err else 0
     if a.cmd in ("zornade-altezze", "zornade-campione"):
         return _zornade(a)
+    if a.cmd in ("regionale-campione", "controlla-regione", "prepara-regione"):
+        return _regionale(a)
     if a.cmd == "lidar":
         return _lidar(a)
     if a.cmd == "lidar-stato":
@@ -158,6 +196,18 @@ def main(argv=None) -> int:
         return 0
     if a.cmd == "lidar-fonti":
         return _fonti(a)
+    if a.cmd == "lidar-corpi":
+        from . import pipeline as PL
+        pl = PL.Pipeline(PL.carica_zona(a.zona), a.archivio, a.stato, prodotti=a.prodotti, radice=a.radice)
+        print(json.dumps(pl.corpi_lidar(a.tessere, a.riquadro), ensure_ascii=False, indent=1))
+        return 0
+    if a.cmd in ("lidar-copertura", "lidar-indice"):
+        from . import coperture as CO, pipeline as PL
+        z = PL.carica_zona(a.zona)
+        r = CO.maschera_fonte(z, a.fonte, passo=a.passo) if a.cmd == "lidar-copertura" else \
+            CO.indice_fonte(z, a.fonte, massimo=a.max, pausa=a.pausa)
+        print(json.dumps(r, ensure_ascii=False, indent=1))
+        return 0
     if a.cmd == "campione":
         return _campione(a.uscita)
     if a.cmd == "importa-modello":
@@ -203,6 +253,29 @@ def main(argv=None) -> int:
         print(json.dumps(O.prepara(a.tessere, a.sito, a.anno, a.archivio), ensure_ascii=False, indent=1))
         return 0
     return 1
+
+
+def _regionale(a) -> int:
+    """Adattatori dei DB topografici di Lombardia, FVG e Liguria (Fase E, 05/11/2026)."""
+    from . import regionali as R
+    zona = F.carica_zona(a.zona)
+    f = zona["fonti"]["edifici"]
+    if a.cmd == "regionale-campione":
+        fonte = dict(f, strato=a.strato or f.get("strato"))
+        print(json.dumps(R.scarica_campione(fonte, a.riquadro, a.uscita, a.max), ensure_ascii=False, indent=1))
+        return 0
+    righe, crs_file = R.leggi_file(a.file, a.strato)
+    ad = R.ADATTATORI[f["adattatore"]]
+    if a.cmd == "controlla-regione":
+        print(json.dumps(R.controlla(righe, ad), ensure_ascii=False, indent=1))
+        return 0
+    crs = zona["zona"]["crs"]
+    corpi, res = R.corpi(righe, ad, crs, a.crs_file or crs_file, a.dtm, a.riquadro)
+    out = F.cartella(a.archivio, zona, f["licenza"], "prodotti")
+    esito = prepara_corpi(corpi, a.dtm, out, f["licenza"], f.get("attribuzione") or ad.attribuzione, crs=crs,
+                          extra={"fonte_edifici": res})
+    print(json.dumps({k: v for k, v in esito.items() if k != "nomi_celle"}, ensure_ascii=False, indent=1))
+    return 0
 
 
 def _zornade(a) -> int:
@@ -269,7 +342,7 @@ def _lidar(a) -> int:
     from . import pipeline as PL
     aggiorna = a.aggiorna
     if a.zona == "auto":
-        z, annuale = PL.scegli_zona(a.stato)
+        z, annuale = PL.scegli_zona(a.stato, archivio=a.archivio)
         if z is None:
             print("nessuna zona con fonti LiDAR attive: niente da fare (vedi `lidar-fonti`)")
             return 0

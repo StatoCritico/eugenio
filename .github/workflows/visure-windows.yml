@@ -126,3 +126,8 @@ jobs:
             EuGEnio Visure: lettore locale delle visure catastali in PDF (nessuna credenziale, nessun accesso a SISTER).
             Impronte SHA-256 in SHA256SUMS.txt. L'avviatore usa solo i pacchetti elencati in
             fase11-visure/avviatore/versioni_approvate.json.
+
+            Code signing policy: https://github.com/statocritico/eugenio/tree/main/fase11-visure#code-signing-policy
+            (anche https://eugenio.statocritico.it/visure.html#code-signing-policy). ${{ needs.firma.result == 'success' && 'Free code signing provided by SignPath.io, certificate by SignPath Foundation.' || 'Questa versione NON è firmata: Windows può mostrare «PC protetto»; controlla l''impronta in SHA256SUMS.txt.' }}
+            Disinstallare: cancellare EuGEnioVisure.exe e la cartella
+            %LOCALAPPDATA%\EuGEnio\Visure.

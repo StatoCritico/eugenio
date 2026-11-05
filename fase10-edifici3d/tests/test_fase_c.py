@@ -201,15 +201,18 @@ def test_una_esecuzione_alla_volta(radice, tmp_path):
 def test_rimini_fonti_in_attesa(tmp_path):
     z = PL.carica_zona("rimini")
     fonti = {f["id"]: f for f in PL.elenco_fonti(z)}
-    for k in ("pnrr_dsm", "rer_las", "rer_dsm", "rer_dsm_costa_2019"):
+    for k in ("pnrr_dsm", "rer_las", "rer_dsm"):
         assert fonti[k]["stato"] == "in attesa", k
         assert not PL.usabile(z["fonti"][k])[0]
+    # 05/11/2026: il DSM della costa 2019 è acceso, ma solo dentro la sua maschera di copertura
+    assert fonti["rer_dsm_costa_2019"]["stato"] == "attiva" and z["fonti"]["rer_dsm_costa_2019"]["copertura"]["maschera"]
     assert fonti["rer_dtm05"]["stato"] == "attiva"
     g, lato = PL.griglia_tessere(z)
     assert g[(785, 4884)].nome == "32_78504884" and lato == 1000      # nome delle tavole RER
     e = PL.Pipeline(z, tmp_path / "a", tmp_path / "s").esegui(subito=True)
-    assert e["esito"] == "in attesa" and "nessuna fonte" in e["motivo"]
-    assert PL.scegli_zona(tmp_path / "s") == (None, False)            # nessuna zona vera attiva, il campione non conta
+    assert e["esito"] == "in attesa" and "nessun corpo" in e["motivo"]  # senza i corpi della Fase A nessuna tessera
+    # nessuna zona vera ha i corpi della Fase A nell'archivio vuoto; il campione non conta
+    assert PL.scegli_zona(tmp_path / "s", archivio=tmp_path / "a") == (None, False)
 
 
 def test_versione_dal_quadro_di_unione():

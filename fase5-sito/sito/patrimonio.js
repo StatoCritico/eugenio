@@ -263,11 +263,37 @@ function elenco() {
     if (r.nota) art.appendChild(h("p", "nota", r.nota));
     const vis = window.EUGENIO_VISURE_UI && window.EUGENIO_VISURE_UI.dettaglio(i);
     if (vis) art.appendChild(vis);
+    if (r.lat !== null && r.lat !== undefined && r.lon !== null && r.lon !== undefined) {
+      const b = h("button", "bottone secondario piccolo apri-3d", "Apri in Modelli 3D");
+      b.type = "button";
+      b.title = "Apre l'edificio di questa sede nella pagina 3D con le sue colonne facoltative e le visure (i dati restano nel browser)";
+      b.addEventListener("click", (e) => { e.stopPropagation(); apriIn3d(i); });
+      art.appendChild(b);
+    }
     art.addEventListener("click", () => scegli(i, false));
     art.addEventListener("keydown", (e) => { if (e.key === "Enter") scegli(i, false); });
     box.appendChild(art);
   }
   if (stato.scelto !== null) scegli(stato.scelto, false);
+}
+
+// Patrimonio → Modelli 3D (05/11/2026): la sede passa alla pagina 3D nella memoria di questa scheda del browser
+// (sessionStorage), mai dal server: punto, nome, colonne facoltative di piani e superfici e colonne visura_…
+const FACOLTATIVE_3D = ["piani_fuori_terra", "piani_interrati", "superficie_lorda", "superficie_netta", "superficie_catastale", "anno_costruzione"];
+function sedePer3d(i) {
+  const r = stato.righe[i], facoltative = {};
+  for (const k of FACOLTATIVE_3D) {
+    const v = typeof r[k] === "number" ? r[k] : parseFloat(String(r[k] ?? "").replace(/\./g, "").replace(",", "."));
+    if (Number.isFinite(v) && v > 0) facoltative[k] = v;
+  }
+  const visura = window.EUGENIO_VISURE_UI ? window.EUGENIO_VISURE_UI.colonne(i) || {} : {};
+  return { nome: [r.id, r.denominazione].filter(Boolean).join(" · ") || `riga ${i + 1}`, lat: +r.lat, lon: +r.lon, facoltative,
+    visura: Object.keys(visura).length ? visura : null };
+}
+function apriIn3d(i) {
+  try { sessionStorage.setItem("eugenio-sede", JSON.stringify(sedePer3d(i))); }
+  catch { messaggio("La memoria della scheda non è disponibile: apri Modelli 3D e scegli l'edificio con un clic.", true); return; }
+  location.href = "modelli3d.html?sede=locale";
 }
 
 document.querySelectorAll(".filtro").forEach((b) => b.addEventListener("click", () => { stato.filtro = b.dataset.esito; elenco(); }));

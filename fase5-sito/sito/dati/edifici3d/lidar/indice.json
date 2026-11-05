@@ -19,10 +19,10 @@
  "zone": {
   "campione": {
    "nome": "Campione sintetico (prova)",
-   "aggiornato": "2026-11-04T01:47:37+00:00"
+   "aggiornato": "2026-11-04T21:06:48+00:00"
   }
  },
- "aggiornato": "2026-11-04T01:47:37+00:00",
+ "aggiornato": "2026-11-04T21:06:48+00:00",
  "sintetico": true,
  "avviso": "Rilievo LiDAR sintetico di esempio: falde e altezze sono inventate e non rappresentano edifici reali."
 }

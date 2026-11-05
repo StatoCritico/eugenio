@@ -1,7 +1,8 @@
 "use strict";
 // Pagina Patrimonio › Importa DXF/IFC (04/11/2026). Il file dell'utente si legge in un Web Worker (modelli_worker.js:
 // dxf-parser, web-ifc, Clipper, proj4js, stessa logica di `importa-modello`), mai inviato al server. La pagina mostra la
-// pianta dei corpi, fa scegliere la posa (dal file, sistema di riferimento, due punti noti, un punto e la rotazione),
+// pianta dei corpi, fa scegliere la posa (dal file, sistema di riferimento, due punti noti, un punto e la rotazione o,
+// dal 05/11/2026, agganciandolo alla sagoma di un edificio dell'archivio di EuGEnio, letta dai file statici /edifici3d/),
 // disegna il risultato sulla mappa e lo passa alla pagina Modelli 3D nella memoria della scheda (sessionStorage) o
 // lo fa scaricare come .geojson «eugenio-modello-1». Le richieste di rete della pagina sono solo le sue librerie e le
 // tessere dell'ortofoto di sfondo (/api/ortofoto/…).
@@ -13,7 +14,8 @@
   const L = MOD.LIMITI;
   const CHIAVE = "eugenio-modello";
   const stato = { worker: null, timer: null, sintesi: null, geojson: null, nomeFile: "modello", scegli: null, mappa: null,
-    marcatori: [null, null], fonti: [], fonte: null, piante: [] };
+    marcatori: [null, null], fonti: [], fonte: null, piante: [], archivio: null, sagoma: null, celle: new Map() };
+  const E = window.EUGENIO_EDIFICI;
   const colore = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
   function h(tag, cls, t) { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; }
   function messaggio(id, t, tipo = "") {
@@ -176,6 +178,8 @@
     $("campi-crs").hidden = s !== "crs";
     $("campi-punti").hidden = !(s === "due_punti" || s === "punto");
     $("campo-rotazione").hidden = s !== "punto";
+    $("campi-sagoma").hidden = s !== "sagoma";
+    if (s === "sagoma") mostraArchivio();
     document.querySelector('.punti-posa tbody tr[data-punto="1"]').hidden = s === "punto";
     $("aiuto-mappa").textContent = s === "due_punti" || s === "punto"
       ? "Premi «sulla mappa» accanto al punto e poi fai clic sul punto vero: la pagina ne prende longitudine e latitudine."
@@ -213,6 +217,19 @@
     else if (s === "due_punti") {
       if (!ok(pp[0]) || !ok(pp[1])) { messaggio("messaggio-posa", "Servono X, Y, longitudine e latitudine di tutti e due i punti.", "errore"); return; }
       posa = { tipo: "due_punti", punti: pp.map((p) => [p.x, p.y, p.lon, p.lat]) };
+    } else if (s === "sagoma") {
+      if (!stato.sagoma || !E) { messaggio("messaggio-posa", "Fai prima clic sulla sagoma di un edificio sulla mappa.", "errore"); return; }
+      const r = E.posaDaSagoma(stato.piante.map((p) => p.sagoma), stato.sagoma.anelli);
+      if (!r) { messaggio("messaggio-posa", "Aggancio non riuscito: il modello o la sagoma non hanno abbastanza punti.", "errore"); return; }
+      const k = (stato.sintesi && stato.sintesi.unita_m) || 1;
+      posa = { tipo: "due_punti", punti: r.punti.map(([x, y, lon, lat]) => [x / k, y / k, lon, lat]) };
+      stato.aggancio = r;
+      const avvisi = [];
+      if (r.iou < 0.6) avvisi.push("le due impronte si sovrappongono poco: forse è un altro edificio, o il modello ha parti che la sagoma non ha");
+      if (r.rapporto_aree && (r.rapporto_aree < 0.85 || r.rapporto_aree > 1.15))
+        avvisi.push(`l'impronta del modello è il ${fmt(100 * r.rapporto_aree, 0)} % della sagoma: controlla le unità del disegno`);
+      stato.notaAggancio = `Agganciato alla sagoma dell'edificio ${stato.sagoma.edificio}: rotazione ${fmt(r.rotazione, 1)}°, sovrapposizione ${fmt(100 * r.iou, 0)} %`
+        + (avvisi.length ? ` – attenzione: ${avvisi.join("; ")}.` : ".");
     } else {
       const r = num($("rotazione").value);
       if (!ok(pp[0]) || !Number.isFinite(r)) { messaggio("messaggio-posa", "Servono X, Y, longitudine, latitudine del punto e la rotazione.", "errore"); return; }
@@ -240,7 +257,10 @@
     for (const a of g.avvisi || []) ul.appendChild(h("li", null, a));
     const fuori = fuoriItalia(g);
     $("apri-3d").disabled = fuori;
-    if (daPosa) messaggio("messaggio-posa", fuori ? "Il modello cade fuori dall'Italia: controlla la posa (unità, punti, sistema di riferimento)." : "Modello posizionato: controllalo sulla mappa.", fuori ? "errore" : "ok");
+    if (daPosa && stato.notaAggancio && sceltaPosa() === "sagoma") {
+      messaggio("messaggio-posa", fuori ? "Il modello cade fuori dall'Italia: controlla la posa." : `${stato.notaAggancio} Controllalo sulla mappa.`,
+        fuori ? "errore" : /attenzione/.test(stato.notaAggancio) ? "attenzione" : "ok");
+    } else if (daPosa) messaggio("messaggio-posa", fuori ? "Il modello cade fuori dall'Italia: controlla la posa (unità, punti, sistema di riferimento)." : "Modello posizionato: controllalo sulla mappa.", fuori ? "errore" : "ok");
     else if (fuori) messaggio("messaggio", "Il modello cade fuori dall'Italia: la pagina 3D non lo aprirà.", "errore");
     if (stato.mappa) {
       const src = stato.mappa.getSource("modello");
@@ -266,6 +286,56 @@
     a.download = `${stato.nomeFile}.geojson`; document.body.appendChild(a); a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   });
+
+  // ------------------------------------------------------------------ sagome dell'archivio (posa «sagoma», 05/11/2026)
+  // Stessi file statici della pagina 3D (celle di 0,01° in contesto/), letti solo quando si sceglie questa posa: sono
+  // richieste GET di file pubblici, il modello dell'utente non lascia mai il browser.
+  const BASI = ["/edifici3d/cc-by/er/prodotti/", "dati/edifici3d/"];
+  async function leggiJson(u) { const r = await fetch(u); if (!r.ok || !/json/.test(r.headers.get("Content-Type") || "")) throw new Error(String(r.status)); return r.json(); }
+  async function archivio() {
+    if (stato.archivio !== null) return stato.archivio;
+    stato.archivio = false;
+    for (const b of BASI) {
+      try { const ind = await leggiJson(`${b}indice.json`); stato.archivio = { base: b, indice: ind }; break; } catch { /* la prossima */ }
+    }
+    return stato.archivio;
+  }
+  async function mostraArchivio(centra = true) {
+    const m = stato.mappa, a = await archivio();
+    if (!m || !m.getSource("archivio")) return;
+    if (!a) { $("sagoma-scelta").textContent = "L'archivio degli edifici non è disponibile su questo server: usa un'altra posa."; return; }
+    if (centra && !stato.archivioCentrato && a.indice.centro && !stato.geojson) {
+      stato.archivioCentrato = true;
+      const c = m.getCenter(), [lon, lat] = a.indice.centro;
+      if (Math.hypot(c.lng - lon, c.lat - lat) > 0.005) m.jumpTo({ center: [lon, lat], zoom: Math.max(m.getZoom(), 16.5) });
+    }
+    const cella = a.indice.cella || 0.01, c = m.getCenter(), feats = new Map();
+    const nomi = [];
+    for (let i = Math.floor((c.lng - 0.005) / cella); i <= Math.floor((c.lng + 0.005) / cella); i++)
+      for (let j = Math.floor((c.lat - 0.004) / cella); j <= Math.floor((c.lat + 0.004) / cella); j++) nomi.push(`${i}_${j}`);
+    for (const n of nomi) {
+      if (!stato.celle.has(n)) stato.celle.set(n, leggiJson(`${a.base}contesto/${n}.json`).catch(() => ({ features: [] })));
+      ((await stato.celle.get(n)).features || []).forEach((f) => feats.set(String(f.properties.id), f));
+    }
+    stato.featArchivio = [...feats.values()];
+    m.getSource("archivio").setData({ type: "FeatureCollection", features: stato.featArchivio });
+    if (a.indice.sintetico) $("sagoma-scelta").textContent = stato.sagoma ? $("sagoma-scelta").textContent
+      : "Archivio di prova sintetico (isolato inventato vicino a Rimini): fai clic su un edificio.";
+  }
+  function scegliSagoma(ev) {
+    const m = stato.mappa;
+    const fs = m.queryRenderedFeatures(ev.point, { layers: ["archivio-area"] });
+    if (!fs.length) { messaggio("messaggio-posa", "Qui non c'è una sagoma dell'archivio: fai clic dentro un contorno tratteggiato.", "attenzione"); return; }
+    const ed = String(fs[0].properties.edificio);
+    const corpi = ((stato.featArchivio && stato.featArchivio.length) ? stato.featArchivio : fs).filter((f) => String(f.properties.edificio) === ed);
+    const anelli = corpi.map((f) => (f.geometry.type === "MultiPolygon" ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0]));
+    stato.sagoma = { edificio: ed, anelli };
+    m.getSource("sagoma").setData({ type: "FeatureCollection", features: corpi });
+    const lic = [...new Set(corpi.map((f) => f.properties.licenza).filter(Boolean))].join(", ");
+    $("sagoma-scelta").textContent = `Sagoma scelta: edificio ${ed}, ${corpi.length} ${corpi.length === 1 ? "corpo" : "corpi"}`
+      + (lic ? ` (${lic})` : "") + ". Ora premi «Posiziona il modello».";
+    messaggio("messaggio-posa", "");
+  }
 
   // ------------------------------------------------------------------ mappa con l'ortofoto di sfondo
   const copre = (f, [lon, lat]) => lon >= f.riquadro[0] && lon <= f.riquadro[2] && lat >= f.riquadro[1] && lat <= f.riquadro[3];
@@ -306,12 +376,18 @@
       m.addSource("modello", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       m.addLayer({ id: "modello-area", type: "fill", source: "modello", paint: { "fill-color": colore("--primario"), "fill-opacity": 0.35 } });
       m.addLayer({ id: "modello-linea", type: "line", source: "modello", paint: { "line-color": colore("--primario"), "line-width": 2 } });
+      m.addSource("archivio", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      m.addSource("sagoma", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      m.addLayer({ id: "archivio-area", type: "fill", source: "archivio", paint: { "fill-color": colore("--inchiostro"), "fill-opacity": 0.04 } }, "modello-area");
+      m.addLayer({ id: "archivio-linea", type: "line", source: "archivio", paint: { "line-color": colore("--inchiostro"), "line-width": 1, "line-dasharray": [2, 2] } }, "modello-area");
+      m.addLayer({ id: "sagoma-linea", type: "line", source: "sagoma", paint: { "line-color": colore("--attenzione"), "line-width": 3 } });
       document.addEventListener("eugenio:ridimensiona", () => m.resize());
       document.addEventListener("eugenio:aspetto", () => {
         m.setPaintProperty("sfondo", "background-color", colore("--carta"));
         m.setPaintProperty("modello-area", "fill-color", colore("--primario")); m.setPaintProperty("modello-linea", "line-color", colore("--primario"));
       });
       m.on("click", (ev) => {
+        if (stato.scegli == null && sceltaPosa() === "sagoma") { scegliSagoma(ev); return; }
         if (stato.scegli == null) return;
         const r = document.querySelector(`.punti-posa tbody tr[data-punto="${stato.scegli}"]`);
         r.querySelector('[data-c="lon"]').value = ev.lngLat.lng.toFixed(7);
@@ -328,6 +404,7 @@
       if (!stato.fonti.length) $("attribuzione").textContent = "Ortofoto non disponibili: puoi scrivere longitudine e latitudine a mano.";
       sfondo();
       m.on("moveend", sfondo);
+      m.on("moveend", () => { if (sceltaPosa() === "sagoma") mostraArchivio(false); });
       if (stato.geojson) mostraModello(stato.geojson, false);
     } catch (e) {
       $("attribuzione").textContent = `La mappa non si è aperta (${e.message || e}): puoi comunque scrivere le coordinate a mano.`;

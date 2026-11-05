@@ -590,6 +590,13 @@ Cosa aspettarsi:
 - il primo comando stampa `0`. Se stampa `1`, la riga c'è già: **non** dare il secondo comando;
 - `crontab -l` mostra la riga nuova e anche quella dei mercati delle 02:30, che deve restare.
 
+**Regola (05/11/2026)**: il crontab dell'host si cambia **solo** partendo da `crontab -l` (come qui sopra, o con
+`crontab -e`), **mai** con un `… | crontab -` che non parte da `crontab -l`: sostituisce tutto il crontab. Il 05/11/2026 il
+crontab era vuoto (righe di mercati, indicatori e clima sparite tra il 03/11 e il 04/11, notte dei mercati del 04/11
+saltata). Prima di cambiarlo salva una copia: `crontab -l > ~/crontab_prima_$(date +%Y%m%d).txt`. Dopo **ogni**
+pubblicazione dai `crontab -l` e controlla che ci siano le 4 righe (sezione «Controllo del crontab» di
+`AGGIORNAMENTO_2026-11-05.md`).
+
 La mattina dopo, `tail -30 ~/edifici.log` deve mostrare l'esito «in attesa», come al passo 34.
 
 **37. [Server] Pulizia:**
@@ -792,9 +799,9 @@ Cosa aspettarsi, comando per comando:
 
 | Comando | Atteso |
 |---|---|
-| dimensione | dell'ordine di 140 MB: la prova Linux pesa 137 MB. Annotala |
+| dimensione | **circa 90 MB** (88,3 MB la build di Actions del 05/11/2026; la prova Linux, con altre librerie, pesava 137 MB). Annotala |
 | impronta dell'.exe | una stringa di 64 caratteri. Annotala: non è nell'elenco delle versioni approvate, che contiene l'impronta del **pacchetto del lettore**; quella dell'.exe va nel `SHA256SUMS.txt` della release |
-| avvio | le righe dell'avviatore, `· in uso la versione 0.1.0 (SHA-256 3fc84c6ae60536a1…)`, poi **due righe `OK:`** (lettore e conversione dei modelli). `Measure-Command` stampa il tempo (`TotalSeconds`): sotto Linux era ~2,5 s, annota quello di Windows |
+| avvio | le righe dell'avviatore, `· in uso la versione 0.1.0 (SHA-256 3fc84c6ae60536a1…)`, poi **due righe `OK:`** (lettore e conversione dei modelli). `Measure-Command` stampa il tempo (`TotalSeconds`): **circa 8 s alla prima esecuzione** (7,9 s il 05/11/2026: estrazione del file unico e controllo dell'antivirus; Linux 2,5 s), meno alle successive. Con `\| Out-Host` i caratteri accentati possono apparire come «ÔÇô», «├®», «┬À»: è solo la decodifica di PowerShell (codepage 850); prima del comando dai `[Console]::OutputEncoding = [Text.Encoding]::UTF8` |
 | IFC | `2 corpi → casa_sito.geojson` |
 | DXF | una riga `… corpi → casa_utm.geojson`, senza errori |
 

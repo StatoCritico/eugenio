@@ -1,0 +1,81 @@
+# Zona della pipeline LiDAR: Provincia autonoma di Trento (fase 10, Fase E, 05/11/2026). Fuori dalla coda dell'ER: si
+# accende quando ci sono i corpi della Fase A per la zona (sagome «Edifici P.A.T. 3D», adattatore ancora da scrivere, o
+# corpi dal solo LiDAR). Gli URL stanno solo qui, mai nel codice.
+#
+# Prove dal vivo del 04–05/11/2026 dal container di sviluppo (nessun blocco aggirato):
+# - DSM e DTM LiDAR PAT 2006/2009 a 1 m (schede RNDT p_TN:06df5d0a-… e p_TN:2989b73f-…, CC BY 4.0): cartelle pubbliche
+#   `idt/raster/lidar_2009_pat_dsm_1mX1m/` e `…_dtm_1mX1m/` con 1410 GeoTIFF ciascuna (dsm000007_wor.tif …), stessi numeri
+#   e stessi riquadri nelle due cartelle (provati 000007, 000500, 001200); file di 2×2 km con 10 m di sovrapposizione
+#   (es. 709990–712010 × 5153990–5154464: i file al bordo della provincia sono più piccoli), 3,8 MB, float32, coordinate
+#   ETRS89 / UTM 32N senza sistema dichiarato nel file (LOCAL_CS): il sistema si dichiara qui (EPSG:25832);
+# - nessun quadro di unione pubblicato: l'indice dei file (coperture/trento_pat_lidar_2009.json) si costruisce leggendo
+#   solo le intestazioni con `python -m edifici3d lidar-indice --zona trento --fonte pat_dsm_2009`.
+# Il rilievo è del 2006–2009: gli edifici più recenti risultano «non presente nel rilievo».
+
+[zona]
+nome = "Provincia autonoma di Trento"
+codice = "tn"
+ordine = 20                        # dopo tutta l'ER
+archivio = "tn"
+crs = "EPSG:25832"                 # ETRS89 / UTM 32N
+riquadro = [612000, 5058000, 732000, 5158000]   # contiene tutti i 1410 file dell'indice
+lato_tessera = 2000                # come i file del LiDAR PAT (angolo in basso a sinistra a km pari)
+nome_tessera = "tn_{e_km:03d}_{n_km:04d}"
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[edifici]
+licenza = "CC BY 4.0"
+
+[limiti]
+finestra = ["03:30", "07:00"]
+max_minuti = 120
+min_gb_liberi = 20
+max_gb_notte = 10
+max_mb_tessera = 200
+max_tentativi = 3
+passo_dsm = 1.0
+maschera_m = 30
+aggiorna_giorni = 730              # rilievo storico: si ricontrolla ogni due anni
+tieni_grezzi = false
+pausa_url = "http://api:8000/api/salute"
+pausa_max_minuti = 20
+
+[fonti.pat_dsm_2009]
+tipo = "dsm"
+priorita = 3
+descrizione = "Provincia autonoma di Trento – LiDAR DSM PAT 2006/2009, 1 m"
+licenza = "CC BY 4.0"
+licenza_confermata = true          # scheda RNDT p_TN:06df5d0a-f8e8-402b-9a5a-7e92bf75929f
+attiva = true
+stato = "attiva"
+attribuzione = "Provincia autonoma di Trento – LiDAR PAT 2006/2009, DSM 1 m (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/p_TN:06df5d0a-f8e8-402b-9a5a-7e92bf75929f"
+verifica = "05/11/2026: elenco della cartella 200 (1410 file), intestazioni di 3 file lette (riquadri uguali al DTM)"
+versione = "fissa"
+versione_fissa = "2006-2009"
+indice = "coperture/trento_pat_lidar_2009.json"
+indice_elenco = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dsm_1mX1m/"
+crs_file = "EPSG:25832"
+max_file_tessera = 4
+url = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dsm_1mX1m/{file}"
+
+[fonti.pat_dtm_2009]
+tipo = "dtm"
+priorita = 1
+descrizione = "Provincia autonoma di Trento – LiDAR DTM PAT 2006/2009, 1 m"
+licenza = "CC BY 4.0"
+licenza_confermata = true          # scheda RNDT p_TN:2989b73f-f243-4fac-b1d0-6464863a7d1d
+attiva = true
+stato = "attiva"
+attribuzione = "Provincia autonoma di Trento – LiDAR PAT 2006/2009, DTM 1 m (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/p_TN:2989b73f-f243-4fac-b1d0-6464863a7d1d"
+verifica = "05/11/2026: stessi file e riquadri del DSM (dtm000007_wor.tif …)"
+versione = "fissa"
+versione_fissa = "2006-2009"
+indice = "coperture/trento_pat_lidar_2009.json"   # stesso indice del DSM, nomi con «dtm» al posto di «dsm»
+sostituisci = ["dsm", "dtm"]
+max_file_tessera = 4
+url = "https://siatservices.provincia.tn.it/idt/raster/lidar_2009_pat_dtm_1mX1m/{file}"

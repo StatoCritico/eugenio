@@ -414,3 +414,15 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
 - **Facciate al sole**: lastre sottili (0,4 m) davanti ai pezzi esposti, colori fissi da `#ffffcc` a `#41b6c4` a
   `#253494` (più scuro = più kWh/m²), lontani dal corallo dell'edificio scelto; campione `.pallino.facciate` nella legenda.
 - `label.casella` (casella e testo sulla stessa riga, testo normale) e `.carica-file` (etichetta-pulsante per i file).
+
+## Mappe MapLibre: confini, avvisi e immagini (05/11/2026)
+
+- Ogni mappa MapLibre che serve a orientarsi (Ortofoto, Modelli 3D) ha i **confini ISTAT** di `confini_gl.js`: regioni
+  sempre, con un alone del colore della carta sotto la linea dell'inchiostro; province da zoom 7; comuni tratteggiati da
+  zoom 9; regione e comune scelti nel colore principale del vestito. Seguono tema e vestito (`eugenio:aspetto`).
+- Gli **avvisi sulla mappa** (`.avviso-mappa`) stanno in alto a sinistra, sul fondo del foglio con il bordo sinistro
+  arancio di attenzione, non intercettano il mouse e dicono cosa si vede al posto di quello che manca.
+- **Immagini scaricate** (`esporta_mappa.js`): la vista com'è, sotto una fascia bianca con testo nero (come i report) con
+  titolo, eventuale avviso dei dati sintetici in rosso scuro, licenza e citazione di ogni fonte e «Fonte: EuGEnio –
+  eugenio.statocritico.it (CC BY 4.0)». Pulsanti «Scarica l'immagine: JPG PNG PDF» sotto la mappa.
+- La piccola mappa d'Italia va in alto a destra accanto al titolo anche in queste pagine (`minimappa.js`, stesse regole).

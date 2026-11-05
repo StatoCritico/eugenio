@@ -13,6 +13,15 @@ edifici: scarica → elabora (DSM ridotto, falde per corpo) → salva i prodotti
 - **Fonti in attesa**: una fonte si usa solo con `attiva = true`, un `url` e `licenza_confermata = true`; le altre
   compaiono nella pagina di stato con il motivo.
 - Un corpo a cavallo di due tessere si rielabora quando arriva la tessera vicina, dai DSM ridotti già salvati.
+- **Copertura** (05/11/2026): una fonte può dichiarare l'area che copre (`[fonti.<id>.copertura]`: riquadri nel sistema
+  della zona e/o una maschera GeoJSON in `zone/coperture/`); una tessera è coperta solo se dentro l'area cade almeno la
+  quota `minima` (0,95) dell'area dei suoi edifici (o della tessera, se non ne ha). Fuori, la fonte «non copre» e vince
+  la successiva per priorità, come per le tavole che mancano nel quadro di unione.
+- **Alberi** (05/11/2026): le chiome del DSM attorno agli edifici diventano quadrati di 2 m in `lidar/alberi/` (ombre
+  della pagina 3D). **Corpi dal solo LiDAR** (`corpi_lidar`, comando `lidar-corpi`) per le zone senza sagome.
+- **Fonti a più file** (05/11/2026): con `indice` (JSON in `zone/coperture/` con nome e riquadro di ogni file, comando
+  `lidar-indice`) l'URL usa `{file}`; per ogni tessera si scaricano i file che la toccano (al più `max_file_tessera`) e
+  si uniscono in un mosaico. L'indice dà anche la copertura.
 
 Prodotti (archivio della licenza della fonte, come la Fase A): `<prodotti>/lidar/dsm/<t>.tif`, `dtm/<t>.tif` (int16 in
 decimetri), `corpi/<t>.json` (risultati per corpo, sistema della zona), `falde/<i>_<j>.json` (celle di 0,01° in WGS84
@@ -38,7 +47,7 @@ from urllib.parse import urlparse
 import httpx
 import numpy as np
 
-from . import fonti as F, lidar as L, tessere as T
+from . import fonti as F, lidar as L, lidar_corpi as LC, tessere as T
 
 log = logging.getLogger(__name__)
 QUI = Path(__file__).resolve().parent.parent
@@ -226,6 +235,73 @@ class Fermati(Exception):
     """Un limite della notte è stato raggiunto (non è un errore della tessera)."""
 
 
+# ============================================================================================== copertura delle fonti
+MINIMA_COPERTURA = 0.95
+
+
+def leggi_indice(f: dict, cartella_zone: Path) -> dict | None:
+    """Indice dei file di una fonte a più file: {"crs", "file": [{"nome", "riquadro": [x0, y0, x1, y1]}]}."""
+    if not f.get("indice"):
+        return None
+    p = Path(f["indice"])
+    if not p.is_absolute():
+        p = Path(cartella_zone) / p
+    return json.loads(p.read_text(encoding="utf-8"))
+
+
+def area_coperta(f: dict, crs_zona: str, cartella_zone: Path):
+    """Area coperta dalla fonte nel sistema della zona (shapely) o None se la fonte non dichiara limiti."""
+    from shapely.geometry import box, shape
+    from shapely.ops import unary_union, transform as sh_transform
+    c = f.get("copertura") or {}
+    pezzi = [box(*r) for r in c.get("riquadri", [])]
+    if c.get("maschera"):
+        p = Path(c["maschera"])
+        if not p.is_absolute():
+            p = Path(cartella_zone) / p
+        d = json.loads(p.read_text(encoding="utf-8"))
+        crs = (d.get("crs") or {}).get("properties", {}).get("name") or c.get("maschera_crs") or crs_zona
+        geoms = [shape(x["geometry"]) for x in d.get("features", [])]
+        if crs and crs.replace("urn:ogc:def:crs:", "").replace("::", ":") != crs_zona:
+            from pyproj import Transformer
+            tr = Transformer.from_crs(crs.replace("urn:ogc:def:crs:", "").replace("::", ":"), crs_zona, always_xy=True)
+            geoms = [sh_transform(tr.transform, g) for g in geoms]
+        pezzi += geoms
+    ind = leggi_indice(f, cartella_zone)
+    if ind:
+        pezzi += [box(*x["riquadro"]) for x in ind.get("file", [])]
+    if not pezzi:
+        return None
+    return unary_union(pezzi)
+
+
+def copre(area, t: "Tessera", sagome=(), minima: float = MINIMA_COPERTURA) -> bool:
+    """La fonte copre la tessera se dentro l'area cade almeno `minima` dell'area dei suoi edifici (o della tessera)."""
+    if area is None:
+        return True
+    from shapely.geometry import box
+    from shapely.ops import unary_union
+    tb = box(*t.riquadro)
+    if not area.intersects(tb):
+        return False
+    base = unary_union([g.intersection(tb) for g in sagome]) if sagome else tb
+    if base.is_empty or base.area <= 0:
+        base = tb
+    return base.intersection(area).area >= minima * base.area - 1e-9
+
+
+def file_della_tessera(ind: dict, t: "Tessera", massimo: int = 6) -> list[str]:
+    """Nomi dei file dell'indice che toccano la tessera (al più `massimo`, i più sovrapposti prima)."""
+    from shapely.geometry import box
+    tb = box(*t.riquadro)
+    sov = []
+    for x in ind.get("file", []):
+        a = box(*x["riquadro"]).intersection(tb).area
+        if a > 0:
+            sov.append((-a, x["nome"]))
+    return [n for _, n in sorted(sov)[:massimo]]
+
+
 # ============================================================================================== pipeline
 class Pipeline:
     def __init__(self, zona: dict, archivio: Path, stato: Path, prodotti: Path | None = None, radice: Path | None = None,
@@ -244,6 +320,9 @@ class Pipeline:
         self.stato = leggi_json(self.file_stato, None) or {}
         # licenza dei prodotti: quella della fonte DSM/LAS attiva (le fonti di licenze diverse vanno in archivi diversi)
         self._prodotti_forzati = Path(prodotti) if prodotti else None
+        self.cartella_zone = Path(zona["_file"]).parent
+        self._aree: dict[str, object] = {}
+        self._indici: dict[str, dict | None] = {}
 
     # ------------------------------------------------------------------ percorsi
     def _zona_archivio(self):
@@ -275,8 +354,24 @@ class Pipeline:
         fs = [(k, f) for k, f in (self.z.get("fonti") or {}).items() if f["tipo"] in tipo and usabile(f)[0]]
         return sorted(fs, key=lambda kf: int(kf[1].get("priorita", 99)))
 
-    def url(self, f: dict, t: Tessera) -> str:
-        return f["url"].format(radice=str(self.radice), **t.valori())
+    def url(self, f: dict, t: Tessera, file: str = "") -> str:
+        if file and f.get("sostituisci"):          # indice condiviso: es. ["dsm", "dtm"] per i file del DTM
+            file = file.replace(f["sostituisci"][0], f["sostituisci"][1], 1)
+        return f["url"].format(radice=str(self.radice), file=file, **t.valori())
+
+    def area(self, chiave: str, f: dict):
+        if chiave not in self._aree:
+            self._aree[chiave] = area_coperta(f, self.zona["crs"], self.cartella_zone)
+        return self._aree[chiave]
+
+    def indice(self, chiave: str, f: dict) -> dict | None:
+        if chiave not in self._indici:
+            self._indici[chiave] = leggi_indice(f, self.cartella_zone)
+        return self._indici[chiave]
+
+    def file_tessera(self, chiave: str, f: dict, t: Tessera) -> list[str]:
+        ind = self.indice(chiave, f)
+        return file_della_tessera(ind, t, int(f.get("max_file_tessera", 6))) if ind else []
 
     def _http(self) -> httpx.Client:
         if self.client is None:
@@ -284,8 +379,16 @@ class Pipeline:
                                        headers={"User-Agent": "EuGEnio-edifici3d (eugenio.statocritico.it)"})
         return self.client
 
-    def versione(self, chiave: str, f: dict, t: Tessera) -> str | None:
+    def versione(self, chiave: str, f: dict, t: Tessera, sagome=()) -> str | None:
         """Versione della fonte per la tessera; None = la fonte non copre la tessera."""
+        minima = float((f.get("copertura") or {}).get("minima", MINIMA_COPERTURA))
+        if not copre(self.area(chiave, f), t, sagome, minima):
+            return None
+        if f.get("indice"):
+            nomi = self.file_tessera(chiave, f, t)
+            if not nomi:
+                return None
+            return f"{chiave}:{f.get('versione_fissa', '')}:" + "|".join(nomi)
         u = self.url(f, t)
         modo = f.get("versione", "intestazioni")
         if u.startswith("file:"):
@@ -468,6 +571,11 @@ class Pipeline:
         s["esecuzioni"] = s["esecuzioni"][-NOTTI:]
         conto = {"byte": 0}
         dsm_fonti = self.fonti_attive({"dsm", "las"})
+        if not tessere:                                 # nessun corpo della Fase A: la zona aspetta le sagome
+            esec.update(esito="in attesa", motivo="nessun corpo della Fase A per la zona (prodotti/contesto vuoto)",
+                        fine=_adesso())
+            self.salva()
+            return esec
         if not dsm_fonti:
             esec.update(esito="in attesa", motivo="nessuna fonte DSM o LAS attiva (vedi le fonti)", fine=_adesso())
             self.salva()
@@ -531,8 +639,9 @@ class Pipeline:
     def _tessera(self, t: Tessera, v: dict, corpi: dict[str, CorpoZ], dsm_fonti, conto: dict, aggiorna: bool) -> None:
         t0 = self.orologio()
         scelta = None
+        sagome_t = [c.sagoma for c in corpi.values() if (t.i, t.j) in c.toccate]
         for k, f in dsm_fonti:
-            ver = self.versione(k, f, t)
+            ver = self.versione(k, f, t, sagome_t)
             if ver is not None:
                 scelta = (k, f, ver)
                 break
@@ -550,40 +659,32 @@ class Pipeline:
         grezzi = self.grezzi(licenza, t.nome)
         prodotti = self.prodotti(licenza) / "lidar"
         byte0 = conto["byte"]
-        nome_file = Path(urlparse(self.url(f, t).replace("file:", "file://", 1)).path).name or f"{t.nome}.bin"
-        raw = self.scarica(self.url(f, t), grezzi / f"{k}_{nome_file}"[-120:], conto)
         passo = float(self.lim.get("passo_dsm", L.PASSO))
-        if f["tipo"] == "las":
+        raw = None
+        if f.get("indice"):                            # fonte a più file: mosaico dei file che toccano la tessera
+            dsm = self._mosaico(k, f, t, grezzi, conto, passo)
+        else:
+            nome_file = Path(urlparse(self.url(f, t).replace("file:", "file://", 1)).path).name or f"{t.nome}.bin"
+            raw = self.scarica(self.url(f, t), grezzi / f"{k}_{nome_file}"[-120:], conto)
+        if f.get("indice"):
+            dtm, fonte_dtm = self._dtm(t, grezzi, conto, passo, licenza, sagome_t)
+        elif f["tipo"] == "las":
             pts = L.leggi_las(raw, riquadro=t.riquadro, max_punti=int(self.lim.get("max_punti_las", 60_000_000)))
             dsm, dtm = L.griglie_da_las(pts, t.riquadro, passo)
             fonte_dtm = f"{k} (classe terreno)"
         else:
             dsm = L.ricampiona(L.leggi_raster(raw, t.riquadro), t.riquadro, passo)
-            dtm, fonte_dtm = None, None
-            for kd, fd in self.fonti_attive({"dtm"}):
-                try:
-                    if self.versione(kd, fd, t) is None:
-                        continue
-                    rd = self.scarica(self.url(fd, t), grezzi / f"{kd}_{t.nome}.tif", conto)
-                    dtm = L.ricampiona(L.leggi_raster(rd, t.riquadro), t.riquadro, passo)
-                    fonte_dtm = kd
-                    break
-                except Fermati:
-                    raise
-                except Exception as e:
-                    log.warning("DTM %s per %s: %s", kd, t.nome, e)
-            if dtm is None:                            # ripiego: DTM della Fase A, se c'è
-                cog = self.prodotti(licenza) / "dtm_cog.tif"
-                if cog.exists():
-                    dtm = L.ricampiona(L.leggi_raster(cog, t.riquadro), t.riquadro, passo)
-                    fonte_dtm = "DTM della Fase A"
+            dtm, fonte_dtm = self._dtm(t, grezzi, conto, passo, licenza, sagome_t)
         # DSM e DTM ridotti, solo attorno agli edifici
-        sagome = [c.sagoma for c in corpi.values() if (t.i, t.j) in c.toccate]
+        sagome = sagome_t
         masc = L.maschera_edifici(dsm, sagome, float(self.lim.get("maschera_m", 30)))
         et = {"FONTE": k, "VERSIONE": ver, "TESSERA": t.nome}
         L.scrivi_ridotto(dsm, prodotti / "dsm" / f"{t.nome}.tif", self.zona["crs"], masc, et)
         if dtm is not None:
             L.scrivi_ridotto(dtm, prodotti / "dtm" / f"{t.nome}.tif", self.zona["crs"], masc, {**et, "FONTE_DTM": fonte_dtm or ""})
+        # alberi (05/11/2026): chiome dal DSM attorno agli edifici, ostacoli per le ombre della pagina 3D
+        if dtm is not None:
+            self._alberi(t, dsm, dtm, sagome, prodotti)
         # corpi da (ri)elaborare: quelli della tessera e quelli delle vicine che la toccano
         da_fare = [c for c in corpi.values() if c.tessera == (t.i, t.j) or ((t.i, t.j) in c.toccate)]
         n_falde, qual = self._corpi(da_fare, prodotti, k, f, ver, fonte_dtm)
@@ -602,6 +703,107 @@ class Pipeline:
                  byte_prodotti=kb, secondi=round(self.orologio() - t0, 1))
         v.pop("errore", None)
         self._indice(prodotti, k, f)
+
+    def _mosaico(self, k: str, f: dict, t: Tessera, grezzi: Path, conto: dict, passo: float) -> L.Griglia:
+        griglie = []
+        for nome in self.file_tessera(k, f, t):
+            r = self.scarica(self.url(f, t, nome), grezzi / f"{k}_{nome}"[-120:], conto)
+            griglie.append(L.ricampiona(L.leggi_raster(r, t.riquadro), t.riquadro, passo))
+        if not griglie:
+            raise RuntimeError(f"{k}: nessun file dell'indice per {t.nome}")
+        return L.unisci(griglie, t.riquadro, passo)
+
+    def _dtm(self, t: Tessera, grezzi: Path, conto: dict, passo: float, licenza: str, sagome=()):
+        """DTM della tessera: fonti `dtm` attive che la coprono, per priorità; se la prima lascia dei vuoti (es. DTM 0,5 m
+        di Bolzano solo nelle aree insediative) si riempiono con le successive; infine il DTM della Fase A."""
+        griglie, usate = [], []
+        for kd, fd in self.fonti_attive({"dtm"}):
+            try:
+                if self.versione(kd, fd, t, sagome) is None:
+                    continue
+                if fd.get("indice"):
+                    g = self._mosaico(kd, fd, t, grezzi, conto, passo)
+                else:
+                    rd = self.scarica(self.url(fd, t), grezzi / f"{kd}_{t.nome}.tif", conto)
+                    g = L.ricampiona(L.leggi_raster(rd, t.riquadro), t.riquadro, passo)
+                griglie.append(g); usate.append(kd)
+                if not np.isnan(L.unisci(griglie, t.riquadro, passo).z).any():
+                    break
+            except Fermati:
+                raise
+            except Exception as e:
+                log.warning("DTM %s per %s: %s", kd, t.nome, e)
+        cog = self.prodotti(licenza) / "dtm_cog.tif"            # ripiego: DTM della Fase A, se c'è
+        if (not griglie or np.isnan(L.unisci(griglie, t.riquadro, passo).z).any()) and cog.exists():
+            griglie.append(L.ricampiona(L.leggi_raster(cog, t.riquadro), t.riquadro, passo)); usate.append("DTM della Fase A")
+        if not griglie:
+            return None, None
+        return (griglie[0] if len(griglie) == 1 else L.unisci(griglie, t.riquadro, passo)), " + ".join(usate)
+
+    def _alberi(self, t: Tessera, dsm, dtm, sagome, prodotti: Path) -> int:
+        """Chiome della tessera → celle di 0,01° in WGS84 (`lidar/alberi/<i>_<j>.json`, per tessera: rifare sovrascrive)."""
+        try:
+            pts = LC.alberi(dsm, dtm, sagome, fascia=float(self.lim.get("fascia_alberi_m", 50)))
+        except Exception as e:                            # gli alberi sono un di più: un errore non ferma la tessera
+            log.warning("alberi di %s: %s", t.nome, e)
+            return 0
+        celle: dict[str, list] = {}
+        for a in LC.alberi_in_wgs84(pts, self.zona["crs"]):
+            celle.setdefault(f"{math.floor(a[0] / T.CELLA)}_{math.floor(a[1] / T.CELLA)}", []).append(a)
+        for nome, aa in celle.items():
+            pth = prodotti / "alberi" / f"{nome}.json"
+            d = leggi_json(pth, {"cella": nome, "crs": "EPSG:4326", "campi": ["lon", "lat", "h", "quota", "lato"], "tessere": {}})
+            d["tessere"][t.nome] = aa
+            scrivi_json(pth, d)
+        return len(pts)
+
+    def corpi_lidar(self, tessere: list[str] | None = None, riquadro=None, conto: dict | None = None) -> dict:
+        """Corpi dal solo LiDAR (§ 7) per una zona senza sagome: per ogni tessera scelta (nomi o riquadro) scarica DSM e
+        DTM dalle fonti attive, raggruppa le celle per altezza e scrive i prodotti della Fase A (contesto/, corpi.pmtiles,
+        indice.json) nell'archivio della licenza del DSM. Poi la pipeline normale stima le falde su questi corpi."""
+        from shapely.geometry import box
+        from .__main__ import prepara_corpi
+        conto = conto if conto is not None else {"byte": 0}
+        scelte = [t for t in self.griglia.values() if (tessere and t.nome in tessere)
+                  or (riquadro is not None and box(*t.riquadro).intersects(box(*riquadro)))]
+        if not scelte:
+            raise ValueError("nessuna tessera scelta (--tessere o --riquadro nel sistema della zona)")
+        passo = float(self.lim.get("passo_dsm", L.PASSO))
+        corpi, usate, licenze, attrib = [], [], set(), {}
+        for t in scelte:
+            for k, f in self.fonti_attive({"dsm", "las"}):
+                if self.versione(k, f, t) is None:
+                    continue
+                grezzi = self.grezzi(f["licenza"], t.nome)
+                if f.get("indice"):
+                    dsm = self._mosaico(k, f, t, grezzi, conto, passo)
+                    dtm, _ = self._dtm(t, grezzi, conto, passo, f["licenza"])
+                elif f["tipo"] == "las":
+                    raw = self.scarica(self.url(f, t), grezzi / f"{k}_{t.nome}.las", conto)
+                    dsm, dtm = L.griglie_da_las(L.leggi_las(raw, riquadro=t.riquadro), t.riquadro, passo)
+                else:
+                    raw = self.scarica(self.url(f, t), grezzi / f"{k}_{t.nome}.tif", conto)
+                    dsm = L.ricampiona(L.leggi_raster(raw, t.riquadro), t.riquadro, passo)
+                    dtm, _ = self._dtm(t, grezzi, conto, passo, f["licenza"])
+                if dtm is not None:
+                    nuovi = LC.corpi_da_lidar(dsm, dtm, f"L{t.nome}", f["licenza"], f.get("descrizione", k), self.zona["crs"])
+                    # un corpo a cavallo del bordo compare in due tessere: si tiene quello con il baricentro dentro la tessera
+                    tb = box(*t.riquadro)
+                    corpi += [c for c in nuovi if tb.contains(c.sagoma.centroid)]
+                    usate.append(t.nome); licenze.add(f["licenza"]); attrib[k] = f.get("attribuzione", k)
+                if not self.lim.get("tieni_grezzi"):
+                    shutil.rmtree(grezzi, ignore_errors=True)
+                break
+        if not corpi:
+            return {"tessere": usate, "corpi": 0}
+        if len(licenze) > 1:
+            raise ValueError(f"fonti con licenze diverse nelle tessere scelte: {sorted(licenze)}")
+        lic = licenze.pop()
+        out = self.prodotti(lic)
+        esito = prepara_corpi(corpi, None, out, lic, "; ".join(attrib.values()), crs=self.zona["crs"],
+                              extra={"fonte_edifici": {"metodo": "corpi dal solo LiDAR (§ 7)", "tessere": usate}})
+        return {"tessere": usate, "corpi": len(corpi), "edifici": len({c.edificio for c in corpi}), "prodotti": str(out),
+                "celle": esito.get("celle"), "byte": conto["byte"]}
 
     @staticmethod
     def _conta_qualita(prodotti: Path, nome: str) -> dict[str, int]:
@@ -689,15 +891,20 @@ def zone_disponibili(cartella: Path = ZONE) -> list[dict]:
     return sorted(out, key=lambda z: z["zona"].get("ordine", 99))
 
 
-def scegli_zona(cartella_stato: Path, cartella_zone: Path = ZONE) -> tuple[dict | None, bool]:
+def scegli_zona(cartella_stato: Path, cartella_zone: Path = ZONE, archivio: Path | None = None) -> tuple[dict | None, bool]:
     """La prima zona della coda (campo `ordine`) con fonti attive e tessere da fare; se sono tutte complete, la zona
-    controllata da più tempo (aggiornamento annuale). Le zone di prova (`prova = true`) non entrano."""
+    controllata da più tempo (aggiornamento annuale). Le zone di prova (`prova = true`) non entrano; con `archivio`, non
+    entrano nemmeno le zone senza i corpi della Fase A (celle di contesto)."""
     candidate = []
     for z in zone_disponibili(cartella_zone):
         if z["zona"].get("prova"):
             continue
         if not [1 for f in (z.get("fonti") or {}).values() if f["tipo"] in ("dsm", "las") and usabile(f)[0]]:
             continue
+        if archivio is not None:
+            ctx = Pipeline(z, archivio, cartella_stato).contesto()
+            if not ctx.is_dir() or not any(ctx.glob("*.json")):
+                continue
         st = leggi_json(Path(cartella_stato) / f"{z['zona']['codice']}.json", {}) or {}
         if not st.get("completata"):
             return z, False

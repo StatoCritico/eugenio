@@ -39,7 +39,11 @@ def test_senza_modulo(client):
     c, _ = client
     r = c.get("/api/analisi/stato").json()
     assert r["modulo"] is False and len(r["analisi"]) == 8
-    assert {x["messaggio"] for x in r["analisi"]} == {"analisi non disponibile in questa installazione"}
+    # dal 05/11/2026 le analisi 7, 9 e 13 sono pubbliche (si calcolano nelle pagine): sempre disponibili
+    pub = {x["id"] for x in r["analisi"] if x.get("pubblica")}
+    assert pub == {"7", "9", "13"} and all(x["disponibile"] for x in r["analisi"] if x["id"] in pub)
+    assert {x["messaggio"] for x in r["analisi"] if x["id"] not in pub} == {"analisi non disponibile in questa installazione"}
+    assert c.post("/api/analisi/13", json=CORPO).status_code == 422
     r = c.post("/api/analisi/5", json=CORPO)
     assert r.status_code == 503 and "non disponibile in questa installazione" in r.json()["detail"]
     assert c.post("/api/analisi/42", json=CORPO).status_code == 404

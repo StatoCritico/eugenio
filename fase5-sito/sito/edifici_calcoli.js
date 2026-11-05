@@ -7,7 +7,8 @@
 //  Geometria (§ 9, analisi 1): area, indicatori (volume, S/V, pareti per orientamento e in comune), dividi (linea)
 //  Sole e ombre: sole (posizione NOAA), ombra (sagoma proiettata sul terreno), orizzonte (profilo per un punto, 72
 //  direzioni), svf (fattore di vista del cielo)
-//  FV (§ 9, analisi 6): trasponi (modello isotropo), producibilita (tipo PVWatts, perdite 14 %, temperatura celle)
+//  FV (§ 9, analisi 6): trasponi (Perez 1990 dal 05/11/2026, isotropo a richiesta), producibilita (tipo PVWatts,
+//  perdite 14 %, temperatura celle)
 //  Firma energetica (§ 9, analisi 3): firma (minimi quadrati consumo ↔ gradi giorno)
 //  Nessun coefficiente delle norme UNI: sono grandezze geometriche e modelli solari di letteratura aperta.
 (function (radice) {
@@ -257,7 +258,9 @@
     if (alt > -0.575) {   // rifrazione atmosferica (Saemundsson), piccola correzione vicino all'orizzonte
       alt += 1.02 / Math.tan((alt + 10.3 / (alt + 5.11)) * GRAD) / 60;
     }
-    return { azimut: (az + 360) % 360, altezza: alt, declinazione: decl / GRAD };
+    // irradianza extraterrestre normale (W/m²) con la correzione della distanza Terra–Sole (Spencer, forma breve)
+    const giorno = Math.floor((jd - 2451544.5) % 365.25), extra = 1367 * (1 + 0.033 * Math.cos(2 * Math.PI * giorno / 365.25));
+    return { azimut: (az + 360) % 360, altezza: alt, declinazione: decl / GRAD, extra };
   }
   // ombra sul terreno di un prisma alto h (m) con base r: inviluppo della base e della base spostata controsole
   function ombra(r, h, s) {
@@ -298,20 +301,57 @@
   const svf = (h) => h.reduce((s, a) => s + Math.cos(a * GRAD) ** 2, 0) / h.length;
 
   // ------------------------------------------------------------------ fotovoltaico
-  // irradianza sul piano (W/m²) con modello isotropo; beam = false se il sole è dietro l'orizzonte del punto
-  function trasponi(ghi, dhi, s, inclinazione, orientamento, { albedo = 0.2, fattoreCielo = 1, beam = true } = {}) {
-    if (!(ghi > 0) || s.altezza <= 0) return { poa: 0, diretta: 0 };
+  // Trasposizione sul piano (W/m²). Dal 05/11/2026 il modello predefinito è **Perez** (Perez, Ineichen, Seals, Michalsky,
+  // Stewart, «Modeling daylight availability and irradiance components from direct and global irradiance», Solar Energy
+  // 44(5), 1990, pp. 271–289, coefficienti «allsitescomposite1990», gli stessi di pvlib-python, BSD): il cielo diffuso
+  // ha una parte isotropa, una circumsolare (che segue il sole: sparisce quando il sole è coperto dall'orizzonte del
+  // punto) e una fascia all'orizzonte. Con un orizzonte (fattoreCielo < 1) la parte isotropa e la fascia si riducono con
+  // il fattore di vista del cielo. Massa d'aria di Kasten e Young (1989). `modello: "isotropo"` dà il calcolo di prima.
+  const PEREZ_EPS = [1.065, 1.23, 1.5, 1.95, 2.8, 4.5, 6.2];
+  const PEREZ_F1 = [[-0.008, 0.588, -0.062], [0.13, 0.683, -0.151], [0.33, 0.487, -0.221], [0.568, 0.187, -0.295],
+    [0.873, -0.392, -0.362], [1.132, -1.237, -0.412], [1.06, -1.6, -0.359], [0.678, -0.327, -0.25]];
+  const PEREZ_F2 = [[-0.06, 0.072, -0.022], [-0.019, 0.066, -0.029], [0.055, -0.064, -0.026], [0.109, -0.152, -0.014],
+    [0.226, -0.462, 0.001], [0.288, -0.823, 0.056], [0.264, -1.127, 0.131], [0.156, -1.377, 0.251]];
+  function massaAria(zenGradi) {
+    if (zenGradi >= 90) return null;
+    return 1 / (Math.cos(zenGradi * GRAD) + 0.50572 * (96.07995 - zenGradi) ** -1.6364);
+  }
+  // parti del cielo diffuso sul piano secondo Perez: { isotropa, circumsolare, orizzonte } (W/m²)
+  function perez(dhi, dni, zenGradi, extra, cosAoi, inclinazione) {
+    const zero = { isotropa: 0, circumsolare: 0, orizzonte: 0 };
+    if (!(dhi > 0)) return zero;
+    const z = zenGradi * GRAD, b = inclinazione * GRAD, am = massaAria(zenGradi);
+    if (am === null) return { isotropa: dhi * (1 + Math.cos(b)) / 2, circumsolare: 0, orizzonte: 0 };
+    const k = 1.041, eps = ((dhi + dni) / dhi + k * z ** 3) / (1 + k * z ** 3), delta = dhi * am / (extra || 1367);
+    let i = 0;
+    while (i < PEREZ_EPS.length && eps >= PEREZ_EPS[i]) i++;
+    const f1 = PEREZ_F1[i], f2 = PEREZ_F2[i];
+    const F1 = Math.max(0, f1[0] + f1[1] * delta + f1[2] * z), F2 = f2[0] + f2[1] * delta + f2[2] * z;
+    const a = Math.max(0, cosAoi), bb = Math.max(Math.cos(85 * GRAD), Math.cos(z));
+    const r = { isotropa: dhi * (1 - F1) * (1 + Math.cos(b)) / 2, circumsolare: dhi * F1 * a / bb, orizzonte: dhi * F2 * Math.sin(b) };
+    if (r.isotropa + r.circumsolare + r.orizzonte < 0) return zero;
+    return r;
+  }
+  // beam = false se il sole è dietro l'orizzonte del punto (si perdono la diretta e la circumsolare)
+  function trasponi(ghi, dhi, s, inclinazione, orientamento, { albedo = 0.2, fattoreCielo = 1, beam = true, modello = "perez" } = {}) {
+    if (!(ghi > 0) || s.altezza <= 0) return { poa: 0, diretta: 0, diffusa: 0 };
     const cz = Math.sin(s.altezza * GRAD), b = inclinazione * GRAD;
     let dni = cz > 0.087 ? Math.max(0, (ghi - dhi) / cz) : 0;
     dni = Math.min(dni, 1100);
     const cosAoi = Math.cos(s.altezza * GRAD) * Math.sin(b) * Math.cos((s.azimut - orientamento) * GRAD) + cz * Math.cos(b);
     const diretta = beam ? dni * Math.max(0, cosAoi) : 0;
-    const diffusa = dhi * fattoreCielo * (1 + Math.cos(b)) / 2, riflessa = ghi * albedo * (1 - Math.cos(b)) / 2;
-    return { poa: diretta + diffusa + riflessa, diretta };
+    const riflessa = ghi * albedo * (1 - Math.cos(b)) / 2;
+    let diffusa;
+    if (modello === "isotropo") diffusa = dhi * fattoreCielo * (1 + Math.cos(b)) / 2;
+    else {
+      const p = perez(dhi, dni, 90 - s.altezza, s.extra, cosAoi, inclinazione);
+      diffusa = p.isotropa * fattoreCielo + (beam ? p.circumsolare : 0) + p.orizzonte * fattoreCielo;
+    }
+    return { poa: diretta + diffusa + riflessa, diretta, diffusa };
   }
   // clima: { inizio (ISO UTC), passo_ore: 1, ghi[], dhi[], t[] } (W/m² medi dell'ora precedente);
   // aree: [{ id, inclinazione, orientamento, kwp, orizzonti: [Float32Array per punto di campionamento] }]
-  function producibilita(clima, lat, lon, aree, { perdite = 0.14, gamma = -0.0037, noct = 45 } = {}) {
+  function producibilita(clima, lat, lon, aree, { perdite = 0.14, gamma = -0.0037, noct = 45, modello = "perez" } = {}) {
     const t0 = Date.parse(clima.inizio), n = clima.ghi.length;
     const out = aree.map((a) => ({ id: a.id, kwh: 0, kwhSenzaOmbre: 0, mensile: new Array(12).fill(0),
       svf: a.orizzonti.length ? a.orizzonti.reduce((s, h) => s + svf(h), 0) / a.orizzonti.length : 1 }));
@@ -322,12 +362,12 @@
       if (s.altezza <= 0) continue;
       const ta = clima.t && clima.t[i] !== null && clima.t[i] !== undefined ? clima.t[i] : 15, mese = d.getUTCMonth();
       aree.forEach((a, k) => {
-        const libero = trasponi(ghi, dhi, s, a.inclinazione, a.orientamento);
+        const libero = trasponi(ghi, dhi, s, a.inclinazione, a.orientamento, { modello });
         let poa = 0;
         const pts = a.orizzonti.length ? a.orizzonti : [null];
         for (const h of pts) {
           const visto = !h || s.altezza > altezzaOrizzonte(h, s.azimut);
-          poa += trasponi(ghi, dhi, s, a.inclinazione, a.orientamento, { fattoreCielo: h ? svf(h) : 1, beam: visto }).poa;
+          poa += trasponi(ghi, dhi, s, a.inclinazione, a.orientamento, { fattoreCielo: h ? svf(h) : 1, beam: visto, modello }).poa;
         }
         poa /= pts.length;
         const pot = (g) => { const tc = ta + g * (noct - 20) / 800; return a.kwp * g / 1000 * (1 + gamma * (tc - 25)) * (1 - perdite); };
@@ -413,7 +453,7 @@
   }
   // irraggiamento sulle parti esposte delle facciate (verticali, inclinazione 90°): kWh/m² annui e mensili per parte,
   // con le ombre del loro orizzonte (vicino + lontano). clima come per producibilita.
-  function irraggiamentoFacciate(clima, lat, lon, parti, orizzonti) {
+  function irraggiamentoFacciate(clima, lat, lon, parti, orizzonti, { modello = "perez" } = {}) {
     const t0 = Date.parse(clima.inizio), n = clima.ghi.length;
     const out = parti.map((p, k) => ({ annuo: 0, libero: 0, mensile: new Array(12).fill(0), svf: orizzonti[k] ? svf(orizzonti[k]) : 1 }));
     for (let i = 0; i < n; i++) {
@@ -427,8 +467,8 @@
         const h = orizzonti[k], visto = !h || s.altezza > altezzaOrizzonte(h, s.azimut);
         // fattore di vista del cielo di una parete verticale: metà cielo, ridotto dagli ostacoli del suo lato
         const fc = h ? Math.min(1, out[k].svf * 2) : 1;
-        const g = trasponi(ghi, dhi, s, 90, p.azimut, { fattoreCielo: fc, beam: visto }).poa / 1000;
-        const g0 = trasponi(ghi, dhi, s, 90, p.azimut).poa / 1000;
+        const g = trasponi(ghi, dhi, s, 90, p.azimut, { fattoreCielo: fc, beam: visto, modello }).poa / 1000;
+        const g0 = trasponi(ghi, dhi, s, 90, p.azimut, { modello }).poa / 1000;
         out[k].annuo += g; out[k].libero += g0; out[k].mensile[mese] += g;
       });
     }
@@ -436,13 +476,18 @@
   }
   // riepilogo per orientamento: area esposta, kWh/anno, kWh/m² medi, perdita per ombre, estate (giu–ago) e inverno (dic–feb)
   function riepilogoFacciate(parti, irr) {
-    const r = Object.fromEntries(SETTORI.map((s) => [s, { area: 0, kwh: 0, libero: 0, estate: 0, inverno: 0 }]));
+    const r = Object.fromEntries(SETTORI.map((s) => [s, { area: 0, kwh: 0, libero: 0, estate: 0, inverno: 0, cielo: 0 }]));
     parti.forEach((p, k) => {
       const x = r[p.settore], m = irr[k].mensile;
       x.area += p.area; x.kwh += irr[k].annuo * p.area; x.libero += irr[k].libero * p.area;
       x.estate += (m[5] + m[6] + m[7]) * p.area; x.inverno += (m[11] + m[0] + m[1]) * p.area;
+      // analisi 9 (05/11/2026): cielo visibile dalla facciata, 0–1 (1 = nessun ostacolo davanti), media sull'area
+      x.cielo += Math.min(1, 2 * (irr[k].svf ?? 0.5)) * p.area;
     });
-    for (const x of Object.values(r)) { x.kwh_m2 = x.area ? x.kwh / x.area : 0; x.perdita = x.libero ? 100 * (1 - x.kwh / x.libero) : 0; }
+    for (const x of Object.values(r)) {
+      x.kwh_m2 = x.area ? x.kwh / x.area : 0; x.perdita = x.libero ? 100 * (1 - x.kwh / x.libero) : 0;
+      x.cielo = x.area ? x.cielo / x.area : null;
+    }
     return r;
   }
 
@@ -474,6 +519,117 @@
     if (!r || !Number.isFinite(sv)) return null;
     const i = sv < 0.4 ? 0 : sv < 0.7 ? 1 : 2;
     return { valore: r[i], fascia: ["S/V < 0,4", "0,4 ≤ S/V < 0,7", "S/V ≥ 0,7"][i] };
+  }
+
+  // Stesso DM, Allegato 1, Appendice A, § 2.1, Tabella 11 (GU n. 283 del 5/12/2025, pp. 39–40): H'T massimo (W/m²K) per le
+  // ristrutturazioni importanti di primo livello, per zona climatica e rapporto EX ANTE tra la superficie dei componenti
+  // vetrati e la superficie di tutti i componenti (vetrati e/o opachi) dell'edificio oggetto di intervento (superfici
+  // esterne lorde, § 2.1, comma 4). Valori dell'atto normativo. La norma dà solo le 20 colonne: tra due colonne EuGEnio
+  // interpola in modo lineare (scelta sua, dichiarata nella pagina); sotto il 9 % vale la prima colonna.
+  const HT_TAB11_QUOTE = [9, 14, 19, 24, 28, 33, 38, 43, 47, 52, 57, 62, 67, 71, 76, 81, 86, 90, 95, 100];
+  const _AB = [0.72, 0.82, 0.92, 1.01, 1.1, 1.18, 1.26, 1.34, 1.41, 1.47, 1.53, 1.59, 1.64, 1.68, 1.72, 1.76, 1.79, 1.82, 1.84, 1.86];
+  const HT_TAB11 = { A: _AB, B: _AB,
+    C: [0.6, 0.64, 0.71, 0.78, 0.85, 0.91, 0.97, 1.03, 1.08, 1.14, 1.18, 1.23, 1.27, 1.31, 1.35, 1.38, 1.42, 1.44, 1.47, 1.49],
+    D: [0.58, 0.58, 0.59, 0.65, 0.7, 0.75, 0.81, 0.86, 0.9, 0.95, 0.99, 1.03, 1.07, 1.11, 1.14, 1.18, 1.21, 1.24, 1.26, 1.29],
+    E: [0.55, 0.55, 0.55, 0.55, 0.58, 0.62, 0.66, 0.7, 0.74, 0.78, 0.82, 0.85, 0.89, 0.92, 0.95, 0.99, 1.02, 1.04, 1.07, 1.1],
+    F: [0.53, 0.53, 0.53, 0.53, 0.53, 0.53, 0.56, 0.6, 0.63, 0.66, 0.69, 0.72, 0.75, 0.79, 0.82, 0.85, 0.87, 0.9, 0.93, 0.96] };
+  // quota: percentuale (0–100) di superfici vetrate sul totale dei componenti dell'involucro
+  function htMassimoPrimoLivello(zona, quota) {
+    const r = HT_TAB11[String(zona || "").toUpperCase()];
+    if (!r || !Number.isFinite(quota) || quota < 0 || quota > 100) return null;
+    const Q = HT_TAB11_QUOTE;
+    if (quota <= Q[0]) return { valore: r[0], colonne: [[Q[0], r[0]]], interpolato: false, nota: quota < Q[0] ? "sotto il 9 %: prima colonna" : "" };
+    let j = Q.findIndex((x) => x >= quota);
+    if (Q[j] === quota) return { valore: r[j], colonne: [[Q[j], r[j]]], interpolato: false, nota: "" };
+    const t = (quota - Q[j - 1]) / (Q[j] - Q[j - 1]);
+    return { valore: Math.round((r[j - 1] + t * (r[j] - r[j - 1])) * 1000) / 1000, colonne: [[Q[j - 1], r[j - 1]], [Q[j], r[j]]],
+      interpolato: true, nota: "interpolazione lineare tra due colonne (EuGEnio)" };
+  }
+  // Quota vetrata **stimata** quando l'utente non la conosce: rapporto finestre/pareti tipico per uso (valori assunti da
+  // EuGEnio, non presi da norme: da sostituire con il rilievo), applicato alle pareti esposte e diviso per la superficie
+  // disperdente (pareti esposte + tetti + pavimento a terra, come per H'T).
+  const FINESTRE_SU_PARETI = { residenziale: 0.15, uffici: 0.3, scuola: 0.25, ospedale: 0.22, commerciale: 0.3, capannone: 0.08,
+    palestra: 0.12, industriale: 0.08, altro: 0.18 };
+  function quotaVetrataStimata(geometria, uso = "altro") {
+    if (!geometria || !(geometria.superficie_disperdente > 0)) return null;
+    const wwr = FINESTRE_SU_PARETI[uso] ?? FINESTRE_SU_PARETI.altro;
+    return { quota: 100 * wwr * geometria.pareti_esposte / geometria.superficie_disperdente, finestre_su_pareti: wwr, uso };
+  }
+
+  // Colonne visura_… di EuGEnio Visure (fase 11) → stesse chiavi delle colonne facoltative, per la precedenza
+  // CSV → visura → stima (§ 8). Le visure non danno superficie lorda né netta: solo piani, superficie catastale e uso.
+  const DA_VISURA = { piani_fuori_terra: "visura_piani_fuori_terra", piani_interrati: "visura_piani_interrati",
+    superficie_catastale: "visura_superficie_catastale" };
+  function daVisura(colonne) {
+    const o = {};
+    if (!colonne || colonne.visura_esito === "nessuna_visura") return o;
+    for (const [k, c] of Object.entries(DA_VISURA)) {
+      const v = numero(colonne[c]);
+      if (v !== null && v > 0) o[k] = v;
+    }
+    if (o.piani_fuori_terra === undefined) { const p = numero(colonne.visura_piani); if (p !== null && p > 0) o.piani_fuori_terra = p; }
+    if (colonne.visura_uso) o.uso = String(colonne.visura_uso);
+    return o;
+  }
+  // { indice di colonna: nome della colonna visura_… } tra i titoli di un file (Valori per sede, Patrimonio)
+  function mappaVisura(titoli) {
+    const m = {};
+    titoli.forEach((t, i) => { const k = String(t).trim().toLowerCase(); if (k.startsWith("visura_")) m[i] = k; });
+    return m;
+  }
+  function leggiVisura(mappa, celle) {
+    const c = {};
+    for (const [i, k] of Object.entries(mappa)) if (celle[i] !== undefined && String(celle[i]).trim() !== "") c[k] = String(celle[i]).trim();
+    return daVisura(c);
+  }
+
+  // ------------------------------------------------------------------ posa di un modello sulla sagoma dell'archivio
+  // Importa DXF/IFC (05/11/2026): il modello dell'utente (piante dei corpi in metri, coordinate del disegno) si aggancia
+  // alla sagoma di un edificio dell'archivio (anelli in lon/lat). Rotazione dai rettangoli minimi delle due impronte
+  // (quattro candidati a 90°), traslazione dei baricentri, scelta del candidato con la sovrapposizione (IoU) più alta,
+  // stimata su una griglia di 80×80 punti. Nessuna scala: le unità del disegno sono già note; il rapporto delle aree
+  // dice se tornano. Restituisce due coppie di punti (disegno → lon/lat), così la pagina usa la stessa posa «due punti».
+  function posaDaSagoma(piante, sagomeLonLat) {
+    const pm = piante.flatMap((r) => chiudi(r).slice(0, -1));
+    const tutti = sagomeLonLat.flatMap((r) => chiudi(r).slice(0, -1));
+    if (pm.length < 3 || tutti.length < 3) return null;
+    const lon0 = tutti.reduce((s, q) => s + q[0], 0) / tutti.length, lat0 = tutti.reduce((s, q) => s + q[1], 0) / tutti.length;
+    const pr = proiezione(lon0, lat0);
+    const pa = tutti.map(pr.avanti);
+    const hm = inviluppo(pm), ha = inviluppo(pa);
+    const cm = centroide([...hm, hm[0]]), ca = centroide([...ha, ha[0]]);
+    const rm = rettangoloMinimo([...hm, hm[0]]), ra = rettangoloMinimo([...ha, ha[0]]);
+    const am = piante.reduce((x, r) => x + area(r), 0), aa = sagomeLonLat.reduce((x, r) => x + area(r.map(pr.avanti)), 0);
+    // trasformazione: punto del disegno → metri locali attorno alla sagoma (rotazione oraria di «rot» gradi, come gli azimut)
+    const muovi = (rot) => { const c = Math.cos(rot * GRAD), sn = Math.sin(rot * GRAD);
+      return ([x, y]) => { const dx = x - cm[0], dy = y - cm[1]; return [ca[0] + dx * c + dy * sn, ca[1] - dx * sn + dy * c]; }; };
+    const anelliA = sagomeLonLat.map((r) => r.map(pr.avanti));
+    const iou = (rot) => {
+      const f = muovi(rot), anelliM = piante.map((r) => r.map(f));
+      const pts = [...anelliM.flat(), ...pa];
+      const x0 = Math.min(...pts.map((q) => q[0])), x1 = Math.max(...pts.map((q) => q[0]));
+      const y0 = Math.min(...pts.map((q) => q[1])), y1 = Math.max(...pts.map((q) => q[1]));
+      let ent = 0, una = 0;
+      const N = 80;
+      for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+        const q = [x0 + (i + 0.5) * (x1 - x0) / N, y0 + (j + 0.5) * (y1 - y0) / N];
+        const inM = anelliM.some((r) => dentro(q, r)), inA = anelliA.some((r) => dentro(q, r));
+        if (inM && inA) ent++;
+        if (inM || inA) una++;
+      }
+      return una ? ent / una : 0;
+    };
+    const candidati = [0, 90, 180, 270].map((k) => {
+      const rot = ((ra.dir - rm.dir + k) % 360 + 360) % 360;
+      return { rot, iou: iou(rot) };
+    }).sort((a, b) => b.iou - a.iou);
+    const best = candidati[0], f = muovi(best.rot);
+    // due punti lontani del disegno: gli estremi dell'inviluppo lungo il lato lungo
+    let p1 = hm[0], p2 = hm[0], dmax = -1;
+    for (const a of hm) for (const b of hm) { const d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (d > dmax) { dmax = d; p1 = a; p2 = b; } }
+    const punti = [p1, p2].map((q) => { const [lon, lat] = pr.indietro(f(q)); return [q[0], q[1], lon, lat]; });
+    return { rotazione: Math.round(best.rot * 100) / 100, iou: Math.round(best.iou * 1000) / 1000, rapporto_aree: aa > 0 ? am / aa : null,
+      candidati, punti, centro: pr.indietro(ca) };
   }
 
   // ------------------------------------------------------------------ classifica di priorità (analisi 4, § 9)
@@ -515,7 +671,8 @@
     mappaFacoltative, leggiFacoltative, usoDa, stimaPiani, scegli, superfici, area, centroide, lati, chiudi, indicatori, dividi,
     inviluppo, dentro, rettangoloMinimo, proiezione, sole, ombra, orizzonte, altezzaOrizzonte, svf, trasponi, producibilita,
     climaSintetico, firma, altezzaMedia, uniscio, partiFacciate, irraggiamentoFacciate, riepilogoFacciate, QUOTE_199, obbligoFer,
-    HT_TAB10, htMassimo, PESI_PRIORITA, priorita };
+    HT_TAB10, htMassimo, HT_TAB11, HT_TAB11_QUOTE, htMassimoPrimoLivello, FINESTRE_SU_PARETI, quotaVetrataStimata, DA_VISURA,
+    daVisura, mappaVisura, leggiVisura, perez, massaAria, posaDaSagoma, PESI_PRIORITA, priorita };
   radice.EUGENIO_EDIFICI = API;
   if (typeof module !== "undefined" && module.exports) module.exports = API;
 })(typeof self !== "undefined" ? self : globalThis);

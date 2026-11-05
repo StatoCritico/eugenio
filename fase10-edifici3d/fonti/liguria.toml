@@ -1,0 +1,40 @@
+# Fonti della zona Liguria (fase 10, Fase E, adattatore del 05/11/2026). Gli URL stanno qui, mai nel codice.
+# Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 04/11/2026: WFS 2.0.0 GetCapabilities 200 (AccessConstraints e Fees NONE), scheda RNDT CC BY 4.0;
+# - 05/11/2026: strati M2237:L8178 «Edificato» e M2237:L8177 «Manufatto edilizio»; L8178 in GeoJSON EPSG:3003
+#   (Gauss-Boaga fuso Ovest), nessun campo di altezza, z costante per poligono in 399 su 400; nel punto del primo
+#   edificio (x 1388611, y 4858157) la z vale 141,0 m e il DTM 2023 (WMS M2056, strato L6952, GetFeatureInfo) 137 m: la z
+#   è la quota di gronda, altezza = z − DTM. Domini su 400 oggetti: def_sotterr «Non sotterraneo» 395 / «Sotterraneo» 5,
+#   def_stato «In esercizio» 400, def_porz_est «Ingombro al suolo» 399 / «Aggetto» 1.
+# - Il DTM serve: ritaglio del DTM 2023 (D.2056, CC BY 4.0) nel sistema della zona, passato con --dtm.
+
+[zona]
+nome = "Liguria"
+codice = "lig"
+crs = "EPSG:7791"                       # RDN2008 / UTM 32N
+riquadro = [7.49, 43.75, 10.08, 44.68]
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Regione Liguria – CTR 1:5000 3D / DB topografico, strato Edificato"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Liguria – Carta Tecnica Regionale 1:5000 3D / DB topografico (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/r_liguri:D.2237"
+adattatore = "liguria_ctr3d"
+servizio_tipo = "wfs"
+servizio = "https://geoservizi.regione.liguria.it/geoserver/M2237/wfs"
+strato = "M2237:L8178"
+crs_servizio = "EPSG:3003"
+url = ""
+
+[fonti.dtm]
+descrizione = "Regione Liguria – DTM ed. 2023"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Liguria – DTM 2023 (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/r_liguri:D.2056"
+wms = "https://geoservizi.regione.liguria.it/geoserver/M2056/wms"
+wms_strato = "L6952"
+url = ""                                 # download dalla pagina srvcarto (D.2056.DS), da scrivere dopo il primo download

@@ -57,7 +57,10 @@ def test_elenco_analisi():
 def test_senza_modulo_tutto_non_disponibile(senza):
     s = A.stato()
     assert s["modulo"] is False
-    assert all(not r["disponibile"] and r["messaggio"] == A.NON_DISPONIBILE for r in s["analisi"])
+    # 05/11/2026: 7, 9 e 13 sono nel codice pubblico (pagine del sito), le altre restano al modulo privato
+    assert all(not r["disponibile"] and r["messaggio"] == A.NON_DISPONIBILE for r in s["analisi"] if not r.get("pubblica"))
+    assert {r["id"] for r in s["analisi"] if r.get("pubblica") and r["disponibile"]} == {"7", "9", "13"}
+    assert {a.id for a in A.ANALISI.values() if a.norme} == {"5", "8", "10", "11", "12"}
     with pytest.raises(A.NonDisponibile):
         A.calcola("5", RICHIESTA)
 
@@ -65,11 +68,11 @@ def test_senza_modulo_tutto_non_disponibile(senza):
 def test_modulo_finto(privato):
     privato()
     s = {r["id"]: r for r in A.stato()["analisi"]}
-    assert s["5"]["disponibile"] and not s["7"]["disponibile"] and not s["13"]["disponibile"]
+    assert s["5"]["disponibile"] and not s["10"]["disponibile"] and s["7"]["pubblica"] and s["13"]["pubblica"]
     r = A.calcola("5", RICHIESTA)
     assert r["valori"]["fabbisogno_kwh"] == 1234.5 and "interno" not in r and r["stima"] is True
-    with pytest.raises(A.NonDisponibile):
-        A.calcola("7", RICHIESTA)
+    with pytest.raises(ValueError, match="nella sua pagina"):
+        A.calcola("7", RICHIESTA)                       # pubblica: si calcola nella pagina, non sul server
     with pytest.raises(KeyError):
         A.calcola("99", RICHIESTA)
     with pytest.raises(ValueError):

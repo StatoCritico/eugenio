@@ -206,8 +206,10 @@
     // colonne facoltative di piani e superfici (§ 8 della proposta 3D): si leggono a parte, non sono valori da disegnare;
     // i CSV vecchi, senza queste colonne, si leggono come prima
     const facoltative = ED ? ED.mappaFacoltative(titoli) : {};
+    // colonne visura_… (EuGEnio Visure, fase 11): danno piani e superficie catastale, non sono valori da disegnare
+    const visure = ED && ED.mappaVisura ? ED.mappaVisura(titoli) : {};
     const candidate = titoli.map((t, i) => i).filter((i) => {
-      if (!titoli[i] || MODELLO.has(chiavi[i]) || i in facoltative) return false;
+      if (!titoli[i] || MODELLO.has(chiavi[i]) || i in facoltative || i in visure || /^visura_/i.test(titoli[i])) return false;
       const celle = dati.map((r) => (r[i] || "").trim()).filter(Boolean);
       return celle.length && celle.filter((c) => num(c) !== null).length >= celle.length * 0.6;
     });
@@ -230,8 +232,9 @@
     // colori provvisori: quelli veri li sceglie assegnaColori() quando si conoscono le regioni visibili
     colonne.forEach((c, k) => { c.colore = LIBERI[k % 5][0]; });
     const sedi = corpo.map((r, n) => ({ riga: n, celle: r, valori: colonne.map((c) => num(r[c.indice])),
-      edificio: ED ? ED.leggiFacoltative(facoltative, r) : {} }));
-    return { sep, titoli, chiavi, colonne, sedi, rigaUnita, facoltative: Object.values(facoltative), esempio: note.includes(AVVISO_TITOLO) };
+      edificio: ED ? ED.leggiFacoltative(facoltative, r) : {}, visura: ED && ED.leggiVisura ? ED.leggiVisura(visure, r) : {} }));
+    return { sep, titoli, chiavi, colonne, sedi, rigaUnita, facoltative: Object.values(facoltative), visure: Object.keys(visure).length,
+      esempio: note.includes(AVVISO_TITOLO) };
   }
 
   function csvPerServer(a) {
@@ -593,14 +596,17 @@
   }
 
   // ------------------------------------------------------------------ consumi normalizzati (fase 10, § 9 analisi 2)
-  // consumo o costo di ogni sede diviso la superficie lorda o netta del file (colonne facoltative): kWh/m², Smc/m², €/m².
-  // Solo con le superfici dichiarate nel file: le stime dalla geometria 3D sono nella pagina Modelli 3D.
+  // consumo o costo di ogni sede diviso la superficie lorda, netta o catastale: kWh/m², Smc/m², €/m². Precedenza del § 8:
+  // colonna del file → colonne visura_… (EuGEnio Visure: solo la superficie catastale) → niente (le stime dalla geometria 3D
+  // sono nella pagina Modelli 3D). I valori presi dalla visura sono segnati con «v».
+  const base = (s, k) => (s.edificio && s.edificio[k] ? { v: s.edificio[k], fonte: "file" }
+    : s.visura && s.visura[k] ? { v: s.visura[k], fonte: "visura" } : null);
   function normalizzati() {
     const box = $("normalizzati"), passo = $("passo-normalizzati");
     if (!box || !passo) return [];
     box.innerHTML = "";
-    const basi = [["superficie_lorda", "m² lordi"], ["superficie_netta", "m² netti"]]
-      .filter(([k]) => stato.sedi.some((s) => s.edificio && s.edificio[k]));
+    const basi = [["superficie_lorda", "m² lordi"], ["superficie_netta", "m² netti"], ["superficie_catastale", "m² catastali"]]
+      .filter(([k]) => stato.sedi.some((s) => base(s, k)));
     passo.hidden = !basi.length;
     if (!basi.length) return [];
     const righe = [];
@@ -616,14 +622,18 @@
       r.appendChild(h("th", null, s.titolo || s.id));
       const riga = { sede: s.titolo || s.id, valori: [] };
       combinazioni.forEach(({ c, k }) => {
-        const v = s.valori[stato.colonne.indexOf(c)], a = s.edificio && s.edificio[k];
+        const v = s.valori[stato.colonne.indexOf(c)], b = base(s, k), a = b && b.v;
         const x = v !== null && a ? v / a : null;
         riga.valori.push(x);
-        r.appendChild(h("td", x === null ? "num nd" : "num", x === null ? "—" : fmt(x, Math.abs(x) < 10 ? 2 : 1)));
+        const td = h("td", x === null ? "num nd" : "num", x === null ? "—" : fmt(x, Math.abs(x) < 10 ? 2 : 1) + (b && b.fonte === "visura" ? " v" : ""));
+        if (b && b.fonte === "visura") td.title = `superficie dalla visura: ${fmt(a, 0)} m²`;
+        r.appendChild(td);
       });
       righe.push(riga);
     });
     box.appendChild(t);
+    if (stato.sedi.some((s) => basi.some(([k]) => (base(s, k) || {}).fonte === "visura")))
+      box.appendChild(h("p", "aiuto", "v = superficie presa dalle colonne visura_… (EuGEnio Visure): vale solo se il file non ha la sua colonna; le visure lette da EuGEnio non sostituiscono quelle ufficiali."));
     stato.normalizzati = { intestazioni: ["Sede", ...combinazioni.map(({ c, u }) => `${c.nome} (${testoUnita(c) || "—"}/${u})`)],
       righe: righe.map((r) => [r.sede, ...r.valori]) };
     return righe;
@@ -937,7 +947,7 @@
     if (stato.normalizzati && stato.normalizzati.righe.length)
       tabelle.push({ titolo: "Consumi e costi per metro quadro", tipo: "consumo", intestazioni: stato.normalizzati.intestazioni,
         righe: stato.normalizzati.righe, decimali: stato.normalizzati.intestazioni.map((x, i) => (i ? 2 : null)),
-        nota: "Valori del file divisi per la superficie lorda o netta dichiarata nel file." });
+        nota: "Valori del file divisi per la superficie lorda, netta o catastale: colonna del file, altrimenti visura (segnata con «v»)." });
     return { titolo: "Valori per sede", sottotitolo: `${stato.sedi.length} sedi${nomi ? " – " + nomi : ""}`,
       totali, prezzi, ...immagini, tabelle, note, fonti: [...stato.fonti],
       ...(stato.esempio ? { avviso: { titolo: AVVISO_TITOLO, testo: AVVISO_TESTO } } : {}) };

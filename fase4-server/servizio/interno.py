@@ -102,6 +102,31 @@ def disco() -> dict:
     return out
 
 
+def situazione(s: dict) -> dict:
+    """Stato della zona in una riga, coerente con l'esito dell'ultima notte (05/11/2026): prima diceva «Zona in corso»
+    anche con 0 tessere su 0 e nessuna fonte DSM/LAS attiva, cioè quando la pipeline non può partire.
+    `stato` ∈ completata, in attesa, non avviata, fermata, in corso; `testo` è la frase per la pagina."""
+    fonti = s.get("fonti") or []
+    dsm = [f for f in fonti if f.get("tipo") in ("dsm", "las") and f.get("stato") == "attiva"]
+    corpi = s.get("corpi") or 0
+    tot = s.get("totale_tessere") or 0
+    motivi = []
+    if not dsm:
+        motivi.append("nessuna fonte DSM o LAS attiva")
+    if not corpi or not tot:
+        motivi.append(f"{corpi} corpi della Fase A (manca prepara)")
+    if motivi:
+        return {"stato": "in attesa", "testo": "In attesa: " + " e ".join(motivi) + "."}
+    if s.get("completata"):
+        return {"stato": "completata", "testo": "Zona completata."}
+    ultima = (s.get("esecuzioni") or [{}])[-1]
+    esito = ultima.get("esito")
+    if esito in ("in attesa", "non avviata", "fermata"):
+        m = f": {ultima['motivo']}" if ultima.get("motivo") else ""
+        return {"stato": esito, "testo": f"{esito[:1].upper()}{esito[1:]}{m}."}
+    return {"stato": "in corso", "testo": "Zona in corso."}
+
+
 def stato_edifici() -> dict:
     """Zone dagli stato.json della pipeline (sola lettura); niente percorsi del server nella risposta."""
     zone = []
@@ -121,7 +146,7 @@ def stato_edifici() -> dict:
             "corpi": s.get("corpi"), "conteggi": s.get("conteggi", {}), "qualita": s.get("qualita", {}),
             "esecuzioni": (s.get("esecuzioni") or [])[-30:], "errori": (s.get("errori") or [])[-30:],
             "fonti": s.get("fonti", []), "limiti": s.get("limiti", {}), "disco_pipeline": s.get("disco"),
-            "prossime": da_fare[:20],
+            "prossime": da_fare[:20], "situazione": situazione(s),
             "saltate": sorted(k for k, v in tessere.items() if v.get("stato") == "saltata")[:50],
             "tessere": {k: {c: v.get(c) for c in ("stato", "fonte", "fatta", "corpi", "falde", "qualita", "tentativi",
                                                    "errore", "secondi", "byte_scaricati", "byte_prodotti")}

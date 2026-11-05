@@ -105,11 +105,11 @@
    "edificio": "E-VIC3",
    "fonte": "campione_dsm",
    "descrizione_fonte": "Campione LiDAR sintetico – DSM (prova)",
-   "versione": "campione_dsm:40986:1793756856",
+   "versione": "campione_dsm:40986:1793826407",
    "fonte_dtm": "campione_dtm",
    "licenza": "dati sintetici",
    "attribuzione": "Dati sintetici di esempio (EuGEnio)",
-   "elaborato": "2026-11-04T01:47:37+00:00",
+   "elaborato": "2026-11-04T21:06:47+00:00",
    "altezza_dbtr": 9.0,
    "sintetico": true
   }

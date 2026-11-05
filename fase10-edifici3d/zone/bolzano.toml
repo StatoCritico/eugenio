@@ -1,0 +1,91 @@
+# Zona della pipeline LiDAR: Provincia autonoma di Bolzano (fase 10, Fase E, 05/11/2026). Fuori dalla coda dell'ER: si
+# accende quando ci sono i corpi della Fase A per la zona. In Alto Adige non c'è un DB topografico con le altezze
+# (fonti/regioni.toml): le sagome verranno dai corpi del solo LiDAR (raggruppamento per altezza) o da OSM (ODbL, archivio
+# separato). Gli URL stanno solo qui, mai nel codice.
+#
+# Prove dal vivo del 04–05/11/2026 dal container di sviluppo (nessun blocco aggirato):
+# - WCS 2.0.1 di geoservices9.civis.bz.it, coperture p_bz-Elevation__DigitalElevationModel-0.5m (DSM) e
+#   p_bz-Elevation__DigitalTerrainModel-0.5m (DTM), CC0 1.0 (schede RNDT p_bz:Elevation:…), EPSG:25832, estensione
+#   610544–758512 × 5121880–5216600; GetCoverage di 100×100 m a 0,5 m: 200 image/tiff (DSM 515–609 m, DTM 515–600 m);
+#   GetCoverage di 1×1 km con scalefactor=0.5: 1000×1000 celle a 1 m, 4,2 MB.
+# - Il DTM a 0,5 m copre le aree insediative; fuori resta il 2,5 m (stesso servizio, coperture …-2.5m).
+
+[zona]
+nome = "Provincia autonoma di Bolzano"
+codice = "bz"
+ordine = 21
+archivio = "bz"
+crs = "EPSG:25832"
+riquadro = [610000, 5121000, 759000, 5217000]
+lato_tessera = 1000
+nome_tessera = "bz_{e_km:03d}_{n_km:04d}"
+
+[archivi]
+"CC0 1.0" = "cc-by"                # CC0: nessun obbligo, va nell'archivio aperto con l'attribuzione di cortesia
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[edifici]
+licenza = "CC BY 4.0"
+
+[limiti]
+finestra = ["03:30", "07:00"]
+max_minuti = 120
+min_gb_liberi = 20
+max_gb_notte = 10
+max_mb_tessera = 100
+max_tentativi = 3
+passo_dsm = 1.0
+maschera_m = 30
+aggiorna_giorni = 365
+tieni_grezzi = false
+pausa_url = "http://api:8000/api/salute"
+pausa_max_minuti = 20
+
+[fonti.bz_dsm05]
+tipo = "dsm"
+priorita = 2
+descrizione = "Provincia autonoma di Bolzano – DSM 0,5 m (WCS, chiesto a 1 m)"
+licenza = "CC0 1.0"
+licenza_confermata = true          # scheda RNDT p_bz:Elevation:DigitalElevationModel-0.5m
+attiva = true
+stato = "attiva"
+attribuzione = "Provincia autonoma di Bolzano – DSM 0,5 m (CC0 1.0)"
+scheda = "https://geodati.gov.it/resource/id/p_bz:Elevation:DigitalElevationModel-0.5m"
+verifica = "05/11/2026: GetCoverage 1×1 km con scalefactor=0.5, 200 image/tiff, 1000×1000 celle"
+versione = "fissa"
+versione_fissa = "DSM 0,5 m"
+url = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1&request=GetCoverage&coverageId=p_bz-Elevation__DigitalElevationModel-0.5m&format=image/tiff&subset=E({x0},{x1})&subset=N({y0},{y1})&scalefactor=0.5"
+[fonti.bz_dsm05.copertura]
+riquadri = [[610544, 5121880, 758512, 5216600]]   # estensione dichiarata dal WCS (DescribeCoverage)
+minima = 0.5
+
+[fonti.bz_dtm05]
+tipo = "dtm"
+priorita = 1
+descrizione = "Provincia autonoma di Bolzano – DTM 0,5 m (aree insediative, WCS, chiesto a 1 m)"
+licenza = "CC0 1.0"
+licenza_confermata = true          # scheda RNDT p_bz:Elevation:DigitalTerrainModel-0.5m
+attiva = true
+stato = "attiva"
+attribuzione = "Provincia autonoma di Bolzano – DTM 0,5 m (CC0 1.0)"
+scheda = "https://geodati.gov.it/resource/id/p_bz:Elevation:DigitalTerrainModel-0.5m"
+verifica = "05/11/2026: GetCoverage 100×100 m, 200 image/tiff"
+versione = "fissa"
+versione_fissa = "DTM 0,5 m"
+url = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1&request=GetCoverage&coverageId=p_bz-Elevation__DigitalTerrainModel-0.5m&format=image/tiff&subset=E({x0},{x1})&subset=N({y0},{y1})&scalefactor=0.5"
+
+[fonti.bz_dtm25]
+tipo = "dtm"
+priorita = 2
+descrizione = "Provincia autonoma di Bolzano – DTM 2,5 m (tutta la provincia, WCS)"
+licenza = "CC0 1.0"
+licenza_confermata = true
+attiva = true
+stato = "attiva"
+attribuzione = "Provincia autonoma di Bolzano – DTM 2,5 m (CC0 1.0)"
+scheda = "https://geodati.gov.it/resource/id/p_bz:Elevation:DigitalTerrainModel-0.5m"
+verifica = "04/11/2026: copertura p_bz-Elevation__DigitalTerrainModel-2.5m nel GetCapabilities"
+versione = "fissa"
+versione_fissa = "DTM 2,5 m"
+url = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1&request=GetCoverage&coverageId=p_bz-Elevation__DigitalTerrainModel-2.5m&format=image/tiff&subset=E({x0},{x1})&subset=N({y0},{y1})"
