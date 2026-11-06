@@ -359,8 +359,8 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
 
 ## Menu a gruppi (dal 03/11/2026)
 
-- Seconda riga della testata: cinque gruppi di servizi (Clima e meteo, Patrimonio, Edificio, Cogenerazione,
-  Fotovoltaico), ognuno un `<details class="voce-gruppo">` con `<summary>` (titolo con la freccina) e
+- Seconda riga della testata: sei gruppi di servizi (Clima e meteo, Patrimonio, Edificio, Cogenerazione,
+  Fotovoltaico e, dal 05/11/2026, **Statistiche** con «Costi energetici Sanità»), ognuno un `<details class="voce-gruppo">` con `<summary>` (titolo con la freccina) e
   `<ul class="tendina">`. Il gruppo della pagina aperta ha `data-attivo` (sottolineato nel colore `--primario`), la voce
   `aria-current="page"`: li mette `costruisci_pagine.py`.
 - La tendina è un riquadro `--foglio` con `--ombra-2`, voci alte almeno 2,6rem; gli ultimi due gruppi si aprono verso
@@ -398,7 +398,19 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
   Le pagine restano; sulla loro pagina la voce ha `aria-current` e il gruppo `data-attivo`.
 - Sotto gli 861 px la seconda riga sparisce: i gruppi sono `<details class="pannello-gruppo">` richiudibili dentro il
   pulsante Menu, con quello della pagina già aperto; poi «Altre pagine» e «Aspetto».
-- Voci informative (Indicatori, Come funziona, F.A.Q., Sitografia, Mirror, Contattaci) nella prima riga a destra.
+- Voci informative (Come funziona, F.A.Q., Sitografia, Mirror, Contattaci) nella prima riga a destra; «Indicatori» è
+  diventato «Costi energetici Sanità» nel gruppo Statistiche (05/11/2026, stesso indirizzo `indicatori.html`).
+- **Etichette brevi** (05/11/2026, seconda pubblicazione) nella tendina e quindi nella riga fissata, che la copia:
+  - «sperimentale» → `<span class="cantiere prova breve" title="sperimentale">` con «S» (`aria-hidden`) e il testo intero in
+    `.solo-lettori`; stessi colori di prima (bordo e testo `--primario`; nella riga `--accento-riga`);
+  - «licenza GME» → `<span class="cantiere breve" title="licenza GME: …" aria-hidden="true">GME</span>` (il testo per i
+    lettori di schermo è già sulla voce), bordo tratteggiato come prima;
+  - «in sviluppo» → `<span class="cantiere sviluppo breve" title="in sviluppo">` con un **triangolo giallo** SVG in linea
+    (`fill="#f5c400"`, bordo e punto esclamativo `#1a1a1a`, 1,15rem): il bordo scuro lo stacca dal bianco del tema chiaro
+    (giallo da solo 1,6:1), il giallo dal fondo scuro e dal nero della riga (oltre 10:1); non dipende dal vestito;
+  - nel **menu del telefono** e negli elenchi «Nello stesso gruppo» restano le parole intere (c'è spazio);
+  - le etichette brevi hanno `position: relative` (e `.riga-voci > li` anche): i testi `.solo-lettori` assoluti restano
+    dentro la riga che scorre e non allargano la pagina sul telefono.
 - Pagine segnaposto: `<main class="articolo segnaposto">` con `.gruppo-servizio`, `.stato-pagina` (pallino nel colore
   `--attenzione`), sezioni «Cosa farà», «Come funzionerà», «Fonti previste» (`.fonti-pagina`, licenza in
   `.licenza`), «Nello stesso gruppo» (`.stesso-gruppo`, pillole). Mai dati inventati.
@@ -426,3 +438,16 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
   titolo, eventuale avviso dei dati sintetici in rosso scuro, licenza e citazione di ogni fonte e «Fonte: EuGEnio –
   eugenio.statocritico.it (CC BY 4.0)». Pulsanti «Scarica l'immagine: JPG PNG PDF» sotto la mappa.
 - La piccola mappa d'Italia va in alto a destra accanto al titolo anche in queste pagine (`minimappa.js`, stesse regole).
+- **Salvataggio** (05/11/2026, seconda pubblicazione): dove il browser ha `showSaveFilePicker` (Chrome, Edge sul computer)
+  la finestra «Salva con nome» si apre nel clic e il messaggio «Immagine salvata: nome (dimensione)» compare solo dopo la
+  scrittura; altrove «Download avviato…» e un collegamento `.salva-a-mano` «Salva …» da cliccare. Mai «scaricata» prima di
+  saperlo. Il messaggio va nell'elemento passato a `pulsanti()` (`#messaggio-immagine`).
+- **Livelli e legenda degli strati** (05/11/2026, `strati_gl.js`): caselle `label.casella-strato` in `.caselle-strati`
+  (in Modelli 3D dentro `fieldset.livelli-mappa` «Livelli della mappa» con la casella Ortofoto e la scelta della fonte);
+  con un livello acceso `.legenda-strati` sotto la mappa mostra per ogni strato un segno `.segno-strato` (linea di 22 px nel
+  colore dello strato: giallo `#ffd400` le particelle, azzurro `#00e5ff` i contorni degli edifici, scelti per staccarsi
+  dalle foto e dal corallo dell'edificio scelto), la legenda, la fonte e la licenza (collegamento); le stesse righe vanno
+  nella fascia dell'immagine scaricata. Gli strati si vedono da zoom 16: sotto, la legenda dice «avvicinati».
+- **Ricerca** (`cerca_luogo.js`): stessi due moduli in Ortofoto e Modelli 3D (`.cerca-edificio`), con la riga
+  `#messaggio-cerca` che cita la fonte del punto (ANNCSU o Zornade come collegamento); il punto è un pallino nel colore
+  principale con il bordo bianco; in Modelli 3D si trascina (cursore «move», poi «grabbing»).

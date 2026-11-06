@@ -467,7 +467,7 @@ Caddy serve subito i file statici, ma le parti nuove (`/interno/`, `/edifici3d/`
 
 **28. [Server] Rebuild dell'api.** Una volta sola: comprende Previsioni, Fasi A, B, C ed E e PyJWT. Dura qualche minuto:
 ```bash
-cd ~/energia/fase4-server && docker compose up -d --build api
+cd ~/energia/fase4-server && docker compose up -d --build api && docker compose up -d worker
 docker compose ps api
 ```
 Dopo circa un minuto `docker compose ps api` deve mostrare `Up … (healthy)`.
@@ -588,14 +588,13 @@ crontab -l
 ```
 Cosa aspettarsi:
 - il primo comando stampa `0`. Se stampa `1`, la riga c'è già: **non** dare il secondo comando;
-- `crontab -l` mostra la riga nuova e anche quella dei mercati delle 02:30, che deve restare.
+- `crontab -l` mostra la riga nuova. Righe `servizio.worker …` non devono esserci: con il worker acceso (dal 04/11) sono doppioni (correzione del 05/11).
 
 **Regola (05/11/2026)**: il crontab dell'host si cambia **solo** partendo da `crontab -l` (come qui sopra, o con
-`crontab -e`), **mai** con un `… | crontab -` che non parte da `crontab -l`: sostituisce tutto il crontab. Il 05/11/2026 il
-crontab era vuoto (righe di mercati, indicatori e clima sparite tra il 03/11 e il 04/11, notte dei mercati del 04/11
-saltata). Prima di cambiarlo salva una copia: `crontab -l > ~/crontab_prima_$(date +%Y%m%d).txt`. Dopo **ogni**
-pubblicazione dai `crontab -l` e controlla che ci siano le 4 righe (sezione «Controllo del crontab» di
-`AGGIORNAMENTO_2026-11-05.md`).
+`crontab -e`), **mai** con un `… | crontab -` che non parte da `crontab -l`: sostituisce tutto il crontab. Prima di cambiarlo
+salva una copia: `crontab -l > ~/crontab_prima_$(date +%Y%m%d).txt`. Dopo **ogni** pubblicazione dai `crontab -l`: deve
+esserci solo la riga `edifici-lidar` (il worker, acceso dal 04/11, fa mercati, previsioni, storico, indicatori e clima;
+passo C14 di `AGGIORNAMENTO_2026-11-05.md`). Dopo ogni rebuild dell'api ricrea anche il worker: `docker compose up -d worker`.
 
 La mattina dopo, `tail -30 ~/edifici.log` deve mostrare l'esito «in attesa», come al passo 34.
 

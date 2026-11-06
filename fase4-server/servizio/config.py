@@ -138,6 +138,8 @@ ORTOFOTO_MAX_GB = float(os.environ.get("ORTOFOTO_MAX_GB", "15"))          # tett
 ORTOFOTO_CACHE_S = int(os.environ.get("ORTOFOTO_CACHE_S", "2592000"))     # Cache-Control verso browser e Cloudflare (30 giorni)
 ORTOFOTO_ORA = int(os.environ.get("ORTOFOTO_ORA", "3000"))                # tessere per IP all'ora
 ORTOFOTO_ATTESA_S = float(os.environ.get("ORTOFOTO_ATTESA_S", "6"))       # attesa massima del turno verso la fonte
+# strati sopra le ortofoto (particelle catastali, contorni degli edifici; servizio/strati.py, 05/11/2026): spenti dal .env
+STRATI_SPENTI = {s.strip() for s in os.environ.get("STRATI_SPENTI", "").split(",") if s.strip()}
 
 # confronto PVGIS (fase 10, Fase B; servizio/pvgis.py): chiamato dal server (PVGIS non ha CORS), con copia delle risposte
 PVGIS_URL = os.environ.get("PVGIS_URL", "https://re.jrc.ec.europa.eu/api/v5_3/PVcalc")

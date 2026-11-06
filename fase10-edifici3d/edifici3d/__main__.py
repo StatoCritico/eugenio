@@ -16,6 +16,8 @@ Fase C (LiDAR e pipeline notturna; zone in zone/*.toml):
   python -m edifici3d lidar-fonti --zona rimini [--prova]   # fonti, stato e motivo; --prova controlla dal vivo
   python -m edifici3d campione --uscita /tmp/campione       # campione LiDAR sintetico (prove)
   python -m edifici3d importa-modello edificio.ifc --uscita modello.geojson [--posa …]   # DXF/IFC dell'utente
+  python -m edifici3d dtm-wcs --riquadro 770000 4860000 800000 4890000 --uscita dtm5_rimini.tif   # DTM 5 m dal WCS
+  python -m edifici3d osm-campione --riquadro 12.5600 44.0555 12.5735 44.0640 --nome rimini-prova --archivio …   # prova ODbL
   python -m edifici3d lidar-copertura --zona rimini --fonte rer_dsm_costa_2019   # maschera della copertura (05/11/2026)
   python -m edifici3d lidar-indice --zona trento --fonte pat_dsm_2009            # indice dei file di una fonte a più file
   python -m edifici3d lidar-corpi --zona bolzano --archivio … --riquadro x0 y0 x1 y1   # corpi dal solo LiDAR (§ 7)
@@ -132,6 +134,14 @@ def main(argv=None) -> int:
     lx.add_argument("--max", type=int, help="al più tanti file nuovi per volta"); lx.add_argument("--pausa", type=float, default=0.3)
     ca = sub.add_parser("campione", help="campione LiDAR sintetico con i prodotti della Fase A")
     ca.add_argument("--uscita", type=Path, required=True)
+    oc = sub.add_parser("osm-campione", help="archivio di prova ODbL di un quartiere: OSM (una chiamata all'API) + DTM 5 m dal WCS")
+    oc.add_argument("--riquadro", nargs=4, type=float, required=True, metavar=("LON0", "LAT0", "LON1", "LAT1"))
+    oc.add_argument("--nome", required=True); oc.add_argument("--archivio", type=Path, required=True)
+    oc.add_argument("--altezza-stima", type=float, default=9.0, help="altezza dei corpi senza height né building:levels (0 = nessuna)")
+    oc.add_argument("--senza-dtm", action="store_true"); oc.add_argument("--osm", type=Path, help="file .osm già scaricato")
+    dw = sub.add_parser("dtm-wcs", help="DTM 5 m dell'Emilia-Romagna dal WCS pubblico, a blocchi di 10 km, in un GeoTIFF")
+    dw.add_argument("--riquadro", nargs=4, type=float, required=True, metavar=("X0", "Y0", "X1", "Y1"), help="EPSG:7791")
+    dw.add_argument("--uscita", type=Path, required=True)
     im = sub.add_parser("importa-modello", help="DXF o IFC dell'utente → GeoJSON dei corpi con le falde")
     im.add_argument("file", type=Path); im.add_argument("--uscita", type=Path, required=True)
     im.add_argument("--crs", help="sistema delle coordinate del disegno se è già georeferenziato (es. EPSG:7791)")
@@ -164,6 +174,16 @@ def main(argv=None) -> int:
             pr.add_argument("--dtm", type=Path, help="DTM nel sistema della zona (obbligatorio per la Liguria)")
             pr.add_argument("--archivio", type=Path, required=True); pr.add_argument("--riquadro", nargs=4, type=float)
     a = p.parse_args(argv)
+    if a.cmd == "dtm-wcs":
+        from . import dtm_wcs as DW
+        print(json.dumps(DW.scarica(tuple(a.riquadro), a.uscita), ensure_ascii=False))
+        return 0
+    if a.cmd == "osm-campione":
+        from . import osm_campione as OC
+        esito = OC.prepara(tuple(a.riquadro), a.archivio, a.nome, a.altezza_stima or None, not a.senza_dtm, a.osm)
+        print(json.dumps({k: esito[k] for k in ("corpi", "tessere_corpi", "celle", "centro", "riquadro") if k in esito}, ensure_ascii=False))
+        print("riga per /edifici3d/archivi.json:", json.dumps(OC.voce_archivi(a.nome), ensure_ascii=False))
+        return 0
     if a.cmd == "regioni":
         from . import regioni as RG
         d = RG.carica()

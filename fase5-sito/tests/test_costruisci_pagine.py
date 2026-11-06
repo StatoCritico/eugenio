@@ -71,15 +71,17 @@ def test_modifica_del_modello_arriva_in_tutte_le_pagine(sito, monkeypatch, tmp_p
 
 # ---------------------------------------------------------------- menu a gruppi e pagine segnaposto (03/11/2026)
 GRUPPI = {"clima": ["dati.html", "legge10.html", "./"],
-          "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "visure.html"]}
+          "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "visure.html"],
+          "statistiche": ["indicatori.html"]}
 VIETATI = ("PUN Index GME =", "€/MWh", "Prezzo medio")   # nessun valore nelle pagine in attesa della licenza GME
 
 
-def test_menu_cinque_gruppi_e_voci_raggiungibili(sito):
+def test_menu_sei_gruppi_e_voci_raggiungibili(sito):
     C.main(["--sito", str(sito)])
     t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
     titoli = re.findall(r'<details class="voce-gruppo"[^>]*><summary>([^<]+)</summary>', t)
-    assert titoli == ["Clima e meteo", "Patrimonio", "Edificio", "Cogenerazione", "Fotovoltaico"]
+    # dal 05/11/2026 (seconda pubblicazione) il sesto gruppo Statistiche, con «Costi energetici Sanità» (indicatori.html)
+    assert titoli == ["Clima e meteo", "Patrimonio", "Edificio", "Cogenerazione", "Fotovoltaico", "Statistiche"]
     for gruppo, voci in GRUPPI.items():
         blocco = re.search(rf'data-gruppo="{gruppo}"><summary>.*?</details>', t, re.S).group(0)
         assert re.findall(r'href="([^"]+)"', blocco) == voci
@@ -97,7 +99,12 @@ def test_gruppo_attivo(sito):
     assert re.search(r'<details class="pannello-gruppo" data-gruppo="patrimonio" data-attivo open>', s)
     assert s.count("data-attivo") == 2
     s = (sito / "indicatori.html").read_text(encoding="utf-8")
-    assert "data-attivo" not in s                 # Indicatori sta tra le altre pagine, fuori dai gruppi
+    # dal 05/11/2026 «Costi energetici Sanità» è nel gruppo Statistiche (non più «Indicatori» tra le altre pagine)
+    assert re.search(r'<details class="voce-gruppo" data-gruppo="statistiche" data-attivo>', s) and s.count("data-attivo") == 2
+    altre = re.search(r'<nav class="menu-info"[^>]*>.*?</nav>', s, re.S).group(0)
+    assert "indicatori.html" not in altre and ">Indicatori<" not in s
+    assert "<h1>Costi energetici Sanità</h1>" in s and "Costi energetici Sanità</title>" in s
+    assert "Servizio sperimentale non ancora verificato" not in s     # validata: niente avviso né «S» nel menu
 
 
 def test_segnaposto_senza_dati_gme(sito):
@@ -328,7 +335,7 @@ def test_riga_fissata_nella_testata_e_nel_head():
     assert t.index('class="testata-menu"') < t.index('class="riga-fissata"') < t.index("</header>")
     h = (C.PARTI / "testa.html").read_text(encoding="utf-8")
     assert 'localStorage.getItem("menu-fissato")' in h and "d.dataset.menuFissato" in h
-    assert "clima|patrimonio|edificio|cogenerazione|fotovoltaico" in h
+    assert "clima|patrimonio|edificio|cogenerazione|fotovoltaico|statistiche" in h
     js = (QUI / "sito" / "aspetto.js").read_text(encoding="utf-8")
     for testo in ("Clicca qui per fissare il menu ${nome} sotto la barra",
                   "Clicca qui per richiudere la barra di ${nome} e tornare al menu a tendina", "aria-pressed", '"menu-fissato"'):
@@ -513,7 +520,8 @@ def test_ortofoto_e_modelli3d_05_11():
     assert o.index('src="minimappa.js') < o.index('src="ortofoto.js')         # window.EUGENIO prima della pagina
     assert 'id="scarica-ortofoto"' in o and 'id="messaggio-immagine"' in o and "ISTAT" in o
     m = (QUI / "sito" / "modelli3d.html").read_text(encoding="utf-8")
-    for id_ in ("cerca-indirizzo", "cerca-catasto", "genera-3d", "torna-2d", "apri-demo", "scarica-3d", "fonti-corpi", "aiuto-3d"):
+    # i moduli di ricerca li crea cerca_luogo.js nel contenitore (seconda pubblicazione del 05/11/2026)
+    for id_ in ("cerca-edificio", "genera-3d", "torna-2d", "apri-demo", "scarica-3d", "fonti-corpi", "aiuto-3d"):
         assert f'id="{id_}"' in m, id_
     assert 'href="modelli3d.html?archivio=demo"' in m
     for js in ("minimappa.js", "confini_gl.js", "esporta_mappa.js"):
@@ -554,3 +562,39 @@ console.log(JSON.stringify({ lo, la, rimini: C.svgLonlat(S * 788000 + AX, -S * 4
     assert d["rimini"][0] == pytest.approx(lon, abs=2e-6) and d["rimini"][1] == pytest.approx(lat, abs=2e-6)
     lon, lat = t.transform(500000 + 3.5683 * 80180, 4879000)
     assert d["lo"] == pytest.approx(lon, abs=2e-6) and d["la"] == pytest.approx(lat, abs=2e-6)
+
+
+# ---------------------------------------------------------------- seconda pubblicazione del 05/11/2026 (menu e mappe)
+def test_etichette_brevi_nelle_tendine():
+    """Nelle tendine (e quindi nella riga fissata, che le copia) «S», «GME» e il triangolo giallo; testo intero nel title e
+    per i lettori di schermo; nel menu del telefono le parole intere."""
+    t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
+    tendine = "".join(re.findall(r'<ul class="tendina">.*?</ul>', t, re.S))
+    pannello = re.search(r'<nav class="menu-pannello".*?</nav>', t, re.S).group(0)
+    assert ">sperimentale<" not in tendine and ">in sviluppo<" not in tendine and ">licenza GME<" not in tendine
+    s = re.findall(r'<span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> \(sperimentale\)</span></span>', tendine)
+    v = re.findall(r'<span class="cantiere sviluppo breve" title="in sviluppo"><svg class="segnale"[^>]*aria-hidden="true"', tendine)
+    g = re.findall(r'<span class="cantiere breve" title="licenza GME[^"]*" aria-hidden="true">GME</span>', tendine)
+    assert len(s) == pannello.count(">sperimentale<") == 15 and len(v) == pannello.count(">in sviluppo<") == 5 and len(g) == 6
+    assert tendine.count('fill="#f5c400"') == 5 and tendine.count('stroke="#1a1a1a"') >= 5      # giallo con il bordo scuro
+    css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
+    assert ".cantiere.breve" in css and ".cantiere .segnale" in css
+    # «Costi energetici Sanità» senza etichetta (pagina validata)
+    assert re.search(r'<a href="indicatori.html">Costi energetici Sanità</a>', tendine)
+
+
+def test_ortofoto_e_modelli3d_seconda_pubblicazione():
+    o = (QUI / "sito" / "ortofoto.html").read_text(encoding="utf-8")
+    m = (QUI / "sito" / "modelli3d.html").read_text(encoding="utf-8")
+    for s in (o, m):
+        assert 'src="cerca_luogo.js?v=' in s and 'src="strati_gl.js?v=' in s and 'id="caselle-strati"' in s and 'id="legenda-strati"' in s
+        assert "Agenzia" in s and "OpenStreetMap" in s and "ODbL" in s
+    assert 'id="cerca-luogo"' in o
+    assert 'id="esci-demo" href="modelli3d.html"' in m and 'id="strato-ortofoto"' in m and 'id="cerca-edificio"' in m
+    e = (QUI / "sito" / "esporta_mappa.js").read_text(encoding="utf-8")
+    assert "showSaveFilePicker" in e and "AbortError" in e and "Download avviato" in e and "controllaCopia" in e
+    assert "Immagine scaricata" not in e          # niente più «scaricata» detto prima di sapere se il file è partito
+    j = (QUI / "sito" / "edificio3d.js").read_text(encoding="utf-8")
+    assert "trascinaPunto" in j and "puntoCambiato" in j and "EUGENIO_CERCA" in j and "EUGENIO_STRATI" in j
+    st = (QUI / "sito" / "strati_gl.js").read_text(encoding="utf-8")
+    assert "/api/ortofoto/strati" in st and "zornade" not in st.lower()     # nessuna dipendenza nuova da Zornade

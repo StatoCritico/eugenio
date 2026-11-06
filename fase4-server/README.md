@@ -228,6 +228,9 @@ Siccome il server riscrive `dati/indicatori/`, `dati/clima/` e i due CSV, **il s
 | GET | `/api/edifici/clima-orario/{istat}?anno=AAAA` | (04/11/2026, fase 10) un anno orario di radiazione globale e diffusa, temperatura e vento dall'archivio orario del comune, per la producibilità FV nel browser; 503 finché manca l'archivio |
 | GET | `/api/ortofoto/fonti` | (04/11/2026, Fase B) fonti delle ortofoto accese, con licenza, citazione, stato («confermata», «da confermare»), zoom, riquadro e modello d'indirizzo delle tessere |
 | GET | `/api/ortofoto/{fonte}/{z}/{x}/{y}.jpg` | (Fase B) tessera 256×256 in web mercator dal proxy con copia su disco (`servizio/ortofoto.py`); 404 fuori zona o per una fonte spenta, 502 se la fonte risponde con un errore, 503 se il ritmo verso la fonte è esaurito |
+| GET | `/api/ortofoto/strati` | (05/11/2026, seconda pubblicazione) strati sopra le ortofoto accesi (`servizio/strati.py`): tema (`particelle`, `edifici`), regioni, licenza, citazione, colore, legenda, zoom, riquadro e modello d'indirizzo delle tessere |
+| GET | `/api/ortofoto/strati/{id}/{z}/{x}/{y}.png` | tessera **trasparente** 256×256 in web mercator: particelle catastali dell'Agenzia delle Entrate (WMS in EPSG:4258 riproiettato), contorni degli edifici del DBTR; solo linee, ricolorate; copia su disco, ritmo e limite come le ortofoto; 404 fuori zona o zoom, 502 se la fonte sbaglia, 503 col ritmo esaurito |
+| GET | `/api/ortofoto/strati/osm_edifici/16/{x}/{y}.json` | sagome degli edifici di OpenStreetMap (ODbL) della tessera z16, in GeoJSON, dall'API Overpass, con copia su disco |
 | GET | `/api/edifici/orizzonte?lat=&lon=&h=&direzioni=72` | (Fase B) orizzonte del terreno fino a 25 km dal Copernicus DEM 90 m (file `.om` di Open-Meteo su S3, come la fase 3), angoli per direzione; copia su disco per punto (~100 m) |
 | POST | `/api/edifici/pvgis` | (Fase B) `{lat, lon, aree: [{id, kwp, inclinazione, orientamento, montaggio, perdite, orizzonte}]}` → PVGIS `PVcalc` chiamato dal server con `userhorizon` e senza, per area; massimo 12 aree; risposte copiate su disco |
 | GET | `/api/interno/edifici/stato` | (Fase C, **interna**) stato della pipeline notturna degli edifici (zone, tessere, ultime 30 notti, qualità, errori, disco, fonti); solo con il JWT di Cloudflare Access verificato (`servizio/interno.py`); 403 senza o con gettone non valido, 503 se `CF_ACCESS_TEAM_DOMAIN`/`CF_ACCESS_AUD` mancano nel `.env`; `X-Robots-Tag: noindex`, `no-store` |
@@ -598,6 +601,26 @@ l'informativa privacy.
 - Prove: `tests/test_ortofoto.py` (9, risposte simulate) e `tests/test_pvgis_orizzonte.py` (5, DEM sintetico e risposte
   simulate); `tests/test_edifici.py` con il report della Fase B. Dal vivo, dal container di sviluppo il 04/11/2026: WMS RER
   2023-24, WMS Toscana, EOX 2016, WMS del Geoportale Nazionale, PVGIS (con e senza `userhorizon`) e DEM su S3 rispondono.
+
+## Strati sopra le ortofoto (05/11/2026, seconda pubblicazione)
+
+- **`servizio/strati.py`** – stesso schema del proxy delle ortofoto (copia in `CARTELLA_ORTOFOTO/strati/`, ritmo verso la
+  fonte per tutti gli utenti, limite per indirizzo «ortofoto», `Cache-Control` di 30 giorni), per immagini **trasparenti**:
+  - **particelle catastali** (`catasto`): WMS INSPIRE dell'Agenzia delle Entrate, CC BY 4.0, senza EPSG:3857 né CORS. Si
+    chiede il riquadro in EPSG:4258 (WMS 1.3.0, assi lat,lon) e si **riproiettano le righe** in web mercator (la longitudine
+    è lineare in tutte e due: basta spostare le righe secondo la latitudine, esatto al pixel); con `metatessera = 2` si
+    chiede un blocco 2×2 e si tiene la tessera in alto a destra (la scritta del servizio in basso a sinistra cade fuori);
+    `contorni = true` toglie il riempimento e lascia linee e numeri nel colore del TOML;
+  - **contorni degli edifici**: DBTR dell'Emilia-Romagna (`dbtr_edifici`, strato `EDI_Edificio`, EPSG:3857) e, per le altre
+    regioni, OpenStreetMap (`osm_edifici`, Overpass, GeoJSON a tessere z16, archivio ODbL separato).
+- Rotte sotto `/api/ortofoto/` apposta: il **Caddyfile non cambia** (nessuna compressione, timeout di 30 s) e la regola di
+  rate limiting di Cloudflare, che esclude `/api/ortofoto/`, vale anche qui. Spegnimento senza toccare i TOML:
+  `STRATI_SPENTI=id1,id2` nel `.env`, poi `docker compose up -d api`.
+- TOML in `fase10-edifici3d/ortofoto/strati/` (copiati nell'immagine con la riga già esistente del Dockerfile).
+- Prove: `tests/test_strati.py` (8, risposte simulate: riproiezione esatta, contorni senza griglia ai bordi, blocco 2×2,
+  Overpass → GeoJSON, rotte, copia, spegnimento, coerenza con `fonti/regioni.toml`). Dal vivo dal container il 05/11/2026:
+  WMS AdE e WMS DBTR rispondono (Rimini, zoom 17 e 18, allineati all'ortofoto RER); Overpass no (da provare dal server).
+- Pubblicazione: rebuild dell'api e poi `docker compose up -d worker` (procedura D di `AGGIORNAMENTO_2026-11-05.md`).
 
 ## Pipeline LiDAR e pagina di stato interna (fase 10, Fase C, dal 04/11/2026)
 

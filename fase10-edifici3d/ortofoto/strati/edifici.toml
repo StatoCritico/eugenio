@@ -1,0 +1,59 @@
+# Strati sopra le ortofoto (05/11/2026, seconda pubblicazione): contorni degli edifici. Letti da
+# fase4-server/servizio/strati.py. Per ogni regione vale lo strato con `regioni` che la contiene (DB topografico
+# regionale, solo se in fonti/regioni.toml la fonte «edifici» di quella regione è «attiva»: lo controlla un test della
+# fase 4); altrove lo strato senza `regioni` (OpenStreetMap, archivio ODbL separato).
+#
+# Emilia-Romagna, DBTR (WMS pubblico servizigis.regione.emilia-romagna.it/wms/dbtr, CC BY 4.0 come la scheda del
+# catalogo): strato EDI_Edificio (sagome degli edifici, visibile fino a 1:14.174 → zoom ≥ 16); l'UVL (unità
+# volumetriche) si vede solo sotto 1:1.890 (zoom ≥ 19) e per i contorni basta l'edificio. EPSG:3857 offerto.
+# Prova dal container del 05/11/2026: GetMap PNG 512×512 RGBA sul centro di Rimini 200, sagome rosa con il bordo rosso,
+# allineate all'ortofoto RER (stessa verifica del blocco 5: scarto ~0,5 m). Il proxy lascia solo i bordi.
+#
+# OpenStreetMap: sagome «building» dall'API Overpass (overpass-api.de), a tessere dello zoom 16, in GeoJSON; licenza
+# ODbL 1.0 («© contributori OpenStreetMap»), copia sul server in strati/osm/ separata dagli archivi CC BY.
+# **Non raggiungibile dal container di sviluppo** (connessione chiusa, 05/11/2026): codice provato con risposte simulate;
+# da provare dal server (passo D9 di AGGIORNAMENTO_2026-11-05.md). Se Overpass non risponde lo strato resta vuoto e la
+# pagina lo dice.
+
+[[strato]]
+id = "dbtr_edifici"
+tema = "edifici"
+nome = "Contorni degli edifici – DBTR Emilia-Romagna"
+tipo = "wms"
+url = "https://servizigis.regione.emilia-romagna.it/wms/dbtr"
+livello = "EDI_Edificio"
+crs = "EPSG:3857"
+formato = "image/png"
+licenza = "CC BY 4.0"
+citazione = "Regione Emilia-Romagna – Database topografico regionale (DBTR), edifici, CC BY 4.0 (contorni ricolorati da EuGEnio)"
+scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/database-topografico-regionale/immobili-e-antropizzazioni/edificato/layer-6"
+stato = "confermata"
+attiva = true
+regioni = ["08"]
+zoom = [16, 20]
+riquadro = [9.19, 43.71, 12.84, 45.15]
+contorni = true
+colore = "#00e5ff"
+legenda = "linee azzurre: contorni degli edifici del DBTR"
+ritmo = { al_secondo = 4, all_ora = 4000 }
+
+[[strato]]
+id = "osm_edifici"
+tema = "edifici"
+nome = "Contorni degli edifici – OpenStreetMap"
+tipo = "overpass"
+url = "https://overpass-api.de/api/interpreter"
+# 06/11/2026 dal server: overpass-api.de 200 in ~15 s ma a volte 502 (sovraccarico); maps.mail.ru 200 in ~10 s;
+# overpass.private.coffee e overpass.kumi.systems senza risposta entro 30 s
+url_riserva = ["https://maps.mail.ru/osm/tools/overpass/api/interpreter"]
+licenza = "ODbL 1.0"
+citazione = "© contributori OpenStreetMap (ODbL 1.0), tramite l'API Overpass"
+scheda = "https://www.openstreetmap.org/copyright"
+stato = "confermata"
+attiva = true
+zoom = [16, 16]
+riquadro = [6.6, 35.4, 18.6, 47.1]
+colore = "#00e5ff"
+legenda = "linee azzurre: contorni degli edifici di OpenStreetMap"
+nota = "Da zoom 16: le sagome arrivano a tessere; completezza variabile secondo la zona."
+ritmo = { al_secondo = 1, all_ora = 300 }

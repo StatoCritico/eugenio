@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
-from . import analisi, config as C, edifici, interno, meteo, modello, orizzonte, ortofoto, protezione as P, pvgis, report, storici, tabelle
+from . import analisi, config as C, edifici, interno, meteo, modello, orizzonte, ortofoto, protezione as P, pvgis, report, storici, strati, tabelle
 from .report_servizi import CON_FORMATO as REPORT_CON_FORMATO, TIPI as TIPI_REPORT
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -30,6 +30,7 @@ if C.ORIGINI_CORS:
 
 app.include_router(storici.router)   # pagina "Dati climatici": /api/storici/...
 app.include_router(edifici.router)   # edifici 3D (fase 10): gradi giorno mensili e clima orario per firma e FV
+app.include_router(strati.router)   # strati sopra le ortofoto (particelle, contorni edifici), prima delle tessere
 app.include_router(ortofoto.router)  # ortofoto (fase 10, Fase B): proxy con copia su disco, una fonte per TOML
 app.include_router(pvgis.router)     # confronto PVGIS chiamato dal server (fase 10, Fase B)
 app.include_router(orizzonte.router) # orizzonte lontano dal Copernicus DEM 90 m (fase 10, Fase B)

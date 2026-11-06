@@ -18,6 +18,10 @@
 //    secondo clic sul comune = lo toglie;
 //  - «Scarica l'immagine» in JPG, PNG o PDF della vista com'è, con licenza e citazione delle fonti dentro l'immagine
 //    (esporta_mappa.js); non per le fonti «solo consultazione dal vivo».
+// Seconda pubblicazione del 05/11/2026: ricerca per indirizzo o per comune, foglio e particella (cerca_luogo.js, lo stesso
+// modulo di Modelli 3D) che porta la mappa sul punto con un segnaposto; strati attivabili sopra la foto (strati_gl.js:
+// particelle catastali dell'Agenzia delle Entrate, contorni degli edifici) con legenda e attribuzione sotto la mappa e
+// nell'immagine scaricata; messaggio dell'immagine solo a file davvero salvato o avviato (esporta_mappa.js).
 // Indirizzo: ?lat=…&lon=…&z=… per aprire su un punto, ?fonte=<id> per scegliere la fonte.
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -27,7 +31,7 @@
   const q = new URLSearchParams(location.search);
   const centro = [Number(q.get("lon")) || 12.5683, Number(q.get("lat")) || 44.0594];
   const CONTESTO = "s2cloudless2016";
-  const stato = { fonti: [], scelta: null, mappa: null, contesto: null, edifici: null, confini: null, regione: null, comune: null };
+  const stato = { fonti: [], scelta: null, mappa: null, contesto: null, edifici: null, confini: null, regione: null, comune: null, strati: null, cercato: null };
   const colore = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
   function h(tag, cls, t) { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; }
   function messaggio(t, errore = false) { const m = $("messaggio"); m.textContent = t; m.classList.toggle("errore", errore); }
@@ -63,7 +67,7 @@
       ? { type: "raster", url: `pmtiles://${location.origin}${f.pmtiles}`, tileSize: 256, attribution: f.citazione }
       : { type: "raster", tiles: [location.origin + f.tessere], tileSize: 256, minzoom: f.zoom[0], maxzoom: f.zoom[1], bounds: f.riquadro, attribution: f.citazione };
   }
-  const sopraLe = () => ["edifici", "confini-comuni-clic", "confini-regioni-clic"].find((id) => stato.mappa.getLayer(id));
+  const sopraLe = () => ["strato-particelle", "strato-dbtr_edifici", "strato-osm", "edifici", "cercato", "confini-comuni-clic", "confini-regioni-clic"].find((id) => stato.mappa.getLayer(id));
   function contesto() {
     const m = stato.mappa, f = stato.fonti.find((x) => x.id === CONTESTO);
     stato.contesto = f || null;
@@ -178,6 +182,8 @@
       righe.push(`Contesto: ${stato.contesto.citazione} – licenza ${stato.contesto.licenza} (${stato.contesto.scheda}).`);
     if (stato.edifici && m.getLayer("edifici") && m.getLayoutProperty("edifici", "visibility") !== "none")
       righe.push(`Edifici: ${stato.edifici.attribuzione || "DBTR Emilia-Romagna"} (${stato.edifici.licenza || "CC BY 4.0"}).`);
+    if (stato.strati) righe.push(...stato.strati.righe());
+    if (stato.cercato) righe.push(`Punto cercato: ${stato.cercato}.`);
     righe.push(`${C ? C.ATTRIBUZIONE : "Confini: ISTAT (CC BY 4.0)"}. Mappa: MapLibre GL JS (BSD-3).`);
     const pos = `centro ${c.lat.toFixed(5)} N, ${c.lng.toFixed(5)} E, zoom ${z.toFixed(1)}`;
     return { titolo: `Ortofoto – ${pos}`, righe, nome: `ortofoto_${c.lat.toFixed(4)}_${c.lng.toFixed(4)}` };
@@ -227,6 +233,16 @@
     await siti();
     await edifici(m);
     contesto();
+    // segnaposto del punto cercato (sopra la foto e gli strati, sotto i confini cliccabili)
+    m.addSource("cercato", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    m.addLayer({ id: "cercato", type: "circle", source: "cercato", paint: { "circle-radius": 7, "circle-color": colore("--primario"),
+      "circle-stroke-color": "#fff", "circle-stroke-width": 2 } }, ["confini-comuni-clic", "confini-regioni-clic"].find((id) => m.getLayer(id)));
+    if (window.EUGENIO_STRATI) {
+      try {
+        stato.strati = await window.EUGENIO_STRATI.aggiungi(m, { caselle: $("caselle-strati"), legenda: $("legenda-strati"),
+          sotto: () => ["edifici", "cercato", "confini-comuni-clic", "confini-regioni-clic"].find((id) => m.getLayer(id)) });
+      } catch { /* strati non disponibili */ }
+    }
     $("edifici").addEventListener("change", (e) => { if (m.getLayer("edifici")) m.setLayoutProperty("edifici", "visibility", e.target.checked ? "visible" : "none"); });
     const c = [m.getCenter().lng, m.getCenter().lat], qui = stato.fonti.filter((f) => copre(f, c) && f.id !== CONTESTO);
     const chiesta = stato.fonti.find((f) => f.id === q.get("fonte"));
@@ -235,11 +251,21 @@
     m.on("moveend", elenco);
     m.on("zoomend", aggiornaAvviso);
     m.on("error", (e) => { if (e && (e.sourceId === "ortofoto" || e.sourceId === "contesto")) messaggio("Alcune tessere non sono arrivate (fonte lenta o fuori zona).", true); });
-    if (window.EUGENIO_ESPORTA) {
-      window.EUGENIO_ESPORTA.pulsanti($("scarica-ortofoto"), m, opzioniImmagine, (t, e) => {
-        const x = $("messaggio-immagine"); x.textContent = t; x.classList.toggle("errore", !!e);
-      });
-    }
+    if (window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-ortofoto"), m, opzioniImmagine, $("messaggio-immagine"));
   })();
+
+  // ricerca per indirizzo o per dati catastali: la mappa va sul punto, con il segnaposto
+  if (window.EUGENIO_CERCA) {
+    window.EUGENIO_CERCA.crea($("cerca-luogo"), {
+      suTrovato: (lon, lat, riga) => {
+        const m = stato.mappa;
+        if (!m || !m.getSource("cercato")) return;
+        m.getSource("cercato").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [lon, lat] } }] });
+        stato.cercato = `${[riga.indirizzo_trovato, riga.comune_catasto].filter(Boolean).join(", ") || `${lat.toFixed(5)}, ${lon.toFixed(5)}`}`
+          + ` (${riga.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT, CC BY 4.0" : "dati elaborati da Zornade, zornade.com"})`;
+        m.flyTo({ center: [lon, lat], zoom: Math.max(18, m.getZoom()), duration: 900 });
+      },
+    });
+  }
   window.EUGENIO_ORTOFOTO = { stato, opzioniImmagine };
 })();

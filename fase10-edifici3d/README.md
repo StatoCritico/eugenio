@@ -1,6 +1,11 @@
 # Fase 10 – Edifici 3D, ortofoto, LiDAR e analisi energetiche
 
-Stato al 05/11/2026: **affinamenti Edificio** (sezione «Affinamenti Edificio – blocco 2»: Tabella 11 del DM requisiti
+Stato al 05/11/2026, seconda pubblicazione (`?v=20261105b`): **strati sopra le ortofoto** (particelle catastali
+dell'Agenzia delle Entrate riproiettate dal proxy, contorni degli edifici DBTR/OSM), **archivio di prova OSM** del centro di
+Rimini (`osm-campione`), **DTM dal WCS a blocchi** (`dtm-wcs`) e la tabella **«Cosa manca per passare dalla demo al servizio
+vero»** (sezione «Strati sopra le ortofoto, archivio di prova e strumenti per il servizio vero»); 96 test.
+
+Prima, **affinamenti Edificio** (sezione «Affinamenti Edificio – blocco 2»: Tabella 11 del DM requisiti
 minimi, trasposizione di Perez confrontata con PVGIS, colonne `visura_…`, Patrimonio → Modelli 3D, posa sulla sagoma
 dell'archivio, corpi dal solo LiDAR, ombre degli alberi); prima, lo stesso giorno, **edifici fuori dall'Emilia-Romagna** (sezione «Edifici fuori dall'Emilia-Romagna – come si usa»):
 adattatori dei DB topografici di Lombardia, FVG e Liguria → corpi, provati su piccoli campioni scaricati dal vivo; zone
@@ -670,8 +675,56 @@ metodo: si dividono a mano nella pagina 3D); C10, demolito, non compare; nessun 
   Rimini, senza legame con edifici veri: sopra l'ortofoto sembravano ruotati (convergenza della griglia ~2,5° e strade vere a
   ~45°). La catena dei dati veri è corretta: le UVL del WMS DBTR e le sagome OSM vere (4326 → 7791 → `feature_da_corpi` →
   PMTiles → pagina) coincidono con l'ortofoto RER 2023-24 entro circa 1 m. Ora la demo non va mai sopra una foto vera.
-- Il WMS della cartografia catastale dell'Agenzia delle Entrate (CC BY 4.0) non offre EPSG:3857 né CORS: per usarlo come
-  strato servirebbe la riproiezione nel proxy del server (rinviato).
+- Il WMS della cartografia catastale dell'Agenzia delle Entrate (CC BY 4.0) non offre EPSG:3857 né CORS: **fatto nella
+  seconda pubblicazione del 05/11** (sezione qui sotto), con la riproiezione nel proxy del server.
+
+## Strati sopra le ortofoto, archivio di prova e strumenti per il servizio vero (05/11/2026, seconda pubblicazione)
+
+- **Strati** (`ortofoto/strati/*.toml`, letti da `fase4-server/servizio/strati.py`, rotte `/api/ortofoto/strati…`; nelle
+  pagine con `fase5-sito/sito/strati_gl.js`):
+  - `catasto.toml`: **particelle catastali** dell'Agenzia delle Entrate (WMS INSPIRE, CC BY 4.0). Il servizio offre solo
+    sistemi geografici e UTM: il proxy chiede il riquadro in EPSG:4258 (assi lat,lon) e **riproietta riga per riga** in
+    web mercator (esatto al pixel); chiede un blocco di 2×2 tessere e tiene quella in alto a destra (la scritta del servizio
+    cade fuori), toglie il riempimento beige e lascia linee e numeri in giallo. Provato dal vivo il 05/11 sul centro di
+    Rimini (zoom 17 e 18): confini allineati all'ortofoto RER e al DBTR. Non copre Trento, Bolzano e il catasto tavolare;
+  - `edifici.toml`: **contorni degli edifici**, per regione: Emilia-Romagna dal WMS DBTR (strato `EDI_Edificio`, che si
+    vede da 1:14.174 = zoom 16; l'UVL solo da zoom 19), fuori ER **OpenStreetMap** via Overpass (ODbL, tessere z16 in
+    GeoJSON). Un test controlla che ogni strato regionale corrisponda a una fonte «edifici» **attiva** in
+    `fonti/regioni.toml`. Overpass **non risponde dal container** (connessione chiusa): codice provato con risposte
+    simulate, da provare dal server. Lombardia (ArcGIS `export` del DBGT) provata: immagine vuota alle scale utili, non
+    accesa.
+- **`osm-campione`** (`edifici3d/osm_campione.py`): archivio di prova **ODbL** di un quartiere con **una sola** chiamata
+  all'API di OpenStreetMap (riquadro al più ~2×2 km) e un GetCoverage del DTM 5 m; altezze da `height` o
+  `building:levels` × 3 m, altrimenti **stima dichiarata** (9 m). Il 05/11 per il centro di Rimini (12,5600–12,5735 E,
+  44,0555–44,0640 N): 532 edifici, 528 corpi, 27 tessere, 1,3 MB di prodotti, 12 s. Pacchetto da mettere sul server:
+  `edifici_rimini_prova_2026-11-05.tar.gz` (con `archivi.json`, `LICENZE.txt`, `LEGGIMI_ARCHIVIO_PROVA.txt`).
+- **`dtm-wcs`** (`edifici3d/dtm_wcs.py`): DTM 5×5 m dal WCS pubblico `dtm5x5` a blocchi di 10 km (ripresa, mosaico in un
+  GeoTIFF deflate); provato il 05/11: un blocco di 10×10 km = 2000×2000 celle, 15 MB, 35 s.
+
+### Cosa manca per passare dalla demo al servizio vero
+
+Oggi sul server non c'è nessun archivio di edifici: Modelli 3D cerca il punto e mostra ortofoto e strati, ma il 3D si genera
+solo sulla demo sintetica. Con l'**archivio di prova OSM** del centro di Rimini (passo D13 di `AGGIORNAMENTO_2026-11-05.md`)
+il flusso vero funziona già lì (ricerca, punto trascinabile, «Genera il 3D», immagine e report), con altezze stimate. Il
+servizio vero in Emilia-Romagna usa le **unità volumetriche del DBTR** (altezza per corpo, CC BY 4.0) e il **DTM 5 m**.
+
+| # | Passo | Chi | Tempo e spazio (stime) |
+|---|---|---|---|
+| 1 | **Prenotare l'estrazione del DBTR** dal Geoportale: pagina «Download DB Topografico» (`https://geoportale.regione.emilia-romagna.it/download-data/download-dbtopografico`), area = comune o provincia di Rimini (o tutta la regione), classe **Unità volumetrica (UVL)** (facoltativo: Edificio), formato **GeoPackage**, sistema **RDN2008 / UTM 32N (EPSG:7791)**. Il modulo ha il reCAPTCHA e la consegna è per email: l'agente non può farlo (e non deve aggirarlo). Il WFS del DBTR non è un'alternativa (401 il 03/11, 404 il 05/11/2026). | **Paolo** | 5 minuti + attesa dell'email; GeoPackage stimato 50–150 MB per la provincia di Rimini, 1–3 GB per la regione (da verificare sul file) |
+| 2 | Copiare il GeoPackage sul server: `scp UVL_rimini.gpkg eugenio:/srv/energia/dati/edifici/cc-by/er/grezzi/` (creare prima la cartella con `mkdir -p`). In alternativa metterlo in `C:\Users\ingpa\Documents\claude\pj\statocritico\edifici\`: l'agente lo legge dal PC, prepara l'archivio nel suo ambiente e ti restituisce un tar come quello di prova. | **Paolo** (o agente dal PC) | minuti |
+| 3 | **DTM 5 m** della zona dal WCS pubblico, sul server: `docker compose --profile edifici run --rm edifici-lidar dtm-wcs --riquadro 770000 4860000 800000 4895000 --uscita /dati/edifici/cc-by/er/grezzi/dtm5_rimini.tif` (comune di Rimini e dintorni, 30×35 km, 12 blocchi). Per tutta la regione: i quattro quadranti TIFF della scheda del DTM (~4,9 GB) in `cc-by/er/grezzi/`. | **Paolo** (comando pronto) | ~7 minuti e ~180 MB per 30×35 km; ~1 h per i quadranti |
+| 4 | **Controllo degli attributi**: `docker compose --profile edifici run --rm edifici-lidar controlla-uvl --gpkg /dati/edifici/cc-by/er/grezzi/UVL_rimini.gpkg` (rapporto su H_uvl, B_uvl, gronda/colmo, piani). | Paolo; l'agente legge il rapporto | 1–2 minuti |
+| 5 | **`prepara`**: `docker compose --profile edifici run --rm edifici-lidar prepara --gpkg /dati/edifici/cc-by/er/grezzi/UVL_rimini.gpkg --dtm /dati/edifici/cc-by/er/grezzi/dtm5_rimini.tif --archivio /dati/edifici --riquadro 770000 4860000 800000 4895000`. Scrive `cc-by/er/prodotti/` (corpi.pmtiles, contesto/, dtm_cog.tif, terreno.pmtiles, indice.json). | Paolo | provincia di Rimini: 5–20 minuti, 50–200 MB; regione intera a zone (una provincia per volta), qualche ora e 1–3 GB |
+| 6 | **`archivi.json`** in `/srv/energia/dati/edifici/`: il DBTR **prima** dell'archivio di prova OSM (o l'archivio di prova tolto): `{"archivi": [{"base": "/edifici3d/cc-by/er/prodotti/", "nome": "DBTR Emilia-Romagna"}, {"base": "/edifici3d/odbl/rimini-prova/prodotti/", "nome": "OpenStreetMap – rimini-prova (archivio di prova)"}]}`. | Paolo (testo pronto) | 1 minuto |
+| 7 | **Caddy**: niente da fare. `/edifici3d/` è già servito dalla cartella `CARTELLA_EDIFICI` (sola lettura, Range, CORS, cache di un giorno); nessun riavvio. | — | — |
+| 8 | **Prove**: Modelli 3D → «via Gambalunga 27, Rimini» → l'edificio UVL del punto (trascinare il punto se serve) → «Genera il 3D» (fonte «DB topografico regionale»); Ortofoto → «contorni dell'archivio 3D» accesi. | Paolo; l'agente corregge quello che non va | 10 minuti |
+| 9 | **Dopo, da sola, la pipeline LiDAR** (cron delle 3:30, `edifici-lidar`, zona Rimini): trovati i corpi della Fase A, lavora le tessere coperte dal **DSM della costa 2019** (falde per corpo dal LiDAR, CC BY 4.0, fascia costiera); per il resto resta «in attesa» finché non arrivano DSM/LAS RER 2023-24 (email all'Archivio Cartografico) o il LiDAR PNRR. La pagina interna `/interno/edifici.html` passa da «In attesa: … 0 corpi della Fase A» a «Zona in corso». | automatico; l'agente legge lo stato | notti successive |
+
+L'agente (Claude) ha già fatto: proxy di particelle e contorni, comandi `osm-campione` e `dtm-wcs`, archivio di prova OSM
+del centro di Rimini, prove dal vivo di WMS AdE, WMS DBTR, WCS DTM e API OSM; può fare: leggere il GeoPackage dal PC e
+preparare l'archivio (passo 2, alternativa), scrivere `archivi.json` da `prepara`, controllare i rapporti dei passi 4–5 e
+le prove del passo 8. Resta a Paolo: la prenotazione del DBTR (reCAPTCHA ed email), i comandi sul server, l'email
+all'Archivio Cartografico per DSM/LAS 2023-24.
 
 ## Piano di lavoro (§ 15)
 

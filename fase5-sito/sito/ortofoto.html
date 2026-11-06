@@ -9,25 +9,24 @@
 <script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
 try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
-var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|cogenerazione|fotovoltaico)$/.test(f))d.dataset.menuFissato=f}catch(e){}
+var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261105a";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261105a"></script>
-<link rel="stylesheet" href="stile.css?v=20261105a">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261105a">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261105a">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261105b";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261105b"></script>
+<link rel="stylesheet" href="stile.css?v=20261105b">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261105b">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261105b">
 <!-- /testa -->
-<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261105a">
+<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261105b">
 </head>
 <body>
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261105a" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261105b" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
-      <a href="indicatori.html">Indicatori</a>
       <a href="metodo.html">Come funziona</a>
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
@@ -53,8 +52,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <details class="pannello-gruppo" data-gruppo="fotovoltaico"><summary>Fotovoltaico</summary>
           <ul><li><a href="fv-ombre.html">Ombre e percorso del sole <span class="cantiere prova">sperimentale</span></a></li><li><a href="fv-irradiazione.html">Sole e irradiazione su tetti e facciate <span class="cantiere prova">sperimentale</span></a></li><li><a href="fv-producibilita.html">Producibilità con le ombre <span class="cantiere prova">sperimentale</span></a></li><li><a href="fv-pvgis.html">Confronto con PVGIS <span class="cantiere prova">sperimentale</span></a></li><li><a href="fv-dlgs199.html">D.Lgs. 199/2021, Allegato III <span class="cantiere prova">sperimentale</span></a></li><li><a href="fv-leed.html">Prefattibilità LEED <span class="cantiere prova">sperimentale</span></a></li><li><span class="voce-gme" data-pagina="fv-mercato.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Prezzo catturato, accumuli e mercato</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li></ul>
         </details>
+        <details class="pannello-gruppo" data-gruppo="statistiche"><summary>Statistiche</summary>
+          <ul><li><a href="indicatori.html">Costi energetici Sanità</a></li></ul>
+        </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="indicatori.html">Indicatori</a></li><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -81,41 +83,45 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <li><details class="voce-gruppo" data-gruppo="patrimonio" data-attivo><summary>Patrimonio</summary>
           <ul class="tendina">
             <li><a href="patrimonio.html">Patrimonio</a></li>
-            <li><a href="ortofoto.html" aria-current="page">Ortofoto <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="lidar.html">LiDAR <span class="cantiere">in sviluppo</span></a></li>
-            <li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="visure.html">Visure <span class="cantiere">in sviluppo</span></a></li>
+            <li><a href="ortofoto.html" aria-current="page">Ortofoto <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="lidar.html">LiDAR <span class="cantiere sviluppo breve" title="in sviluppo"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg><span class="solo-lettori"> (in sviluppo)</span></span></a></li>
+            <li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="visure.html">Visure <span class="cantiere sviluppo breve" title="in sviluppo"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg><span class="solo-lettori"> (in sviluppo)</span></span></a></li>
           </ul></details></li>
         <li><details class="voce-gruppo" data-gruppo="edificio"><summary>Edificio</summary>
           <ul class="tendina">
-            <li><a href="edificio-geometria.html">Geometria e luce naturale <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="edificio-consumi.html">Consumi, firma energetica e priorità <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="edificio-fabbisogno.html">Fabbisogno con le metodiche UNI <span class="cantiere">in sviluppo</span></a></li>
-            <li><a href="edificio-involucro.html">Facciate e tetti: sole, tetti freddi e verdi <span class="cantiere">in sviluppo</span></a></li>
-            <li><a href="edificio-impianti.html">Pompe di calore e solare termico <span class="cantiere">in sviluppo</span></a></li>
-            <li><a href="edificio-cer.html">Comunità energetiche <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="edificio-clima.html">Clima che cambia <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="edificio-obblighi.html">Obblighi di legge <span class="cantiere prova">sperimentale</span></a></li>
+            <li><a href="edificio-geometria.html">Geometria e luce naturale <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="edificio-consumi.html">Consumi, firma energetica e priorità <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="edificio-fabbisogno.html">Fabbisogno con le metodiche UNI <span class="cantiere sviluppo breve" title="in sviluppo"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg><span class="solo-lettori"> (in sviluppo)</span></span></a></li>
+            <li><a href="edificio-involucro.html">Facciate e tetti: sole, tetti freddi e verdi <span class="cantiere sviluppo breve" title="in sviluppo"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg><span class="solo-lettori"> (in sviluppo)</span></span></a></li>
+            <li><a href="edificio-impianti.html">Pompe di calore e solare termico <span class="cantiere sviluppo breve" title="in sviluppo"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg><span class="solo-lettori"> (in sviluppo)</span></span></a></li>
+            <li><a href="edificio-cer.html">Comunità energetiche <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="edificio-clima.html">Clima che cambia <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="edificio-obblighi.html">Obblighi di legge <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
           </ul></details></li>
         <li><details class="voce-gruppo" data-gruppo="cogenerazione"><summary>Cogenerazione</summary>
           <ul class="tendina">
-            <li><span class="voce-gme" data-pagina="cog-spark-spread.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Spark spread di autoconsumo</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
-            <li><span class="voce-gme" data-pagina="cog-simulazione.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Cogeneratore sull'edificio, con FV e accumulo</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
-            <li><span class="voce-gme" data-pagina="cog-confronto.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Confronto tra alternative e trigenerazione</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
-            <li><a href="cog-emissioni.html">Emissioni <span class="cantiere prova">sperimentale</span></a></li>
-            <li><span class="voce-gme" data-pagina="cog-rischio.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Rischio prezzo elettricità e gas</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
-            <li><span class="voce-gme" data-pagina="cog-car.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Budget di dissipazione CAR</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-spark-spread.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Spark spread di autoconsumo</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-simulazione.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Cogeneratore sull'edificio, con FV e accumulo</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-confronto.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Confronto tra alternative e trigenerazione</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><a href="cog-emissioni.html">Emissioni <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><span class="voce-gme" data-pagina="cog-rischio.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Rischio prezzo elettricità e gas</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-car.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Budget di dissipazione CAR</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
           </ul></details></li>
         <li><details class="voce-gruppo" data-gruppo="fotovoltaico"><summary>Fotovoltaico</summary>
           <ul class="tendina">
-            <li><a href="fv-ombre.html">Ombre e percorso del sole <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="fv-irradiazione.html">Sole e irradiazione su tetti e facciate <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="fv-producibilita.html">Producibilità con le ombre <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="fv-pvgis.html">Confronto con PVGIS <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="fv-dlgs199.html">D.Lgs. 199/2021, Allegato III <span class="cantiere prova">sperimentale</span></a></li>
-            <li><a href="fv-leed.html">Prefattibilità LEED <span class="cantiere prova">sperimentale</span></a></li>
-            <li><span class="voce-gme" data-pagina="fv-mercato.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Prezzo catturato, accumuli e mercato</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><a href="fv-ombre.html">Ombre e percorso del sole <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="fv-irradiazione.html">Sole e irradiazione su tetti e facciate <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="fv-producibilita.html">Producibilità con le ombre <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="fv-pvgis.html">Confronto con PVGIS <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="fv-dlgs199.html">D.Lgs. 199/2021, Allegato III <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="fv-leed.html">Prefattibilità LEED <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><span class="voce-gme" data-pagina="fv-mercato.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Prezzo catturato, accumuli e mercato</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="statistiche"><summary>Statistiche</summary>
+          <ul class="tendina">
+            <li><a href="indicatori.html">Costi energetici Sanità</a></li>
           </ul></details></li>
       </ul>
     </nav>
@@ -142,7 +148,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <p class="gruppo-servizio">Patrimonio</p>
     <h1>Ortofoto</h1>
     <p class="sotto">Le fotografie aeree come sfondo della mappa, con gli edifici sovrapposti, per riconoscere a colpo d'occhio
-      tetti, cortili e ombre. Scegli la fonte a destra: sotto la mappa compaiono sempre la sua licenza e la sua citazione.</p>
+      tetti, cortili e ombre. Scegli la fonte a destra: sotto la mappa compaiono sempre la sua licenza e la sua citazione.
+      Per andare su un punto scrivi l'indirizzo o i dati catastali.</p>
+    <div id="cerca-luogo"></div>
     <div class="mappa mappa-gl" id="mappa-ortofoto" role="region" aria-label="Mappa con l'ortofoto"></div>
     <p class="aiuto">Trascina per spostare, rotella o due dita per ingrandire. Le immagini arrivano dal server di EuGEnio, che
       ne tiene una copia per non pesare sui servizi delle Regioni. I confini di regioni, province e comuni restano sempre
@@ -150,6 +158,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       piccola mappa in alto a destra (o con un clic su una regione o un comune) vai lì; un secondo clic toglie la scelta.</p>
     <p class="aiuto" id="messaggio-mappa" aria-live="polite"></p>
     <p class="attribuzione-ortofoto" id="attribuzione" aria-live="polite"></p>
+    <div class="legenda-strati" id="legenda-strati" aria-live="polite" hidden></div>
     <div id="scarica-ortofoto"></div>
     <p class="aiuto">L'immagine scaricata è la vista della mappa così com'è, con sotto licenza e citazione di ogni fonte
       visibile: tienile insieme all'immagine quando la usi.</p>
@@ -162,13 +171,16 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         autonoma di Bolzano – Ortofoto 2023</a> (CC BY 4.0); <a href="https://geodati.gov.it/resource/id/p_TN:f2e88f1b-05d9-4942-93ee-857a0a9e1f0b">Provincia
         autonoma di Trento – Ortofoto PAT 2015</a> (CC BY 4.0); <a href="https://cloudless.eox.at/pricing">Sentinel-2 cloudless – s2maps.eu by EOX IT
         Services GmbH</a> (Contains modified Copernicus Sentinel data 2016, CC BY 4.0); <a href="https://gn.mase.gov.it/portale/servizio-di-consultazione-wms">Geoportale
-        Nazionale – MASE</a> (ortofoto AGEA 2012, solo consultazione dal vivo). Edifici: DBTR Emilia-Romagna (CC BY 4.0).
+        Nazionale – MASE</a> (ortofoto AGEA 2012, solo consultazione dal vivo). Edifici: DBTR Emilia-Romagna (CC BY 4.0); fuori dall'Emilia-Romagna © <a href="https://www.openstreetmap.org/copyright">contributori
+        OpenStreetMap</a> (ODbL 1.0). Particelle: <a href="https://www.agenziaentrate.gov.it/portale/schede/fabbricatiterreni/consultazione-cartografia-catastale/servizio-consultazione-cartografia">Agenzia
+        delle Entrate – Cartografia catastale</a> (CC BY 4.0). Ricerca: ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0) e
+        <a href="https://zornade.com">dati elaborati da Zornade</a>.
         Confini: <a href="https://www.istat.it/">ISTAT</a>,
         unità amministrative a fini statistici (generalizzati, CC BY 4.0).
         Mappa: <a href="https://maplibre.org/">MapLibre GL JS</a> (BSD-3), ospitata su questo sito.</p>
       </div>
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261105a" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261105b" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
   <!-- /piede -->
     </footer>
@@ -192,11 +204,19 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         citazione e stato della verifica.</p>
       <div class="messaggio" id="messaggio" role="status" aria-live="polite"></div>
       <fieldset class="fonti-ortofoto" id="fonti"><legend class="solo-lettori">Fonte delle ortofoto</legend></fieldset>
-      <label class="casella"><input id="edifici" type="checkbox" checked> mostra i contorni degli edifici (dove ci sono)</label>
+      <label class="casella"><input id="edifici" type="checkbox" checked> mostra i contorni degli edifici dell'archivio 3D (dove ci sono)</label>
     </div>
 
     <div class="passo">
-      <h2><span class="n">2</span>Licenze e regole</h2>
+      <h2><span class="n">2</span>Strati sopra la foto</h2>
+      <p class="aiuto">Da vicino (zoom 16 e oltre) puoi accendere i confini delle particelle catastali dell'Agenzia delle
+        Entrate e i contorni degli edifici (DB topografico della Regione dove c'è, altrove OpenStreetMap). Legenda e fonte
+        compaiono sotto la mappa ed entrano nell'immagine scaricata.</p>
+      <div class="caselle-strati" id="caselle-strati"></div>
+    </div>
+
+    <div class="passo">
+      <h2><span class="n">3</span>Licenze e regole</h2>
       <ul>
         <li><b>Emilia-Romagna</b>: ortofoto RER 2023-24, 20 cm, CC BY 4.0, dal servizio WMS della Regione con una copia sul
           nostro server; l'uso tramite copia è <b>in attesa di conferma</b> dalla Regione e si spegne in un attimo se serve.</li>
@@ -206,12 +226,17 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           perché la licenza delle immagini non è chiara.</li>
         <li><b>Escluse</b>: infrarosso e foto originali AGEA, servizi WMS regionali AGEA con «utilizzo ristretto», Google, Esri,
           Bing, EOX 2018 e seguenti.</li>
+        <li><b>Particelle catastali</b>: cartografia catastale dell'Agenzia delle Entrate (servizio WMS INSPIRE, CC BY 4.0),
+          riproiettata dal nostro server e ridotta alle sole linee e ai numeri; non copre Trento, Bolzano e i comuni con il
+          catasto tavolare e non sostituisce gli estratti di mappa ufficiali.</li>
+        <li><b>Contorni degli edifici</b>: DBTR dell'Emilia-Romagna (CC BY 4.0); fuori dall'Emilia-Romagna sagome di
+          OpenStreetMap (© contributori OpenStreetMap, ODbL 1.0).</li>
         <li>Nei report ogni figura con un'ortofoto riporta la sua licenza e la sua citazione.</li>
       </ul>
     </div>
 
     <div class="passo">
-      <h2><span class="n">3</span>Ortofoto AGEA per singoli siti</h2>
+      <h2><span class="n">4</span>Ortofoto AGEA per singoli siti</h2>
       <p>Per un sito puntuale (un ospedale, una scuola) si possono usare le ortofoto AGEA 2022–2024 a colori (CC BY 4.0) scaricate
         a mano dal GeoPortale AGEA (al massimo 20 tessere per richiesta, con codice via email). Le ridurremo a 50 cm e le
         conserveremo come ortofoto del sito, con la citazione «AGEA – Ortofoto <i>anno</i> (CC BY 4.0)». Si fanno a richiesta:
@@ -221,13 +246,15 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   </section>
 </main>
 
-<script src="aspetto.js?v=20261105a"></script>
-<script src="divisore.js?v=20261105a"></script>
-<script src="lib/maplibre-gl/maplibre-gl.js?v=20261105a"></script>
-<script src="lib/pmtiles/pmtiles.js?v=20261105a"></script>
-<script src="minimappa.js?v=20261105a"></script>
-<script src="confini_gl.js?v=20261105a"></script>
-<script src="esporta_mappa.js?v=20261105a"></script>
-<script src="ortofoto.js?v=20261105a"></script>
+<script src="aspetto.js?v=20261105b"></script>
+<script src="divisore.js?v=20261105b"></script>
+<script src="lib/maplibre-gl/maplibre-gl.js?v=20261105b"></script>
+<script src="lib/pmtiles/pmtiles.js?v=20261105b"></script>
+<script src="minimappa.js?v=20261105b"></script>
+<script src="confini_gl.js?v=20261105b"></script>
+<script src="esporta_mappa.js?v=20261105b"></script>
+<script src="cerca_luogo.js?v=20261105b"></script>
+<script src="strati_gl.js?v=20261105b"></script>
+<script src="ortofoto.js?v=20261105b"></script>
 </body>
 </html>

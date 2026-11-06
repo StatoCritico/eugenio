@@ -4,7 +4,7 @@
 // Messaggio: { id, punti: [[x, y, z]], ostacoli: [{ ring, cima }], direzioni, lontano? } in metri locali; `lontano` è
 // l'orizzonte del terreno (Copernicus DEM, dal server), unito con il massimo direzione per direzione (Fase B).
 // Risposta: { id, orizzonti: [Array(72)] }.
-importScripts("edifici_calcoli.js?v=20261105a");
+importScripts("edifici_calcoli.js?v=20261105b");
 self.onmessage = (e) => {
   const { id, punti, ostacoli, direzioni, lontano } = e.data;
   const E = self.EUGENIO_EDIFICI;

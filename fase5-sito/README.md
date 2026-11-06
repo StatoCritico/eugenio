@@ -280,6 +280,30 @@ in ODT. Sul server i due formati sono spenti (rispondono 410, variabile `REPORT_
   browser). Provato in Node con browser, Turnstile e server simulati: verifica spenta, una sola verifica per più
   richieste anche contemporanee, rinnovo dopo un 401, errore leggibile se la verifica fallisce.
 
+## Aggiornamento del 05/11/2026 – seconda pubblicazione (`?v=20261105b`, che sostituisce `?v=20261105a`)
+
+Dopo le prove di Paolo su `?v=20261105a` (dettagli e procedura D1–D17 in `../AGGIORNAMENTO_2026-11-05.md`, blocco 6):
+- **`esporta_mappa.js`**: il messaggio di successo compare solo a file davvero scritto. In Chrome/Edge sul computer la
+  finestra «Salva con nome» (`showSaveFilePicker`) si apre **nel clic**, la pagina scrive il file e dice «Immagine salvata:
+  nome (dimensione)»; «Annulla» = «Salvataggio annullato». Altrove «Download avviato…» con il collegamento «Salva …» da
+  cliccare a mano. Controllo della copia della mappa (vuota o non leggibile per CORS) prima di creare il file. `pulsanti()`
+  accetta ora l'elemento dei messaggi (per il collegamento).
+- **`cerca_luogo.js`** (nuovo): ricerca per indirizzo o per comune, foglio e particella (una riga a `POST /api/patrimonio`,
+  nessuna dipendenza nuova da Zornade), comune a Ortofoto (nuova casella sopra la mappa, pallino sul punto) e Modelli 3D.
+- **`strati_gl.js`** (nuovo): caselle «Confini delle particelle catastali» e «Contorni degli edifici» sopra la foto, dal
+  proxy del server (`/api/ortofoto/strati`), con il DB regionale dove c'è e OpenStreetMap altrove; legenda e fonti sotto la
+  mappa (`#legenda-strati`) e nelle righe dell'immagine scaricata.
+- **Modelli 3D** (`edificio3d.js`, `modelli3d.html`): punto trascinabile (mouse e dito) e clic che lo sposta da zoom 15;
+  l'edificio scelto è quello del punto corretto; **«Esci dalla demo»** (`#esci-demo`) sempre visibile nella demo; riquadro
+  «Livelli della mappa» con Ortofoto (casella + fonte), particelle e contorni (spenti nella demo).
+- **Menu** (`parti/testata.html`, `parti/testa.html`, `stile.css`): nelle tendine e nella riga fissata «S», «GME» e il
+  triangolo giallo per «in sviluppo» (testo intero nel `title` e per i lettori di schermo; parole intere nel menu del
+  telefono); sesto gruppo **Statistiche** con **Costi energetici Sanità** (`indicatori.html`, senza etichetta e senza
+  l'avviso sperimentale); «Indicatori» tolto dalle «Altre pagine»; `menu-fissato` accetta `statistiche`.
+- Corretti: scorrimento orizzontale sul telefono con la riga fissata (testi nascosti assoluti fuori dalla riga che scorre:
+  `.riga-voci > li` ora `position: relative`); l'avviso «Dati sintetici di esempio» visibile senza demo (`.messaggio[hidden]`).
+- Versione **`?v=20261105b`** (anche `interno/edifici.html`, a mano); **38 test** (5 nuovi; 9 nel browser).
+
 ## Aggiornamento del 05/11/2026 – Ortofoto e Modelli 3D dopo le prove sul sito pubblicato (blocco 5, stessa versione `?v=20261105a`)
 
 - **Ortofoto** (`ortofoto.html`, `ortofoto.js`): contesto Sentinel-2 sempre sotto la fonte scelta, sovracampionamento

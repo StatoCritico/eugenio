@@ -1154,7 +1154,7 @@ table.totali td.sedi { color: var(--tenue); font-size: var(--c-xs); width: 1%; }
 .riga-titolo { display: none; flex: none; color: var(--tenue-riga); font: 600 var(--c-xs)/1 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
 .riga-voci { display: flex; flex: 1; min-width: 0; flex-wrap: nowrap; gap: var(--s1); list-style: none; margin: 0 0 0 -.7rem; padding: 0;
   overflow-x: auto; scrollbar-width: thin; scrollbar-color: #555 transparent; }
-.riga-voci > li { flex: none; }
+.riga-voci > li { flex: none; position: relative; }   /* contiene i testi .solo-lettori (assoluti) dentro la riga che scorre */
 .riga-voci a, .riga-voci .voce-gme {
   display: inline-flex; align-items: center; gap: .4rem; min-height: 2.75rem; padding: 0 .7rem; white-space: nowrap; text-decoration: none;
   color: var(--testo-riga); font: 600 var(--c-s)/1.2 var(--titoli); border-top: 3px solid transparent; border-bottom: 3px solid transparent;
@@ -1317,3 +1317,32 @@ label.casella { display: flex; gap: var(--s2); align-items: center; font-weight:
   main.pagina-edificio3d[data-vista="modelli"] > .mappa-area, main.pagina-ortofoto > .mappa-area { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
   main.pagina-edificio3d[data-vista="modelli"] > .mappa-area > *, main.pagina-ortofoto > .mappa-area > * { flex-shrink: 0; }
 }
+
+/* ------------------------------------------------------------------------------- seconda pubblicazione del 05/11/2026 */
+/* menu: etichette brevi nelle tendine e nella riga fissata (testo intero nel title e per i lettori di schermo): «S» per
+   sperimentale, «GME» per le voci in attesa della licenza, triangolo giallo con il punto esclamativo per «in sviluppo»
+   (contorno scuro: si legge sul bianco del tema chiaro e sul nero della riga) */
+.cantiere.breve { position: relative; padding: .12rem .34rem; min-width: 1.35em; text-align: center; letter-spacing: .02em; cursor: help; }
+.cantiere.sviluppo { position: relative; display: inline-flex; align-items: center; border: 0 !important; padding: 0 !important; background: none; min-width: 0; }
+.cantiere .segnale { display: block; width: 1.15rem; height: 1.15rem; }
+.riga-voci .cantiere.breve { padding: .1rem .3rem; }
+.riga-voci .cantiere.sviluppo .segnale { width: 1.05rem; height: 1.05rem; }
+
+/* livelli della mappa (Modelli 3D, Ortofoto), legenda degli strati, collegamento «Salva …» dell'immagine */
+.livelli-mappa { border: 1px solid var(--linea); border-radius: var(--r); padding: var(--s2) var(--s3); margin: var(--s3) 0 0; }
+.livelli-mappa legend { font-weight: 600; padding: 0 .3rem; }
+.livelli-mappa .sfondo-3d { align-items: center; margin: 0; }
+.livelli-mappa .sfondo-3d label { margin-top: 0; }
+.caselle-strati { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin-top: var(--s2); }
+label.casella-strato { display: inline-flex; gap: .4rem; align-items: center; font-weight: 400; margin: 0; }
+label.casella-strato input { width: auto; }
+.aiuto-breve { color: var(--tenue); font-size: var(--c-s); }
+.legenda-strati { margin: var(--s2) 0 0; font-size: var(--c-s); color: var(--tenue); }
+.legenda-strati[hidden] { display: none; }
+.legenda-strati .voce-strato { margin: .2rem 0; }
+.segno-strato { display: inline-block; width: 22px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: .45rem;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--inchiostro) 35%, transparent); }
+.salva-a-mano { font-weight: 600; }
+/* un riquadro di messaggio con hidden resta nascosto (prima .messaggio vinceva: «Dati sintetici di esempio» compariva in
+   Modelli 3D anche senza la demo) */
+.messaggio[hidden] { display: none !important; }

@@ -1,0 +1,39 @@
+# Strati sopra le ortofoto (05/11/2026, seconda pubblicazione): confini delle particelle catastali. Letti da
+# fase4-server/servizio/strati.py (rotte /api/ortofoto/strati/…); stessi stati e regole delle ortofoto (../*.toml).
+#
+# Cartografia catastale dell'Agenzia delle Entrate, servizio WMS INSPIRE (consultazione):
+#   - licenza **CC BY 4.0** (GetCapabilities: Fees «CC BY 4.0», AccessConstraints «Dato pubblico»; comunicato
+#     dell'Agenzia del 24/09/2020);
+#   - **nessun EPSG:3857** (solo EPSG:6706, 4258, 25832–25834, 3044–3046) e **nessuna intestazione CORS**: per questo
+#     passa dal proxy del server, che chiede il riquadro in EPSG:4258 (assi lat,lon) e riproietta le righe in web mercator;
+#   - stile del servizio con il riempimento beige e una scritta in basso a sinistra: il proxy chiede un blocco di 2×2
+#     tessere (`metatessera = 2`), tiene quella in alto a destra e lascia solo le linee e i numeri delle particelle,
+#     ricolorati (`contorni`, `colore`). L'attribuzione completa resta sotto la mappa e nelle immagini scaricate;
+#   - strati: CP.CadastralParcel (confini, visibile da 1:40.000) e codice_plla (numeri, da 1:5.000, zoom ≥ 17);
+#   - non copre le province di Trento e Bolzano né i comuni con il catasto tavolare (Friuli-Venezia Giulia in parte):
+#     lì lo strato resta vuoto.
+# Prova dal container del 05/11/2026: GetCapabilities 200; GetMap PNG 512×512 RGBA in EPSG:4258 sul centro di Rimini
+# 200 (413 kB), confini e numeri allineati all'ortofoto RER.
+
+[[strato]]
+id = "catasto"
+tema = "particelle"
+nome = "Confini delle particelle catastali"
+tipo = "wms"
+url = "https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php"
+livello = "CP.CadastralParcel,codice_plla"
+crs = "EPSG:4258"
+formato = "image/png"
+licenza = "CC BY 4.0"
+citazione = "Agenzia delle Entrate – Cartografia catastale, CC BY 4.0 (servizio WMS INSPIRE; linee ricolorate da EuGEnio)"
+scheda = "https://www.agenziaentrate.gov.it/portale/web/guest/schede/fabbricatiterreni/consultazione-cartografia-catastale/servizio-consultazione-cartografia"
+stato = "confermata"
+attiva = true
+zoom = [16, 20]
+riquadro = [6.6, 35.4, 18.6, 47.1]
+contorni = true
+colore = "#ffd400"
+metatessera = 2
+legenda = "linee e numeri gialli: confini e numeri delle particelle catastali"
+nota = "Non copre Trento, Bolzano e i comuni con il catasto tavolare. Non sostituisce visure ed estratti di mappa ufficiali."
+ritmo = { al_secondo = 2, all_ora = 2000 }

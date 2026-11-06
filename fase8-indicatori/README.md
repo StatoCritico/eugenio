@@ -1,6 +1,6 @@
 # Fase 8 – Indicatori della spesa energetica degli enti del SSN
 
-Raccoglie e calcola i dati della pagina **Indicatori** del sito (`fase5-sito/sito/indicatori.html`): la spesa per
+Raccoglie e calcola i dati della pagina **Costi energetici Sanità** (menu Statistiche; fino al 05/11/2026 «Indicatori») del sito (`fase5-sito/sito/indicatori.html`): la spesa per
 energia e utenze di ogni ente del Servizio Sanitario Nazionale, anno per anno dal 2015 al 2025, accanto al
 consolidato della sua regione e all'Italia, con leva, incidenza, peso e spesa per giornata di degenza, per posto
 letto e per cittadino. Il risultato sono file JSON statici, che il sito legge da `dati/indicatori/`.

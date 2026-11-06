@@ -37,6 +37,16 @@
 // Archivi: /edifici3d/archivi.json ({"archivi": [{"base": "/edifici3d/cc-by/er/prodotti/", "nome": …}, …]}, in ordine di
 // affidabilità) se c'è, altrimenti il DBTR dell'Emilia-Romagna; i corpi di un archivio meno affidabile che cadono dentro
 // quelli di uno più affidabile non si usano.
+//
+// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261105b):
+//  - il punto trovato con la ricerca (cerca_luogo.js, modulo comune con Ortofoto) si **trascina** per correggerlo (l'ANNCSU
+//    è a volte impreciso) e, da zoom 15, un clic sulla mappa lo sposta lì; la scelta dell'edificio usa sempre il punto
+//    corretto (l'edificio che lo contiene, o il più vicino entro 30 m) e «Genera il 3D» parte da lì;
+//  - **«Esci dalla demo»** sempre visibile nella demo (2D e 3D): riapre la pagina normale, con ortofoto e ricerca;
+//    «Torna alla mappa 2D» nella demo resta nella 2D della demo;
+//  - **livelli** con le caselle: ortofoto (con la scelta della fonte), confini delle particelle catastali e contorni degli
+//    edifici (strati_gl.js, dal proxy del server), con legenda e attribuzioni sotto la mappa e nell'immagine scaricata;
+//    nella demo restano spenti (i dati veri non vanno sopra gli edifici inventati).
 (function () {
   const E = window.EUGENIO_EDIFICI, G = window.EUGENIO_GRAFICI, R = window.EUGENIO_REPORT;
   const main = document.querySelector("main.pagina-edificio3d");
@@ -254,6 +264,10 @@
     if (!DUE_TEMPI) { try { if (m.getSource("terreno")) m.setTerrain({ source: "terreno", exaggeration: 1 }); } catch { /* terreno non disponibile: mappa piatta */ } }
     m.on("click", (e) => clic(e));
     m.on("mousemove", (e) => {
+      if (stato.trascino) return;
+      if (DUE_TEMPI && !stato.in3d && m.getLayer("cercato") && m.queryRenderedFeatures(e.point, { layers: ["cercato"] }).length) {
+        m.getCanvas().style.cursor = "move"; return;
+      }
       const ids = (stato.in3d ? [...stato.sorgentiCorpi, "scelto"] : stato.strati2d).filter((id) => m.getLayer(id));
       const f = ids.length ? m.queryRenderedFeatures(e.point, { layers: ids }) : [];
       m.getCanvas().style.cursor = stato.modo ? "crosshair" : f.length ? "pointer" : "";
@@ -274,7 +288,8 @@
       if (C) {
         try {
           stato.confini = await C.aggiungi(m, {
-            attivo: (ev) => !stato.in3d && !stato.modo && !(stato.strati2d.length && m.queryRenderedFeatures(ev.point, { layers: stato.strati2d.filter((id) => m.getLayer(id)) }).length),
+            // da zoom 15 il clic sposta il punto (o sceglie l'edificio): regioni e comuni si scelgono da più lontano
+            attivo: (ev) => !stato.in3d && !stato.modo && m.getZoom() < 15 && !(stato.strati2d.length && m.queryRenderedFeatures(ev.point, { layers: stato.strati2d.filter((id) => m.getLayer(id)) }).length),
             suRegione: (cod) => { if (stato.regione === cod) togliRegione(); else vaiRegione(cod); },
             suComune: async (c) => {
               if (!c) { messaggio("messaggio-cerca", ""); return; }
@@ -286,6 +301,7 @@
         } catch { /* confini non disponibili */ }
       }
       comandi3d(m);
+      trascinaPunto(m);
       m.getContainer().addEventListener("keydown", tastiera3d);
       m.on("dblclick", (e) => { if (stato.in3d) { e.preventDefault(); vistaNominata("3d"); } });
     }
@@ -302,19 +318,71 @@
       if (m.getLayer(`${id}-${suf}`)) m.setFilter(`${id}-${suf}`, ["==", ["get", "edificio"], edificio || ""]);
     }));
   }
-  // clic sulla mappa 2D: sceglie l'edificio (o lo toglie se è già quello scelto); false se lì non c'è un edificio
+  // clic sulla mappa 2D: sceglie l'edificio (o lo toglie se è già quello scelto) e ci porta il punto; da zoom 15 un clic
+  // fuori dagli edifici sposta solo il punto. false se il clic non riguarda il punto né un edificio
   function clic2d(e) {
+    if (Date.now() - (stato.trascinato || 0) < 400) return true;     // fine di un trascinamento del punto
     const m = stato.mappa, ids = stato.strati2d.filter((id) => m.getLayer(id));
     const f = ids.length ? m.queryRenderedFeatures(e.point, { layers: ids })[0] : null;
     if (!f) {
-      if (!stato.archivi.length && !stato.base && m.getZoom() >= 15)
-        messaggio("messaggio", "Qui non c'è ancora un archivio degli edifici sul server: il 3D non si può generare (prova la demo sintetica).", true);
-      return false;
+      if (m.getZoom() < 15) return false;
+      impostaPunto(e.lngLat.lng, e.lngLat.lat, "clic");
+      puntoCambiato();
+      return true;
     }
     const edificio = String(f.properties.edificio || "");
     if (stato.daGenerare && stato.daGenerare.edificio === edificio) { togliScelta2d(); return true; }
+    impostaPunto(e.lngLat.lng, e.lngLat.lat, "clic");
     scegli2d(edificio, e.lngLat.lng, e.lngLat.lat, null, ids.indexOf(f.layer.id));
     return true;
+  }
+  // punto della ricerca, del clic o spostato a mano: segnaposto sulla mappa 2D
+  function impostaPunto(lon, lat, origine) {
+    const m = stato.mappa;
+    stato.punto = { ...(stato.punto || {}), lon, lat, origine };      // fonte e indirizzo della ricerca restano
+    if (m && m.getSource("cercato")) {
+      m.getSource("cercato").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [lon, lat] } }] });
+    }
+  }
+  // il punto è cambiato (trascinato o clic): sceglie l'edificio che lo contiene (o il più vicino entro 30 m)
+  async function puntoCambiato() {
+    const p = stato.punto;
+    if (!p) return;
+    const dove = `${p.lat.toFixed(6)} N, ${p.lon.toFixed(6)} E`;
+    if (!stato.archivi.length && !stato.base) {
+      messaggio("messaggio", `Punto ${p.origine === "spostato" ? "spostato" : "messo"} in ${dove}. L'archivio degli edifici di questa zona non è `
+        + "ancora sul server: il 3D non si può generare qui (prova la demo sintetica).", true);
+      return;
+    }
+    const f = edificioNelPunto(await contesto(p.lon, p.lat), p.lon, p.lat);
+    if (f) {
+      scegli2d(String(f.properties.edificio), p.lon, p.lat, null, +f.properties.archivio || 0);
+      if (p.origine === "spostato") messaggio("messaggio", `Punto spostato in ${dove}: scelto l'edificio ${f.properties.edificio}. Premi «Genera il 3D» `
+        + "o sposta ancora il punto.");
+    } else {
+      stato.daGenerare = null; evidenzia2d(""); $("genera-3d").disabled = true;
+      messaggio("messaggio", `Punto in ${dove}: nessun edificio dell'archivio lo contiene (né entro 30 m). Trascina il punto sull'edificio `
+        + "o fai clic sull'edificio.", true);
+    }
+  }
+  // trascinamento del segnaposto (mouse e dito) nella mappa 2D
+  function trascinaPunto(m) {
+    const muovi = (e) => { impostaPunto(e.lngLat.lng, e.lngLat.lat, "spostato"); };
+    const fine = () => {
+      m.off("mousemove", muovi); m.off("touchmove", muovi);
+      stato.trascino = false; stato.trascinato = Date.now();
+      m.getCanvas().style.cursor = "";
+      puntoCambiato();
+    };
+    const inizio = (e, tocco) => {
+      if (stato.in3d || stato.modo || !stato.punto) return;
+      e.preventDefault();                       // niente spostamento della mappa durante il trascinamento
+      stato.trascino = true; m.getCanvas().style.cursor = "grabbing";
+      m.on(tocco ? "touchmove" : "mousemove", muovi);
+      m.once(tocco ? "touchend" : "mouseup", fine);
+    };
+    m.on("mousedown", "cercato", (e) => inizio(e, false));
+    m.on("touchstart", "cercato", (e) => { if (e.points && e.points.length === 1) inizio(e, true); });
   }
   function scegli2d(edificio, lon, lat, sede = null, k = 0) {
     stato.daGenerare = { edificio, lon, lat, sede };
@@ -476,17 +544,25 @@
   function opzioniImmagine() {
     const m = stato.mappa, righe = [];
     if (!m) return "La mappa non è pronta.";
-    const f = stato.ortofoto;
+    const f = ortoVisibile() ? stato.ortofoto : null;
     if (f && !f.copia) return `«${f.nome}» è solo in consultazione dal vivo: per scaricare l'immagine scegli un'altra ortofoto o nessuna.`;
     if (f) righe.push(`Ortofoto: ${f.citazione} – licenza ${f.licenza} (${f.scheda})${f.stato === "da confermare" ? "; uso tramite il server di EuGEnio in attesa di conferma della fonte" : ""}.`);
-    if (stato.contestoOrto && m.getLayer("contesto") && !f) righe.push(`Contesto: ${stato.contestoOrto.citazione} – licenza ${stato.contestoOrto.licenza}.`);
+    if (stato.contestoOrto && m.getLayer("contesto") && !f && ortoVisibile()) righe.push(`Contesto: ${stato.contestoOrto.citazione} – licenza ${stato.contestoOrto.licenza}.`);
     const archivi = stato.archivi.length ? stato.archivi : stato.indice ? [{ indice: stato.indice }] : [];
-    archivi.forEach((a) => righe.push(`Edifici: ${a.indice.attribuzione || "archivio di EuGEnio"} (${a.indice.licenza || ""}).`));
+    archivi.forEach((a) => {
+      const att = a.indice.attribuzione || "archivio di EuGEnio", lic = a.indice.licenza || "";
+      righe.push(`Edifici: ${att}${lic && !att.includes(lic) ? ` (${lic})` : ""}.`);
+    });
     if (stato.in3d && stato.lidar && stato.corpi.some((c) => c.lidar && c.lidar.stato === "ok"))
       Object.values(stato.lidar.attribuzioni || {}).forEach((a) => righe.push(`Falde dei tetti: ${a.attribuzione || a.descrizione} (${a.licenza}).`));
     if (stato.in3d && stato.base && !stato.sintetico) righe.push("Terreno: DTM Emilia-Romagna 5×5 m (CC BY 4.0).");
     if (stato.in3d) { const t = testoFontiCorpi(); if (t) righe.push(t.replace(/ Il dettaglio.*$/, "")); }
     if (stato.modello) righe.push(`Modello dell'utente «${stato.modello}» (letto solo nel browser).`);
+    if (stato.strati) righe.push(...stato.strati.righe());
+    if (!stato.in3d && stato.punto) {
+      const p = stato.punto;
+      righe.push(`Punto: ${p.lat.toFixed(6)} N, ${p.lon.toFixed(6)} E${p.testo ? ` (${p.testo})` : ""}${p.fonte ? `, da ${p.fonte}` : ""}${p.origine === "spostato" || p.origine === "clic" ? ", posizione corretta a mano" : ""}.`);
+    }
     righe.push(`${C ? C.ATTRIBUZIONE : "Confini: ISTAT (CC BY 4.0)"}. Mappa: MapLibre GL JS (BSD-3).`);
     const titolo = stato.in3d && stato.edificio
       ? `Modelli 3D – ${stato.modello ? `modello «${stato.modello}»` : `edificio ${stato.edificio}`}${stato.comune ? `, ${stato.comune.nome}` : ""}`
@@ -496,53 +572,28 @@
       nome: stato.in3d && stato.edificio ? `modello3d_${String(stato.edificio).replace(/[^\w-]+/g, "_").slice(0, 40)}` : "modelli3d_mappa" };
   }
 
-  // ricerca per indirizzo o per foglio e particella: una riga a /api/patrimonio (ANNCSU, poi Zornade, come Patrimonio)
-  async function cerca(campi) {
-    const col = ["id", "denominazione", "indirizzo", "civico", "comune", "foglio", "particella"];
-    const pulito = (v) => String(v || "").replace(/[;\r\n"]+/g, " ").trim().slice(0, 120);
-    const testo = `${col.join(";")}\n${["1", "ricerca", pulito(campi.indirizzo), "", pulito(campi.comune), pulito(campi.foglio), pulito(campi.particella)].join(";")}\n`;
-    messaggio("messaggio-cerca", "Cerco…");
-    const fd = new FormData();
-    fd.append("file", new Blob([testo], { type: "text/csv;charset=utf-8" }), "ricerca.csv");
-    let r, d = null;
-    try { r = await fetch("/api/patrimonio", { method: "POST", body: fd }); } catch { messaggio("messaggio-cerca", "Il server non risponde: riprova più tardi.", true); return; }
-    try { d = await r.json(); } catch { /* non JSON */ }
-    if (!r.ok) { messaggio("messaggio-cerca", r.status === 503 ? "La ricerca non è attiva su questo server." : `Ricerca non riuscita: ${(d && d.detail) || r.status}.`, true); return; }
-    const x = d && d.righe && d.righe[0];
-    if (!x || !Number.isFinite(+x.lat) || !Number.isFinite(+x.lon)) {
-      messaggio("messaggio-cerca", `Non trovato${x && x.nota ? `: ${x.nota}` : ""}. Controlla il testo o prova con foglio e particella.`, true); return;
-    }
-    const lon = +x.lon, lat = +x.lat, m = stato.mappa;
+  // ricerca per indirizzo o per foglio e particella (cerca_luogo.js, comune con la pagina Ortofoto): la mappa va sul punto,
+  // con il segnaposto da trascinare se l'indirizzo è impreciso; l'edificio è quello che contiene il punto
+  async function trovato(lon, lat, x) {
+    const m = stato.mappa;
+    if (!m) return;
     esci3d();
-    m.getSource("cercato").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [lon, lat] } }] });
+    stato.punto = { lon, lat, origine: "ricerca", fonte: x.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)" : "dati elaborati da Zornade (zornade.com)",
+      testo: [x.indirizzo_trovato, x.comune_catasto].filter(Boolean).join(", ") };
+    impostaPunto(lon, lat, "ricerca");
     m.flyTo({ center: [lon, lat], zoom: 18, duration: 900 });
-    const dove = [x.indirizzo_trovato, x.comune_catasto].filter(Boolean).join(", ");
-    const part = x.mappale ? `particella ${x.foglio_catasto ? `foglio ${x.foglio_catasto}, ` : ""}${x.mappale}` : "";
-    const fonte = x.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)" : "Dati elaborati da Zornade";
-    const p = $("messaggio-cerca"); p.innerHTML = ""; p.classList.toggle("errore", x.esito !== "ok");
-    p.append(`${x.esito === "ok" ? "Trovato" : "Trovato, da verificare"}: ${[dove, part].filter(Boolean).join(" – ") || `${lat.toFixed(5)}, ${lon.toFixed(5)}`}`
-      + `${x.nota ? ` (${x.nota})` : ""}. Fonte: `);
-    if (x.fonte_punto === "ANNCSU") p.append(fonte); else { const a = h("a", null, fonte); a.href = "https://zornade.com"; p.appendChild(a); }
-    p.append(".");
     if (stato.archivi.length || stato.base) {
       const f = edificioNelPunto(await contesto(lon, lat), lon, lat);
-      if (f) scegli2d(String(f.properties.edificio), lon, lat, null, +f.properties.archivio || 0);
-      else messaggio("messaggio", "Nessun edificio dell'archivio contiene il punto (né entro 30 m): sceglilo con un clic sulla mappa.", true);
-    } else messaggio("messaggio", "L'archivio degli edifici di questa zona non è ancora sul server: il 3D non si può generare qui.", true);
+      if (f) {
+        scegli2d(String(f.properties.edificio), lon, lat, null, +f.properties.archivio || 0);
+        messaggio("messaggio", `Edificio ${f.properties.edificio} scelto nel punto trovato. Se il punto non è sull'edificio giusto `
+          + "(l'indirizzo può essere impreciso) trascinalo o fai clic sull'edificio; poi «Genera il 3D».");
+      } else messaggio("messaggio", "Nessun edificio dell'archivio contiene il punto (né entro 30 m): trascina il punto sull'edificio o fai clic sulla mappa.", true);
+    } else messaggio("messaggio", "Punto trovato (trascinalo per correggerlo). L'archivio degli edifici di questa zona non è ancora sul server: "
+      + "il 3D non si può generare qui.", true);
   }
   if (DUE_TEMPI) {
-    $("cerca-indirizzo").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const via = $("cerca-via").value.trim(), comune = $("cerca-comune").value.trim();
-      if (via.length < 3 || comune.length < 2) { messaggio("messaggio-cerca", "Scrivi via e civico e il comune.", true); return; }
-      cerca({ indirizzo: via, comune });
-    });
-    $("cerca-catasto").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const comune = $("catasto-comune").value.trim(), particella = $("catasto-particella").value.trim();
-      if (comune.length < 2 || !particella) { messaggio("messaggio-cerca", "Scrivi il comune e la particella (e, se lo sai, il foglio).", true); return; }
-      cerca({ comune, foglio: $("catasto-foglio").value.trim(), particella });
-    });
+    if (window.EUGENIO_CERCA) window.EUGENIO_CERCA.crea($("cerca-edificio"), { suTrovato: trovato });
     $("genera-3d").addEventListener("click", genera);
     $("torna-2d").addEventListener("click", esci3d);
   }
@@ -688,7 +739,7 @@
   // comune che contiene il punto (confini ISTAT del sito, dati/mappa/08.json, stesse coordinate di patrimonio.js)
   async function comuneDi(lon, lat) {
     try {
-      const m = await json("dati/mappa/08.json?v=20261105a");
+      const m = await json("dati/mappa/08.json?v=20261105b");
       const p = lonlatSvg(lon, lat);
       for (const c of m.comuni) {
         for (const parte of c.d.split("M").filter(Boolean)) {
@@ -1007,7 +1058,7 @@
   let lavoratore = null;
   function orizzonti(punti, ostacoli, lontano = null) {
     return new Promise((ok, ko) => {
-      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261105a"); } catch (e) { ko(e); return; }
+      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261105b"); } catch (e) { ko(e); return; }
       const id = Math.random();
       const f = (e) => { if (e.data.id === id) { lavoratore.removeEventListener("message", f); ok(e.data.orizzonti); } };
       lavoratore.addEventListener("message", f);
@@ -1195,7 +1246,9 @@
     // demo sintetica: mai sopra una foto vera (sagome inventate, allineate alla griglia UTM e non alle strade: sembravano
     // «storte» rispetto agli edifici veri della foto, 05/11/2026)
     if (stato.indice && stato.indice.sintetico) {
-      sel.disabled = true; sel.options[0].textContent = "nessuna: la demo sintetica non va sopra le foto vere"; return;
+      sel.disabled = true; sel.options[0].textContent = "nessuna: la demo sintetica non va sopra le foto vere";
+      if ($("strato-ortofoto")) { $("strato-ortofoto").checked = false; $("strato-ortofoto").disabled = true; }
+      return;
     }
     stato.tutteOrtofoto = fonti;
     const copre = (f, [lon, lat]) => lon >= f.riquadro[0] && lon <= f.riquadro[2] && lat >= f.riquadro[1] && lat <= f.riquadro[3];
@@ -1205,7 +1258,9 @@
       stato.contestoOrto = ctx;
       stato.mappa.addSource("contesto", { type: "raster", tiles: [location.origin + ctx.tessere], tileSize: 256, minzoom: ctx.zoom[0], maxzoom: ctx.zoom[1],
         bounds: ctx.riquadro, attribution: ctx.citazione });
-      stato.mappa.addLayer({ id: "contesto", type: "raster", source: "contesto" }, stato.mappa.getLayer("rilievo") ? "rilievo" : "ombre");
+      stato.mappa.addLayer({ id: "contesto", type: "raster", source: "contesto", layout: { visibility: ortoVisibile() ? "visible" : "none" } },
+        stato.mappa.getLayer("rilievo") ? "rilievo" : "ombre");
+      if (stato.strati) stato.strati.alza();
     }
     function opzioni() {
       const c = stato.mappa.getCenter(), qui = fonti.filter((f) => f.id !== "s2cloudless2016" || !DUE_TEMPI).filter((f) => copre(f, [c.lng, c.lat]));
@@ -1213,15 +1268,26 @@
       while (sel.options.length > 1) sel.remove(1);
       qui.forEach((f) => { const o = h("option", null, f.nome + (f.stato === "da confermare" ? " (licenza da confermare)" : "")); o.value = f.id; sel.appendChild(o); });
       stato.fontiOrtofoto = qui;
-      sel.disabled = !qui.length;
+      sel.disabled = !qui.length || !ortoVisibile();
       sel.options[0].textContent = qui.length ? "nessuna ortofoto" : "ortofoto non disponibili qui";
       if (qui.some((f) => f.id === prima)) sel.value = prima;
       else if (prima) { sel.value = qui.length && !stato.manuale ? qui[0].id : ""; sfondo(sel.value); }
       else if (!stato.manuale && qui.length && !stato.ortofoto) { sel.value = qui[0].id; sfondo(sel.value); }
     }
     sel.addEventListener("change", () => { stato.manuale = true; sfondo(sel.value); });
+    if ($("strato-ortofoto")) $("strato-ortofoto").addEventListener("change", vediOrtofoto);
     opzioni();
     stato.mappa.on("moveend", opzioni);
+  }
+  // casella «Ortofoto» dei livelli (seconda pubblicazione del 05/11): spenta = niente foto né contesto, la fonte scelta resta
+  const ortoVisibile = () => !$("strato-ortofoto") || $("strato-ortofoto").checked;
+  function vediOrtofoto() {
+    const m = stato.mappa, si = ortoVisibile();
+    if (!m) return;
+    vedi(m, ["ortofoto", "contesto"], si);
+    const att = $("attribuzione-ortofoto");
+    if (att) att.hidden = !si || !stato.ortofoto;
+    if ($("sfondo-ortofoto") && !(stato.indice && stato.indice.sintetico)) $("sfondo-ortofoto").disabled = !si || !(stato.fontiOrtofoto || []).length;
   }
   function sfondo(id) {
     const m = stato.mappa, f = (stato.tutteOrtofoto || stato.fontiOrtofoto).find((x) => x.id === id) || null;
@@ -1232,8 +1298,10 @@
     if (!f) { att.hidden = true; return; }
     m.addSource("ortofoto", { type: "raster", tiles: [location.origin + f.tessere], tileSize: 256, minzoom: f.zoom[0], maxzoom: f.zoom[1],
       bounds: f.riquadro, attribution: `${f.citazione}` });
-    m.addLayer({ id: "ortofoto", type: "raster", source: "ortofoto", paint: { "raster-opacity": 1 } }, m.getLayer("rilievo") ? "rilievo" : "ombre");
-    att.hidden = false; att.innerHTML = "";
+    m.addLayer({ id: "ortofoto", type: "raster", source: "ortofoto", paint: { "raster-opacity": 1 },
+      layout: { visibility: ortoVisibile() ? "visible" : "none" } }, m.getLayer("rilievo") ? "rilievo" : "ombre");
+    if (stato.strati) stato.strati.alza();
+    att.hidden = !ortoVisibile(); att.innerHTML = "";
     att.append("Ortofoto: ", f.citazione, " – licenza ");
     const a = h("a", null, f.licenza); a.href = f.scheda; att.appendChild(a);
     if (f.stato === "da confermare") att.append(" (uso tramite il server di EuGEnio in attesa di conferma della fonte)");
@@ -1387,7 +1455,7 @@
   async function datiDpr() {
     if (stato.dpr === null) {
       stato.dpr = false;
-      try { stato.dpr = await json("dati/dpr412.json?v=20261105a"); } catch { /* senza file: niente zona */ }
+      try { stato.dpr = await json("dati/dpr412.json?v=20261105b"); } catch { /* senza file: niente zona */ }
     }
     return stato.dpr || null;
   }
@@ -1689,10 +1757,22 @@
         });
       }
       stato.mappa = await creaMappa();
-      caricaOrtofoto();
-      if (DUE_TEMPI && window.EUGENIO_ESPORTA) {
-        window.EUGENIO_ESPORTA.pulsanti($("scarica-3d"), stato.mappa, opzioniImmagine, (t, e) => messaggio("messaggio-immagine", t, e));
+      // livelli sopra la foto (particelle, contorni degli edifici): non nella demo, i cui edifici sono inventati
+      if (DUE_TEMPI && window.EUGENIO_STRATI && $("caselle-strati")) {
+        if (indice && indice.sintetico) {
+          $("caselle-strati").append(h("p", "aiuto-breve", "Particelle e contorni degli edifici non si mostrano sulla demo sintetica (edifici inventati)."));
+        } else {
+          try {
+            const m = stato.mappa;
+            stato.strati = await window.EUGENIO_STRATI.aggiungi(m, { caselle: $("caselle-strati"), legenda: $("legenda-strati"),
+              sotto: () => (m.getLayer("rilievo") ? "rilievo" : "ombre") });
+          } catch { /* strati non disponibili */ }
+        }
       }
+      caricaOrtofoto();
+      if (DUE_TEMPI && window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-3d"), stato.mappa, opzioniImmagine, $("messaggio-immagine"));
+      // demo sintetica: si esce sempre con «Esci dalla demo», che riapre la pagina normale (mappa 2D vera, ortofoto, ricerca)
+      if (DUE_TEMPI && indice && indice.sintetico && $("esci-demo")) { $("esci-demo").hidden = false; $("apri-demo").hidden = true; }
       const q = new URLSearchParams(location.search);
       if (DUE_TEMPI) {
         if (!base) {
@@ -1704,7 +1784,7 @@
           if (!q.get("modello") && !q.get("sede")) await vaiRegione(cod);
         } else if (indice.sintetico) {
           messaggio("messaggio", "Demo sintetica: isolato inventato vicino a Rimini, senza foto sotto (non corrisponde a edifici veri). "
-            + "Fai clic su un edificio (E-DEMO è l'esempio a tre corpi, con la torre), poi «Genera il 3D».");
+            + "Fai clic su un edificio (E-DEMO è l'esempio a tre corpi, con la torre), poi «Genera il 3D». Per tornare alla mappa vera: «Esci dalla demo».");
         } else messaggio("messaggio", "Avvicinati e fai clic su un edificio (o cercalo con l'indirizzo), poi «Genera il 3D».");
       } else {
         messaggio("messaggio", indice.sintetico ? "Isolato sintetico di prova: fai clic su un edificio (quello arancione più alto è l'esempio a tre corpi)." : "Fai clic su un edificio.");
@@ -1750,5 +1830,5 @@
     }
   })();
   window.EUGENIO_EDIFICIO3D = { stato, corpoReport, scegli, apriModello, edificioNelPunto, alberiVicini, ostacoliRelativi, genera, entra3d, esci3d,
-    vistaNominata, opzioniImmagine, livelloFonte, scegli2d };
+    vistaNominata, opzioniImmagine, livelloFonte, scegli2d, impostaPunto, puntoCambiato, trovato };
 })();

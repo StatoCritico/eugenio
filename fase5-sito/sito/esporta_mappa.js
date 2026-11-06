@@ -1,11 +1,23 @@
 "use strict";
 // Scarica la vista di una mappa MapLibre così come appare (Ortofoto, Modelli 3D; 05/11/2026), in JPG, PNG o PDF.
-// Sotto l'immagine c'è sempre una fascia con titolo, licenza e citazione di ogni fonte visibile e «Fonte: EuGEnio –
-// eugenio.statocritico.it»: la fascia fa parte dell'immagine, quindi resta anche se il file viene ritagliato male o
-// inoltrato da solo. Nel PDF (A4 orizzontale, scritto qui senza librerie: un'immagine JPEG e testo Helvetica) le stesse
-// righe ci sono anche come testo selezionabile. Tutto nel browser: niente va al server.
+// Sotto l'immagine c'è sempre una fascia con titolo, licenza e citazione di ogni fonte visibile (con la legenda degli
+// strati accesi) e «Fonte: EuGEnio – eugenio.statocritico.it»: la fascia fa parte dell'immagine, quindi resta anche se il
+// file viene ritagliato male o inoltrato da solo. Nel PDF (A4 orizzontale, scritto qui senza librerie: un'immagine JPEG e
+// testo Helvetica) le stesse righe ci sono anche come testo selezionabile. Tutto nel browser: niente va al server.
 //
-//  EUGENIO_ESPORTA.scarica(mappa, { formato: "jpg"|"png"|"pdf", nome, titolo, righe: [testo, …], avviso })
+// Salvataggio (seconda pubblicazione del 05/11/2026, dopo «dice scaricata ma il file non parte»): prima il messaggio di
+// successo compariva appena il collegamento di download era stato cliccato dal codice, senza sapere se il browser avesse
+// davvero salvato il file. Ora:
+//  - dove c'è (Chrome, Edge sul computer) si apre la finestra «Salva con nome» del sistema **subito, nel clic** (il
+//    browser la permette solo durante il gesto dell'utente); il file lo scrive la pagina e il messaggio «salvata» compare
+//    solo dopo la scrittura riuscita; «Annulla» dice «salvataggio annullato»;
+//  - altrove (Firefox, Safari, telefoni) il download parte con un collegamento, e il messaggio dice che è stato **avviato**
+//    e lascia un collegamento «Salva …» da cliccare a mano (un clic vero dell'utente funziona sempre, anche se il browser
+//    ha bloccato o nascosto il download automatico);
+//  - prima di creare il file si controlla che la copia della mappa non sia vuota (tutta trasparente) e che il browser la
+//    lasci leggere (tessere di un altro sito senza CORS «sporcano» il canvas): in caso contrario un messaggio chiaro.
+//
+//  EUGENIO_ESPORTA.scarica(mappa, { formato: "jpg"|"png"|"pdf", nome, titolo, righe: [testo, …], avviso }, maniglia)
 //  La mappa deve essere creata con canvasContextAttributes: { preserveDrawingBuffer: true } (altrimenti si ridisegna
 //  prima di copiarla).
 (function () {
@@ -52,11 +64,37 @@
     return { canvas: c, testi: testi.map((x) => x.t), larghezza: W, altezza: H + fascia };
   }
 
-  const blob = (c, tipo, q) => new Promise((ok, no) => c.toBlob((b) => (b ? ok(b) : no(new Error("immagine non creata"))), tipo, q));
-  function salva(b, nome) {
-    const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nome;
+  const blob = (c, tipo, q) => new Promise((ok, no) => c.toBlob((b) => (b ? ok(b) : no(new Error("il browser non ha creato l'immagine (memoria?)"))), tipo, q));
+  const TIPI = { jpg: ["image/jpeg", ".jpg", "Immagine JPEG"], png: ["image/png", ".png", "Immagine PNG"], pdf: ["application/pdf", ".pdf", "Documento PDF"] };
+
+  // copia della mappa leggibile e non vuota? (una mappa non ridisegnata con preserveDrawingBuffer falso esce tutta nera o
+  // trasparente; un canvas «sporcato» da tessere senza CORS non si legge)
+  function controllaCopia(src) {
+    const p = document.createElement("canvas"); p.width = 24; p.height = 24;
+    const g = p.getContext("2d");
+    g.drawImage(src, 0, 0, 24, 24);
+    let d;
+    try { d = g.getImageData(0, 0, 24, 24).data; }
+    catch { throw new Error("il browser non permette di copiare la mappa (immagini di un altro sito senza autorizzazione CORS)"); }
+    // una mappa non conservata dal browser si legge tutta trasparente; un colore unico (solo sfondo, mare) è una vista lecita
+    let alfa = 0;
+    for (let i = 3; i < d.length; i += 4) alfa = Math.max(alfa, d[i]);
+    if (!alfa) throw new Error("la copia della mappa è vuota (il browser non l'ha conservata): ricarica la pagina e riprova");
+  }
+
+  // salvataggio: con la finestra del sistema (maniglia di showSaveFilePicker) o con un collegamento di download
+  async function salva(b, nome, maniglia) {
+    if (!b || b.size < 200) throw new Error("file vuoto");
+    if (maniglia) {
+      const w = await maniglia.createWritable();
+      await w.write(b); await w.close();
+      return { modo: "salvato", nome: maniglia.name || nome, byte: b.size };
+    }
+    const url = URL.createObjectURL(b);
+    const a = document.createElement("a"); a.href = url; a.download = nome; a.rel = "noopener"; a.hidden = true;
     document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    setTimeout(() => URL.revokeObjectURL(url), 10 * 60 * 1000);     // il collegamento «Salva …» resta valido 10 minuti
+    return { modo: "avviato", nome, byte: b.size, url };
   }
 
   // ------------------------------------------------------------------ PDF minimo (una pagina A4 orizzontale)
@@ -128,8 +166,8 @@
     return out;
   }
 
-  async function scarica(mappa, opz = {}) {
-    const formato = (opz.formato || "jpg").toLowerCase(), nome = opz.nome || "mappa";
+  async function scarica(mappa, opz = {}, maniglia = null) {
+    const formato = (opz.formato || "jpg").toLowerCase(), nome = `${opz.nome || "mappa"}.${formato}`;
     // immagine più nitida: la mappa si ridisegna per un momento a densità doppia (linee e testo; le foto restano quelle
     // delle tessere), poi torna com'era
     const pr0 = typeof mappa.getPixelRatio === "function" ? mappa.getPixelRatio() : null;
@@ -138,16 +176,28 @@
     let v;
     try {
       // un fotogramma nuovo prima di copiare (preserveDrawingBuffer tiene il contenuto), dopo l'arrivo delle tessere
-      await new Promise((ok) => { const t = setTimeout(ok, 4000); mappa.once("idle", () => { clearTimeout(t); ok(); }); mappa.triggerRepaint(); });
+      await new Promise((ok) => { const t = setTimeout(ok, 2500); mappa.once("idle", () => { clearTimeout(t); ok(); }); mappa.triggerRepaint(); });
+      controllaCopia(mappa.getCanvas());
       v = componi(mappa, opz);
     } finally { if (pr && pr !== pr0) mappa.setPixelRatio(pr0); }
-    if (formato === "png") { salva(await blob(v.canvas, "image/png"), `${nome}.png`); return v; }
-    const jpg = await blob(v.canvas, "image/jpeg", 0.9);
-    if (formato === "pdf") {
-      const b = new Uint8Array(await jpg.arrayBuffer());
-      salva(pdf(b, v.canvas.width, v.canvas.height, opz.titolo || "", v.testi.slice(opz.titolo ? 1 : 0)), `${nome}.pdf`);
-    } else salva(jpg, `${nome}.jpg`);
-    return v;
+    let file;
+    if (formato === "png") file = await blob(v.canvas, "image/png");
+    else {
+      const jpg = await blob(v.canvas, "image/jpeg", 0.9);
+      file = formato === "pdf"
+        ? pdf(new Uint8Array(await jpg.arrayBuffer()), v.canvas.width, v.canvas.height, opz.titolo || "", v.testi.slice(opz.titolo ? 1 : 0))
+        : jpg;
+    }
+    return { ...v, ...(await salva(file, nome, maniglia)) };
+  }
+
+  const mb = (n) => (n >= 1e6 ? `${(n / 1e6).toLocaleString("it-IT", { maximumFractionDigits: 1 })} MB` : `${Math.max(1, Math.round(n / 1e3))} kB`);
+  // finestra «Salva con nome» del sistema, se il browser ce l'ha (va chiesta subito, durante il clic)
+  function chiediManiglia(nome, formato) {
+    if (typeof window.showSaveFilePicker !== "function" || window.EUGENIO_ESPORTA_SENZA_FINESTRA) return null;
+    const [mime, est, descr] = TIPI[formato] || TIPI.jpg;
+    try { return window.showSaveFilePicker({ suggestedName: nome, types: [{ description: descr, accept: { [mime]: [est] } }] }); }
+    catch { return null; }   // fuori dal gesto o in un riquadro: si ripiega sul collegamento
   }
 
   // pulsanti «Scarica l'immagine: JPG · PNG · PDF» in un contenitore; opz() restituisce le opzioni al momento del clic
@@ -155,6 +205,16 @@
   function pulsanti(dove, mappa, opz, messaggio, formati = ["jpg", "png", "pdf"]) {
     const box = document.createElement("div"); box.className = "scarica scarica-vista";
     const t = document.createElement("span"); t.className = "scarica-titolo"; t.textContent = "Scarica l'immagine:"; box.appendChild(t);
+    // messaggio: l'elemento dei messaggi (consigliato: ci va anche il collegamento «Salva …») o una funzione (testo, errore)
+    const scrivi = (testo, errore = false, url = null, nome = "") => {
+      const el = messaggio instanceof Element ? messaggio : null;
+      if (el) { el.textContent = testo; el.classList.toggle("errore", !!errore); } else if (messaggio) messaggio(testo, errore);
+      if (el && url) {
+        const a = document.createElement("a"); a.href = url; a.download = nome; a.className = "salva-a-mano";
+        a.textContent = `Salva ${nome}`;
+        el.append(" ", a);
+      }
+    };
     for (const f of formati) {
       const b = document.createElement("button"); b.type = "button"; b.className = "bottone secondario"; b.dataset.formato = f;
       b.textContent = f.toUpperCase(); b.title = `Scarica la vista della mappa in ${f.toUpperCase()}, con licenze e citazioni delle fonti`;
@@ -162,9 +222,23 @@
         const m = typeof mappa === "function" ? mappa() : mappa;
         const o = typeof opz === "function" ? opz() : opz;
         if (!m) return;
-        if (typeof o === "string") { if (messaggio) messaggio(o, true); return; }
-        try { b.disabled = true; await scarica(m, { ...o, formato: f }); if (messaggio) messaggio(`Immagine scaricata (${f.toUpperCase()}), con le attribuzioni sotto la mappa.`); }
-        catch (e) { if (messaggio) messaggio(`Immagine non scaricata: ${e.message || e}`, true); }
+        if (typeof o === "string") { scrivi(o, true); return; }
+        const nome = `${o.nome || "mappa"}.${f}`;
+        const richiesta = chiediManiglia(nome, f);          // nel gesto, prima di ogni attesa
+        let maniglia = null;
+        if (richiesta) {
+          try { maniglia = await richiesta; }
+          catch (e) {
+            if (e && e.name === "AbortError") { scrivi("Salvataggio annullato: nessun file scritto."); return; }
+            maniglia = null;                                  // finestra non disponibile: si usa il collegamento
+          }
+        }
+        try {
+          b.disabled = true; scrivi(`Preparo l'immagine (${f.toUpperCase()})…`);
+          const r = await scarica(m, { ...o, formato: f }, maniglia);
+          if (r.modo === "salvato") scrivi(`Immagine salvata: ${r.nome} (${mb(r.byte)}), con le attribuzioni sotto la mappa.`);
+          else scrivi(`Download avviato dal browser: ${r.nome} (${mb(r.byte)}). Se non compare tra i download, usa il collegamento:`, false, r.url, r.nome);
+        } catch (e) { scrivi(`Immagine non scaricata: ${e.message || e}.`, true); }
         finally { b.disabled = false; }
       });
       box.appendChild(b);
@@ -173,5 +247,5 @@
     return box;
   }
 
-  window.EUGENIO_ESPORTA = { scarica, componi, pulsanti, _pdf: pdf, _winAnsi: winAnsi };
+  window.EUGENIO_ESPORTA = { scarica, componi, pulsanti, salva, controllaCopia, _pdf: pdf, _winAnsi: winAnsi };
 })();
