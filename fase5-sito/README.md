@@ -41,6 +41,8 @@ sito/
                     librerie in lib/ (dxf-parser, web-ifc, clipper-lib, proj4) caricate solo qui; posa dal file, da un
                     sistema di riferimento o con due punti noti; risultato a modelli3d.html?modello=locale o .geojson
   privacy.html      informativa privacy (titolare: Paolo Bianco; email in arrivo via Cloudflare Email Routing e Gmail)
+  EUGENIO_PER_AGENTI.md  tutte le funzioni spiegate agli agenti AI (06/11/2026; copia identica di quello nella radice del
+                    repository; servito da Caddy come text/markdown); llms.txt  rimando breve (convenzione llms.txt)
   app.js, patrimonio.js, legge10.js, contatti.js, stile.css
   report.js         pulsanti "Scarica il report" (PDF, Excel, ODS; dal 28/10/2026 niente Word né ODT) su previsione, patrimonio, Legge 10 e
                     indicatori: manda i
@@ -279,6 +281,30 @@ in ODT. Sul server i due formati sono spenti (rispondono 410, variabile `REPORT_
 - Informativa privacy aggiornata (Turnstile tra i servizi di Cloudflare, conteggio dei 429 per 7 giorni, gettone nel
   browser). Provato in Node con browser, Turnstile e server simulati: verifica spenta, una sola verifica per più
   richieste anche contemporanee, rinnovo dopo un 401, errore leggibile se la verifica fallisce.
+
+## Aggiornamento del 06/11/2026 – file per gli agenti AI (`?v=20261106a`, che sostituisce `?v=20261105b`)
+
+Richiesta di Paolo: un file che spiega tutte le funzioni di EuGEnio agli agenti AI, perché lo possano usare da soli.
+- **`sito/EUGENIO_PER_AGENTI.md`** (copia identica di `../EUGENIO_PER_AGENTI.md`, nella radice del repository per GitHub):
+  cos'è, licenze e attribuzioni, mappa del menu pagina per pagina con i parametri dell'indirizzo (`?comune=`, `?regione=`,
+  `?dataset=`, `?archivio=`, `?edificio=`, `?sede=locale`, `?modello=locale`, `?lat=&lon=&z=`, `?fonte=`, `?istat=`,
+  `?ente=`), formati dei file, API libere e protette da Turnstile con esempi curl, limiti, flussi passo passo, cosa EuGEnio
+  non fa, privacy funzione per funzione, file statici, contatti, fonti nel repository da cui è ricavato.
+- **`sito/llms.txt`** (convenzione llms.txt): descrizione breve e rimando al file.
+- **F.A.Q.** nuova voce `#agenti-ai` («Posso far usare EuGEnio al mio assistente di intelligenza artificiale?») con il
+  collegamento che scarica il file (`download`).
+- **Sitografia** `#claude`, dopo «No, scherzavamo: non è open source…»: «E lo puoi usare anche tu: per fargli imparare cosa
+  può fare EuGEnio, scarica e fagli leggere [questo file].» (collegamento con `download`).
+- `stile.css`: `.articolo p code` va a capo anche dentro le parole (l'indirizzo lungo nella F.A.Q. non fa più scorrere la
+  pagina in orizzontale sul telefono).
+- Caddy: tipo `text/markdown; charset=utf-8` per i `.md` e `text/plain; charset=utf-8` per `/llms.txt` (fase 4, Caddyfile).
+- Versione **`?v=20261106a`** (anche `interno/edifici.html`, a mano); **43 test** (5 nuovi in `tests/test_agenti_sito.py`,
+  2 nel browser: ancora `#agenti-ai`, download dalla F.A.Q. e dalla Sitografia a 1366 e 375 px, nessuno scorrimento
+  orizzontale, nessun errore).
+
+**Dopo ogni modifica a funzioni, pagine o API del sito** aggiornare anche `EUGENIO_PER_AGENTI.md` (radice e `sito/`,
+identici) e `sito/llms.txt`, con data e versione del sito in testa (`?v=…` uguale a quella di `index.html`: i test lo
+controllano).
 
 ## Aggiornamento del 05/11/2026 – seconda pubblicazione (`?v=20261105b`, che sostituisce `?v=20261105a`)
 

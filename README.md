@@ -31,6 +31,19 @@ numerazione ha un buco (la 2) perché quella fase non fa parte del servizio pubb
 | 13 | `fase13-cogenerazione/` | **cogenerazione** in autoconsumo, report 13–20 con il budget di dissipazione CAR: **uso interno finché non c'è la licenza GME**; regole CAR dagli atti normativi, niente contenuti GSE; **report 18 Emissioni nel sito dal 05/11/2026** con i fattori ISPRA (`dati_terzi/`), senza dati GME | server + sito |
 | — | `documenti/` | documenti di progetto: proposta 3D e visure, riepilogo GME, scaletta della call GME, bozza dell'articolo per Stato Critico sugli edifici 3D (Fase E), valutazione dei dati di Zornade (05/11/2026, per il § 14.2) | — |
 
+## Per gli agenti AI
+
+[`EUGENIO_PER_AGENTI.md`](EUGENIO_PER_AGENTI.md) (dal 06/11/2026) spiega tutte le funzioni di EuGEnio a un agente AI
+(Claude, ChatGPT…) che le usa per conto di una persona: pagine e parametri dell'indirizzo, formati dei file, API libere e
+protette da Turnstile, limiti, flussi passo passo, cosa non fare, privacy, attribuzioni. La stessa copia è nel sito
+(`https://eugenio.statocritico.it/EUGENIO_PER_AGENTI.md`, collegata dalla F.A.Q. `#agenti-ai` e dalla Sitografia `#claude`),
+con il rimando breve `https://eugenio.statocritico.it/llms.txt`.
+
+**Da aggiornare dopo ogni modifica** (oltre ai README delle fasi, `DA_FARE.md` e `RIEPILOGO.md`): se cambiano funzioni,
+pagine o API, anche `EUGENIO_PER_AGENTI.md` (radice e `fase5-sito/sito/`, identici) e `fase5-sito/sito/llms.txt`, con data e
+versione del sito in testa. Il test `fase4-server/tests/test_agenti.py` fallisce se le due copie differiscono, se la versione
+non è quella del sito o se le rotte `/api/…` dell'app e quelle citate nel file non coincidono.
+
 ## Ordine consigliato
 
 1. Fase 1 (1–2 ore).

@@ -208,6 +208,12 @@ Siccome il server riscrive `dati/indicatori/`, `dati/clima/` e i due CSV, **il s
 
 ## API
 
+Le rotte pubbliche sono descritte per gli agenti AI in [`../EUGENIO_PER_AGENTI.md`](../EUGENIO_PER_AGENTI.md) (06/11/2026;
+copia identica nel sito): **una rotta nuova, cambiata o tolta va scritta anche lì**, altrimenti `tests/test_agenti.py`
+fallisce (confronta i percorsi citati con `app.openapi()` in tutti e due i sensi, escluse le rotte `/api/interno/…`).
+Il Caddyfile serve dal 06/11/2026 i file `.md` del sito come `text/markdown; charset=utf-8` e `/llms.txt` come
+`text/plain; charset=utf-8` (dopo la modifica: `docker compose up -d --force-recreate caddy`).
+
 | Metodo | Percorso | Descrizione |
 |---|---|---|
 | GET | `/api/salute` | stato e ultimo aggiornamento delle previsioni |

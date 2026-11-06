@@ -38,7 +38,7 @@
 // affidabilità) se c'è, altrimenti il DBTR dell'Emilia-Romagna; i corpi di un archivio meno affidabile che cadono dentro
 // quelli di uno più affidabile non si usano.
 //
-// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261105b):
+// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261106a):
 //  - il punto trovato con la ricerca (cerca_luogo.js, modulo comune con Ortofoto) si **trascina** per correggerlo (l'ANNCSU
 //    è a volte impreciso) e, da zoom 15, un clic sulla mappa lo sposta lì; la scelta dell'edificio usa sempre il punto
 //    corretto (l'edificio che lo contiene, o il più vicino entro 30 m) e «Genera il 3D» parte da lì;
@@ -739,7 +739,7 @@
   // comune che contiene il punto (confini ISTAT del sito, dati/mappa/08.json, stesse coordinate di patrimonio.js)
   async function comuneDi(lon, lat) {
     try {
-      const m = await json("dati/mappa/08.json?v=20261105b");
+      const m = await json("dati/mappa/08.json?v=20261106a");
       const p = lonlatSvg(lon, lat);
       for (const c of m.comuni) {
         for (const parte of c.d.split("M").filter(Boolean)) {
@@ -1058,7 +1058,7 @@
   let lavoratore = null;
   function orizzonti(punti, ostacoli, lontano = null) {
     return new Promise((ok, ko) => {
-      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261105b"); } catch (e) { ko(e); return; }
+      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261106a"); } catch (e) { ko(e); return; }
       const id = Math.random();
       const f = (e) => { if (e.data.id === id) { lavoratore.removeEventListener("message", f); ok(e.data.orizzonti); } };
       lavoratore.addEventListener("message", f);
@@ -1455,7 +1455,7 @@
   async function datiDpr() {
     if (stato.dpr === null) {
       stato.dpr = false;
-      try { stato.dpr = await json("dati/dpr412.json?v=20261105b"); } catch { /* senza file: niente zona */ }
+      try { stato.dpr = await json("dati/dpr412.json?v=20261106a"); } catch { /* senza file: niente zona */ }
     }
     return stato.dpr || null;
   }

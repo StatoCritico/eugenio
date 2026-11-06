@@ -1,0 +1,29 @@
+# EuGEnio
+
+> Servizio open source (AGPL-3.0, dati CC BY 4.0) di Stato Critico per chi si occupa di energia: previsione dei consumi
+> con TiRex-2 e meteo per comune, dati climatici per la Legge 10, gradi giorno, patrimonio edilizio sul catasto, edifici 3D,
+> ombre e fotovoltaico, costi energetici della sanità. Sito in italiano; servizio sperimentale. Ultimo aggiornamento:
+> 06/11/2026, versione del sito ?v=20261106a.
+
+Le istruzioni complete per gli agenti AI (pagine, parametri dell'indirizzo, formati dei file, API libere e protette,
+limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un solo file: leggilo prima di usare il servizio.
+
+## Documentazione
+
+- [EuGEnio per agenti AI](https://eugenio.statocritico.it/EUGENIO_PER_AGENTI.md): tutte le funzioni e come usarle
+- [Schema OpenAPI](https://eugenio.statocritico.it/api/openapi.json): rotte, parametri e risposte dell'API
+- [F.A.Q.](https://eugenio.statocritico.it/faq.html#agenti-ai): domande frequenti, compresa quella su questo file
+- [Licenza](https://eugenio.statocritico.it/licenza.html): codice AGPL-3.0, dati CC BY 4.0 («Fonte: EuGEnio – eugenio.statocritico.it»)
+
+## Regole essenziali
+
+- Non aggirare la verifica anti-robot (Cloudflare Turnstile): previsione, patrimonio, geocodifica, particella e download
+  dei dati climatici si usano nel browser della persona.
+- I dati di mercato GME ed EEX non sono mai esposti: non cercarli.
+- Vietato usare i dati catastali per re-identificare persone.
+- User-Agent identificabile, richieste in serie, rispetto dei 429; per uso intensivo un mirror proprio.
+
+## Facoltativo
+
+- [Codice su GitHub](https://github.com/statocritico/eugenio)
+- [Contatti](https://eugenio.statocritico.it/contatti.html)

@@ -651,7 +651,7 @@ code { font: .9em var(--mono); background: var(--rialzo); padding: .05em .3em; b
 .articolo th, .articolo td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--linea); vertical-align: top; }
 .articolo thead th { font: 600 var(--c-s)/1.25 var(--titoli); background: var(--rialzo); }
 .articolo td.num, .articolo th.num { text-align: right; font-variant-numeric: tabular-nums; }
-.articolo td, .articolo td code { overflow-wrap: anywhere; }
+.articolo td, .articolo td code, .articolo p code { overflow-wrap: anywhere; }   /* indirizzi lunghi (F.A.Q. #agenti-ai) */
 .articolo pre { line-height: 1.5; }
 .articolo pre code { background: none; padding: 0; }
 .schema { background: var(--foglio); border: 1px solid var(--linea); border-radius: var(--r); padding: var(--s4); margin: var(--s4) 0; overflow-x: auto; }

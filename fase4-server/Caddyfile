@@ -80,6 +80,12 @@
 	handle {
 		root * /srv/sito
 		try_files {path} /index.html
+		# file per gli agenti AI (06/11/2026): Markdown e llms.txt come testo UTF-8 (senza queste righe il .md
+		# uscirebbe come application/octet-stream o senza charset, secondo l'immagine di Caddy)
+		@markdown path *.md
+		header @markdown Content-Type "text/markdown; charset=utf-8"
+		@llms path /llms.txt
+		header @llms Content-Type "text/plain; charset=utf-8"
 		file_server
 	}
 
