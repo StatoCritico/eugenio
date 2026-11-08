@@ -8,10 +8,12 @@
 // Salvataggio (seconda pubblicazione del 05/11/2026, dopo «dice scaricata ma il file non parte»): prima il messaggio di
 // successo compariva appena il collegamento di download era stato cliccato dal codice, senza sapere se il browser avesse
 // davvero salvato il file. Ora:
-//  - dove c'è (Chrome, Edge sul computer) si apre la finestra «Salva con nome» del sistema **subito, nel clic** (il
-//    browser la permette solo durante il gesto dell'utente); il file lo scrive la pagina e il messaggio «salvata» compare
+//  - (07/11/2026 sera, prove di Paolo: la finestra di sistema si apriva nascosta e Chrome restava bloccato) di
+//    predefinito **nessuna finestra**: il download parte con un collegamento (come nei download normali di Chrome). La
+//    finestra «Salva con nome» del sistema (Chrome, Edge sul computer) si apre **solo** se l'utente spunta «chiedi dove
+//    salvarlo» accanto ai pulsanti: allora si apre nel clic, il file lo scrive la pagina e il messaggio «salvata» compare
 //    solo dopo la scrittura riuscita; «Annulla» dice «salvataggio annullato»;
-//  - altrove (Firefox, Safari, telefoni) il download parte con un collegamento, e il messaggio dice che è stato **avviato**
+//  - il download parte con un collegamento (sempre in Firefox, Safari, telefoni), e il messaggio dice che è stato **avviato**
 //    e lascia un collegamento «Salva …» da cliccare a mano (un clic vero dell'utente funziona sempre, anche se il browser
 //    ha bloccato o nascosto il download automatico);
 //  - prima di creare il file si controlla che la copia della mappa non sia vuota (tutta trasparente) e che il browser la
@@ -205,6 +207,15 @@
   function pulsanti(dove, mappa, opz, messaggio, formati = ["jpg", "png", "pdf"]) {
     const box = document.createElement("div"); box.className = "scarica scarica-vista";
     const t = document.createElement("span"); t.className = "scarica-titolo"; t.textContent = "Scarica l'immagine:"; box.appendChild(t);
+    // scelta esplicita della finestra del sistema (solo dove c'è): spenta di predefinito
+    let conNome = null;
+    if (typeof window.showSaveFilePicker === "function" && !window.EUGENIO_ESPORTA_SENZA_FINESTRA) {
+      const l = document.createElement("label"); l.className = "casella-strato salva-con-nome";
+      conNome = document.createElement("input"); conNome.type = "checkbox"; conNome.dataset.salvaConNome = "1";
+      l.append(conNome, " chiedi dove salvarlo («Salva con nome…»)");
+      l.title = "Apre la finestra del sistema per scegliere cartella e nome; senza spunta il file va nei download del browser";
+      box.appendChild(l);
+    }
     // messaggio: l'elemento dei messaggi (consigliato: ci va anche il collegamento «Salva …») o una funzione (testo, errore)
     const scrivi = (testo, errore = false, url = null, nome = "") => {
       const el = messaggio instanceof Element ? messaggio : null;
@@ -224,7 +235,7 @@
         if (!m) return;
         if (typeof o === "string") { scrivi(o, true); return; }
         const nome = `${o.nome || "mappa"}.${f}`;
-        const richiesta = chiediManiglia(nome, f);          // nel gesto, prima di ogni attesa
+        const richiesta = conNome && conNome.checked ? chiediManiglia(nome, f) : null;   // solo se chiesto; nel gesto
         let maniglia = null;
         if (richiesta) {
           try { maniglia = await richiesta; }

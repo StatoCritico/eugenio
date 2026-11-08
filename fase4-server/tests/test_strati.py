@@ -86,6 +86,34 @@ def test_riproiezione_righe_esatta():
     assert len(righe) >= 1 and abs(righe.mean() - attesa) <= 1.0
 
 
+
+def test_colonne_e_datum_senza_scarti():
+    """Sfasamento segnalato da Paolo il 07/11/2026 sera (punto 8): il proxy non sposta nulla. (1) Una colonna a una
+    longitudine nota finisce sulla colonna mercatore giusta (blocco 2×2, tessera in alto a destra); (2) RDN2008/ETRS89 →
+    WGS 84 in PROJ è la trasformazione nulla, la stessa usata per l'archivio DBTR (7791 → 4326) e implicita nelle tessere
+    3857 dell'ortofoto RER: tutte le fonti sono nello stesso riferimento entro 1 cm (lo scarto ETRF2000–ITRF di ~0,8 m
+    non si applica a nessuna, quindi non sfasa le une rispetto alle altre)."""
+    z, x, y = 19, 279005, 190770
+    s = T.Strato(id="t", tema="particelle", nome="t", tipo="wms", url="u", licenza="", citazione="", scheda="",
+                 stato="confermata", crs="EPSG:4258", metatessera=2)
+    lo0 = O.lonlat_tessera(z, x - 1, y)[0]; lo1 = O.lonlat_tessera(z, x, y)[2]
+    lon_col = O.lonlat_tessera(z, x, y)[0] + 0.37 * (O.lonlat_tessera(z, x, y)[2] - O.lonlat_tessera(z, x, y)[0])
+    a = np.zeros((512, 512, 4))
+    c = int((lon_col - lo0) / (lo1 - lo0) * 512)
+    a[:, c, :] = (255, 0, 0, 255)
+    out = np.asarray(Image.open(io.BytesIO(T.elabora(s, _png(a), z, x, y))))
+    col = np.where(out[128, :, 3] > 0)[0]
+    attesa = ((lon_col + 180) / 360 * 2 ** z - x) * 256
+    assert len(col) == 1 and abs(col[0] + 0.5 - attesa) <= 0.5          # entro mezzo pixel (0,15 m allo zoom 19)
+    from pyproj import Transformer
+    for da in ("EPSG:6706", "EPSG:4258"):
+        lon, lat = Transformer.from_crs(da, "EPSG:4326", always_xy=True).transform(12.5879, 44.0468)
+        assert abs(lon - 12.5879) < 1e-7 and abs(lat - 44.0468) < 1e-7
+    e, n = Transformer.from_crs("EPSG:4326", "EPSG:7791", always_xy=True).transform(12.5879, 44.0468)
+    lon, lat = Transformer.from_crs("EPSG:7791", "EPSG:4326", always_xy=True).transform(e, n)
+    assert abs(lon - 12.5879) < 1e-8 and abs(lat - 44.0468) < 1e-8
+
+
 def test_solo_contorni():
     a = np.zeros((256, 256, 4))
     a[50:150, 50:150] = (250, 230, 190, 255)            # particella piena beige
@@ -176,7 +204,10 @@ def test_errore_della_fonte_non_si_copia(client, tmp_path, monkeypatch):
 def test_overpass_istanza_di_riserva(monkeypatch):
     """06/11/2026: overpass-api.de risponde 502 quando è sovraccarico; si prova l'istanza di riserva del TOML."""
     s = {x.id: x for f in sorted(STRATI.glob("*.toml")) for x in T.leggi_toml(f)}["osm_edifici"]
-    assert s.url_riserva and "maps.mail.ru" in s.url_riserva[0]
+    # 07/11/2026: riserva europea (Overpass API Europa, Germania) al posto di maps.mail.ru (VK)
+    assert s.url_riserva == ("https://ovp.dresel.systems/api/interpreter",)
+    assert not any("mail.ru" in u for u in T.istanze_overpass())
+    monkeypatch.setattr(T.C, "OVERPASS_RISERVA", None)
     chiamate = []
 
     def finto(url, dati=None):
@@ -195,3 +226,23 @@ def test_overpass_istanza_di_riserva(monkeypatch):
     monkeypatch.setattr(T, "_scarica", sempre_giu)
     with pytest.raises(httpx.HTTPError):
         T._overpass(s, "[out:json];")
+
+
+def test_overpass_riserva_dal_env(monkeypatch):
+    """07/11/2026: OVERPASS_RISERVA nel .env sostituisce la riserva del TOML; vuota = nessuna riserva (procedura F11 bis)."""
+    s = T.strati()["osm_edifici"]
+    monkeypatch.setattr(T.C, "OVERPASS_RISERVA", None)
+    assert T.istanze_overpass() == [s.url, "https://ovp.dresel.systems/api/interpreter"]
+    monkeypatch.setattr(T.C, "OVERPASS_RISERVA", [])
+    assert T.istanze_overpass() == [s.url]
+    chiamate = []
+
+    def giu(url, dati=None):
+        chiamate.append(url)
+        raise httpx.ConnectError("giù")
+    monkeypatch.setattr(T, "_scarica", giu)
+    with pytest.raises(httpx.HTTPError):
+        T._overpass(s, "[out:json];")
+    assert chiamate == [s.url]
+    monkeypatch.setattr(T.C, "OVERPASS_RISERVA", ["https://altra.example/api/interpreter", "https://maps.google.com/x"])
+    assert T.istanze_overpass() == [s.url, "https://altra.example/api/interpreter"]      # servizi esclusi tolti

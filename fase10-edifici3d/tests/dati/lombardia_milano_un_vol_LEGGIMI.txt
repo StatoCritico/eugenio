@@ -1,0 +1,2 @@
+Comune di Milano – Database Topografico 2020, Unità volumetrica (CC BY 4.0), https://dati.comune.milano.it/dataset/ds2889_database-topografico-dbt-2020-shp
+Estratto di UN_VOL.shp (DBT_2020.zip, EPSG:7791) attorno al Pirellone, letto l'08/11/2026; prova della lettura dello Shapefile comunale con l'adattatore lombardia_dbgt.

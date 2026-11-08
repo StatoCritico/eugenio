@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EuGEnio – Scaricare i DB topografici</title>
+<meta name="description" content="Come scaricare passo passo il database topografico degli edifici dai portali delle Regioni (Emilia-Romagna, Lombardia, Friuli Venezia Giulia, Liguria, Trento, Veneto) per caricarlo in EuGEnio.">
+<!-- testa -->
+<script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
+try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
+if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
+var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
+function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261107b";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261107b"></script>
+<link rel="stylesheet" href="stile.css?v=20261107b">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261107b">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261107b">
+<link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
+<!-- /testa -->
+</head>
+<body>
+<!-- testata -->
+<header class="testata">
+  <div class="testata-alta">
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261107b" alt="EuGEnio" width="153" height="28"></a>
+    <script>eugenioLoghi()</script>
+    <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
+    <nav class="menu-info" aria-label="Altre pagine">
+      <a href="metodo.html">Come funziona</a>
+      <a href="faq.html">F.A.Q.</a>
+      <a href="sitografia.html">Sitografia</a>
+      <a href="mirror.html">Mirror</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261107b">Novità</a>
+      <a href="contatti.html">Contattaci</a>
+    </nav>
+    <details class="menu-tutto">
+      <summary><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Menu</summary>
+      <nav class="menu-pannello" aria-label="Menu completo">
+        <h2>Servizi</h2>
+        <details class="pannello-gruppo" data-gruppo="clima"><summary>Clima e meteo</summary>
+          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li></ul>
+        </details>
+        <details class="pannello-gruppo" data-gruppo="patrimonio" data-attivo open><summary>Patrimonio</summary>
+          <ul><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="ortofoto.html">Ortofoto <span class="cantiere prova">sperimentale</span></a></li><li><a href="lidar.html">LiDAR <span class="cantiere">in sviluppo</span></a></li><li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova">sperimentale</span></a></li><li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova">sperimentale</span></a></li><li><a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico) <span class="cantiere prova">sperimentale</span></a></li><li><a href="dbtr-istruzioni.html" aria-current="page">Scaricare i DB topografici</a></li><li><a href="visure.html">Visure <span class="cantiere">in sviluppo</span></a></li></ul>
+        </details>
+        <details class="pannello-gruppo" data-gruppo="edificio"><summary>Edifici</summary>
+          <ul><li><span class="voce-gme voce-corso" data-pagina="edificio-obblighi.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Obblighi di legge</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-geometria.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Geometria e luce naturale</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-consumi.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Consumi, firma energetica e priorità</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-fabbisogno.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Fabbisogno con le metodiche UNI</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-involucro.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Facciate e tetti: sole, tetti freddi e verdi</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-impianti.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Pompe di calore e solare termico</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-ecobonus.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Ecobonus</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-conto-termico.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Conto Termico</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li></ul>
+        </details>
+        <details class="pannello-gruppo" data-gruppo="cogenerazione"><summary>Cogenerazione</summary>
+          <ul><li><span class="voce-gme" data-pagina="cog-spark-spread.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Spark spread di autoconsumo</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme" data-pagina="cog-simulazione.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Cogeneratore sull'edificio, con FV e accumulo</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme" data-pagina="cog-confronto.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Confronto tra alternative e trigenerazione</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme voce-corso" data-pagina="cog-emissioni.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Emissioni</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme" data-pagina="cog-rischio.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Rischio prezzo elettricità e gas</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme" data-pagina="cog-car.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Budget di dissipazione CAR</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li></ul>
+        </details>
+        <details class="pannello-gruppo" data-gruppo="fotovoltaico"><summary>Fotovoltaico</summary>
+          <ul><li><span class="voce-gme voce-corso" data-pagina="fv-ombre.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Ombre e percorso del sole</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-irradiazione.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Sole e irradiazione su tetti e facciate</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-producibilita.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Producibilità con le ombre</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-pvgis.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Confronto con PVGIS</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-dlgs199.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">D.Lgs. 199/2021, Allegato III</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-leed.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Prefattibilità LEED</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-cer.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Comunità energetiche</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme" data-pagina="fv-mercato.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Prezzo catturato, accumuli e mercato</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li></ul>
+        </details>
+        <details class="pannello-gruppo" data-gruppo="statistiche"><summary>Statistiche</summary>
+          <ul><li><a href="indicatori.html">Costi energetici Sanità</a></li></ul>
+        </details>
+        <h2>Altre pagine</h2>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261107b">Novità</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <h2 id="aspetto-telefono">Aspetto</h2>
+        <div class="vestito">
+          <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
+      <li role="option" id="vestiti-telefono-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-telefono-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-telefono-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-telefono-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-telefono-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+          </ul>
+        </div>
+      </nav>
+    </details>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <div class="testata-menu">
+    <nav class="menu-strumenti" aria-label="Servizi">
+      <ul class="menu-gruppi">
+        <li><details class="voce-gruppo" data-gruppo="clima"><summary>Clima e meteo</summary>
+          <ul class="tendina">
+            <li><a href="dati.html">Dati climatici</a></li>
+            <li><a href="legge10.html">Legge 10</a></li>
+            <li><a href="./">Previsioni</a></li>
+            <li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="patrimonio" data-attivo><summary>Patrimonio</summary>
+          <ul class="tendina">
+            <li><a href="patrimonio.html">Patrimonio</a></li>
+            <li><a href="ortofoto.html">Ortofoto <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="lidar.html">LiDAR <span class="cantiere sviluppo breve" title="in sviluppo"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg><span class="solo-lettori"> (in sviluppo)</span></span></a></li>
+            <li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico) <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="dbtr-istruzioni.html" aria-current="page">Scaricare i DB topografici</a></li>
+            <li><a href="visure.html">Visure <span class="cantiere sviluppo breve" title="in sviluppo"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg><span class="solo-lettori"> (in sviluppo)</span></span></a></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="edificio"><summary>Edifici</summary>
+          <ul class="tendina">
+            <li><span class="voce-gme voce-corso" data-pagina="edificio-obblighi.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Obblighi di legge</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="edificio-geometria.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Geometria e luce naturale</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="edificio-consumi.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Consumi, firma energetica e priorità</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="edificio-fabbisogno.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Fabbisogno con le metodiche UNI</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="edificio-involucro.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Facciate e tetti: sole, tetti freddi e verdi</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="edificio-impianti.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Pompe di calore e solare termico</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="edificio-ecobonus.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Ecobonus</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="edificio-conto-termico.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Conto Termico</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="cogenerazione"><summary>Cogenerazione</summary>
+          <ul class="tendina">
+            <li><span class="voce-gme" data-pagina="cog-spark-spread.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Spark spread di autoconsumo</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-simulazione.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Cogeneratore sull'edificio, con FV e accumulo</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-confronto.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Confronto tra alternative e trigenerazione</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="cog-emissioni.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Emissioni</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-rischio.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Rischio prezzo elettricità e gas</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+            <li><span class="voce-gme" data-pagina="cog-car.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Budget di dissipazione CAR</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="fotovoltaico"><summary>Fotovoltaico</summary>
+          <ul class="tendina">
+            <li><span class="voce-gme voce-corso" data-pagina="fv-ombre.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Ombre e percorso del sole</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="fv-irradiazione.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Sole e irradiazione su tetti e facciate</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="fv-producibilita.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Producibilità con le ombre</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="fv-pvgis.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Confronto con PVGIS</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="fv-dlgs199.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">D.Lgs. 199/2021, Allegato III</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="fv-leed.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Prefattibilità LEED</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme voce-corso" data-pagina="edificio-cer.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Comunità energetiche</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+            <li><span class="voce-gme" data-pagina="fv-mercato.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Prezzo catturato, accumuli e mercato</span> <span class="cantiere breve" title="licenza GME: in attesa di autorizzazione dal GME" aria-hidden="true">GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="statistiche"><summary>Statistiche</summary>
+          <ul class="tendina">
+            <li><a href="indicatori.html">Costi energetici Sanità</a></li>
+          </ul></details></li>
+      </ul>
+    </nav>
+    <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
+    <div class="vestito">
+      <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
+        aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <ul class="vestito-elenco a-discesa" id="vestiti-elenco" role="listbox" aria-label="Vestito del sito" tabindex="-1" hidden>
+      <li role="option" id="vestiti-elenco-corallo" data-vestito="corallo" aria-selected="true"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Corallo</li>
+      <li role="option" id="vestiti-elenco-ambra" data-vestito="ambra" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Ambra</li>
+      <li role="option" id="vestiti-elenco-indaco" data-vestito="indaco" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Indaco</li>
+      <li role="option" id="vestiti-elenco-lime" data-vestito="lime" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Lime</li>
+      <li role="option" id="vestiti-elenco-verde" data-vestito="verde" aria-selected="false"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Verde</li>
+      </ul>
+    </div>
+    <button class="tema" type="button" aria-label="Passa al tema chiaro" title="Passa al tema chiaro"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" fill-rule="evenodd" d="M12 2.75a9.25 9.25 0 0 1 0 18.5a4.625 4.625 0 0 1 0-9.25a4.625 4.625 0 0 0 0-9.25zM13.4 16.625a1.4 1.4 0 1 0-2.8 0a1.4 1.4 0 1 0 2.8 0z"/><circle cx="12" cy="7.375" r="1.4" fill="currentColor"/></svg></button>
+  </div>
+  <nav class="riga-fissata" id="riga-fissata" aria-label="Menu fissato"></nav>
+</header>
+<!-- /testata -->
+
+
+<main class="articolo dbtr-istruzioni">
+  <h1>Scaricare i DB topografici</h1>
+  <p>Questa pagina spiega come scaricare gli edifici dal <b>database topografico</b> (DBT) della tua Regione per caricarli in
+    <a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico)</a>: lì il file si legge nel tuo browser e gli edifici
+    si usano subito in <a href="modelli3d.html">Modelli 3D</a>; se vuoi, puoi proporlo per l'archivio comune di EuGEnio.
+    I portali cambiano spesso: dove non siamo sicuri di un passaggio lo scriviamo («verifica sul portale»). Se trovi un
+    passaggio diverso, <a href="contatti.html">scrivici</a>. Ultima verifica: 07/11/2026.</p>
+  <p>In sintesi: <b>Emilia-Romagna</b> si legge già bene; <b>Lombardia</b> e <b>Friuli Venezia Giulia</b> sono
+    sperimentali (lettori provati su piccoli campioni); <b>Liguria</b> richiede il DTM regionale e si può solo proporre al
+    server; <b>Trento</b> e <b>Veneto</b> hanno dati aperti che EuGEnio non legge ancora.</p>
+
+  <h2 id="emilia-romagna">Emilia-Romagna – DBTR</h2>
+  <dl class="scheda-fonte">
+    <dt>Pagina</dt><dd>Geoportale regionale › Download › DB Topografico:
+      <a href="https://geoportale.regione.emilia-romagna.it/download-data/download-dbtopografico">geoportale.regione.emilia-romagna.it/download-data/download-dbtopografico</a></dd>
+    <dt>Strati</dt><dd><b>Edificio</b> (EDI_GPG) e <b>Unità volumetrica</b> (UVL_GPG), più l'<b>ingombro al suolo</b>
+      dell'edificio (EDI_GPGSA) e la <b>destinazione d'uso</b> (EDI_CT_USO_AVM)</dd>
+    <dt>Formato</dt><dd>GeoPackage (consigliato: un solo file <code>estraz_procons.gpkg</code>) oppure Shapefile
+      (<code>V_UVL_GPG.shp</code>, <code>V_EDI_GPG.shp</code> …): EuGEnio li legge tutti e due</dd>
+    <dt>Sistema di riferimento</dt><dd>EPSG:7791 (RDN2008 / UTM 32N)</dd>
+    <dt>Licenza</dt><dd>CC BY 4.0 (scheda RNDT <code>r_emiro:2017-11-24T135040</code>; i metadati XML dentro
+      l'estrazione dicono ancora CC BY 3.0, compatibile). Attribuzione: «Regione Emilia-Romagna – DBTR, CC BY 4.0»</dd>
+    <dt>Limiti</dt><dd><b>un comune alla volta</b>: il Geoportale non estrae edifici e unità volumetriche per provincia né
+      per regione; per i comuni grandi il comune intero può essere rifiutato (Ravenna, novembre 2026): in quel caso si
+      sceglie un'area più piccola. C'è anche un <b>limite giornaliero</b> di estrazioni: se lo raggiungi, riprova il
+      giorno dopo. L'estrazione completa della regione si chiede all'Archivio Cartografico
+      (<a href="https://geoportale.regione.emilia-romagna.it/archivio-cartografico/come-acquistare">come acquistare</a>)</dd>
+  </dl>
+  <ol>
+    <li>Apri la pagina «Download DB Topografico» del Geoportale.</li>
+    <li>Scegli il <b>comune</b> (per un comune grande che viene rifiutato, un'area più piccola: verifica sul portale lo
+      strumento per disegnarla).</li>
+    <li>Spunta gli strati <b>Edificio</b> e <b>Unità volumetrica</b>, e anche ingombro al suolo e destinazione d'uso.</li>
+    <li>Scegli il formato <b>GeoPackage</b> e il sistema <b>EPSG:7791</b>.</li>
+    <li>Supera il controllo reCAPTCHA e scrivi la tua <b>email</b>: l'estrazione si prenota e il collegamento per
+      scaricarla arriva per email (di solito in pochi minuti; verifica sul portale quanto resta valido).</li>
+    <li>Scarica lo zip dal collegamento dell'email.</li>
+    <li>In EuGEnio, <a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico)</a>: regione <b>Emilia-Romagna</b>, il
+      comune, «comune intero» se lo è, e carica <b>lo zip così com'è</b> (o il file <code>.gpkg</code> che contiene).</li>
+  </ol>
+  <p class="aiuto">Le altezze del DBTR si leggono con regole verificate sul LiDAR (H_UVL intero = altezza; H_UVL con i
+    decimali sopra la base = quota del tetto; H_COLMO quota o altezza secondo il comune): sono le stesse nel browser e sul
+    server, spiegate nel README della fase 10 del codice.</p>
+
+  <h2 id="lombardia">Lombardia – DBGT <span class="cantiere prova">sperimentale</span></h2>
+  <dl class="scheda-fonte">
+    <dt>Pagina</dt><dd>Geoportale della Lombardia › Download dati:
+      <a href="https://www.geoportale.regione.lombardia.it/download-dati">geoportale.regione.lombardia.it/download-dati</a></dd>
+    <dt>Strato</dt><dd>Database topografico (DBGT), tema Edificato, classe <b>020101 Unità volumetrica</b>, con le colonne
+      <code>UN_VOL_AV</code> (altezza), <code>UN_VOL_QE</code> (quota di estrusione), <code>CEDIUV</code> (edificio),
+      <code>CLASSID</code>, <code>UN_VOL_POR</code></dd>
+    <dt>Formato e sistema</dt><dd>verifica sul portale (Shapefile o GeoPackage con il file del sistema di riferimento;
+      il servizio della Regione usa RDN2008 / UTM 32N)</dd>
+    <dt>Licenza</dt><dd>CC BY 4.0 (scheda RNDT <code>r_lombar:3493af32-587c-4bca-92a4-ea717ea1a617</code>). Attribuzione:
+      «Regione Lombardia – DBGT, Unità volumetrica (CC BY 4.0)»</dd>
+    <dt>Limiti</dt><dd>serve l'accesso al Geoportale («Accedi», con registrazione); estensione dei pacchetti: verifica sul
+      portale</dd>
+  </dl>
+  <ol>
+    <li>Apri la pagina «Download dati» e premi <b>ACCEDI</b> (la prima volta registrati).</li>
+    <li>Cerca nel catalogo il database topografico del tuo comune (o provincia), tema Edificato.</li>
+    <li>Apri la scheda e premi l'icona «Accedi al servizio per scaricare i dati».</li>
+    <li>Scarica il pacchetto con lo strato delle <b>unità volumetriche</b> (verifica sul portale il nome dei file).</li>
+    <li>In EuGEnio: regione <b>Lombardia</b>, il comune, e carica lo zip (o il GeoPackage, o le parti dello Shapefile
+      con il <code>.prj</code>).</li>
+  </ol>
+  <p class="aiuto">Sperimentale: il lettore è stato provato su 60 unità volumetriche di Milano prese dal servizio della
+    Regione, non ancora su un pacchetto scaricato. L'altezza è quella alla sommità del volume (gronda o colmo da verificare).</p>
+
+  <h2 id="friuli-venezia-giulia">Friuli Venezia Giulia – CTRN, Edificato <span class="cantiere prova">sperimentale</span></h2>
+  <dl class="scheda-fonte">
+    <dt>Pagina</dt><dd>IRDAT, ricerca della cartografia per comune:
+      <a href="https://irdat.regione.fvg.it/CTRN/ricerca-cartografia/">irdat.regione.fvg.it/CTRN/ricerca-cartografia</a>,
+      oppure il WebGIS <a href="https://eaglefvg.regione.fvg.it/eagle/main.aspx?configuration=guest">Eagle.fvg</a>, che
+      ha anche il download</dd>
+    <dt>Strato</dt><dd>Edificato della CTRN 1:5000, con le colonne <code>ALTEZZA</code>, <code>QUOTA_PIEDE</code>,
+      <code>QUOTA_GRONDA</code>, <code>NOME</code>, <code>ID</code> (negli Shapefile i nomi si accorciano a 10 caratteri,
+      per esempio <code>QUOTA_GRON</code>: EuGEnio li riconosce)</dd>
+    <dt>Formato e sistema</dt><dd>DXF, Shapefile o FCN, in Gauss-Boaga fuso Est o in <b>RDN2008 / TM33</b>: scegli lo
+      <b>Shapefile in RDN2008 / TM33</b> (EPSG:6708)</dd>
+    <dt>Licenza</dt><dd>CC BY 4.0 nella scheda del servizio di download; «Non indicato» nelle schede dei singoli strati;
+      la Regione rilascia i dati pubblici con la IODL 2.0 (compatibile): <b>in attesa di chiarimento dalla Regione</b>.
+      Attribuzione: «Regione Autonoma Friuli Venezia Giulia – IRDAT, Edificato CTRN (CC BY 4.0)»</dd>
+    <dt>Limiti</dt><dd>la CTRN è divisa in elementi (fogli): un comune può stare su più elementi; verifica sul portale</dd>
+  </dl>
+  <ol>
+    <li>Apri la ricerca della cartografia IRDAT e cerca il <b>comune</b>.</li>
+    <li>Scegli gli elementi della CTRN che lo coprono, il formato <b>Shapefile</b> e il sistema <b>RDN2008 / TM33</b>.</li>
+    <li>Scarica lo zip e controlla che ci sia lo strato dell'<b>edificato</b> con le colonne delle altezze.</li>
+    <li>In EuGEnio: regione <b>Friuli Venezia Giulia</b>, il comune, e carica lo zip (o le parti dello Shapefile).</li>
+  </ol>
+  <p class="aiuto">Sperimentale: il lettore è stato provato su 22 elementi del foglio 110 presi dal servizio WFS della
+    Regione (<code>QUOTA_GRONDA − QUOTA_PIEDE = ALTEZZA</code> in tutti), non ancora su un pacchetto scaricato.</p>
+
+  <h2 id="liguria">Liguria – CTR 1:5000 3D, Edificato <span class="cantiere prova">sperimentale</span></h2>
+  <dl class="scheda-fonte">
+    <dt>Pagina</dt><dd>Geoportale della Regione Liguria, scheda «Edifici e manufatti – CTR 1:5000 2007/2013, II edizione
+      3D / DB topografico» (<code>r_liguri:D.2237</code>); servizio WFS
+      <code>https://geoservizi.regione.liguria.it/geoserver/M2237/wfs</code>, strato <code>M2237:L8178</code>. Il
+      collegamento per scaricare il file: verifica sul portale</dd>
+    <dt>Strato</dt><dd>Edificato, senza colonna dell'altezza: la quota della gronda è nella coordinata z dei vertici</dd>
+    <dt>Sistema</dt><dd>Gauss-Boaga fuso Ovest (EPSG:3003) nel servizio; verifica sul portale quello del download</dd>
+    <dt>Licenza</dt><dd>CC BY 4.0. Attribuzione: «Regione Liguria – Carta Tecnica Regionale 1:5000 3D / DB topografico (CC BY 4.0)»</dd>
+    <dt>Limiti</dt><dd>l'altezza è la quota di gronda meno il terreno: serve il <b>DTM 2023</b> della Regione
+      (<code>r_liguri:D.2056</code>, CC BY 4.0), che il browser non può scaricare</dd>
+  </dl>
+  <p>In EuGEnio il file della Liguria <b>non si legge nel browser</b>: si può solo proporre all'archivio comune (passo 5 di
+    <a href="aggiungi-dbtr.html">Aggiungi edifici</a>); sul server si preparerà quando ci sarà il DTM regionale.</p>
+
+  <h2 id="trento">Provincia autonoma di Trento – Edifici P.A.T. 3D</h2>
+  <dl class="scheda-fonte">
+    <dt>Pagina</dt><dd>Geocatalogo della Provincia, scheda <code>p_TN:6a7806d8-63fa-4445-b009-9412c99d8fd2</code>;
+      download diretto (zip di tutta la provincia, circa 108 MB):
+      <a href="https://siatservices.provincia.tn.it/idt/vector/p_TN_6a7806d8-63fa-4445-b009-9412c99d8fd2.zip">siatservices.provincia.tn.it/…/p_TN_6a7806d8….zip</a></dd>
+    <dt>Strato</dt><dd>sagome degli edifici alla gronda, in 3D (il campo dell'altezza va verificato nel file)</dd>
+    <dt>Licenza</dt><dd>CC BY 4.0</dd>
+    <dt>Stato in EuGEnio</dt><dd>il lettore di questo formato <b>non c'è ancora</b>: per ora non caricarlo (la pagina lo
+      rifiuterebbe). Lo aggiungeremo dopo aver provato il file.</dd>
+  </dl>
+
+  <h2 id="veneto">Veneto – Edifici del Veneto</h2>
+  <dl class="scheda-fonte">
+    <dt>Pagina</dt><dd>piattaforma dei dati geografici della Regione (IDT-RV 2.0):
+      <a href="https://idt2.regione.veneto.it/">idt2.regione.veneto.it</a>, scheda «Edifici del Veneto» (febbraio 2022,
+      <code>r_veneto:edifici_veneto</code>); servizio WFS <code>rv:edifici_veneto_feb2022</code></dd>
+    <dt>Strato</dt><dd>solo le sagome (colonne <code>edi_ty</code>, <code>edi_uso</code>, <code>edi_stat</code>),
+      <b>senza altezze</b></dd>
+    <dt>Licenza</dt><dd>IODL 2.0 (compatibile con la CC BY)</dd>
+    <dt>Stato in EuGEnio</dt><dd>senza altezze il 3D non si può fare con questo strato: <b>non caricarlo</b>. Nel Veneto
+      le altezze arriveranno dal LiDAR; intanto Modelli 3D usa il ripiego OpenStreetMap.</dd>
+  </dl>
+
+  <h2 id="altre-regioni">Le altre regioni</h2>
+  <p>Per queste regioni non abbiamo (ancora) trovato un download in blocco degli edifici con le altezze e una licenza
+    aperta verificata: <b>in attesa di chiarimento dalla Regione</b>. Intanto Modelli 3D usa gli edifici di OpenStreetMap
+    come ripiego (<a href="faq.html#ripiego-osm">F.A.Q.</a>).</p>
+  <div class="tabella-scorre"><table class="mensili">
+    <thead><tr><th>Regione</th><th>Dato noto</th><th>Stato</th></tr></thead>
+    <tbody>
+      <tr><td>Piemonte</td><td>BDTRE – Unità volumetrica (UN_VOL)</td><td>in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Valle d'Aosta</td><td>CTRN – Fabbricati; Edificato 2018</td><td>in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Provincia autonoma di Bolzano</td><td>nessuno strato di edifici con altezza trovato</td><td>in attesa di chiarimento dalla Provincia</td></tr>
+      <tr><td>Toscana</td><td>Edificato – unità volumetriche al 2023 (versione 1.0, ottobre 2026)</td><td>in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Umbria</td><td>Fabbricati 2005-2010 (senza altezze); DB geotopografico 10k dell'asta del Tevere e del Trasimeno (parziale)</td><td>da verificare; in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Marche</td><td>DBT / CTR regionale</td><td>in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Lazio</td><td>CTRN 2002-2003; DBGT 2014</td><td>in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Abruzzo</td><td>DBT / CTR regionale (geoportale Cartanet)</td><td>da verificare; in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Molise</td><td>DBT / CTR regionale</td><td>in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Campania</td><td>CTR, DBT e DTM 2020 di tutta la regione, scaricabili in CC BY 4.0 secondo il geoportale</td><td>da verificare se ci sono le unità volumetriche con le altezze</td></tr>
+      <tr><td>Puglia</td><td>«DBT Multiscala 2006» nel SIT regionale, con una sezione di download</td><td>da verificare</td></tr>
+      <tr><td>Basilicata</td><td>DBGT – Unità volumetrica (UN_VOL 020101), IODL 2.0</td><td>in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Calabria</td><td>DBT / CTR regionale</td><td>in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Sicilia</td><td>CTR 1:10.000 (SITR)</td><td>in attesa di chiarimento dalla Regione</td></tr>
+      <tr><td>Sardegna</td><td>DBGT 10k 2020 – Edificio, edificio minore</td><td>in attesa di chiarimento dalla Regione</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="dopo">Dopo il download</h2>
+  <ul>
+    <li>In <a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico)</a> il file si legge <b>nel tuo browser</b> (fino a
+      300 MB): non va a nessun server, e gli edifici restano solo nel tuo browser per Modelli 3D.</li>
+    <li>Se vuoi, lo stesso file si può <b>proporre per l'archivio comune</b>: solo con il tuo consenso esplicito; il server
+      lo controlla e lo prepara, e Stato Critico lo approva (o lo rifiuta, e allora viene cancellato). Nessun dato
+      personale richiesto (<a href="privacy.html#dbtr">privacy</a>).</li>
+    <li>L'archivio comune ha la licenza della fonte (CC BY 4.0 per Emilia-Romagna, Lombardia, Friuli Venezia Giulia e
+      Liguria) con l'attribuzione della Regione in Modelli 3D, nelle immagini e nei report.</li>
+  </ul>
+</main>
+
+<footer class="piede">
+  <!-- piede -->
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261107b" alt="" width="44" height="44">
+  <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  <!-- /piede -->
+</footer>
+<script src="aspetto.js?v=20261107b"></script>
+<script src="indice.js?v=20261107b"></script>
+</body>
+</html>

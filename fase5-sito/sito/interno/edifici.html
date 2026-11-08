@@ -6,12 +6,14 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>EuGEnio – stato interno degli edifici</title>
+<link rel="stylesheet" href="../lib/maplibre-gl/maplibre-gl.css?v=20261107b">
 <!-- Pagina interna (fase 10, Fase C, § 12): fuori da menu e mappa del sito, non nel robots.txt, X-Robots-Tag noindex
      da Caddy. Accesso solo con Cloudflare Access (Caddy rifiuta le richieste senza l'intestazione, l'api verifica il
-     JWT). Sola lettura: i comandi si danno via ssh. -->
+     JWT). Pipeline: sola lettura, i comandi si danno via ssh. Coda «Aggiungi DBTR» (07/11/2026): Approva / Rifiuta con
+     POST /api/interno/dbtr/{id}/approva|rifiuta (intestazione X-EuGEnio-Interno). -->
 <script>try{if(localStorage.getItem("tema")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
-<link rel="stylesheet" href="../stile.css?v=20261106a">
-<link rel="stylesheet" href="interno.css?v=20261106a">
+<link rel="stylesheet" href="../stile.css?v=20261107b">
+<link rel="stylesheet" href="interno.css?v=20261107b">
 </head>
 <body>
 <main class="interno">
@@ -21,11 +23,32 @@
     <p class="sotto">Tessere LiDAR, ultime notti, errori, spazio su disco e fonti. Sola lettura: i comandi si danno sul
       server (<code>docker compose --profile edifici run --rm edifici-lidar …</code>). <span id="utente"></span></p>
   </header>
+  <section id="coda-dbtr" aria-label="DB topografici proposti">
+    <h2>DB topografici proposti («Aggiungi DBTR»)</h2>
+    <p class="sotto">File caricati dagli utenti con il loro consenso, controllati e preparati dal servizio
+      <code>edifici-coda</code>. <b>Approva</b>: l'archivio entra in <code>cc-by/&lt;regione&gt;/&lt;comune&gt;/</code> al posto
+      dell'eventuale precedente (copia in <code>_precedenti/</code>, si torna indietro con <code>coda-ripristina</code>) e
+      <code>archivi.json</code> si rigenera. <b>Rifiuta</b>: file cancellati subito. Nessuna email.</p>
+    <div class="messaggio" id="messaggio-coda" role="status" aria-live="polite">Carico la coda…</div>
+    <div id="tabella-coda"></div>
+    <div id="dettaglio-coda" hidden>
+      <h3 id="titolo-dettaglio"></h3>
+      <div class="mappa-coda" id="mappa-coda" role="region" aria-label="Anteprima dei corpi sull'ortofoto"></div>
+      <p class="aiuto" id="legenda-coda">Corpi colorati per altezza di gronda: giallo chiaro 3 m, arancio 15 m, rosso 25 m, rosso scuro 40 m e oltre.</p>
+      <div id="esito-coda"></div>
+      <p class="pulsanti-coda"><button class="bottone" id="approva" type="button">Approva</button>
+        <button class="bottone secondario" id="rifiuta" type="button">Rifiuta</button>
+        <a id="registro" href="#" target="_blank" rel="noopener">registro della preparazione</a></p>
+    </div>
+    <div id="storico-coda"></div>
+  </section>
+  <h2>Pipeline LiDAR</h2>
   <div class="messaggio" id="messaggio" role="status" aria-live="polite">Carico lo stato…</div>
   <section id="disco" aria-label="Spazio su disco" hidden><h2>Spazio su disco</h2><div class="schede" id="schede-disco"></div></section>
   <div id="zone"></div>
   <p class="aiuto">Aggiornato: <span id="generato">—</span>. <button class="bottone secondario" id="ricarica" type="button">Ricarica</button></p>
 </main>
-<script src="edifici.js?v=20261106a"></script>
+<script src="../lib/maplibre-gl/maplibre-gl.js?v=20261107b"></script>
+<script src="edifici.js?v=20261107b"></script>
 </body>
 </html>

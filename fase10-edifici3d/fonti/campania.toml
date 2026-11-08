@@ -1,0 +1,42 @@
+# Fonti della zona «Campania» per gli archivi degli edifici (fase 10, lettori regionali, gruppo C, 08/11/2026). URL solo
+# qui. Licenza CC BY 4.0: pagina «Carta Tecnica Regionale» («possono essere scaricati liberamente, con licenza d'uso
+# CC-BY 4.0») e note legali del geoportale (attribuzione «Geoportale Regione Campania»).
+# Verifiche (08/11/2026):
+# - DBT_5K.zip del comune di Napoli (153.786.015 byte, scaricato da Paolo dalla cartella SharePoint della Regione):
+#   31.112 edifici (EDIFC + EDIFC_CR_EDF_IS PolygonZ, z = quota al piede), COD_ISTAT 63049 per tutti: comune intero;
+#   Shapefile in ETRS89/UTM 33N (EPSG:25833; i servizi della Regione usano EPSG:7792, differenza di centimetri).
+# - DTM_5k.zip (21.179.847 byte, 25 tessere ASCII 5 m con il bordo a 0): mosaico con `altezze_dsm mosaico --zero-vuoto`.
+# - CTR 2020 MapServer (strato 4 «Poligoni»), provato dal vivo: forma alternativa delle sagome (campo `tipo`).
+# - Nessun DSM aperto (regione o comune); PST da verificare dopo il 10/11/2026: altezze stimate (dichiarate). Per l'archivio
+#   di Napoli si usa fonti/campania_napoli.toml (stessa zona cam): classi Copernicus UA 2012, poi vicini, poi uso.
+
+[zona]
+nome = "Campania"
+codice = "cam"
+crs = "EPSG:25833"
+riquadro = [13.7, 39.98, 15.82, 41.51]
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Regione Campania – DBT 2020 (volo AGEA 2020, 1:5.000), Edifici"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Campania – DBT e CTR 2020, Geoportale Regione Campania (CC BY 4.0)"
+scheda = "https://sit.regione.campania.it/carta-tecnica-regionale"
+note_legali = "https://sit.regione.campania.it/note-legali"
+adattatore = "campania_dbt"
+servizio_tipo = "arcgis"
+servizio = "https://geomaps.regione.campania.it/federated/rest/services/Amministrativo/CTR2020/MapServer/4"
+crs_servizio = "EPSG:7792"
+link_comuni = "https://geomaps.regione.campania.it/federated/rest/services/Amministrativo/Mappa_CTR2020___Link_Download_Comuni_MIL1/MapServer/0"
+url = ""                                  # DBT_5K.zip per comune: cartelle SharePoint (link_comuni, campo dbt_5k), a mano
+
+[fonti.dtm]
+descrizione = "Regione Campania – DTM 2020, 5 m"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Campania – DTM 2020 5 m, Geoportale Regione Campania (CC BY 4.0)"
+scheda = "https://sit.regione.campania.it/carta-tecnica-regionale"
+servizio = "https://geomaps.regione.campania.it/server/rest/services/Amministrativo/CTR_DTM5m/ImageServer"
+url = ""                                  # DTM_5k.zip per comune (SharePoint), o exportImage del servizio

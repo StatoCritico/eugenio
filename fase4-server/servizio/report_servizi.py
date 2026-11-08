@@ -885,7 +885,8 @@ def report_edificio(d: dict, formato: str = "pdf", **_) -> Documento:
     """Corpo mandato da fase5-sito/sito/edificio3d.js (pagine Modelli 3D, Geometria, Consumi, Producibilità):
     titolo, edificio {id, nome, comune}, sintetico (bool), superfici {piani_fuori_terra: {valore, fonte}, …},
     geometria {volume_lordo, superficie_disperdente, s_su_v, pareti_per_orientamento {N: m², …}, …},
-    corpi [{id, area, gronda, colmo, tetto, piani, fonte_sagoma, fonte_altezza, licenza, qualita}],
+    corpi [{id, area, gronda, colmo, tetto, fonte_tetto, piani, fonte_sagoma, fonte_altezza, licenza, qualita}],
+    tetti {scelta, testo, conteggi {lidar, colmo, ipotesi, piano, …}} (forma dei tetti, 08/11/2026),
     falde [{corpo, falda, pendenza, orientamento, superficie, area_pianta, fonte}] (Fase C),
     firma {base, pendenza, r2, unita, mesi [{mese, consumo, gg20}]}, consumi_normalizzati [{voce, valore, unita}],
     fv {aree [{nome, area, inclinazione, orientamento, moduli, kwp, kwh_anno, perdita_ombre}], totale_kwh, anno_clima},
@@ -930,7 +931,7 @@ def report_edificio(d: dict, formato: str = "pdf", **_) -> Documento:
             righe=[[_testo(c.get("id"), 60), _num(c.get("area")), _num(c.get("gronda")), _num(c.get("colmo")),
                     _testo(c.get("tetto"), 20), _num(c.get("piani")), _testo(c.get("fonte_sagoma"), 80),
                     _testo(c.get("fonte_altezza"), 120), _testo(c.get("licenza"), 20), _testo(c.get("qualita"), 120)] for c in corpi],
-            decimali=[None, 0, 1, 1, None, 0, None, None, None, None])]))
+            decimali=[None, 0, 1, 1, None, 0, None, None, None, None])] + _blocchi_tetti(d)))
     falde = [_diz(f) for f in _lista(d.get("falde"))][:C.REPORT_MAX_RIGHE]
     if falde:   # fase 10, Fase C: falde misurate dal LiDAR o lette dal modello dell'utente
         sezioni.append(Sezione(titolo="Falde dei tetti", blocchi=[Tabella(
@@ -939,8 +940,9 @@ def report_edificio(d: dict, formato: str = "pdf", **_) -> Documento:
                     _num(f.get("superficie")), _num(f.get("area_pianta")), _testo(f.get("fonte"), 160)] for f in falde],
             decimali=[None, None, 1, 0, 0, 0, None]),
             Paragrafo(testo="Falde ricavate dal rilievo LiDAR (punti del DSM dentro il corpo, piano, capanna o padiglione ai minimi "
-                            "quadrati) o dal modello dell'utente; orientamento in gradi da nord in senso orario (180 = sud), vuoto "
-                            "per i tetti piani.")]))
+                            "quadrati), dal modello dell'utente, stimate dal colmo del DB topografico o ipotizzate (22° in pianura, "
+                            "32° in montagna; a capanna sul lato lungo o a padiglione), come dice la colonna «Fonte»; orientamento "
+                            "in gradi da nord in senso orario (180 = sud), vuoto per i tetti piani.")]))
     cn = [x for x in map(_diz, _lista(d.get("consumi_normalizzati"))) if _ammessa(x.get("voce", "")) and _ammessa(x.get("unita", ""))]
     if cn:
         sezioni.append(Sezione(titolo="Consumi normalizzati", blocchi=[Tabella(
@@ -990,6 +992,28 @@ def report_edificio(d: dict, formato: str = "pdf", **_) -> Documento:
                      fonti=_fonti(OPEN_METEO, *fonti_ortofoto, extra=d.get("fonti")))
 
 
+NOMI_FONTE_TETTO = {"lidar": "misurato dal LiDAR", "colmo": "stimato dal colmo DBTR", "ipotesi": "ipotizzato (22°/32°)",
+                    "piano": "piano", "modello": "dal modello dell'utente", "utente": "corretto a mano"}
+
+
+def _blocchi_tetti(d: dict) -> list:
+    """Forma dei tetti (08/11/2026): scelta (cascata in Modelli 3D, scelta dell'utente nelle pagine Edificio e Fotovoltaico)
+    e corpi per fonte; testo ripulito, solo numeri interi nei conteggi."""
+    t = _diz(d.get("tetti"))
+    if not t:
+        return []
+    voci = [Voce(chiave="Forma dei tetti", valore=_testo(t.get("scelta"), 120))] if t.get("scelta") else []
+    n = _diz(t.get("conteggi"))
+    for k, nome in NOMI_FONTE_TETTO.items():
+        v = _num(n.get(k))
+        if v:
+            voci.append(Voce(chiave=f"Corpi con il tetto {nome}", valore=v, decimali=0))
+    out = [ChiaveValore(voci=voci[:10])] if voci else []
+    if t.get("testo"):
+        out.append(Paragrafo(testo=_testo(t.get("testo"), 600)))
+    return out
+
+
 def _immagine_ortofoto(x) -> tuple[Immagine | None, Fonte | None]:
     """{titolo, png (base64), ortofoto {id, licenza, citazione, scheda}} → immagine con licenza e citazione nella
     didascalia. Regola del § 6: ogni figura con ortofoto porta licenza e citazione; senza, la figura non entra. Le fonti
@@ -1000,8 +1024,11 @@ def _immagine_ortofoto(x) -> tuple[Immagine | None, Fonte | None]:
     if not (cit and lic) or _testo(o.get("id"), 40) in _ORTOFOTO_SOLO_DAL_VIVO or not isinstance(x.get("png"), str):
         return None, None
     titolo = _testo(x.get("titolo"), 200).split(". ")[0] or "Vista dell'edificio con l'ortofoto"
+    sp = testo_spostamento(o.get("de"), o.get("dn"))
+    sp = f" {sp}." if sp else ""
     try:
-        i = Immagine(formato="png", dati=x["png"], didascalia=f"{titolo}. Ortofoto: {cit} – licenza {lic}."[:300], larghezza_cm=17)
+        i = Immagine(formato="png", dati=x["png"], didascalia=f"{titolo}. Ortofoto: {cit} – licenza {lic}."[:300 - len(sp)] + sp,
+                     larghezza_cm=17)
     except ValidationError:
         return None, None
     url = o.get("scheda") if isinstance(o.get("scheda"), str) and re.match(r"^https?://\S+$", o["scheda"]) else None
@@ -1009,6 +1036,20 @@ def _immagine_ortofoto(x) -> tuple[Immagine | None, Fonte | None]:
 
 
 _ORTOFOTO_SOLO_DAL_VIVO = {"pcn2012"}
+
+
+def testo_spostamento(de, dn) -> str:
+    """(08/11/2026) «Ortofoto spostata manualmente di 2 m E, 1 m S rispetto alla cartografia» (frecce sotto la mappa);
+    vuoto se lo spostamento è nullo o non valido (interi da -20 a 20, come il proxy)."""
+    def m(v):
+        try:
+            v = int(v)
+        except (TypeError, ValueError):
+            return 0
+        return v if -20 <= v <= 20 else 0
+    de, dn = m(de), m(dn)
+    parti = ([f"{abs(de)} m {'E' if de > 0 else 'O'}"] if de else []) + ([f"{abs(dn)} m {'N' if dn > 0 else 'S'}"] if dn else [])
+    return f"Ortofoto spostata manualmente di {', '.join(parti)} rispetto alla cartografia" if parti else ""
 
 
 def _sezioni_fase_b(d: dict) -> list[Sezione]:

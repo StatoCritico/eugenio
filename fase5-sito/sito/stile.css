@@ -1081,7 +1081,7 @@ table.totali td.sedi { color: var(--tenue); font-size: var(--c-xs); width: 1%; }
 @media (max-width: 560px) { .riquadro-grafico.con-tabella .riquadro-finestra { max-height: 95vh; border-radius: var(--r-l); border: 1px solid var(--linea); } }
 
 /* ------------------------------------------------------------------------------------------- menu a gruppi (03/11/2026)
-   cinque gruppi di servizi (Clima e meteo, Patrimonio, Edificio, Cogenerazione, Fotovoltaico) con un sottomenu a tendina
+   sei gruppi di servizi (Clima e meteo, Patrimonio, Edifici, Cogenerazione, Fotovoltaico, Statistiche) con un sottomenu a tendina
    ciascuno: <details class="voce-gruppo"> (si apre con clic, Invio o Spazio anche senza JavaScript); aspetto.js chiude
    gli altri gruppi, chiude con Esc o con un clic fuori e sposta il fuoco con le frecce. Il gruppo della pagina aperta ha
    data-attivo (lo mette costruisci_pagine.py). Sul telefono i gruppi stanno nel pulsante Menu, come elenchi richiudibili. */
@@ -1233,6 +1233,7 @@ table.totali td.sedi { color: var(--tenue); font-size: var(--c-xs); width: 1%; }
 .riga-campi { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: end; }
 .riga-campi label { margin: var(--s2) 0 0; }
 .riga-campi input, .riga-campi select { display: block; margin-top: var(--s1); max-width: 12rem; }
+.riga-campi.forma-tetti label, .riga-campi.forma-tetti select { max-width: min(26rem, 100%); }   /* forma dei tetti (08/11/2026) */
 table.corpi input, table.aree-fv input { width: 5.2rem; padding: .25rem .4rem; }
 table.corpi select, table.aree-fv select { padding: .25rem .4rem; }
 td.fonte { font-size: var(--c-s); color: var(--tenue); } td.fonte small { display: block; }
@@ -1328,12 +1329,12 @@ label.casella { display: flex; gap: var(--s2); align-items: center; font-weight:
 .riga-voci .cantiere.breve { padding: .1rem .3rem; }
 .riga-voci .cantiere.sviluppo .segnale { width: 1.05rem; height: 1.05rem; }
 
-/* livelli della mappa (Modelli 3D, Ortofoto), legenda degli strati, collegamento «Salva …» dell'immagine */
-.livelli-mappa { border: 1px solid var(--linea); border-radius: var(--r); padding: var(--s2) var(--s3); margin: var(--s3) 0 0; }
-.livelli-mappa legend { font-weight: 600; padding: 0 .3rem; }
-.livelli-mappa .sfondo-3d { align-items: center; margin: 0; }
-.livelli-mappa .sfondo-3d label { margin-top: 0; }
+/* livelli della mappa (dal 07/11/2026 un passo della colonna destra di Modelli 3D, come «Strati sopra la foto» in
+   Ortofoto), legenda degli strati, collegamento «Salva …» dell'immagine */
+#livelli-mappa .sfondo-3d { align-items: center; margin: 0; }
+#livelli-mappa .sfondo-3d label { margin-top: 0; }
 .caselle-strati { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin-top: var(--s2); }
+#livelli-mappa .caselle-strati, .pannello .caselle-strati { flex-direction: column; align-items: flex-start; }
 label.casella-strato { display: inline-flex; gap: .4rem; align-items: center; font-weight: 400; margin: 0; }
 label.casella-strato input { width: auto; }
 .aiuto-breve { color: var(--tenue); font-size: var(--c-s); }
@@ -1346,3 +1347,72 @@ label.casella-strato input { width: auto; }
 /* un riquadro di messaggio con hidden resta nascosto (prima .messaggio vinceva: «Dati sintetici di esempio» compariva in
    Modelli 3D anche senza la demo) */
 .messaggio[hidden] { display: none !important; }
+
+/* Novità (07/11/2026): registro delle versioni e pallino sul collegamento quando c'è una versione nuova */
+.novita .novita-versione { color: var(--grigio, inherit); opacity: .75; font-size: var(--c-s); margin: 0 0 var(--s2); }
+.novita .novita-tipo { font-weight: 700; margin: var(--s3) 0 0; }
+.novita .novita-collegamenti { font-size: var(--c-s); margin-top: var(--s3); overflow-wrap: anywhere; }
+.novita h2 { overflow-wrap: anywhere; }
+a.voce-novita.con-novita { position: relative; }
+a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45em; height: .45em; margin-left: .3em;
+  border-radius: 50%; background: var(--primario); vertical-align: .35em; }
+.nota-altezze-osm { margin-top: var(--s2); }
+
+/* ------------------------------------------------------------------------- correzioni dalle prove di Paolo (07/11/2026 sera) */
+/* la colonna della mappa di Modelli 3D e Ortofoto scorre da sola: la sua barra di scorrimento stava a destra, attaccata al
+   divisore trascinabile e si confondeva con lui. La barra va a sinistra (direzione rtl solo per il contenitore, il
+   contenuto resta ltr); sul telefono la colonna non scorre da sola e non cambia nulla */
+@media (min-width: 861px) {
+  main.pagina-edificio3d[data-vista="modelli"] > .mappa-area, main.pagina-ortofoto > .mappa-area { direction: rtl; overflow-x: hidden; }
+  main.pagina-edificio3d[data-vista="modelli"] > .mappa-area > *, main.pagina-ortofoto > .mappa-area > * { direction: ltr; }
+}
+/* edifici OpenStreetMap (ripiego) in marrone nella mappa e nella legenda */
+.pallino.osm { background: #9a6440; }
+#legenda-terreno[hidden] { display: none; }
+/* «Aggiungi edifici»: zona dove trascinare il file (nessuna finestra di sistema se non la si chiede) */
+.trascina-qui { border: 2px dashed var(--bordo); border-radius: var(--r-l); padding: var(--s4); text-align: center; margin: var(--s2) 0;
+  background: color-mix(in srgb, var(--foglio) 85%, var(--carta)); transition: border-color .15s, background .15s; }
+.trascina-qui p { margin: var(--s1) 0; }
+.trascina-qui.sopra, .trascina-qui:focus-within { border-color: var(--primario); background: color-mix(in srgb, var(--primario) 10%, var(--foglio)); }
+.trascina-qui label.bottone { display: inline-flex; cursor: pointer; }
+/* «chiedi dove salvarlo» accanto ai pulsanti dell'immagine */
+.salva-con-nome { font-size: var(--c-s); color: var(--tenue); margin-left: var(--s2); }
+/* pagina interna: coda vuota */
+.coda-vuota { color: var(--tenue); }
+#legenda-osm[hidden] { display: none; }
+
+/* Spostamento manuale dell'ortofoto (08/11/2026): quattro frecce a croce sotto la mappa, stato e «Azzera» (sposta_ortofoto.js) */
+.sposta-ortofoto { display: inline-flex; align-items: center; gap: var(--s2); flex-wrap: wrap; min-width: 0; max-width: 100%; }
+.sposta-ortofoto[hidden] { display: none; }
+.sposta-ortofoto .croce { display: grid; grid-template-columns: repeat(3, 1.85rem); grid-template-rows: repeat(3, 1.85rem); gap: 2px; flex: none; }
+.sposta-ortofoto .freccia { display: flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--bordo);
+  border-radius: var(--r); background: transparent; color: var(--inchiostro); font: 700 1rem/1 var(--testo); cursor: pointer; }
+.sposta-ortofoto .freccia:hover { background: var(--rialzo); border-color: var(--inchiostro); }
+.sposta-ortofoto .freccia:focus-visible { outline: 2px solid var(--primario); outline-offset: 1px; }
+.sposta-ortofoto .freccia[disabled] { color: var(--tenue); border-style: dashed; cursor: not-allowed; background: transparent; }
+.sposta-ortofoto .freccia-n { grid-area: 1 / 2; } .sposta-ortofoto .freccia-o { grid-area: 2 / 1; }
+.sposta-ortofoto .freccia-e { grid-area: 2 / 3; } .sposta-ortofoto .freccia-s { grid-area: 3 / 2; }
+.sposta-ortofoto .passo { grid-area: 2 / 2; display: flex; align-items: center; justify-content: center; font-size: .7rem; color: var(--tenue); }
+.sposta-ortofoto .sposta-lato { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s1); min-width: 0; flex: 1 1 10rem; max-width: 22rem; }
+.sposta-ortofoto .sposta-stato { font-size: var(--c-s); color: var(--tenue); overflow-wrap: anywhere; }
+.sposta-ortofoto .sposta-stato.spostata { color: var(--inchiostro); font-weight: 600; }
+.comandi-ortofoto { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; margin: var(--s2) 0; }
+.comandi-ortofoto > #scarica-ortofoto { min-width: 0; }
+
+/* ------------------------------------------------------------------------------------- menu dell'08/11/2026 (Paolo) */
+/* tendine larghe quanto la voce più lunga (prima 17rem fissi: «Cogeneratore sull'edificio…», «Consumi, firma…» andavano
+   a capo), entro 30rem e dentro la finestra */
+.tendina { width: max-content; max-width: min(30rem, calc(100vw - 2rem)); }
+/* voci in lavorazione (span.voce-gme.voce-corso): come le voci GME, non cliccabili, attenuate, triangolo giallo */
+.voce-corso .cantiere.sviluppo { opacity: 1; }
+/* avviso in cima alle pagine in lavorazione (raggiungibili solo con l'indirizzo diretto) */
+.avviso-lavorazione { margin: var(--s3) var(--margine) 0; }
+/* barra di scorrimento della colonna della mappa a sinistra in tutte le pagine a due colonne (prima solo Modelli 3D e
+   Ortofoto): la colonna scorre da sola se il contenuto supera la finestra, la barra non si confonde con il divisore;
+   contenuto in ltr. Sul telefono (una colonna) nulla cambia */
+@media (min-width: 861px) {
+  main.strumento > .mappa-area { overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; direction: rtl; }
+  main.strumento > .mappa-area > * { direction: ltr; }
+  main.pagina-patrimonio > .mappa-area { scrollbar-width: thin; }
+  main.pagina-patrimonio > .mappa-area::-webkit-scrollbar { display: initial; }
+}

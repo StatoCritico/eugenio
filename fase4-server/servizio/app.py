@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
-from . import analisi, config as C, edifici, interno, meteo, modello, orizzonte, ortofoto, protezione as P, pvgis, report, storici, strati, tabelle
+from . import analisi, config as C, dbtr_coda, edifici, edifici_osm, interno, meteo, modello, orizzonte, ortofoto, protezione as P, pvgis, report, storici, strati, tabelle, terreno
 from .report_servizi import CON_FORMATO as REPORT_CON_FORMATO, TIPI as TIPI_REPORT
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -30,11 +30,14 @@ if C.ORIGINI_CORS:
 
 app.include_router(storici.router)   # pagina "Dati climatici": /api/storici/...
 app.include_router(edifici.router)   # edifici 3D (fase 10): gradi giorno mensili e clima orario per firma e FV
+app.include_router(edifici_osm.router)   # ripiego OpenStreetMap di Modelli 3D fuori dal DBTR (07/11/2026)
 app.include_router(strati.router)   # strati sopra le ortofoto (particelle, contorni edifici), prima delle tessere
 app.include_router(ortofoto.router)  # ortofoto (fase 10, Fase B): proxy con copia su disco, una fonte per TOML
 app.include_router(pvgis.router)     # confronto PVGIS chiamato dal server (fase 10, Fase B)
 app.include_router(orizzonte.router) # orizzonte lontano dal Copernicus DEM 90 m (fase 10, Fase B)
+app.include_router(terreno.router)   # tessere del terreno 3D su richiesta dal DTM del server (07/11/2026)
 app.include_router(interno.router)   # pagina di stato nascosta degli edifici (fase 10, Fase C), con Cloudflare Access
+app.include_router(dbtr_coda.router)   # «Aggiungi DBTR»: proposte all'archivio comune e approvazione interna (07/11/2026)
 app.include_router(analisi.router)   # analisi 5 e 7–13 (fase 10, Fase E): modulo privato facoltativo, altrimenti «non disponibile»
 # limiti per indirizzo (IPv6 per rete /64) in finestra mobile di un'ora: previsioni (pesanti), geocodifica (quota
 # Zornade), patrimonio (contato in edifici: il sito invia i file grandi a blocchi, perché il tunnel Cloudflare chiude
@@ -84,7 +87,10 @@ async def sessione(request: Request, token: str = Body(..., embed=True, max_leng
 def comuni(request: Request):
     _limita(request, "dati")
     cm = meteo.comuni()
-    return cm[["istat", "nome", "belfiore", "provincia", "lat", "lon", "svg_x", "svg_y"]].to_dict(orient="records")
+    # (07/11/2026 sera: la rotta rispondeva 500 sul server) colonne mancanti e valori vuoti (NaN) non fermano la risposta
+    col = [c for c in ("istat", "nome", "belfiore", "provincia", "lat", "lon", "svg_x", "svg_y") if c in cm.columns]
+    t = cm[col].astype(object)
+    return t.where(t.notna(), None).to_dict(orient="records")
 
 
 @app.get("/api/mappa")
@@ -407,7 +413,11 @@ async def geocodifica(request: Request, q: str, comune: str | None = None):
         lat, lon = _coord(x)
         etichetta = (x.get("formatted_address") or x.get("display_name") or x.get("label") or x.get("address")
                      or x.get("name") or q)
-        if lat is not None:
+        try:     # (08/11/2026) senza coordinate vere (vuote o 0,0) non è un punto: si scarta, la pagina offre il comune
+            ok = lat is not None and lon is not None and not (abs(float(lat)) < 1e-6 and abs(float(lon)) < 1e-6)
+        except (TypeError, ValueError):
+            ok = False
+        if ok:
             out.append({"etichetta": etichetta, "lat": lat, "lon": lon})
     return {"risultati": out, "fonte": "Dati elaborati da Zornade", "fonte_url": "https://zornade.com"}
 

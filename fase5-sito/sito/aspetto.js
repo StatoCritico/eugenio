@@ -212,7 +212,8 @@
   //    prima del CSS, così la riga ha già il suo posto e la pagina non salta;
   //  - sul telefono (sotto 861 px) la barra dei gruppi non c'è: la riga fissata resta visibile, scorre in orizzontale e ha
   //    il pulsante × per richiuderla.
-  // Le voci in attesa della licenza GME sono <span class="voce-gme"> e non collegamenti: non si cliccano, non prendono il
+  // Le voci in attesa della licenza GME e (08/11/2026) quelle in lavorazione (span.voce-gme.voce-corso, «In lavorazione:
+  // disponibile prossimamente») sono <span class="voce-gme"> e non collegamenti: non si cliccano, non prendono il
   // fuoco e hanno il suggerimento «In attesa di autorizzazione dal GME» (con un tocco la nota compare anche sul telefono).
   const gruppi = [...document.querySelectorAll("details.voce-gruppo")];
   const vociDi = (d) => [...d.querySelectorAll(".tendina a")];
@@ -335,7 +336,7 @@
           return;
         }
         d.open = true;
-        voci[(n + voci.length) % voci.length].focus();
+        if (voci.length) voci[(n + voci.length) % voci.length].focus();   // (08/11/2026) gruppi con sole voci in lavorazione: nessun collegamento
       };
       if (e.key === "Escape" && d.open) {
         e.preventDefault(); e.stopPropagation(); d.open = false; titolo.focus();
@@ -402,5 +403,29 @@
       const s = d.querySelector("summary");
       if (s) s.focus();
     });
+  });
+})();
+
+// Novità (07/11/2026): pallino discreto sul collegamento «Novità» quando c'è una versione più nuova dell'ultima vista.
+// Solo localStorage (nessun cookie, nessuna richiesta), protetto: senza memoria del browser il pallino non compare.
+(function () {
+  const CHIAVE = "novita-vista";
+  const voci = document.querySelectorAll("a.voce-novita[data-ultima]");
+  const ultima = (voci[0] && voci[0].dataset.ultima) || "";
+  if (!/^\d{8}[a-z]?$/.test(ultima)) return;
+  let vista = null;
+  try { vista = localStorage.getItem(CHIAVE); } catch (e) { return; }
+  if (document.querySelector("main.novita")) {
+    try { localStorage.setItem(CHIAVE, ultima); } catch (e) { /* niente */ }
+    return;
+  }
+  // la prima volta (nessuna versione vista) niente pallino: si segna la versione attuale
+  if (vista === null) { try { localStorage.setItem(CHIAVE, ultima); } catch (e) { /* niente */ } return; }
+  if (vista >= ultima) return;
+  voci.forEach((a) => {
+    a.classList.add("con-novita");
+    a.setAttribute("title", "C'è una versione nuova di EuGEnio");
+    const s = document.createElement("span"); s.className = "solo-lettori"; s.textContent = " (c'è una versione nuova)";
+    a.appendChild(s);
   });
 })();

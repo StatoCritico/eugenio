@@ -1,0 +1,48 @@
+# Fonti della zona Puglia (fase 10, gruppo B dei lettori regionali, 08/11/2026). Gli URL stanno qui, mai nel codice.
+# Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 08/11/2026 (documenti/CITTA_RIFERIMENTO_CENTRO.md § 3): schede RNDT della CTR (r_puglia:e5fdf473-…) e del DTM
+#   (r_puglia:85898eba-…): «Italian Open Data License (IODL 2.0)»; download diretto per elemento, nessun login;
+# - 08/11/2026 (gruppo B): elementi 438061, 438062, 438072, 438073, 438074 del foglio 438 «Bari» scaricati (23,5 MB) e
+#   letti: Shapefile PolygonZ/PointZ/PolyLineZ senza .prj, WGS84 / UTM 33N (EPSG:32633; Basilica di San Nicola contro OSM:
+#   scarto 0,3 m); poligoni con LAYER/DESCR («edificio civile», «capannone», «chiesa», «atrio (cavedio)»…), punti «quota
+#   gronda edificio» e «quota piede fabbricato», linee «dividente edificio civile» che dividono gli isolati in corpi.
+#   DTM 8 m per elemento: ASCII Grid con la virgola decimale, mare a 0, vuoti −9999.
+# - Il file per `prepara-regione` si costruisce con `python -m edifici3d.b_regioni puglia-ctr --ctr <zip…>` (divisione
+#   degli isolati, gronde e piedi assegnati ai corpi); il DTM con `b_regioni puglia-dtm --asc <zip…>`.
+# - Licenza IODL 2.0 (attribuzione, compatibile con CC BY): archivio separato in `iodl/` (vedi MODIFICHE_CONDIVISE del
+#   gruppo B per LICENZE.txt e controlla-archivio).
+
+[zona]
+nome = "Puglia"
+codice = "pug"
+crs = "EPSG:7792"                       # RDN2008 / UTM 33N
+riquadro = [14.93, 39.79, 18.53, 42.24]
+
+[archivi]
+"IODL 2.0" = "iodl"
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Regione Puglia – Carta Tecnica Regionale 1:5.000 (volo 2006), SHP per elemento con punti di gronda e piede"
+licenza = "IODL 2.0"
+attribuzione = "Regione Puglia – Carta Tecnica Regionale 1:5.000, volo 2006 (IODL 2.0)"
+scheda = "https://geodati.gov.it/resource/id/r_puglia:e5fdf473-4457-420a-9cef-3ad20f31a9b9"
+pagina_download = "http://www.sit.puglia.it/portal/portale_cartografie_tecniche_tematiche/Download/Cartografie"
+adattatore = "puglia_ctr"
+servizio_tipo = "file"
+# un file per elemento 1:5.000: {foglio} = prime tre cifre dell'elemento (es. 438), {elemento} = sei cifre (es. 438073)
+modello_url = "https://cartografia.sit.puglia.it/download/CTR/SHP/{foglio}/{elemento}_ctr.zip"
+crs_servizio = "EPSG:32633"
+url = ""
+# elementi di Bari usati l'08/11/2026 (centro, Policlinico, Murattiano, Bari Vecchia, San Paolo, Japigia)
+elementi_bari = ["438061", "438062", "438072", "438073", "438074"]
+
+[fonti.dtm]
+descrizione = "Regione Puglia – DTM 8 m (Intesa GIS, riprese 2006), ASCII Grid per elemento"
+licenza = "IODL 2.0"
+attribuzione = "Regione Puglia – DTM 8 m (IODL 2.0)"
+scheda = "https://geodati.gov.it/resource/id/r_puglia:85898eba-d4b0-4c3b-a2c7-6ea666522591"
+modello_url = "https://cartografia.sit.puglia.it/download/DTM/ASC/{foglio}/{elemento}_asc.zip"
+crs = "EPSG:32633"
+url = ""

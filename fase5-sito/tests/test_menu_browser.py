@@ -4,6 +4,9 @@
 - il clic sul titolo fissa il gruppo nella riga nera sotto la barra, il clic su un altro gruppo la cambia, il secondo clic
   sullo stesso titolo la toglie; la scelta resta al cambio di pagina;
 - le voci «licenza GME» non sono collegamenti e hanno il suggerimento «In attesa di autorizzazione dal GME»;
+- (08/11/2026) sei gruppi; le voci «in lavorazione» (Edifici, Cogenerazione, Fotovoltaico) non sono collegamenti, hanno il
+  triangolo giallo e il suggerimento «In lavorazione: disponibile prossimamente»; le tendine sono larghe quanto la voce più
+  lunga (nessuna voce va a capo) e stanno nella finestra; frecce della tastiera nei gruppi senza collegamenti senza errori;
 - a 375 px la riga scorre dentro di sé, la pagina non scorre in orizzontale e il pulsante × la chiude;
 - nessun errore JavaScript.
 Si salta se Playwright o Chromium non ci sono.
@@ -83,29 +86,37 @@ def test_menu_computer(base, browser):
     assert "richiudere la barra di Patrimonio" in pg.get_attribute(titolo, "title")
     riga = pg.locator("nav.riga-fissata")
     assert riga.evaluate("r => getComputedStyle(r).backgroundColor") == "rgb(0, 0, 0)"
-    assert riga.locator(".riga-voci > li").count() == 6
+    assert riga.locator(".riga-voci > li").count() == 8          # dal 07/11/2026 anche Aggiungi edifici e Scaricare i DB topografici
     assert riga.locator("a[aria-current=page]").inner_text().startswith("LiDAR")
     pg.mouse.move(700, 650)
     pg.hover(titolo)
     pg.wait_for_timeout(100)
     assert not aperto(pg, "patrimonio")
-    # un altro gruppo: la riga passa a quello; le voci GME nella riga non sono collegamenti
+    # un altro gruppo: la riga passa a quello; le voci GME e quelle in lavorazione nella riga non sono collegamenti
     pg.click(G.format("cogenerazione") + " > summary")
     assert fissato(pg) == "cogenerazione"
-    assert riga.locator(".voce-gme").count() == 5 and riga.locator("a").count() == 1
+    assert riga.locator(".voce-gme").count() == 6 and riga.locator("a").count() == 0
     assert riga.locator(".voce-gme").first.get_attribute("title") == "In attesa di autorizzazione dal GME"
-    # al cambio di pagina la riga resta
-    pg.click("nav.riga-fissata a[href='cog-emissioni.html']")
+    assert riga.locator(".voce-corso").count() == 1 and riga.locator(".voce-corso").get_attribute("title") == "In lavorazione: disponibile prossimamente"
+    # al cambio di pagina (pagina in lavorazione aperta con l'indirizzo diretto) la riga resta, con la voce della pagina
+    pg.goto(base + "cog-emissioni.html")
     pg.wait_for_load_state("load")
-    assert fissato(pg) == "cogenerazione" and riga.locator("a[aria-current=page]").count() == 1
-    # voce GME nella tendina: niente collegamento, il clic non cambia pagina
+    assert fissato(pg) == "cogenerazione" and riga.locator("[aria-current=page]").count() == 1
+    assert pg.locator(".avviso-lavorazione").is_visible() and "Pagina in lavorazione, non ancora verificata" in pg.locator(".avviso-lavorazione").inner_text()
+    # voce GME e voci in lavorazione nella tendina: niente collegamento, il clic non cambia pagina
     pg.hover(G.format("fotovoltaico") + " > summary")
-    gme = pg.locator(G.format("fotovoltaico") + " .tendina .voce-gme")
+    gme = pg.locator(G.format("fotovoltaico") + " .tendina .voce-gme:not(.voce-corso)")
     assert gme.count() == 1 and gme.get_attribute("aria-disabled") == "true"
+    corso = pg.locator(G.format("fotovoltaico") + " .tendina .voce-corso")
+    assert corso.count() == 7 and pg.locator(G.format("fotovoltaico") + " .tendina a").count() == 0
+    assert corso.first.get_attribute("title") == "In lavorazione: disponibile prossimamente"
+    assert corso.first.locator("svg.segnale path[fill='#f5c400']").count() == 1           # triangolo giallo
+    assert float(corso.first.evaluate("e => getComputedStyle(e).opacity")) < 1 and corso.first.evaluate("e => getComputedStyle(e).cursor") == "not-allowed"
     url = pg.url
     gme.click()
+    corso.last.click()
     pg.wait_for_timeout(150)
-    assert pg.url == url
+    assert pg.url == url and "con-nota" in corso.last.get_attribute("class")
     # secondo clic sullo stesso titolo: la riga sparisce e torna la tendina
     pg.mouse.move(700, 650)
     pg.click(G.format("cogenerazione") + " > summary")
@@ -138,13 +149,13 @@ def test_menu_computer(base, browser):
 def test_menu_telefono(base, browser):
     ctx, pg = pagina(browser, 375, 740)
     pg.goto(base + "index.html")
-    pg.evaluate("localStorage.setItem('menu-fissato', 'edificio')")
+    pg.evaluate("localStorage.setItem('menu-fissato', 'fotovoltaico')")      # (08/11/2026) Comunità energetiche nel Fotovoltaico
     pg.goto(base + "edificio-cer.html")
     riga = pg.locator("nav.riga-fissata")
     assert riga.evaluate("r => getComputedStyle(r).display") == "block"
     assert pg.evaluate("document.documentElement.scrollWidth") <= 375
     assert riga.locator(".riga-voci").evaluate("u => u.scrollWidth > u.clientWidth && getComputedStyle(u).overflowX === 'auto'")
-    box = riga.locator("a[aria-current=page]").bounding_box()
+    box = riga.locator("[aria-current=page]").bounding_box()
     assert box and box["x"] >= 0 and box["x"] < 375                       # la voce della pagina aperta è in vista
     # voce GME nel menu del telefono: niente collegamento, il tocco mostra la nota
     pg.click("details.menu-tutto > summary")
@@ -157,5 +168,83 @@ def test_menu_telefono(base, browser):
     pg.click("nav.riga-fissata .riga-chiudi")
     assert riga.evaluate("r => getComputedStyle(r).display") == "none"
     assert pg.evaluate("localStorage.getItem('menu-fissato')") is None
+    assert not pg.errori, pg.errori
+    ctx.close()
+
+
+def test_novita_telefono_e_pallino(base, browser):
+    """Novità (07/11/2026): la pagina non scorre in orizzontale a 375 px, l'indice elenca le versioni; il pallino compare
+    sul collegamento solo se l'ultima versione vista è più vecchia, e sparisce dopo aver aperto la pagina."""
+    ctx, pg = pagina(browser, 375)
+    pg.goto(base + "novita.html")
+    pg.wait_for_load_state("load")
+    assert pg.evaluate("document.documentElement.scrollWidth") <= 375
+    assert pg.locator("main.novita h2").count() >= 8
+    assert pg.evaluate("localStorage.getItem('novita-vista')") == pg.get_attribute("a.voce-novita >> nth=0", "data-ultima")
+    pg.evaluate("localStorage.setItem('novita-vista', '20261001a')")
+    pg.goto(base + "faq.html")
+    pg.wait_for_load_state("load")
+    assert pg.locator("a.voce-novita.con-novita").count() == 2                 # menu del computer e del telefono
+    pg.goto(base + "novita.html"); pg.wait_for_load_state("load")
+    pg.goto(base + "faq.html"); pg.wait_for_load_state("load")
+    assert pg.locator("a.voce-novita.con-novita").count() == 0
+    assert not pg.errori, pg.errori
+    ctx.close()
+
+
+def test_voce_novita_come_le_altre(browser, base):
+    """«Novità» (07/11/2026 sera, prova 11 di Paolo: «blu elettrico»): stesso colore calcolato di «F.A.Q.» nella riga in
+    alto e nel menu del telefono, in tutti e 5 i vestiti, tema chiaro e scuro, con e senza il pallino delle novità; nella
+    propria pagina come «F.A.Q.» nella sua."""
+    def colori(pg):
+        return pg.evaluate("""() => { const c = (sel) => { const e = document.querySelector(sel); return e ? getComputedStyle(e).color : null; };
+          return [c('.menu-info a.voce-novita'), c('.menu-info a[href="faq.html"]'), c('.menu-pannello a.voce-novita'), c('.menu-pannello a[href="faq.html"]'),
+                  c('.menu-info a[aria-current="page"]')]; }""")
+    for vestito in ("corallo", "ambra", "indaco", "lime", "verde"):
+        for tema in ("dark", "light"):
+            for pallino in (False, True):
+                ctx = browser.new_context(viewport={"width": 1366, "height": 800})
+                ctx.add_init_script(f"""try {{ localStorage.setItem('vestito', '{vestito}'); {"localStorage.setItem('tema', 'light');" if tema == "light" else ""}
+                    localStorage.setItem('novita-vista', '{"20261001a" if pallino else "29991231z"}'); }} catch (e) {{}}""")
+                pg = ctx.new_page()
+                pg.goto(base + "metodo.html")
+                n, f, n2, f2, _ = colori(pg)
+                assert n == f and n2 == f2, (vestito, tema, pallino, n, f, n2, f2)
+                assert pg.evaluate("document.querySelector('.menu-info a.voce-novita').classList.contains('con-novita')") == pallino
+                pg.goto(base + "novita.html"); cur_n = colori(pg)[4]
+                pg.goto(base + "faq.html"); cur_f = colori(pg)[4]
+                assert cur_n == cur_f, (vestito, tema, cur_n, cur_f)
+                ctx.close()
+
+
+def test_menu_08_11_sei_gruppi_tendine_e_tastiera(base, browser):
+    """(08/11/2026) Sei gruppi nell'ordine; Edifici con «Obblighi di legge» in cima e solo voci in lavorazione; Cambiamento
+    climatico ultima voce di Clima e meteo; ogni voce di ogni tendina su una riga, tendina dentro la finestra (1366, 1000 e
+    900 px); frecce della tastiera su un gruppo senza collegamenti: nessun errore."""
+    for larghezza in (1366, 1000, 900):
+        ctx, pg = pagina(browser, larghezza)
+        pg.goto(base + "faq.html")
+        titoli = pg.locator("details.voce-gruppo > summary").all_inner_texts()
+        assert [t.strip() for t in titoli] == ["Clima e meteo", "Patrimonio", "Edifici", "Cogenerazione", "Fotovoltaico", "Statistiche"]
+        for g in ("clima", "patrimonio", "edificio", "cogenerazione", "fotovoltaico", "statistiche"):
+            pg.hover(G.format(g) + " > summary")
+            assert aperto(pg, g)
+            d = pg.evaluate(f"""() => {{ const t = document.querySelector('{G.format(g)} .tendina'), b = t.getBoundingClientRect();
+              const righe = [...t.querySelectorAll(':scope > li > *')].map((e) => {{ const n = e.querySelector('.voce-nome') || e;
+                const r = document.createRange(); r.selectNodeContents(n.firstChild); return r.getClientRects().length; }});
+              return {{ left: b.left, right: b.right, righe }}; }}""")
+            assert d["left"] >= 0 and d["right"] <= larghezza and set(d["righe"]) == {1}, (larghezza, g, d)
+            pg.mouse.move(5, 700)
+            pg.wait_for_timeout(250)
+        assert pg.locator(G.format("clima") + " .tendina > li").last.text_content().strip().startswith("Cambiamento climatico")
+        assert pg.locator(G.format("edificio") + " .tendina > li").first.text_content().strip().startswith("Obblighi di legge")
+        assert pg.locator(G.format("edificio") + " .tendina a").count() == 0
+        assert pg.locator(G.format("edificio") + " .tendina .voce-corso").count() == 8
+        ctx.close()
+    ctx, pg = pagina(browser, 1366)
+    pg.goto(base + "faq.html")
+    pg.focus(G.format("edificio") + " > summary")
+    for k in ("ArrowDown", "ArrowDown", "ArrowUp", "End", "Escape"):
+        pg.keyboard.press(k)
     assert not pg.errori, pg.errori
     ctx.close()

@@ -5,13 +5,25 @@
 }
 
 :80 {
-	@comprimibile not path /api/ortofoto/*
+	@comprimibile not path /api/ortofoto/* /api/dbtr/* /api/terreno/*
 	encode @comprimibile zstd gzip
 
 	# ortofoto (fase 10, Fase B): tessere dal proxy dell'api (servizio/ortofoto.py) con la sua copia su disco. Caddy
 	# le passa senza timeout lungo e lascia le intestazioni di cache scritte dall'api (public, 30 giorni, così anche
 	# Cloudflare tiene la copia; no-store per le fonti solo dal vivo); niente compressione (JPEG già compressi).
 	handle /api/ortofoto/* {
+		reverse_proxy api:8000 {
+			header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+			transport http {
+				read_timeout 30s
+			}
+		}
+		header -Set-Cookie
+	}
+
+	# terreno 3D su richiesta (07/11/2026, servizio/terreno.py): tessere Terrarium PNG dal DTM del server, con la copia
+	# su disco dell'api; come le ortofoto: intestazioni di cache dell'api (public, 30 giorni), niente compressione (PNG)
+	handle /api/terreno/* {
 		reverse_proxy api:8000 {
 			header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
 			transport http {
@@ -46,6 +58,20 @@
 		file_server
 	}
 
+	# «Aggiungi DBTR» (07/11/2026): DB topografici proposti all'archivio comune, caricati a pezzi di 32 MB (Cloudflare
+	# accetta al più 100 MB per richiesta): qui 40 MB per richiesta invece dei 6 MB delle altre rotte; niente compressione
+	handle /api/dbtr/* {
+		request_body {
+			max_size 40MB
+		}
+		reverse_proxy api:8000 {
+			header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+			transport http {
+				read_timeout 300s
+			}
+		}
+	}
+
 	# API (FastAPI): limite di dimensione per i CSV e IP reale del visitatore per i limiti di uso
 	handle /api/* {
 		request_body {
@@ -59,7 +85,7 @@
 		}
 	}
 
-	# edifici 3D (fase 10): PMTiles dei corpi e del terreno, COG del DTM e celle di contesto, file statici letti a
+	# edifici 3D (fase 10): PMTiles dei corpi e celle di contesto (il terreno dal 07/11/2026 viene da /api/terreno/), file statici letti a
 	# pezzi (Range) dalla pagina 3D. Archivi separati per licenza: /edifici3d/cc-by/<zona>/… e /edifici3d/odbl/<zona>/…
 	# (cartella CARTELLA_EDIFICI del .env, montata in sola lettura). file_server gestisce già Range e ETag.
 	handle_path /edifici3d/* {
@@ -67,10 +93,17 @@
 		header {
 			Access-Control-Allow-Origin "*"
 			Access-Control-Expose-Headers "Content-Length, Content-Range, ETag"
-			Cache-Control "public, max-age=86400"
 		}
 		@pmtiles path *.pmtiles
 		header @pmtiles Content-Type "application/vnd.pmtiles"
+		# elenchi e indici (archivi.json, indice.json, lidar/indice.json) cambiano a ogni archivio nuovo: il browser li
+		# riconvalida sempre con ETag (304 se uguali); PMTiles e celle restano in copia per un giorno (07/11/2026 sera)
+		# due matcher che si escludono: Caddy ordina i «header» dello stesso blocco per matcher (quello senza matcher
+		# veniva applicato per ultimo e rimetteva «public» anche sugli elenchi: corretto l'08/11/2026)
+		@elenchi path /archivi.json */indice.json
+		header @elenchi Cache-Control "no-cache"
+		@copiabili not path /archivi.json */indice.json
+		header @copiabili Cache-Control "public, max-age=86400"
 		@tif path *.tif
 		header @tif Content-Type "image/tiff; application=geotiff; profile=cloud-optimized"
 		file_server
@@ -86,6 +119,9 @@
 		header @markdown Content-Type "text/markdown; charset=utf-8"
 		@llms path /llms.txt
 		header @llms Content-Type "text/plain; charset=utf-8"
+		# registro delle versioni (07/11/2026): feed Atom della pagina Novità
+		@atom path /novita.xml
+		header @atom Content-Type "application/atom+xml; charset=utf-8"
 		file_server
 	}
 

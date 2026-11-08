@@ -46,7 +46,8 @@ def uvl() -> list[tuple[dict, Polygon]]:
     out = []
     for cid, eid, g, h in righe:
         cx, cy = g.centroid.x, g.centroid.y
-        colmo = "9" if cid == "C6" else "Null"
+        # H_COLMO del DBTR è una quota assoluta (07/11/2026): colmo a 9 m sopra la base
+        colmo = f"{quota(cx, cy) + 9:.2f}".replace(".", ",") if cid == "C6" else "Null"
         out.append(({"Id_e": cid, "Edi_id_e": eid, "H_uvl": f"{h:g}".replace(".", ","),
                      "B_uvl": f"{quota(cx, cy):.2f}".replace(".", ","), "H_GRONDA": "Null", "H_COLMO": colmo,
                      "Tipo_fonte": "SINTETICO", "Qualita": "20", "D_tetto": "Non assegnato", "D_ty_porz": "generica",

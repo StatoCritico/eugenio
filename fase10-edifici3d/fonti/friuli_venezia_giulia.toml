@@ -5,6 +5,9 @@
 # - 05/11/2026: 44 strati, uno per foglio CTRN (EDIFICI:EDIFICATO_CTRN_ED1_018 … _ED2_…); GetFeature di 6 elementi del
 #   foglio 110 in GeoJSON EPSG:6708 (RDN2008 / UTM 33N): ALTEZZA, QUOTA_PIEDE, QUOTA_GRONDA, VOLUME, AREA, CODICE, NOME, ID;
 #   QUOTA_GRONDA − QUOTA_PIEDE = ALTEZZA in 6 su 6. Nessun identificativo d'edificio: ogni elemento è un corpo.
+# - 08/11/2026 (gruppo B): Trieste dagli strati ED2_110 e ED2_131 (`python -m edifici3d.b_regioni fvg-wfs --istat 032006
+#   --strati …`): 41.950 elementi nel confine, volo 22–23/05/2003, QUOTA_GRONDA − QUOTA_PIEDE = ALTEZZA in 41.944;
+#   adattatore fvg_ctrn_ed2 (edifici3d/adattatori/friuli_venezia_giulia.py); per gli strati ED1 vale fvg_ctrn (alternativi).
 
 [zona]
 nome = "Friuli Venezia Giulia"
@@ -21,9 +24,10 @@ descrizione = "IRDAT FVG – Edificato CTRN (per elemento, con altezza e quote)"
 licenza = "CC BY 4.0"
 attribuzione = "Regione Autonoma Friuli Venezia Giulia – IRDAT, Edificato CTRN (CC BY 4.0)"
 scheda = "https://geodati.gov.it/resource/id/r_friuve:m10812-cc-i11555"
-adattatore = "fvg_ctrn"
+adattatore = "fvg_ctrn_ed2"                  # edizione 2 (08/11/2026, gruppo B): ID1, DATA_VOLO
+alternativi = ["fvg_ctrn"]                   # strati ED1 (campo ID): scelto da solo se al file mancano ID1 e DATA_VOLO
 servizio_tipo = "wfs"
 servizio = "https://serviziogc.regione.fvg.it/geoserver/EDIFICI/wfs"
-strato = "EDIFICI:EDIFICATO_CTRN_ED1_110"   # uno strato per foglio CTRN: si sceglie con --strato
+strato = "EDIFICI:EDIFICATO_CTRN_ED2_110"   # uno strato per foglio CTRN (ED2, con la data del volo): si sceglie con --strato
 crs_servizio = "EPSG:6708"
 url = ""

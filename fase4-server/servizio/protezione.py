@@ -11,7 +11,8 @@ Cosa fa (decisione del 29/10/2026):
     (PREVISIONI_PARALLELE: modello.py ne calcola una alla volta, le altre aspettano al massimo PREVISIONI_ATTESA_S
     secondi, poi 503);
   * **verifica Cloudflare Turnstile** sulle rotte che costano o consumano quote (previsione, patrimonio,
-    geocodifica, particella, estrazione dei dati climatici): la pagina ottiene un gettone Turnstile, lo scambia con
+    geocodifica, particella, estrazione dei dati climatici; dal 07/11/2026 anche gli edifici OSM al volo, che consumano
+    le quote di Overpass del server): la pagina ottiene un gettone Turnstile, lo scambia con
     POST /api/sessione e riceve un **gettone di sessione** firmato (HMAC), valido SESSIONE_MINUTI e legato alla rete
     di chi l'ha chiesto, da mandare nell'intestazione X-EuGEnio-Sessione. Senza TURNSTILE_SITEKEY e
     TURNSTILE_SECRET la verifica è spenta (prove, mirror);
@@ -44,7 +45,7 @@ from . import avvisi, config as C
 log = logging.getLogger(__name__)
 ROMA = ZoneInfo("Europe/Rome")
 INTESTAZIONE_SESSIONE = "X-EuGEnio-Sessione"
-TIPI_PROTETTI = ("previsione", "patrimonio", "geocodifica", "particella", "estrazione")
+TIPI_PROTETTI = ("previsione", "patrimonio", "geocodifica", "particella", "estrazione", "edifici_osm", "dbtr")
 
 
 # ---------------------------------------------------------------------------------------------- indirizzo
@@ -139,15 +140,21 @@ LIMITI: dict[str, tuple[int, int]] = {"converti": (200, 3600), "previsione": (20
                                       "patrimonio": (2000, 3600), "report": (60, 3600)}
 _DINAMICI = {"dati": lambda: C.LIMITE_DATI_ORA, "sessione": lambda: C.SESSIONI_ORA,
              "stima": lambda: C.STORICI_STIME_ORA, "estrazione": lambda: C.STORICI_ESTRAZIONI_ORA,
-             "ortofoto": lambda: C.ORTOFOTO_ORA, "pvgis": lambda: C.PVGIS_ORA, "orizzonte": lambda: C.ORIZZONTE_ORA,
-             "interno": lambda: C.INTERNO_ORA}
+             "ortofoto": lambda: C.ORTOFOTO_ORA, "pvgis": lambda: C.PVGIS_ORA, "orizzonte": lambda: C.ORIZZONTE_ORA, "terreno": lambda: C.TERRENO_ORA,
+             "interno": lambda: C.INTERNO_ORA, "edifici_osm": lambda: C.EDIFICI_OSM_ORA,
+             "dbtr_pezzi": lambda: C.DBTR_PEZZI_ORA}
+# limiti giornalieri (finestra mobile di 24 ore): file proposti all'archivio comune («Aggiungi DBTR», 07/11/2026)
+_GIORNALIERI = {"dbtr": lambda: C.DBTR_CARICAMENTI_GIORNO}
 _UNITA = {"patrimonio": "edifici", "estrazione": "download", "stima": "stime", "sessione": "verifiche",
-          "ortofoto": "tessere di ortofoto", "pvgis": "confronti PVGIS", "orizzonte": "profili d'orizzonte"}
+          "ortofoto": "tessere di ortofoto", "pvgis": "confronti PVGIS", "orizzonte": "profili d'orizzonte", "terreno": "tessere del terreno",
+          "edifici_osm": "richieste di edifici OpenStreetMap", "dbtr": "file proposti", "dbtr_pezzi": "pezzi di file"}
 
 
 def soglia(tipo: str) -> tuple[int, int]:
     if tipo in LIMITI:
         return LIMITI[tipo]
+    if tipo in _GIORNALIERI:
+        return _GIORNALIERI[tipo](), 86400
     return _DINAMICI[tipo](), 3600
 
 
@@ -158,7 +165,8 @@ def limita(req: Request, tipo: str, peso: int = 1) -> None:
     if not limiti.prova(chiave, tipo, n, finestra, peso):
         registro_429.registra(chiave, tipo)
         unita = _UNITA.get(tipo, "richieste")
-        raise HTTPException(429, f"Troppe richieste: massimo {n} {unita} all'ora. Riprova più tardi.")
+        quando = "al giorno" if finestra >= 86400 else "all'ora"
+        raise HTTPException(429, f"Troppe richieste: massimo {n} {unita} {quando}. Riprova più tardi.")
 
 
 # ---------------------------------------------------------------------------------------------- tetti globali
@@ -178,6 +186,12 @@ def _una_volta_al_giorno(tipo: str, ora: float | None = None) -> bool:
             return False
         _avvisi_inviati[tipo] = oggi
         return True
+
+
+def tetto_globale(tipo: str, tetto: int, peso: int = 1) -> bool:
+    """Conta `peso` chiamate a un servizio esterno per tutto il sito nella finestra di un'ora; False (e niente conteggio)
+    se si supererebbe `tetto`. Per Overpass (ripiego OSM di Modelli 3D, 07/11/2026)."""
+    return limiti.prova(_TUTTI, tipo, max(0, int(tetto)), 3600, peso)
 
 
 def zornade_disponibile(previste: int = 1) -> None:

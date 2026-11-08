@@ -3,10 +3,12 @@
 # alle 3:30 (AGGIORNAMENTO_2026-11-04.md, § Fase C): la pipeline si ferma da sola alle 7:00.
 FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
-RUN apt-get update && apt-get install -y --no-install-recommends tzdata && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata libexpat1 && rm -rf /var/lib/apt/lists/*
 COPY fase10-edifici3d/requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 WORKDIR /app
+# tutta la fase 10: anche i lettori regionali dell'08/11/2026 (edifici3d/adattatori/, altezze_dsm.py, a_comuni.py,
+# b_regioni.py, fonti/<regione>.toml, fonti/sagome_regionali.d/) per archivi-json, controlla-archivio e prepara-regione
 COPY fase10-edifici3d /app
 RUN useradd --uid 1000 --create-home energia
 USER energia

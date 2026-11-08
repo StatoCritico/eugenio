@@ -17,3 +17,11 @@
 .interno .legenda-barra { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .85rem; }
 .interno .legenda-barra i { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin-right: .3rem; vertical-align: -1px; border: 1px solid var(--linea); }
 .interno .prova { font-size: .8rem; border: 1px solid var(--linea); border-radius: 99px; padding: .05rem .5rem; margin-left: .5rem; }
+/* coda «Aggiungi DBTR» (07/11/2026) */
+.interno .mappa-coda { height: 420px; border: 1px solid var(--linea); border-radius: 10px; margin: .5rem 0; }
+.interno tr.scelta td { background: var(--rialzo); }
+.interno .stato-coda { font-weight: 600; }
+.interno .stato-coda.attesa { color: #2e8b57; } .interno .stato-coda.ko { color: #c0392b; } .interno .stato-coda.lavoro { color: #d08a00; }
+.interno .pulsanti-coda { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+.interno ul.anomalie { color: #d08a00; }
+.interno ul.problemi { color: #c0392b; }

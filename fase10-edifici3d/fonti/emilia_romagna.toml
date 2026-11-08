@@ -22,14 +22,20 @@ coda = ["RN", "FC", "RA", "BO", "FE", "MO", "RE", "PR", "PC"]
 [fonti.dbtr_uvl]
 descrizione = "DBTR Emilia-Romagna – Unità volumetrica (UVL)"
 licenza = "CC BY 4.0"
-attribuzione = "Regione Emilia-Romagna – Database Topografico Regionale (CC BY 4.0)"
+attribuzione = "Regione Emilia-Romagna – DBTR, CC BY 4.0"
 scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/database-topografico-regionale/immobili-e-antropizzazioni/edificato/layer-6"
 identificativo = "r_emiro:DBTR:UVL_GPG"
-# GeoPackage regionale: URL del file da completare dopo il primo download a mano dalla pagina qui sotto
+# Estrazione per comune dalla pagina qui sotto (prenotazione con reCAPTCHA, consegna per email): GeoPackage
+# `estraz_procons.gpkg` o Shapefile, strati V_UVL_GPG, V_EDI_GPG, V_EDI_GPGSA, V_EDI_CT_USO_AVM (07/11/2026). Il
+# Geoportale non permette l'estrazione per provincia né per regione di EDI e UVL: si prepara un comune alla volta (o
+# più comuni insieme con `prepara --gpkg a.gpkg b/ …`). Nessun URL fisso: i file si copiano a mano sul server.
+# Licenza: CC BY 4.0 nella scheda RNDT r_emiro:2017-11-24T135040 (revisione 2025); i metadati XML dentro l'estrazione
+# del 05/11 dicono ancora «CC BY 3.0» (scheda vecchia): vale la scheda RNDT, tutte e due compatibili.
 pagina_download = "https://geoportale.regione.emilia-romagna.it/download-data/download-dbtopografico"
+scheda_rndt = "r_emiro:2017-11-24T135040"
 url = ""
 formato = "gpkg"
-strato = "UVL_Unita_volumetrica"
+strato = "V_UVL_GPG"
 # WMS pubblico: serve solo al controllo degli attributi su pochi punti (non per scaricare la regione)
 wms = "http://servizigis.regione.emilia-romagna.it/wms/dbtr"
 wms_strato = "UVL_Unita_volumetrica"
@@ -43,10 +49,25 @@ attribuzione = "Regione Emilia-Romagna – DTM 5×5 m (CC BY 4.0)"
 scheda = "https://geoportale.regione.emilia-romagna.it/notizie/servizi-e-applicazioni/dtm-novita-2025"
 crs = "EPSG:7791"
 formato = "tif"
-# quattro quadranti TIFF (~4,9 GB in tutto): URL da completare dalla scheda; in alternativa il WCS.
+# 07/11/2026: «DTM 5x5 – ultima edizione», edizione 2025 (revisione della scheda 18/12/2025), GeoTIFF float32 in zip,
+# EPSG:7791, nodata −9999. Licenza **CC BY 4.0** scritta nella scheda RNDT r_emiro:2016-08-08T155835 (geodati.gov.it,
+# letta il 07/11/2026) e nel PDF «licenza/…_licenza.pdf» dentro lo zip. Quattro quadranti dalla pagina Geoportale ›
+# Dati e prodotti preconfezionati › Altimetria; l'indirizzo pubblico (servizimoka …/packs?p=…) risponde 307 verso
+# archiviogis: qui l'indirizzo diretto, l'altro come nota. Il TIFF non è a tessere: si legge solo la finestra che serve,
+# anche dentro lo zip (edifici3d/dtm_locale.py, `dtm-ritaglia` o `prepara --dtm <zip>`). Il quadrante SE contiene la
+# Romagna (Rimini, Forlì-Cesena, Ravenna): riquadro 655500–802800 E, 4843000–4922500 N.
 # 04/11/2026 (Fase C): «wcs/dtm5» risponde 401, ma il WCS pubblico «wcs/dtm5x5» funziona (copertura DTM5X5_RDN32_RMD,
 # GetCoverage WCS 1.0.0 in GeoTIFF; il 2.0.1 dell'ArcGIS regionale risponde in multipart): fonti.url_wcs usa l'1.0.0.
-quadranti = []
+# Il WCS resta come riserva (`dtm-wcs`).
+licenza_confermata = true
+scheda_rndt = "r_emiro:2016-08-08T155835"
+edizione = "2025"
+quadranti = [
+  { nome = "NO", url = "https://mappegis.regione.emilia-romagna.it/archiviogis/DTM/DTM5x5_ed2025_NO_7791.zip", pagina = "https://servizimoka.regione.emilia-romagna.it/download/api/packs?p=2803", byte = 1562380811 },
+  { nome = "NE", url = "https://mappegis.regione.emilia-romagna.it/archiviogis/DTM/DTM5x5_ed2025_NE_7791.zip", pagina = "https://servizimoka.regione.emilia-romagna.it/download/api/packs?p=2804", byte = 1153456683, riquadro = [655500, 4922500, 802800, 5002000] },
+  { nome = "SO", url = "https://mappegis.regione.emilia-romagna.it/archiviogis/DTM/DTM5x5_ed2025_SO_7791.zip", pagina = "https://servizimoka.regione.emilia-romagna.it/download/api/packs?p=2805", byte = 1035399357 },
+  { nome = "SE", url = "https://mappegis.regione.emilia-romagna.it/archiviogis/DTM/DTM5x5_ed2025_SE_7791.zip", pagina = "https://servizimoka.regione.emilia-romagna.it/download/api/packs?p=2806", byte = 1459636279, riquadro = [655500, 4843000, 802800, 4922500] },
+]
 wcs = "https://servizigis.regione.emilia-romagna.it/wcs/dtm5x5"
 wcs_coverage = "DTM5X5_RDN32_RMD"
 wcs_passo = 5

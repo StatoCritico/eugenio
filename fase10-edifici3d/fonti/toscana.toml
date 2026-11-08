@@ -1,0 +1,51 @@
+# Fonti della zona Toscana (fase 10, gruppo B dei lettori regionali, 08/11/2026). Gli URL stanno qui, mai nel codice.
+# Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 08/11/2026 (documenti/CITTA_RIFERIMENTO_MILANO_FIRENZE_ROMA.md § 3): scheda RNDT r_toscan:c3e27a3a-… «liberamente
+#   accessibile e usabile con licenza CC BY»; nello zip regionale licenza_ccby_40.pdf; WFS Fees e AccessConstraints «none»;
+# - 08/11/2026 (gruppo B): DescribeFeatureType e GetFeature GML 3.1.1 di `ms:rt_edif.unitavolumetriche` in EPSG:3003
+#   (GeoJSON non ammesso dal MapServer, al più 3.000 oggetti per richiesta): campi uv_pk, uv_id, edifc_id, edi_min_id,
+#   uv_av (altezza), uv_qe (quota di estrusione), uv_qs (quota al suolo), uv_por/uv_dpor (porzione), edifc_dty, edifc_duso,
+#   edifc_dstat, edifc_dsot, edi_min_dty, dtvolo, scala. Duomo (106 volumi): uv_qe − uv_av = uv_qs in 103, i 3 diversi
+#   sono porzioni «05 Soffitto di loggia». Firenze: volo 08/03/2011, scala 02 (CTR 1:2.000).
+# - Lo scaricamento del comune intero si fa con `python -m edifici3d.b_regioni toscana-wfs --istat <codice>` (riquadri
+#   di 1 km divisi quando tornano pieni); `regionale-campione` non va bene qui (chiede GeoJSON in WFS 2.0.0).
+
+[zona]
+nome = "Toscana"
+codice = "tos"
+crs = "EPSG:7791"                       # RDN2008 / UTM 32N (il DTM LiDAR 2023 di Firenze è in questo sistema)
+riquadro = [9.68, 42.23, 12.38, 44.48]  # WGS84 (lon_min, lat_min, lon_max, lat_max)
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Regione Toscana – Edificato multiscala 1:2.000/1:10.000, unità volumetriche (1988-2013)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Toscana – Edificato multiscala, unità volumetriche (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/r_toscan:c3e27a3a-c62d-48f3-9cd7-738b6e96b6c9"
+adattatore = "toscana_uv"
+servizio_tipo = "wfs-mapserver"         # WFS 1.1.0, GML 3.1.1 (b_regioni.toscana_wfs)
+servizio = "https://www502.regione.toscana.it/ows2/com.rt.wms.RTmap/wms?map=owsedificato"
+strato = "ms:rt_edif.unitavolumetriche"
+crs_servizio = "EPSG:3003"              # Monte Mario / Gauss-Boaga fuso Ovest
+# zip di tutta la Toscana (SpatiaLite EPSG:3003, 530.630.969 byte), facoltativo: il comune si prende dal WFS
+url = "https://www502.regione.toscana.it/geoscopio/download/dbtopografico/edificato/edificato_2k_10k_1988_2013.zip"
+
+[fonti.dtm]
+descrizione = "Comune di Firenze – DTM LiDAR 2023 (27/06/2023), 0,5 m, tessere ASCII 500 × 500 m"
+licenza = "CC BY 4.0"
+attribuzione = "Comune di Firenze – DTM LiDAR 2023 (CC BY 4.0)"
+scheda = "https://dati.toscana.it/dataset/dtm-lidar-2023"
+# zip unico (922.675.701 byte, Deflate64: si legge con `unzip`, non con zipfile di Python); sistema reale EPSG:7791
+url = "https://datigis.comune.fi.it/grid/MDT_LIDAR_2023_ASCII.zip"
+crs = "EPSG:7791"
+
+[fonti.dsm]
+descrizione = "Comune di Firenze – DSM LiDAR 2023, 0,5 m (solo per il controllo delle altezze)"
+licenza = "CC BY 4.0"
+attribuzione = "Comune di Firenze – DSM LiDAR 2023 (CC BY 4.0)"
+scheda = "https://dati.toscana.it/dataset/dsm-lidar-2023"
+url = "https://datigis.comune.fi.it/grid/MDS_LIDAR_2023_ASCII.zip"
+crs = "EPSG:7791"

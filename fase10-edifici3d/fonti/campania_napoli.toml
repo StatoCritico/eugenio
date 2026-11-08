@@ -1,0 +1,44 @@
+# Zona «cam» per l'archivio di Napoli (08/11/2026, decisione di Paolo delle 15:22): sagome del DBT 2020 della Regione
+# Campania (CC BY 4.0, adattatore campania_dbt) con le altezze del Copernicus Urban Atlas Building Height 2012
+# (edifici3d/altezze_ua.py: classi di altezza a 10 m, 90° percentile per sagoma), poi la mediana dei vicini, poi la
+# stima dall'uso; altezze OSM non usate (ODbL: mai nello stesso archivio CC BY). Stessa zona e cartella di campania.toml
+# (cc-by/cam/napoli); qui cambia solo l'attribuzione, che cita anche Copernicus. Gli URL stanno qui, mai nel codice.
+
+[zona]
+nome = "Campania"
+codice = "cam"
+crs = "EPSG:25833"
+riquadro = [13.7, 39.98, 15.82, 41.51]
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"Copernicus 1159/2013" = "cc-by"         # sola citazione della fonte e dichiarazione delle modifiche: compatibile con CC BY
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Regione Campania – DBT 2020 (volo AGEA 2020, 1:5.000), Edifici; altezze Copernicus UA Building Height 2012"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Campania – DBT 2020, Geoportale Regione Campania (CC BY 4.0); altezze: © European Union, Copernicus Land Monitoring Service 2012, European Environment Agency (EEA) – Urban Atlas Building Height 2012, classi rielaborate da EuGEnio"
+scheda = "https://sit.regione.campania.it/carta-tecnica-regionale"
+adattatore = "campania_dbt"
+servizio_tipo = "file"
+crs_servizio = "EPSG:25833"
+url = ""                                  # DBT_5K.zip per comune (SharePoint della Regione), scaricato da Paolo
+
+[fonti.dtm]
+descrizione = "Regione Campania – DTM 2020, 5 m"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Campania – DTM 2020 5 m, Geoportale Regione Campania (CC BY 4.0)"
+scheda = "https://sit.regione.campania.it/carta-tecnica-regionale"
+url = ""                                  # DTM_5k.zip per comune
+
+[fonti.ua_bh]
+descrizione = "Copernicus Land Monitoring Service – Urban Atlas Building Height 2012 (raster 10 m, v3 ott. 2022), classi"
+licenza = "Copernicus 1159/2013"              # Reg. delegato UE 1159/2013: accesso completo, aperto e gratuito, citando la fonte
+attribuzione = "© European Union, Copernicus Land Monitoring Service 2012, European Environment Agency (EEA)"
+scheda = "https://sdi.eea.europa.eu/catalogue/srv/api/records/42690e05-edf4-43fc-8020-33e130f62023"
+doi = "10.2909/42690e05-edf4-43fc-8020-33e130f62023"
+image_server = "https://copernicus.discomap.eea.europa.eu/arcgis/rest/services/UrbanAtlas/UA_BuildingHeights_2012_10m/ImageServer"
+crs = "EPSG:3035"
+# 08/11/2026: exportImage dal container (200, GeoTIFF U16, NoData 65535); i valori sono classi 1–10 (tabella degli
+# attributi del servizio: 1 = 2–4 m … 8 = 30–60 m, 9 = 60–100 m, 10 = 100–368 m), non metri.

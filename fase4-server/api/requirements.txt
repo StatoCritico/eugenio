@@ -19,3 +19,9 @@ s3fs==2026.9.0
 # pagina di stato interna (fase 10, Fase C): verifica del JWT di Cloudflare Access (RS256) con le chiavi del team
 PyJWT==2.15.0
 cryptography==50.0.1
+# ripiego OpenStreetMap di Modelli 3D (07/11/2026): lettore OSM della fase 10, stesse versioni di fase10-edifici3d
+shapely==2.2.0
+pyproj==3.8.0
+# tessere del terreno 3D su richiesta (07/11/2026, servizio/terreno.py): letture a finestra dal COG del DTM; stessa versione
+# della fase 10 (GDAL incluso nella ruota, anche Linux ARM); Pillow arriva già con fpdf2
+rasterio==1.5.2

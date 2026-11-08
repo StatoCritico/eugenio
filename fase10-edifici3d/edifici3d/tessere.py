@@ -21,6 +21,9 @@ from shapely.ops import transform
 ESTENSIONE = 4096
 ZOOM = (13, 16)
 CELLA = 0.01
+# campi di Corpo.extra che vanno anche nelle tessere e nelle celle (07/11/2026, DBTR: V_EDI_GPG e V_EDI_CT_USO_AVM)
+# h_dbtr_scartata e stima_altezza: altezza del DBTR non plausibile portata alla stima (plausibilita.py, 07/11/2026)
+EXTRA_PUBBLICI = ("foglio", "numero", "nome", "destinazione", "tipo_edificio", "altezza_dbtr", "h_dbtr_scartata", "stima_altezza")
 
 
 def lonlat_a_tessera(lon: float, lat: float, z: int) -> tuple[int, int]:
@@ -78,7 +81,8 @@ def corpi_pmtiles(feature: list[dict], dest: Path, licenza: str, attribuzione: s
         raise ValueError("nessun corpo")
     lon0 = min(g.bounds[0] for g, _ in geoms); lat0 = min(g.bounds[1] for g, _ in geoms)
     lon1 = max(g.bounds[2] for g, _ in geoms); lat1 = max(g.bounds[3] for g, _ in geoms)
-    merc = [(transform(lambda x, y, z=None: _merc_vett(x, y), g), p) for g, p in geoms]
+    merc = [(_valida(transform(lambda x, y, z=None: _merc_vett(x, y), g)), p) for g, p in geoms]
+    merc = [(g, p) for g, p in merc if g is not None]
     tiles = {}
     for z in range(zoom[0], zoom[1] + 1):
         x0, y1 = lonlat_a_tessera(lon0, lat0, z)
@@ -92,8 +96,8 @@ def corpi_pmtiles(feature: list[dict], dest: Path, licenza: str, attribuzione: s
                 for g, p in merc:
                     if not g.intersects(riq):
                         continue
-                    c = g.intersection(riq)
-                    if c.is_empty:
+                    c = _solo_poligoni(g.intersection(riq))
+                    if c is None:
                         continue
                     dentro.append({"geometry": c.wkt, "properties": p})
                 if not dentro:
@@ -126,11 +130,41 @@ def celle_contesto(feature: list[dict], cartella: Path, licenza: str, attribuzio
             for j in range(math.floor(y0 / CELLA), math.floor(y1 / CELLA) + 1):
                 celle.setdefault((i, j), []).append(f)
     cartella.mkdir(parents=True, exist_ok=True)
+    for vecchia in cartella.glob("*.json"):          # una nuova preparazione sostituisce le celle della precedente
+        vecchia.unlink()
     for (i, j), fs in celle.items():
         (cartella / f"{i}_{j}.json").write_text(json.dumps(
             {"type": "FeatureCollection", "licenza": licenza, "attribuzione": attribuzione, "features": fs},
             ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     return len(celle)
+
+
+def _solo_poligoni(g):
+    """Solo le parti poligonali (Polygon/MultiPolygon) di una geometria; None se non ne restano.
+    Serve perché l'arrotondamento delle coordinate può rendere autointersecante una sagoma con vertici
+    vicinissimi e il ritaglio sulla tessera restituisce allora una GeometryCollection, che l'MVT rifiuta."""
+    from shapely.geometry import MultiPolygon, Polygon
+    if g is None or g.is_empty:
+        return None
+    if isinstance(g, (Polygon, MultiPolygon)):
+        return g
+    parti = []
+    for q in getattr(g, "geoms", []):
+        if isinstance(q, Polygon) and not q.is_empty:
+            parti.append(q)
+        elif isinstance(q, MultiPolygon):
+            parti.extend(q.geoms)
+    if not parti:
+        return None
+    return parti[0] if len(parti) == 1 else MultiPolygon(parti)
+
+
+def _valida(g):
+    """Sagoma valida (make_valid se serve), ridotta alle parti poligonali."""
+    if g is not None and not g.is_valid:
+        from shapely.validation import make_valid
+        g = make_valid(g)
+    return _solo_poligoni(g)
 
 
 def feature_da_corpi(corpi, da_crs: str = "EPSG:7791") -> list[dict]:
@@ -142,6 +176,10 @@ def feature_da_corpi(corpi, da_crs: str = "EPSG:7791") -> list[dict]:
         g = transform(t.transform, c.sagoma)
         p = c.proprieta()
         p["altezza"] = round(c.colmo if c.colmo else c.gronda, 2)
+        for k in EXTRA_PUBBLICI:                       # dati dell'edificio del DBTR (foglio, numero, nome, uso)
+            v = (c.extra or {}).get(k)
+            if isinstance(v, (str, int, float)) and v != "":
+                p[k] = v
         p = {k: v for k, v in p.items() if v is not None and v != ""}
         out.append({"type": "Feature", "id": c.id, "geometry": _arrotonda(mapping(g)), "properties": p})
     return out

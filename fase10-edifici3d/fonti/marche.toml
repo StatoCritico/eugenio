@@ -1,0 +1,44 @@
+# Fonti della zona Marche (fase 10, gruppo B dei lettori regionali, 08/11/2026). Gli URL stanno qui, mai nel codice.
+# Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 08/11/2026 (documenti/CITTA_RIFERIMENTO_CENTRO.md § 4): pagina «Cartografia e informazioni territoriali – Elenco
+#   Opendata»: dati con licenza Creative Commons Attribuzione 4.0 (D.G.R. 783 del 10/07/2017), tra cui la CTR 1:10.000
+#   (DBGT 2019); nessun login, nessun captcha;
+# - 08/11/2026 (gruppo B): edificio.zip (51.153.447 byte, 453.585 edifici) e punto_quotato.zip (56.134.010 byte,
+#   1.321.718 punti) scaricati e letti: Shapefile EPSG:7792; ad Ancona (confine ISTAT 042002) 12.019 edifici, 12.016 con
+#   un punto «al piede»; edifc_qm = punto «in gronda o su copertura» in 11.843. Il file per `prepara-regione` si
+#   costruisce con `python -m edifici3d.b_regioni marche-dbgt --edifici edificio.zip --punti punto_quotato.zip --istat …`.
+# - DTM 10 m 2019 («Orografia 2019»): il TIFF (EPSG:7792, 13.863 × 14.395 celle float32 non compresse, 798 MB) si scarica
+#   da www.regione.marche.it, ma la connessione cade dopo 100–240 MB e il server non accetta Range; il TIFF è a righe, quindi
+#   per Ancona bastano i primi 300 MB (`curl … | head -c 300000000`), letti con rasterio e ritagliati sul comune. Ad
+#   Ancona DTM − punto al piede: mediana +0,6 m, 78 % entro 2 m. Senza DTM la quota viene dal punto al piede.
+
+[zona]
+nome = "Marche"
+codice = "mar"
+crs = "EPSG:7792"                       # RDN2008 / UTM 33N, sistema del DBGT
+riquadro = [12.19, 42.68, 13.92, 43.97]
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Regione Marche – DBGT 2019 (CTR 1:10.000), edificio + punto quotato (tutta la regione)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Marche – DBGT 2019 (CTR 1:10.000), edificio e punto quotato (CC BY 4.0)"
+scheda = "https://www.regione.marche.it/Regione-Utile/Ambiente/Cartografia-e-informazioni-territoriali/OpenData"
+adattatore = "marche_dbgt"
+servizio_tipo = "file"
+crs_servizio = "EPSG:7792"
+url = "https://giscartografia.regione.marche.it/Cartografia/CTR2019/DBT/edificio.zip"
+url_punti = "https://giscartografia.regione.marche.it/Cartografia/CTR2019/DBT/punto_quotato.zip"
+
+[fonti.dtm]
+descrizione = "Regione Marche – DTM 10 m (Orografia 2019)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Marche – DTM 10 m, Orografia 2019 (CC BY 4.0)"
+scheda = "https://www.regione.marche.it/Regione-Utile/Ambiente/Cartografia-e-informazioni-territoriali/Repertorio"
+pagina_download = "https://www.regione.marche.it/Portals/0/Paesaggio_Territorio_Urbanistica/Cartografia/Banche_dati/Orografia-2019-DTM.zip"
+# TIFF unico non compresso (798 MB; connessione instabile, niente Range: vedi il commento in testa)
+url = "https://www.regione.marche.it/Portals/0/Paesaggio_Territorio_Urbanistica/Cartografia/Banche_dati/Orografia-2019-DTM.tif"
+crs = "EPSG:7792"

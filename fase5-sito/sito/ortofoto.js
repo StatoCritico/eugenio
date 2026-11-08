@@ -22,14 +22,21 @@
 // modulo di Modelli 3D) che porta la mappa sul punto con un segnaposto; strati attivabili sopra la foto (strati_gl.js:
 // particelle catastali dell'Agenzia delle Entrate, contorni degli edifici) con legenda e attribuzione sotto la mappa e
 // nell'immagine scaricata; messaggio dell'immagine solo a file davvero salvato o avviato (esporta_mappa.js).
-// Indirizzo: ?lat=…&lon=…&z=… per aprire su un punto, ?fonte=<id> per scegliere la fonte.
+// Indirizzo: ?lat=…&lon=…&z=… per aprire su un punto (senza: Cesena, ospedale Bufalini), ?fonte=<id> per scegliere la fonte.
+// 08/11/2026: frecce sotto la mappa, accanto a «Scarica l'immagine», per spostare l'ortofoto di 1 m rispetto agli strati
+// vettoriali (sposta_ortofoto.js; il proxy chiede alla fonte WMS il riquadro spostato). Attive solo con un'ortofoto
+// spostabile e almeno uno strato vettoriale acceso (contorni dell'archivio, particelle, contorni degli edifici).
 (function () {
   const $ = (id) => document.getElementById(id);
   const box = $("mappa-ortofoto");
   if (!box || !window.maplibregl) return;
   const C = window.EUGENIO_CONFINI;
   const q = new URLSearchParams(location.search);
-  const centro = [Number(q.get("lon")) || 12.5683, Number(q.get("lat")) || 44.0594];
+  // (08/11/2026) senza ?lat=&lon= si apre su Cesena, ospedale Bufalini, in collina (cerca_luogo.js, PARTENZA)
+  const P0 = window.EUGENIO_CERCA && window.EUGENIO_CERCA.PARTENZA;
+  const conPunto = Number.isFinite(Number(q.get("lon"))) && Number.isFinite(Number(q.get("lat"))) && q.get("lon") && q.get("lat");
+  const centro = conPunto ? [Number(q.get("lon")), Number(q.get("lat"))] : P0 ? [P0.lon, P0.lat] : [12.5683, 44.0594];
+  const zoomIniziale = Number(q.get("z")) || (conPunto || !P0 ? 16 : P0.zoom);
   const CONTESTO = "s2cloudless2016";
   const stato = { fonti: [], scelta: null, mappa: null, contesto: null, edifici: null, confini: null, regione: null, comune: null, strati: null, cercato: null };
   const colore = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
@@ -62,10 +69,12 @@
     a.append(f.copia ? "." : ". Solo consultazione dal vivo: non entra nei report né nelle immagini scaricate.");
     if (stato.contesto && f.id !== CONTESTO) a.append(` Sotto, come contesto: ${stato.contesto.citazione}.`);
   }
-  function sorgente(f) {
+  // indirizzo delle tessere della fonte scelta, con lo spostamento manuale (il contesto sotto resta fermo)
+  const tessere = (f, spostata) => location.origin + (spostata && stato.sposta ? stato.sposta.url(f.tessere) : f.tessere);
+  function sorgente(f, spostata = false) {
     return f.pmtiles
       ? { type: "raster", url: `pmtiles://${location.origin}${f.pmtiles}`, tileSize: 256, attribution: f.citazione }
-      : { type: "raster", tiles: [location.origin + f.tessere], tileSize: 256, minzoom: f.zoom[0], maxzoom: f.zoom[1], bounds: f.riquadro, attribution: f.citazione };
+      : { type: "raster", tiles: [tessere(f, spostata)], tileSize: 256, minzoom: f.zoom[0], maxzoom: f.zoom[1], bounds: f.riquadro, attribution: f.citazione };
   }
   const sopraLe = () => ["strato-particelle", "strato-dbtr_edifici", "strato-osm", "edifici", "cercato", "confini-comuni-clic", "confini-regioni-clic"].find((id) => stato.mappa.getLayer(id));
   function contesto() {
@@ -80,8 +89,9 @@
     if (m.getLayer("ortofoto")) m.removeLayer("ortofoto");
     if (m.getSource("ortofoto")) m.removeSource("ortofoto");
     stato.scelta = f;
+    aggiornaSposta();
     if (f && f.id !== CONTESTO) {
-      m.addSource("ortofoto", sorgente(f));
+      m.addSource("ortofoto", sorgente(f, true));
       m.addLayer({ id: "ortofoto", type: "raster", source: "ortofoto" }, sopraLe());
     }
     // il contesto si vede sempre sotto (anche con «Nessuna ortofoto» resta il riferimento della zona)
@@ -91,6 +101,16 @@
     attribuzione(f);
     document.querySelectorAll('#fonti input[name="fonte"]').forEach((i) => { i.checked = i.value === (f ? f.id : ""); });
     aggiornaAvviso();
+  }
+  // strati vettoriali accesi sopra la foto: contorni dell'archivio 3D, particelle, contorni degli edifici
+  function vettoriAccesi() {
+    const e = $("edifici"), st = stato.strati && stato.strati.stato;
+    return !!((e && e.checked && !e.disabled && (stato.stratiEdifici || []).length) || (st && (st.particelle || st.edifici)));
+  }
+  function aggiornaSposta() { if (stato.sposta) stato.sposta.fonte(stato.scelta, { vettori: vettoriAccesi() }); }
+  function spostaTessere() {
+    const m = stato.mappa, f = stato.scelta, src = m && m.getSource("ortofoto");
+    if (src && f && !f.pmtiles && src.setTiles) src.setTiles([tessere(f, true)]);    // la camera non si muove
   }
   function elenco() {
     const fs = $("fonti");
@@ -121,18 +141,32 @@
   async function edifici(m) {
     // contorni dei corpi dall'archivio 3D (dati veri): solo per riconoscere i tetti. La demo sintetica non si sovrappone
     // mai alla foto: le sue sagome sono inventate e non corrispondono a nessun edificio (05/11/2026, «edifici storti»)
-    for (const b of ["/edifici3d/cc-by/er/prodotti/"]) {
+    // archivi di /edifici3d/archivi.json (dal 07/11/2026 un archivio DBTR per comune), altrimenti il DBTR dell'ER
+    let basi = ["/edifici3d/cc-by/er/prodotti/"];
+    try {
+      const r = await fetch("/edifici3d/archivi.json?v=20261107b", { cache: "no-cache" });
+      if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
+        const l = ((await r.json()).archivi || []).map((x) => x && x.base)
+          .filter((b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes(".."));
+        if (l.length) basi = l.slice(0, 60);
+      }
+    } catch { /* solo l'archivio regionale */ }
+    const ids = [];
+    for (const [k, b] of basi.entries()) {
       try {
         const r = await fetch(`${b}indice.json`);
         if (!r.ok || !/json/.test(r.headers.get("Content-Type") || "")) continue;
         const ind = await r.json();
         if (ind.sintetico) continue;
-        m.addSource("corpi", { type: "vector", url: `pmtiles://${new URL(b + "corpi.pmtiles", location.href).href}`, attribution: ind.attribuzione || "" });
-        m.addLayer({ id: "edifici", type: "line", source: "corpi", "source-layer": "corpi", paint: { "line-color": colore("--primario"), "line-width": 1.2 } });
-        stato.edifici = ind;
-        return true;
+        const id = k ? `edifici-${k}` : "edifici";
+        m.addSource(`corpi-${k}`, { type: "vector", url: `pmtiles://${new URL(b + "corpi.pmtiles", location.href).href}`, attribution: ind.attribuzione || "" });
+        m.addLayer({ id, type: "line", source: `corpi-${k}`, "source-layer": "corpi", paint: { "line-color": colore("--primario"), "line-width": 1.2 } });
+        ids.push(id);
+        if (!stato.edifici) stato.edifici = ind;
       } catch { /* prossimo archivio */ }
     }
+    stato.stratiEdifici = ids;
+    if (ids.length) return true;
     $("edifici").disabled = true; $("edifici").parentElement.append(" – archivio degli edifici non ancora sul server");
     return false;
   }
@@ -178,9 +212,10 @@
     const fotoVisibile = f && f.id !== CONTESTO && copre(f, p) && z >= f.zoom[0] - 0.01;
     if (fotoVisibile || (f && f.id === CONTESTO))
       righe.push(`Ortofoto: ${f.citazione} – licenza ${f.licenza} (${f.scheda})${f.stato === "da confermare" ? "; uso tramite il server di EuGEnio in attesa di conferma della fonte" : ""}.`);
+    if (fotoVisibile && stato.sposta && stato.sposta.riga()) righe.push(stato.sposta.riga());
     if (stato.contesto && copre(stato.contesto, p) && !fotoVisibile && (!f || f.id !== CONTESTO))
       righe.push(`Contesto: ${stato.contesto.citazione} – licenza ${stato.contesto.licenza} (${stato.contesto.scheda}).`);
-    if (stato.edifici && m.getLayer("edifici") && m.getLayoutProperty("edifici", "visibility") !== "none")
+    if (stato.edifici && m.getLayer("edifici") && m.getLayoutProperty("edifici", "visibility") !== "none")   // stessa visibilità per tutti
       righe.push(`Edifici: ${stato.edifici.attribuzione || "DBTR Emilia-Romagna"} (${stato.edifici.licenza || "CC BY 4.0"}).`);
     if (stato.strati) righe.push(...stato.strati.righe());
     if (stato.cercato) righe.push(`Punto cercato: ${stato.cercato}.`);
@@ -190,7 +225,7 @@
   }
 
   (async function avvio() {
-    const m = new window.maplibregl.Map({ container: box, center: centro, zoom: Number(q.get("z")) || 16, maxZoom: 21, minZoom: 4.5,
+    const m = new window.maplibregl.Map({ container: box, center: centro, zoom: zoomIniziale, maxZoom: 21, minZoom: 4.5,
       attributionControl: false, canvasContextAttributes: { preserveDrawingBuffer: true },
       style: { version: 8, sources: {}, layers: [{ id: "sfondo", type: "background", paint: { "background-color": colore("--carta") } }] } });
     stato.mappa = m;
@@ -203,8 +238,10 @@
     document.addEventListener("eugenio:ridimensiona", () => m.resize());
     document.addEventListener("eugenio:aspetto", () => {
       m.setPaintProperty("sfondo", "background-color", colore("--carta"));
-      if (m.getLayer("edifici")) m.setPaintProperty("edifici", "line-color", colore("--primario"));
+      (stato.stratiEdifici || []).forEach((id) => { if (m.getLayer(id)) m.setPaintProperty(id, "line-color", colore("--primario")); });
     });
+    if (window.EUGENIO_SPOSTA && $("sposta-ortofoto"))
+      stato.sposta = window.EUGENIO_SPOSTA.crea($("sposta-ortofoto"), { pagina: "ortofoto", suCambio: spostaTessere });
     if (window.pmtiles) { const proto = new window.pmtiles.Protocol(); window.maplibregl.addProtocol("pmtiles", proto.tile); }
     // i confini prima di tutto: ci sono anche se il servizio delle ortofoto non risponde
     if (C) {
@@ -243,7 +280,9 @@
           sotto: () => ["edifici", "cercato", "confini-comuni-clic", "confini-regioni-clic"].find((id) => m.getLayer(id)) });
       } catch { /* strati non disponibili */ }
     }
-    $("edifici").addEventListener("change", (e) => { if (m.getLayer("edifici")) m.setLayoutProperty("edifici", "visibility", e.target.checked ? "visible" : "none"); });
+    $("edifici").addEventListener("change", (e) => (stato.stratiEdifici || []).forEach((id) => { if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", e.target.checked ? "visible" : "none"); }));
+    $("edifici").addEventListener("change", aggiornaSposta);
+    if ($("caselle-strati")) $("caselle-strati").addEventListener("change", aggiornaSposta);
     const c = [m.getCenter().lng, m.getCenter().lat], qui = stato.fonti.filter((f) => copre(f, c) && f.id !== CONTESTO);
     const chiesta = stato.fonti.find((f) => f.id === q.get("fonte"));
     scegli(chiesta ? chiesta.id : qui.length ? qui[0].id : "");
@@ -261,9 +300,10 @@
         const m = stato.mappa;
         if (!m || !m.getSource("cercato")) return;
         m.getSource("cercato").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [lon, lat] } }] });
-        stato.cercato = `${[riga.indirizzo_trovato, riga.comune_catasto].filter(Boolean).join(", ") || `${lat.toFixed(5)}, ${lon.toFixed(5)}`}`
+        stato.cercato = riga.centro_comune ? `centro del comune di ${riga.comune_catasto} (confini ISTAT, CC BY 4.0)`
+          : `${[riga.indirizzo_trovato, riga.comune_catasto].filter(Boolean).join(", ") || `${lat.toFixed(5)}, ${lon.toFixed(5)}`}`
           + ` (${riga.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT, CC BY 4.0" : "dati elaborati da Zornade, zornade.com"})`;
-        m.flyTo({ center: [lon, lat], zoom: Math.max(18, m.getZoom()), duration: 900 });
+        m.flyTo({ center: [lon, lat], zoom: riga.zoom || (window.EUGENIO_CERCA && window.EUGENIO_CERCA.ZOOM) || 17, duration: 900 });
       },
     });
   }

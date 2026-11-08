@@ -137,7 +137,7 @@
     function accendi(tema, si) {   // per le prove e per gli altri script
       const c = tema === "particelle" ? cP : cE;
       if (c.disabled) return false;
-      c.checked = si; c.dispatchEvent(new Event("change"));
+      c.checked = si; c.dispatchEvent(new Event("change", { bubbles: true }));
       return true;
     }
     legenda();

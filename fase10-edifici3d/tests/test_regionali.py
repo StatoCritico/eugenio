@@ -126,11 +126,17 @@ def test_prepara_regione_senza_dtm_in_liguria_fallisce(tmp_path):
 
 
 def test_toml_regionali_coerenti():
-    for nome, ad in (("lombardia", "lombardia_dbgt"), ("friuli_venezia_giulia", "fvg_ctrn"), ("liguria", "liguria_ctr3d")):
+    for nome, ad in (("lombardia", "lombardia_dbgt"), ("friuli_venezia_giulia", "fvg_ctrn_ed2"), ("liguria", "liguria_ctr3d")):
         z = F.carica_zona(nome)
         f = z["fonti"]["edifici"]
         assert f["adattatore"] == ad and f["licenza"] == "CC BY 4.0" and f["servizio"].startswith("https://")
         assert z["zona"]["crs"].startswith("EPSG:") and "geodati.gov.it" in f["scheda"]
+    # FVG (08/11/2026): edizione 2 predefinita, edizione 1 scelta dai campi del file
+    f = F.carica_zona("friuli_venezia_giulia")["fonti"]["edifici"]
+    assert f["alternativi"] == ["fvg_ctrn"]
+    assert R.scegli_adattatore(f, [({"ID": 1, "ALTEZZA": 6, "QUOTA_PIEDE": 1, "QUOTA_GRONDA": 7, "NOME": "x"}, None)]).chiave == "fvg_ctrn"
+    assert R.scegli_adattatore(f, [({"ID1": 1, "ALTEZZA": 6, "QUOTA_PIEDE": 1, "QUOTA_GRONDA": 7, "NOME": "x",
+                                     "DATA_VOLO": "2003-05-23"}, None)]).chiave == "fvg_ctrn_ed2"
 
 
 def test_campione_a_pagine_e_errori(tmp_path):
@@ -150,7 +156,7 @@ def test_campione_a_pagine_e_errori(tmp_path):
     r = R.scarica_campione(z["fonti"]["edifici"], (1, 2, 3, 4), tmp_path / "c.geojson", max_oggetti=10, pagina=2,
                            client=cl, pausa=0)
     assert r["oggetti"] == 5 and len(chiamate) == 3 and "bbox=1%2C2%2C3%2C4%2CEPSG%3A6708" in chiamate[0]
-    assert "EDIFICATO_CTRN_ED1_110" in chiamate[0]
+    assert "EDIFICATO_CTRN_ED2_110" in chiamate[0]       # edizione 2 dall'08/11/2026
     lom = F.carica_zona("lombardia")["fonti"]["edifici"]
     u = R.url_campione(lom, (1, 2, 3, 4), "EPSG:7791", 10)
     assert "/query?" in u and "returnZ=true" in u and "inSR=7791" in u and "f=geojson" in u
@@ -281,3 +287,25 @@ def test_maschera_da_raster(tmp_path):
     dest = CO.scrivi_maschera(area, tmp_path / "c" / "m.geojson", "EPSG:7791", "prova", "CC BY 4.0")
     back = PL.area_coperta({"copertura": {"maschera": str(dest)}}, "EPSG:7791", tmp_path)
     assert abs(back.area - area.area) < 1
+
+
+def test_archivi_licenze_aperte(tmp_path):
+    """08/11/2026: IODL 2.0, CC BY 2.5 e CC0 1.0 stanno con i DB topografici (prima di ODbL) e passano controlla-archivio."""
+    import json
+    from edifici3d.archivi import scrivi_archivi_json
+    from edifici3d.__main__ import TESTI_LICENZA, controlla_archivio
+    voci = {"odbl/er/prova/prodotti": ("ODbL 1.0", "OSM"), "iodl/pug/bari/prodotti": ("IODL 2.0", "Regione Puglia (IODL 2.0)"),
+            "cc-by/bz/bolzano/prodotti": ("CC0 1.0", "Provincia di Bolzano (CC0 1.0)"),
+            "cc-by/pie/torino/prodotti": ("CC BY 2.5", "Regione Piemonte (CC BY 2.5)")}
+    for rel, (lic, att) in voci.items():
+        d = tmp_path / rel
+        (d / "contesto").mkdir(parents=True)
+        (d / "indice.json").write_text(json.dumps({"licenza": lic, "attribuzione": att, "corpi": 0, "riquadro": [0, 0, 1, 1]}))
+        (d / "corpi.pmtiles").write_bytes(b"x")
+    basi = [v["base"] for v in scrivi_archivi_json(tmp_path)["archivi"]]
+    assert basi[-1] == "/edifici3d/odbl/er/prova/prodotti/" and len(basi) == 4
+    assert basi[:3] == sorted(basi[:3])
+    assert set(TESTI_LICENZA) == {"CC BY 4.0", "CC BY 2.5", "IODL 2.0", "CC0 1.0"}
+    for rel in list(voci)[1:]:
+        assert controlla_archivio(tmp_path / rel)["problemi"] == []
+    assert controlla_archivio(tmp_path / "odbl/er/prova/prodotti")["problemi"]

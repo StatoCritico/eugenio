@@ -5,6 +5,8 @@
 #   in GeoJSON (WGS84): campi CLASSID, CEDIUV, UN_VOL_AV, UN_VOL_QE, UN_VOL_POR, UN_VOL_EX, SCRIL; UN_VOL_QE − z della
 #   base = UN_VOL_AV in 8 su 8. Su 1×1 km a Milano: 1000 volumi, UN_VOL_POR 01 (776), 04 (188), 03 (32), 02 (4);
 #   UN_VOL_AV da 0 a 64,6 m (gli 0 si scartano). maxRecordCount del servizio 2000.
+# - 08/11/2026: a Milano il DBGT regionale coincide con il DBT 2020 del Comune; per l'archivio di Milano si usa
+#   fonti/lombardia_milano.toml (stessa zona lom, fonte e attribuzione del Comune). DTM 5 m dall'ImageServer (fonti.dtm5).
 
 [zona]
 nome = "Lombardia"
@@ -27,3 +29,12 @@ servizio = "https://www.cartografia.servizirl.it/arcgis5/rest/services/BaseMap/D
 crs_servizio = "EPSG:7791"              # sistema del riquadro della query (il GeoJSON torna sempre in WGS84)
 # download completo della regione (GeoPackage o Shapefile del DBGT per provincia): da scrivere dopo il primo download
 url = ""
+
+[fonti.dtm5]
+descrizione = "Regione Lombardia – DTM 5×5 m (ed. 2015)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Lombardia – DTM 5×5 m (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/r_lombar:dfc98d60-5f02-4a2b-8113-5ad24cc53a9c"
+image_server = "https://www.cartografia.servizirl.it/arcgis2/rest/services/BaseMap/DTM5_RL_img/ImageServer"
+passo = 5.0
+url = ""                                 # exportImage a blocchi (edifici3d/a_comuni.py); zip DTM5_RL.zip 3,1 GB non necessario

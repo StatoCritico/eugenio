@@ -5,7 +5,9 @@
 // Dati (file statici serviti da Caddy, vedi fase4-server/Caddyfile, o la demo sintetica in dati/edifici3d/):
 //   <base>/indice.json          centro, riquadro, celle, licenza, attribuzione, sintetico
 //   <base>/corpi.pmtiles        corpi estrusi (MapLibre, protocollo pmtiles)
-//   <base>/terreno.pmtiles      terreno raster-dem in codifica Terrarium
+//   /api/terreno/{z}/{x}/{y}.png terreno raster-dem in codifica Terrarium, generato dal server su richiesta dal DTM 5 m
+//                                (07/11/2026: il DTM non è più negli archivi dei comuni; <base>/terreno.pmtiles solo se
+//                                l'archivio lo ha ancora: demo sintetica, archivi vecchi, prove con --terreno-archivio)
 //   <base>/contesto/<i>_<j>.json  sagome intere per i calcoli (celle di 0,01°)
 // La base è /edifici3d/cc-by/er/prodotti/ sul server; se manca si usa la demo sintetica (con l'avviso).
 // Clima: /api/edifici/clima-orario/{istat} e /api/edifici/gradi-giorno/{istat} (archivio meteo di EuGEnio); se il server
@@ -38,7 +40,7 @@
 // affidabilità) se c'è, altrimenti il DBTR dell'Emilia-Romagna; i corpi di un archivio meno affidabile che cadono dentro
 // quelli di uno più affidabile non si usano.
 //
-// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261106a):
+// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261107b):
 //  - il punto trovato con la ricerca (cerca_luogo.js, modulo comune con Ortofoto) si **trascina** per correggerlo (l'ANNCSU
 //    è a volte impreciso) e, da zoom 15, un clic sulla mappa lo sposta lì; la scelta dell'edificio usa sempre il punto
 //    corretto (l'edificio che lo contiene, o il più vicino entro 30 m) e «Genera il 3D» parte da lì;
@@ -47,6 +49,20 @@
 //  - **livelli** con le caselle: ortofoto (con la scelta della fonte), confini delle particelle catastali e contorni degli
 //    edifici (strati_gl.js, dal proxy del server), con legenda e attribuzioni sotto la mappa e nell'immagine scaricata;
 //    nella demo restano spenti (i dati veri non vanno sopra gli edifici inventati).
+//
+// Ripiego OpenStreetMap (07/11/2026, decisione di Paolo): dove il punto (ricerca, punto trascinato, clic, sede del
+// Patrimonio) cade fuori da ogni archivio DBTR – fuori dall'Emilia-Romagna e nei comuni ER non ancora preparati – la
+// pagina chiede al server gli edifici OSM intorno al punto (GET /api/edifici/osm, Overpass, celle di 0,002° con copia) e
+// li usa come corpi, con licenza ODbL 1.0 e altezze in parte stimate, dichiarate in pagina, nell'immagine e nel report.
+// Dove c'è il DBTR vale il DBTR e OSM non si mescola: un archivio di un comune intero (`istat` in archivi.json) copre il
+// confine ISTAT del comune (confini_gl.js), gli altri il riquadro dei corpi; i corpi OSM che cadono in un comune coperto
+// si scartano. Archivio «virtuale» in fondo a stato.archivi ({ osm: true }), sorgente GeoJSON «corpi_<k>» sulla mappa.
+//
+// DB topografico letto nel browser (07/11/2026, pagina «Aggiungi edifici (DB topografico)», dbtr_locale.js): con
+// ?dbtr=locale (o nella stessa sessione della scheda) gli edifici del file dell'utente diventano un archivio «locale»
+// ({ locale: true }, sorgente GeoJSON, celle in memoria), prima degli archivi del server per la scelta dei corpi (dove si
+// sovrappongono vince il file dell'utente) e «zona coperta» per la sessione: confine ISTAT del comune se il file è il
+// comune intero, altrimenti il riquadro dei corpi; fuori resta il ripiego OSM. Mai inviati al server.
 (function () {
   const E = window.EUGENIO_EDIFICI, G = window.EUGENIO_GRAFICI, R = window.EUGENIO_REPORT;
   const main = document.querySelector("main.pagina-edificio3d");
@@ -58,8 +74,12 @@
   const BASI = SCELTA === "demo" ? ["dati/edifici3d/"] : SCELTA ? [`/edifici3d/${SCELTA.replace(/^\/+|\.\.+/g, "").replace(/\/?$/, "/")}`]
     : ["/edifici3d/cc-by/er/prodotti/", "dati/edifici3d/"];
   const RAGGIO = 250;
-  // Modelli 3D in due tempi (05/11/2026): mappa 2D con ricerca e scelta, poi «Genera il 3D»
-  const DUE_TEMPI = VISTA === "modelli" && !!$("genera-3d");
+  const ZOOM_CERCA = (window.EUGENIO_CERCA && window.EUGENIO_CERCA.ZOOM) || 17;   // zoom dopo la ricerca, uguale in Ortofoto (cerca_luogo.js)
+  // Modelli 3D in due tempi (05/11/2026): mappa 2D con ricerca e scelta, poi «Genera il 3D». Dal 07/11/2026 sera tutte le
+  // pagine 3D (Edificio, Fotovoltaico) hanno la stessa mappa di Modelli 3D (stessi elementi nell'HTML): stessi archivi per
+  // comune, ripiego OSM, DB topografico del browser, terreno dal server; data-vista sceglie solo il passo in evidenza
+  const DUE_TEMPI = !!$("genera-3d");
+  const TITOLO = VISTA === "modelli" ? "Modelli 3D" : (($("mappa3d") && document.querySelector("main h1")) || {}).textContent || "Modelli 3D";
   const C = window.EUGENIO_CONFINI;
   const fmt = (v, d = 0) => (v === null || v === undefined || !Number.isFinite(+v) ? "—" : (+v).toLocaleString("it-IT", { maximumFractionDigits: d, minimumFractionDigits: d }));
   const NOMI_FONTE = { csv: "dato inserito", visura: "visura", stima: "stima", mancante: "—", "dato del corpo": "dato del corpo" };
@@ -67,7 +87,47 @@
     proj: null, istat: null, comune: null, csv: {}, uso: "", aree: [], modo: null, punti: [], anima: null, firma: null, fv: null,
     giornaliero: null, sintetico: false, ortofoto: null, fontiOrtofoto: [], lontano: null, facciate: null, pvgis: null,
     fvOrizzonti: {}, obblighi: null, dpr: null, lidar: null, falde: new Map(), celleFalde: new Map(), nascostiExtra: [], modello: null,
-    alberi: new Map(), celleAlberi: new Map(), visura: {}, sede: null, archivi: [], in3d: !DUE_TEMPI, daGenerare: null, regione: null };
+    alberi: new Map(), celleAlberi: new Map(), visura: {}, sede: null, archivi: [], in3d: !DUE_TEMPI, daGenerare: null, regione: null,
+    osmAttivo: false, osm: { celle: new Map(), visti: new Map(), errore: null, info: null } };
+  // archivio «virtuale» del ripiego OpenStreetMap (07/11/2026): ultimo di stato.archivi, senza file statici
+  const ATTRIBUZIONE_OSM = "© OpenStreetMap contributors (ODbL 1.0)";
+  // terreno 3D dal server (07/11/2026, fase4-server/servizio/terreno.py): DTM regionale, altrove Copernicus DEM 90 m
+  const ATTRIBUZIONE_TERRENO = "Terreno: DTM regionali (Regione Emilia-Romagna – DTM 5×5 m, CC BY 4.0; Regione del Veneto – DTM 5 m da voli LiDAR, IODL 2.0); altrove Copernicus DEM GLO-90 (© DLR e Airbus)";
+  const TESSERE_TERRENO = "/api/terreno/{z}/{x}/{y}.png";
+  const MARGINE_CONFINE = 150;             // m: un punto a questa distanza da un corpo DBTR è coperto (confini ISTAT generalizzati)
+  const COLORE_OSM = "#9a6440";            // marrone: edifici OpenStreetMap (altezza dal dato OSM, dai piani, dai vicini o 9 m)
+  // l'archivio ha ancora le sue tessere del terreno? (indice.tessere_terreno: demo sintetica, archivi preparati prima del 07/11)
+  const terrenoProprio = (a) => !!(a && a.base && !a.osm && !a.locale && a.indice && a.indice.tessere_terreno);
+  const ARCHIVIO_OSM = { base: null, osm: true, indice: { nome: "OpenStreetMap (ripiego fuori dal DBTR)", licenza: "ODbL 1.0", attribuzione: ATTRIBUZIONE_OSM } };
+  const CELLA_OSM = 0.002;                 // come servizio/edifici_osm.py: una richiesta (e una copia) per cella
+  const veri = () => stato.archivi.filter((a) => !a.osm);
+  const LOCALE = window.EUGENIO_DBTR_LOCALE;
+  // archivio «locale» (DB topografico letto nel browser): celle di 0,01° in memoria, come le celle di contesto del server
+  function archivioLocale(d) {
+    const C0 = 0.01, celle = new Map();
+    const fs = d.features.filter((f) => f && f.geometry && f.properties && f.properties.id !== undefined);
+    for (const f of fs) {
+      const r = anelli(f.geometry)[0];
+      if (!r) continue;
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const q of r) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; }
+      for (let i = Math.floor(x0 / C0); i <= Math.floor(x1 / C0); i++)
+        for (let j = Math.floor(y0 / C0); j <= Math.floor(y1 / C0); j++) {
+          const k = `${i}_${j}`; if (!celle.has(k)) celle.set(k, []); celle.get(k).push(f);
+        }
+      f.properties.licenza = f.properties.licenza || d.licenza || "CC BY 4.0";
+    }
+    const r = Array.isArray(d.riquadro) && d.riquadro.length === 4 ? d.riquadro.map(Number) : [0, 0, 0, 0];
+    return { base: null, locale: true, celle, features: fs, istat: /^\d{6}$/.test(String(d.istat || "")) ? String(d.istat) : null,
+      indice: { nome: String(d.nome || "DB topografico dal tuo file").slice(0, 120), licenza: d.licenza || "CC BY 4.0",
+        attribuzione: `${String(d.attribuzione || "").slice(0, 200)} (file caricato dall'utente, letto solo in questo browser)`,
+        riquadro: r, cella: C0, centro: [(r[0] + r[2]) / 2, (r[1] + r[3]) / 2], corpi: fs.length } };
+  }
+  const archivioDi = (c) => stato.archivi[(c && c.archivio) || 0] || null;
+  // la rotta del ripiego OSM c'è? (422 senza parametri = sì; 404 = spenta o api non ancora ricostruita)
+  async function osmDisponibile() {
+    try { const r = await fetch("/api/edifici/osm"); return r.status !== 404; } catch { return false; }
+  }
 
   function h(tag, cls, testo) { const e = document.createElement(tag); if (cls) e.className = cls; if (testo !== undefined && testo !== null) e.textContent = testo; return e; }
   function messaggio(id, t, errore = false) { const m = $(id); if (!m) return; m.textContent = t; m.classList.toggle("errore", errore); }
@@ -85,24 +145,43 @@
   async function trovaArchivi() {
     if (SCELTA || !DUE_TEMPI) { try { return [await trovaBase()]; } catch { return []; } }
     let elenco = null;
+    const valida = (b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes("..");
     try {
-      const r = await fetch("/edifici3d/archivi.json");
-      if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) elenco = (await r.json()).archivi;
+      const r = await fetch("/edifici3d/archivi.json?v=20261107b", { cache: "no-cache" });   // mai l'elenco vecchio
+      if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
+        const d = await r.json();
+        elenco = d.archivi;
+        if (valida(d.lidar)) stato.baseLidar = d.lidar;        // falde LiDAR dell'ER (07/11/2026: archivi per comune)
+      }
     } catch { /* nessun elenco: solo l'archivio dell'Emilia-Romagna */ }
-    const basi = (Array.isArray(elenco) && elenco.length ? elenco.map((x) => x && x.base) : ["/edifici3d/cc-by/er/prodotti/"])
-      .filter((b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes("..")).slice(0, 8);
-    const trovati = await Promise.all(basi.map((b) => json(`${b}indice.json`).then((i) => ({ base: b, indice: i })).catch(() => null)));
+    // fino a 60 archivi (un archivio DBTR per comune dal 07/11/2026): la pagina legge le celle solo di quelli vicini al punto
+    // `istat` (07/11/2026): archivio di un comune intero, zona coperta = confine ISTAT del comune
+    const voci = (Array.isArray(elenco) && elenco.length ? elenco : [{ base: "/edifici3d/cc-by/er/prodotti/" }])
+      .filter((x) => x && valida(x.base)).slice(0, 60);
+    const codice = (v) => (/^\d{6}$/.test(String(v || "")) ? String(v) : null);
+    const trovati = await Promise.all(voci.map((v) => json(`${v.base}indice.json`)
+      .then((i) => ({ base: v.base, indice: i, istat: i.parziale ? null : codice(v.istat) || codice(i.istat) })).catch(() => null)));
     return trovati.filter((x) => x && !x.indice.sintetico);
+  }
+  // celle che l'archivio ha davvero (indice.nomi_celle): le altre non si chiedono (07/11/2026 sera: 404 rumorosi nella
+  // console quando il raggio di 250 m tocca il riquadro di un comune vicino)
+  function haCella(base, nome) {
+    const a = stato.archivi.find((x) => x.base === base) || (base === stato.base ? { indice: stato.indice } : null);
+    const n = a && a.indice && a.indice.nomi_celle;
+    if (!Array.isArray(n)) return true;
+    if (!a.insiemeCelle) a.insiemeCelle = new Set(n);
+    return a.insiemeCelle.has(nome);
   }
   async function cella(nome, base = stato.base) {
     const k = `${base}|${nome}`;
+    if (!haCella(base, nome)) return { features: [] };
     if (!stato.celle.has(k)) stato.celle.set(k, json(`${base}contesto/${nome}.json`).catch(() => ({ features: [] })));
     return stato.celle.get(k);
   }
   // alberi dal DSM (05/11/2026): quadrati di 2 m con l'altezza della chioma, per tessera, nelle stesse celle di 0,01°
   async function cellaAlberi(nome) {
     if (!stato.celleAlberi.has(nome)) {
-      stato.celleAlberi.set(nome, json(`${stato.base}lidar/alberi/${nome}.json`).then((d) => {
+      stato.celleAlberi.set(nome, json(`${stato.baseLidar || stato.base}lidar/alberi/${nome}.json`).then((d) => {
         Object.values((d && d.tessere) || {}).forEach((l) => l.forEach((a) => stato.alberi.set(`${a[0]},${a[1]}`, a)));
       }).catch(() => null));
     }
@@ -111,7 +190,7 @@
   // falde dal LiDAR (stesse celle di 0,01°, indicizzate per corpo); senza rilievo la cella non c'è
   async function cellaFalde(nome) {
     if (!stato.celleFalde.has(nome)) {
-      stato.celleFalde.set(nome, json(`${stato.base}lidar/falde/${nome}.json`).then((d) => {
+      stato.celleFalde.set(nome, json(`${stato.baseLidar || stato.base}lidar/falde/${nome}.json`).then((d) => {
         Object.entries((d && d.corpi) || {}).forEach(([id, r]) => stato.falde.set(String(id), r));
       }).catch(() => null));
     }
@@ -147,36 +226,422 @@
     const nomi0 = nomiCelle(archivi[0].indice, lon, lat);
     await Promise.all([stato.lidar ? Promise.all(nomi0.map(cellaFalde)) : null, stato.lidar ? Promise.all(nomi0.map(cellaAlberi)) : null]);
     const pr = E.proiezione(lon, lat), visti = new Map(), sagome = [];
-    for (let k = 0; k < archivi.length; k++) {
-      const a = archivi[k], fc = await Promise.all(nomiCelle(a.indice, lon, lat).map((n) => cella(n, a.base)));
+    const vicino = (a) => { const r = a.indice && a.indice.riquadro, m = 0.004;          // ~300 m: i 250 m del contesto
+      return !Array.isArray(r) || r.length !== 4 || (lon >= r[0] - m && lon <= r[2] + m && lat >= r[1] - m && lat <= r[3] + m); };
+    // ripiego OSM solo se il punto è fuori da ogni archivio DBTR (07/11/2026)
+    const usaOsm = stato.osmAttivo && archivi.some((a) => a.osm) && !(await coperto(lon, lat));
+    // il DB topografico letto nel browser per primo: dove si sovrappone a un archivio del server vince il file dell'utente
+    const ordine = archivi.map((_, k) => k).sort((x, y) => (archivi[y].locale ? 1 : 0) - (archivi[x].locale ? 1 : 0));
+    for (const k of ordine) {
+      const a = archivi[k];
+      if (a.osm ? !usaOsm : !vicino(a)) continue;
+      const fc = a.osm ? [{ features: await edificiOsm(lon, lat) }]
+        : a.locale ? nomiCelle(a.indice, lon, lat).map((n) => ({ features: a.celle.get(n) || [] }))
+          : await Promise.all(nomiCelle(a.indice, lon, lat).map((n) => cella(n, a.base)));
+      const lic = a.indice.licenza || "";
       const nuovi = [];
       fc.forEach((x) => (x.features || []).forEach((f) => {
         const id = String(f.properties.id);
         if (visti.has(id) || !f.geometry) return;
-        const ring = (f.geometry.type === "MultiPolygon" ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0]).map(pr.avanti);
-        if (k > 0 && sagome.some((s) => E.dentro(E.centroide(ring), s))) return;       // già coperto da una fonte migliore
+        const [esterno, ...fori] = anelli(f.geometry);
+        if (!esterno) return;
+        const sag = { ring: esterno.map(pr.avanti), buchi: fori.map((r) => r.map(pr.avanti)), lic, locale: !!a.locale };
+        // già coperto da una fonte migliore (un corpo nel cortile di un altro non è coperto)
+        // (archivi della stessa licenza, come i DBTR di due comuni vicini, non si sovrappongono: niente controllo)
+        if (sagome.some((s) => (s.lic !== lic || s.locale) && E.dentroCorpo(E.centroide(sag.ring), s))) return;
         f.properties.archivio = k;
-        visti.set(id, f); nuovi.push(ring);
+        visti.set(id, f); nuovi.push(sag);
       }));
       sagome.push(...nuovi);
     }
     return [...visti.values()];
   }
+  // edifici OSM della cella del punto (servizio/edifici_osm.py): una richiesta per cella, tenuta in memoria; i corpi che
+  // cadono in un comune coperto dal DBTR si scartano (dove c'è il DBTR, OSM non si mescola)
+  async function edificiOsm(lon, lat) {
+    const k = `${Math.round(lat / CELLA_OSM)}_${Math.round(lon / CELLA_OSM)}`;
+    if (!stato.osm.celle.has(k)) {
+      stato.osm.celle.set(k, (async () => {
+        messaggio("messaggio", "Qui non c'è ancora il DBTR: chiedo gli edifici al server (sagome della Regione dove ci sono, altrimenti OpenStreetMap; può volerci qualche secondo)…");
+        const r = await fetch(`/api/edifici/osm?lon=${lon.toFixed(6)}&lat=${lat.toFixed(6)}`);
+        let d = null;
+        try { d = await r.json(); } catch { d = null; }
+        if (!r.ok || !d || !Array.isArray(d.features)) {
+          const t = d && typeof d.detail === "string" ? d.detail : `il server ha risposto ${r.status}`;
+          throw new Error(r.status === 404 && !(d && d.detail) ? "ripiego OpenStreetMap non disponibile su questo server." : t);
+        }
+        const fs = await fuoriDalDbtr(d.features.filter((f) => f && f.geometry && f.properties && f.properties.id !== undefined));
+        // sagome regionali al volo (08/11/2026): licenza della sagoma dal server (IODL 2.0 per il Veneto, con l'altezza ODbL)
+        fs.forEach((f) => { f.properties.licenza = f.properties.regione_sagoma && f.properties.licenza ? String(f.properties.licenza) : "ODbL 1.0";
+          f.properties.edificio = String(f.properties.edificio || f.properties.id);
+          f.properties.origine_altezza = origineAltezza(f.properties); });
+        // altezze fisse vicino al DB topografico caricato nel browser: mediana dei suoi corpi entro 200 m (il server fa lo
+        // stesso con gli archivi DBTR che ha, servizio/edifici_osm.py)
+        if (stato.locale) altezzeDaVicini(fs, puntiDbtr(stato.locale.features), "del DB topografico del tuo file");
+        stato.osm.info = { data: d.data || null, stimate: fs.filter((f) => /^(fissa|dbtr_vicini|osm_vicini)$/.test(f.properties.origine_altezza)).length, corpi: fs.length };
+        if (d.sagome && d.sagome.attribuzione) stato.osm.sagome = { ...d.sagome };
+        if (d.avviso_sagome) stato.osm.avvisoSagome = String(d.avviso_sagome).slice(0, 300);
+        return fs;
+      })());
+    }
+    try {
+      const fs = await stato.osm.celle.get(k);
+      stato.osm.errore = null;
+      mostraOsm(fs);
+      return fs;
+    } catch (e) {
+      stato.osm.celle.delete(k);                 // si riprova al prossimo punto
+      stato.osm.errore = String((e && e.message) || e);
+      return [];
+    }
+  }
+  // altezze dei corpi OSM (07/11/2026 sera, decisione di Paolo; stessa regola di osm_campione.altezze_da_vicini): senza
+  // height né building:levels, mediana dei corpi DBTR vicini (entro 200 m, almeno 3, altezze non stimate), altrimenti 9 m;
+  // origine per corpo: osm_height, osm_piani, dbtr_vicini, fissa
+  const ORIGINI_ALTEZZA = ["osm_height", "osm_piani", "dbtr_vicini", "osm_vicini", "fissa"];
+  function origineAltezza(p) {
+    if (ORIGINI_ALTEZZA.includes(p.origine_altezza)) return p.origine_altezza;
+    const f = String(p.fonte_altezza || "");
+    return f.startsWith("OSM height") ? "osm_height" : f.startsWith("OSM building:levels") ? "osm_piani" : "fissa";
+  }
+  const arrotonda2 = (x) => { const y = x * 2, r = Math.round(y); return (Math.abs(y % 1) === 0.5 ? (r % 2 ? r - 1 : r) : r) / 2; };   // come round() di Python
+  function puntiDbtr(features) {
+    const out = [];
+    for (const f of features || []) {
+      const p = f.properties || {}, g = +p.gronda;
+      if (!Number.isFinite(g) || g < 2 || g > 80 || (p.h_dbtr_scartata !== undefined && p.h_dbtr_scartata !== null && p.h_dbtr_scartata !== "")
+        || /stima/i.test(String(p.fonte_altezza || ""))) continue;
+      const r = anelli(f.geometry)[0];
+      if (r) out.push([r.reduce((s, q) => s + q[0], 0) / r.length, r.reduce((s, q) => s + q[1], 0) / r.length, g]);
+    }
+    return out;
+  }
+  function altezzeDaVicini(fs, vicini, nomeFonte = "DBTR", raggio = 200, minimo = 3) {
+    if (!fs.length || !vicini.length) return 0;
+    const n0 = Math.min(vicini.length, 50), lat0 = vicini.slice(0, 50).reduce((s, v) => s + v[1], 0) / n0;
+    const kx = 111320 * Math.cos(lat0 * Math.PI / 180), ky = 110574, griglia = new Map();
+    for (const [lo, la, g] of vicini) {
+      const x = lo * kx, y = la * ky, k = `${Math.floor(x / raggio)}_${Math.floor(y / raggio)}`;
+      if (!griglia.has(k)) griglia.set(k, []); griglia.get(k).push([x, y, g]);
+    }
+    let n = 0;
+    for (const f of fs) {
+      const p = f.properties;
+      if (origineAltezza(p) !== "fissa") continue;
+      const r = anelli(f.geometry)[0];
+      if (!r) continue;
+      const x = r.reduce((s, q) => s + q[0], 0) / r.length * kx, y = r.reduce((s, q) => s + q[1], 0) / r.length * ky;
+      const i = Math.floor(x / raggio), j = Math.floor(y / raggio), hs = [];
+      for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++)
+        for (const [vx, vy, g] of griglia.get(`${i + di}_${j + dj}`) || []) if ((vx - x) ** 2 + (vy - y) ** 2 <= raggio * raggio) hs.push(g);
+      if (hs.length < minimo) continue;
+      hs.sort((a, b) => a - b);
+      const m = hs.length % 2 ? hs[(hs.length - 1) / 2] : (hs[hs.length / 2 - 1] + hs[hs.length / 2]) / 2, h = arrotonda2(m);
+      Object.assign(p, { gronda: h, altezza: h, piani: Math.max(1, Math.round(h / 3)), qualita: "stima", origine_altezza: "dbtr_vicini",
+        fonte_altezza: `stima: mediana dei corpi ${nomeFonte} vicini (${hs.length} entro ${raggio} m: ${String(h)} m)` });
+      delete p.colmo;
+      n++;
+    }
+    return n;
+  }
+  // conteggi per origine delle altezze dei corpi OSM; nota sotto la mappa, nell'immagine e nel report
+  function contaOrigini(lista) {
+    const n = { osm_height: 0, osm_piani: 0, dbtr_vicini: 0, osm_vicini: 0, fissa: 0, regionali: 0 };
+    lista.forEach((p) => { n[origineAltezza(p)]++; if (p.regione_sagoma) n.regionali++; });
+    return n;
+  }
+  // sagome regionali al volo (08/11/2026): «Sagome dalla Regione X (licenza), altezze da OpenStreetMap dove ci sono, altrimenti stimate»
+  function testoSagomeRegionali() {
+    const s = stato.osm && stato.osm.sagome;
+    return s ? `Sagome dalla ${String(s.nome || s.regione).replace(/ – .*$/, "")} (${s.licenza}), altezze da OpenStreetMap dove ci sono, altrimenti stimate.` : "";
+  }
+  function testoAltezzeOsm(n, dove = "") {
+    const tot = n.osm_height + n.osm_piani + n.dbtr_vicini + n.osm_vicini + n.fissa;
+    if (!tot) return "";
+    const parti = [`${n.osm_height + n.osm_piani} con l'altezza dal dato OSM (height o piani × 3 m${n.regionali ? ", dall'edificio OSM sovrapposto" : ""})`,
+      `${n.dbtr_vicini} stimati dalla mediana dei corpi DBTR vicini (entro 200 m)`,
+      ...(n.osm_vicini ? [`${n.osm_vicini} dalla mediana dei vicini con l'altezza OSM (entro 200 m)`] : []), `${n.fissa} a 9 m fissi (stima)`];
+    const chi = n.regionali ? `Edifici fuori dal DBTR${dove}: ${tot.toLocaleString("it-IT")} (${n.regionali.toLocaleString("it-IT")} con la sagoma della Regione, `
+      + `${(tot - n.regionali).toLocaleString("it-IT")} da OpenStreetMap)` : `Edifici OpenStreetMap${dove}: ${tot.toLocaleString("it-IT")}`;
+    return `${n.regionali ? `${testoSagomeRegionali()} ` : ""}${chi}, di cui ${parti.join(", ")}. Le altezze stimate sono indicate come «stima» nella tabella dei corpi.`;
+  }
+  // corpi OSM della vista: in 3D l'edificio e i vicini, in 2D le sagome OSM ricevute che cadono nella mappa
+  function altezzeOsmVista() {
+    if (stato.in3d) return contaOrigini(stato.corpi.concat(stato.vicini).filter((c) => (archivioDi(c) || {}).osm));
+    const m = stato.mappa, b = m && m.getBounds();
+    return contaOrigini([...stato.osm.visti.values()].filter((f) => {
+      if (!b) return true;
+      const r = anelli(f.geometry)[0];
+      return r && b.contains([r[0][0], r[0][1]]);
+    }).map((f) => f.properties));
+  }
+  function notaAltezzeOsm() {
+    if (!stato.osmAttivo) return;
+    let p = $("nota-altezze-osm");
+    if (!p) {
+      const dopo = $("fonti-corpi") || $("comandi-edificio") || $("mappa3d");
+      if (!dopo) return;
+      p = h("p", "aiuto nota-altezze-osm"); p.id = "nota-altezze-osm"; p.setAttribute("aria-live", "polite"); p.hidden = true;
+      dopo.after(p);
+    }
+    const t = testoAltezzeOsm(altezzeOsmVista(), stato.in3d ? " dell'edificio e dei vicini" : " nella vista");
+    p.textContent = t; p.hidden = !t;
+  }
+  // corpi OSM fuori dai comuni (o dai riquadri) coperti dal DBTR
+  async function fuoriDalDbtr(fs) {
+    const arch = veri().filter((a) => !a.indice.sintetico && Array.isArray(a.indice.riquadro) && a.indice.riquadro.length === 4);
+    if (!arch.length) return fs;
+    const out = [];
+    for (const f of fs) {
+      const r0 = anelli(f.geometry)[0];
+      if (!r0) continue;
+      const lon = r0.reduce((x, q) => x + q[0], 0) / r0.length, lat = r0.reduce((x, q) => x + q[1], 0) / r0.length;
+      const nei = arch.filter((a) => { const r = a.indice.riquadro; return lon >= r[0] && lon <= r[2] && lat >= r[1] && lat <= r[3]; });
+      if (nei.some((a) => !a.istat)) continue;
+      if (nei.length) {
+        const c = await comuneNelPunto(lon, lat);
+        if (c && nei.some((a) => a.istat === c.istat)) continue;
+        // vicino al confine generalizzato: fuori se c'è un corpo DBTR entro 30 m (lo stesso edificio, già nel DBTR)
+        let doppio = false;
+        for (const a of nei) if (await vicinoAlDbtr(a, lon, lat, 30)) { doppio = true; break; }
+        if (doppio) continue;
+      }
+      out.push(f);
+    }
+    return out;
+  }
+  // sagome OSM ricevute finora sulla mappa (sorgente GeoJSON dell'archivio virtuale)
+  function mostraOsm(fs) {
+    const k = stato.archivi.findIndex((a) => a.osm), m = stato.mappa;
+    if (k < 0) return;
+    fs.forEach((f) => { if (!stato.osm.visti.has(f.properties.id)) stato.osm.visti.set(f.properties.id, f); });
+    while (stato.osm.visti.size > 6000) stato.osm.visti.delete(stato.osm.visti.keys().next().value);
+    const src = m && m.getSource(stato.sorgentiCorpi[k]);
+    if (src) src.setData({ type: "FeatureCollection", features: [...stato.osm.visti.values()] });
+    const p = $("fonti-osm");
+    if (p) p.hidden = !stato.osm.visti.size;
+    const lo = $("legenda-osm"); if (lo) lo.hidden = !stato.osm.visti.size;
+    notaAltezzeOsm();
+  }
+  // il corpo viene dal ripiego OSM? (per i messaggi)
+  function avvisoOsm(k) {
+    const a = stato.archivi[k];
+    if (!a || !a.osm) return "";
+    if (stato.osm.sagome) return ` Qui non c'è ancora il DBTR: ${testoSagomeRegionali()} Edifici OSM senza sagoma regionale: © OpenStreetMap contributors (ODbL 1.0).`;
+    return (stato.osm.avvisoSagome ? ` ${stato.osm.avvisoSagome}` : "") + " Qui non c'è ancora il DBTR: si usa OpenStreetMap come ripiego (© OpenStreetMap contributors, ODbL 1.0), con qualità "
+      + "inferiore e altezze in parte stimate (dove OSM non ha né altezza né piani: mediana dei corpi DBTR vicini, se ci sono, altrimenti 9 m).";
+  }
+  // la rotta del terreno risponde? (prima della mappa: se tutte le tessere danno 404 MapLibre non finisce mai di caricare,
+  // per esempio prima del rebuild dell'api o con TERRENO_ATTIVO=false; allora mappa piatta come senza DTM)
+  async function provaTerreno() {
+    try {
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 4000);
+      const r = await fetch("/api/terreno/fonti", { signal: ctl.signal });
+      clearTimeout(t);
+      if (!r.ok) return false;
+      const j = await r.json();
+      return !!(j && j.attivo);
+    } catch { return false; }
+  }
+  // sorgente raster-dem del terreno: le tessere del server, o quelle dell'archivio se le ha ancora (terrenoProprio);
+  // null se non c'è né l'una né l'altra (mappa piatta)
+  function sorgenteTerreno(a) {
+    if (terrenoProprio(a)) return { type: "raster-dem", url: `pmtiles://${new URL(a.base + "terreno.pmtiles", location.href).href}`, encoding: "terrarium", tileSize: 256 };
+    if (!stato.terrenoServer) return null;
+    // location.origin + percorso, non new URL(): codificherebbe le graffe di {z}/{x}/{y}
+    return { type: "raster-dem", tiles: [location.origin + TESSERE_TERRENO], encoding: "terrarium", tileSize: 256,
+      minzoom: 8, maxzoom: 15, attribution: ATTRIBUZIONE_TERRENO };
+  }
+  // terreno 3D dell'edificio scelto: dal server (un solo terreno per tutti gli archivi), salvo archivi con le loro tessere
+  function terrenoDi(k) {
+    const a = stato.archivi[k], m = stato.mappa;
+    if (!a || !m || a.osm) return;
+    const chiave = terrenoProprio(a) ? a.base : "server";
+    if (stato.baseTerreno === chiave) return;
+    const src = sorgenteTerreno(a);
+    if (!src) return;
+    try {
+      ["terreno", "rilievo"].forEach((id) => {
+        const s = m.getSource(id);
+        if (!s) return;
+        if (src.url && typeof s.setUrl === "function") s.setUrl(src.url);
+        else if (src.tiles && typeof s.setTiles === "function") s.setTiles(src.tiles);
+      });
+      stato.baseTerreno = chiave;
+    } catch { /* resta il terreno di prima */ }
+  }
+  // anelli di una sagoma (07/11/2026): il primo è l'esterno, gli altri i fori (cortili); solo il primo poligono
+  function anelli(geom) {
+    const g = geom && (geom.type === "MultiPolygon" ? geom.coordinates[0] : geom.coordinates);
+    return Array.isArray(g) ? g.filter((r) => Array.isArray(r) && r.length >= 4) : [];
+  }
   function aCorpo(f) {
-    const p = f.properties, ring = (f.geometry.type === "MultiPolygon" ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0]).map(stato.proj.avanti);
-    return { id: String(p.id), edificio: String(p.edificio), ring, lonlat: f.geometry, gronda: +p.gronda, colmo: p.colmo ? +p.colmo : null,
+    const p = f.properties, [esterno, ...fori] = anelli(f.geometry), ring = esterno.map(stato.proj.avanti);
+    const buchi = fori.slice(0, 200).map((r) => r.map(stato.proj.avanti));
+    return { id: String(p.id), edificio: String(p.edificio), ring, buchi, lonlat: f.geometry, gronda: +p.gronda, colmo: p.colmo ? +p.colmo : null,
       tetto: p.tetto || "piano", falde: +p.falde || 0, piani: p.piani ? +p.piani : null, quota: p.quota_terreno !== undefined ? +p.quota_terreno : 0,
       fonte_sagoma: p.fonte_sagoma || "", fonte_altezza: p.fonte_altezza || "", licenza: p.licenza || "", qualita: p.qualita || "",
-      uso: p.uso || null, sintetico: !!p.sintetico, modificato: false, falde: null, lidar: null, archivio: +p.archivio || 0 };
+      uso: p.uso || null, sintetico: !!p.sintetico, modificato: false, falde: null, lidar: null, archivio: +p.archivio || 0,
+      foglio: p.foglio || null, numero: p.numero || null, nome: p.nome || null, destinazione: p.destinazione || null,
+      origine_altezza: p.origine_altezza || null, tipo_edificio: p.tipo_edificio || null, regione_sagoma: p.regione_sagoma || null,
+      quotaNota: p.quota_terreno !== undefined && p.quota_terreno !== null && Number.isFinite(+p.quota_terreno),
+      h_scartata: Number.isFinite(+p.h_dbtr_scartata) && p.h_dbtr_scartata !== undefined && p.h_dbtr_scartata !== null ? +p.h_dbtr_scartata : null };
   }
-  // un corpo con le sue falde: prima il modello dell'utente, poi il LiDAR, altrimenti la stima del DBTR
+  // fonte dell'altezza da mostrare (07/11/2026): l'altezza del DBTR non plausibile portata alla stima si dichiara
+  function testoAltezza(c) {
+    if (c.h_scartata !== null && c.h_scartata !== undefined && !c.modificato && !(c.lidar && c.lidar.stato === "ok"))
+      return `altezza stimata (dato DBTR non plausibile: ${(+c.h_scartata).toLocaleString("it-IT", { maximumFractionDigits: 1 })} m)`;
+    if (c.tettoStimato) return `${c.fonte_altezza}; ${c.falde && c.falde[0] ? c.falde[0].fonte : FONTE_STIMA_TETTO} (${c.tetto === "padiglione" ? "a padiglione" : c.tetto === "monofalda" ? "a una falda" : "a capanna"})`;
+    if (c.fonteTetto === "piano" && !c.modificato && c.motivoPiano) return `${c.fonte_altezza}; tetto piano (${c.motivoPiano})`;
+    return c.fonte_altezza;
+  }
+  // tetto a falde stimato dal colmo del DB topografico (07/11/2026 sera): dove non ci sono falde misurate e il colmo è più
+  // alto della gronda, falde a capanna sul lato lungo o a padiglione (corpi quasi quadrati), dichiarate «stimate»
+  const FONTE_STIMA_TETTO = "tetto stimato dal colmo DBTR";
+  function stimaTetto(c, fonte = FONTE_STIMA_TETTO, tipo = null) {
+    c.tettoStimato = false;
+    if (c.falde && c.falde.length) return c;
+    const r = E.faldeStimate ? E.faldeStimate(c, tipo) : null;
+    if (!r) return c;
+    c.falde = r.falde.map((f) => ({ ...f, fonte })); c.tetto = r.tipo; c.tettoStimato = true;
+    return c;
+  }
+  // ------------------------------------------------------------------ forma dei tetti: tre fonti (08/11/2026, decisione di Paolo)
+  // 1. falde misurate dal LiDAR (pipeline notturna, lidar/indice.json dell'archivio); 2. tetto stimato dal colmo DBTR
+  // (stimaTetto); 3. tetto ipotizzato a falde, 22° in pianura e 32° in montagna (E.tettoIpotizzato: stessa forma, colmo =
+  // gronda + semiluce × tan(inclinazione)), o piano dove la regola dice piano (capannoni, commerciali, corpi molto grandi,
+  // bassi, con cortile o poco rettangolari). In Modelli 3D le fonti valgono in cascata per ogni corpo; nelle pagine
+  // Edificio e Fotovoltaico l'utente sceglie la forma con «Forma dei tetti» (#forma-tetti): «lidar» e «colmo» partono da
+  // quella fonte e scendono la cascata dove manca, «ipotesi» ipotizza tutti i corpi (salvo i piani), «piani» li fa tutti
+  // piani. Il modello dell'utente (DXF/IFC) e i corpi corretti a mano non cambiano: hanno la precedenza.
+  const SCELTE_TETTO = { auto: ["lidar", "colmo", "ipotesi"], lidar: ["lidar", "colmo", "ipotesi"], colmo: ["colmo", "ipotesi"], ipotesi: ["ipotesi"], piani: [] };
+  const NOMI_SCELTA_TETTO = { auto: "in cascata: LiDAR, poi colmo DBTR, poi ipotesi automatica", lidar: "Misurata (LiDAR) dove c'è",
+    colmo: "Stimata dal colmo DBTR dove c'è", ipotesi: "Ipotesi automatica (22°/32°)", piani: "Tutti piani" };
+  const SELETTORE_TETTI = () => (VISTA !== "modelli" ? $("forma-tetti") : null);
+  stato.formaTetti = "auto";
+  // un corpo con le sue falde: il modello dell'utente resta com'è; per gli altri si ricordano i valori del DB topografico
+  // (c.base) e il record LiDAR, poi applicaTetto sceglie la fonte
   function conFalde(c, p) {
-    if (Array.isArray(p.falde) && p.falde.length) {               // modello dell'utente (importa-modello)
-      c.falde = faldeLocali(p.falde, p.fonte_altezza || "modello dell'utente");
+    c.base = { gronda: c.gronda, colmo: c.colmo, tetto: c.tetto, fonte_altezza: c.fonte_altezza, qualita: c.qualita };
+    if (c.edificio === "MODELLO") {                                  // modello dell'utente (importa-modello)
+      c.tettoFisso = true; c.fonteTetto = "modello";
+      if (Array.isArray(p.falde) && p.falde.length) c.falde = faldeLocali(p.falde, p.fonte_altezza || "modello dell'utente");
+      else stimaTetto(c, "tetto stimato dal colmo del modello");
       return c;
     }
-    const r = stato.falde.get(c.id);
-    if (!r) return c;
+    c.recLidar = stato.falde.get(c.id) || null;
+    return applicaTetto(c);
+  }
+  // quota per la regola pianura/montagna: terreno sotto il corpo (DTM, nei corpi DBTR) o, senza, altitudine del comune (DPR 412/93)
+  function quotaPerTetto(c) {
+    if (c.quotaNota) return { quota: c.quota, testo: `quota del terreno ${fmt(c.quota)} m` };
+    const riga = stato.dpr && stato.comune ? stato.dpr.comuni[stato.comune.istat] : null;
+    if (riga && Number.isFinite(+riga[2])) return { quota: +riga[2], testo: `altitudine del comune ${fmt(riga[2])} m, DPR 412/93` };
+    return { quota: null, testo: "quota non nota" };
+  }
+  function ipotesiDi(c) {
+    const q = quotaPerTetto(c);
+    return { ...E.tettoIpotizzato(c, { quota: q.quota, istat: stato.comune ? stato.comune.istat : null }), testoQuota: q.testo };
+  }
+  function applicaTetto(c, scelta = stato.formaTetti || "auto") {
+    if (c.tettoFisso || c.modificato) return c;                      // modello dell'utente e correzioni a mano: precedenza
+    const b = c.base || {};
+    Object.assign(c, { gronda: b.gronda, colmo: b.colmo, tetto: b.tetto, fonte_altezza: b.fonte_altezza, qualita: b.qualita,
+      falde: null, lidar: null, tettoStimato: false, ipotesi: null, motivoPiano: null, fonteTetto: "piano" });
+    const rec = c.recLidar;
+    if (rec && rec.stato !== "ok") conLidar(c, rec);                 // solo le note (resta l'altezza del DBTR)
+    for (const f of SCELTE_TETTO[scelta] || SCELTE_TETTO.auto) {
+      if (f === "lidar" && rec && rec.stato === "ok") { conLidar(c, rec); c.fonteTetto = "lidar"; return c; }
+      if (f === "colmo") { stimaTetto(c); if (c.tettoStimato) { c.fonteTetto = "colmo"; return c; } }
+      if (f === "ipotesi") {
+        const r = ipotesiDi(c);
+        if (r.piano) { c.motivoPiano = r.motivo; break; }
+        const fonte = `tetto ipotizzato a ${r.inclinazione}° (${r.montagna ? "montagna" : "pianura"}: ${r.testoQuota})`;
+        Object.assign(c, { colmo: r.colmo, tetto: r.tipo, falde: r.falde.map((x) => ({ ...x, fonte })), tettoStimato: true, fonteTetto: "ipotesi",
+          ipotesi: { inclinazione: r.inclinazione, montagna: r.montagna, quota: r.quota, testo: r.testoQuota } });
+        return c;
+      }
+    }
+    if (scelta === "piani") { c.colmo = null; c.tetto = "piano"; c.motivoPiano = "scelta «Tutti piani»"; }
+    return c;
+  }
+  function testoSceltaTetti() {
+    return `Forma dei tetti: ${VISTA !== "modelli" && SELETTORE_TETTI() ? `«${NOMI_SCELTA_TETTO[stato.formaTetti] || NOMI_SCELTA_TETTO.auto}»` : NOMI_SCELTA_TETTO.auto}.`;
+  }
+  function applicaTetti() { [...stato.corpi, ...stato.vicini].forEach((c) => applicaTetto(c)); }
+  // fonte del tetto di ogni corpo: lidar, colmo, ipotesi, piano, modello, utente
+  function fonteTettoDi(c) { return c.modificato ? "utente" : c.fonteTetto || (c.falde && c.falde.length ? "colmo" : "piano"); }
+  function contaTetti(corpi = stato.corpi) {
+    const n = { lidar: 0, colmo: 0, ipotesi: 0, piano: 0, modello: 0, utente: 0, pianura: 0, montagna: 0 };
+    corpi.forEach((c) => { const f = fonteTettoDi(c); n[f] = (n[f] || 0) + 1; if (f === "ipotesi" && c.ipotesi) n[c.ipotesi.montagna ? "montagna" : "pianura"]++; });
+    return n;
+  }
+  // «Tetti: N misurati dal LiDAR, M stimati dal colmo DBTR, K ipotizzati (22° pianura / 32° montagna), P piani»
+  function testoTetti(corpi = stato.corpi) {
+    if (!corpi.length) return "";
+    const n = contaTetti(corpi), pl = (k, s, p) => `${k} ${k === 1 ? s : p}`;
+    const qui = [n.pianura ? `${n.pianura} a 22°` : "", n.montagna ? `${n.montagna} a 32°` : ""].filter(Boolean).join(", ");
+    const parti = [`${pl(n.lidar, "misurato", "misurati")} dal LiDAR`, `${pl(n.colmo, "stimato", "stimati")} dal colmo DBTR`,
+      `${pl(n.ipotesi, "ipotizzato", "ipotizzati")} (22° pianura / 32° montagna${qui ? `: ${qui}` : ""})`, pl(n.piano, "piano", "piani")];
+    if (n.modello) parti.push(`${n.modello} dal modello dell'utente`);
+    if (n.utente) parti.push(`${pl(n.utente, "corretto", "corretti")} a mano`);
+    const scelta = VISTA !== "modelli" && SELETTORE_TETTI() ? ` Forma dei tetti scelta: «${NOMI_SCELTA_TETTO[stato.formaTetti] || NOMI_SCELTA_TETTO.auto}».` : "";
+    return `Tetti: ${parti.join(", ")}.${scelta}`;
+  }
+  // opzioni del selettore per l'edificio scelto: disponibili o spente con il motivo; predefinita la più affidabile
+  function opzioniTetti() {
+    const corpi = stato.corpi.filter((c) => !c.tettoFisso);
+    const out = { lidar: null, colmo: null, ipotesi: null, piani: null };
+    if (!corpi.length) { const m = "tetti dal modello dell'utente"; return { lidar: m, colmo: m, ipotesi: m, piani: m }; }
+    if (!corpi.some((c) => c.recLidar && c.recLidar.stato === "ok"))
+      out.lidar = stato.lidar ? "la pipeline LiDAR non ha ancora misurato le falde di questo edificio" : "nessun rilievo LiDAR elaborato per questo archivio";
+    if (!corpi.some((c) => E.faldeStimate({ ring: c.ring, buchi: c.buchi, gronda: c.base.gronda, colmo: c.base.colmo })))
+      out.colmo = corpi.some((c) => c.base.colmo > c.base.gronda) ? "forma dei corpi non adatta alla stima dal colmo" : "il DB topografico non dà il colmo di questi corpi";
+    const ip = corpi.map((c) => ipotesiDi({ ...c, gronda: c.base.gronda }));
+    if (ip.every((r) => r.piano)) out.ipotesi = `corpi plausibilmente piani (${ip[0].motivo})`;
+    return out;
+  }
+  function preparaSelettoreTetti(nuovo = false) {
+    const sel = SELETTORE_TETTI();
+    if (!sel) return;
+    const off = opzioniTetti(), nota = $("motivi-forma-tetti");
+    [...sel.options].forEach((o) => {
+      o.textContent = NOMI_SCELTA_TETTO[o.value] + (off[o.value] ? ` – non disponibile: ${off[o.value]}` : "");
+      o.disabled = !!off[o.value]; o.title = off[o.value] || "";
+    });
+    if (nuovo || off[stato.formaTetti] || stato.formaTetti === "auto") stato.formaTetti = ["lidar", "colmo", "ipotesi", "piani"].find((k) => !off[k]) || "piani";
+    sel.value = stato.formaTetti; sel.disabled = stato.corpi.every((c) => c.tettoFisso);
+    if (nota) {
+      const spente = Object.entries(off).filter(([, m]) => m).map(([k, m]) => `«${NOMI_SCELTA_TETTO[k]}»: ${m}`);
+      nota.textContent = spente.length ? `Non disponibili per questo edificio: ${spente.join("; ")}.` : "";
+    }
+  }
+  // dopo un cambio di forma: aree FV sulle falde nuove (salvo inclinazione e orientamento corretti a mano), ombre, sole e
+  // producibilità ricalcolati se erano già stati calcolati
+  function cambiaFormaTetti(scelta) {
+    stato.formaTetti = scelta;
+    applicaTetti();
+    stato.originali = stato.corpi.map((c) => ({ ...c, ring: c.ring.map((p) => [...p]), buchi: (c.buchi || []).map((b) => b.map((p) => [...p])) }));
+    for (const a of stato.aree) {
+      if (a.manuale) continue;
+      const c = stato.corpi.find((x) => x.id === a.corpo);
+      if (!c) continue;
+      const f = (c.falde || []).find((x) => E.dentro(E.centroide(a.ring), x.ring) && x.pendenza >= 5);
+      Object.assign(a, f ? { falda: f.id, inclinazione: Math.round(f.pendenza), orientamento: Math.round(f.orientamento), montaggio: "aderente",
+        quota: Number.isFinite(f.alto) && Number.isFinite(f.basso) ? (f.alto + f.basso) / 2 : c.gronda, fonte: f.fonte }
+        : { falda: null, inclinazione: 10, orientamento: 180, montaggio: "telai", quota: c.gronda, fonte: null });
+    }
+    const fv = !!stato.fv, facc = !!stato.facciate;
+    stato.fv = null; stato.pvgis = null; stato.facciate = null; mostraFacciate();
+    if ($("pvgis")) $("pvgis").innerHTML = "";
+    if ($("calcola-pvgis")) $("calcola-pvgis").disabled = true;
+    aggiorna(); tabellaFv(); fontiCorpi();
+    if (stato.in3d && stato.mappa) ridisegna();
+    if (fv && stato.aree.length) $("calcola-fv").click();
+    if (facc) $("calcola-facciate").click();
+  }
+  if (SELETTORE_TETTI()) SELETTORE_TETTI().addEventListener("change", (e) => { if (stato.corpi.length) cambiaFormaTetti(e.target.value); });
+  function conLidar(c, r) {
     c.lidar = { stato: r.stato, qualita: r.qualita || null, rmse: r.rmse, copertura: r.copertura, fonte: r.descrizione_fonte || r.fonte,
       note: Array.isArray(r.note) ? r.note.slice(0, 5).map(String) : [], sintetico: !!r.sintetico, versione: r.versione };
     if (r.stato !== "ok") return c;
@@ -190,32 +655,125 @@
     return c;
   }
 
+  // ------------------------------------------------------------------ rilievo: ombreggiatura, esagerazione, fonte
+  function paintRilievo(conFoto) {
+    const scuro = !document.documentElement.matches('[data-theme="light"]') && (document.documentElement.matches('[data-theme="dark"]')
+      || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches));
+    return { "hillshade-exaggeration": conFoto ? 0.3 : 0.75, "hillshade-shadow-color": scuro ? "#000000" : "#3a3a3a",
+      "hillshade-highlight-color": scuro ? "#d9d4c7" : "#ffffff", "hillshade-accent-color": scuro ? "#1b1b1b" : "#5a5a5a",
+      "hillshade-illumination-direction": 315 };
+  }
+  function coloriRilievo() {
+    const m = stato.mappa;
+    if (!m || !m.getLayer("rilievo")) return;
+    const p = paintRilievo(ortoVisibile && ortoVisibile() && !!stato.ortofoto);
+    Object.entries(p).forEach(([k, v]) => { try { m.setPaintProperty("rilievo", k, v); } catch { /* proprietà non supportata */ } });
+  }
+  // esagerazione verticale del rilievo nella vista 3D: ×1 (predefinito), ×1,5, ×2
+  function terreno3d() {
+    const m = stato.mappa;
+    if (!m || !stato.in3d) return;
+    const osm = stato.corpi.some((c) => (archivioDi(c) || {}).osm && !c.quotaNota);   // sagome regionali con la quota dal DTM: terreno vero
+    try { if (osm || !m.getSource("terreno")) m.setTerrain(null); else m.setTerrain({ source: "terreno", exaggeration: stato.esagera || 1 }); } catch { /* piatta */ }
+    quotaCamera();
+  }
+  // (07/11/2026 sera, «diventa nera» a Bagno di Romagna) la camera guarda il centro della mappa alla quota del centro: con
+  // il terreno appena acceso MapLibre la teneva a 0 m finché le tessere non arrivavano, e in collina (550–780 m) la camera
+  // finiva dentro il versante (tutto nero, nessuna tessera chiesta). Si dà subito la quota del terreno sotto l'edificio
+  // (dal DTM, già nei corpi), moltiplicata per l'esagerazione; poi MapLibre la affina con le tessere
+  function quotaDelCentro() {
+    const m = stato.mappa;
+    if (!m || !m.getTerrain || !m.getTerrain() || !stato.corpi.length) return 0;
+    return (Number.isFinite(stato.q0) ? stato.q0 : 0) * (stato.esagera || 1);
+  }
+  function quotaCamera() {
+    const m = stato.mappa;
+    if (!m || typeof m.setCenterElevation !== "function") return;
+    try { m.setCenterElevation(stato.in3d ? quotaDelCentro() : 0); } catch { /* versione senza quota del centro */ }
+  }
+  function esagera(x) {
+    stato.esagera = x;
+    if (stato.barra3d) stato.barra3d.querySelectorAll("[data-esagera]").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.esagera === x)));
+    terreno3d();
+    legendaTerreno();
+  }
+  // fonte delle tessere del terreno al centro della vista (intestazione X-Terreno-Fonte della rotta /api/terreno)
+  const NOMI_TERRENO = { dtm: "DTM 5 m Regione Emilia-Romagna (CC BY 4.0)", "dtm+copernicus": "DTM 5 m Regione Emilia-Romagna e Copernicus DEM GLO-90",
+    copernicus: "Copernicus DEM GLO-90 (© DLR e Airbus)", piatta: "piatto (nessun modello del terreno disponibile qui)" };
+  async function fonteTerreno() {
+    const m = stato.mappa;
+    if (!m || !stato.terrenoServer || !m.getSource("terreno")) { stato.fonteTerreno = m && m.getSource("terreno") ? null : "piatta"; legendaTerreno(); return; }
+    const c = m.getCenter(), z = Math.min(15, Math.max(8, Math.floor(m.getZoom()) - 1)), n = 2 ** z;
+    const x = Math.floor((c.lng + 180) / 360 * n), y = Math.floor((1 - Math.asinh(Math.tan(c.lat * Math.PI / 180)) / Math.PI) / 2 * n);
+    try {
+      const r = await fetch(TESSERE_TERRENO.replace("{z}", z).replace("{x}", x).replace("{y}", y));
+      stato.fonteTerreno = r.ok ? (r.headers.get("X-Terreno-Fonte") || null) : "piatta";
+      stato.nomeTerreno = r.ok ? (r.headers.get("X-Terreno-Nome") || null) : null;     // 08/11/2026: più DTM regionali
+    } catch { stato.fonteTerreno = null; stato.nomeTerreno = null; }
+    legendaTerreno();
+  }
+  function legendaTerreno() {
+    const l = $("legenda-3d");
+    if (!l) return;
+    let el = $("legenda-terreno");
+    if (!el) { el = h("span"); el.id = "legenda-terreno"; l.appendChild(el); }
+    const osm = stato.corpi.some((c) => (archivioDi(c) || {}).osm && !c.quotaNota);   // sagome regionali con la quota dal DTM: terreno vero
+    const dtm = /^dtm/.test(stato.fonteTerreno || "") && stato.nomeTerreno
+      ? `${stato.nomeTerreno}${/copernicus/.test(stato.fonteTerreno) ? " e Copernicus DEM GLO-90" : ""}` : null;
+    const f = osm ? "piatto (edifici OpenStreetMap: nessuna quota del terreno)" : dtm || NOMI_TERRENO[stato.fonteTerreno] || (stato.fonteTerreno ? stato.fonteTerreno : "dal server");
+    el.textContent = `Terreno: ${f}${stato.esagera && stato.esagera !== 1 ? `, rilievo esagerato ×${String(stato.esagera).replace(".", ",")}` : ""}`;
+    el.hidden = !stato.in3d;
+  }
+
   // ------------------------------------------------------------------ mappa
+  // punto di apertura (08/11/2026, decisione di Paolo): Cesena, ospedale Bufalini, se l'indirizzo della pagina non porta
+  // un punto, una sede, un edificio, un modello, un file o la demo e la regione scelta è l'Emilia-Romagna; null altrimenti
+  function partenza() {
+    const C0 = window.EUGENIO_CERCA;
+    if (!DUE_TEMPI || !C0 || !C0.PARTENZA || !C0.partenzaLibera() || stato.locale || (stato.indice && stato.indice.sintetico)) return null;
+    return C0.PARTENZA;
+  }
   async function creaMappa() {
     const ml = window.maplibregl;
     if (!ml) throw new Error("libreria della mappa non caricata");
     const proto = new window.pmtiles.Protocol();
     ml.addProtocol("pmtiles", proto.tile);
     const abs = (p) => new URL(p, location.href).href;
-    const [lon, lat] = stato.indice ? stato.indice.centro : [12.5683, 44.0594];
+    // (08/11/2026) prima apertura senza indicazioni nell'indirizzo: Cesena, ospedale Bufalini (cerca_luogo.js, PARTENZA)
+    const P = partenza();
+    const [lon, lat] = P ? [P.lon, P.lat] : stato.indice ? stato.indice.centro : [12.5683, 44.0594];
     const vuota = () => ({ type: "geojson", data: { type: "FeatureCollection", features: [] } });
     const sources = { ombre: vuota(), scelto: vuota(), fv: vuota(), linea: vuota(), facciate: vuota(), falde: vuota(), alberi: vuota(), cercato: vuota() };
     const archivi = stato.archivi.length ? stato.archivi : stato.base ? [{ base: stato.base, indice: stato.indice }] : [];
-    if (stato.base) {
-      sources.terreno = { type: "raster-dem", url: `pmtiles://${abs(stato.base + "terreno.pmtiles")}`, encoding: "terrarium", tileSize: 256 };
-      sources.rilievo = { type: "raster-dem", url: `pmtiles://${abs(stato.base + "terreno.pmtiles")}`, encoding: "terrarium", tileSize: 256 };
+    {
+      // terreno: dal server (se la rotta risponde), o dalle tessere dell'archivio di partenza se le ha
+      stato.terrenoServer = await provaTerreno();
+      const a0 = stato.base ? { base: stato.base, indice: stato.indice || {} } : null, t0 = sorgenteTerreno(a0);
+      if (t0) {
+        sources.terreno = t0;
+        sources.rilievo = sorgenteTerreno(a0);
+        stato.baseTerreno = terrenoProprio(a0) ? a0.base : "server";
+      }
     }
     // un sorgente vettoriale per archivio: «corpi» il primo (il più affidabile), «corpi_1», «corpi_2»… gli altri
+    // (il ripiego OSM, senza file statici, è una sorgente GeoJSON riempita da edificiOsm)
     stato.sorgentiCorpi = archivi.map((a, k) => {
       const id = k ? `corpi_${k}` : "corpi";
-      sources[id] = { type: "vector", url: `pmtiles://${abs(a.base + "corpi.pmtiles")}`, attribution: a.indice.attribuzione || "" };
+      sources[id] = a.osm ? { type: "geojson", data: { type: "FeatureCollection", features: [] }, attribution: ATTRIBUZIONE_OSM }
+        : a.locale ? { type: "geojson", data: { type: "FeatureCollection", features: a.features }, attribution: a.indice.attribuzione }
+        : { type: "vector", url: `pmtiles://${abs(a.base + "corpi.pmtiles")}`, attribution: a.indice.attribuzione || "" };
       return id;
     });
+    const strato = (k) => (archivi[k].osm || archivi[k].locale ? {} : { "source-layer": "corpi" });
     const layers = [{ id: "sfondo", type: "background", paint: { "background-color": colore("--carta") } }];
-    if (stato.base) layers.push({ id: "rilievo", type: "hillshade", source: "rilievo", paint: { "hillshade-exaggeration": 0.4, "hillshade-shadow-color": colore("--linea") } });
+    // ombreggiatura del rilievo (07/11/2026 sera, prova a Bagno di Romagna: «non sembra 3D»): nella vista 3D sempre, più
+    // marcata senza ortofoto; colori dal tema (ombre scure, luci chiare), sopra il fondo e sotto ortofoto e strati
+    if (sources.rilievo) layers.push({ id: "rilievo", type: "hillshade", source: "rilievo", paint: paintRilievo(false) });
     layers.push({ id: "ombre", type: "fill", source: "ombre", paint: { "fill-color": "#000", "fill-opacity": 0.32 } });
-    stato.sorgentiCorpi.forEach((id) => layers.push({ id, type: "fill-extrusion", source: id, "source-layer": "corpi",
-      paint: { "fill-extrusion-color": colore("--serie-6"), "fill-extrusion-height": ["+", ["get", "altezza"], 0], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.85 } }));
+    // colori (07/11/2026 sera): edifici del DB topografico come prima, quelli di OpenStreetMap (ripiego) in marrone
+    const coloreDi = (k) => (archivi[k].osm ? COLORE_OSM : colore("--serie-6"));
+    stato.sorgentiCorpi.forEach((id, k) => layers.push({ id, type: "fill-extrusion", source: id, ...strato(k),
+      paint: { "fill-extrusion-color": coloreDi(k), "fill-extrusion-height": ["+", ["get", "altezza"], 0], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.85 } }));
     layers.push(
       { id: "scelto", type: "fill-extrusion", source: "scelto",
         paint: { "fill-extrusion-color": colore("--primario"), "fill-extrusion-height": ["get", "altezza"], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.95 } },
@@ -235,22 +793,31 @@
     // mappa 2D (Modelli 3D in due tempi): sagome piatte, sagoma scelta in evidenza, punto cercato
     stato.strati2d = [];
     if (DUE_TEMPI) {
-      stato.sorgentiCorpi.forEach((id) => {
-        layers.push({ id: `${id}-2d`, type: "fill", source: id, "source-layer": "corpi", minzoom: 13,
-          paint: { "fill-color": colore("--serie-6"), "fill-opacity": 0.3 } });
-        layers.push({ id: `${id}-2d-linea`, type: "line", source: id, "source-layer": "corpi", minzoom: 13,
-          paint: { "line-color": colore("--inchiostro"), "line-width": ["interpolate", ["linear"], ["zoom"], 14, 0.6, 19, 1.6], "line-opacity": 0.85 } });
-        layers.push({ id: `${id}-2d-scelto`, type: "fill", source: id, "source-layer": "corpi", filter: ["==", ["get", "edificio"], ""],
+      stato.sorgentiCorpi.forEach((id, k) => {
+        // sagome OSM (ripiego) tratteggiate: si distinguono da quelle del DBTR
+        layers.push({ id: `${id}-2d`, type: "fill", source: id, ...strato(k), minzoom: 13,
+          paint: { "fill-color": coloreDi(k), "fill-opacity": archivi[k].osm ? 0.35 : 0.3 } });
+        layers.push({ id: `${id}-2d-linea`, type: "line", source: id, ...strato(k), minzoom: 13,
+          paint: { "line-color": colore("--inchiostro"), "line-width": ["interpolate", ["linear"], ["zoom"], 14, 0.6, 19, 1.6], "line-opacity": 0.85,
+            ...(archivi[k].osm ? { "line-dasharray": [2, 1] } : {}) } });
+        layers.push({ id: `${id}-2d-scelto`, type: "fill", source: id, ...strato(k), filter: ["==", ["get", "edificio"], ""],
           paint: { "fill-color": colore("--primario"), "fill-opacity": 0.75 } });
-        layers.push({ id: `${id}-2d-bordo`, type: "line", source: id, "source-layer": "corpi", filter: ["==", ["get", "edificio"], ""],
+        layers.push({ id: `${id}-2d-bordo`, type: "line", source: id, ...strato(k), filter: ["==", ["get", "edificio"], ""],
           paint: { "line-color": colore("--inchiostro"), "line-width": 2.5 } });
         stato.strati2d.push(`${id}-2d`);
       });
+      // zone coperte dagli archivi veri: riquadro tratteggiato, discreto (07/11/2026)
+      const zone = archivi.filter((a) => !a.indice.sintetico && Array.isArray(a.indice.riquadro) && a.indice.riquadro.length === 4)
+        .map((a) => { const [x0, y0, x1, y1] = a.indice.riquadro.map(Number);
+          return { type: "Feature", properties: { nome: a.indice.nome || "" }, geometry: { type: "LineString", coordinates: [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]] } }; });
+      sources.zone = { type: "geojson", data: { type: "FeatureCollection", features: zone } };
+      layers.push({ id: "zone-coperte", type: "line", source: "zone",
+        paint: { "line-color": colore("--inchiostro"), "line-width": 1.2, "line-opacity": 0.55, "line-dasharray": [3, 3] } });
       layers.push({ id: "cercato", type: "circle", source: "cercato",
         paint: { "circle-radius": 7, "circle-color": colore("--primario"), "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
     }
     const m = new ml.Map({
-      container: "mappa3d", center: [lon, lat], zoom: DUE_TEMPI ? (stato.base ? 16 : 7) : 17.2, pitch: DUE_TEMPI ? 0 : 55,
+      container: "mappa3d", center: [lon, lat], zoom: P ? P.zoom : DUE_TEMPI ? (stato.base ? 16 : 7) : 17.2, pitch: DUE_TEMPI ? 0 : 55,
       bearing: DUE_TEMPI ? 0 : -20, maxPitch: 80, maxZoom: 21, attributionControl: false,
       // per copiare la vista nel report e nell'immagine scaricata (con l'ortofoto)
       canvasContextAttributes: { preserveDrawingBuffer: true },
@@ -261,8 +828,10 @@
     if (DUE_TEMPI) m.addControl(new ml.ScaleControl({ unit: "metric" }), "bottom-left");
     await new Promise((ok) => m.on("load", ok));
     if (DUE_TEMPI) m.getContainer().querySelectorAll(".maplibregl-compact-show").forEach((x) => x.classList.remove("maplibregl-compact-show"));
+    if (DUE_TEMPI) zoneComuni(m, archivi);
     if (!DUE_TEMPI) { try { if (m.getSource("terreno")) m.setTerrain({ source: "terreno", exaggeration: 1 }); } catch { /* terreno non disponibile: mappa piatta */ } }
     m.on("click", (e) => clic(e));
+    m.on("moveend", () => { if (!stato.in3d) notaAltezzeOsm(); else if (DUE_TEMPI) lontanoDal3d(); });
     m.on("mousemove", (e) => {
       if (stato.trascino) return;
       if (DUE_TEMPI && !stato.in3d && m.getLayer("cercato") && m.queryRenderedFeatures(e.point, { layers: ["cercato"] }).length) {
@@ -274,10 +843,12 @@
     });
     document.addEventListener("eugenio:aspetto", () => {
       m.setPaintProperty("sfondo", "background-color", colore("--carta"));
-      stato.sorgentiCorpi.forEach((id) => {
-        m.setPaintProperty(id, "fill-extrusion-color", colore("--serie-6"));
-        if (m.getLayer(`${id}-2d`)) { m.setPaintProperty(`${id}-2d`, "fill-color", colore("--serie-6")); m.setPaintProperty(`${id}-2d-scelto`, "fill-color", colore("--primario")); }
+      stato.sorgentiCorpi.forEach((id, k) => {
+        const col = (stato.archivi[k] || {}).osm ? COLORE_OSM : colore("--serie-6");
+        m.setPaintProperty(id, "fill-extrusion-color", col);
+        if (m.getLayer(`${id}-2d`)) { m.setPaintProperty(`${id}-2d`, "fill-color", col); m.setPaintProperty(`${id}-2d-scelto`, "fill-color", colore("--primario")); }
       });
+      coloriRilievo();
       m.setPaintProperty("scelto", "fill-extrusion-color", colore("--primario"));
       m.setPaintProperty("linea", "line-color", colore("--segno"));
     });
@@ -308,10 +879,24 @@
     return m;
   }
 
+  // zone coperte (07/11/2026): per gli archivi di un comune intero il confine ISTAT del comune al posto del riquadro
+  async function zoneComuni(m, archivi) {
+    if (!C || typeof C.geometriaComune !== "function" || !m.getSource("zone")) return;
+    const feats = [];
+    for (const a of archivi) {
+      if (a.osm || a.indice.sintetico || !Array.isArray(a.indice.riquadro) || a.indice.riquadro.length !== 4) continue;
+      const [x0, y0, x1, y1] = a.indice.riquadro.map(Number);
+      const g = a.istat ? await C.geometriaComune(a.istat, (x0 + x1) / 2, (y0 + y1) / 2) : null;
+      const linee = g ? (g.type === "MultiPolygon" ? g.coordinates : [g.coordinates]).flat() : [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]];
+      feats.push({ type: "Feature", properties: { nome: a.indice.nome || "" }, geometry: { type: "MultiLineString", coordinates: linee } });
+    }
+    try { m.getSource("zone").setData({ type: "FeatureCollection", features: feats }); } catch { /* restano i riquadri */ }
+  }
+
   // ------------------------------------------------------------------ Modelli 3D in due tempi (05/11/2026)
   function vedi(m, ids, si) { ids.forEach((id) => { if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", si ? "visible" : "none"); }); }
   const strati3d = () => [...(stato.sorgentiCorpi || []), "rilievo", "ombre", "scelto", "falde", "fv", "facciate", "alberi", "linea"];
-  const strati2dTutti = () => (stato.sorgentiCorpi || []).flatMap((id) => [`${id}-2d`, `${id}-2d-linea`, `${id}-2d-scelto`, `${id}-2d-bordo`]).concat(["cercato"]);
+  const strati2dTutti = () => (stato.sorgentiCorpi || []).flatMap((id) => [`${id}-2d`, `${id}-2d-linea`, `${id}-2d-scelto`, `${id}-2d-bordo`]).concat(["zone-coperte", "cercato"]);
   function evidenzia2d(edificio) {
     const m = stato.mappa;
     (stato.sorgentiCorpi || []).forEach((id) => ["2d-scelto", "2d-bordo"].forEach((suf) => {
@@ -344,6 +929,64 @@
       m.getSource("cercato").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [lon, lat] } }] });
     }
   }
+  // zona coperta dagli archivi (07/11/2026): per un archivio di un comune intero (istat) il confine ISTAT del comune, per
+  // gli altri il riquadro [lon0, lat0, lon1, lat1] dei corpi (che sborda sui comuni vicini)
+  async function coperto(lon, lat) {
+    const archivi = veri().length ? veri() : stato.indice && !stato.archivi.length ? [{ indice: stato.indice }] : [];
+    const dentro = (a) => { const r = a.indice && a.indice.riquadro;
+      return Array.isArray(r) && r.length === 4 && lon >= r[0] && lon <= r[2] && lat >= r[1] && lat <= r[3]; };
+    if (archivi.some((a) => !a.istat && dentro(a))) return true;
+    const conIstat = archivi.filter((a) => a.istat);
+    if (!conIstat.length) return false;
+    const c = await comuneNelPunto(lon, lat);
+    if (c && conIstat.some((a) => a.istat === c.istat)) return true;
+    // (07/11/2026 sera) i confini ISTAT del sito sono generalizzati (~100 m): vicino al confine il 5 % dei corpi DBTR
+    // (Cattolica 13 %) cadeva «fuori» e prendeva OpenStreetMap. Coperto anche se l'archivio ha un corpo entro 150 m.
+    for (const a of conIstat.filter(dentro)) if (await vicinoAlDbtr(a, lon, lat)) return true;
+    return false;
+  }
+  async function vicinoAlDbtr(a, lon, lat, metri = MARGINE_CONFINE) {
+    if (!a.base) return false;
+    const dlat = metri / 110574, dlon = metri / (111320 * Math.cos(lat * Math.PI / 180)), c = (a.indice && a.indice.cella) || 0.01;
+    for (let i = Math.floor((lon - dlon) / c); i <= Math.floor((lon + dlon) / c); i++) {
+      for (let j = Math.floor((lat - dlat) / c); j <= Math.floor((lat + dlat) / c); j++) {
+        const d = await cella(`${i}_${j}`, a.base);
+        for (const f of (d && d.features) || []) {
+          const r0 = anelli(f.geometry)[0];
+          if (r0 && r0.some((q) => Math.abs(q[0] - lon) <= dlon && Math.abs(q[1] - lat) <= dlat)) return true;
+        }
+      }
+    }
+    return false;
+  }
+  // comune del punto: confini di tutta Italia (confini_gl.js), altrimenti quelli dell'Emilia-Romagna (dati/mappa/08.json)
+  async function comuneNelPunto(lon, lat) {
+    if (C && typeof C.comuneNelPunto === "function") { try { const c = await C.comuneNelPunto(lon, lat); if (c) return c; } catch { /* sotto */ } }
+    return comuneDi(lon, lat);
+  }
+  function nomiArchivi() {
+    const n = (veri().length ? veri() : stato.indice && !stato.archivi.length ? [{ indice: stato.indice }] : [])
+      .map((a) => a.indice && (a.indice.nome || a.indice.attribuzione)).filter(Boolean);
+    return n.length ? (n.length > 4 ? `${n.slice(0, 4).map((x) => `«${x}»`).join(", ")} e altri ${n.length - 4}` : n.map((x) => `«${x}»`).join(", ")) : "«archivio degli edifici»";
+  }
+  // testo quando nessun edificio contiene il punto: fuori dalla zona coperta (con o senza il ripiego OSM), o dentro ma
+  // lontano dagli edifici
+  async function nessunEdificio(lon, lat, prima) {
+    if (!(await coperto(lon, lat))) {
+      const zona = veri().length ? `dall'archivio degli edifici (${nomiArchivi()})` : "da un archivio degli edifici di qualità (DBTR)";
+      if (stato.osmAttivo && stato.osm.errore) {
+        return `${prima}il punto è fuori dalla zona coperta ${zona} e OpenStreetMap, il ripiego per queste zone, non ha risposto `
+          + `(${stato.osm.errore.replace(/\.$/, "")}): qui il 3D non si può generare ora. Riprova tra qualche minuto.`;
+      }
+      if (stato.osmAttivo) {
+        return `${prima}il punto è fuori dalla zona coperta ${zona}: qui si usano gli edifici di OpenStreetMap (ripiego, altezze in `
+          + "parte stimate), ma nessuno contiene il punto né è entro 30 m. Trascina il punto sull'edificio o fai clic sull'edificio.";
+      }
+      return `${prima}il punto è fuori dalla zona coperta ${zona}: qui il 3D non si può ancora `
+        + "generare. Le zone coperte sono tratteggiate sulla mappa.";
+    }
+    return `${prima}nessun edificio dell'archivio lo contiene (né entro 30 m). Trascina il punto sull'edificio o fai clic sull'edificio.`;
+  }
   // il punto è cambiato (trascinato o clic): sceglie l'edificio che lo contiene (o il più vicino entro 30 m)
   async function puntoCambiato() {
     const p = stato.punto;
@@ -358,11 +1001,10 @@
     if (f) {
       scegli2d(String(f.properties.edificio), p.lon, p.lat, null, +f.properties.archivio || 0);
       if (p.origine === "spostato") messaggio("messaggio", `Punto spostato in ${dove}: scelto l'edificio ${f.properties.edificio}. Premi «Genera il 3D» `
-        + "o sposta ancora il punto.");
+        + "o sposta ancora il punto." + avvisoOsm(+f.properties.archivio || 0));
     } else {
       stato.daGenerare = null; evidenzia2d(""); $("genera-3d").disabled = true;
-      messaggio("messaggio", `Punto in ${dove}: nessun edificio dell'archivio lo contiene (né entro 30 m). Trascina il punto sull'edificio `
-        + "o fai clic sull'edificio.", true);
+      messaggio("messaggio", await nessunEdificio(p.lon, p.lat, `Punto in ${dove}: `), true);
     }
   }
   // trascinamento del segnaposto (mouse e dito) nella mappa 2D
@@ -388,9 +1030,11 @@
     stato.daGenerare = { edificio, lon, lat, sede };
     evidenzia2d(edificio);
     $("genera-3d").disabled = false;
-    const a = stato.archivi[Math.max(0, k)], fonte = a && a.indice.attribuzione ? ` (sagome: ${a.indice.attribuzione})` : "";
+    const a = stato.archivi[Math.max(0, k)], f = a && a.osm ? stato.osm.visti.get(edificio) : null;
+    const att = f && f.properties && f.properties.regione_sagoma ? String(f.properties.fonte_sagoma || "") : a && a.indice.attribuzione;   // sagome regionali (08/11/2026)
+    const fonte = att ? ` (sagome: ${att})` : "";
     messaggio("messaggio", `Edificio ${edificio} scelto${fonte}. Premi «Genera il 3D» sotto la mappa; un altro clic cambia la scelta, `
-      + "un clic sullo stesso edificio la toglie.");
+      + "un clic sullo stesso edificio la toglie." + avvisoOsm(Math.max(0, k)));
   }
   function togliScelta2d() {
     stato.daGenerare = null; evidenzia2d(""); $("genera-3d").disabled = true;
@@ -408,7 +1052,8 @@
     if (!DUE_TEMPI || !m) return;
     stato.in3d = true;
     vedi(m, strati3d(), true); vedi(m, strati2dTutti(), false); vedi(m, ["confini-comuni", "confini-province"], false);
-    try { if (m.getSource("terreno")) m.setTerrain({ source: "terreno", exaggeration: 1 }); } catch { /* piatta */ }
+    // edificio OSM (ripiego): niente DTM, mappa piatta come le quote dei corpi
+    terreno3d(); coloriRilievo(); fonteTerreno();
     m.dragRotate.enable(); m.touchPitch.enable(); m.touchZoomRotate.enableRotation(); m.doubleClickZoom.disable();
     $("torna-2d").hidden = false; $("genera-3d").hidden = true; $("aiuto-2d").hidden = true; $("aiuto-3d").hidden = false;
     if (stato.barra3d) stato.barra3d.hidden = false;
@@ -416,7 +1061,10 @@
     vistaNominata("3d");
     fontiCorpi();
   }
-  function esci3d() {
+  // azzera (07/11/2026 sera, prove di Paolo): nuova ricerca o mappa portata lontano dall'edificio durante il 3D; si torna
+  // alla mappa 2D dritta (subito, senza animazione: un volo partito subito dopo la interromperebbe e la mappa restava
+  // inclinata, un «3D piatto») e il 3D dell'edificio di prima si toglie dalla mappa
+  function esci3d(azzera = false) {
     const m = stato.mappa;
     if (!DUE_TEMPI || !m || !stato.in3d) return;
     stato.in3d = false;
@@ -424,13 +1072,29 @@
     if (stato.anima) $("anima").click();
     vedi(m, strati3d(), false); vedi(m, strati2dTutti(), true); vedi(m, ["confini-comuni", "confini-province"], true);
     try { m.setTerrain(null); } catch { /* niente */ }
+    quotaCamera();
     m.dragRotate.disable(); m.touchPitch.disable(); m.touchZoomRotate.disableRotation(); m.doubleClickZoom.enable();
     if (typeof m.setVerticalFieldOfView === "function") m.setVerticalFieldOfView(36.87);
-    m.easeTo({ pitch: 0, bearing: 0, roll: 0, duration: 600 });
+    if (azzera) {
+      m.jumpTo({ pitch: 0, bearing: 0, roll: 0 });
+      stato.corpi = []; stato.vicini = []; stato.originali = []; stato.aree = []; stato.edificio = null; stato.daGenerare = null;
+      evidenzia2d("");
+      ["scelto", "falde", "fv", "ombre", "facciate", "linea", "alberi"].forEach((id) => { const g = m.getSource(id); if (g) g.setData({ type: "FeatureCollection", features: [] }); });
+    } else m.easeTo({ pitch: 0, bearing: 0, roll: 0, duration: 600 });
     $("torna-2d").hidden = true; $("genera-3d").hidden = false; $("genera-3d").disabled = !stato.daGenerare;
     $("aiuto-2d").hidden = false; $("aiuto-3d").hidden = true;
     if (stato.barra3d) stato.barra3d.hidden = true;
-    messaggio("messaggio", "Mappa 2D: scegli un altro edificio con un clic (o cercalo), poi «Genera il 3D». A destra restano i dati dell'ultimo edificio generato.");
+    messaggio("messaggio", azzera ? "Mappa 2D: il 3D dell'edificio di prima è stato tolto. Scegli l'edificio con un clic, poi «Genera il 3D»."
+      : "Mappa 2D: scegli un altro edificio con un clic (o cercalo), poi «Genera il 3D». A destra restano i dati dell'ultimo edificio generato.");
+    fontiCorpi();
+  }
+  // nella vista 3D la mappa portata a più di 2 km dall'edificio: si torna al 2D (stesso comportamento della ricerca)
+  const LONTANO_3D = 2000;
+  function lontanoDal3d() {
+    const m = stato.mappa;
+    if (!stato.in3d || !stato.proj || !m) return;
+    const c = m.getCenter(), p = stato.proj.avanti([c.lng, c.lat]);
+    if (Math.hypot(p[0], p[1]) > LONTANO_3D) esci3d(true);
   }
   // viste come in mappa3d.js: dall'alto, 3D (inclinazione 55°, imbardata −20°), isometrica (60°, −45°, prospettiva quasi
   // nulla: MapLibre non ha la proiezione ortografica, si usa un campo visivo stretto)
@@ -439,9 +1103,20 @@
     if (!m) return;
     const v = { alto: { pitch: 0, bearing: 0 }, "3d": { pitch: 55, bearing: -20 }, iso: { pitch: 60, bearing: -45 } }[nome] || { pitch: 55, bearing: -20 };
     if (typeof m.setVerticalFieldOfView === "function") m.setVerticalFieldOfView(nome === "iso" ? 8 : 36.87);
-    const centro = stato.proj ? stato.proj.indietro([0, 0]) : m.getCenter();
-    const z = nome === "iso" ? 17.6 + Math.log2(36.87 / 8) * 0.9 : 17.6;
-    m.easeTo({ ...v, roll: 0, center: centro, zoom: stato.edificio ? z : m.getZoom(), duration: 600 });
+    let centro = stato.proj ? stato.proj.indietro([0, 0]) : m.getCenter();
+    let z = 17.6;
+    // isometrica (07/11/2026 sera, «troppo vicina»): l'inquadratura è circa il doppio dell'edificio (lato maggiore della
+    // pianta o altezza, il più grande), centrata sull'edificio
+    if (nome === "iso" && stato.corpi.length && stato.proj) {
+      const pts = stato.corpi.flatMap((c) => c.ring);
+      const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+      const L = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys), ...stato.corpi.map((c) => c.colmo || c.gronda || 0), 10);
+      centro = stato.proj.indietro([(Math.max(...xs) + Math.min(...xs)) / 2, (Math.max(...ys) + Math.min(...ys)) / 2]);
+      const lato = Math.min(m.getContainer().clientWidth || 600, m.getContainer().clientHeight || 400);
+      z = Math.max(14, Math.min(20, Math.log2(78271.517 * Math.cos(centro[1] * Math.PI / 180) * lato / (2 * L))));
+    }
+    quotaCamera();
+    m.easeTo({ ...v, roll: 0, center: centro, zoom: stato.edificio ? z : m.getZoom(), ...(stato.in3d ? { elevation: quotaDelCentro() } : {}), duration: 600 });
   }
   function comandi3d(m) {
     const comandi = h("div", "mappa3d-comandi"); comandi.setAttribute("role", "toolbar"); comandi.setAttribute("aria-label", "Comandi della vista 3D");
@@ -455,11 +1130,17 @@
       ["Ruota", [["↺", "Ruota la mappa a sinistra", () => ruota(-15)], ["↻", "Ruota la mappa a destra", () => ruota(15)]]],
       ["Inclina", [["−", "Inclina di meno, verso la vista dall'alto", () => inclina(-10)], ["+", "Inclina di più", () => inclina(10)]]],
       ["Rollio", [["↺", "Rollio a sinistra", () => rolla(-15)], ["↻", "Rollio a destra", () => rolla(15)]]],
+      ["Rilievo", [["×1", "Rilievo vero (predefinito)", () => esagera(1), 1], ["×1,5", "Rilievo esagerato una volta e mezza", () => esagera(1.5), 1.5],
+        ["×2", "Rilievo esagerato due volte", () => esagera(2), 2]]],
     ];
     for (const [nome, pulsanti] of gruppi) {
       const g = h("span", "mappa3d-gruppo"); g.setAttribute("role", "group"); g.setAttribute("aria-label", nome); g.dataset.gruppo = nome;
       g.appendChild(h("span", "mappa3d-nome", nome));
-      for (const [t, titolo, fa] of pulsanti) { const b = h("button", null, t); b.type = "button"; b.title = titolo; b.setAttribute("aria-label", titolo); b.addEventListener("click", fa); g.appendChild(b); }
+      for (const [t, titolo, fa, x] of pulsanti) {
+        const b = h("button", null, t); b.type = "button"; b.title = titolo; b.setAttribute("aria-label", titolo); b.addEventListener("click", fa);
+        if (x) { b.dataset.esagera = String(x); b.setAttribute("aria-pressed", String(x === 1)); }
+        g.appendChild(b);
+      }
       comandi.appendChild(g);
     }
     comandi.hidden = true;
@@ -513,15 +1194,18 @@
 
   // fonte usata per ogni corpo, dalla più affidabile (05/11/2026): falde LiDAR → DB topografico regionale con le altezze →
   // modello importato DXF/IFC → OSM → stima
-  const LIVELLI = ["falde LiDAR", "corpi dal LiDAR", "DB topografico regionale", "modello importato (DXF/IFC)", "OpenStreetMap", "stima", "dato dell'utente", "dati sintetici"];
+  const LIVELLI = ["falde LiDAR", "corpi dal LiDAR", "DB topografico regionale", "modello importato (DXF/IFC)", "sagome regionali con altezze OSM o stimate", "OpenStreetMap", "stima", "dato dell'utente", "dati sintetici"];
   function livelloFonte(c) {
     if (c.sintetico) return "dati sintetici";
     if (c.modificato) return "dato dell'utente";
     if (c.edificio === "MODELLO") return "modello importato (DXF/IFC)";
     if (c.lidar && c.lidar.stato === "ok") return "falde LiDAR";
+    if (c.regione_sagoma) return "sagome regionali con altezze OSM o stimate";      // 08/11/2026 (Veneto)
     const t = `${c.fonte_sagoma} ${c.fonte_altezza} ${c.licenza}`.toLowerCase();
     if (/stima|stimat/.test(String(c.fonte_altezza).toLowerCase())) return "stima";
     if (/osm|openstreetmap|odbl/.test(t)) return "OpenStreetMap";
+    // «DBTR … da DTM DSM 2008» è un'altezza del DB topografico (07/11/2026): il LiDAR si riconosce dalla sagoma
+    if (/dbtr|db topografico|database topografico|dbgt|ctrn|ctr 3d/.test(t)) return "DB topografico regionale";
     if (/lidar|dsm/.test(t)) return "corpi dal LiDAR";
     return "DB topografico regionale";
   }
@@ -533,11 +1217,32 @@
       .map(([l, ids]) => `${l}: ${ids.length > 6 ? `${ids.length} corpi` : ids.join(", ")}`);
     return `Fonte del 3D per corpo (dalla più affidabile): ${parti.join("; ")}. Il dettaglio (sagoma, altezza, licenza) è nella tabella «Corpi».`;
   }
+  // tetti stimati e ipotizzati: forma e precedenza, per la nota, l'immagine e il report
+  function testoTettiStimati() {
+    const n = contaTetti(), t = [];
+    if (n.colmo) t.push(`Tetto a falde stimato dal colmo DBTR per ${n.colmo} ${n.colmo === 1 ? "corpo" : "corpi"}`);
+    if (n.ipotesi) t.push(`tetto ipotizzato a falde per ${n.ipotesi} ${n.ipotesi === 1 ? "corpo" : "corpi"} (22° in pianura, 32° in montagna: quota del terreno da 600 m al Nord, da 700 m al Centro-Sud)`);
+    if (!t.length) return "";
+    const s = t.join("; ");
+    return `${s[0].toUpperCase()}${s.slice(1)}: forma a capanna sul lato lungo o a padiglione; le falde LiDAR, quando ci saranno, prendono il posto delle stime.`;
+  }
   function fontiCorpi() {
     const p = $("fonti-corpi");
     if (!p) return;
     const t = testoFontiCorpi();
     p.textContent = t; p.hidden = !t || !stato.in3d;
+    const nt = $("nota-tetti"), tt = stato.in3d ? testoTetti() : "";
+    if (nt) { nt.textContent = tt; nt.hidden = !tt; }
+    const lf = $("legenda-falde");
+    if (lf) {
+      const n = contaTetti();
+      lf.lastChild.textContent = stato.in3d && stato.corpi.length
+        ? `falde dei tetti: ${n.lidar} LiDAR, ${n.colmo} dal colmo DBTR, ${n.ipotesi} ipotizzate (22°/32°), ${n.piano} piani (dall'arancio, a sud, al blu, a nord)`
+        : "falde dei tetti: LiDAR, stimate dal colmo DBTR o ipotizzate a 22°/32° (dall'arancio, a sud, al blu, a nord)";
+    }
+    const lo = $("legenda-osm"); if (lo) lo.hidden = !(stato.osm && stato.osm.visti && stato.osm.visti.size);
+    legendaTerreno();
+    notaAltezzeOsm();
   }
 
   // immagine della vista (2D o 3D) con le attribuzioni di tutto quello che si vede
@@ -547,15 +1252,36 @@
     const f = ortoVisibile() ? stato.ortofoto : null;
     if (f && !f.copia) return `«${f.nome}» è solo in consultazione dal vivo: per scaricare l'immagine scegli un'altra ortofoto o nessuna.`;
     if (f) righe.push(`Ortofoto: ${f.citazione} – licenza ${f.licenza} (${f.scheda})${f.stato === "da confermare" ? "; uso tramite il server di EuGEnio in attesa di conferma della fonte" : ""}.`);
+    if (f && stato.sposta && stato.sposta.riga()) righe.push(stato.sposta.riga());
     if (stato.contestoOrto && m.getLayer("contesto") && !f && ortoVisibile()) righe.push(`Contesto: ${stato.contestoOrto.citazione} – licenza ${stato.contestoOrto.licenza}.`);
     const archivi = stato.archivi.length ? stato.archivi : stato.indice ? [{ indice: stato.indice }] : [];
-    archivi.forEach((a) => {
+    new Set(archivi.filter((a) => !a.osm).map((a) => {
       const att = a.indice.attribuzione || "archivio di EuGEnio", lic = a.indice.licenza || "";
-      righe.push(`Edifici: ${att}${lic && !att.includes(lic) ? ` (${lic})` : ""}.`);
-    });
+      return `Edifici: ${att}${lic && !att.includes(lic) ? ` (${lic})` : ""}.`;
+    })).forEach((t) => righe.push(t));
+    // ripiego OSM (07/11/2026): licenza della sagoma, mai confusa con quella dell'archivio CC BY
+    if (archivi.some((a) => a.osm) && stato.osm.visti.size && stato.osm.sagome)
+      righe.push(`Sagome degli edifici fuori dal DBTR: ${stato.osm.sagome.attribuzione} (${stato.osm.sagome.scheda || ""}), dal servizio WFS della Regione.`);
+    if (archivi.some((a) => a.osm) && stato.osm.visti.size)
+      righe.push("Edifici fuori dal DBTR: © OpenStreetMap contributors, ODbL 1.0 (openstreetmap.org/copyright), tramite l'API Overpass; "
+        + "ripiego con altezze in parte stimate.");
+    if (archivi.some((a) => a.osm) && (stato.osm.visti.size || stato.in3d)) { const t = testoAltezzeOsm(altezzeOsmVista(), stato.in3d ? " dell'edificio e dei vicini" : " nella vista"); if (t) righe.push(t); }
     if (stato.in3d && stato.lidar && stato.corpi.some((c) => c.lidar && c.lidar.stato === "ok"))
       Object.values(stato.lidar.attribuzioni || {}).forEach((a) => righe.push(`Falde dei tetti: ${a.attribuzione || a.descrizione} (${a.licenza}).`));
-    if (stato.in3d && stato.base && !stato.sintetico) righe.push("Terreno: DTM Emilia-Romagna 5×5 m (CC BY 4.0).");
+    if (stato.in3d && stato.terrenoServer && !stato.sintetico && !stato.corpi.some((c) => (archivioDi(c) || {}).osm)) righe.push(`${ATTRIBUZIONE_TERRENO}; quote dei corpi dal DTM 5×5 m.`);
+    else if (stato.in3d && stato.terrenoServer && stato.nomeTerreno) righe.push(`Terreno: ${stato.nomeTerreno}; altrove Copernicus DEM GLO-90 (© DLR e Airbus).`);
+    // legenda dei colori e del terreno nella vista 3D (07/11/2026 sera)
+    if (stato.in3d) {
+      const osmVisti = stato.osmAttivo && (stato.osm.visti.size || stato.vicini.some((c) => (archivioDi(c) || {}).osm));
+      const ts = testoTettiStimati();
+      righe.push(`Colori: edificio scelto in evidenza; edifici vicini del DB topografico in grigio${osmVisti ? "; edifici OpenStreetMap in marrone (altezza da OSM o stimata)" : ""}`
+        + `${stato.corpi.some((c) => c.falde && c.falde.length) ? "; falde dei tetti dall'arancio (a sud) al blu (a nord)" : ""}.`
+        + (ts ? ` ${ts}` : ""));
+      if (stato.corpi.length) righe.push(testoTetti());
+      const t = $("legenda-terreno");
+      if (t && t.textContent) righe.push(`${t.textContent}.`);
+    }
+    if (stato.in3d && stato.corpi.some((c) => (archivioDi(c) || {}).locale)) righe.push("Edifici dal DB topografico caricato dall'utente (letto solo nel browser): quote dei corpi dalla base del DB topografico, terreno 3D dal server.");
     if (stato.in3d) { const t = testoFontiCorpi(); if (t) righe.push(t.replace(/ Il dettaglio.*$/, "")); }
     if (stato.modello) righe.push(`Modello dell'utente «${stato.modello}» (letto solo nel browser).`);
     if (stato.strati) righe.push(...stato.strati.righe());
@@ -565,8 +1291,8 @@
     }
     righe.push(`${C ? C.ATTRIBUZIONE : "Confini: ISTAT (CC BY 4.0)"}. Mappa: MapLibre GL JS (BSD-3).`);
     const titolo = stato.in3d && stato.edificio
-      ? `Modelli 3D – ${stato.modello ? `modello «${stato.modello}»` : `edificio ${stato.edificio}`}${stato.comune ? `, ${stato.comune.nome}` : ""}`
-      : `Modelli 3D – mappa 2D, ${m.getCenter().lat.toFixed(5)} N ${m.getCenter().lng.toFixed(5)} E`;
+      ? `${TITOLO} – ${stato.modello ? `modello «${stato.modello}»` : `edificio ${stato.edificio}`}${stato.comune ? `, ${stato.comune.nome}` : ""}`
+      : `${TITOLO} – mappa 2D, ${m.getCenter().lat.toFixed(5)} N ${m.getCenter().lng.toFixed(5)} E`;
     const sint = stato.sintetico || (stato.indice && stato.indice.sintetico);
     return { titolo, righe, avviso: sint ? "Dati sintetici di esempio: sagome, altezze e terreno inventati, non rappresentano edifici reali." : "",
       nome: stato.in3d && stato.edificio ? `modello3d_${String(stato.edificio).replace(/[^\w-]+/g, "_").slice(0, 40)}` : "modelli3d_mappa" };
@@ -577,18 +1303,25 @@
   async function trovato(lon, lat, x) {
     const m = stato.mappa;
     if (!m) return;
-    esci3d();
-    stato.punto = { lon, lat, origine: "ricerca", fonte: x.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)" : "dati elaborati da Zornade (zornade.com)",
+    esci3d(true);
+    stato.punto = { lon, lat, origine: "ricerca", fonte: x.centro_comune ? "centro del comune (confini ISTAT, CC BY 4.0)"
+      : x.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)" : "dati elaborati da Zornade (zornade.com)",
       testo: [x.indirizzo_trovato, x.comune_catasto].filter(Boolean).join(", ") };
     impostaPunto(lon, lat, "ricerca");
-    m.flyTo({ center: [lon, lat], zoom: 18, duration: 900 });
+    m.flyTo({ center: [lon, lat], zoom: x.zoom || ZOOM_CERCA, pitch: 0, bearing: 0, duration: 900 });
+    // solo il comune, o indirizzo senza coordinate (07/11/2026 sera): nessun edificio scelto, si avvicina l'utente
+    if (x.centro_comune) {
+      stato.daGenerare = null; evidenzia2d(""); $("genera-3d").disabled = true;
+      messaggio("messaggio", `Centro del comune di ${x.comune_catasto || ""}: avvicinati, poi fai clic sull'edificio (o trascina il punto); infine «Genera il 3D».`);
+      return;
+    }
     if (stato.archivi.length || stato.base) {
       const f = edificioNelPunto(await contesto(lon, lat), lon, lat);
       if (f) {
         scegli2d(String(f.properties.edificio), lon, lat, null, +f.properties.archivio || 0);
         messaggio("messaggio", `Edificio ${f.properties.edificio} scelto nel punto trovato. Se il punto non è sull'edificio giusto `
-          + "(l'indirizzo può essere impreciso) trascinalo o fai clic sull'edificio; poi «Genera il 3D».");
-      } else messaggio("messaggio", "Nessun edificio dell'archivio contiene il punto (né entro 30 m): trascina il punto sull'edificio o fai clic sulla mappa.", true);
+          + "(l'indirizzo può essere impreciso) trascinalo o fai clic sull'edificio; poi «Genera il 3D»." + avvisoOsm(+f.properties.archivio || 0));
+      } else messaggio("messaggio", await nessunEdificio(lon, lat, "Punto trovato: "), true);
     } else messaggio("messaggio", "Punto trovato (trascinalo per correggerlo). L'archivio degli edifici di questa zona non è ancora sul server: "
       + "il 3D non si può generare qui.", true);
   }
@@ -603,7 +1336,7 @@
     return { type: "FeatureCollection", features: corpi.map((c) => ({ type: "Feature",
       // con le falde inclinate il prisma arriva alla gronda e sopra si vedono le falde a gradini
       properties: { id: c.id, altezza: inclinate(c).length ? c.gronda : (c.colmo || c.gronda), quota: quotaBase ? c.quota : 0 },
-      geometry: { type: "Polygon", coordinates: [E.chiudi(c.ring).map(stato.proj.indietro)] } })) };
+      geometry: { type: "Polygon", coordinates: [c.ring, ...(c.buchi || [])].map((r) => E.chiudi(r).map(stato.proj.indietro)) } })) };
   }
   // una falda divisa in strisce lungo la discesa, ognuna alta quanto il suo bordo superiore (Sutherland–Hodgman)
   function taglia(ring, d, s0, s1) {
@@ -698,20 +1431,32 @@
     const tutti = fs.map((f) => conFalde(aCorpo(f), f.properties));
     const corpi = tutti.filter((c) => c.edificio === edificio);
     if (!corpi.length) { messaggio("messaggio", "Edificio non trovato nell'archivio.", true); return false; }
+    terrenoDi(corpi[0].archivio);
+    // edificio OSM (ripiego, nessun DTM): tutto sullo stesso piano, anche i corpi DBTR vicini oltre il confine del comune
+    const daOsm = (archivioDi(corpi[0]) || {}).osm;
+    // sagome regionali con la quota dal DTM del server (08/11/2026): terreno vero; altrimenti tutto sullo stesso piano
+    const conQuota = daOsm && corpi.every((c) => c.quotaNota);
+    if (daOsm && !conQuota) tutti.forEach((c) => { c.quota = 0; });
+    else if (conQuota) { const q = Math.min(...corpi.map((c) => c.quota)); tutti.forEach((c) => { if (!c.quotaNota) c.quota = q; }); }
     const centro = E.centroide(corpi[0].ring);
     stato.vicini = tutti.filter((c) => c.edificio !== edificio && Math.hypot(...E.centroide(c.ring).map((v, i) => v - centro[i])) <= RAGGIO + 60);
     stato.modello = null; stato.nascostiExtra = [];
-    stato.corpi = corpi; stato.edificio = edificio; stato.originali = corpi.map((c) => ({ ...c, ring: c.ring.map((p) => [...p]) }));
+    stato.corpi = corpi; stato.edificio = edificio;
     stato.aree = []; stato.firma = null; stato.fv = null; stato.sintetico = corpi.some((c) => c.sintetico);
     stato.q0 = Math.min(...corpi.map((c) => c.quota || 0)); stato.lontano = null; stato.facciate = null; stato.pvgis = null;
     stato.fvOrizzonti = {}; mostraFacciate();
-    stato.comune = await comuneDi(lon, lat);
+    // comune del punto (07/11/2026: confini di tutta Italia, serve anche fuori dall'Emilia-Romagna con il ripiego OSM)
+    stato.comune = daOsm ? await comuneNelPunto(lon, lat) : await comuneDi(lon, lat);
+    // forma dei tetti (08/11/2026): con il comune (soglia di montagna 600/700 m, altitudine del comune per i corpi senza quota)
+    await datiDpr();
+    preparaSelettoreTetti(true); applicaTetti();
+    stato.originali = corpi.map((c) => ({ ...c, ring: c.ring.map((p) => [...p]) }));
     $("avviso-sintetico").hidden = !stato.sintetico;
     ["passo-corpi", "passo-superfici", "passo-geometria", "passo-obblighi", "passo-ombre", "passo-facciate", "passo-fv", "passo-pvgis",
       "passo-consumi", "passo-report"].forEach((id) => { $(id).hidden = false; });
     $("aggiungi-priorita").disabled = false; $("calcola-pvgis").disabled = true;
     messaggio("messaggio", `Edificio ${edificio}: ${corpi.length} ${corpi.length === 1 ? "corpo" : "corpi"}, ${stato.vicini.length} corpi vicini.`
-      + (stato.comune ? ` Comune: ${stato.comune.nome}.` : ""));
+      + (stato.comune ? ` Comune: ${stato.comune.nome}.` : "") + (daOsm ? avvisoOsm(corpi[0].archivio) + (conQuota ? " Quote dei corpi dal DTM del server." : " Quote del terreno non disponibili: edifici sullo stesso piano.") : ""));
     aggiorna();
     if (!DUE_TEMPI) stato.mappa.easeTo({ center: [lon, lat], zoom: 17.6, duration: 600 });
     apriVista();
@@ -721,13 +1466,16 @@
   }
 
   // edificio dell'archivio che contiene il punto (lon, lat); se nessuno lo contiene, il più vicino entro 30 m
+  // (un punto in un cortile non è contenuto; la distanza conta anche dai lati dei cortili)
   function edificioNelPunto(fs, lon, lat) {
     const pr = E.proiezione(lon, lat);
     let vicino = null, dmin = 30;
     for (const f of fs) {
-      const ring = (f.geometry.type === "MultiPolygon" ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0]).map(pr.avanti);
-      if (E.dentro([0, 0], ring)) return f;
-      for (const [a, b] of E.lati(ring)) {
+      const [esterno, ...fori] = anelli(f.geometry);
+      if (!esterno) continue;
+      const c = { ring: esterno.map(pr.avanti), buchi: fori.map((r) => r.map(pr.avanti)) };
+      if (E.dentroCorpo([0, 0], c)) return f;
+      for (const [a, b] of E.latiCorpo(c)) {
         const ex = b[0] - a[0], ey = b[1] - a[1], l2 = ex * ex + ey * ey || 1;
         const t = Math.max(0, Math.min(1, -(a[0] * ex + a[1] * ey) / l2)), d = Math.hypot(a[0] + t * ex, a[1] + t * ey);
         if (d < dmin) { dmin = d; vicino = f; }
@@ -739,7 +1487,7 @@
   // comune che contiene il punto (confini ISTAT del sito, dati/mappa/08.json, stesse coordinate di patrimonio.js)
   async function comuneDi(lon, lat) {
     try {
-      const m = await json("dati/mappa/08.json?v=20261106a");
+      const m = await json("dati/mappa/08.json?v=20261107b");
       const p = lonlatSvg(lon, lat);
       for (const c of m.comuni) {
         for (const parte of c.d.split("M").filter(Boolean)) {
@@ -775,7 +1523,7 @@
       c[chiave] = v === null ? null : v;
       if (chiave === "colmo") c.tetto = c.colmo && c.colmo > c.gronda ? (c.tetto === "piano" ? "capanna" : c.tetto) : "piano";
       c.fonte_altezza = "dato dell'utente"; c.modificato = true;
-      if (chiave !== "piani") c.falde = null;          // le falde misurate non valgono più per il corpo corretto
+      if (chiave !== "piani") { c.falde = null; if (c.tetto !== "piano") stimaTetto(c, "tetto stimato dai valori inseriti", c.tetto); }   // le falde misurate non valgono più
       aggiorna();
     });
     return i;
@@ -788,7 +1536,7 @@
     stato.corpi.forEach((c) => {
       const r = corpo.insertRow();
       r.appendChild(h("th", null, c.id));
-      r.appendChild(h("td", "num", fmt(E.area(c.ring))));
+      r.appendChild(h("td", "num", fmt(E.areaCorpo(c))));
       const g = h("td", "num"); g.appendChild(campo(c, "gronda", 0.5, 0.5)); r.appendChild(g);
       const k = h("td", "num"); k.appendChild(campo(c, "colmo", 0.5, 0)); r.appendChild(k);
       const tt = h("td"); const s = h("select");
@@ -797,11 +1545,13 @@
       s.addEventListener("change", () => {
         c.tetto = s.value;
         if (c.tetto === "piano") c.colmo = null; else if (!c.colmo || c.colmo <= c.gronda) c.colmo = c.gronda + 3;
-        c.modificato = true; c.fonte_altezza = "dato dell'utente"; c.falde = null; aggiorna();
+        c.modificato = true; c.fonte_altezza = "dato dell'utente"; c.falde = null;
+        if (c.tetto !== "piano") stimaTetto(c, "tetto stimato dai valori inseriti", c.tetto);
+        aggiorna();
       });
       tt.appendChild(s); r.appendChild(tt);
       const p = h("td", "num"); p.appendChild(campo(c, "piani", 1, 1)); r.appendChild(p);
-      const f = h("td", "fonte"); f.append(c.fonte_altezza || "—"); f.appendChild(h("small", null, `${c.fonte_sagoma} · ${c.licenza}`)); r.appendChild(f);
+      const f = h("td", "fonte"); f.append(testoAltezza(c) || "—"); f.appendChild(h("small", null, `${c.fonte_sagoma} · ${c.licenza}`)); r.appendChild(f);
     });
   }
   function tabellaFalde() {
@@ -815,7 +1565,7 @@
     });
     if (!con.length) {
       messaggio("messaggio-falde", (stato.lidar ? "Nessuna falda misurata per questo edificio" : "Nessun rilievo LiDAR in questo archivio")
-        + ": tetti stimati dal DBTR (piani, salvo correzioni)." + (note.length ? ` ${note.join("; ")}.` : ""));
+        + `: tetti piani. ${testoTetti()}` + (note.length ? ` ${note.join("; ")}.` : ""));
       return;
     }
     const r1 = t.createTHead().insertRow();
@@ -829,14 +1579,18 @@
       r.appendChild(h("td", "num", fmt(f.superficie))); r.appendChild(h("td", "num", fmt(f.area_pianta)));
       r.appendChild(h("td", "fonte", f.fonte + (c.lidar && c.lidar.qualita ? ` · qualità ${c.lidar.qualita}` : "")));
     }));
-    const sint = con.some((c) => c.lidar && c.lidar.sintetico);
+    const sint = con.some((c) => c.lidar && c.lidar.sintetico), ts = testoTettiStimati();
     messaggio("messaggio-falde", `${con.reduce((s, c) => s + c.falde.length, 0)} falde in ${con.length} ${con.length === 1 ? "corpo" : "corpi"}`
-      + (sint ? " dal rilievo LiDAR sintetico di esempio (inventato)." : ".") + (note.length ? ` ${note.join("; ")}.` : ""), sint);
+      + (sint ? " dal rilievo LiDAR sintetico di esempio (inventato)." : ".") + ` ${testoTetti()}` + (ts ? ` ${ts}` : "")
+      + (note.length ? ` ${note.join("; ")}.` : ""), sint);
   }
   function schedaEdificio() {
     const d = $("scheda-edificio"); d.hidden = false; d.innerHTML = "";
-    const voci = [["Edificio", stato.edificio], ["Comune", stato.comune ? stato.comune.nome : "—"], ["Corpi", stato.corpi.length],
-      ["Licenza delle sagome", [...new Set(stato.corpi.map((c) => c.licenza))].join(", ")]];
+    const c0 = stato.corpi.find((c) => c.nome || c.foglio || c.destinazione) || {};
+    const voci = [["Edificio", c0.nome ? `${c0.nome} (${stato.edificio})` : stato.edificio], ["Comune", stato.comune ? stato.comune.nome : "—"],
+      ...(c0.foglio || c0.numero ? [["Foglio e numero (DBTR)", [c0.foglio && `foglio ${c0.foglio}`, c0.numero && `numero ${c0.numero}`].filter(Boolean).join(", ")]] : []),
+      ...(c0.destinazione ? [["Destinazione d'uso (DBTR)", c0.destinazione]] : []),
+      ["Corpi", stato.corpi.length], ["Licenza delle sagome", [...new Set(stato.corpi.map((c) => c.licenza))].join(", ")]];
     voci.forEach(([k, v]) => { d.appendChild(h("dt", null, k)); d.appendChild(h("dd", null, String(v))); });
   }
 
@@ -853,7 +1607,9 @@
       const parti = E.dividi(c.ring, a, b);
       if (!parti) return [c];
       fatto = true;
-      return parti.map((r, k) => ({ ...c, id: `${c.id}.${k + 1}`, ring: r, modificato: true, falde: null, fonte_sagoma: `${c.fonte_sagoma} (divisa dall'utente)` }));
+      // i cortili restano nella parte che contiene il loro centro (un cortile tagliato dalla linea si approssima così)
+      return parti.map((r, k) => ({ ...c, id: `${c.id}.${k + 1}`, ring: r, buchi: (c.buchi || []).filter((b) => E.dentro(E.centroide(b), r)),
+        modificato: true, falde: null, fonte_sagoma: `${c.fonte_sagoma} (divisa dall'utente)` }));
     });
     finisciModo();
     messaggio("messaggio", fatto ? "Corpo diviso: ora dai a ciascuna parte la sua altezza." : "La linea non attraversa nessun corpo dell'edificio.", !fatto);
@@ -869,7 +1625,8 @@
     finisciModo(); stato.modo = "dividi"; $("dividi").setAttribute("aria-pressed", "true"); $("aiuto-dividi").hidden = false;
   });
   $("ripristina").addEventListener("click", () => {
-    stato.corpi = stato.originali.map((c) => ({ ...c, ring: c.ring.map((p) => [...p]) })); stato.aree = []; aggiorna();
+    stato.corpi = stato.originali.map((c) => ({ ...c, ring: c.ring.map((p) => [...p]), buchi: (c.buchi || []).map((b) => b.map((p) => [...p])) })); stato.aree = [];
+    stato.corpi.forEach((c) => { if (c.base) c.modificato = false; applicaTetto(c); }); aggiorna(); fontiCorpi();
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && stato.modo) finisciModo(); });
 
@@ -981,7 +1738,7 @@
       montaggio: piano ? "telai" : "aderente", fonte: f.fonte };
   }
   function aggiungiArea(p) {
-    const c = stato.corpi.find((x) => E.dentro(p, x.ring));
+    const c = stato.corpi.find((x) => E.dentroCorpo(p, x));
     if (!c) { messaggio("messaggio-fv", "Fai clic sul tetto di un corpo dell'edificio scelto.", true); return; }
     const fascia = Math.max(0, E.numero($("fascia").value) || 0);
     const falda = (c.falde || []).find((f) => E.dentro(p, f.ring));
@@ -1003,7 +1760,7 @@
     const P = (ss, tt) => [ss * ux - tt * uy, ss * uy + tt * ux];
     let ring = [P(s0, t0), P(s1, t0), P(s1, t1), P(s0, t1)];
     // sagome non rettangolari: si tengono solo i vertici dentro il corpo (la pagina lo dice)
-    const fuori = ring.some((q) => !E.dentro(q, c.ring));
+    const fuori = ring.some((q) => !E.dentroCorpo(q, c));
     ring = E.chiudi(ring);
     const piano = c.tetto === "piano" || !c.colmo;
     // falda verso sud: normale del lato più lungo più vicina al sud
@@ -1034,12 +1791,12 @@
       for (const kk of ["inclinazione", "orientamento"]) {
         const td = h("td", "num"), i = h("input"); i.type = "number"; i.value = a[kk]; i.min = 0; i.max = kk === "inclinazione" ? 90 : 359;
         i.setAttribute("aria-label", `${kk} dell'area ${a.id}`);
-        i.addEventListener("change", () => { a[kk] = E.numero(i.value) || 0; stato.fv = null; tabellaFv(); });
+        i.addEventListener("change", () => { a[kk] = E.numero(i.value) || 0; a.manuale = true; stato.fv = null; tabellaFv(); });
         td.appendChild(i); r.appendChild(td);
       }
       const tm = h("td"), sm = h("select");
       [["telai", "su telai"], ["aderente", "aderente"]].forEach(([v, n]) => { const o = h("option", null, n); o.value = v; o.selected = a.montaggio === v; sm.appendChild(o); });
-      sm.addEventListener("change", () => { a.montaggio = sm.value; stato.fv = null; tabellaFv(); });
+      sm.addEventListener("change", () => { a.montaggio = sm.value; a.manuale = true; stato.fv = null; tabellaFv(); });
       tm.appendChild(sm); r.appendChild(tm);
       r.appendChild(h("td", "num", fmt(c.moduli))); r.appendChild(h("td", "num", fmt(c.kwp, 2)));
       r.appendChild(h("td", "num", ris ? fmt(ris.kwh) : "—")); r.appendChild(h("td", "num", ris ? `−${fmt(ris.perdita, 1)} %` : "—"));
@@ -1058,7 +1815,7 @@
   let lavoratore = null;
   function orizzonti(punti, ostacoli, lontano = null) {
     return new Promise((ok, ko) => {
-      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261106a"); } catch (e) { ko(e); return; }
+      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261107b"); } catch (e) { ko(e); return; }
       const id = Math.random();
       const f = (e) => { if (e.data.id === id) { lavoratore.removeEventListener("message", f); ok(e.data.orizzonti); } };
       lavoratore.addEventListener("message", f);
@@ -1109,7 +1866,7 @@
       messaggio("messaggio-fv", `Producibilità totale: ${fmt(tot)} kWh/anno` + (cl.sintetico
         ? ". Attenzione: il clima orario del comune non è ancora sul server, il calcolo usa un anno di cielo sereno ridotto (sintetico): è solo una prova."
         : ` con il clima orario del ${cl.anno} di ${cl.comune}.`) + (lont ? " Orizzonte: edifici entro 250 m e terreno fino a 25 km."
-        : " Orizzonte: solo edifici entro 250 m (il terreno lontano non è disponibile ora)."), !!cl.sintetico);
+        : " Orizzonte: solo edifici entro 250 m (il terreno lontano non è disponibile ora).") + ` ${testoSceltaTetti()}`, !!cl.sintetico);
       $("calcola-pvgis").disabled = false; stato.pvgis = null; $("pvgis").innerHTML = ""; messaggio("messaggio-pvgis", "");
       if (G) G.registra($("grafico-fv"), (dest, mis) => disegnaMensile(dest, mis), { titolo: "Producibilità mensile" });
     } catch (e) {
@@ -1238,6 +1995,10 @@
   async function caricaOrtofoto() {
     const sel = $("sfondo-ortofoto");
     if (!sel) return;
+    // (08/11/2026) frecce sotto la mappa, accanto a «Genera il 3D»: spostano l'ortofoto di 1 m rispetto ai vettori
+    // (sposta_ortofoto.js); nella demo sintetica non ci sono ortofoto: nascoste
+    if (window.EUGENIO_SPOSTA && $("sposta-ortofoto") && !stato.sposta)
+      stato.sposta = window.EUGENIO_SPOSTA.crea($("sposta-ortofoto"), { pagina: location.pathname.split("/").pop() || "modelli3d", suCambio: spostaTessere });
     let fonti = [];
     try {
       const r = await fetch("/api/ortofoto/fonti");
@@ -1247,6 +2008,7 @@
     // «storte» rispetto agli edifici veri della foto, 05/11/2026)
     if (stato.indice && stato.indice.sintetico) {
       sel.disabled = true; sel.options[0].textContent = "nessuna: la demo sintetica non va sopra le foto vere";
+      if (stato.sposta) stato.sposta.nascondi(true);
       if ($("strato-ortofoto")) { $("strato-ortofoto").checked = false; $("strato-ortofoto").disabled = true; }
       return;
     }
@@ -1263,7 +2025,8 @@
       if (stato.strati) stato.strati.alza();
     }
     function opzioni() {
-      const c = stato.mappa.getCenter(), qui = fonti.filter((f) => f.id !== "s2cloudless2016" || !DUE_TEMPI).filter((f) => copre(f, [c.lng, c.lat]));
+      // (07/11/2026 sera) stesso elenco e stesso ordine della pagina Ortofoto: anche Sentinel-2 cloudless, che resta pure come contesto sotto
+      const c = stato.mappa.getCenter(), qui = fonti.filter((f) => copre(f, [c.lng, c.lat]));
       const prima = sel.value;
       while (sel.options.length > 1) sel.remove(1);
       qui.forEach((f) => { const o = h("option", null, f.nome + (f.stato === "da confermare" ? " (licenza da confermare)" : "")); o.value = f.id; sel.appendChild(o); });
@@ -1276,11 +2039,27 @@
     }
     sel.addEventListener("change", () => { stato.manuale = true; sfondo(sel.value); });
     if ($("strato-ortofoto")) $("strato-ortofoto").addEventListener("change", vediOrtofoto);
+    if ($("caselle-strati")) $("caselle-strati").addEventListener("change", aggiornaSposta);
     opzioni();
+    aggiornaSposta();
     stato.mappa.on("moveend", opzioni);
   }
   // casella «Ortofoto» dei livelli (seconda pubblicazione del 05/11): spenta = niente foto né contesto, la fonte scelta resta
   const ortoVisibile = () => !$("strato-ortofoto") || $("strato-ortofoto").checked;
+  // strati vettoriali sopra la foto: sagome degli edifici dell'archivio (DBTR, OSM, DB topografico caricato: sempre
+  // disegnate), particelle e contorni degli edifici dei livelli
+  function vettoriAccesi() {
+    const st = stato.strati && stato.strati.stato;
+    return !!((stato.sorgentiCorpi || []).length || stato.osmAttivo || (st && (st.particelle || st.edifici)));
+  }
+  function aggiornaSposta() {
+    if (stato.sposta) stato.sposta.fonte(stato.ortofoto, { visibile: ortoVisibile(), vettori: vettoriAccesi() });
+  }
+  const tessereOrto = (f) => location.origin + (stato.sposta ? stato.sposta.url(f.tessere) : f.tessere);
+  function spostaTessere() {
+    const f = stato.ortofoto, src = stato.mappa && stato.mappa.getSource("ortofoto");
+    if (src && f && src.setTiles) src.setTiles([tessereOrto(f)]);     // nessun salto della camera, 2D e 3D
+  }
   function vediOrtofoto() {
     const m = stato.mappa, si = ortoVisibile();
     if (!m) return;
@@ -1288,15 +2067,18 @@
     const att = $("attribuzione-ortofoto");
     if (att) att.hidden = !si || !stato.ortofoto;
     if ($("sfondo-ortofoto") && !(stato.indice && stato.indice.sintetico)) $("sfondo-ortofoto").disabled = !si || !(stato.fontiOrtofoto || []).length;
+    aggiornaSposta();
+    coloriRilievo();
   }
   function sfondo(id) {
     const m = stato.mappa, f = (stato.tutteOrtofoto || stato.fontiOrtofoto).find((x) => x.id === id) || null;
     if (m.getLayer("ortofoto")) m.removeLayer("ortofoto");
     if (m.getSource("ortofoto")) m.removeSource("ortofoto");
     stato.ortofoto = f;
+    aggiornaSposta();
     const att = $("attribuzione-ortofoto");
     if (!f) { att.hidden = true; return; }
-    m.addSource("ortofoto", { type: "raster", tiles: [location.origin + f.tessere], tileSize: 256, minzoom: f.zoom[0], maxzoom: f.zoom[1],
+    m.addSource("ortofoto", { type: "raster", tiles: [tessereOrto(f)], tileSize: 256, minzoom: f.zoom[0], maxzoom: f.zoom[1],
       bounds: f.riquadro, attribution: `${f.citazione}` });
     m.addLayer({ id: "ortofoto", type: "raster", source: "ortofoto", paint: { "raster-opacity": 1 },
       layout: { visibility: ortoVisibile() ? "visible" : "none" } }, m.getLayer("rilievo") ? "rilievo" : "ombre");
@@ -1318,7 +2100,8 @@
       o.getContext("2d").drawImage(c, 0, 0, w, hh);
       let dati = o.toDataURL("image/png");
       if (dati.length > 1.3e6 * 4 / 3) { o.width = Math.round(w * 0.7); o.height = Math.round(hh * 0.7); o.getContext("2d").drawImage(c, 0, 0, o.width, o.height); dati = o.toDataURL("image/png"); }
-      return { titolo: `Vista 3D dell'edificio con l'ortofoto. ${f.citazione}`, png: dati.split(",")[1], ortofoto: { id: f.id, licenza: f.licenza, citazione: f.citazione, scheda: f.scheda } };
+      const sp = stato.sposta ? { de: stato.sposta.de, dn: stato.sposta.dn } : {};     // dichiarato nella didascalia del report
+      return { titolo: `Vista 3D dell'edificio con l'ortofoto. ${f.citazione}`, png: dati.split(",")[1], ortofoto: { id: f.id, licenza: f.licenza, citazione: f.citazione, scheda: f.scheda, ...sp } };
     } catch { return null; }
   }
 
@@ -1357,7 +2140,7 @@
       const tot = Object.values(stato.facciate.riepilogo).reduce((s, x) => s + x.area, 0);
       messaggio("messaggio-facciate", `${fmt(tot)} m² di facciate esposte in ${parti.length} pezzi.` + (cl.sintetico
         ? " Attenzione: il clima orario del comune non è ancora sul server, il calcolo usa un anno di cielo sereno ridotto (sintetico)."
-        : ` Clima orario del ${cl.anno}.`) + (lont ? "" : " Orizzonte del terreno lontano non disponibile: solo edifici vicini."), !!cl.sintetico);
+        : ` Clima orario del ${cl.anno}.`) + (lont ? "" : " Orizzonte del terreno lontano non disponibile: solo edifici vicini.") + ` ${testoSceltaTetti()}`, !!cl.sintetico);
     } catch (e) {
       console.warn(e); messaggio("messaggio-facciate", `Calcolo non riuscito: ${e.message || e}`, true);
     } finally { b.disabled = false; }
@@ -1374,7 +2157,7 @@
       r.appendChild(h("td", "num", `−${fmt(x.perdita, 1)} %`));
       r.appendChild(h("td", "num", x.cielo === null ? "—" : fmt(100 * x.cielo, 0) + " %"));
     });
-    box.appendChild(t);
+    { const sc = h("div", "tabella-scorre"); sc.appendChild(t); box.appendChild(sc); }   // telefono: niente scorrimento di lato
     box.appendChild(h("p", "aiuto", "Cielo visibile: quota del cielo che la facciata vede davanti a sé (100 % = nessun edificio, albero o rilievo davanti), media sull'area esposta; indica l'accesso alla luce naturale (analisi 9)."));
     if (G) G.registra($("grafico-facciate"), (dest, mis) => {
       const W = mis && mis.riquadro ? mis.larghezza : 520, H = mis && mis.riquadro ? mis.altezza : 220;
@@ -1427,7 +2210,7 @@
       r.appendChild(h("td", "num", e && p ? `${e >= p ? "+" : "−"}${fmt(Math.abs(100 * (e - p) / p), 1)} %` : "—"));
       r.appendChild(h("td", "fonte", `${x.con_orizzonte.banca_dati || ""} ${(x.con_orizzonte.anni || []).join("–")}`));
     });
-    box.appendChild(t);
+    { const sc = h("div", "tabella-scorre"); sc.appendChild(t); box.appendChild(sc); }   // telefono: niente scorrimento di lato
     const MESI_ = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
     const eu = MESI_.map((_, i) => P_.aree.reduce((s, x) => s + ((x.eugenio.mensile || [])[i] || 0), 0));
     const pv = MESI_.map((_, i) => P_.aree.reduce((s, x) => s + ((x.con_orizzonte.kwh_mensili || [])[i] || 0), 0));
@@ -1455,14 +2238,14 @@
   async function datiDpr() {
     if (stato.dpr === null) {
       stato.dpr = false;
-      try { stato.dpr = await json("dati/dpr412.json?v=20261106a"); } catch { /* senza file: niente zona */ }
+      try { stato.dpr = await json("dati/dpr412.json?v=20261107b"); } catch { /* senza file: niente zona */ }
     }
     return stato.dpr || null;
   }
   async function obblighi() {
     const box = $("obblighi");
     if (!box || !stato.edificio) return;
-    const S = stato.corpi.reduce((s, c) => s + E.area(c.ring), 0);
+    const S = stato.corpi.reduce((s, c) => s + E.areaCorpo(c), 0);
     const intervento = $("intervento-199").value, pubblico = $("pubblico-199").checked;
     const o = E.obbligoFer(S, { intervento, pubblico });
     const kwpFv = stato.aree.reduce((s, a) => s + conteggio(a).kwp, 0);
@@ -1500,7 +2283,7 @@
     ["Voce", "Valore", "Riferimento"].forEach((x) => r1.appendChild(h("th", null, x)));
     const b = t.createTBody();
     righe.forEach(([v, x, r]) => { const tr = b.insertRow(); tr.appendChild(h("th", null, v)); tr.appendChild(h("td", null, x)); tr.appendChild(h("td", "fonte", r)); });
-    box.appendChild(t);
+    { const sc = h("div", "tabella-scorre"); sc.appendChild(t); box.appendChild(sc); }   // telefono: niente scorrimento di lato
     const telai = stato.aree.some((a) => a.montaggio === "telai");
     $("nota-obblighi").textContent = "Le quote di copertura valgono sui consumi previsti dal progetto (servono le metodiche di calcolo, qui non "
       + "fatte); la potenza minima si può coprire anche con altre fonti rinnovabili. Gli impianti a terra non contano; quelli nelle pertinenze sì "
@@ -1603,8 +2386,29 @@
     for (const k of Object.keys(E.ETICHETTE)) if (s[k]) sup[k] = { valore: s[k].valore, fonte: NOMI_FONTE[s[k].fonte] || s[k].fonte };
     const fonti = [...new Set(stato.corpi.map((c) => c.fonte_sagoma.replace(/ \(divisa dall'utente\)/, "")))].map((f) => `Sagome: ${f}`)
       .concat([...new Set(stato.corpi.map((c) => c.licenza))].map((l) => `Licenza delle sagome: ${l}`));
-    if (stato.indice && stato.indice.attribuzione) fonti.push(stato.indice.attribuzione);
+    // attribuzione di ogni archivio da cui vengono i corpi e i vicini (07/11/2026: anche il ripiego OSM, con la sua licenza)
+    const usati = [...new Set(stato.corpi.filter((c) => c.edificio !== "MODELLO").concat(stato.vicini).map((c) => c.archivio || 0))]
+      .map((k) => stato.archivi[k]).filter(Boolean);
+    const osmUsato = usati.some((a) => a.osm);
+    const attr = usati.map((a) => (a.osm ? "© OpenStreetMap contributors, Open Database License 1.0 (https://www.openstreetmap.org/copyright): "
+      + "sagome degli edifici fuori dal DBTR, tramite l'API Overpass" : a.indice.attribuzione)).filter(Boolean);
+    if (!attr.length && stato.indice && stato.indice.attribuzione) attr.push(stato.indice.attribuzione);
+    fonti.push(...new Set(attr));
     const note = [];
+    if (usati.some((a) => a.locale)) note.push("Sagome e altezze dal DB topografico caricato dall'utente e letto solo nel browser (stesse regole "
+      + "dell'archivio del server; quote dei corpi dalla base data dal DB topografico, terreno della vista 3D dal DTM del server).");
+    if (osmUsato && stato.osm.sagome) {
+      note.push(`${testoSagomeRegionali()} ${stato.osm.sagome.attribuzione}; altezze ed edifici aggiunti © OpenStreetMap contributors (ODbL 1.0). `
+        + "Altezza di ogni sagoma dall'edificio OSM che le si sovrappone di più (height, poi piani × 3 m), altrimenti mediana dei vicini o 9 m.");
+      fonti.push(`${stato.osm.sagome.attribuzione} – ${stato.osm.sagome.scheda || ""}`);
+    }
+    if (osmUsato) {
+      note.push("Sagome da OpenStreetMap (ripiego dove non c'è ancora il DBTR): completezza variabile, qualità inferiore, altezze dal tag height "
+        + "o dai piani (× 3 m) e altrove stimate (mediana dei corpi DBTR entro 200 m dove ci sono, altrimenti 9 m), indicate come «stima» nella "
+        + "tabella dei corpi; terreno piano (nessun DTM).");
+      const t = testoAltezzeOsm(contaOrigini(stato.corpi.concat(stato.vicini).filter((c) => (archivioDi(c) || {}).osm)), " dell'edificio e dei vicini");
+      if (t) note.push(t);
+    }
     if (stato.lidar && stato.corpi.some((c) => c.lidar && c.lidar.stato === "ok"))
       Object.values(stato.lidar.attribuzioni || {}).forEach((a) => fonti.push(`Falde dei tetti: ${a.attribuzione || a.descrizione} (${a.licenza})`));
     if (stato.corpi.some((c) => c.lidar && c.lidar.sintetico)) note.push("Falde dei tetti dal rilievo LiDAR sintetico di esempio: inventate.");
@@ -1616,13 +2420,16 @@
     if (stato.sede) note.push(`Edificio aperto dalla sede «${stato.sede.nome}» del Patrimonio` + (stato.sede.visura ? "; piani e superficie catastale dalle visure lette da EuGEnio Visure (non sostituiscono le visure ufficiali)." : "."));
     if (stato.obblighi && stato.obblighi.quota_vetrata_fonte === "stima") note.push("Quota di superfici vetrate stimata dall'uso dell'edificio: il limite della Tabella 11 va ricontrollato con il rilievo.");
     { const t = testoFontiCorpi(); if (t) note.push(t.replace(/ Il dettaglio.*$/, "")); }
+    { const t = testoTettiStimati(); if (t) note.push(`${t} Falde, pendenze e superfici dei tetti di questi corpi sono stime.`); }
     if (stato.obblighi) fonti.push("D.Lgs. 8 novembre 2021, n. 199, art. 26 e Allegato III (testo vigente, Normattiva); DPR 412/93, Allegato A; DM 26/6/2015 come modificato dal DM 28/10/2025 (GU n. 283 del 5/12/2025)");
     return {
+      tetti: stato.corpi.length ? { scelta: VISTA !== "modelli" && SELETTORE_TETTI() ? NOMI_SCELTA_TETTO[stato.formaTetti] : NOMI_SCELTA_TETTO.auto,
+        testo: testoTetti(), conteggi: contaTetti() } : null,
       titolo: "Edificio in 3D", sintetico: stato.sintetico || !!(stato.firma && stato.firma.sintetici),
       edificio: { id: stato.edificio, nome: stato.modello ? `Modello dell'utente «${stato.modello}»` : `Edificio ${stato.edificio}`, comune: stato.comune ? stato.comune.nome : null },
       superfici: sup, geometria: stato.geometria,
-      corpi: stato.corpi.map((c) => ({ id: c.id, area: E.area(c.ring), gronda: c.gronda, colmo: c.colmo, tetto: c.tetto,
-        piani: c.piani || E.stimaPiani(c.gronda, stato.uso || c.uso || "altro"), fonte_sagoma: c.fonte_sagoma, fonte_altezza: c.fonte_altezza,
+      corpi: stato.corpi.map((c) => ({ id: c.id, area: E.areaCorpo(c), gronda: c.gronda, colmo: c.colmo, tetto: c.tetto, fonte_tetto: fonteTettoDi(c),
+        piani: c.piani || E.stimaPiani(c.gronda, stato.uso || c.uso || "altro"), fonte_sagoma: c.fonte_sagoma, fonte_altezza: testoAltezza(c),
         licenza: c.licenza, qualita: c.qualita })),
       falde: stato.corpi.flatMap((c) => (c.falde || []).map((f) => ({ corpo: c.id, falda: f.id, pendenza: f.pendenza,
         orientamento: f.pendenza < 5 ? null : f.orientamento, superficie: f.superficie, area_pianta: f.area_pianta, fonte: f.fonte }))),
@@ -1685,11 +2492,13 @@
     stato.nascostiExtra = archivio.filter(sotto).map((c) => c.id);
     stato.vicini = archivio.filter((c) => !sotto(c) && Math.hypot(...E.centroide(c.ring)) <= RAGGIO + 60);
     stato.corpi = corpi; stato.edificio = "MODELLO"; stato.modello = String(nome).slice(0, 80);
-    stato.originali = corpi.map((c) => ({ ...c, ring: c.ring.map((q) => [...q]) }));
     stato.aree = []; stato.firma = null; stato.fv = null; stato.sintetico = false;
     stato.q0 = Math.min(...corpi.map((c) => c.quota || 0)); stato.lontano = null; stato.facciate = null; stato.pvgis = null;
     stato.fvOrizzonti = {}; mostraFacciate();
     stato.comune = await comuneDi(lon, lat);
+    await datiDpr();
+    preparaSelettoreTetti(true); applicaTetti();
+    stato.originali = corpi.map((c) => ({ ...c, ring: c.ring.map((q) => [...q]) }));
     $("avviso-sintetico").hidden = true;
     ["passo-corpi", "passo-superfici", "passo-geometria", "passo-obblighi", "passo-ombre", "passo-facciate", "passo-fv", "passo-pvgis",
       "passo-consumi", "passo-report"].forEach((id) => { $(id).hidden = false; });
@@ -1732,29 +2541,51 @@
   // ------------------------------------------------------------------ avvio
   (async function avvio() {
     numeraPassi();
+    if ($("legenda-osm")) $("legenda-osm").hidden = true;
     try {
       const q0 = new URLSearchParams(location.search);
       if (DUE_TEMPI) {
         stato.archivi = await trovaArchivi();
         // aperta dal Patrimonio (?sede=locale) o con ?edificio=, senza archivio vero: si ripiega sulla demo dichiarata,
         // come prima del 05/11 (la pagina dice che nessun edificio contiene il punto della sede); l'ingresso semplice no
-        if (!stato.archivi.length && !SCELTA && (q0.get("sede") === "locale" || q0.get("edificio"))) {
+        // (07/11/2026 sera: solo se non c'è nemmeno il ripiego OSM, cioè la rotta risponde 404)
+        if (!stato.archivi.length && !SCELTA && (q0.get("sede") === "locale" || q0.get("edificio")) && !(await osmDisponibile())) {
           try { stato.archivi = [{ base: "dati/edifici3d/", indice: await json("dati/edifici3d/indice.json") }]; } catch { /* niente demo */ }
         }
         if (stato.archivi.length) { stato.base = stato.archivi[0].base; stato.indice = stato.archivi[0].indice; }
+        // DB topografico letto nel browser (07/11/2026): solo nella sessione aperta dalla pagina «Aggiungi edifici»
+        if (!SCELTA && LOCALE && !(stato.indice && stato.indice.sintetico) && (q0.get("dbtr") === "locale" || LOCALE.attivo())) {
+          if (q0.get("dbtr") === "locale") LOCALE.attiva();
+          const d = await LOCALE.leggi();
+          if (d && Array.isArray(d.features) && d.features.length) { stato.locale = archivioLocale(d); stato.archivi.push(stato.locale); }
+        }
+        // ripiego OSM (07/11/2026): fuori dagli archivi DBTR; mai nella demo né con ?archivio=
+        if (!SCELTA && !(stato.indice && stato.indice.sintetico)) { stato.osmAttivo = true; stato.archivi.push(ARCHIVIO_OSM); }
       } else {
         const { base, indice } = await trovaBase();
         stato.base = base; stato.indice = indice;
       }
       const base = stato.base, indice = stato.indice;
       if (base) {
-        stato.lidar = await json(`${base}lidar/indice.json`).catch(() => null);
+        // falde: con gli archivi per comune solo se archivi.json dice dove sono (07/11/2026 sera: niente 404 prima della pipeline)
+        stato.lidar = DUE_TEMPI && !SCELTA && !stato.baseLidar && !(indice && indice.sintetico) ? null : await json(`${stato.baseLidar || base}lidar/indice.json`).catch(() => null);
         if (stato.lidar) $("fonti-3d").append(" ", h("span", null, "Falde dei tetti: " + Object.values(stato.lidar.attribuzioni || {})
           .map((a) => `${a.attribuzione || a.descrizione} (${a.licenza})`).join("; ") + "."));
         if (indice.sintetico) $("avviso-sintetico").hidden = false;
-        stato.archivi.slice(1).concat(indice.attribuzione ? [{ indice }] : []).forEach((a) => {
-          if (a.indice.attribuzione) $("fonti-3d").append(" ", h("span", null, `Questo archivio: ${a.indice.attribuzione}.`));
-        });
+        // una riga per attribuzione (i DBTR dei comuni hanno tutti la stessa)
+        [...new Set(veri().slice(1).concat(indice.attribuzione ? [{ indice }] : []).map((a) => a.indice.attribuzione).filter(Boolean))]
+          .forEach((t) => $("fonti-3d").append(" ", h("span", null, `Questo archivio: ${t}.`)));
+      }
+      if (stato.locale && $("fonti-3d")) {
+        const o = h("span", null, `Edifici del tuo file: ${stato.locale.indice.attribuzione}. `);
+        const b = h("button", "bottone secondario piccolo", "Togli gli edifici del file"); b.type = "button"; b.id = "togli-locale";
+        b.addEventListener("click", async () => { await LOCALE.togli(); location.href = location.pathname; });
+        o.appendChild(b); $("fonti-3d").append(" ", o);
+      }
+      if (stato.osmAttivo && $("fonti-3d")) {
+        const o = h("span", null, "Fuori dal DBTR (ripiego): in Veneto sagome della Regione del Veneto – Edifici del Veneto (feb. 2022), IODL 2.0, "
+          + "con le altezze di OpenStreetMap; altrove edifici © OpenStreetMap contributors, ODbL 1.0; altezze in parte stimate.");
+        o.id = "fonti-osm"; o.hidden = true; $("fonti-3d").append(" ", o);
       }
       stato.mappa = await creaMappa();
       // livelli sopra la foto (particelle, contorni degli edifici): non nella demo, i cui edifici sono inventati
@@ -1774,18 +2605,33 @@
       // demo sintetica: si esce sempre con «Esci dalla demo», che riapre la pagina normale (mappa 2D vera, ortofoto, ricerca)
       if (DUE_TEMPI && indice && indice.sintetico && $("esci-demo")) { $("esci-demo").hidden = false; $("apri-demo").hidden = true; }
       const q = new URLSearchParams(location.search);
-      if (DUE_TEMPI) {
+      if (DUE_TEMPI && stato.locale) {
+        const r = stato.locale.indice.riquadro;
+        stato.mappa.fitBounds([[r[0], r[1]], [r[2], r[3]]], { padding: 30, duration: 0, maxZoom: 16 });
+        messaggio("messaggio", `Edifici del tuo file «${stato.locale.indice.nome}»: ${stato.locale.features.length.toLocaleString("it-IT")} corpi, letti solo in `
+          + "questo browser. Avvicinati e fai clic su un edificio (o cercalo con l'indirizzo), poi «Genera il 3D»."
+          + (stato.osmAttivo ? " Fuori dalla zona del file (tratteggiata) valgono gli archivi del server e il ripiego OpenStreetMap." : ""));
+      } else if (DUE_TEMPI) {
         if (!base) {
           $("apri-demo").hidden = false;
-          messaggio("messaggio", "L'archivio degli edifici non è ancora sul server: puoi cercare un indirizzo e guardare la zona, ma il 3D "
+          messaggio("messaggio", stato.osmAttivo
+            ? "L'archivio DBTR degli edifici non è ancora sul server: cerca un indirizzo o fai clic su un edificio; si useranno gli edifici di "
+              + "OpenStreetMap come ripiego (qualità inferiore, altezze in parte stimate). C'è anche la demo sintetica (edifici inventati)."
+            : "L'archivio degli edifici non è ancora sul server: puoi cercare un indirizzo e guardare la zona, ma il 3D "
             + "si genera solo dove ci sono le sagome. Per vedere come funziona c'è la demo sintetica (edifici inventati).");
           // la regione della piccola mappa (predefinita l'Emilia-Romagna)
           const cod = (window.EUGENIO && window.EUGENIO.regione) || "08";
-          if (!q.get("modello") && !q.get("sede")) await vaiRegione(cod);
+          if (!q.get("modello") && !q.get("sede") && !partenza()) await vaiRegione(cod);
         } else if (indice.sintetico) {
           messaggio("messaggio", "Demo sintetica: isolato inventato vicino a Rimini, senza foto sotto (non corrisponde a edifici veri). "
             + "Fai clic su un edificio (E-DEMO è l'esempio a tre corpi, con la torre), poi «Genera il 3D». Per tornare alla mappa vera: «Esci dalla demo».");
-        } else messaggio("messaggio", "Avvicinati e fai clic su un edificio (o cercalo con l'indirizzo), poi «Genera il 3D».");
+        } else {
+          messaggio("messaggio", "Avvicinati e fai clic su un edificio (o cercalo con l'indirizzo), poi «Genera il 3D»."
+            + (stato.osmAttivo ? " Fuori dalle zone del DBTR (tratteggiate) si usano gli edifici di OpenStreetMap come ripiego." : ""));
+          // (08/11/2026) regione scelta diversa dall'Emilia-Romagna e nessuna indicazione nell'indirizzo: si apre su di lei
+          const cod = (window.EUGENIO && window.EUGENIO.regione) || "08";
+          if (cod !== "08" && !["modello", "sede", "edificio", "lat", "lon", "dbtr"].some((k) => q.get(k))) await vaiRegione(cod);
+        }
       } else {
         messaggio("messaggio", indice.sintetico ? "Isolato sintetico di prova: fai clic su un edificio (quello arancione più alto è l'esempio a tre corpi)." : "Fai clic su un edificio.");
       }
@@ -1811,18 +2657,21 @@
           const fs = await contesto(+sd.lon, +sd.lat);
           const f = edificioNelPunto(fs, +sd.lon, +sd.lat);
           if (f) { if (await scegli(String(f.properties.edificio), +sd.lon, +sd.lat, sd)) entra3d(); return; }
-          stato.mappa.easeTo({ center: [+sd.lon, +sd.lat], zoom: DUE_TEMPI ? 18 : 17.6, duration: 600 });
-          messaggio("messaggio", `Nessun edificio dell'archivio contiene il punto della sede «${sd.nome}» (né entro 30 m): scegli l'edificio con un clic. `
-            + "Il punto viene dalla geolocalizzazione del Patrimonio.", true);
+          stato.mappa.easeTo({ center: [+sd.lon, +sd.lat], zoom: DUE_TEMPI ? ZOOM_CERCA : 17.6, duration: 600 });
+          messaggio("messaggio", await nessunEdificio(+sd.lon, +sd.lat, `Sede «${sd.nome}» (punto dalla geolocalizzazione del Patrimonio): `), true);
           return;
         }
       }
       if (!indice) return;
-      const scelto = q.get("edificio") || (indice.sintetico ? "E-DEMO" : null);
-      if (scelto && (q.get("edificio") || VISTA !== "modelli")) {
-        const fs = await contesto(...indice.centro);
+      const scelto = q.get("edificio") || (indice.sintetico && VISTA !== "modelli" && !DUE_TEMPI ? "E-DEMO" : null);
+      if (scelto) {
+        // ?edificio=<id>&lon=&lat= (07/11/2026 sera: con gli archivi per comune serve il punto; senza, il centro del primo archivio)
+        const lo = +q.get("lon"), la = +q.get("lat"), conPunto = Number.isFinite(lo) && Number.isFinite(la) && q.get("lon") && q.get("lat");
+        const [x0, y0] = conPunto ? [lo, la] : indice.centro;
+        const fs = await contesto(x0, y0);
         const f = fs.find((x) => String(x.properties.edificio) === scelto);
-        if (f) { const c = f.geometry.coordinates[0][0]; if (await scegli(scelto, c[0], c[1])) entra3d(); }
+        if (f) { const c = anelli(f.geometry)[0][0]; if (await scegli(scelto, conPunto ? x0 : c[0], conPunto ? y0 : c[1])) entra3d(); }
+        else messaggio("messaggio", `Edificio «${scelto}» non trovato${conPunto ? " vicino al punto indicato" : " nell'archivio"}: cercalo con l'indirizzo o con un clic.`, true);
       }
     } catch (e) {
       console.warn(e);
@@ -1830,5 +2679,6 @@
     }
   })();
   window.EUGENIO_EDIFICIO3D = { stato, corpoReport, scegli, apriModello, edificioNelPunto, alberiVicini, ostacoliRelativi, genera, entra3d, esci3d,
-    vistaNominata, opzioniImmagine, livelloFonte, scegli2d, impostaPunto, puntoCambiato, trovato };
+    vistaNominata, opzioniImmagine, livelloFonte, scegli2d, impostaPunto, puntoCambiato, trovato, coperto, nessunEdificio, geojson, edificiOsm,
+    esagera, fonteTerreno, testoAltezza, lontanoDal3d, testoTetti, contaTetti, cambiaFormaTetti };
 })();

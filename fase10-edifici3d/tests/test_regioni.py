@@ -17,9 +17,9 @@ def test_file_valido():
     d = RG.carica()
     assert RG.controlla(d) == []
     assert len(d["regione"]) == 21
-    assert sum(len(r["fonte"]) for r in d["regione"]) == 84
+    assert sum(len(r["fonte"]) for r in d["regione"]) == 90          # 08/11/2026: +6 fonti dei lettori regionali (Toscana 2, Palermo, LiDAR PAT, DBT Campania, Venezia)
     c = RG.conteggi(d)
-    assert sum(c.values()) == 84 and c["attiva"] > 0
+    assert sum(c.values()) == 90 and c["attiva"] > 0
 
 
 def test_regola_attiva():

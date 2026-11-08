@@ -111,3 +111,20 @@ def test_colonne_facoltative_edificio():
     assert df.loc[0, "superficie_lorda"] == "1.200"
     vecchio = PT.leggi("id;denominazione;indirizzo;civico;comune\nE01;Sede;Via Zamboni;33;Bologna\n".encode())
     assert list(vecchio.columns) == ["id", "denominazione", "indirizzo", "civico", "comune"]
+
+
+class FintoZero(Finto):
+    """Novafeltria, 07/11/2026 sera: risposta con coordinate 0,0 (indirizzo non georeferenziato)."""
+    def geocodifica(self, q, limite=5):
+        self.query.append(q)
+        return [{"street_name": "Via XXIV Maggio", "latitude": 0.0, "longitude": 0.0, "formatted_address": q}]
+
+
+def test_coordinate_zero_non_sono_un_punto():
+    from territorio.zornade import coordinate
+    assert coordinate({"latitude": 0, "longitude": 0}) == (None, None)
+    assert coordinate({"lat": 0.0, "lng": 0.0, "centroid": {"lat": 43.94, "lng": 12.29}}) == (43.94, 12.29)
+    df = pd.DataFrame([{"id": "N1", "indirizzo": "via XXIV Maggio 10", "comune": "Forlì"}])
+    r = patrimonio.geolocalizza(df, FintoZero(), COMUNI).iloc[0]
+    assert r.lat is None or pd.isna(r.lat)
+    assert r.esito == "non_trovato"

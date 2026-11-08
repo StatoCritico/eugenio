@@ -1,0 +1,160 @@
+# Novità di EuGEnio: le funzioni per gli utenti, pubblicazione per pubblicazione (fonte unica, dal 07/11/2026).
+#
+# Una voce [[voce]] per ogni pubblicazione **con qualcosa di nuovo per chi usa il servizio**, la più recente in cima.
+# costruisci_pagine.py ne genera la pagina sito/novita.html e il feed Atom sito/novita.xml (python costruisci_pagine.py;
+# --controlla dice se sono da rifare); la newsletter mensile ne prende le voci del mese. La prima voce deve avere la
+# versione di sito/index.html (tests/test_costruisci_pagine.py).
+#
+# Campi: data (aaaa-mm-gg), versione (quella di ?v=…), titolo; poi, tutti facoltativi:
+#   nuovo       servizi pubblicati: pagine o funzioni nuove che si possono usare
+#   migliorato  cosa si può fare di più o meglio in un servizio che c'era già (anche «ora funziona X» se prima un difetto
+#               si vedeva davvero)
+#   verificato  servizi passati da sperimentali a validati
+#   testo       un paragrafo semplice (una voce con il solo testo può non avere la versione: «Meet EuGEnio», 26/10/2026)
+#   collegamenti { testo, indirizzo } (pagina del sito, articolo, release su GitHub)
+# Decisione di Paolo dell'08/11/2026: solo lo sviluppo delle funzioni per gli utenti. **Niente modifiche interne**
+# (protezione e verifica anti-robot, menu, file per gli agenti AI, copie e versioni, server, test, licenze tecniche).
+# Linguaggio semplice, frasi brevi, il nome della pagina con il gruppo del menu («Patrimonio › Modelli 3D»), niente gergo.
+# Una pubblicazione senza novità per gli utenti non ha voce (la sua sostanza, se c'è, va nella voce successiva).
+# Regola permanente: a ogni pubblicazione una voce qui, insieme ad AGGIORNAMENTO_<data>.md, EUGENIO_PER_AGENTI.md e
+# llms.txt, e la release su GitHub con lo stesso testo (tag v<aaaa>.<mm>.<gg>).
+# Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
+
+[[voce]]
+data = "2026-11-07"
+versione = "20261107b"
+titolo = "Tetti a falde, 3D in collina e ortofoto da allineare"
+testo = "Le pagine dei gruppi Edifici, Cogenerazione e Fotovoltaico sono in lavorazione: hanno il triangolo giallo, non si aprono ancora e si apriranno quando saranno verificate."
+nuovo = [
+  "Patrimonio › Modelli 3D: frecce sotto la mappa per spostare la foto aerea di 1 m alla volta, finché combacia con particelle e contorni; «Azzera» la rimette a posto. Lo spostamento è scritto nell'immagine scaricata e nel report.",
+  "Patrimonio › Modelli 3D: tetti a capanna o a padiglione dove il database della Regione dà l'altezza del colmo (circa 6.900 edifici a Rimini, Faenza e Santarcangelo), indicati come tetti stimati.",
+  "Vista 3D con il rilievo ombreggiato, che si può esagerare ×1,5 o ×2; in legenda da dove viene il terreno.",
+  "Patrimonio › Modelli 3D: dove non c'è un rilievo, i tetti sono ipotizzati a falde (22° in pianura, 32° in montagna) e lo trovi scritto.",
+  "Fuori dai comuni con il database completo, in Veneto le sagome degli edifici arrivano dalla Regione, con le altezze di OpenStreetMap dove ci sono.",
+  "Vista 3D a Susegana e Conegliano con il terreno del rilievo LiDAR della Regione del Veneto.",
+  "Patrimonio › Modelli 3D: modelli 3D degli edifici anche in 15 città italiane – Milano, Torino, Genova (una parte), Venezia, Trieste, Trento, Bolzano, Firenze, Ancona, Roma (una parte), Bari (il centro), Potenza, Napoli, Palermo e Cagliari (Castello e Brotzu) – con le altezze dai database topografici di Regioni, Province e Comuni o dal rilievo laser; a Napoli dalle classi di altezza del Copernicus Urban Atlas. Per ogni edificio è scritto da dove viene l'altezza.",
+]
+migliorato = [
+  "Clima e meteo › Cambiamento climatico (prima «Clima che cambia»): ora nel gruppo Clima e meteo, con i gradi giorno dal 1940 del tuo comune.",
+  "Ricerca più comoda: è il primo passo della colonna di destra; se scrivi solo il comune la mappa va al suo centro. Le mappe di Modelli 3D e Ortofoto si aprono su Cesena, sull'ospedale Bufalini.",
+  "Vista 3D in collina (Bagno di Romagna, Brisighella): ora parte sopra il terreno e non diventa più nera.",
+  "Patrimonio › Ortofoto: dove la foto della Regione non c'è si vede la foto satellitare, al posto delle zone nere.",
+  "Le immagini delle mappe vanno subito nei download; in Patrimonio › Aggiungi edifici il file si trascina.",
+]
+verificato = [
+  "Clima e meteo › Dati climatici e Clima e meteo › Legge 10: non più sperimentali.",
+]
+collegamenti = [
+  { testo = "Modelli 3D", indirizzo = "modelli3d.html" },
+  { testo = "Perché particelle, sagome e foto non coincidono al metro", indirizzo = "faq.html#sfasamento" },
+]
+
+[[voce]]
+data = "2026-11-07"
+versione = "20261107a"
+titolo = "Edifici veri di 19 comuni della Romagna"
+nuovo = [
+  "Patrimonio › Modelli 3D: sagome e altezze degli edifici dal database della Regione Emilia-Romagna per 19 comuni della Romagna, tra cui Rimini, Cesena, Forlì, Faenza e Lugo.",
+  "Fuori da questi comuni gli edifici arrivano da OpenStreetMap; per ognuno è scritto da dove viene l'altezza.",
+  "Patrimonio › Aggiungi edifici: carichi il database degli edifici del tuo comune e lo usi subito, solo nel tuo browser; se vuoi, lo proponi per tutti. Le istruzioni per scaricarlo sono in una pagina a parte.",
+  "La pagina Novità, con il feed per seguirla.",
+]
+migliorato = [
+  "Patrimonio › Modelli 3D: cortili disegnati bene e un messaggio chiaro dove non ci sono edifici.",
+]
+collegamenti = [
+  { testo = "Modelli 3D", indirizzo = "modelli3d.html" },
+  { testo = "Aggiungi edifici", indirizzo = "aggiungi-dbtr.html" },
+  { testo = "Perché alcuni edifici vengono da OpenStreetMap", indirizzo = "faq.html#ripiego-osm" },
+]
+
+[[voce]]
+data = "2026-11-05"
+versione = "20261105b"
+titolo = "Immagini delle mappe, ricerca in Ortofoto e costi della Sanità"
+nuovo = [
+  "Statistiche › Costi energetici Sanità.",
+  "Patrimonio › Ortofoto: ricerca per indirizzo o particella; da vicino, sopra la foto, i confini delle particelle catastali e i contorni degli edifici.",
+  "Le mappe si scaricano come immagine (JPG, PNG o PDF), con le fonti scritte sotto.",
+]
+migliorato = [
+  "Patrimonio › Modelli 3D: il punto trovato con la ricerca si trascina per correggerlo.",
+]
+verificato = [
+  "Statistiche › Costi energetici Sanità: validata dall'inizio, senza l'avviso di servizio sperimentale.",
+]
+collegamenti = [
+  { testo = "Ortofoto", indirizzo = "ortofoto.html" },
+  { testo = "Costi energetici Sanità", indirizzo = "indicatori.html" },
+]
+
+[[voce]]
+data = "2026-11-05"
+versione = "20261105a"
+titolo = "Modelli 3D in due tempi"
+nuovo = [
+  "Patrimonio › Ortofoto con i confini dei comuni, la piccola mappa d'Italia e un avviso quando la foto non copre la zona.",
+]
+migliorato = [
+  "Patrimonio › Modelli 3D in due tempi: prima trovi l'edificio (indirizzo, foglio e particella o un clic), poi «Genera il 3D».",
+]
+
+[[voce]]
+data = "2026-11-04"
+versione = "20261104c"
+titolo = "I primi edifici in 3D"
+nuovo = [
+  "Patrimonio › Modelli 3D: l'edificio in 3D, con i vicini e il terreno.",
+  "Patrimonio › Ortofoto: le foto aeree delle Regioni come sfondo della mappa.",
+  "Patrimonio › Importa DXF/IFC: apri i tuoi disegni nel browser, senza mandarli a nessuno.",
+  "EuGEnio Visure: un programma per il PC che legge le visure catastali senza mandarle a nessuno.",
+]
+migliorato = [
+  "Clima e meteo › Previsioni a schede, con la scheda «Solo clima».",
+]
+collegamenti = [
+  { testo = "Modelli 3D", indirizzo = "modelli3d.html" },
+  { testo = "Visure", indirizzo = "visure.html" },
+]
+
+[[voce]]
+data = "2026-10-29"
+versione = "20261029b"
+titolo = "Patrimonio più ricco"
+nuovo = [
+  "Patrimonio: la mappa 3D della regione e la scheda «Valori per sede».",
+]
+migliorato = [
+  "File Excel e OpenDocument accettati in tutte le pagine che leggono i tuoi dati.",
+  "Ora le previsioni funzionano anche per le isole minori (Ischia, Eolie, Lampedusa e le altre).",
+]
+collegamenti = [
+  { testo = "Patrimonio", indirizzo = "patrimonio.html" },
+]
+
+[[voce]]
+data = "2026-10-28"
+versione = "20261028d"
+titolo = "Report in PDF e dati in Excel o ODS"
+migliorato = [
+  "Il report si scarica in PDF; i dati in Excel o in OpenDocument, anche in Clima e meteo › Dati climatici.",
+  "Zona climatica del DPR 412/93 con la regola nuova; clima dal 1940 e anno tipo rifatti di conseguenza.",
+]
+
+[[voce]]
+data = "2026-10-27"
+versione = "20261027m"
+titolo = "Dati climatici, DPR 412/93 e clima dal 1940"
+nuovo = [
+  "Clima e meteo › Dati climatici: lo storico del meteo per comune, da scaricare.",
+  "Clima e meteo › Legge 10: zona climatica e gradi giorno del DPR 412/93 per ogni comune, clima dal 1940 e report.",
+]
+collegamenti = [
+  { testo = "Dati climatici", indirizzo = "dati.html" },
+  { testo = "Legge 10", indirizzo = "legge10.html" },
+]
+
+[[voce]]
+data = "2026-10-26"
+titolo = "Meet EuGEnio"
+testo = "Siamo online"

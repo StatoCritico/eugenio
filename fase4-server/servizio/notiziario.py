@@ -3,7 +3,8 @@
 Distinta dalla newsletter degli articoli di Stato Critico (Substack, scritta a mano). Una sola
 lista, mensile, a cui ci si iscrive dal modulo pubblico con doppia conferma: il giorno
 NOTIZIARIO_GIORNO arriva il riepilogo del mese appena concluso (gradi giorno osservati nei capoluoghi
-rispetto agli anni precedenti) con gli ultimi prezzi Eurostat dell'energia per le PMI.
+rispetto agli anni precedenti) con gli ultimi prezzi Eurostat dell'energia per le PMI e, dal 07/11/2026, la sezione
+«Novità di EuGEnio» con le voci del mese di fase5-sito/novita.toml (registro delle versioni, pagina novita.html).
 Con NOTIZIARIO_INVIO_AUTOMATICO=true (predefinito) le campagne partono da sole; altrimenti restano in
 bozza in listmonk. I dati GME e TTF restano interni: non compaiono.
 """
@@ -11,6 +12,7 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
+import tomllib
 from pathlib import Path
 
 import httpx
@@ -38,12 +40,39 @@ def _piede() -> list[str]:
             "EuGEnio è un servizio di Stato Critico (statocritico.it)."]
 
 
+def novita_del_mese(anno: int, mese: int, file: Path | None = None) -> list[str]:
+    """Righe Markdown della sezione «Novità di EuGEnio»: le voci di novita.toml pubblicate nel mese (vuoto se nessuna)."""
+    f = Path(file or C.NOVITA_TOML)
+    try:
+        voci = tomllib.loads(f.read_text(encoding="utf-8")).get("voce", [])
+    except (OSError, ValueError) as e:
+        log.info("Newsletter: novità non lette (%s)", e)
+        return []
+    voci = [v for v in voci if str(v.get("data", "")).startswith(f"{anno}-{mese:02d}-")]
+    if not voci:
+        return []
+    righe = ["## Novità di EuGEnio", ""]
+    for v in sorted(voci, key=lambda v: (v["data"], v.get("versione", ""))):
+        g = dt.date.fromisoformat(v["data"])
+        righe += [f"**{g.day} {MESI[g.month - 1]}: {v['titolo']}**", ""]
+        if str(v.get("testo", "")).strip():      # voce senza elenchi (08/11/2026: «Meet EuGEnio», 26/10)
+            righe += [str(v["testo"]).strip(), ""]
+        # (08/11/2026) gruppi della pagina Novità: Nuovo, Migliorato, Verificato (righe vuote: elenchi Markdown giusti)
+        for k, nome in (("nuovo", "Nuovo"), ("migliorato", "Migliorato"), ("verificato", "Verificato")):
+            if v.get(k):
+                righe += [f"*{nome}*", ""] + [f"- {x}" for x in v[k]] + [""]
+    righe += [f"Tutte le novità: {C.SITO_URL}/novita.html", ""]
+    return righe
+
+
 # ---------------------------------------------------------------------------------------------- mensile
 def testo_mensile(anno: int, mese: int) -> tuple[str, str]:
     nome_mese = f"{MESI[mese - 1]} {anno}"
     righe = [f"# Il freddo di {nome_mese}, comune per comune", ""]
     cap = _capoluoghi()
-    g = pd.read_parquet(C.DATI / "giornaliero.parquet", columns=["istat", "data", "gg20", "t_media"])
+    # solo i capoluoghi (filtro sul parquet): il giornaliero nazionale non si carica mai tutto
+    g = pd.read_parquet(C.DATI / "giornaliero.parquet", columns=["istat", "data", "gg20", "t_media"],
+                        filters=[("istat", "in", [str(i) for i in cap.istat])] if len(cap) else None)
     g["data"] = pd.to_datetime(g.data)
     g = g[g.istat.isin(cap.istat) & (g.data.dt.month == mese)]
     if not g.empty:
@@ -70,6 +99,7 @@ def testo_mensile(anno: int, mese: int) -> tuple[str, str]:
             for r in d[d.time == ult].itertuples():
                 righe.append(f"- {nomi[r.nrg_cons]}: {_num(r.valore * 1000, 0)} €/MWh, IVA esclusa")
             righe += ["", "Fonte: Eurostat (nrg_pc_205).", ""]
+    righe += novita_del_mese(anno, mese)
     righe += _piede()
     return f"EuGEnio – il freddo di {nome_mese}", "\n".join(righe)
 

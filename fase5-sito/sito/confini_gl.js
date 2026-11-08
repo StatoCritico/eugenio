@@ -130,6 +130,18 @@
     const f = r.comuni.features.find((x) => x.properties.istat === istat);
     return f ? riquadro(f.geometry) : null;
   }
+  // confine del comune (MultiPolygon in lon/lat), per le zone coperte dal DBTR in Modelli 3D (07/11/2026); lon e lat
+  // (un punto vicino al comune) servono a trovare la regione se non è ancora caricata
+  async function geometriaComune(istat, lon, lat) {
+    let cod = await regioneDelComune(istat);
+    if (!cod && Number.isFinite(lon) && Number.isFinite(lat)) cod = await regioneNelPunto(lon, lat);
+    if (!cod) return null;
+    try {
+      const r = await datiRegione(cod);
+      const f = r.comuni.features.find((x) => x.properties.istat === istat);
+      return f ? f.geometry : null;
+    } catch { return null; }
+  }
   // il codice ISTAT del comune comincia con quello della provincia, non della regione: si cerca nelle regioni già caricate
   async function regioneDelComune(istat) {
     for (const [cod, p] of regioni) { try { if ((await p).comuni.features.some((x) => x.properties.istat === istat)) return cod; } catch { /* prossima */ } }
@@ -229,6 +241,6 @@
     return stato;
   }
 
-  window.EUGENIO_CONFINI = { aggiungi, alza, riquadroRegione, riquadroComune, regioneNelPunto, comuneNelPunto, utmLonlat, svgLonlat,
+  window.EUGENIO_CONFINI = { aggiungi, alza, riquadroRegione, riquadroComune, geometriaComune, regioneNelPunto, comuneNelPunto, utmLonlat, svgLonlat,
     ITALIA, ATTRIBUZIONE };
 })();

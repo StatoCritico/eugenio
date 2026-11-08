@@ -1,5 +1,7 @@
 // Verifica anti-robot (Cloudflare Turnstile) per le richieste che costano o consumano quote: previsione, patrimonio,
-// geocodifica, particella ed estrazione dei Dati climatici (servizio/protezione.py sul server).
+// geocodifica, particella, estrazione dei Dati climatici, edifici OpenStreetMap al volo di Modelli 3D e proposta di un DB
+// topografico all'archivio comune (07/11/2026;
+// servizio/protezione.py sul server).
 //
 // Si carica in tutte le pagine (parti/testa.html) e avvolge window.fetch: le pagine non cambiano. Alla prima
 // richiesta protetta legge /api/protezione; se il server ha la verifica accesa carica Turnstile, ottiene un gettone
@@ -9,7 +11,7 @@
 // e ripete la richiesta. Senza verifica sul server (prove, mirror) non fa nulla.
 (function () {
   "use strict";
-  const PROTETTE = /\/api\/(previsione|patrimonio|geocodifica|particella|storici\/estrai)(?:[/?#]|$)/;
+  const PROTETTE = /\/api\/(previsione|patrimonio|geocodifica|particella|storici\/estrai|edifici\/osm|dbtr\/inizia)(?:[/?#]|$)/;
   const SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
   const CHIAVE = "eugenio_sessione";
   const originale = window.fetch.bind(window);

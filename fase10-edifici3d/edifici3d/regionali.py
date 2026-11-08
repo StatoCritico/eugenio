@@ -69,6 +69,21 @@ def _poligono(g):
     return p2, z
 
 
+# nomi completi delle colonne lette dagli adattatori: negli Shapefile (DBF) i nomi si troncano a 10 caratteri
+# (QUOTA_GRONDA → QUOTA_GRON, def_tipo_edil → def_tipo_e): si riportano al nome completo (07/11/2026, «Aggiungi DBTR»)
+NOMI_COMPLETI = ("CLASSID", "CEDIUV", "UN_VOL_AV", "UN_VOL_QE", "UN_VOL_POR", "ID", "ALTEZZA", "QUOTA_PIEDE",
+                 "QUOTA_GRONDA", "VOLUME", "CODICE", "NOME", "id", "def_tipo_edil", "def_cat_uso", "def_sotterr", "def_stato",
+                 "def_porz_est", "ogr_fid")
+_TRONCATI = {n[:10]: n for n in NOMI_COMPLETI if len(n) > 10}
+
+
+def nomi_completi(p: dict) -> dict:
+    """Proprietà con i nomi completi (gli altri restano come sono)."""
+    if not any(k in _TRONCATI for k in p):
+        return p
+    return {_TRONCATI.get(k, k) if _TRONCATI.get(k, k) not in p else k: v for k, v in p.items()}
+
+
 def _z_variabile(g) -> float:
     g = shape(g) if isinstance(g, dict) else g
     if isinstance(g, MultiPolygon):
@@ -177,20 +192,29 @@ LIGURIA = Adattatore("liguria_ctr3d", "Regione Liguria – CTR 3D, Edificato", "
 ADATTATORI: dict[str, Adattatore] = {a.chiave: a for a in (LOMBARDIA, FVG, LIGURIA)}
 
 
+def _carica_adattatori_esterni() -> None:
+    """Adattatori delle altre regioni (08/11/2026): un modulo per regione o gruppo in `edifici3d/adattatori/`, ognuno con
+    una tupla `ADATTATORI`; si aggiungono qui senza toccare questo file."""
+    import importlib
+    import pkgutil
+    from . import adattatori as pacchetto
+    for m in sorted(pkgutil.iter_modules(pacchetto.__path__), key=lambda x: x.name):
+        modulo = importlib.import_module(f"{pacchetto.__name__}.{m.name}")
+        for ad in getattr(modulo, "ADATTATORI", ()):
+            ADATTATORI[ad.chiave] = ad
+
+
+_carica_adattatori_esterni()
+
+
 # ------------------------------------------------------------------------------------------------ lettura
 
 
 def leggi_file(percorso: Path, strato: str | None = None) -> tuple[list[tuple[dict, object]], str | None]:
     """(proprietà, geometria shapely con z) e sistema delle coordinate dichiarato dal file (GeoJSON, GPKG, SHP, FGB)."""
-    import pyogrio
-    from shapely import from_wkb
-    kw = {"layer": strato} if strato else {}
-    meta, tab = pyogrio.read_arrow(str(percorso), **kw)
-    nomi = tab.column_names
-    col = meta.get("geometry_name") or next((c for c in ("wkb_geometry", "geometry") if c in nomi), nomi[-1])
-    crs = meta.get("crs")
-    righe = tab.to_pylist()
-    return [({k: v for k, v in r.items() if k != col}, from_wkb(r[col]) if r[col] is not None else None) for r in righe], crs
+    from .uvl import _leggi
+    righe, geoms, meta = _leggi(percorso, strato) if strato else _leggi(percorso, None)
+    return list(zip(righe, geoms)), meta.get("crs")
 
 
 def corpi(righe, adattatore: Adattatore | str, crs_uscita: str, crs_file: str | None = None,
@@ -207,6 +231,7 @@ def corpi(righe, adattatore: Adattatore | str, crs_uscita: str, crs_file: str | 
     rq = box(*riquadro) if riquadro else None
     out, scarti = [], Counter()
     for p, g in righe:
+        p = nomi_completi(p)
         if g is None:
             scarti["senza geometria"] += 1
             continue
@@ -252,9 +277,22 @@ def _stesso_crs(a: str, b: str) -> bool:
         return a == b
 
 
+def scegli_adattatore(fonte: dict, righe) -> Adattatore:
+    """Adattatore della fonte (`adattatore` del TOML) o, se al file mancano i suoi campi, il primo di `alternativi` che li
+    trova tutti (08/11/2026: FVG, `fvg_ctrn_ed2` per gli strati ED2 e `fvg_ctrn` per gli ED1 caricati nella coda)."""
+    candidati = [fonte["adattatore"], *fonte.get("alternativi", [])]
+    campi = {k for p, _ in righe[:2000] for k in nomi_completi(p)}
+    for c in candidati:
+        a = ADATTATORI[c]
+        if all(k in campi for k in a.campi_attesi):
+            return a
+    return ADATTATORI[candidati[0]]
+
+
 def controlla(righe, adattatore: Adattatore | str) -> dict:
     """Controllo degli attributi come per le UVL: campi presenti, riempimento, altezze, coerenza delle quote."""
     a = ADATTATORI[adattatore] if isinstance(adattatore, str) else adattatore
+    righe = [(nomi_completi(p), g) for p, g in righe]
     prop = [p for p, _ in righe]
     campi = sorted({k for p in prop for k in p})
     pieni = {c: sum(1 for p in prop if not _vuoto(p.get(c))) for c in campi}
@@ -273,13 +311,17 @@ def controlla(righe, adattatore: Adattatore | str) -> dict:
             z_var += 1
     esito = {"adattatore": a.chiave, "oggetti": len(prop), "campi": campi, "pieni": pieni,
              "mancanti": [c for c in a.campi_attesi if c not in campi]}
-    if a is LOMBARDIA:
+    if hasattr(a, "coerenza"):                       # adattatori esterni (edifici3d/adattatori/, 08/11/2026)
+        esito["coerenza"] = a.coerenza(righe)
+    elif a is LOMBARDIA:
         esito["coerenza"] = (f"UN_VOL_QE − z della base = UN_VOL_AV in {coerenti} su {len(prop)} (gli altri: base sotto "
                              "terra, porzione 03; terreno = UN_VOL_QE − UN_VOL_AV)")
     elif a is FVG:
         esito["coerenza"] = f"QUOTA_GRONDA − QUOTA_PIEDE = ALTEZZA in {coerenti} su {len(prop)}"
-    else:
+    elif a is LIGURIA:
         esito["coerenza"] = f"z costante per poligono in {len(prop) - z_var} su {len(prop)} (z = quota di gronda)"
+    else:
+        esito["coerenza"] = "nessun controllo delle quote per questo adattatore (vedi la sua documentazione)"
     return esito
 
 

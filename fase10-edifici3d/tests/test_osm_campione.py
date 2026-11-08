@@ -81,3 +81,122 @@ def test_dtm_wcs_a_blocchi(tmp_path):
     assert e["blocchi"] == 1 and e["celle"] == [2000, 1600] and "CC BY" in e["licenza"]
     with rasterio.open(tmp_path / "dtm.tif") as r:
         assert r.crs.to_epsg() == 7791 and float(r.read(1)[0, 0]) == 780.0
+
+
+# 07/11/2026: multipoligoni con way aperte e fori (cortili)
+XML_MP = b"""<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6">
+ <node id="1" lat="44.0600" lon="12.5660"/><node id="2" lat="44.0600" lon="12.5670"/>
+ <node id="3" lat="44.0607" lon="12.5670"/><node id="4" lat="44.0607" lon="12.5660"/>
+ <node id="11" lat="44.0602" lon="12.5663"/><node id="12" lat="44.0602" lon="12.5667"/>
+ <node id="13" lat="44.0605" lon="12.5667"/><node id="14" lat="44.0605" lon="12.5663"/>
+ <way id="300"><nd ref="1"/><nd ref="2"/><nd ref="3"/></way>
+ <way id="301"><nd ref="3"/><nd ref="4"/><nd ref="1"/></way>
+ <way id="302"><nd ref="11"/><nd ref="12"/><nd ref="13"/><nd ref="14"/><nd ref="11"/></way>
+ <relation id="400"><member type="way" ref="300" role="outer"/><member type="way" ref="301" role="outer"/>
+  <member type="way" ref="302" role="inner"/><tag k="type" v="multipolygon"/><tag k="building" v="public"/></relation>
+</osm>"""
+
+
+def test_multipoligono_way_aperte_e_cortile():
+    from pyproj import Transformer
+    from shapely.geometry import Polygon
+    el = OC.edifici_da_xml(XML_MP)
+    assert [t["osm_id"] for t, _ in el] == ["r400_0"]
+    g = el[0][1]
+    assert g.geom_type == "Polygon" and len(g.interiors) == 1
+    t = Transformer.from_crs("EPSG:4326", "EPSG:7791", always_xy=True)
+    m = lambda pts: Polygon([t.transform(x, y) for x, y in pts])
+    fuori = m([(12.5660, 44.0600), (12.5670, 44.0600), (12.5670, 44.0607), (12.5660, 44.0607)])
+    dentro = m([(12.5663, 44.0602), (12.5667, 44.0602), (12.5667, 44.0605), (12.5663, 44.0605)])
+    assert abs(g.area - (fuori.area - dentro.area)) < 1.0 and dentro.area > 900
+    c = OC.corpi_con_stima(el, 9.0)[0]
+    assert c.id == "r400_0" and abs(c.area - g.area) < 1e-6
+
+
+def test_prepara_con_dtm_gia_scaricato(tmp_path):
+    import numpy as np
+    import rasterio
+    from rasterio.transform import from_origin
+    dtm = tmp_path / "dtm5.tif"
+    with rasterio.open(dtm, "w", driver="GTiff", width=400, height=400, count=1, dtype="float32", crs="EPSG:7791",
+                       transform=from_origin(785000, 4886000, 5, 5)) as d:
+        d.write(np.full((1, 400, 400), 7.5, dtype="float32"))
+    chiamate = []
+    esito = OC.prepara((12.565, 44.059, 12.569, 44.062), tmp_path, "rimini-prova", 9.0, dtm=True, osm_file=None,
+                       scarica=lambda u: chiamate.append(u) or XML_MP, dtm_file=dtm)
+    assert len(chiamate) == 1 and "openstreetmap" in chiamate[0]          # solo OSM, nessuna richiesta al WCS
+    # dal 07/11/2026 il terreno 3D viene dalla rotta del server: il DTM dà solo le quote dei corpi
+    assert esito["corpi"] == 1 and not (tmp_path / "odbl" / "rimini-prova" / "prodotti" / "terreno.pmtiles").exists()
+    assert esito["terreno"] == "/api/terreno/{z}/{x}/{y}.png" and esito["quote_da_dtm"]
+    ind = json.loads((tmp_path / "odbl" / "rimini-prova" / "prodotti" / "contesto" / f"{esito['nomi_celle'][0]}.json").read_text(encoding="utf-8"))
+    f = ind["features"][0]
+    assert len(f["geometry"]["coordinates"]) == 2 and f["properties"]["quota_terreno"] == 7.5   # il cortile resta
+
+
+# ----------------------------------------------------------------------------------- 07/11/2026: ripiego OSM al volo
+XML_DUE_PARTI = b"""<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="Overpass API">
+ <node id="1" lat="43.9040" lon="12.9060"/><node id="2" lat="43.9040" lon="12.9066"/>
+ <node id="3" lat="43.9045" lon="12.9066"/><node id="4" lat="43.9045" lon="12.9060"/>
+ <node id="5" lat="43.9041" lon="12.9062"/><node id="6" lat="43.9041" lon="12.9064"/>
+ <node id="7" lat="43.9043" lon="12.9064"/><node id="8" lat="43.9043" lon="12.9062"/>
+ <node id="11" lat="43.9050" lon="12.9070"/><node id="12" lat="43.9050" lon="12.9072"/>
+ <node id="13" lat="43.9052" lon="12.9072"/><node id="14" lat="43.9052" lon="12.9070"/>
+ <way id="300"><nd ref="1"/><nd ref="2"/><nd ref="3"/></way>
+ <way id="301"><nd ref="3"/><nd ref="4"/><nd ref="1"/></way>
+ <way id="302"><nd ref="5"/><nd ref="6"/><nd ref="7"/><nd ref="8"/><nd ref="5"/></way>
+ <way id="303"><nd ref="11"/><nd ref="12"/><nd ref="13"/><nd ref="14"/><nd ref="11"/></way>
+ <relation id="400"><member type="way" ref="300" role="outer"/><member type="way" ref="301" role="outer"/>
+  <member type="way" ref="302" role="inner"/><member type="way" ref="303" role="outer"/>
+  <tag k="type" v="multipolygon"/><tag k="building" v="hospital"/><tag k="height" v="21.5"/></relation>
+</osm>"""
+
+
+def test_ripiego_al_volo_corpi_e_query():
+    q = OC.query_punto(12.906, 43.904)
+    assert q.startswith("[out:xml]") and "around:400,43.904000,12.906000" in q and "(._;>;);out body qt;" in q
+    assert 'relation["building"]["type"="multipolygon"]' in q
+    assert OC.crs_metrico(9.2) == "EPSG:32632" and OC.crs_metrico(12.9) == "EPSG:32633" and OC.crs_metrico(18.3) == "EPSG:32634"
+    assert OC.errore_overpass(XML) is None
+    assert "timed out" in OC.errore_overpass(b"<osm><remark> runtime error: Query timed out in \"query\" </remark></osm>")
+    assert OC.errore_overpass(b"<osm><remark>nota qualsiasi</remark></osm>") is None
+    d = OC.corpi_al_volo(XML_DUE_PARTI, 12.906, 43.904)
+    assert d["licenza"] == "ODbL 1.0" and "OpenStreetMap" in d["attribuzione"] and d["corpi"] == 2 and d["altezze_stimate"] == 0
+    fs = {f["properties"]["id"]: f for f in d["features"]}
+    assert set(fs) == {"r400_0", "r400_1"}
+    # i due pezzi del multipoligono (way outer aperte saldate + una chiusa) sono un edificio solo, con il cortile
+    assert {f["properties"]["edificio"] for f in fs.values()} == {"r400"}
+    grande = fs["r400_0"]
+    assert len(grande["geometry"]["coordinates"]) == 2                                   # esterno + cortile
+    lon, lat = grande["geometry"]["coordinates"][0][0]
+    assert 12.9 < lon < 12.91 and 43.9 < lat < 43.91                                     # WGS84, non metri
+    p = grande["properties"]
+    assert p["gronda"] == 21.5 and p["fonte_altezza"] == "OSM height" and p["licenza"] == "ODbL 1.0" and p["uso"] == "ospedale"
+    # senza altezza in OSM: stima dichiarata
+    s = OC.corpi_al_volo(XML, 12.566, 44.06)
+    st = {f["properties"]["id"]: f["properties"] for f in s["features"]}
+    assert st["r200_0"]["qualita"] == "stima" and st["r200_0"]["fonte_altezza"].startswith("stima") and s["altezze_stimate"] == 1
+    assert OC.corpi_al_volo(b"<osm></osm>", 12.9, 43.9)["features"] == []
+
+
+def test_origine_e_conteggi_delle_altezze_al_volo():
+    """07/11/2026 sera: ogni corpo OSM porta l'origine dell'altezza; i conteggi per origine sono nella risposta."""
+    from edifici3d import osm_campione as OC
+    xml = b"""<?xml version="1.0"?><osm version="0.6">
+ <node id="1" lat="43.9040" lon="12.9060"/><node id="2" lat="43.9040" lon="12.9063"/><node id="3" lat="43.9042" lon="12.9063"/><node id="4" lat="43.9042" lon="12.9060"/>
+ <node id="5" lat="43.9045" lon="12.9060"/><node id="6" lat="43.9045" lon="12.9063"/><node id="7" lat="43.9047" lon="12.9063"/><node id="8" lat="43.9047" lon="12.9060"/>
+ <node id="9" lat="43.9050" lon="12.9060"/><node id="10" lat="43.9050" lon="12.9063"/><node id="11" lat="43.9052" lon="12.9063"/><node id="12" lat="43.9052" lon="12.9060"/>
+ <way id="1"><nd ref="1"/><nd ref="2"/><nd ref="3"/><nd ref="4"/><nd ref="1"/><tag k="building" v="yes"/><tag k="height" v="21 m"/></way>
+ <way id="2"><nd ref="5"/><nd ref="6"/><nd ref="7"/><nd ref="8"/><nd ref="5"/><tag k="building" v="yes"/><tag k="building:levels" v="4"/></way>
+ <way id="3"><nd ref="9"/><nd ref="10"/><nd ref="11"/><nd ref="12"/><nd ref="9"/><tag k="building" v="yes"/></way>
+</osm>"""
+    d = OC.corpi_al_volo(xml, 12.906, 43.904)
+    org = {f["properties"]["id"]: f["properties"]["origine_altezza"] for f in d["features"]}
+    assert sorted(org.values()) == ["fissa", "osm_height", "osm_piani"]
+    assert d["altezze"] == {"osm_height": 1, "osm_piani": 1, "dbtr_vicini": 0, "osm_vicini": 0, "fissa": 1} and d["altezze_stimate"] == 1
+    vicini = [(12.9061 + 0.0002 * k, 43.9051, g) for k, g in enumerate([5, 6, 7, 30])]
+    assert OC.altezze_da_vicini(d["features"], vicini) == 1                 # solo il corpo a 9 m fissi
+    p = next(f["properties"] for f in d["features"] if f["properties"]["origine_altezza"] == "dbtr_vicini")
+    assert p["gronda"] == 6.5 and p["fonte_altezza"].startswith("stima: mediana dei corpi DBTR vicini (4 entro 200 m")
+    assert OC.conta_altezze(d)["altezze"]["dbtr_vicini"] == 1

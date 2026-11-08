@@ -202,7 +202,29 @@ archivio/
   stato_api.json                     consumo dell'API gratuita
 pacchetto_server/                    da copiare sul server (fase 4)
   comuni.json, giornaliero.parquet, orario/<istat>.parquet, parametri_correzione.parquet, metriche.json
+  giornaliero.parziale/              solo durante `esporta` (blocchi già fatti: si riprende da lì)
 ```
+
+**Giornaliero a blocchi (07/11/2026).** Per tutta Italia `giornaliero.parquet` ha ~34 milioni di righe: `esporta` non
+lo costruisce più in memoria. Elabora i comuni in ordine di codice ISTAT a blocchi di `COMUNI_PER_BLOCCO` (100, in
+`meteo_storico/aggrega.py`; `--comuni-per-blocco` per cambiarlo), scrive ogni blocco in `giornaliero.parziale/` e alla
+fine li unisce in un solo file **ordinato per comune e data, un row group per blocco** (un comune mai diviso tra due
+row group), poi cancella la cartella. Se `esporta` si interrompe, rilanciato con le stesse opzioni rifà solo i blocchi
+mancanti. Il server legge un comune alla volta (solo il suo row group) e aggiorna il file un pezzo alla volta
+(README della fase 4, «Meteo nazionale a blocchi»). Un giornaliero scritto prima si controlla o si converte una volta
+con:
+```bash
+python -m meteo_storico giornaliero-blocchi --file pacchetto_server/giornaliero.parquet --solo-verifica
+python -m meteo_storico giornaliero-blocchi --file pacchetto_server/giornaliero.parquet
+```
+(file ordinato: una passata; non ordinato: una lettura per blocco, riprendibile in `giornaliero.parziale/`; il file
+originale resta valido finché quello nuovo non è pronto). Funzioni: `aggrega.aggiorna_a_blocchi`,
+`aggrega.leggi_comune`, `aggrega.info_giornaliero`.
+
+**Risposte troncate dell'API (07/11/2026).** `scarica.richiesta` riprova una risposta 200 con il JSON interrotto o con
+meno punti di quelli chiesti (fino a 4 volte di fila, pause di 5–40 s, sempre col limitatore; poi errore), invece di
+fermare `scarica` o l'aggiornamento del server. Prova: `fase4-server/tests/test_scarica_risposte.py` (la fase 3 non ha
+una cartella di test propria: le sue funzioni si provano dalla fase 4).
 
 Spazio: ~6 MB per comune con ERA5 dal 2015 (ER ≈ 2 GB, Italia ≈ 50 GB; circa metà sono i pezzi annuali in `grezzi/`, che servono per riprendere e aggiornare). Il pacchetto per il server dell'ER è ~170 MB.
 

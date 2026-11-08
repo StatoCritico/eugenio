@@ -3,6 +3,9 @@
 La prova dal vivo del WMS RER 2023-24 è stata fatta a mano il 04/11/2026 (vedi fase10-edifici3d/ortofoto/*.toml)."""
 from __future__ import annotations
 
+import io
+import math
+import re
 import sys
 import types
 from pathlib import Path
@@ -73,6 +76,20 @@ def test_ritmo():
     assert r.prova(f, 103.0) > 1000              # quarta nell'ora: tetto orario
 
 
+
+_RER_BUCO = [False]
+
+
+def _png_rer(buco=False):
+    """Tessera PNG come quella della RER con TRANSPARENT=TRUE: piena, o con la metà sinistra senza dati (trasparente)."""
+    from PIL import Image
+    im = Image.new("RGBA", (256, 256), (120, 140, 90, 255))
+    if buco:
+        im.paste((0, 0, 0, 0), (0, 0, 128, 256))
+    b = io.BytesIO(); im.save(b, "PNG")
+    return b.getvalue()
+
+
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     from fastapi import FastAPI
@@ -90,6 +107,8 @@ def client(tmp_path, monkeypatch):
         chiamate.append(url)
         if "errore" in url:
             return httpx.Response(200, content=b"<ServiceExceptionReport/>", headers={"content-type": "text/xml"})
+        if "TRANSPARENT=TRUE" in url:      # RER (fonte «trasparente»): PNG, con un buco se l'URL lo chiede (BBOX di prova)
+            return httpx.Response(200, content=_png_rer(buco=_RER_BUCO[0]), headers={"content-type": "image/png"})
         return httpx.Response(200, content=JPEG, headers={"content-type": "image/jpeg"})
 
     monkeypatch.setattr(O, "_scarica", finto)
@@ -105,11 +124,13 @@ def test_rotte_copia_e_intestazioni(client, tmp_path):
     ids = [x["id"] for x in r.json()["fonti"]]
     assert r.status_code == 200 and "rer2023" in ids and "pcn2012" in ids
     rer = next(x for x in r.json()["fonti"] if x["id"] == "rer2023")
-    assert rer["stato"] == "da confermare" and rer["tessere"] == "/api/ortofoto/rer2023/{z}/{x}/{y}.jpg"
+    # ?t=1 (07/11/2026 sera): indirizzo nuovo delle tessere RER, le copie nere vecchie di browser e Cloudflare non valgono più
+    assert rer["stato"] == "da confermare" and rer["tessere"] == "/api/ortofoto/rer2023/{z}/{x}/{y}.jpg?t=1"
     r = c.get("/api/ortofoto/rer2023/17/70114/47547.jpg")
-    assert r.status_code == 200 and r.content == JPEG and r.headers["x-ortofoto-copia"] == "nuova"
+    assert r.status_code == 200 and r.content[:3] == b"\xff\xd8\xff" and r.headers["content-type"] == "image/jpeg"
+    assert r.headers["x-ortofoto-copia"] == "nuova" and "FORMAT=image/png&TRANSPARENT=TRUE" in chiamate[-1]
     assert "public" in r.headers["cache-control"] and r.headers["x-ortofoto-fonte"] == "rer2023"
-    assert (tmp_path / "copia" / "rer2023" / "17" / "70114" / "47547.jpg").exists()
+    assert (tmp_path / "copia" / "rer2023_t" / "17" / "70114" / "47547.jpg").exists()
     r2 = c.get("/api/ortofoto/rer2023/17/70114/47547.jpg")
     assert r2.headers["x-ortofoto-copia"] == "si" and len(chiamate) == 1          # dalla copia, senza chiamare
     r3 = c.get("/api/ortofoto/rer2023/17/70114/47547.jpg", headers={"If-None-Match": r2.headers["etag"]})
@@ -173,3 +194,79 @@ def test_attesa_del_turno(client, monkeypatch):
     O.ritmo.svuota()
     codici = [c.get(f"/api/ortofoto/s2cloudless2016/12/2190/{1470 + i}.jpg").status_code for i in range(5)]
     assert codici == [200] * 5                       # aspettano il turno invece di fallire
+
+
+def test_zone_senza_dati_trasparenti(client, tmp_path):
+    """Brisighella (07/11/2026 sera): dove la RER 2023-24 non ha dati la tessera era nera e opaca. Ora è PNG con la
+    trasparenza (sotto si vede il contesto); dalla copia esce con il tipo giusto."""
+    import numpy as np
+    from PIL import Image
+    c, chiamate = client
+    url = "/api/ortofoto/rer2023/17/70114/47548.jpg"
+    _RER_BUCO[0] = True
+    r = c.get(url)
+    assert r.status_code == 200 and r.headers["content-type"] == "image/png"
+    a = np.asarray(Image.open(io.BytesIO(r.content)).convert("RGBA"))
+    assert a[10, 10, 3] == 0 and a[10, 200, 3] == 255                 # buco trasparente, foto opaca
+    r2 = c.get(url)
+    assert r2.headers["x-ortofoto-copia"] == "si" and r2.headers["content-type"] == "image/png" and r2.content == r.content
+    _RER_BUCO[0] = False
+    assert O.tipo_di(b"\xff\xd8\xff\xe0", "x") == "image/jpeg" and O.tipo_di(b"abc", "image/jpeg") == "image/jpeg"
+
+
+# ------------------------------------------------------------------ ortofoto spostata a mano (08/11/2026)
+@pytest.mark.parametrize("z,x,y,de,dn", [(19, 280456, 190190, 1, 0), (19, 280456, 190190, 0, -1), (17, 70114, 47547, 20, -20),
+                                         (12, 2190, 1478, -7, 13), (18, 139000, 93000, 3, 4)])
+def test_bbox_spostato_di_n_metri_sul_terreno(z, x, y, de, dn):
+    """Il BBOX chiesto alla fonte è quello della tessera spostato di (−de, −dn) metri **sul terreno** (ellissoide WGS84),
+    misurato con pyproj: la foto appare spostata di de m a est e dn m a nord. Scarto < 1 cm (anche allo zoom 12)."""
+    from pyproj import Geod, Transformer
+    t = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+    g = Geod(ellps="WGS84")
+    w, s, e, n = O.limiti_tessera(z, x, y)
+    w2, s2, e2, n2 = O.bbox_spostato(z, x, y, de, dn)
+    assert e2 - w2 == pytest.approx(e - w, abs=1e-6) and n2 - s2 == pytest.approx(n - s, abs=1e-6)   # stessa scala, nessuna riproiezione
+    lon0, lat0 = t.transform((w + e) / 2, (s + n) / 2)
+    lon1, lat1 = t.transform((w2 + e2) / 2, (s2 + n2) / 2)
+    # componenti est e nord del passo, misurate separatamente sul terreno
+    _, _, est = g.inv(lon0, lat0, lon1, lat0)
+    _, _, nord = g.inv(lon1, lat0, lon1, lat1)
+    assert math.copysign(est, lon1 - lon0) == pytest.approx(-de, abs=0.01)
+    assert math.copysign(nord, lat1 - lat0) == pytest.approx(-dn, abs=0.01)
+    assert O.bbox_spostato(z, x, y) == (w, s, e, n)
+    ke, kn = O.scala_mercatore(44.0)
+    assert ke == pytest.approx(1.388, abs=0.001) and kn == pytest.approx(1.393, abs=0.001)
+
+
+def test_spostamento_rotta_limiti_e_niente_copia(client, tmp_path):
+    c, chiamate = client
+    fonti = {x["id"]: x for x in c.get("/api/ortofoto/fonti").json()["fonti"]}
+    assert fonti["rer2023"]["spostabile"] and fonti["pcn2012"]["spostabile"] and fonti["toscana2023"]["spostamento_max"] == 20
+    assert not fonti["s2cloudless2016"]["spostabile"] and fonti["s2cloudless2016"]["spostamento_max"] == 0
+    base = "/api/ortofoto/toscana2023/16/34800/23900.jpg"
+    r0 = c.get(base)
+    assert r0.headers["x-ortofoto-copia"] == "nuova" and len(chiamate) == 1
+    r = c.get(base + "?de=2&dn=-1")
+    assert r.status_code == 200 and r.headers["x-ortofoto-copia"] == "no" and r.headers["x-ortofoto-spostamento"] == "de=2; dn=-1"
+    assert len(chiamate) == 2 and "max-age=86400" in r.headers["cache-control"]       # sempre dalla fonte, mai dalla copia
+    bb = lambda u: [float(v) for v in re.search(r"BBOX=([^&]+)", u).group(1).split(",")]
+    w, s, e, n = O.limiti_tessera(16, 34800, 23900)
+    ke, kn = O.scala_mercatore(math.degrees(math.atan(math.sinh(((s + n) / 2) / 6378137.0))))
+    assert bb(chiamate[-1]) == pytest.approx([w - 2 * ke, s + kn, e - 2 * ke, n + kn], abs=0.002)
+    assert bb(chiamate[0]) == pytest.approx([w, s, e, n], abs=0.002)
+    c.get(base + "?de=2&dn=-1")
+    assert len(chiamate) == 3                                                          # nessuna copia su disco
+    copie = sorted(p.relative_to(tmp_path / "copia").as_posix() for p in (tmp_path / "copia").rglob("*.jpg"))
+    assert copie == ["toscana2023/16/34800/23900.jpg"]                                 # solo la tessera normale
+    assert c.get(base + "?de=0&dn=0").headers["x-ortofoto-copia"] == "si"              # spostamento nullo = tessera normale
+    # RER trasparente (?t=1 nell'indirizzo) e Geoportale dal vivo: spostabili
+    r = c.get("/api/ortofoto/rer2023/17/70114/47547.jpg?t=1&de=-1&dn=0")
+    assert r.status_code == 200 and "TRANSPARENT=TRUE" in chiamate[-1] and not (tmp_path / "copia" / "rer2023_t").exists()
+    r = c.get("/api/ortofoto/pcn2012/17/70114/47547.jpg?de=0&dn=5")
+    assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
+    # limiti: interi da -20 a 20; tessere già pronte (Sentinel-2) non spostabili
+    n0 = len(chiamate)
+    for q in ("de=21", "dn=-21", "de=1.5", "de=a"):
+        assert c.get(f"{base}?{q}").status_code == 422, q
+    assert c.get("/api/ortofoto/s2cloudless2016/12/2190/1478.jpg?de=1").status_code == 400
+    assert len(chiamate) == n0                                                         # nessuna chiamata alla fonte

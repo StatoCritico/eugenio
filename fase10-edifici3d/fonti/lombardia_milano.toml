@@ -1,0 +1,43 @@
+# Zona «Lombardia – Comune di Milano» (gruppo A, 08/11/2026): stessa zona di lombardia.toml (codice «lom», stesso
+# sistema, stesso adattatore `lombardia_dbgt`) ma con la fonte e l'attribuzione del **Comune di Milano**, per preparare
+# l'archivio cc-by/lom/milano/ dallo Shapefile del DBT 2020 comunale invece che dal servizio regionale. Gli URL stanno
+# qui, mai nel codice. Verifiche dal vivo (container di sviluppo, nessun login, nessun blocco aggirato):
+# - 08/11/2026: CKAN dati.comune.milano.it, dataset «ds2889_database-topografico-dbt-2020-shp», licenza «cc-by»;
+#   piè di pagina del portale: CC BY 4.0. Zip `DBT_2020.zip` (596.533.009 byte, 1.754 voci), letti con Range solo
+#   `DBT 2020 - SHAPE/UN_VOL.shp/.shx/.dbf/.prj`: PolygonZ, EPSG:7791 (AUTHORITY nel .prj), 237.743 volumi, campi
+#   UN_VOL_QE, UN_VOL_POR, CLASSID, UN_VOL_AV, UN_VOL_EX, CEDIUV, SCRIL (nessun nome troncato: tutti ≤ 10 caratteri).
+#   Porta Nuova (514600–516000 E, 5036400–5037300 N): 3.275 volumi, UN_VOL_QE − z = UN_VOL_AV in 3.185 (gli altri:
+#   base sotto terra); Pirellone 125,5 m, Palazzo Lombardia 155,4 m, Bosco Verticale 113,1 m.
+# - Il DBGT regionale a Milano è questo stesso DBT (stessi CLASSID, CEDIUV e altezze su 635 volumi, 08/11/2026).
+# - DTM: ImageServer regionale DTM5_RL_img (`exportImage`, F32, EPSG:7791), CC BY 4.0 della Regione Lombardia.
+
+[zona]
+nome = "Lombardia"
+codice = "lom"
+crs = "EPSG:7791"                       # RDN2008 / UTM 32N
+riquadro = [9.04, 45.38, 9.28, 45.54]   # WGS84, Comune di Milano
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Comune di Milano – Database Topografico (DBT) 2020, strato 02, classe 020101 Unità volumetrica (UN_VOL)"
+licenza = "CC BY 4.0"
+attribuzione = "Comune di Milano – Database Topografico 2020, Unità volumetrica (CC BY 4.0)"
+scheda = "https://dati.comune.milano.it/dataset/ds2889_database-topografico-dbt-2020-shp"
+adattatore = "lombardia_dbgt"
+servizio_tipo = "arcgis"                # FeatureServer comunale (stessi campi), solo Query, maxRecordCount 2000
+servizio = "https://gisportal.comune.milano.it/federated/rest/services/DBGT/Milano_2020_DBGT/FeatureServer/30"
+crs_servizio = "EPSG:7791"
+url = "https://gisportal.comune.milano.it/download/area_download/SIT/DBT2020/DBT_2020.zip"
+strato_nel_zip = "DBT 2020 - SHAPE/UN_VOL.shp"
+
+[fonti.dtm5]
+descrizione = "Regione Lombardia – DTM 5×5 m (ed. 2015)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Lombardia – DTM 5×5 m (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/r_lombar:dfc98d60-5f02-4a2b-8113-5ad24cc53a9c"
+image_server = "https://www.cartografia.servizirl.it/arcgis2/rest/services/BaseMap/DTM5_RL_img/ImageServer"
+passo = 5.0
+url = ""                                 # zip regionale DTM5_RL.zip (3,1 GB) non necessario: exportImage a blocchi

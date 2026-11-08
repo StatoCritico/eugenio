@@ -1,6 +1,6 @@
 "use strict";
 // Analisi del § 9 che non usano norme UNI, nel codice pubblico (05/11/2026; prima nel modulo privato, solo come
-// struttura): **13** Clima che cambia, **7** Comunità energetiche, **9** cielo visibile (le funzioni di calcolo sono qui,
+// struttura): **13** Cambiamento climatico (prima «Clima che cambia»), **7** Comunità energetiche, **9** cielo visibile (le funzioni di calcolo sono qui,
 // la scena 3D è in edificio3d.js). Solo statistica e geometria di base; nessun coefficiente di norme, nessun dato GME o
 // GSE, nessun prezzo: l'energia condivisa di una CER è un conto di energia, gli incentivi dipendono dai prezzi di mercato.
 //
@@ -113,7 +113,7 @@
   const msg = (id, t, err = false) => { const m = $(id); if (m) { m.textContent = t; m.classList.toggle("errore", err); } };
   const G = window.EUGENIO_GRAFICI;
 
-  // ---- analisi 13: Clima che cambia
+  // ---- analisi 13: Cambiamento climatico (Clima e meteo)
   if ($("clima-comune")) {
     const st = { comuni: null, dati: null };
     const V = (() => { try { return new URL(document.currentScript.src).search; } catch { return ""; } })();

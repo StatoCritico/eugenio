@@ -1,0 +1,41 @@
+# Seconda fonte della zona Sicilia (gruppo B dei lettori regionali, 08/11/2026): CTR 1:10.000 ed. ATA 2012-13 della
+# Regione, strato «Edificato», per i comuni senza una carta comunale con le altezze. Gli URL stanno qui, mai nel codice.
+# Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 08/11/2026 (documenti/CITTA_RIFERIMENTO_SUD_ISOLE.md § 3): SITR, area download: dati «distribuiti secondo la Licenza
+#   Pubblica Creative Commons Attribuzione 4.0 Internazionale» (esclusi quelli con costi di cessione: DTM/DSM 2 m in file);
+# - 08/11/2026 (gruppo B): MapServer/35 «Edificato», hasZ, maxRecordCount 1000, campi OBJECTID, ID, FOGLIO, CODICE,
+#   DESCRIZION, TIPO, ANNORILEV, FLAGSTATO; query GeoJSON con returnZ provata col comando `regionale-campione`; la z dei
+#   vertici è la quota di gronda: altezza = z − DTM. Il DTM 2 m del SITR (ImageServer modelli_digitali/mdt_2013) ha la
+#   licenza del servizio ancora da chiarire (lettera al SITR): usarlo solo per prove interne. Senza DTM aperto questa
+#   fonte non produce archivi pubblici.
+# Lo zona ha lo stesso codice «sic» di sicilia.toml: gli archivi vanno per comune (cc-by/sic/<comune>/).
+
+[zona]
+nome = "Sicilia"
+codice = "sic"
+crs = "EPSG:7792"
+riquadro = [12.42, 36.64, 15.66, 38.82]
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Regione Siciliana – CTR 1:10.000 ed. ATA 2012-2013, Edificato (z dei vertici = quota di gronda)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Siciliana – SITR, CTR 1:10.000 ed. ATA 2012-2013 (CC BY 4.0)"
+scheda = "https://www.sitr.regione.sicilia.it/download/download-carta-tecnica-regionale-10000/ata1213-shape/"
+adattatore = "sicilia_ctr"
+servizio_tipo = "arcgis"
+servizio = "https://map.sitr.regione.sicilia.it/gis/rest/services/ctr_10000/ctr_2013_dbtrs/MapServer/35"
+crs_servizio = "EPSG:25833"             # sistema del riquadro della query (il GeoJSON torna in WGS84 con le z)
+# zip di tutta la Sicilia (164.136.249 byte, Shapefile PolygonZ EPSG:25833)
+url = "https://www.sitr.regione.sicilia.it/wp-content/uploads/CTR_ATA_2012_2013_B_Edificato.zip"
+
+[fonti.dtm]
+descrizione = "Regione Siciliana – MDT 2013 2 m (ImageServer): SOLO PROVE INTERNE, licenza del servizio da chiarire"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Siciliana – SITR, MDT 2013 (licenza del servizio da chiarire)"
+servizio = "https://map.sitr.regione.sicilia.it/gis/rest/services/modelli_digitali/mdt_2013/ImageServer"
+url = ""
+stato = "da chiarire"

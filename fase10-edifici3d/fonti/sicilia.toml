@@ -1,0 +1,28 @@
+# Fonti della zona Sicilia (fase 10, gruppo B dei lettori regionali, 08/11/2026). Gli URL stanno qui, mai nel codice.
+# Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 08/11/2026 (documenti/CITTA_RIFERIMENTO_SUD_ISOLE.md § 3): scheda del dataset 1294 del Comune di Palermo «Quest'opera
+#   è distribuita con Licenza CC BY 4.0 IT», catalogo DCAT creativecommons.org/licenses/by/4.0;
+# - 08/11/2026 (gruppo B): zip scaricato (16.428.234 byte, nessun login) e letto: VOLUMETRIE_7792 (PolygonZ, EPSG:7792),
+#   100.432 volumi, QUOTA_GRON − QUOTA_PIED = ALTEZZA in tutti, 70 con altezza 0, 247 righe che ripetono la sagoma di
+#   un'altra (tolte con `python -m edifici3d.b_regioni palermo-uv`, che tiene la più alta).
+# - La seconda fonte (CTR regionale ATA 2012-13 con la z di gronda) è in sicilia_ctr.toml: serve un DTM.
+
+[zona]
+nome = "Sicilia"
+codice = "sic"
+crs = "EPSG:7792"                       # RDN2008 / UTM 33N
+riquadro = [12.42, 36.64, 15.66, 38.82]
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Comune di Palermo – Carta tecnica comunale, unità volumetriche (1:2.000)"
+licenza = "CC BY 4.0"
+attribuzione = "Comune di Palermo – Carta tecnica comunale, unità volumetriche (CC BY 4.0)"
+scheda = "https://opendata.comune.palermo.it/opendata-dataset.php?dataset=1294"
+adattatore = "palermo_uv"
+servizio_tipo = "file"
+crs_servizio = "EPSG:7792"
+url = "https://opendata.comune.palermo.it/js/server/uploads/dataset/shp/_09062021064719.zip"

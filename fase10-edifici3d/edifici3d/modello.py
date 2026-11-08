@@ -229,8 +229,11 @@ def indicatori(edificio: Edificio, vicini: list[Corpo] = ()) -> dict:
     pareti = {s: 0.0 for s in SETTORI}
     comuni_stesso = comuni_vicini = 0.0
     corpi = edificio.corpi
+    from shapely.geometry.polygon import orient
     for c in corpi:
         p = c.sagoma.buffer(0) if not c.sagoma.is_valid else c.sagoma
+        if isinstance(p, Polygon):
+            p = orient(p, 1.0)          # esterno antiorario, fori orari: la normale dei lati dei cortili guarda il cortile
         volume += c.area * c.altezza_media
         pavimenti += c.area
         if c.colmo and c.colmo > c.gronda and c.tetto != "piano":

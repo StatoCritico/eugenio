@@ -186,29 +186,57 @@ function scegli(istat, punto) {
 }
 
 // ------------------------------------------------------------------ ricerca indirizzo (Zornade)
+// (08/11/2026) Con il solo nome del comune (o «via…, Comune» con il comune scritto per intero) compare per prima la voce
+// «Comune di X»: sceglie il comune della mappa, senza chiedere nulla al server. Le risposte senza coordinate vere (vuote
+// o 0,0) non sono mai un punto.
+const piano = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const coordVere = (lat, lon) => lat !== null && lon !== null && lat !== "" && lon !== "" && Number.isFinite(+lat) && Number.isFinite(+lon)
+  && !(Math.abs(+lat) < 1e-6 && Math.abs(+lon) < 1e-6);
+function comuniNelTesto(q) {
+  const t = piano(q), ultimo = piano(String(q).split(",").pop());
+  const out = [];
+  for (const [istat, c] of stato.comuni) {
+    const n = piano(c.nome);
+    if (n && (n === t || n === ultimo)) out.push([istat, c]);
+  }
+  return out;
+}
+function bottoneComune(ul, istat, c) {
+  const li = document.createElement("li"), b = document.createElement("button");
+  b.type = "button"; b.textContent = `Comune di ${c.nome}${c.prov ? ` (${c.prov})` : ""}`;
+  b.addEventListener("click", () => { $("risultati").innerHTML = ""; $("cerca").value = c.nome; scegli(istat, [c.x, c.y]); });
+  li.appendChild(b); ul.appendChild(li);
+}
 let attesa;
 $("cerca").addEventListener("input", (e) => {
   clearTimeout(attesa);
   const q = e.target.value.trim();
-  if (q.length < 4) { $("risultati").innerHTML = ""; return; }
+  if (q.length < 3) { $("risultati").innerHTML = ""; return; }
+  const comuni = comuniNelTesto(q);
+  const ul = $("risultati"); ul.innerHTML = "";
+  comuni.forEach(([istat, c]) => bottoneComune(ul, istat, c));
+  if (q.length < 4 || (comuni.length && piano(q) === piano(comuni[0][1].nome))) return;    // solo il comune: basta la voce
   attesa = setTimeout(async () => {
     try {
       const d = await json(`${API}/geocodifica?q=${encodeURIComponent(q)}`);
-      const ul = $("risultati"); ul.innerHTML = "";
-      if (!d.risultati.length) { ul.innerHTML = "<li><button disabled>Nessun indirizzo trovato</button></li>"; return; }
-      for (const r of d.risultati) {
+      ul.innerHTML = "";
+      comuni.forEach(([istat, c]) => bottoneComune(ul, istat, c));
+      const buoni = (d.risultati || []).filter((r) => coordVere(r.lat, r.lon));
+      if (!buoni.length && !comuni.length) { ul.innerHTML = "<li><button disabled>Nessun indirizzo trovato</button></li>"; return; }
+      for (const r of buoni) {
         const li = document.createElement("li"), b = document.createElement("button");
         b.type = "button"; b.textContent = r.etichetta;
         b.addEventListener("click", () => scegliIndirizzo(r));
         li.appendChild(b); ul.appendChild(li);
       }
-    } catch (err) { messaggio(`Ricerca indirizzi non disponibile: ${err.message}. Scegli il comune dall'elenco.`, true); }
+    } catch (err) { if (!comuni.length) messaggio(`Ricerca indirizzi non disponibile: ${err.message}. Scegli il comune dall'elenco.`, true); }
   }, 450);
 });
 
 async function scegliIndirizzo(r) {
   $("risultati").innerHTML = "";
   $("cerca").value = r.etichetta;
+  if (!coordVere(r.lat, r.lon)) return messaggio("Indirizzo senza coordinate: scegli il comune dall'elenco o sulla mappa.", true);
   try {
     const d = await json(`${API}/particella?lat=${r.lat}&lon=${r.lon}`);
     if (!d.comune || !d.comune.istat) return messaggio("L'indirizzo è fuori dall'area coperta dal servizio.", true);

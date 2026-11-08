@@ -148,7 +148,7 @@ class CorpoZ:
     lonlat: tuple[float, float]
 
 
-def leggi_corpi(cartella_contesto: Path, z: dict, griglia, lato: float) -> dict[str, CorpoZ]:
+def leggi_corpi(cartella_contesto, z: dict, griglia, lato: float) -> dict[str, CorpoZ]:
     """Corpi della Fase A (celle GeoJSON in WGS84 di `prodotti/contesto/`) dentro il riquadro della zona, nel sistema
     della zona, ognuno assegnato alla tessera del suo centroide."""
     from pyproj import Transformer
@@ -157,7 +157,8 @@ def leggi_corpi(cartella_contesto: Path, z: dict, griglia, lato: float) -> dict[
     tr = Transformer.from_crs("EPSG:4326", z["zona"]["crs"], always_xy=True)
     x0, y0, x1, y1 = z["zona"]["riquadro"]
     corpi: dict[str, CorpoZ] = {}
-    for p in sorted(Path(cartella_contesto).glob("*.json")):
+    cartelle = cartella_contesto if isinstance(cartella_contesto, (list, tuple)) else [cartella_contesto]
+    for p in [q for c in cartelle for q in sorted(Path(c).glob("*.json"))]:
         try:
             fc = json.loads(p.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -303,6 +304,21 @@ def file_della_tessera(ind: dict, t: "Tessera", massimo: int = 6) -> list[str]:
 
 
 # ============================================================================================== pipeline
+def dtm_server(crs: str) -> list[Path]:
+    """COG del DTM sul server (comando dtm-server: <nome>.tif con <nome>.json) nel sistema `crs`, da DTM_SERVER
+    (predefinita /dati/terreno, la stessa cartella della rotta /api/terreno)."""
+    cartella = Path(os.environ.get("DTM_SERVER", "/dati/terreno"))
+    out = []
+    for j in sorted(cartella.glob("*.json")) if cartella.is_dir() else []:
+        try:
+            d = json.loads(j.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if j.with_suffix(".tif").is_file() and str(d.get("crs", "")).upper() == str(crs).upper():
+            out.append(j.with_suffix(".tif"))
+    return out
+
+
 class Pipeline:
     def __init__(self, zona: dict, archivio: Path, stato: Path, prodotti: Path | None = None, radice: Path | None = None,
                  client: httpx.Client | None = None, orologio=time.monotonic, dorme=time.sleep, adesso=None):
@@ -340,6 +356,18 @@ class Pipeline:
         if self._prodotti_forzati:
             return self._prodotti_forzati / "contesto"
         return F.cartella(self.archivio, self._zona_archivio(), e.get("licenza", "CC BY 4.0"), "prodotti") / "contesto"
+
+    def contesti(self) -> list[Path]:
+        """Celle dei corpi della Fase A: l'archivio regionale (cc-by/er/prodotti/contesto) e, dal 07/11/2026, gli archivi
+        dei comuni (cc-by/er/<comune>/prodotti/contesto, `prepara --comune`). I prodotti LiDAR restano nell'archivio
+        regionale (cc-by/er/prodotti/lidar/), che la pagina trova con la chiave «lidar» di archivi.json."""
+        base = self.contesto()
+        out = [base]
+        e = self.z.get("edifici", {})
+        if not e.get("contesto") and not self._prodotti_forzati:
+            reg = F.cartella(self.archivio, self._zona_archivio(), e.get("licenza", "CC BY 4.0"), "")
+            out += sorted(p for p in reg.glob("*/prodotti/contesto") if p.is_dir())
+        return [p for p in out if p.is_dir()] or [base]
 
     def _percorso(self, t: str) -> Path:
         t = t.replace("{radice}", str(self.radice))
@@ -553,7 +581,7 @@ class Pipeline:
 
     def _esegui(self, subito, max_minuti, solo, aggiorna) -> dict:
         s = self._nuovo_stato()
-        corpi = leggi_corpi(self.contesto(), self.z, self.griglia, self.lato)
+        corpi = leggi_corpi(self.contesti(), self.z, self.griglia, self.lato)
         # tessere con edifici: tutte quelle toccate da almeno un corpo (anche solo da un pezzo di sagoma)
         con_edifici = set().union(*(c.toccate for c in corpi.values())) if corpi else set()
         tessere = [self.griglia[k] for k in sorted(con_edifici, key=lambda ij: (-ij[1], ij[0])) if k in self.griglia]
@@ -733,9 +761,19 @@ class Pipeline:
                 raise
             except Exception as e:
                 log.warning("DTM %s per %s: %s", kd, t.nome, e)
-        cog = self.prodotti(licenza) / "dtm_cog.tif"            # ripiego: DTM della Fase A, se c'è
+        cog = self.prodotti(licenza) / "dtm_cog.tif"            # ripiego: DTM della Fase A, se l'archivio lo ha ancora
         if (not griglie or np.isnan(L.unisci(griglie, t.riquadro, passo).z).any()) and cog.exists():
             griglie.append(L.ricampiona(L.leggi_raster(cog, t.riquadro), t.riquadro, passo)); usate.append("DTM della Fase A")
+        # ripiego dal 07/11/2026: il DTM 5 m del server (COG di `dtm-server` in DTM_SERVER, /dati/terreno), lo stesso della
+        # rotta /api/terreno; letto a finestra, solo se è nel sistema della zona
+        for tif in dtm_server(self.zona["crs"]):
+            if griglie and not np.isnan(L.unisci(griglie, t.riquadro, passo).z).any():
+                break
+            try:
+                griglie.append(L.ricampiona(L.leggi_raster(tif, t.riquadro, max_celle=10 ** 11), t.riquadro, passo))
+                usate.append(f"DTM del server ({tif.name})")
+            except Exception as e:
+                log.warning("DTM del server %s per %s: %s", tif.name, t.nome, e)
         if not griglie:
             return None, None
         return (griglie[0] if len(griglie) == 1 else L.unisci(griglie, t.riquadro, passo)), " + ".join(usate)
@@ -878,6 +916,14 @@ class Pipeline:
             d["sintetico"] = True
             d["avviso"] = "Rilievo LiDAR sintetico di esempio: falde e altezze sono inventate e non rappresentano edifici reali."
         scrivi_json(p, d)
+        # (07/11/2026 sera) archivi.json dice alla pagina dove sono le falde solo quando ci sono: si aggiorna qui
+        try:
+            from .archivi import scrivi_archivi_json
+            aj = self.archivio / "archivi.json"
+            if aj.is_file() and "lidar" not in json.loads(aj.read_text(encoding="utf-8")):
+                scrivi_archivi_json(self.archivio)
+        except (OSError, ValueError) as e:     # noqa: PERF203 – mai fermare la pipeline per l'elenco
+            log.warning("archivi.json non aggiornato: %s", e)
 
 
 # ============================================================================================== scelta della zona e stato
@@ -902,8 +948,8 @@ def scegli_zona(cartella_stato: Path, cartella_zone: Path = ZONE, archivio: Path
         if not [1 for f in (z.get("fonti") or {}).values() if f["tipo"] in ("dsm", "las") and usabile(f)[0]]:
             continue
         if archivio is not None:
-            ctx = Pipeline(z, archivio, cartella_stato).contesto()
-            if not ctx.is_dir() or not any(ctx.glob("*.json")):
+            ctx = Pipeline(z, archivio, cartella_stato).contesti()
+            if not any(c.is_dir() and any(c.glob("*.json")) for c in ctx):
                 continue
         st = leggi_json(Path(cartella_stato) / f"{z['zona']['codice']}.json", {}) or {}
         if not st.get("completata"):

@@ -116,19 +116,16 @@ def corpo_da(prop: dict, g, col: dict[str, str], n: int = 0) -> tuple[Corpo | No
 def leggi(percorso: Path, strato: str | None = None, crs: str = "EPSG:7791", mappa: dict | None = None,
           riquadro=None) -> tuple[list[Corpo], dict]:
     """Estratto Zornade → corpi in metri (sistema `crs`) e resoconto (letti, tenuti, scartati per motivo)."""
-    import pyogrio
     from pyproj import CRS, Transformer
-    from shapely import from_wkb
-    meta, tab = pyogrio.read_arrow(str(percorso), layer=strato, bbox=riquadro)
-    righe = tab.to_pylist()
-    gcol = meta.get("geometry_name") or ("wkb_geometry" if "wkb_geometry" in tab.column_names else "geometry")
-    campi = [c for c in tab.column_names if c != gcol]
+    from .uvl import _leggi
+    righe, geoms, meta = _leggi(percorso, strato, riquadro)
+    campi = list(meta["fields"])
     col = colonne(campi, mappa)
     da = CRS.from_user_input(meta.get("crs") or "EPSG:4326")
     t = Transformer.from_crs(da, CRS.from_user_input(crs), always_xy=True)
     corpi, scarti = [], {}
     for n, r in enumerate(righe):
-        g = from_wkb(r[gcol]) if r.get(gcol) is not None else None
+        g = geoms[n]
         if g is not None:
             g = transform(t.transform, g)
         c, motivo = corpo_da({k: r.get(k) for k in campi}, g, col, n)

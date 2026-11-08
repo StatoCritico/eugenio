@@ -1,0 +1,46 @@
+# Fonti della zona «Provincia autonoma di Trento» per gli archivi degli edifici (fase 10, lettori regionali, gruppo C,
+# 08/11/2026). Da non confondere con zone/trento.toml (zona della pipeline LiDAR notturna, stesso codice «tn»: i corpi di
+# cc-by/tn/<comune>/prodotti/ sono quelli che la pipeline aspetta). Gli URL stanno qui, mai nel codice.
+# Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 08/11/2026: zip degli Edifici P.A.T. 3D scaricato (107.676.038 byte, 34 s): Shapefile PolygonZ
+#   ctp14_edificato_04072014, 147.481 edifici, ETRF89/UTM 32N, campi OBJECTID_1, MIN_ALT, MED_ALT, MAS_ALT, quota_DTM,
+#   TIPO, NOTE…; nel comune di Trento 13.287 edifici, 1.693 con MED_ALT = 0 (899 baracche, 449 civili, 142 tettoie);
+# - 08/11/2026: 8 tessere DTM e DSM First del LiDAR PAT 2014/2018 (0,5 m, ASCII 1000×1000, angolo in basso a sinistra
+#   nel nome: 5h<E/100><N/100>) e quadro d'unione WFS stem:inqlid2014_new (n_tavola, x_min, y_min): DSM First − DTM
+#   contro MED_ALT mediana +0,22 m, 97 % entro 2 m su 558 edifici a S. Chiara (altezze_dsm.confronta).
+# - confine del comune: WFS stem:ammcom (descrizione = 'TRENTO', EPSG:32632 ≈ 25832), CC BY 4.0 della Provincia.
+
+[zona]
+nome = "Provincia autonoma di Trento"
+codice = "tn"
+crs = "EPSG:25832"                      # ETRS89 / UTM 32N
+riquadro = [10.44, 45.67, 11.98, 46.54]
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Provincia autonoma di Trento – Edifici P.A.T. 3D (CTP 2014, altezze dal LiDAR 2006-2009)"
+licenza = "CC BY 4.0"
+attribuzione = "Provincia autonoma di Trento – Edifici P.A.T. 3D e LiDAR PAT 2014/2018 (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/p_TN:6a7806d8-63fa-4445-b009-9412c99d8fd2"
+adattatore = "trento_pat3d"
+servizio_tipo = "file"
+url = "https://siatservices.provincia.tn.it/idt/vector/p_TN_6a7806d8-63fa-4445-b009-9412c99d8fd2.zip"
+file_nello_zip = "ctp14_edificato_04072014/ctp14_edificato_04072014.shp"
+campo_altezza = "MED_ALT"                # 0 = altezza mancante: si misura con DSM − DTM ([fonti.lidar])
+confine_wfs = "https://siat.provincia.tn.it/geoserver/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=stem:ammcom&outputFormat=application/json&CQL_FILTER=descrizione='{comune}'"
+
+[fonti.lidar]
+descrizione = "Provincia autonoma di Trento – LiDAR PAT 2014/2018, DSM First e DTM 0,5 m (tessere ASCII di 500 m)"
+licenza = "CC BY 4.0"
+attribuzione = "Provincia autonoma di Trento – LiDAR PAT 2014/2018, DSM First − DTM 0,5 m (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/p_TN:9bb00ab2-8c9e-4afd-aac4-8b6caef3edc9"
+crs = "EPSG:25832"
+indice_wfs = "https://siat.provincia.tn.it/geoserver/wfs"
+indice_strato = "stem:inqlid2014_new"
+indice_crs = "EPSG:25832"
+campo_nome = "n_tavola"
+url_dsm = "https://siatservices.provincia.tn.it/stemdata/2014_lidar_dsmfirst_asc/{n_tavola}_DSMFirst.asc"
+url_dtm = "https://siatservices.provincia.tn.it/stemdata/2014_lidar_dtm_asc/{n_tavola}_DTM.asc"

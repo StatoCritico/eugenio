@@ -7,6 +7,8 @@
 #   è la quota di gronda, altezza = z − DTM. Domini su 400 oggetti: def_sotterr «Non sotterraneo» 395 / «Sotterraneo» 5,
 #   def_stato «In esercizio» 400, def_porz_est «Ingombro al suolo» 399 / «Aggetto» 1.
 # - Il DTM serve: ritaglio del DTM 2023 (D.2056, CC BY 4.0) nel sistema della zona, passato con --dtm.
+# - 08/11/2026 (gruppo C): archivio di prova di Genova (parziale, 4 tavole) con il DTM comunale 0,5 m; DSM − DTM contro
+#   z − DTM: mediana −0,71 m, 77 % entro 2 m su 1.217 corpi (fonti.lidar qui sotto, edifici3d/altezze_dsm.py).
 
 [zona]
 nome = "Liguria"
@@ -38,3 +40,18 @@ scheda = "https://geodati.gov.it/resource/id/r_liguri:D.2056"
 wms = "https://geoservizi.regione.liguria.it/geoserver/M2056/wms"
 wms_strato = "L6952"
 url = ""                                 # download dalla pagina srvcarto (D.2056.DS), da scrivere dopo il primo download
+
+[fonti.lidar]
+descrizione = "Comune di Genova – DSM e DTM 50 cm, LiDAR 3-4/10/2018 (area urbanizzata, tavole 1:1.000)"
+licenza = "CC BY 4.0"
+attribuzione = "Comune di Genova – DSM e DTM 50 cm, LiDAR 2018 (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/c_d969:c39859c3-3aad-45b5-a474-0bfaa854bddf"
+crs = "EPSG:7791"
+indice_wfs = "https://mappe.comune.genova.it/geoserver/ows"
+indice_strato = "MEDIATORE:V_QU_DSM_DTM_50CM_BUFFER10M"
+indice_crs = "EPSG:7791"
+campo_nome = "TAVOLA"
+url_dsm = "https://mappe.comune.genova.it/gis/rilievo/01_DSM_50CM_REV/{LINK_DSM}"
+url_dtm = "https://mappe.comune.genova.it/gis/rilievo/02_DTM_50CM_REV/{LINK_DTM}"
+# 08/11/2026: quadro d'unione WFS provato (campi TAVOLA, LINK_DSM, LINK_DTM); 4 tavole 3931, 3831, 3723, 3721 scaricate
+# (ASCII 1700×1429, 0,5 m, EPSG:7791). A Genova il DTM comunale sostituisce quello regionale per la quota (--dtm).

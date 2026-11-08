@@ -1,0 +1,36 @@
+# Sagome della Sardegna al volo (08/11/2026, lettori regionali, gruppo C): DBGT 10k 2022 v05, strato «Edificio –
+# ingombro al suolo», CC BY 4.0 (scheda RNDT R_SARDEG:2c842f2a-…; WFS con Fees e AccessConstraints «NONE»), 499.171
+# edifici, EPSG:7791, z = 0 (nessuna altezza): l'altezza viene da OSM come per il Veneto. Il campo `uso` è un testo
+# («residenziale», «sede di ospedale», «sede di scuola», «commerciale», …): `campo_uso` e la tabella `usi`.
+# Dove c'è un archivio con le altezze dal LiDAR 2008 (cc-by/sar/<comune>/, adattatore sardegna_dbgt_lidar) vale
+# l'archivio, più affidabile.
+
+[[fonte]]
+id = "sardegna"
+regione = "Sardegna"
+ente = "Regione Autonoma della Sardegna"
+fonte = "DBGT 10k 2022 v05 – Edificio (ingombro al suolo)"
+nome = "Regione Sardegna – DBGT 10k 2022, Edificio"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Autonoma della Sardegna – DBGT 10k 2022, Edificio (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/R_SARDEG:2c842f2a-d268-45e4-a68c-6cff2070bd28"
+wfs = "https://webgis.regione.sardegna.it/geoserver/ows"
+tipo = "dbu:dbgt_10k_22_v05_02_edificio_ingombro_suolo"
+crs = "EPSG:7791"
+riquadro_wgs84 = [8.1, 38.8, 9.9, 41.3]
+massimo = 5000
+campo_uso = "uso"
+prova = "08/11/2026: GetFeature 2.0.0 con bbox breve in EPSG:7791 (E, N) intorno al Brotzu (600 m) → 72 sagome in 1,0 s; bbox urn (N, E) → 0"
+
+[fonte.usi]
+"sede di ospedale" = "ospedale"
+"sede servizi sanitari" = "ospedale"
+"sede di scuola" = "scuola"
+"sede di universit" = "scuola"
+"residenziale" = "residenziale"
+"commerciale" = "commerciale"
+"industriale" = "capannone"
+"agricol" = "capannone"
+"sede di attività sportive" = "palestra"
+"uffici" = "uffici"
+"caserma" = "uffici"

@@ -256,30 +256,69 @@ def geojson_da_overpass(d: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------------------------- rotte
-def _scarica(url: str, dati: str | None = None) -> httpx.Response:
-    h = {"User-Agent": "EuGEnio/1.0 (+https://eugenio.statocritico.it)"}
-    with httpx.Client(timeout=45 if dati is not None else 30, follow_redirects=True, headers=h) as c:
+USER_AGENT = "EuGEnio/1.0 (+https://eugenio.statocritico.it)"
+
+
+def _scarica(url: str, dati: str | None = None, timeout: float | None = None) -> httpx.Response:
+    h = {"User-Agent": USER_AGENT}
+    t = timeout or (45 if dati is not None else 30)
+    with httpx.Client(timeout=t, follow_redirects=True, headers=h) as c:
         return c.post(url, data={"data": dati}) if dati is not None else c.get(url)
 
 
-def _overpass(s: "Strato", query: str) -> httpx.Response:
-    """Prova l'istanza principale e poi quelle di riserva: le istanze pubbliche di Overpass sono spesso sovraccariche
-    (502/504/429) o lente. Restituisce la prima risposta 200 in JSON, altrimenti l'ultima ottenuta."""
+def chiedi_overpass(urls, query: str, formato: str = "json", timeout: float | None = None, nome: str = "Overpass") -> httpx.Response:
+    """Prova le istanze di Overpass in ordine (le pubbliche sono spesso sovraccariche: 502/504/429, o lente) e
+    restituisce la prima risposta 200 del formato chiesto («json» o «xml»), altrimenti l'ultima ottenuta; se nessuna
+    risponde, l'ultimo errore di rete. Usata dallo strato «Contorni degli edifici» e dal ripiego OSM di Modelli 3D
+    (servizio/edifici_osm.py, 07/11/2026)."""
     ultima, errore = None, None
-    for url in (s.url, *s.url_riserva):
+    for url in urls:
         try:
-            r = _scarica(url, query)
+            r = _scarica(url, query, timeout) if timeout else _scarica(url, query)
         except httpx.HTTPError as e:
-            log.info("Strato %s: %s non risponde (%s)", s.id, url, e)
+            log.info("%s: %s non risponde (%s)", nome, url, e)
             errore = e
             continue
-        if r.status_code == 200 and "json" in r.headers.get("content-type", ""):
+        if r.status_code == 200 and formato in r.headers.get("content-type", ""):
             return r
-        log.info("Strato %s: %s risponde %s", s.id, url, r.status_code)
+        log.info("%s: %s risponde %s", nome, url, r.status_code)
         ultima = r
     if ultima is not None:
         return ultima
     raise errore or httpx.HTTPError("nessuna istanza Overpass")
+
+
+# Istanze di Overpass (07/11/2026, decisione di Paolo): principale overpass-api.de (FOSSGIS e.V., Germania); riserva
+# comune allo strato «Contorni degli edifici» e al ripiego OSM di Modelli 3D: «Overpass API Europa» di Christian Dresel
+# (ovp.dresel.systems, Fürth, Germania; dati Europa da Geofabrik, libera, senza chiave, 4 richieste in parallelo per IP),
+# al posto di maps.mail.ru (VK). Scelta e alternative nel TOML dello strato e nel README della fase 4.
+OVERPASS_PRINCIPALE = "https://overpass-api.de/api/interpreter"
+OVERPASS_RISERVA = "https://ovp.dresel.systems/api/interpreter"
+
+
+def riserva_overpass(s: "Strato | None" = None) -> list[str]:
+    """Istanze di riserva: OVERPASS_RISERVA del .env se c'è (anche vuota = nessuna riserva, per esempio se dal server la
+    riserva non risponde: il ripiego dirà che OpenStreetMap non risponde), altrimenti url_riserva del TOML dello strato,
+    altrimenti la riserva predefinita."""
+    if C.OVERPASS_RISERVA is not None:
+        return [u for u in C.OVERPASS_RISERVA if not O.ESCLUSI.search(u)]
+    if s is not None:
+        return list(s.url_riserva)
+    return [OVERPASS_RISERVA]
+
+
+def _overpass(s: "Strato", query: str) -> httpx.Response:
+    """Istanza principale dello strato e poi quelle di riserva (riserva_overpass)."""
+    return chiedi_overpass((s.url, *riserva_overpass(s)), query, "json", nome=f"Strato {s.id}")
+
+
+def istanze_overpass() -> list[str]:
+    """Istanze di Overpass dello strato OSM dei TOML (anche se lo strato è spento: la fonte è la stessa), con la riserva
+    comune."""
+    for s in strati().values():
+        if s.tipo == "overpass":
+            return [s.url, *riserva_overpass(s)]
+    return [OVERPASS_PRINCIPALE, *riserva_overpass()]
 
 
 @router.get("")

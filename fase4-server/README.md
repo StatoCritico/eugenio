@@ -14,12 +14,50 @@ Container:
 | Container | Cosa fa |
 |---|---|
 | `api` | FastAPI: riceve il CSV dei consumi, costruisce le covariate meteo e di calendario, chiama **TiRex-2** e restituisce la previsione probabilistica (quantili 10–90 %). Fa anche da proxy verso **Zornade** (la chiave resta sul server) e geolocalizza i patrimoni edilizi (ANNCSU + Zornade) |
-| `worker` | previsioni meteo ogni 6 ore; storico meteo ogni giorno; **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
+| `worker` | previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
 | `caddy` | sito statico della fase 5 e instradamento verso l'API, solo dentro la rete Docker |
 | `cloudflared` | **Cloudflare Tunnel**: collega il server a Cloudflare senza aprire porte; l'HTTPS lo fa Cloudflare |
 | `listmonk` + `postgres` | newsletter automatica dei dati: liste, doppia conferma, cancellazione, invii |
 
 Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, vedi fase 3).
+
+## Aggiunte dell'08/11/2026 (stessa versione `?v=20261107b`)
+
+- **Sagome regionali al volo** (`servizio/edifici_osm.py`, `edifici3d/sagome_regionali.py` e `fonti/sagome_regionali.toml`
+  copiati nell'immagine): `GET /api/edifici/osm` in **Veneto** chiede anche al WFS della Regione (`rv:edifici_veneto_feb2022`,
+  bbox di 800 m attorno al centro della cella, in **EPSG:6876**) le sagome e dà a ognuna l'altezza dell'edificio OSM
+  sovrapposto (poi mediana dei vicini, poi 9 m), con `sagome`, `quote_dtm`, `X-Licenza: IODL 2.0; ODbL 1.0`. Stessa
+  verifica anti-robot e stessi limiti per IP del ripiego OSM; una chiamata ai WFS alla volta, almeno 1 s tra due, tetto
+  `EDIFICI_REGIONALI_TETTO_ORA` (300) all'ora, timeout `EDIFICI_REGIONALI_TIMEOUT_S` (30 s); copia delle sagome per cella
+  in `/dati/edifici_regionali/<regione>/` per `EDIFICI_OSM_GIORNI` giorni; WFS giù → soli edifici OSM con `avviso_sagome`;
+  `EDIFICI_REGIONALI=false` spegne. Quote dei corpi dal DTM del server (`terreno.quote_punti`). Prova dal vivo dal
+  container (08/11): Susegana via San Salvatore 200 in 6,7 s (396 sagome, 4 con l'altezza OSM, 449 quote dal DTM 73–110 m),
+  castello di San Salvatore 52 sagome (quote 85–162 m), Conegliano centro 1.153 sagome. Test `tests/test_edifici_regionali.py`.
+  Dall'08/11/2026 notte anche **Sardegna** (WFS del DBGT 10k, CC BY 4.0) e **Campania** (CTR 2020, ArcGIS REST, CC BY 4.0) da
+  `fase10-edifici3d/fonti/sagome_regionali.d/` (nell'immagine dell'api): la copia tiene anche il campo dell'uso della fonte
+  (`sagome_regionali.campi_tenuti`: `uso` per la Sardegna, `tipo` per la Campania) e la fonte dice «servizio ArcGIS» o «WFS».
+- **Terreno da più DTM** (`servizio/terreno.py`): le schede di `CARTELLA_TERRENO` si ordinano dal passo più fine; per ogni
+  tessera il primo DTM che la copre, poi gli altri per i vuoti, poi Copernicus, poi piatta; intestazione nuova
+  `X-Terreno-Nome` (nome del DTM, anche dalla copia). DTM del Veneto: `dtm-server --regione veneto --crs EPSG:6876 --file
+  <cartella delle tavole> --uscita /dati/terreno/dtm5_veneto_tv.tif` (passo J5 bis). Test
+  `test_piu_dtm_veneto_in_6876_il_piu_dettagliato_prima` (tavole ASCII Grid sintetiche senza `.prj`).
+- **Report dell'edificio**: sezione «Forma dei tetti» (scelta e corpi per fonte) dal campo `tetti`.
+
+- **`/api/geocodifica` senza 0,0** (08/11/2026 sera, menu e ricerca): le risposte di Zornade senza coordinate vere (vuote,
+  non numeriche o 0,0) si scartano; la pagina Previsioni propone il comune scritto («Comune di X») senza chiamare il server.
+  Test `test_geocodifica_scarta_le_coordinate_zero` (`tests/test_protezione.py`). Serve il rebuild dell'api (già in J5).
+
+## Correzioni del 07/11/2026 sera (`?v=20261107b`)
+
+- **Ortofoto RER** (`servizio/ortofoto.py`, `trasparente = true` nel TOML): chiesta in PNG con `TRANSPARENT=TRUE`; tessere
+  piene restituite in JPEG, con buchi in PNG trasparente (prima nere e opache dove la RER non ha dati, per esempio sulle
+  colline di Brisighella agli zoom 12–14); copia in `ortofoto/rer2023_t/`, indirizzo pubblicato con `?t=1`. La cartella
+  vecchia `ortofoto/rer2023/` si cancella (passo J7).
+- **Caddyfile**: `archivi.json` e `*/indice.json` sotto `/edifici3d/` con `Cache-Control: no-cache` (riconvalida con ETag);
+  prima un giorno di copia nel browser mostrava l'elenco vecchio degli archivi.
+- **`/api/comuni`**: valori vuoti (NaN) e colonne mancanti non danno più 500.
+- **Ricerca** (fase 7, `territorio/zornade.py` e `patrimonio.py`): 0,0 non è mai un punto (civico senza coordinate).
+- Misura dello sfasamento (proxy degli strati): nessuno scarto introdotto dal server; test `test_colonne_e_datum_senza_scarti`.
 
 ## Come funziona la previsione
 
@@ -142,7 +180,7 @@ sed -i 's|^cartella = "archivio_mercati"|cartella = "/dati/mercati"|; s|^cartell
 ```bash
 cd ~/energia/fase4-server
 cp .env.example .env
-nano .env                 # CLOUDFLARE_TUNNEL_TOKEN, ZORNADE_API_KEY, GME_*, SMTP_*, REGIONI
+nano .env                 # CLOUDFLARE_TUNNEL_TOKEN, ZORNADE_API_KEY, GME_*, SMTP_*, REGIONI, REGIONI_AGGIORNATE
 chmod 600 .env
 docker compose up -d --build      # la prima build richiede ~10 minuti
 docker compose logs -f worker     # prime previsioni meteo (qualche minuto), poi l'indirizzario ANNCSU
@@ -154,6 +192,49 @@ Al primo avvio il worker scarica anche l'indirizzario ANNCSU in `/srv/energia/da
 
 Controllo: `https://eugenio.statocritico.it/api/salute` e la documentazione interattiva
 `https://eugenio.statocritico.it/api/docs`.
+
+### Meteo nazionale a blocchi e regioni aggiornate (07/11/2026)
+
+**Regioni servite e regioni aggiornate.** `REGIONI` (`.env`) dice quali comuni il sito serve (meteo, previsioni,
+Legge 10, Dati climatici, patrimonio): codici ISTAT separati da virgola, **vuoto = tutta Italia**.
+`REGIONI_AGGIORNATE` dice di quali comuni il worker aggiorna **ogni giorno** previsioni (ogni `ORE_PREVISIONI` ore) e
+storico (dopo `ORA_STORICO_UTC`) con l'API gratuita di Open-Meteo: **vuoto = tutte quelle servite**, cioè il
+comportamento di prima (predefinito: nessun cambiamento sul server). Vale solo dentro le servite
+(`meteo.comuni(aggiornati=True)`). Esempio: con l'archivio nazionale della fase 3 si può servire tutta Italia e
+aggiornare ogni giorno solo l'Emilia-Romagna (`REGIONI=` e `REGIONI_AGGIORNATE=08`): gli altri comuni restano
+consultabili con l'archivio com'è, senza le previsioni del giorno (la previsione dei consumi usa allora la
+climatologia, come quando il meteo manca). Il worker scrive all'avvio «Meteo: regioni servite …, aggiornate ogni giorno …».
+
+**Giornaliero a blocchi.** `giornaliero.parquet` nazionale (7.896 comuni × ~4.300 giorni ≈ 34 milioni di righe) è
+**un solo file ordinato per comune e data, con un row group ogni `COMUNI_PER_BLOCCO` comuni** (100,
+`meteo_storico/aggrega.py`; un comune non è mai diviso tra due row group; metadato `eugenio_formato =
+giornaliero_a_blocchi_v1`). Così:
+- `meteo.storico_giornaliero(istat)` legge solo il row group del comune (estremi dalle statistiche, in cache finché il
+  file non cambia): ~0,1 s e pochi MB, mai il file intero; `servizio/storici.py` (Dati climatici) legge con i filtri
+  per comune e data, `notiziario.py` solo i capoluoghi;
+- `meteo.aggiorna_giornaliero(p, nuovi)` (usato dallo storico del worker) riscrive il file **un pezzo alla volta**:
+  le righe nuove vincono su quelle con la stessa chiave `istat`+`data`, i comuni nuovi entrano al loro posto; scrive in
+  `giornaliero.parquet.nuovo` e sostituisce il file solo alla fine (l'api legge sempre un file intero). Misurato sul
+  container: ~650 MB di picco e ~16 s per 8,6 milioni di righe; la memoria non cresce con il file (worker: `mem_limit` 3 GB);
+- **compatibilità con i file di prima** (scritti in un colpo da `esporta` o dall'aggiornamento di prima del 07/11): si
+  leggono così come sono; il primo aggiornamento li converte da solo. Se il file è ordinato per comune basta una
+  passata; se non lo è (`esporta` di prima seguiva l'ordine di `comuni.parquet`) la conversione legge il file una volta
+  per blocco di comuni e salva i blocchi in `giornaliero.parziale/` accanto al file: se si interrompe, rilanciandola
+  rifà solo i blocchi mancanti. Per farla una volta sola e sotto controllo, con il worker fermo:
+  ```bash
+  docker compose run --rm --no-deps worker python -m meteo_storico giornaliero-blocchi --file /dati/giornaliero.parquet --solo-verifica
+  docker compose run --rm --no-deps worker python -m meteo_storico giornaliero-blocchi --file /dati/giornaliero.parquet
+  ```
+  (procedura con copia di sicurezza e verifica in `AGGIORNAMENTO_2026-11-07.md`, passo F12). Prove:
+  `tests/test_meteo_nazionale.py` (esportazione a blocchi, lettura per comune, aggiornamento, regioni servite e
+  aggiornate), `tests/test_giornaliero_blocchi.py` (file di prima ordinati e non ordinati, conversione interrotta e
+  ripresa, comando) e `tests/test_scarica_risposte.py` (risposta troncata di Open-Meteo).
+
+**Risposte troncate di Open-Meteo.** Una risposta 200 con il JSON interrotto a metà (capitato il 04/11/2026) o con meno
+punti di quelli chiesti non ferma più l'aggiornamento: `meteo_storico.scarica.richiesta` la registra nel log
+(«risposta troncata o incompleta … riprovo (n/4)»), aspetta 5, 10, 20, 40 s e riprova, sempre passando dal limitatore
+dell'API; dopo 4 risposte troncate di fila (`MAX_TRONCATE`) o 8 tentativi in tutto (`TENTATIVI`) si arrende con un
+errore (email all'amministratore dal worker).
 
 ### 4. Aggiornare
 
@@ -233,10 +314,13 @@ Il Caddyfile serve dal 06/11/2026 i file `.md` del sito come `text/markdown; cha
 | GET | `/api/edifici/gradi-giorno/{istat}?dal=AAAA-MM&al=AAAA-MM` | (04/11/2026, fase 10) gradi giorno mensili reali (base 20 °C e 24 °C) e temperatura media dall'archivio giornaliero, per la firma energetica; 503 finché manca l'archivio |
 | GET | `/api/edifici/clima-orario/{istat}?anno=AAAA` | (04/11/2026, fase 10) un anno orario di radiazione globale e diffusa, temperatura e vento dall'archivio orario del comune, per la producibilità FV nel browser; 503 finché manca l'archivio |
 | GET | `/api/ortofoto/fonti` | (04/11/2026, Fase B) fonti delle ortofoto accese, con licenza, citazione, stato («confermata», «da confermare»), zoom, riquadro e modello d'indirizzo delle tessere |
-| GET | `/api/ortofoto/{fonte}/{z}/{x}/{y}.jpg` | (Fase B) tessera 256×256 in web mercator dal proxy con copia su disco (`servizio/ortofoto.py`); 404 fuori zona o per una fonte spenta, 502 se la fonte risponde con un errore, 503 se il ritmo verso la fonte è esaurito |
+| GET | `/api/ortofoto/{fonte}/{z}/{x}/{y}.jpg` | (Fase B) tessera 256×256 in web mercator dal proxy con copia su disco (`servizio/ortofoto.py`); 404 fuori zona o per una fonte spenta, 502 se la fonte risponde con un errore, 503 se il ritmo verso la fonte è esaurito; **`?de=<m>&dn=<m>`** (08/11/2026, interi ±20, solo fonti WMS: `spostabile` in `/fonti`): ortofoto spostata di de m a est e dn m a nord rispetto alla cartografia, per le frecce sotto la mappa. Il proxy chiede alla fonte il BBOX della tessera spostato di (−de, −dn) m sul terreno in EPSG:3857 (scala locale dell'ellissoide WGS84 al centro della tessera, `bbox_spostato`; scarto < 1 cm, nessuna riproiezione); **nessuna copia su disco** (ogni passo da 1 m è un'altra serie di tessere usata da una sola persona: con la copia `ORTOFOTO_MAX_GB` si riempirebbe e la pulizia toglierebbe le tessere normali), `Cache-Control` di un giorno, `X-Ortofoto-Copia: no`, `X-Ortofoto-Spostamento`; contano ritmo e limite per IP come le altre; 422 fuori dai limiti, 400 per le fonti XYZ (Sentinel-2) |
 | GET | `/api/ortofoto/strati` | (05/11/2026, seconda pubblicazione) strati sopra le ortofoto accesi (`servizio/strati.py`): tema (`particelle`, `edifici`), regioni, licenza, citazione, colore, legenda, zoom, riquadro e modello d'indirizzo delle tessere |
 | GET | `/api/ortofoto/strati/{id}/{z}/{x}/{y}.png` | tessera **trasparente** 256×256 in web mercator: particelle catastali dell'Agenzia delle Entrate (WMS in EPSG:4258 riproiettato), contorni degli edifici del DBTR; solo linee, ricolorate; copia su disco, ritmo e limite come le ortofoto; 404 fuori zona o zoom, 502 se la fonte sbaglia, 503 col ritmo esaurito |
 | GET | `/api/ortofoto/strati/osm_edifici/16/{x}/{y}.json` | sagome degli edifici di OpenStreetMap (ODbL) della tessera z16, in GeoJSON, dall'API Overpass, con copia su disco |
+| GET | `/api/terreno/{z}/{x}/{y}.png` | (07/11/2026) **terreno della pagina 3D su richiesta** (`servizio/terreno.py`): tessera Terrarium 256×256 (zoom 8–15) letta a finestra dal COG del DTM 5 m in `/dati/terreno` (comando `dtm-server` della fase 10), altrove Copernicus DEM 90 m, se nemmeno quello tessera piatta dichiarata; copia su disco, `X-Terreno-Fonte`, Cache-Control 30 giorni; limite `terreno` solo sulle tessere da generare; 404 fuori dall'Italia o con `TERRENO_ATTIVO=false` |
+| GET | `/api/terreno/fonti` | (07/11/2026) DTM disponibili sul server (riquadro, licenza, attribuzione), zoom e ripiego |
+| GET | `/api/edifici/osm?lon=&lat=` | (07/11/2026) **ripiego OpenStreetMap di Modelli 3D** fuori dal DBTR (`servizio/edifici_osm.py`): edifici OSM entro 400 m dal centro della cella di 0,002° del punto, da Overpass, letti con le regole di `osm_campione` (multipoligoni con i cortili, altezza `height` → `building:levels` × 3 m → stima di 9 m), in GeoJSON WGS84 con licenza ODbL 1.0; Turnstile, limite `edifici_osm`, tetto orario per tutto il sito, copia di 30 giorni; 400 fuori dall'Italia, 404 se spento, 502/503 se Overpass non risponde |
 | GET | `/api/edifici/orizzonte?lat=&lon=&h=&direzioni=72` | (Fase B) orizzonte del terreno fino a 25 km dal Copernicus DEM 90 m (file `.om` di Open-Meteo su S3, come la fase 3), angoli per direzione; copia su disco per punto (~100 m) |
 | POST | `/api/edifici/pvgis` | (Fase B) `{lat, lon, aree: [{id, kwp, inclinazione, orientamento, montaggio, perdite, orizzonte}]}` → PVGIS `PVcalc` chiamato dal server con `userhorizon` e senza, per area; massimo 12 aree; risposte copiate su disco |
 | GET | `/api/interno/edifici/stato` | (Fase C, **interna**) stato della pipeline notturna degli edifici (zone, tessere, ultime 30 notti, qualità, errori, disco, fonti); solo con il JWT di Cloudflare Access verificato (`servizio/interno.py`); 403 senza o con gettone non valido, 503 se `CF_ACCESS_TEAM_DOMAIN`/`CF_ACCESS_AUD` mancano nel `.env`; `X-Robots-Tag: noindex`, `no-store` |
@@ -524,6 +608,7 @@ bloccherebbe anche chi usa le API dei dati aperti con uno script.
 | `dati` | `/api/meteo`, `/api/clima-legge10`, `/api/mappa`, `/api/comuni`, `/api/metodologia` | `LIMITE_DATI_ORA` (600) |
 | `stima`, `estrazione` | `/api/storici/stima`, `/api/storici/estrai` | `STORICI_STIME_ORA` (600), `STORICI_ESTRAZIONI_ORA` (30) |
 | `sessione` | `/api/sessione` | `SESSIONI_ORA` (60) |
+| `edifici_osm` | `/api/edifici/osm` (07/11/2026, anche le risposte dalla copia) | `EDIFICI_OSM_ORA` (60) |
 
 L'indirizzo è quello che Caddy mette in `X-Forwarded-For` (il `CF-Connecting-IP` di Cloudflare, non falsificabile
 perché il server si raggiunge solo dal tunnel). Gli IPv4 contano uno per uno, gli **IPv6 per rete /64**: chi ha IPv6
@@ -594,13 +679,21 @@ l'informativa privacy.
   `data/copernicus_dem90/static/lat_<grado>.om` di Open-Meteo (gli stessi che la fase 3 usa per la quota dei comuni,
   letti con `meteo_storico.s3.FSBlocchi`), angolo massimo per direzione con curvatura e rifrazione (k = 0,13), da 250 m
   in là (più vicino lavora la pagina con gli edifici). Copia in `/dati/orizzonte/`. ~1–4 s per punto la prima volta.
+- **`servizio/terreno.py`** (07/11/2026, decisione di Paolo: il DTM non va più negli archivi dei comuni) – tessere del
+  terreno 3D generate su richiesta dal COG unico per quadrante in `CARTELLA_TERRENO` (`/dati/terreno`, scritto una volta
+  con `edifici-lidar dtm-server`), aprendo la panoramica adatta allo zoom (una tessera legge al più ~1 MB); vuoti e zone
+  fuori dai DTM dal Copernicus DEM dei file `.om` dell'orizzonte; copia in `CARTELLA_TERRENO_TESSERE/<versione>/` (la
+  versione cambia quando cambiano i DTM) con tetto `TERRENO_MAX_GB` (5) e pulizia delle più vecchie; limite per IP
+  `TERRENO_ORA` (3000 tessere nuove all'ora), `TERRENO_PARALLELE` (2) generazioni insieme. `rasterio` (GDAL nella ruota)
+  è nell'immagine dell'api. Prove: `tests/test_terreno.py` (8, DTM sintetico e Copernicus simulato).
 - **`servizio/pvgis.py`** – confronto PVGIS: `PVcalc` della v5.3 chiamato dal server (PVGIS non ha CORS), con
   `userhorizon` (36 direzioni, massimo dei gruppi) e senza; ritmo per tutto il sito sotto le 30 chiamate al secondo del JRC
   (`PVGIS_AL_SECONDO=20`), limite per IP `PVGIS_ORA`, copia delle risposte in `/dati/pvgis/` per `PVGIS_CACHE_GIORNI`.
-- **Caddy**: `/api/ortofoto/*` ha un blocco suo (senza compressione, timeout di 30 s); le intestazioni di cache le scrive
-  l'api. **Cloudflare**: la regola di rate limiting su `/api/` (60 richieste in 10 s) va ristretta per non bloccare le
-  tessere: `URI Path starts with "/api/" and not URI Path starts with "/api/ortofoto/"` (passo manuale in
-  `AGGIORNAMENTO_2026-11-04.md`).
+- **Caddy**: `/api/ortofoto/*` e (dal 07/11/2026) `/api/terreno/*` hanno un blocco loro (senza compressione, timeout di
+  30 s); le intestazioni di cache le scrive l'api. **Cloudflare**: la regola di rate limiting su `/api/` (60 richieste in
+  10 s) va ristretta per non bloccare le tessere: `URI Path starts with "/api/" and not URI Path starts with
+  "/api/ortofoto/" and not URI Path starts with "/api/terreno/"` (passo manuale in `AGGIORNAMENTO_2026-11-04.md`, aggiunta
+  del terreno in F20 di `AGGIORNAMENTO_2026-11-07.md`).
 - **Report `edificio`**: sezioni nuove Obblighi di legge, Sole sulle facciate, Orizzonte lontano, Confronto con PVGIS,
   Classifica di priorità; figura con l'ortofoto (PNG) **solo** se porta licenza e citazione, che vanno nella didascalia e
   tra le fonti; le fonti «solo dal vivo» non entrano mai.
@@ -627,6 +720,106 @@ l'informativa privacy.
   Overpass → GeoJSON, rotte, copia, spegnimento, coerenza con `fonti/regioni.toml`). Dal vivo dal container il 05/11/2026:
   WMS AdE e WMS DBTR rispondono (Rimini, zoom 17 e 18, allineati all'ortofoto RER); Overpass no (da provare dal server).
 - Pubblicazione: rebuild dell'api e poi `docker compose up -d worker` (procedura D di `AGGIORNAMENTO_2026-11-05.md`).
+
+## Ripiego OpenStreetMap degli edifici per Modelli 3D (07/11/2026)
+
+Decisione di Paolo del 07/11/2026: OpenStreetMap resta come **ripiego** dove il punto cade fuori da ogni archivio di
+qualità (DBTR: fuori dall'Emilia-Romagna e nei comuni ER non ancora preparati); dove c'è il DBTR vale il DBTR e OSM non si
+mescola (lo decide la pagina, README della fase 5).
+
+- **`servizio/edifici_osm.py`** – `GET /api/edifici/osm?lon=&lat=`: il punto si arrotonda alla **cella di 0,002°**
+  (~200 m); una sola query Overpass piccola (`around:400` dal centro della cella, XML con i membri delle relazioni) serve
+  tutti i punti della cella e resta **in copia** in `/dati/edifici_osm/<j>_<i>.json` per `EDIFICI_OSM_GIORNI` (30;
+  oltre 500 MB si tolgono le più vecchie). A Overpass va il centro della cella, non il punto dell'utente.
+- **Riuso**: lettore e regole di `fase10-edifici3d/edifici3d/osm_campione.py` (`query_punto`, `corpi_al_volo`: way chiuse,
+  multipoligoni con i cortili e way aperte, i pezzi dello stesso multipoligono = un edificio, altezza `height` →
+  `building:levels` × 3 m → **stima** di 9 m dichiarata in `fonte_altezza` e `qualita = "stima"`), copiato nell'immagine
+  con `modello.py`, `osm.py` e `tessere.py` (Dockerfile); `shapely` e `pyproj` in `api/requirements.txt`. Client Overpass
+  di `strati.py` (`chiedi_overpass`, istanza principale e di riserva dello strato `osm_edifici`, User-Agent del servizio);
+  `EDIFICI_OSM_URL` nel `.env` per altre istanze.
+- **Regole d'uso di Overpass**: **una chiamata alla volta** per tutto il sito e almeno un secondo tra due chiamate; turno
+  atteso al massimo `EDIFICI_OSM_ATTESA_S` (15 s), poi 503; timeout `EDIFICI_OSM_TIMEOUT_S` (30 s) per istanza (due istanze +
+  attesa restano sotto i 100 s di Cloudflare; Caddy ha 180 s su `/api/`); tetto `EDIFICI_OSM_TETTO_ORA` (300) chiamate
+  all'ora per tutto il sito (`protezione.tetto_globale`), poi 503. Risposte di Overpass con `<remark> runtime error` = 502.
+- **Protezione**: Turnstile (gettone di sessione, `edifici_osm` in `TIPI_PROTETTI`, `protezione.js` del sito) come
+  patrimonio e geocodifica, perché la rotta consuma le quote di Overpass del server; limite per IP `edifici_osm`.
+- **Spegnimento**: `EDIFICI_OSM=false` nel `.env` e `docker compose up -d api` (la rotta risponde 404, la pagina dice che il
+  ripiego non è disponibile).
+- **Licenza**: `licenza: "ODbL 1.0"`, `attribuzione: "© OpenStreetMap contributors (ODbL 1.0)"` nella risposta e in ogni
+  corpo, intestazione `X-Licenza`; la copia su disco è un database derivato ODbL, separato dagli archivi CC BY.
+- **Caddyfile**: nessuna regola nuova (`/api/*` con 180 s e compressione bastano).
+- Prove: `tests/test_edifici_osm.py` (7, Overpass simulato: licenza e cortili, istanza di riserva, copia per cella e
+  scadenza, limiti per IP, tetto, fuori Italia, spegnimento, Overpass giù o in timeout, turno occupato, Turnstile). Dal vivo
+  dal container il 07/11/2026 (stesso codice della rotta): Pesaro, ospedale San Salvatore (43,904 N 12,906 E), **390 corpi
+  in 24,9 s** (10 con altezza da OSM, 380 stimati, un multipoligono con cortile); Cesena, ospedale Bufalini (44,1405 N
+  12,2405 E), **746 corpi in 20,2 s** (19 pezzi di multipoligoni, 18 con cortile, 745 stimati); seconda richiesta nella
+  stessa cella dalla copia in 0,01 s. `overpass-api.de` dal container: connessione chiusa o 502; la riserva di allora,
+  `maps.mail.ru`, ha risposto (a tratti 504): sostituita il 07/11 pomeriggio (sotto).
+- Pubblicazione: rebuild dell'api e `docker compose up -d --force-recreate api worker` (IMAGE `energia-api` per tutti e
+  due), procedura F di `AGGIORNAMENTO_2026-11-07.md`.
+
+### Altezze, istanza di riserva e Turnstile (decisioni di Paolo del 07/11/2026 pomeriggio)
+
+- **Altezze**: ai corpi senza `height` né `building:levels` la rotta dà la **mediana delle gronde dei corpi DBTR vicini**
+  (entro 200 m, almeno 3, altezze del DB topografico non stimate) letti da `archivi.json` e dalle celle di contesto degli
+  archivi in `CARTELLA_EDIFICI_INTERNA` (`/dati/edifici`; al più 64 celle in memoria, `archivi.json` riletto quando cambia);
+  altrove la stima fissa di 9 m. Calcolo **a ogni risposta** (`con_altezze_vicine`), non nella copia su disco. Ogni corpo
+  porta `origine_altezza` (`osm_height`, `osm_piani`, `dbtr_vicini`, `fissa`) e la fonte («stima: mediana dei corpi DBTR
+  vicini (11 entro 200 m: 5 m)»); la risposta ha i conteggi in `altezze` (più `altezze_stimate`, `altezze_osm`). Regola in
+  `fase10-edifici3d/edifici3d/osm_campione.py` (`altezze_da_vicini`), uguale nella pagina per il DB topografico caricato
+  nel browser. Prova su dati veri: al confine Rimini–Coriano 27 corpi su 28 dai vicini DBTR; Pesaro 380 a 9 m.
+- **Istanza di riserva** (al posto di `maps.mail.ru`, VK): **Overpass API Europa** `https://ovp.dresel.systems/api/interpreter`
+  (Christian Dresel, Fürth, Germania; dati Europa da Geofabrik aggiornati ogni giorno; libera, senza chiave; 4 richieste
+  parallele per IP; registri di 14 giorni con informativa GDPR; nessuna garanzia di disponibilità). Dal container il
+  07/11: 200 in 1,0–2,5 s su Pesaro, Cesena, Milano, Napoli, Palermo. Alternative valutate: `overpass.private.coffee` (ex
+  kumi.systems, Austria: API senza risposta in 60 s, anche dal server il 06/11), `overpass.openstreetmap.fr` (solo usi
+  autorizzati, dati di luglio 2026), `overpass.osm.ch` (solo Svizzera). `servizio/strati.py`: `OVERPASS_PRINCIPALE`,
+  `OVERPASS_RISERVA`, `riserva_overpass()` comune allo strato `osm_edifici` e al ripiego; nel `.env` `OVERPASS_RISERVA`
+  (riga assente = riserva del TOML; **vuota = nessuna riserva**, da usare se dal server non risponde: F13 della
+  procedura; più istanze separate da virgola). La principale resta `overpass-api.de` (FOSSGIS e.V.).
+- **Turnstile** resta sul ripiego (confermato da Paolo).
+- Prove: `tests/test_edifici_osm.py` (+2: mediana dei vicini DBTR e corpi stimati esclusi, copia su disco senza le altezze
+  calcolate; pochi vicini → 9 m), `tests/test_strati.py` (riserva europea, `OVERPASS_RISERVA` dal `.env`, vuota = nessuna).
+
+## Newsletter: sezione «Novità di EuGEnio» (07/11/2026)
+
+`servizio/notiziario.py` (`novita_del_mese`): nella newsletter mensile, dopo i prezzi Eurostat, le voci del mese concluso
+del registro delle versioni `fase5-sito/novita.toml` (README della fase 5), con il rimando a `novita.html`. Il file è
+copiato nell'immagine (`COPY fase5-sito/novita.toml /app/novita.toml`, `NOVITA_TOML` in `config.py`): il pacchetto del
+codice (F5) lo deve comprendere. Nessun dato di mercato. Prova: `tests/test_notiziario_novita.py` (2). Caddy serve
+`/novita.xml` come `application/atom+xml; charset=utf-8`.
+
+## «Aggiungi DBTR»: proposte di DB topografici e approvazione interna (07/11/2026)
+
+Decisione di Paolo del 07/11/2026 (pagina Patrimonio › Aggiungi edifici (DB topografico), README della fase 5): il DB
+topografico si legge nel browser; **solo con il consenso** dell'utente lo stesso file arriva qui, in una coda, e diventa
+parte dell'archivio comune dopo l'approvazione nella pagina interna.
+
+- **`servizio/dbtr_coda.py`** – `POST /api/dbtr/inizia` (Turnstile, tipo `dbtr` in `TIPI_PROTETTI`; JSON con regione
+  `er|lom|fvg|lig`, comune, `istat`, `intero`, `formato` `zip|gpkg`, `dimensione`, `consenso: true`, `impronta` SHA-256;
+  nessun dato personale) → `id`, `gettone` (HMAC con la chiave delle sessioni), `pezzo_byte`, `pezzi`;
+  `PUT /api/dbtr/{rid}/pezzo/{n}` (corpo = pezzo, gettone in `X-EuGEnio-Dbtr`, scritto in posizione nel file
+  preallocato `caricato.part`); `POST /api/dbtr/{rid}/fine` (pezzi tutti presenti, impronta, `edifici3d.coda.controlla_file`:
+  zip senza percorsi «..»/assoluti/con unità, senza link simbolici né cifratura, rapporto ≤ 200:1 sulle voci oltre 50 MB,
+  ≤ 3 GB estratti, con almeno un GeoPackage o Shapefile; oppure un GeoPackage) → `ricevuto`, altrimenti 422 e cartella
+  cancellata; `GET /api/dbtr/{rid}` (stato e messaggio, anche dopo installazione o rifiuto per 30 giorni) e
+  `DELETE /api/dbtr/{rid}` (ritiro prima dell'approvazione).
+- **Rotte interne** (stessa verifica di `interno.py` più l'intestazione `X-EuGEnio-Interno: 1` e `Sec-Fetch-Site` non
+  `cross-site` sulle POST): `GET /api/interno/dbtr/coda` (richieste, ultime 30 decisioni, limiti, spazio),
+  `GET /api/interno/dbtr/{rid}/anteprima` (GeoJSON dei corpi preparati), `GET …/registro` (uscita di `prepara`),
+  `POST …/approva` (solo da «in attesa di approvazione»: stato «approvato», l'installazione la fa `edifici-coda`) e
+  `POST …/rifiuta` (cartella cancellata, esito e riga di storico).
+- **Limiti** (`.env`): `DBTR_MAX_MB=300`, `DBTR_PEZZO_MB=32` (Cloudflare accetta al più 100 MB per richiesta; Caddy 40 MB su
+  `/api/dbtr/*`), `DBTR_CARICAMENTI_GIORNO=3` (per rete, finestra di 24 ore: nuovo tipo giornaliero in `protezione.py`),
+  `DBTR_PEZZI_ORA=60`, `DBTR_CODA_MAX=20` richieste aperte, `DBTR_CODA_MAX_GB=4`, `DBTR_LIBERO_MIN_GB=10`;
+  `DBTR_CODA=false` spegne le rotte pubbliche (404; la lettura nel browser resta). Cartella `CARTELLA_CODA_DBTR`
+  (`/dati/edifici_coda`, scrivibile dall'utente 1000, mai servita da Caddy).
+- **Servizio `edifici-coda`** (`docker-compose.yml`, profilo `edifici`, immagine `energia-edifici`, `restart:
+  unless-stopped`, 1 CPU, `cpu_shares: 128`, 4 GB): `python -m edifici3d coda --ciclo` (README della fase 10). Si accende
+  con `docker compose --profile edifici up -d edifici-coda`; non va nel crontab.
+- L'immagine dell'api copia `fase10-edifici3d/edifici3d/coda.py` (in testa solo libreria standard).
+- Test: `tests/test_dbtr_coda.py` (16: caricamento a più pezzi, consenso, regione, nomi, dimensione, sette zip malevoli,
+  impronta, limite giornaliero, coda piena, spegnimento, ritiro, rotte interne con JWT finto, Caddyfile/compose/.env).
 
 ## Pipeline LiDAR e pagina di stato interna (fase 10, Fase C, dal 04/11/2026)
 

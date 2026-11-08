@@ -106,7 +106,7 @@ def _anncsu(idx: Indirizzario, dich, via: str, civ: str, ris: dict) -> str:
     if dich is None:
         return "comune non riconosciuto: ANNCSU non consultato"
     t = idx.cerca(dich.istat, getattr(dich, "belfiore", None), via, civ)
-    if t is None:
+    if t is None or not (t.lat and t.lon):        # 0,0 o vuoto: civico senza coordinate (07/11/2026 sera)
         return f"{idx.motivo(dich.istat, via)} a {dich.nome}"
     ris["lat"], ris["lon"] = float(t.lat), float(t.lon)
     ris["fonte_punto"] = "ANNCSU"

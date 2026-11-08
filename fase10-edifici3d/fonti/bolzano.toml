@@ -1,0 +1,45 @@
+# Fonti della zona «Provincia autonoma di Bolzano» per gli archivi degli edifici (fase 10, lettori regionali, gruppo C,
+# 08/11/2026). zone/bolzano.toml resta la zona della pipeline LiDAR (stesso codice «bz»). URL solo qui.
+# Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 08/11/2026: WFS 2.0 p_bz-Inspire, GetFeature GeoJSON con bbox in forma breve «x0,y0,x1,y1,EPSG:25832» (E, N):
+#   ospedale (677000–677600 E, 5151700–5152300 N) 102 edifici BU.Building e 135 parti BU.BuildingPart, 2D, senza
+#   altezze; ogni edificio ha almeno una parte; CURRENT_USE residential / commerceAndServices / agriculture.
+# - DSM e DTM 0,5 m: WCS di geoservices9 (già in zone/bolzano.toml), chiesti a 1 m (scalefactor=0.5) a celle di 1 km.
+# - confine: p_bz-Inspire:AU.AdministrativeUnit, NATIONAL_CODE 21008 (52,3 km²), CC0.
+# Licenza: CC0 1.0 (nessun obbligo): va nell'archivio aperto «cc-by» con l'attribuzione di cortesia, come in
+# zone/bolzano.toml.
+
+[zona]
+nome = "Provincia autonoma di Bolzano"
+codice = "bz"
+crs = "EPSG:25832"
+riquadro = [10.38, 46.21, 12.48, 47.10]
+
+[archivi]
+"CC0 1.0" = "cc-by"
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Provincia autonoma di Bolzano – INSPIRE Edifici (BU.Building) e Parti di un edificio (BU.BuildingPart)"
+licenza = "CC0 1.0"
+attribuzione = "Provincia autonoma di Bolzano – INSPIRE Edifici (CC0 1.0); altezze da DSM − DTM 0,5 m (CC0 1.0)"
+scheda = "https://data.civis.bz.it/dataset/inspire-parti-di-un-edificio-building-parts"
+adattatore = "bolzano_inspire"
+servizio_tipo = "wfs"
+servizio = "https://geoservices8.civis.bz.it/geoserver/p_bz-Inspire/ows"
+strato = "p_bz-Inspire:BU.BuildingPart"
+strato_edifici = "p_bz-Inspire:BU.Building"
+crs_servizio = "EPSG:25832"
+confine_wfs = "https://geoservices8.civis.bz.it/geoserver/p_bz-Inspire/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=p_bz-Inspire:AU.AdministrativeUnit&outputFormat=application/json&CQL_FILTER=NATIONAL_CODE='{istat}'"
+url = ""
+
+[fonti.lidar]
+descrizione = "Provincia autonoma di Bolzano – DSM e DTM 0,5 m (WCS, chiesti a 1 m a celle di 1 km)"
+licenza = "CC0 1.0"
+attribuzione = "Provincia autonoma di Bolzano – DSM − DTM 0,5 m (CC0 1.0)"
+scheda = "https://geodati.gov.it/resource/id/p_bz:Elevation:DigitalElevationModel-0.5m"
+crs = "EPSG:25832"
+griglia = 1000
+url_dsm = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1&request=GetCoverage&coverageId=p_bz-Elevation__DigitalElevationModel-0.5m&format=image/tiff&subset=E({x0},{x1})&subset=N({y0},{y1})&scalefactor=0.5"
+url_dtm = "https://geoservices9.civis.bz.it/geoserver/ows?service=WCS&version=2.0.1&request=GetCoverage&coverageId=p_bz-Elevation__DigitalTerrainModel-0.5m&format=image/tiff&subset=E({x0},{x1})&subset=N({y0},{y1})&scalefactor=0.5"

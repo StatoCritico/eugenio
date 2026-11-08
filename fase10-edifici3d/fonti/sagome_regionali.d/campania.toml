@@ -1,0 +1,43 @@
+# Sagome della Campania al volo (08/11/2026, lettori regionali, gruppo C): CTR 2020 (volo AGEA 2020, 1:5.000), MapServer
+# ArcGIS REST «Amministrativo/CTR2020», strato 4 «Poligoni», CC BY 4.0 (pagina «Carta Tecnica Regionale» e note legali del
+# Geoportale: «indicazione della fonte (Geoportale Regione Campania)»). Lo strato contiene tutti i poligoni della CTR:
+# `filtro` tiene solo gli edifici (codici 311…–315…, 3160/3162/3165/3166; esclusi interrati, diruti, tettoie, pensiline,
+# cavedi). Nessuna altezza (z = terreno): l'altezza viene da OSM. `servizio_tipo = "arcgis"`: sagome_regionali.url_wfs
+# costruisce la query con l'inviluppo in EPSG:7792; la risposta GeoJSON è in WGS84 (`crs_risposta`).
+
+[[fonte]]
+id = "campania"
+regione = "Campania"
+ente = "Regione Campania"
+fonte = "CTR 2020 – Poligoni (edifici)"
+nome = "Regione Campania – CTR 2020, edifici"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Campania – CTR 2020, Geoportale Regione Campania (CC BY 4.0)"
+scheda = "https://sit.regione.campania.it/carta-tecnica-regionale"
+servizio_tipo = "arcgis"
+servizio = "https://geomaps.regione.campania.it/federated/rest/services/Amministrativo/CTR2020/MapServer/4"
+wfs = "https://geomaps.regione.campania.it/federated/rest/services/Amministrativo/CTR2020/MapServer/4"
+tipo = "4"
+crs = "EPSG:7792"
+crs_risposta = "EPSG:4326"
+filtro = "(tipo LIKE '311%' OR tipo LIKE '312%' OR tipo LIKE '313%' OR tipo LIKE '314%' OR tipo IN ('31530000','31540000','31600000','31620000','31620600','31650000','31660000')) AND tipo NOT IN ('31110100','31114000','31214000')"
+campi = "objectid,tipo,descr"
+riquadro_wgs84 = [13.7, 39.98, 15.82, 41.51]
+massimo = 2000
+campo_uso = "tipo"
+prova = "08/11/2026: query con l'inviluppo in EPSG:7792 sul Cardarelli (800 × 700 m) → 790 poligoni CTR, di cui 160 edifici; GeoJSON in WGS84, application/geo+json"
+
+[fonte.usi]
+"3111000O" = "ospedale"
+"3111000S" = "scuola"
+"3111000C" = "commerciale"
+"3111000R" = "commerciale"
+"3111000H" = "commerciale"
+"3111000I" = "capannone"
+"3111000M" = "uffici"
+"311100SP" = "uffici"
+"31110000" = "residenziale"
+"3121" = "capannone"
+"3122" = "capannone"
+"3123" = "capannone"
+"3141" = "palestra"

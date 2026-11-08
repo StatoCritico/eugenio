@@ -14,11 +14,16 @@ Fonti, tutte pubbliche e senza blocchi da aggirare:
     riquadro; file `terreno.pmtiles` e `dtm_cog.tif` con la loro licenza scritta nell'indice (file separati dalle sagome).
 
   python -m edifici3d osm-campione --riquadro 12.5600 44.0555 12.5735 44.0640 --nome rimini-prova \\
-         --archivio /srv/energia/dati/edifici [--altezza-stima 9] [--senza-dtm] [--osm file.osm]
+         --archivio /srv/energia/dati/edifici [--altezza-stima 9] [--senza-dtm] [--osm file.osm] [--dtm grezzi/dtm5.tif]
+
+Rigenerare l'archivio di prova con i fori dei multipoligoni, senza nessuna richiesta in rete (07/11/2026):
+  python -m edifici3d osm-campione --riquadro … --nome rimini-prova --archivio … \\
+         --osm …/odbl/rimini-prova/grezzi/mappa.osm --dtm …/odbl/rimini-prova/grezzi/dtm5.tif
 """
 from __future__ import annotations
 
 import json
+import math
 import logging
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -47,9 +52,12 @@ def url_mappa(riquadro: tuple[float, float, float, float]) -> str:
 
 
 def edifici_da_xml(testo: bytes | str, crs: str = "EPSG:7791") -> list[tuple[dict, Polygon]]:
-    """XML dell'API OSM → [(tag, poligono in metri)] delle way chiuse con `building` e degli anelli esterni dei
-    multipoligoni `building` (i fori si ignorano: per i prismi contano le sagome esterne)."""
+    """XML dell'API OSM → [(tag, poligono in metri)] delle way chiuse con `building` e delle relazioni multipolygon
+    `building` (07/11/2026): le way `outer` (anche aperte, unite tra loro) e `inner` si ricompongono con polygonize,
+    i fori (cortili) restano (outer − inner); un multipoligono con più parti diventa più poligoni, `r<id>_<k>`."""
     from pyproj import Transformer
+    from shapely.geometry import LineString
+    from shapely.ops import polygonize, unary_union
     t = Transformer.from_crs("EPSG:4326", crs, always_xy=True)
     radice = ET.fromstring(testo)
     nodi = {n.get("id"): (float(n.get("lon")), float(n.get("lat"))) for n in radice.iter("node")}
@@ -57,18 +65,41 @@ def edifici_da_xml(testo: bytes | str, crs: str = "EPSG:7791") -> list[tuple[dic
     for w in radice.iter("way"):
         vie[w.get("id")] = ([nd.get("ref") for nd in w.iter("nd")], {x.get("k"): x.get("v") for x in w.iter("tag")})
 
+    def metri(refs):
+        xs, ys = t.transform([nodi[r][0] for r in refs], [nodi[r][1] for r in refs])
+        return list(zip(xs, ys))
+
+    def valido(g):
+        """Poligoni validi (fori compresi) da una geometria qualsiasi."""
+        if g is None or g.is_empty:
+            return []
+        if not g.is_valid:
+            g = make_valid(g)
+        if g.geom_type == "Polygon":
+            return [g] if g.area > 0 else []
+        return [x for x in getattr(g, "geoms", []) for x in valido(x)]
+
     def poligono(refs):
         if len(refs) < 4 or refs[0] != refs[-1] or any(r not in nodi for r in refs):
             return None
-        xs, ys = t.transform([nodi[r][0] for r in refs], [nodi[r][1] for r in refs])
-        g = Polygon(list(zip(xs, ys)))
-        if not g.is_valid:
-            g = make_valid(g)
-            if g.geom_type == "MultiPolygon":
-                g = max(g.geoms, key=lambda p: p.area)
-            if g.geom_type != "Polygon":
-                return None
-        return g
+        parti = valido(Polygon(metri(refs)))
+        return max(parti, key=lambda p: p.area) if parti else None
+
+    def anelli(ruolo, membri):
+        """Linee delle way di un ruolo, unite e chiuse in poligoni (le way aperte si saldano agli estremi)."""
+        linee = []
+        for m in membri:
+            if (m.get("role") or "outer") != ruolo:          # ruolo vuoto = outer
+                continue
+            refs = vie.get(m.get("ref"), ([], {}))[0]
+            if len(refs) >= 2 and all(r in nodi for r in refs):
+                linee.append(LineString(metri(refs)))
+        if not linee:
+            return None
+        poli = [p for p in polygonize(unary_union(linee)) if p.area > 0]
+        if not poli:
+            return None
+        return unary_union([Polygon(p.exterior) for p in poli])     # le aree racchiuse, senza i buchi del polygonize
 
     out = []
     for wid, (refs, tag) in vie.items():
@@ -80,11 +111,14 @@ def edifici_da_xml(testo: bytes | str, crs: str = "EPSG:7791") -> list[tuple[dic
         tag = {x.get("k"): x.get("v") for x in r.iter("tag")}
         if tag.get("type") != "multipolygon" or not tag.get("building") or tag.get("building") == "no":
             continue
-        for k, m in enumerate(x for x in r.iter("member") if x.get("type") == "way" and x.get("role") == "outer"):
-            if m.get("ref") in vie:
-                g = poligono(vie[m.get("ref")][0])
-                if g is not None:
-                    out.append(({**tag, "osm_id": f"r{r.get('id')}_{k}"}, g))
+        membri = [x for x in r.iter("member") if x.get("type") == "way"]
+        esterno = anelli("outer", membri)
+        if esterno is None:
+            continue
+        interno = anelli("inner", membri)
+        g = esterno.difference(interno) if interno is not None else esterno
+        for k, p in enumerate(sorted(valido(g), key=lambda p: -p.area)):
+            out.append(({**tag, "osm_id": f"r{r.get('id')}_{k}", "osm_edificio": f"r{r.get('id')}"}, p))
     return out
 
 
@@ -101,8 +135,9 @@ def corpi_con_stima(elementi, altezza_stima: float | None) -> list[Corpo]:
 
 
 def prepara(riquadro, archivio: Path, nome: str, altezza_stima: float | None = 9.0, dtm: bool = True,
-            osm_file: Path | None = None, scarica=None) -> dict:
-    """Scarica (o legge) l'OSM del riquadro, prende il DTM 5 m dal WCS e prepara `odbl/<nome>/prodotti/`."""
+            osm_file: Path | None = None, scarica=None, dtm_file: Path | None = None) -> dict:
+    """Scarica (o legge) l'OSM del riquadro, prende il DTM 5 m (dal WCS, oppure `dtm_file`: il `grezzi/dtm5.tif` già
+    scaricato o un quadrante del DTM, ritagliato) e prepara `odbl/<nome>/prodotti/`."""
     import re
     if not re.fullmatch(r"[a-z0-9-]{3,40}", nome):
         raise ValueError("nome: minuscole, cifre e trattini")
@@ -127,7 +162,6 @@ def prepara(riquadro, archivio: Path, nome: str, altezza_stima: float | None = 9
     elementi = edifici_da_xml(xml)
     corpi = corpi_con_stima(elementi, altezza_stima)
     log.info("OSM: %d edifici, %d corpi", len(elementi), len(corpi))
-    dtm_file = None
     attribuzione = OSM.ATTRIBUZIONE
     if dtm:
         f = F.fonti(F.carica_zona("emilia_romagna"))["dtm5"]
@@ -135,12 +169,20 @@ def prepara(riquadro, archivio: Path, nome: str, altezza_stima: float | None = 9
         x0, y0 = t.transform(riquadro[0], riquadro[1]); x1, y1 = t.transform(riquadro[2], riquadro[3])
         m = 300                                                        # margine per il contesto (250 m) e le ombre
         bb = (round(x0 - m, -1), round(y0 - m, -1), round(x1 + m, -1), round(y1 + m, -1))
-        url = F.url_wcs(f, bb)
-        dtm_file = grezzi / "dtm5.tif"
-        dati = scarica(url)
-        if not dati[:4] in (b"II*\x00", b"MM\x00*"):
-            raise RuntimeError("il WCS del DTM non ha risposto con un GeoTIFF")
-        dtm_file.write_bytes(dati)
+        dest = grezzi / "dtm5.tif"
+        if dtm_file:                                                   # file già sul disco: nessuna richiesta al WCS
+            from . import dtm_locale as DL
+            dtm_file = Path(dtm_file)
+            if DL.grande(dtm_file):
+                DL.ritaglia(dtm_file, bb, dest)
+                dtm_file = dest
+            log.info("DTM da file: %s", dtm_file)
+        else:
+            dati = scarica(F.url_wcs(f, bb))
+            if not dati[:4] in (b"II*\x00", b"MM\x00*"):
+                raise RuntimeError("il WCS del DTM non ha risposto con un GeoTIFF")
+            dest.write_bytes(dati)
+            dtm_file = dest
         from . import dtm as D
         for c in corpi:
             q = D.quota(dtm_file, c.sagoma)
@@ -165,6 +207,147 @@ def prepara(riquadro, archivio: Path, nome: str, altezza_stima: float | None = 9
            "(https://geoportale.regione.emilia-romagna.it/notizie/servizi-e-applicazioni/dtm-novita-2025), dal WCS pubblico dtm5x5.\n"
            if dtm_file else ""), encoding="utf-8")
     return esito
+
+
+# ---------------------------------------------------------------------------------------------- ripiego al volo
+# Decisione di Paolo del 07/11/2026: dove non c'è un archivio di qualità (DBTR: fuori dall'Emilia-Romagna e nei comuni ER
+# non ancora preparati) Modelli 3D usa gli edifici OSM intorno al punto, chiesti al momento all'API Overpass dal server
+# (fase4-server/servizio/edifici_osm.py, GET /api/edifici/osm). Stesse regole di questo archivio di prova (way chiuse,
+# multipoligoni con i cortili e way aperte, altezza height → building:levels × 3 m → stima dichiarata); niente DTM.
+RAGGIO_VOLO = 400              # m: i 250 m del contesto della pagina + lo spostamento del punto dentro la cella della copia
+
+
+def query_punto(lon: float, lat: float, raggio: float = RAGGIO_VOLO) -> str:
+    """Query Overpass (XML come l'API di OSM: nodi, way e relazioni con i loro membri) degli edifici entro `raggio` m."""
+    a = f"around:{int(raggio)},{lat:.6f},{lon:.6f}"
+    return (f'[out:xml][timeout:25];(way["building"]({a});relation["building"]["type"="multipolygon"]({a}););'
+            "(._;>;);out body qt;")
+
+
+def crs_metrico(lon: float) -> str:
+    """Fuso UTM WGS84 del punto (32, 33 o 34 N), per aree e lunghezze corrette in tutta Italia."""
+    return f"EPSG:326{32 if lon < 12 else 33 if lon < 18 else 34}"
+
+
+def errore_overpass(testo: bytes | str) -> str | None:
+    """Overpass risponde 200 anche quando la query va in timeout o finisce la memoria: lo dice in <remark>."""
+    t = testo.decode("utf-8", "replace") if isinstance(testo, bytes) else testo
+    i = t.find("<remark>")
+    if i < 0:
+        return None
+    r = t[i + 8:t.find("</remark>", i)].strip()
+    return r[:200] if "error" in r.lower() else None
+
+
+def corpi_al_volo(testo: bytes | str, lon: float, lat: float, altezza_stima: float = 9.0) -> dict:
+    """XML di Overpass → FeatureCollection WGS84 con le stesse proprietà delle celle di contesto degli archivi (id, edificio,
+    gronda, altezza, fonte della sagoma e dell'altezza, licenza ODbL, qualità). Corpi senza altezza in OSM: stima dichiarata."""
+    from .tessere import feature_da_corpi
+    crs = crs_metrico(lon)
+    corpi = corpi_con_stima(edifici_da_xml(testo, crs), altezza_stima)
+    fs = feature_da_corpi(corpi, crs) if corpi else []
+    for f in fs:
+        f["properties"]["origine_altezza"] = origine_altezza(f["properties"])
+    d = {"type": "FeatureCollection", "features": fs, "licenza": OSM.LICENZA, "attribuzione": OSM.ATTRIBUZIONE, "corpi": len(corpi)}
+    conta_altezze(d)
+    return d
+
+
+# ---------------------------------------------------------------------------------------------- altezze stimate (07/11/2026)
+# Decisione di Paolo del 07/11/2026: vicino a un comune coperto dal DBTR, l'altezza dei corpi OSM senza `height` né
+# `building:levels` è la **mediana dei corpi DBTR vicini** (entro RAGGIO_VICINI m, almeno MINIMO_VICINI corpi con
+# l'altezza del DB topografico, non stimata); altrove resta la stima fissa di 9 m. Sempre dichiarata come stima, con
+# l'origine per corpo («origine_altezza»): osm_height, osm_piani, dbtr_vicini, fissa. Stessa regola nella pagina
+# (edificio3d.js, altezzeDaVicini) per il DB topografico caricato nel browser.
+RAGGIO_VICINI = 200.0
+MINIMO_VICINI = 3
+ORIGINI = ("osm_height", "osm_piani", "dbtr_vicini", "osm_vicini", "fissa")   # osm_vicini: sagome regionali (08/11/2026)
+
+
+def origine_altezza(p: dict) -> str:
+    """Origine dell'altezza di un corpo OSM dalle sue proprietà."""
+    if p.get("origine_altezza") in ORIGINI:
+        return p["origine_altezza"]
+    f = str(p.get("fonte_altezza", ""))
+    if f.startswith("OSM height"):
+        return "osm_height"
+    if f.startswith("OSM building:levels"):
+        return "osm_piani"
+    return "fissa"
+
+
+def conta_altezze(d: dict) -> dict:
+    """Conteggi per origine (chiave «altezze») e i due totali di prima (altezze_stimate, altezze_osm)."""
+    n = {k: 0 for k in ORIGINI}
+    for f in d.get("features", []):
+        n[origine_altezza(f["properties"])] += 1
+    d["altezze"] = n
+    d["altezze_stimate"] = n["dbtr_vicini"] + n["osm_vicini"] + n["fissa"]
+    d["altezze_osm"] = n["osm_height"] + n["osm_piani"]
+    return d
+
+
+def _centro(geom: dict) -> tuple[float, float] | None:
+    g = geom.get("coordinates") if geom else None
+    if not g:
+        return None
+    anello = g[0][0] if geom.get("type") == "MultiPolygon" else g[0]
+    if not anello:
+        return None
+    return sum(q[0] for q in anello) / len(anello), sum(q[1] for q in anello) / len(anello)
+
+
+def mediana(v: list[float]) -> float:
+    s = sorted(v)
+    m = len(s) // 2
+    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2
+
+
+def altezza_dbtr_valida(p: dict) -> float | None:
+    """Gronda di un corpo DBTR utile come vicino: numerica, tra 2 e 80 m, non stimata né portata alla stima."""
+    try:
+        g = float(p.get("gronda"))
+    except (TypeError, ValueError):
+        return None
+    if not 2.0 <= g <= 80.0 or p.get("h_dbtr_scartata") not in (None, "") or "stima" in str(p.get("fonte_altezza", "")).lower():
+        return None
+    return g
+
+
+def altezze_da_vicini(features: list[dict], vicini: list[tuple[float, float, float]], raggio: float = RAGGIO_VICINI,
+                      minimo: int = MINIMO_VICINI, nome_fonte: str = "DBTR") -> int:
+    """Corpi OSM con l'altezza fissa (origine «fissa») → mediana delle gronde dei corpi `vicini` (lon, lat, gronda) entro
+    `raggio` m dal loro centro, se sono almeno `minimo`. Modifica le feature sul posto; restituisce quante ne ha cambiate.
+    Ricerca a griglia (celle di ~raggio): veloce anche con migliaia di corpi."""
+    if not features or not vicini:
+        return 0
+    lat0 = sum(v[1] for v in vicini[:50]) / min(len(vicini), 50)
+    kx, ky = 111320.0 * math.cos(math.radians(lat0)), 110574.0
+    passo = raggio
+    griglia: dict[tuple[int, int], list[tuple[float, float, float]]] = {}
+    for lo, la, g in vicini:
+        x, y = lo * kx, la * ky
+        griglia.setdefault((int(x // passo), int(y // passo)), []).append((x, y, g))
+    cambiati = 0
+    for f in features:
+        p = f.get("properties") or {}
+        if origine_altezza(p) != "fissa":
+            continue
+        c = _centro(f.get("geometry"))
+        if c is None:
+            continue
+        x, y = c[0] * kx, c[1] * ky
+        i, j = int(x // passo), int(y // passo)
+        hs = [g for di in (-1, 0, 1) for dj in (-1, 0, 1) for (vx, vy, g) in griglia.get((i + di, j + dj), ())
+              if (vx - x) ** 2 + (vy - y) ** 2 <= raggio * raggio]
+        if len(hs) < minimo:
+            continue
+        h = round(mediana(hs) * 2) / 2
+        p.update({"gronda": h, "altezza": h, "piani": max(1, round(h / 3)), "qualita": "stima", "origine_altezza": "dbtr_vicini",
+                  "fonte_altezza": f"stima: mediana dei corpi {nome_fonte} vicini ({len(hs)} entro {raggio:g} m: {h:g} m)"})
+        p.pop("colmo", None)
+        cambiati += 1
+    return cambiati
 
 
 def voce_archivi(nome: str) -> dict:

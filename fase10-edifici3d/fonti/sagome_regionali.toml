@@ -1,0 +1,32 @@
+# Sagome regionali al volo con le altezze di OpenStreetMap (08/11/2026, decisione di Paolo): un livello della cascata delle
+# fonti delle pagine 3D tra «DB topografico con le altezze» e «OpenStreetMap». Il server (fase4-server/servizio/
+# edifici_osm.py, rotta GET /api/edifici/osm) chiede al WFS della Regione le sagome intorno al punto e dà a ognuna
+# l'altezza dell'edificio OSM che le si sovrappone di più (edifici3d/sagome_regionali.py).
+#
+# Solo fonti «attiva» in regioni.toml (licenza aperta compatibile, servizio provato dal vivo) e **senza altezze**: quelle
+# con le altezze (FVG, Lombardia, Liguria) vanno preparate come archivi DBTR, che sono un livello più affidabile.
+# Campi: regione (nome come in regioni.toml), fonte (nome della fonte edifici in regioni.toml), nome breve, licenza,
+# attribuzione, scheda, wfs (URL del servizio), tipo (typeName), crs (sistema nativo: il filtro bbox va nel sistema
+# nativo; in EPSG:4326 il WFS del Veneto restituisce 0 elementi), riquadro_wgs84 (prima scrematura; fuori regione il WFS
+# risponde vuoto e vale OSM), massimo (elementi per richiesta), prova (esito della prova dal vivo).
+#
+# Valutate l'08/11/2026 e non accese: Valle d'Aosta e Umbria (sagome senza altezze, «in attesa»: niente WFS aperto
+# provato); Sicilia (CTR, «in attesa»); Piemonte e Toscana (unità volumetriche da verificare, servizi non raggiungibili
+# dal container); aggregati strutturali della Protezione Civile (CC BY 4.0, nazionali): solo file per regione da scaricare
+# a mano dal portale dei rischi, nessun servizio interrogabile per riquadro trovato (annotato in DA_FARE).
+
+[[fonte]]
+id = "veneto"
+regione = "Veneto"
+ente = "Regione del Veneto"
+fonte = "Edifici del Veneto (feb. 2022, da CTR e DB geotopografici)"
+nome = "Regione del Veneto – Edifici del Veneto (feb. 2022)"
+licenza = "IODL 2.0"
+attribuzione = "Regione del Veneto – Edifici del Veneto (feb. 2022), IODL 2.0"
+scheda = "https://geodati.gov.it/resource/id/r_veneto:edifici_veneto"
+wfs = "https://idt2-geoserver.regione.veneto.it/geoserver/wfs"
+tipo = "rv:edifici_veneto_feb2022"
+crs = "EPSG:6876"
+riquadro_wgs84 = [10.6, 44.7, 13.2, 46.7]
+massimo = 5000
+prova = "08/11/2026: GetFeature 2.0.0 con bbox in EPSG:6876 intorno a Susegana (800 m) → 514 sagome in 3,5 s; bbox in EPSG:4326 → 0"

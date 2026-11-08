@@ -108,3 +108,18 @@ def test_faq_e_sitografia_nel_browser(base, browser, tmp_path, larghezza):
     assert r.ok and r.headers["content-type"].startswith("text/markdown")
     assert not errori, errori
     ctx.close()
+
+
+def test_spostamento_ortofoto_documentato():
+    """08/11/2026: parametri de/dn delle tessere delle ortofoto (frecce sotto la mappa) in llms.txt e nel file per agenti."""
+    md, llms = _testo(NOME), _testo("llms.txt")
+    assert "?de=<m>&dn=<m>" in md and "`spostabile`" in md and "X-Ortofoto-Spostamento" in md
+    assert "?de=<m>&dn=<m>" in llms and "±20" in llms
+
+
+def test_tetti_e_sagome_regionali_documentati():
+    """08/11/2026: tetti ipotizzati 22°/32° con il selettore, sagome del Veneto con le altezze OSM, terreno da più DTM."""
+    md, llms = _testo(NOME), _testo("llms.txt")
+    assert "22° in pianura e 32° in montagna" in md and "«Forma dei tetti»" in md and "Tetti: N misurati dal LiDAR" in md
+    assert "IODL 2.0" in md and "osm_vicini" in md and "X-Terreno-Nome" in md and "Edifici del Veneto (feb. 2022)" in md
+    assert "Veneto" in llms and "22° in pianura e 32° in montagna" in llms and "Forma dei tetti" in llms

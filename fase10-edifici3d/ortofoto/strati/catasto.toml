@@ -34,6 +34,6 @@ riquadro = [6.6, 35.4, 18.6, 47.1]
 contorni = true
 colore = "#ffd400"
 metatessera = 2
-legenda = "linee e numeri gialli: confini e numeri delle particelle catastali"
+legenda = "linee e numeri gialli: confini e numeri delle particelle catastali (mappa catastale: scarti di 1–5 m rispetto a DBTR e foto sono normali)"
 nota = "Non copre Trento, Bolzano e i comuni con il catasto tavolare. Non sostituisce visure ed estratti di mappa ufficiali."
 ritmo = { al_secondo = 2, all_ora = 2000 }

@@ -1,0 +1,54 @@
+# Fonti della zona Piemonte (fase 10, adattatore `piemonte_bdtre` del gruppo A, 08/11/2026). Stesso schema di
+# lombardia.toml: gli URL stanno qui, mai nel codice.
+# - Tutti i siti piemontesi (geoservices.csi.it, geomap.reteunitaria.piemonte.it, geoportale.piemonte.it,
+#   datigeo-piem-download.it) **non rispondono dal container** (connessione chiusa, 08/11/2026); il WFS `bdtre_imm`
+#   **risponde dal PC di Paolo**: l'08/11/2026 lo strato `un_vol` su Torino (EPSG:32632, 387000–404000 E,
+#   4980000–4999000 N, al più 1000 oggetti per richiesta, GeoJSON) → 139.244 volumi deduplicati per `uuid`. Campi:
+#   uuid, data_acq, data_agg, data_fin, ente_for, ente_prod, modo_prod, sc_acq, un_vol_av (testo, m interi),
+#   un_vol_por («al suolo»), un_vol_qe (vuoto), un_vol_ex; geometria 2D. Altezze per il 75 % da DSM − DTM Arpa 2017.
+# - `regionale-campione` usa questo servizio come WFS 2.0.0: dal server di Milano provare prima un riquadro piccolo
+#   (Molinette, 395100 4987600 396100 4988800); se il servizio vuole WFS 1.x o un altro outputFormat, scaricare a pezzi
+#   come ha fatto Paolo e passare il GeoJSON a prepara-regione.
+# - Licenza: CC BY 2.5 dal comunicato della Regione (nov. 2017, legge regionale sull'infrastruttura geografica:
+#   «Tutti i dati e i servizi della BDTRE pubblicati sono resi disponibili con licenza Creative Commons – BY 2.5»);
+#   la scheda RNDT di UN_VOL (r_piemon:6dacd512-…) dice «Condizioni sconosciute»: DA CONFERMARE con la lettera alla
+#   Regione (documenti/LETTERE_REGIONI_DB_TOPOGRAFICI.md). Cartella cc-by/ (licenza della famiglia CC BY).
+# - DTM 5 m ICE 2009-2011 (CC BY 4.0): WCS non raggiungibile dal container; senza DTM la quota del terreno resta vuota.
+
+[zona]
+nome = "Piemonte"
+codice = "pie"
+crs = "EPSG:32632"                       # WGS84 / UTM 32N, sistema del WFS e degli zip BDTRE per comune
+riquadro = [6.62, 44.06, 9.22, 46.47]    # WGS84 (lon_min, lat_min, lon_max, lat_max)
+
+[archivi]
+"CC BY 2.5" = "cc-by"
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Regione Piemonte – BDTRE, Tema Edificato, classe 020101 Unità volumetrica (un_vol)"
+licenza = "CC BY 2.5"
+attribuzione = "Regione Piemonte – BDTRE, Unità volumetriche (altezze ARPA Piemonte), CC BY 2.5"
+scheda = "https://geodati.gov.it/resource/id/r_piemon:6dacd512-8862-491a-a37b-c032cd54d081"
+adattatore = "piemonte_bdtre"
+servizio_tipo = "wfs"
+servizio = "https://geoservices.csi.it/ms/wfs/taims/rp-01/taimswfs/bdtre_imm"
+strato = "un_vol"
+crs_servizio = "EPSG:32632"
+max_per_richiesta = 1000
+# zip BDTRE per comune: modello del nome dell'edizione 2015 (Torino = 001272)
+# «…/BDTRE2015_VECTOR/BDTRE_DATABASE_GEOTOPOGRAFICO_2015-LIMI_COMUNI_10_GAIMSDWL-<istat>-EPSG32632-SHP.zip» su
+# datigeo-piem-download.it; host e percorso completi da confermare dal server (container bloccato)
+url_comune = ""
+url = ""
+
+[fonti.dtm5]
+descrizione = "Regione Piemonte – Ripresa aerea ICE 2009-2011, DTM 5 m (LiDAR)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Piemonte – DTM 5 m ICE 2009-2011 (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/r_piemon:224de2ac-023e-441c-9ae0-ea493b217a8e"
+wcs = ""                                 # wcs_ice_2009_2011_dtm: URL e coverage da leggere dal server (container bloccato)
+coverage = ""
+crs = "EPSG:32632"
+url = ""

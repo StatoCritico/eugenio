@@ -1,0 +1,44 @@
+# Fonti della zona «Sardegna» per gli archivi degli edifici (fase 10, lettori regionali, gruppo C, 08/11/2026). Gli URL
+# stanno qui, mai nel codice. Verifiche dal vivo (container di sviluppo, nessun blocco aggirato):
+# - 08/11/2026: WFS GeoServer della Regione, strato dbu:dbgt_10k_22_v05_02_edificio_ingombro_suolo, GeoJSON in EPSG:7791
+#   con bbox breve «x0,y0,x1,y1,EPSG:7791» (E, N): 72 sagome in 600 m intorno al Brotzu, z = 0; campi classid, stato,
+#   tipologia, uso (testo), nome, monumental, porzione; licenza CC BY 4.0 (scheda RNDT R_SARDEG:2c842f2a-…, Fees e
+#   AccessConstraints NONE).
+# - 08/11/2026: quadro d'unione dbu:QU2k_fasciacostiera2008_DTM_DSM1m (geometrie in EPSG:3003, campi nomemappa, dtm, dsm,
+#   dsm_buildi, dsm_vegeta con gli URL degli zip); tessere ASCII 1 m in WGS84/UTM 32N (coincidenti con EPSG:7791 al
+#   metro): si usa il «DSM buildings» (edifici sul terreno, senza vegetazione). Licenza CC BY 4.0 (R_SARDEG:BFPNM).
+
+[zona]
+nome = "Sardegna"
+codice = "sar"
+crs = "EPSG:7791"                        # RDN2008 / UTM 32N
+riquadro = [8.1, 38.8, 9.9, 41.3]
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Regione Sardegna – DBGT 10k 2022 v05, Edificio (ingombro al suolo)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Autonoma della Sardegna – DBGT 10k 2022 e LiDAR 2008 fascia costiera (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/R_SARDEG:2c842f2a-d268-45e4-a68c-6cff2070bd28"
+adattatore = "sardegna_dbgt_lidar"
+servizio_tipo = "wfs"
+servizio = "https://webgis.regione.sardegna.it/geoserver/ows"
+strato = "dbu:dbgt_10k_22_v05_02_edificio_ingombro_suolo"
+crs_servizio = "EPSG:7791"
+url = ""
+
+[fonti.lidar]
+descrizione = "Regione Sardegna – LiDAR 2008 fascia costiera, DSM buildings e DTM 1 m (tessere 1:2.000)"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Autonoma della Sardegna – LiDAR 2008 fascia costiera, DSM buildings − DTM 1 m (CC BY 4.0)"
+scheda = "https://geodati.gov.it/resource/id/R_SARDEG:BFPNM"
+crs = "EPSG:7791"                        # ASCII in WGS84/UTM 32N, uguali a RDN2008/UTM 32N al metro
+indice_wfs = "https://webgis.regione.sardegna.it/geoserver/ows"
+indice_strato = "dbu:QU2k_fasciacostiera2008_DTM_DSM1m"
+indice_crs = "EPSG:3003"
+campo_nome = "nomemappa"
+url_dsm = "{dsm_buildi}"
+url_dtm = "{dtm}"

@@ -160,8 +160,12 @@ def da_riferimento(rif: str | None) -> dict:
 def coordinate(d: dict) -> tuple[float | None, float | None]:
     """Estrae lat/lon da un risultato (le forme variano tra geocodifica e particelle)."""
     for a, b in (("lat", "lng"), ("lat", "lon"), ("latitude", "longitude")):
-        if a in d and b in d and d[a] is not None:
-            return float(d[a]), float(d[b])
+        if a in d and b in d and d[a] is not None and d[b] is not None:
+            la, lo = float(d[a]), float(d[b])
+            # (07/11/2026 sera, Novafeltria) 0,0 = «senza coordinate», mai un punto vero in Italia
+            if abs(la) < 1e-6 and abs(lo) < 1e-6:
+                continue
+            return la, lo
     for k in ("centroid", "location", "point", "coordinates", "geometry"):
         v = d.get(k)
         if isinstance(v, dict):

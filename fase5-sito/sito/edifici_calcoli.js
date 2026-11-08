@@ -4,7 +4,8 @@
 // fase10-edifici3d/edifici3d/modello.py (un test controlla che interpiani e rapporti coincidano).
 //
 //  Piani e superfici (§ 8): stimaPiani, scegli (CSV → visura → stima), superfici, colonne facoltative di Patrimonio
-//  Geometria (§ 9, analisi 1): area, indicatori (volume, S/V, pareti per orientamento e in comune), dividi (linea)
+//  Geometria (§ 9, analisi 1): area, indicatori (volume, S/V, pareti per orientamento e in comune), dividi (linea);
+//  corpi con i fori (07/11/2026): c.buchi, areaCorpo, dentroCorpo, latiCorpo (pareti dei cortili comprese)
 //  Sole e ombre: sole (posizione NOAA), ombra (sagoma proiettata sul terreno), orizzonte (profilo per un punto, 72
 //  direzioni), svf (fattore di vista del cielo)
 //  FV (§ 9, analisi 6): trasponi (Perez 1990 dal 05/11/2026, isotropo a richiesta), producibilita (tipo PVWatts,
@@ -88,7 +89,7 @@
     let lorda = 0, pmax = 0;
     const perCorpo = corpi.map((c) => {
       const p = c.piani || stimaPiani(c.gronda, c.uso || "altro");
-      lorda += area(c.ring) * p; pmax = Math.max(pmax, p);
+      lorda += areaCorpo(c) * p; pmax = Math.max(pmax, p);
       return { corpo: c.id, piani: p, fonte: c.piani ? "dato del corpo" : "stima" };
     });
     const l = scegli(csv.superficie_lorda, visura.superficie_lorda, lorda || null);
@@ -121,6 +122,18 @@
     return [x / (3 * a), y / (3 * a)];
   }
   function lati(r) { r = chiudi(r); const o = []; for (let i = 0; i < r.length - 1; i++) if (r[i][0] !== r[i + 1][0] || r[i][1] !== r[i + 1][1]) o.push([r[i], r[i + 1]]); return o; }
+  // corpi con i fori (cortili, 07/11/2026): c.ring è l'anello esterno, c.buchi (facoltativo) gli anelli interni. Come in
+  // modello.py (shapely): area netta, punto nel foro = fuori, i lati dei fori sono pareti (la normale esterna guarda il
+  // cortile: i fori si percorrono nel verso opposto all'esterno)
+  const buchiDi = (c) => (c && Array.isArray(c.buchi) ? c.buchi.filter((b) => Array.isArray(b) && b.length >= 3) : []);
+  function areaCorpo(c) { return Math.max(0, area(c.ring) - buchiDi(c).reduce((s, b) => s + area(b), 0)); }
+  function dentroCorpo(p, c) { return dentro(p, c.ring) && !buchiDi(c).some((b) => dentro(p, b)); }
+  function anelliOrientati(c) {
+    const ccw = areaConSegno(c.ring) > 0;
+    const verso = (r, voluto) => ((areaConSegno(r) > 0) === voluto ? chiudi(r) : chiudi(r).slice().reverse());
+    return [chiudi(c.ring), ...buchiDi(c).map((b) => verso(b, !ccw))];
+  }
+  function latiCorpo(c) { return anelliOrientati(c).flatMap(lati); }
   function orientamento(a, b, ccw) {
     const dx = b[0] - a[0], dy = b[1] - a[1];
     const [nx, ny] = ccw ? [dy, -dx] : [-dy, dx];
@@ -131,7 +144,7 @@
     const lung = Math.hypot(b[0] - a[0], b[1] - a[1]);
     const ux = (b[0] - a[0]) / lung, uy = (b[1] - a[1]) / lung;
     let tot = 0;
-    for (const [c, d] of lati(altro)) {
+    for (const [c, d] of (Array.isArray(altro) ? lati(altro) : latiCorpo(altro))) {
       const l2 = Math.hypot(d[0] - c[0], d[1] - c[1]);
       if (l2 < 1e-6) continue;
       const vx = (d[0] - c[0]) / l2, vy = (d[1] - c[1]) / l2;
@@ -167,19 +180,19 @@
     let volume = 0, tetti = 0, pavimenti = 0, stesso = 0, conVicini = 0;
     const pareti = Object.fromEntries(SETTORI.map((s) => [s, 0]));
     for (const c of corpi) {
-      const A = area(c.ring);
+      const A = areaCorpo(c);
       volume += A * altezzaMedia(c); pavimenti += A;
       if (c.colmo && c.colmo > c.gronda && c.tetto !== "piano") {
         const semi = Math.max(Math.min(...rettangoloMinimo(c.ring).lati) / 2, 0.5);
         tetti += A / Math.cos(Math.atan((c.colmo - c.gronda) / semi));
       } else tetti += A;
       const ccw = areaConSegno(c.ring) > 0;
-      for (const [a, b] of lati(c.ring)) {
+      for (const [a, b] of latiCorpo(c)) {
         const lung = Math.hypot(b[0] - a[0], b[1] - a[1]);
         let esposta = lung * c.gronda;
         for (const o of [...corpi, ...altri]) {
           if (o === c) continue;
-          const com = inComune(a, b, o.ring);
+          const com = inComune(a, b, o);
           if (com <= 0.01) continue;
           const coperta = com * Math.min(c.gronda, o.gronda);
           esposta -= coperta;
@@ -424,7 +437,7 @@
     const tutti = [...corpi, ...vicini], parti = [];
     for (const c of corpi) {
       const ccw = areaConSegno(c.ring) > 0, base = c.quota || 0;
-      lati(c.ring).forEach(([a, b], il) => {
+      latiCorpo(c).forEach(([a, b], il) => {
         const lung = Math.hypot(b[0] - a[0], b[1] - a[1]);
         if (lung < 0.3) return;
         const az = orientamento(a, b, ccw), ns = Math.max(1, Math.ceil(lung / passo)), nf = Math.max(1, Math.ceil(c.gronda / fascia));
@@ -436,7 +449,7 @@
           let coperto = 0;
           for (const o of tutti) {
             if (o === c) continue;
-            if (inComune(p0, p1, o.ring) > 0.5 * lung / ns) coperto = Math.max(coperto, Math.min(c.gronda, o.gronda + ((o.quota || 0) - base)));
+            if (inComune(p0, p1, o) > 0.5 * lung / ns) coperto = Math.max(coperto, Math.min(c.gronda, o.gronda + ((o.quota || 0) - base)));
           }
           for (let k = 0; k < nf; k++) {
             const z0 = k * c.gronda / nf, z1 = (k + 1) * c.gronda / nf;
@@ -667,8 +680,154 @@
     return righe;
   }
 
-  const API = { INTERPIANI, UN_PIANO, SOVRALZO, NETTA_SU_LORDA, SETTORI, FACOLTATIVE, ETICHETTE, numero, norm, colonnaFacoltativa,
+  // ------------------------------------------------------------------ tetto a falde stimato dal colmo (07/11/2026 sera)
+  // Dove il DB topografico dà un colmo più alto della gronda (H_COLMO, Rimini 5.798 corpi) ma non ci sono falde misurate
+  // (LiDAR), il tetto si stima sul rettangolo minimo orientato del corpo: **a capanna** con il colmo sul lato lungo, o **a
+  // padiglione** per i corpi quasi quadrati (lato lungo / lato corto < 1,3) o se l'utente lo sceglie; «a una falda» se lo
+  // sceglie l'utente (discesa verso il lato più a sud). Precedenza nella pagina: falde LiDAR → colmo DBTR → tetto piano.
+  // Niente stima per i corpi con i cortili o poco rettangolari (area < 70 % del rettangolo): restano come prima.
+  // Restituisce { tipo, falde: [{ id, ring, pendenza, orientamento, superficie, area_pianta, alto, basso }] } o null.
+  const RAPPORTO_PADIGLIONE = 1.3, RIEMPIMENTO_MIN = 0.7, SALTO_MIN = 0.3;
+  function clipConvesso(poli, taglio) {
+    // Sutherland–Hodgman: poligono qualsiasi tagliato da un poligono convesso (anelli aperti, versi qualsiasi)
+    const ccw = areaConSegno(taglio) > 0;
+    let out = poli.slice();
+    for (let i = 0; i < taglio.length && out.length; i++) {
+      const a = taglio[i], b = taglio[(i + 1) % taglio.length], inp = out; out = [];
+      const lato = (p) => { const v = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]); return ccw ? v >= -1e-9 : v <= 1e-9; };
+      for (let k = 0; k < inp.length; k++) {
+        const p = inp[k], q = inp[(k + 1) % inp.length], ip = lato(p), iq = lato(q);
+        if (ip) out.push(p);
+        if (ip !== iq) {
+          const d1 = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]), d2 = (b[0] - a[0]) * (q[1] - a[1]) - (b[1] - a[1]) * (q[0] - a[0]);
+          const t = d1 / (d1 - d2); out.push([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]);
+        }
+      }
+    }
+    return out.length >= 3 && area(out) > 0.05 ? out : null;
+  }
+  // rettangolo minimo orientato del corpo per il tetto: u lungo il lato lungo (La), v lungo il lato corto (Lb); null se
+  // l'anello ha meno di 3 punti. Lo usano la stima dal colmo e l'ipotesi automatica (stesso rettangolo, stessa campata)
+  function rettangoloTetto(c) {
+    const anello = chiudi(c.ring).slice(0, -1);
+    if (anello.length < 3) return null;
+    const h = inviluppo(anello);
+    let m = null;
+    for (let i = 0; i < h.length; i++) {
+      const a = h[i], b = h[(i + 1) % h.length], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (l < 1e-9) continue;
+      const u = [(b[0] - a[0]) / l, (b[1] - a[1]) / l], v = [-u[1], u[0]];
+      let s0 = Infinity, s1 = -Infinity, t0 = Infinity, t1 = -Infinity;
+      for (const p of h) { const s = p[0] * u[0] + p[1] * u[1], t = p[0] * v[0] + p[1] * v[1]; s0 = Math.min(s0, s); s1 = Math.max(s1, s); t0 = Math.min(t0, t); t1 = Math.max(t1, t); }
+      const A = (s1 - s0) * (t1 - t0);
+      if (!m || A < m.A) m = { A, u, v, s0, s1, t0, t1 };
+    }
+    if (!m) return null;
+    // asse a = lato lungo, b = lato corto
+    let { u, v, s0, s1, t0, t1 } = m;
+    if (s1 - s0 < t1 - t0) { const ou = u; u = v; v = [-ou[0], -ou[1]]; [s0, s1, t0, t1] = [t0, t1, -s1, -s0]; }
+    return { A: m.A, u, v, s0, s1, t0, t1, La: s1 - s0, Lb: t1 - t0, anello, h };
+  }
+  function faldeStimate(c, tipoVoluto = null) {
+    if (!c || !Array.isArray(c.ring) || !(c.colmo > c.gronda + SALTO_MIN) || buchiDi(c).length) return null;
+    const m = rettangoloTetto(c);
+    if (!m || m.A < 1 || areaCorpo(c) / m.A < RIEMPIMENTO_MIN) return null;
+    const { u, v, s0, s1, t0, t1, anello } = m;
+    const La = s1 - s0, Lb = t1 - t0, semi = Lb / 2, salto = c.colmo - c.gronda;
+    if (Lb < 2) return null;
+    const pt = (s, t) => [s * u[0] + t * v[0], s * u[1] + t * v[1]];
+    const az = (d) => ((Math.atan2(d[0], d[1]) / GRAD) + 360) % 360;
+    let tipo = tipoVoluto && ["capanna", "padiglione", "monofalda"].includes(tipoVoluto) ? tipoVoluto : (La / Lb < RAPPORTO_PADIGLIONE ? "padiglione" : "capanna");
+    // regioni convesse del rettangolo, ognuna con la direzione di discesa (versore) e la distanza dalla gronda
+    const reg = [];
+    const tm = (t0 + t1) / 2;
+    if (tipo === "monofalda") {
+      const verso = v[1] <= 0 ? v : [-v[0], -v[1]];      // discesa verso sud (y minore)
+      const basso = verso === v ? t1 : t0;
+      reg.push({ poli: [pt(s0, t0), pt(s1, t0), pt(s1, t1), pt(s0, t1)], d: verso, gronda: (p) => Math.abs(basso - (p[0] * v[0] + p[1] * v[1])), largo: Lb });
+    } else if (tipo === "capanna") {
+      reg.push({ poli: [pt(s0, t0), pt(s1, t0), pt(s1, tm), pt(s0, tm)], d: [-v[0], -v[1]], gronda: (p) => (p[0] * v[0] + p[1] * v[1]) - t0, largo: semi });
+      reg.push({ poli: [pt(s0, tm), pt(s1, tm), pt(s1, t1), pt(s0, t1)], d: v, gronda: (p) => t1 - (p[0] * v[0] + p[1] * v[1]), largo: semi });
+    } else {   // padiglione: due trapezi sui lati lunghi e due triangoli sulle testate, stessa pendenza
+      const a0 = s0 + semi, a1 = s1 - semi;
+      const S = (p) => p[0] * u[0] + p[1] * u[1], T = (p) => p[0] * v[0] + p[1] * v[1];
+      reg.push({ poli: [pt(s0, t0), pt(s1, t0), pt(a1, tm), pt(a0, tm)], d: [-v[0], -v[1]], gronda: (p) => T(p) - t0, largo: semi });
+      reg.push({ poli: [pt(a0, tm), pt(a1, tm), pt(s1, t1), pt(s0, t1)], d: v, gronda: (p) => t1 - T(p), largo: semi });
+      reg.push({ poli: [pt(s0, t0), pt(a0, tm), pt(s0, t1)], d: [-u[0], -u[1]], gronda: (p) => S(p) - s0, largo: semi });
+      reg.push({ poli: [pt(s1, t0), pt(s1, t1), pt(a1, tm)], d: u, gronda: (p) => s1 - S(p), largo: semi });
+    }
+    const falde = [];
+    reg.forEach((r, k) => {
+      const pezzo = clipConvesso(anello, r.poli);
+      if (!pezzo) return;
+      const tanp = salto / r.largo, dist = pezzo.map(r.gronda);
+      const ap = area(pezzo), pend = Math.atan(tanp) / GRAD;
+      falde.push({ id: `S${k + 1}`, ring: chiudi(pezzo), pendenza: Math.round(pend * 10) / 10, orientamento: Math.round(az(r.d)),
+        superficie: Math.round(ap / Math.cos(pend * GRAD) * 10) / 10, area_pianta: Math.round(ap * 10) / 10,
+        alto: Math.round((c.gronda + Math.min(salto, Math.max(...dist) * tanp)) * 100) / 100,
+        basso: Math.round((c.gronda + Math.max(0, Math.min(...dist)) * tanp) * 100) / 100 });
+    });
+    return falde.length ? { tipo, falde } : null;
+  }
+
+  // ------------------------------------------------------------------ tetto ipotizzato (08/11/2026, decisione di Paolo)
+  // Dove non ci sono né falde LiDAR né il colmo del DB topografico, il tetto si **ipotizza a falde**: 22° in pianura (e in
+  // collina), 32° in montagna; stessa forma della stima dal colmo (capanna sul lato lungo, padiglione se lato lungo / lato
+  // corto < 1,3), con colmo = gronda + semiluce × tan(inclinazione) (semiluce = metà del lato corto del rettangolo minimo).
+  // Montagna: quota del terreno sotto il corpo (DTM) ≥ 600 m nei comuni del Nord, ≥ 700 m al Centro, al Sud e nelle isole
+  // (soglie della definizione ISTAT di zona altimetrica di montagna); senza la quota del corpo, l'altitudine del comune
+  // (DPR 412/93, Allegato A). La classificazione ISTAT dei comuni per zona altimetrica non è tra i dati del sito: la
+  // quota sotto l'edificio dà anche il fondovalle di un comune montano (Bagno di Romagna paese, ~490 m: pianura/collina).
+  // Restano **piani** i corpi plausibilmente piani: uso produttivo, commerciale o sportivo (DBTR/OSM: capannone,
+  // commerciale, palestra; tipi DBTR industriali, tettoie, hangar, serre, cabine, tribune, palazzi dello sport), corpi
+  // molto grandi (oltre 1.500 m² in pianta) o con il lato corto oltre 25 m, corpi bassi accessori (gronda sotto 3 m),
+  // corpi con cortile, poco rettangolari (sotto il 70 % del rettangolo minimo) o più stretti di 2 m.
+  const IPOTESI_TETTO = { pianura: 22, montagna: 32, soglia_nord: 600, soglia_centro_sud: 700, area_piano: 1500, lato_piano: 25, gronda_piano: 3 };
+  const USI_TETTO_PIANO = ["capannone", "commerciale", "palestra", "industriale"];
+  const TIPI_TETTO_PIANO = /industrial|capannone|hangar|tettoia|palazzo dello sport|tribuna|serra|impiant|cabina/i;
+  // province del Nord (codice ISTAT del comune = provincia a 3 cifre + progressivo): Piemonte, Valle d'Aosta, Liguria,
+  // Lombardia, Trentino-Alto Adige, Veneto, Friuli-Venezia Giulia, Emilia-Romagna
+  const PROVINCE_NORD_NUOVE = [93, 96, 97, 98, 99, 103, 108];
+  function comuneDelNord(istat) {
+    const p = parseInt(String(istat || "").padStart(6, "0").slice(0, 3), 10);
+    return Number.isFinite(p) && p > 0 ? p <= 40 || PROVINCE_NORD_NUOVE.includes(p) : null;
+  }
+  function zonaAltimetrica(quota, istat = null) {
+    const nord = comuneDelNord(istat), soglia = nord === false ? IPOTESI_TETTO.soglia_centro_sud : IPOTESI_TETTO.soglia_nord;
+    const q = quota === null || quota === undefined || quota === "" ? NaN : +quota;
+    const montagna = Number.isFinite(q) && q >= soglia;
+    return { montagna, soglia, quota: Number.isFinite(q) ? q : null, inclinazione: montagna ? IPOTESI_TETTO.montagna : IPOTESI_TETTO.pianura };
+  }
+  function motivoTettoPiano(c, m = undefined) {
+    const uso = String((c && c.uso) || "").toLowerCase(), tipo = String((c && (c.tipo_edificio || c.destinazione)) || "");
+    if (USI_TETTO_PIANO.includes(uso)) return `uso ${uso === "palestra" ? "sportivo" : uso === "commerciale" ? "commerciale" : "produttivo"} (${uso})`;
+    if (TIPI_TETTO_PIANO.test(tipo)) return `tipo di edificio «${tipo}»`;
+    if (buchiDi(c).length) return "corpo con cortile";
+    const A = areaCorpo(c);
+    if (A > IPOTESI_TETTO.area_piano) return `corpo molto grande (${Math.round(A)} m²)`;
+    if (!(c.gronda >= IPOTESI_TETTO.gronda_piano)) return "corpo basso, accessorio (gronda sotto 3 m)";
+    if (m === undefined) m = rettangoloTetto(c);
+    if (!m || m.A < 1 || A / m.A < RIEMPIMENTO_MIN) return "forma poco rettangolare";
+    if (m.Lb > IPOTESI_TETTO.lato_piano) return `lato corto oltre 25 m (${Math.round(m.Lb)} m)`;
+    if (m.Lb < 2) return "corpo più stretto di 2 m";
+    return null;
+  }
+  // c: { ring, buchi, gronda, uso, tipo_edificio }; opz: { quota, istat, tipo } (tipo: capanna/padiglione voluto)
+  // → { piano: true, motivo } oppure { tipo, falde, colmo, inclinazione, montagna, quota, soglia }
+  function tettoIpotizzato(c, opz = {}) {
+    if (!c || !Array.isArray(c.ring) || !Number.isFinite(+c.gronda)) return { piano: true, motivo: "corpo senza gronda" };
+    const m = rettangoloTetto(c), motivo = motivoTettoPiano(c, m);
+    if (motivo) return { piano: true, motivo };
+    const z = zonaAltimetrica(opz.quota, opz.istat);
+    const colmo = Math.round((+c.gronda + m.Lb / 2 * Math.tan(z.inclinazione * GRAD)) * 100) / 100;
+    const r = faldeStimate({ ring: c.ring, buchi: c.buchi, gronda: +c.gronda, colmo }, opz.tipo || null);
+    if (!r) return { piano: true, motivo: "forma poco rettangolare" };
+    return { tipo: r.tipo, falde: r.falde, colmo, inclinazione: z.inclinazione, montagna: z.montagna, quota: z.quota, soglia: z.soglia };
+  }
+
+  const API = { INTERPIANI, faldeStimate, rettangoloTetto, IPOTESI_TETTO, USI_TETTO_PIANO, comuneDelNord, zonaAltimetrica, motivoTettoPiano, tettoIpotizzato, RAPPORTO_PADIGLIONE, UN_PIANO, SOVRALZO, NETTA_SU_LORDA, SETTORI, FACOLTATIVE, ETICHETTE, numero, norm, colonnaFacoltativa,
     mappaFacoltative, leggiFacoltative, usoDa, stimaPiani, scegli, superfici, area, centroide, lati, chiudi, indicatori, dividi,
+    areaCorpo, dentroCorpo, latiCorpo, anelliOrientati,
     inviluppo, dentro, rettangoloMinimo, proiezione, sole, ombra, orizzonte, altezzaOrizzonte, svf, trasponi, producibilita,
     climaSintetico, firma, altezzaMedia, uniscio, partiFacciate, irraggiamentoFacciate, riepilogoFacciate, QUOTE_199, obbligoFer,
     HT_TAB10, htMassimo, HT_TAB11, HT_TAB11_QUOTE, htMassimoPrimoLivello, FINESTRE_SU_PARETI, quotaVetrataStimata, DA_VISURA,

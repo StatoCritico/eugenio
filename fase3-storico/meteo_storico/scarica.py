@@ -112,6 +112,10 @@ def leggi(archivio: Path, fonte: str, istat: str) -> pd.DataFrame | None:
     return pd.read_parquet(p) if p.exists() else None
 
 
+TENTATIVI = 8          # tentativi per richiesta (errori di rete, 5xx, 429 al minuto/ora, risposte troncate)
+MAX_TRONCATE = 4       # risposte 200 con JSON interrotto o incompleto, di fila, prima di arrendersi
+
+
 def client() -> httpx.Client:
     return httpx.Client(timeout=180, headers={"User-Agent": "progetto-energia/1.0 (open source)"})
 
@@ -137,7 +141,8 @@ def richiesta(http: httpx.Client, lim: Limitatore, url: str, punti: pd.DataFrame
         params["end_date"] = fine.isoformat()
         giorni = (fine - inizio).days + 1
     w = peso(len(punti), giorni, len(variabili))
-    for tentativo in range(8):
+    troncate = 0
+    for tentativo in range(TENTATIVI):
         lim.attendi(w)
         try:
             r = http.get(url, params=params)
@@ -159,9 +164,22 @@ def richiesta(http: httpx.Client, lim: Limitatore, url: str, punti: pd.DataFrame
             continue
         if r.status_code != 200:
             raise RuntimeError(f"Open-Meteo {r.status_code}: {r.text[:300]}")
-        dati = r.json()
-        if isinstance(dati, dict):
-            dati = [dati]
+        try:
+            dati = r.json()
+            if isinstance(dati, dict):
+                dati = [dati]
+            if not isinstance(dati, list) or len(dati) != len(punti) or any("hourly" not in d for d in dati):
+                raise ValueError(f"{len(dati) if isinstance(dati, list) else 0} punti su {len(punti)}, o senza «hourly»")
+        except ValueError as e:
+            # risposta 200 interrotta a metà (JSON troncato, 04/11/2026) o incompleta: si riprova (la chiamata è già
+            # contata dal limitatore) invece di fermare l'aggiornamento di tutti i comuni
+            troncate += 1
+            if troncate > MAX_TRONCATE:
+                raise RuntimeError(f"Open-Meteo: {troncate} risposte troncate di fila ({len(r.content)} byte): {e}")
+            log.warning("Open-Meteo: risposta troncata o incompleta (%d byte, %s), riprovo (%d/%d)",
+                        len(r.content), str(e)[:120], troncate, MAX_TRONCATE)
+            time.sleep(min(120, 5 * 2 ** (troncate - 1)))
+            continue
         out = []
         for d in dati:
             h = d["hourly"]

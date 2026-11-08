@@ -5,7 +5,13 @@ import os
 from pathlib import Path
 
 DATI = Path(os.environ.get("DATI", "/dati"))
+# regioni SERVITE dal sito (comuni, meteo, Legge 10, Dati climatici): codici ISTAT separati da virgola, vuoto = tutta Italia
 REGIONI = [r.strip().zfill(2) for r in os.environ.get("REGIONI", "08").split(",") if r.strip()]
+# regioni di cui il worker AGGIORNA ogni giorno previsioni (Open-Meteo) e storico (04/11/2026): vuoto = tutte quelle
+# servite (comportamento di prima). Con l'archivio nazionale si può servire tutta Italia (REGIONI vuoto) e aggiornare
+# ogni giorno solo una parte (es. REGIONI_AGGIORNATE=08), per stare nei limiti dell'API gratuita di Open-Meteo; le
+# regioni aggiornate valgono solo tra quelle servite.
+REGIONI_AGGIORNATE = [r.strip().zfill(2) for r in os.environ.get("REGIONI_AGGIORNATE", "").split(",") if r.strip()]
 SOLO_COMUNI = [c.strip() for c in os.environ.get("SOLO_COMUNI", "").split(",") if c.strip()]  # per prove
 ORE_PREVISIONI = int(os.environ.get("ORE_PREVISIONI", "6"))          # ogni quante ore aggiornare le previsioni
 ORA_STORICO_UTC = int(os.environ.get("ORA_STORICO_UTC", "5"))        # aggiornamento giornaliero dello storico
@@ -82,6 +88,9 @@ SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 SMTP_MITTENTE = os.environ.get("SMTP_MITTENTE", "")
 EMAIL_AMMINISTRATORE = os.environ.get("EMAIL_AMMINISTRATORE", "")
 SITO_URL = os.environ.get("SITO_URL", "https://eugenio.statocritico.it")
+# registro delle versioni del sito (07/11/2026; fase5-sito/novita.toml, copiato nell'immagine): voci del mese nella newsletter
+NOVITA_TOML = Path(os.environ.get("NOVITA_TOML", "/app/novita.toml" if Path("/app/novita.toml").exists()
+                                   else str(Path(__file__).resolve().parents[2] / "fase5-sito" / "novita.toml")))
 NOTIZIE_URL = os.environ.get("NOTIZIE_URL", "https://notizie.statocritico.it")
 
 # dati storici scaricabili (pagina "Dati storici", servizio/storici.py): solo dati ridistribuibili con attribuzione
@@ -141,12 +150,44 @@ ORTOFOTO_ATTESA_S = float(os.environ.get("ORTOFOTO_ATTESA_S", "6"))       # atte
 # strati sopra le ortofoto (particelle catastali, contorni degli edifici; servizio/strati.py, 05/11/2026): spenti dal .env
 STRATI_SPENTI = {s.strip() for s in os.environ.get("STRATI_SPENTI", "").split(",") if s.strip()}
 
+# ripiego OpenStreetMap per Modelli 3D (servizio/edifici_osm.py, decisione di Paolo del 07/11/2026): edifici OSM intorno
+# al punto dall'API Overpass dove non c'è un archivio DBTR. EDIFICI_OSM=false lo spegne (la rotta risponde 404).
+EDIFICI_OSM = os.environ.get("EDIFICI_OSM", "true").lower() not in ("false", "0", "no", "spento")
+EDIFICI_OSM_ORA = int(os.environ.get("EDIFICI_OSM_ORA", "60"))             # richieste per IP all'ora (anche dalla copia)
+EDIFICI_OSM_TETTO_ORA = int(os.environ.get("EDIFICI_OSM_TETTO_ORA", "300"))  # chiamate a Overpass all'ora per tutto il sito
+EDIFICI_OSM_GIORNI = int(os.environ.get("EDIFICI_OSM_GIORNI", "30"))       # validità della copia su disco di una cella
+EDIFICI_OSM_ATTESA_S = float(os.environ.get("EDIFICI_OSM_ATTESA_S", "15"))  # attesa massima del turno (una chiamata alla volta)
+EDIFICI_OSM_TIMEOUT_S = float(os.environ.get("EDIFICI_OSM_TIMEOUT_S", "30"))  # per istanza di Overpass (due istanze + attesa < 100 s di Cloudflare)
+# istanze di Overpass (separate da virgola, in ordine); vuoto = quelle dello strato «osm_edifici» (ortofoto/strati/edifici.toml)
+EDIFICI_OSM_URL = [u.strip() for u in os.environ.get("EDIFICI_OSM_URL", "").split(",") if u.strip()]
+# sagome regionali al volo con le altezze OSM (08/11/2026, servizio/edifici_osm.py, edifici3d/sagome_regionali.py): dove la
+# Regione pubblica le sagome aperte senza altezze (Veneto, IODL 2.0) la rotta /api/edifici/osm dà quelle sagome con le
+# altezze di OpenStreetMap. EDIFICI_REGIONALI=false le spegne (resta il ripiego OSM di prima).
+EDIFICI_REGIONALI = os.environ.get("EDIFICI_REGIONALI", "true").lower() not in ("false", "0", "no", "spento")
+EDIFICI_REGIONALI_TETTO_ORA = int(os.environ.get("EDIFICI_REGIONALI_TETTO_ORA", "300"))   # chiamate ai WFS regionali all'ora
+EDIFICI_REGIONALI_TIMEOUT_S = float(os.environ.get("EDIFICI_REGIONALI_TIMEOUT_S", "30"))
+# istanza di riserva di Overpass comune allo strato OSM e al ripiego (07/11/2026: Overpass API Europa, ovp.dresel.systems,
+# al posto di maps.mail.ru): assente = quella del TOML; presente ma vuota = nessuna riserva (se dal server non risponde)
+OVERPASS_RISERVA = ([u.strip() for u in os.environ["OVERPASS_RISERVA"].split(",") if u.strip()]
+                    if "OVERPASS_RISERVA" in os.environ else None)
+
 # confronto PVGIS (fase 10, Fase B; servizio/pvgis.py): chiamato dal server (PVGIS non ha CORS), con copia delle risposte
 PVGIS_URL = os.environ.get("PVGIS_URL", "https://re.jrc.ec.europa.eu/api/v5_3/PVcalc")
 PVGIS_AL_SECONDO = float(os.environ.get("PVGIS_AL_SECONDO", "20"))       # il JRC ammette 30 chiamate/s per IP: margine
 PVGIS_ORA = int(os.environ.get("PVGIS_ORA", "60"))                        # confronti per IP all'ora
 PVGIS_CACHE_GIORNI = int(os.environ.get("PVGIS_CACHE_GIORNI", "90"))
 # orizzonte lontano dal Copernicus DEM 90 m (servizio/orizzonte.py, stessi file .om su S3 della fase 3)
+# terreno della pagina 3D su richiesta (07/11/2026, servizio/terreno.py): DTM come COG in CARTELLA_TERRENO (comando
+# dtm-server della fase 10), tessere Terrarium copiate in CARTELLA_TERRENO_TESSERE
+TERRENO_ATTIVO = os.environ.get("TERRENO_ATTIVO", "true").lower() != "false"
+CARTELLA_TERRENO = Path(os.environ.get("CARTELLA_TERRENO", str(DATI / "terreno")))
+CARTELLA_TERRENO_TESSERE = Path(os.environ.get("CARTELLA_TERRENO_TESSERE", str(DATI / "terreno_tessere")))
+TERRENO_ZOOM_MIN = int(os.environ.get("TERRENO_ZOOM_MIN", "8"))
+TERRENO_MAX_GB = float(os.environ.get("TERRENO_MAX_GB", "5"))
+TERRENO_CACHE_S = int(os.environ.get("TERRENO_CACHE_S", "2592000"))      # 30 giorni
+TERRENO_ORA = int(os.environ.get("TERRENO_ORA", "3000"))                 # tessere da generare per IP all'ora
+TERRENO_PARALLELE = int(os.environ.get("TERRENO_PARALLELE", "2"))        # tessere generate insieme
+TERRENO_ATTESA_S = float(os.environ.get("TERRENO_ATTESA_S", "10"))
 ORIZZONTE_RAGGIO_KM = float(os.environ.get("ORIZZONTE_RAGGIO_KM", "25"))
 ORIZZONTE_ORA = int(os.environ.get("ORIZZONTE_ORA", "120"))               # profili per IP all'ora
 
@@ -159,3 +200,17 @@ CF_ACCESS_EMAIL = os.environ.get("CF_ACCESS_EMAIL", "")
 EDIFICI_STATO = Path(os.environ.get("EDIFICI_STATO", str(DATI / "edifici_stato")))          # stato.json della pipeline
 CARTELLA_EDIFICI_INTERNA = Path(os.environ.get("CARTELLA_EDIFICI_INTERNA", str(DATI / "edifici")))
 INTERNO_ORA = int(os.environ.get("INTERNO_ORA", "300"))                   # richieste per IP all'ora alle rotte interne
+
+# «Aggiungi DBTR» (07/11/2026, decisione di Paolo; servizio/dbtr_coda.py): DB topografici caricati dagli utenti (solo con
+# il loro consenso) in una coda sul server, preparati dal servizio edifici-coda e messi nell'archivio comune solo dopo
+# l'approvazione nella pagina interna. File a pezzi (Cloudflare accetta al più 100 MB per richiesta; Caddy 40 MB su
+# /api/dbtr/*). DBTR_CODA=false spegne il caricamento (404); la lettura nel browser resta.
+DBTR_CODA = os.environ.get("DBTR_CODA", "true").lower() not in ("false", "0", "no", "spento")
+CARTELLA_CODA_DBTR = Path(os.environ.get("CARTELLA_CODA_DBTR", str(DATI / "edifici_coda")))
+DBTR_MAX_MB = float(os.environ.get("DBTR_MAX_MB", "300"))                 # dimensione massima di un file (zip o GeoPackage)
+DBTR_PEZZO_MB = float(os.environ.get("DBTR_PEZZO_MB", "32"))              # pezzo di ogni richiesta (sotto i 40 MB di Caddy)
+DBTR_CARICAMENTI_GIORNO = int(os.environ.get("DBTR_CARICAMENTI_GIORNO", "3"))  # file proposti per IP ogni 24 ore
+DBTR_PEZZI_ORA = int(os.environ.get("DBTR_PEZZI_ORA", "60"))              # pezzi per IP all'ora (60 × 32 MB)
+DBTR_CODA_MAX = int(os.environ.get("DBTR_CODA_MAX", "20"))                # richieste aperte (non ancora approvate o rifiutate)
+DBTR_CODA_MAX_GB = float(os.environ.get("DBTR_CODA_MAX_GB", "4"))         # spazio occupato dalla coda
+DBTR_LIBERO_MIN_GB = float(os.environ.get("DBTR_LIBERO_MIN_GB", "10"))    # spazio libero che deve restare sul disco

@@ -43,9 +43,16 @@ tema = "edifici"
 nome = "Contorni degli edifici – OpenStreetMap"
 tipo = "overpass"
 url = "https://overpass-api.de/api/interpreter"
-# 06/11/2026 dal server: overpass-api.de 200 in ~15 s ma a volte 502 (sovraccarico); maps.mail.ru 200 in ~10 s;
-# overpass.private.coffee e overpass.kumi.systems senza risposta entro 30 s
-url_riserva = ["https://maps.mail.ru/osm/tools/overpass/api/interpreter"]
+# 06/11/2026 dal server: overpass-api.de 200 in ~15 s ma a volte 502 (sovraccarico); overpass.private.coffee (ex
+# kumi.systems) senza risposta entro 30 s.
+# Riserva (decisione di Paolo del 07/11/2026: istanza pubblica europea al posto di maps.mail.ru di VK): «Overpass API
+# Europa» di Christian Dresel (Fürth, Germania; dati Europa da Geofabrik aggiornati ogni giorno; libera, senza chiave;
+# 4 richieste in parallelo per IP; informativa GDPR con registri di 14 giorni; nessuna garanzia di disponibilità).
+# Prova dal container del 07/11/2026: 200 in 1–2,5 s a Pesaro, Cesena, Milano, Napoli e Palermo, dati del giorno prima.
+# Scartate: overpass.private.coffee (Austria, nessuna risposta dell'API in 60 s), overpass.openstreetmap.fr («solo usi
+# autorizzati», dati di luglio 2026), overpass.osm.ch (solo Svizzera). OVERPASS_RISERVA nel .env la sostituisce
+# (vuoto = nessuna riserva): servizio/strati.py, riserva_overpass().
+url_riserva = ["https://ovp.dresel.systems/api/interpreter"]
 licenza = "ODbL 1.0"
 citazione = "© contributori OpenStreetMap (ODbL 1.0), tramite l'API Overpass"
 scheda = "https://www.openstreetmap.org/copyright"

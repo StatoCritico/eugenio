@@ -1,0 +1,60 @@
+# Fonti della zona Basilicata (fase 10, adattatore `basilicata_dbgt` del gruppo A, 08/11/2026). Stesso schema di
+# lombardia.toml: gli URL stanno qui, mai nel codice. Verifiche dal vivo (container di sviluppo, nessun login, nessun
+# blocco aggirato; RSDI risponde dall'08/11, il 04/11 dava 503):
+# - WFS GeoServer `rbgeoserver2016/ows`, strato `dbgt_0201:un_vol` (DBGT 1:5.000, classe 020101): GeoJSON in
+#   EPSG:25833, geometria PolygonZ con **z costante = quota della base** del volume; campi `un_vol_por`, `un_vol_av`,
+#   `cediuv`, `scril` (minuscoli, manca `un_vol_qe`): quota di gronda = z + un_vol_av. Fees e AccessConstraints NONE,
+#   5.000 oggetti per richiesta senza errori. Potenza (riquadro del confine comunale): 37.203 volumi.
+# - Confini dei comuni con il link dello zip comunale: strato `confini:limiti_comunali_download_dbgt` (`comune_ist` =
+#   «17» + ISTAT, `download`). Zip comunale (Shapefile 2D, `ALTEZZA_VO`, `PORZIONE`, `CEDIUV`): senza z, serve --dtm.
+# - WCS `rbgeoserver2016/rsdi_wcs/ows`, coverage `rsdi_wcs__dtm_5m` e `rsdi_wcs__dsm_5m`: GeoTIFF float32 EPSG:25833,
+#   5 m, LiDAR 2013, nodata −9999 (il WCS generale e `maps_dtm` sono spenti: usare lo spazio `rsdi_wcs`).
+# - Licenza: **IODL 2.0** (schede RNDT di UN_VOL, DTM e DSM; `informazioni_e_precisazioni.pdf` nello zip comunale).
+#   Archivio in una cartella propria `iodl/` (proposta del gruppo A: vedi lettori/a/MODIFICHE_CONDIVISE.md), mai
+#   mescolata a cc-by/ o odbl/.
+
+[zona]
+nome = "Basilicata"
+codice = "bas"
+crs = "EPSG:25833"                       # ETRS89 / UTM 33N, sistema del WFS, degli zip e del WCS
+riquadro = [15.33, 39.89, 16.87, 41.14]  # WGS84 (lon_min, lat_min, lon_max, lat_max)
+
+[archivi]
+"IODL 2.0" = "iodl"
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "Regione Basilicata – DBGT 1:5.000, classe 020101 Unità volumetrica (UN_VOL)"
+licenza = "IODL 2.0"
+attribuzione = "Regione Basilicata – RSDI, DBGT 1:5.000, Unità volumetrica (IODL 2.0)"
+scheda = "https://geodati.gov.it/resource/id/r_basili:26e21af8:14ff44204d8:214c"
+adattatore = "basilicata_dbgt"
+servizio_tipo = "wfs"
+servizio = "https://rsdi.regione.basilicata.it/rbgeoserver2016/ows"
+strato = "dbgt_0201:un_vol"
+crs_servizio = "EPSG:25833"
+confini = "confini:limiti_comunali_download_dbgt"     # strato WFS dei comuni (campi comune_ist, download)
+# download: tutta la regione con le z (Shapefile PolygonZ, 71,5 MB) e zip per comune (<17 + ISTAT>.zip, 2D)
+url = "https://rsdi.regione.basilicata.it/webGis/shape-zip/unita_volumetrica.zip"
+url_comune = "https://rsdi.regione.basilicata.it/downloadProd/dbgt_ctr_comune_download/{codice}.zip"
+
+[fonti.dtm5]
+descrizione = "Regione Basilicata – DTM 5 m da LiDAR 2013"
+licenza = "IODL 2.0"
+attribuzione = "Regione Basilicata – RSDI, DTM 5 m (LiDAR 2013, IODL 2.0)"
+scheda = "https://geodati.gov.it/resource/id/r_basili:9EE9C09A-7091-D8A2-A41D-F28191B86C4F"
+wcs = "https://rsdi.regione.basilicata.it/rbgeoserver2016/rsdi_wcs/ows"
+coverage = "rsdi_wcs__dtm_5m"
+crs = "EPSG:25833"
+url = ""                                 # nessun file unico: GetCoverage WCS 2.0.1 con subset=E(...)&subset=N(...)
+
+[fonti.dsm5]
+descrizione = "Regione Basilicata – DSM 5 m da LiDAR 2013 (solo per i controlli: non entra nei corpi)"
+licenza = "IODL 2.0"
+attribuzione = "Regione Basilicata – RSDI, DSM 5 m (LiDAR 2013, IODL 2.0)"
+scheda = "https://geodati.gov.it/resource/id/r_basili:28FFB196-1EAA-49B4-769D-78C030B75042"
+wcs = "https://rsdi.regione.basilicata.it/rbgeoserver2016/rsdi_wcs/ows"
+coverage = "rsdi_wcs__dsm_5m"
+crs = "EPSG:25833"
+url = ""

@@ -3,7 +3,9 @@
 > Servizio open source (AGPL-3.0, dati CC BY 4.0) di Stato Critico per chi si occupa di energia: previsione dei consumi
 > con TiRex-2 e meteo per comune, dati climatici per la Legge 10, gradi giorno, patrimonio edilizio sul catasto, edifici 3D,
 > ombre e fotovoltaico, costi energetici della sanità. Sito in italiano; servizio sperimentale. Ultimo aggiornamento:
-> 06/11/2026, versione del sito ?v=20261106a.
+> 08/11/2026 (menu: pagine dei gruppi Edifici, Cogenerazione e Fotovoltaico in lavorazione e non accessibili; Cambiamento
+> climatico in Clima e meteo; mappe che si aprono su Cesena; edifici 3D di 15 città fuori dall'Emilia-Romagna), versione del
+> sito ?v=20261107b.
 
 Le istruzioni complete per gli agenti AI (pagine, parametri dell'indirizzo, formati dei file, API libere e protette,
 limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un solo file: leggilo prima di usare il servizio.
@@ -14,11 +16,31 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
 - [Schema OpenAPI](https://eugenio.statocritico.it/api/openapi.json): rotte, parametri e risposte dell'API
 - [F.A.Q.](https://eugenio.statocritico.it/faq.html#agenti-ai): domande frequenti, compresa quella su questo file
 - [Licenza](https://eugenio.statocritico.it/licenza.html): codice AGPL-3.0, dati CC BY 4.0 («Fonte: EuGEnio – eugenio.statocritico.it»)
+- [Novità](https://eugenio.statocritico.it/novita.html): cosa cambia a ogni versione del sito, anche come [feed Atom](https://eugenio.statocritico.it/novita.xml)
 
 ## Regole essenziali
 
-- Non aggirare la verifica anti-robot (Cloudflare Turnstile): previsione, patrimonio, geocodifica, particella e download
-  dei dati climatici si usano nel browser della persona.
+- Non aggirare la verifica anti-robot (Cloudflare Turnstile): previsione, patrimonio, geocodifica, particella, download
+  dei dati climatici, edifici OpenStreetMap di Modelli 3D (ripiego fuori dal DBTR) e proposta di un DB topografico
+  all'archivio comune si usano nel browser della persona.
+- I DB topografici regionali si leggono nel browser in Aggiungi edifici (DB topografico) (aggiungi-dbtr.html; istruzioni in
+  dbtr-istruzioni.html): proporli all'archivio comune è una scelta della persona, con il suo consenso esplicito.
+- Le tessere del terreno 3D (/api/terreno/{z}/{x}/{y}.png, Terrarium dal DTM del server) e delle ortofoto servono
+  alla mappa del sito: non scaricare intere zone. Le tessere delle ortofoto WMS accettano ?de=<m>&dn=<m> (interi, ±20):
+  ortofoto spostata di quei metri a est e a nord rispetto alla cartografia (frecce sotto la mappa), senza copia sul server.
+- Fuori dal DBTR, /api/edifici/osm (con la verifica anti-robot) dà in Veneto le sagome della Regione (IODL 2.0) con le
+  altezze di OpenStreetMap (ODbL) dove ci sono, altrimenti stimate; altrove gli edifici OpenStreetMap. Non per scaricare zone.
+- Edifici 3D dai DB topografici (archivi elencati in /edifici3d/archivi.json, ognuno con licenza e attribuzione): 28
+  comuni della Romagna e, dall'08/11/2026, Milano, Torino, Genova (parte), Venezia, Trieste, Trento, Bolzano, Firenze,
+  Ancona, Roma (parte), Bari (centro), Potenza, Napoli (altezze dalle classi del Copernicus Urban Atlas Building Height
+  2012), Palermo e Cagliari (parte). Sagome regionali al volo senza altezze anche in Sardegna e Campania. Citare
+  l'attribuzione dell'archivio; la fonte dell'altezza è scritta per ogni corpo.
+- Tetti nelle pagine 3D: falde LiDAR, poi stima dal colmo DBTR, poi tetto ipotizzato a 22° in pianura e 32° in montagna (o
+  piano per capannoni e corpi grandi); nelle pagine Edifici e Fotovoltaico (in lavorazione) la forma si sceglie («Forma dei tetti»).
+- Pagine in lavorazione (dall'08/11/2026 tutte quelle dei gruppi Edifici, Cogenerazione e Fotovoltaico, tranne le voci GME):
+  voce del menu con il triangolo giallo e non cliccabile, nessun collegamento nel sito, avviso «Pagina in lavorazione, non
+  ancora verificata»; non proporle come servizi disponibili. Accessibili: Clima e meteo (con Cambiamento climatico),
+  Patrimonio, Statistiche.
 - I dati di mercato GME ed EEX non sono mai esposti: non cercarli.
 - Vietato usare i dati catastali per re-identificare persone.
 - User-Agent identificabile, richieste in serie, rispetto dei 429; per uso intensivo un mirror proprio.

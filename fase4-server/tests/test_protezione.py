@@ -299,3 +299,18 @@ def test_protezione_e_sessione_dal_sito(client, monkeypatch):
     c.post("/api/sessione", json={"token": "buono"}, headers=h)
     c.post("/api/sessione", json={"token": "buono"}, headers=h)
     assert c.post("/api/sessione", json={"token": "buono"}, headers=h).status_code == 429
+
+
+def test_geocodifica_scarta_le_coordinate_zero(client, monkeypatch):
+    """(08/11/2026) Una risposta di Zornade senza coordinate vere (0,0 o vuote) non è mai un punto: la rotta la scarta e
+    la pagina Previsioni offre il comune scritto (ricerca col solo comune)."""
+    c, A = client
+    monkeypatch.setattr(C, "ZORNADE_API_KEY", "chiave-finta")
+
+    async def finto_zornade(percorso, params):
+        return {"data": [{"lat": 0, "lon": 0, "label": "Cesena"}, {"lat": None, "lon": None, "label": "Cesena 2"},
+                         {"lat": "x", "lon": 12.2, "label": "Cesena 3"}, {"lat": 44.1338, "lon": 12.2597, "label": "Viale Ghirotti 286, Cesena"}]}
+    monkeypatch.setattr(A, "_zornade", finto_zornade)
+    r = c.get("/api/geocodifica?q=viale+ghirotti+286+cesena", headers={"X-Forwarded-For": "203.0.113.40"})
+    assert r.status_code == 200
+    assert [x["etichetta"] for x in r.json()["risultati"]] == ["Viale Ghirotti 286, Cesena"]

@@ -8,6 +8,8 @@
   stato      quanto è stato scaricato e consumo dell'API
   tutto      comuni + scarica + correggi + esporta
   legge10    dati climatici aggiornati per la Legge 10 (--comuni, --anni, --ufficiali file.csv)
+  giornaliero-blocchi   controlla (--solo-verifica) o converte una volta un giornaliero.parquet al formato a blocchi
+             di comuni (--file; riprendibile, il file resta valido finché la copia nuova non è pronta)
   territorio-verifica   nuove versioni dell'elenco ISTAT o dei confini Gramscii?
   territorio-blocca     adotta l'ultima versione Gramscii (poi rieseguire `comuni`)
 """
@@ -33,11 +35,30 @@ def _regioni(v: str | None):
     return [x.strip().zfill(2) for x in v.split(",")]
 
 
+def _stampa_info(f: Path) -> None:
+    inf = aggrega.info_giornaliero(f)
+    comuni = len(set(pq_codici(f)))
+    print(f"file: {f}")
+    print(f"righe: {inf['righe']}  row group: {inf['row_group']}  comuni: {comuni}")
+    print(f"ordinato per comune: {'sì' if inf['ordinato'] else 'no'}  a blocchi: {'sì' if inf['a_blocchi'] else 'no'}"
+          f"  formato: {inf['formato'] or '(prima del 07/11/2026)'}"
+          + (f"  comuni per blocco: {inf['comuni_per_blocco']}" if inf["comuni_per_blocco"] else ""))
+
+
+def pq_codici(f: Path):
+    """Codici dei comuni nel file, un row group alla volta (senza caricare il file)."""
+    import pyarrow.compute as pc
+    import pyarrow.parquet as pq
+    pf = pq.ParquetFile(f)
+    for rg in range(pf.metadata.num_row_groups):
+        yield from pc.unique(pf.read_row_group(rg, columns=["istat"])["istat"]).to_pylist()
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="meteo_storico", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("comando", choices=["comuni", "scarica", "scarica-s3", "correggi", "esporta", "stato", "tutto", "legge10",
-                                          "territorio-verifica", "territorio-blocca"])
+                                          "territorio-verifica", "territorio-blocca", "giornaliero-blocchi"])
     p.add_argument("--archivio", default="archivio", help="cartella dell'archivio (anche su disco esterno)")
     p.add_argument("--regioni", default="08", help='codici ISTAT separati da virgola, o "tutte" (predefinito 08 = ER)')
     p.add_argument("--comuni", help="solo questi codici ISTAT (es. 037006,039014) – utile per provare")
@@ -53,6 +74,9 @@ def main(argv=None):
     p.add_argument("--anni", type=int, default=10, help="legge10: stagioni da usare")
     p.add_argument("--ufficiali", help="legge10: CSV istat;gg;zona;theta_progetto con i valori normativi")
     p.add_argument("--uscita", default="legge10", help="legge10: cartella dei risultati")
+    p.add_argument("--file", help="giornaliero-blocchi: il giornaliero.parquet da controllare o convertire")
+    p.add_argument("--solo-verifica", action="store_true", help="giornaliero-blocchi: non scrive nulla")
+    p.add_argument("--comuni-per-blocco", type=int, help=f"giornaliero-blocchi, esporta: predefinito {aggrega.COMUNI_PER_BLOCCO}")
     p.add_argument("-v", "--verbose", action="store_true")
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if a.verbose else logging.INFO, format="%(asctime)s %(message)s")
@@ -62,6 +86,22 @@ def main(argv=None):
     # zfill: PowerShell senza virgolette passa 037006,039014 come numeri e toglie gli zeri iniziali
     sel = [x.strip().zfill(6) for x in a.comuni.split(",") if x.strip()] if a.comuni else None
     cmd = a.comando
+    if a.comuni_per_blocco:
+        aggrega.COMUNI_PER_BLOCCO = a.comuni_per_blocco
+
+    if cmd == "giornaliero-blocchi":
+        if not a.file:
+            raise SystemExit("giornaliero-blocchi: serve --file percorso/giornaliero.parquet")
+        f = Path(a.file)
+        if not a.solo_verifica:
+            inf = aggrega.info_giornaliero(f)
+            if inf["a_blocchi"] and inf["formato"] == aggrega.FORMATO:
+                print("Già a blocchi: niente da fare.")
+            else:
+                n = aggrega.aggiorna_a_blocchi(f)
+                print(f"Convertito: {n} righe scritte.")
+        _stampa_info(f)
+        return 0
 
     if cmd in ("comuni", "tutto"):
         # l'elenco dei comuni e i loro punti sono sempre nazionali (7.896 comuni); --regioni vale per il meteo

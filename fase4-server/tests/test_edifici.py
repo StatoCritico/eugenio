@@ -4,6 +4,7 @@ Dati meteo sintetici: nessun archivio vero. Dalla cartella fase4-server: `python
 from __future__ import annotations
 
 import io
+import json
 import sys
 import types
 from pathlib import Path
@@ -162,6 +163,13 @@ def test_report_edificio_fase_b():
     assert "Figure" not in [s.titolo for s in RS.report_edificio(pcn, formato="pdf").sezioni]
     # nei fogli niente immagini, ma le tabelle sì
     assert R.genera(RS.report_edificio(corpo, formato="xlsx"), "xlsx")[:2] == b"PK"
+    # (08/11/2026) ortofoto spostata a mano con le frecce: dichiarato nella didascalia, anche con una citazione lunga
+    sp = {**corpo, "immagini_png": [{**corpo["immagini_png"][0], "ortofoto": {**corpo["immagini_png"][0]["ortofoto"],
+                                                                               "citazione": "x" * 400, "de": 2, "dn": -1}}]}
+    fig = next(s for s in RS.report_edificio(sp, formato="pdf").sezioni if s.titolo == "Figure").blocchi[0]
+    assert fig.didascalia.endswith("Ortofoto spostata manualmente di 2 m E, 1 m S rispetto alla cartografia.") and len(fig.didascalia) <= 300
+    assert RS.testo_spostamento(0, 0) == "" and RS.testo_spostamento(99, "a") == ""
+    assert RS.testo_spostamento(-3, 4) == "Ortofoto spostata manualmente di 3 m O, 4 m N rispetto alla cartografia"
 
 
 # ---------------------------------------------------------------- blocco 2 (05/11/2026): modello del cielo nel report
@@ -174,3 +182,16 @@ def test_report_edificio_dichiara_il_modello_del_cielo():
     t = leggi_pdf(R.genera(RS.report_edificio(c, formato="pdf"), "pdf"))
     assert "trasposizione di Perez (1990)" in t and "isotropa" not in t
     assert RS._modello_cielo(None) == "isotropa" and RS._modello_cielo({"modello_cielo": "perez"}) == "di Perez (1990)"
+
+
+def test_report_edificio_forma_dei_tetti():
+    """08/11/2026: scelta della forma dei tetti e corpi per fonte nel report; voci sconosciute ignorate, testo ripulito."""
+    d = {**CORPO, "tetti": {"scelta": "Ipotesi automatica (22°/32°)", "testo": "Tetti: 0 misurati dal LiDAR, 0 stimati dal colmo DBTR, "
+         "2 ipotizzati (22° pianura / 32° montagna: 2 a 22°), 1 piano.", "conteggi": {"ipotesi": 2, "piano": 1, "x": 5, "lidar": "a"}}}
+    doc = RS.report_edificio(d, formato="pdf")
+    testo = json.dumps(doc.model_dump(), ensure_ascii=False)
+    assert "Ipotesi automatica (22°/32°)" in testo and "Corpi con il tetto ipotizzato (22°/32°)" in testo
+    assert "Corpi con il tetto piano" in testo and "2 ipotizzati (22° pianura" in testo
+    assert "Corpi con il tetto misurato dal LiDAR" not in testo
+    assert R.genera(doc, "pdf")[:4] == b"%PDF"
+    assert "Forma dei tetti" not in json.dumps(RS.report_edificio(CORPO).model_dump(), ensure_ascii=False)

@@ -96,6 +96,148 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Menu dell'08/11/2026, ricerca col solo comune, apertura su Cesena (decisioni di Paolo, stessa versione `?v=20261107b`)
+
+Per la newsletter del 12/11 il sito mostra come servizi solo quelli usabili.
+
+| Gruppo (`data-gruppo`) | Voci accessibili | Voci in lavorazione (triangolo giallo, non cliccabili) | GME |
+|---|---|---|---|
+| Clima e meteo (`clima`) | Dati climatici, Legge 10, Previsioni, **Cambiamento climatico** S (`edificio-clima.html`, prima «Clima che cambia» nel gruppo Edificio) | — | — |
+| Patrimonio (`patrimonio`) | Patrimonio, Ortofoto S, LiDAR (triangolo, come prima), Modelli 3D S, Importa DXF/IFC S, Aggiungi edifici S, Scaricare i DB topografici, Visure (triangolo, come prima) | — | — |
+| **Edifici** (`edificio`, prima «Edificio») | — | **Obblighi di legge** (prima voce), Geometria e luce naturale, Consumi, Fabbisogno UNI, Facciate e tetti, Pompe di calore e solare termico, **Ecobonus** e **Conto Termico** (segnaposto nuovi: `edificio-ecobonus.html`, `edificio-conto-termico.html`) | — |
+| Cogenerazione (`cogenerazione`) | — | Emissioni | 5 voci |
+| Fotovoltaico (`fotovoltaico`) | — | Ombre, Sole e irradiazione, Producibilità, PVGIS, D.Lgs. 199/2021, LEED, **Comunità energetiche** (`edificio-cer.html`) | Prezzo catturato |
+| Statistiche (`statistiche`) | Costi energetici Sanità | — | — |
+
+- **Voci in lavorazione**: `<span class="voce-gme voce-corso" data-pagina=… aria-disabled="true" title="In lavorazione:
+  disponibile prossimamente">` con il triangolo giallo, stesso comportamento delle voci GME (non cliccabili, attenuate,
+  nota al tocco, `aria-current` sulla propria pagina; nella riga fissata come nella tendina). Indirizzi delle pagine
+  invariati; `data-gruppo="edificio"` invariato (la scelta «menu fissato» dei browser resta valida). Le frecce della
+  tastiera in un gruppo senza collegamenti non danno più errore (`aspetto.js`).
+- **`costruisci_pagine.py`** ricava dal menu della testata (`gruppi_menu`, `pagine_in_corso`): l'elenco **«Nello stesso
+  gruppo»** di ogni pagina che lo ha (voci in lavorazione e GME senza collegamento), l'**etichetta del gruppo** sopra il
+  titolo (`<p class="gruppo-servizio">`) e, nelle pagine in lavorazione, l'**avviso in cima** «Pagina in lavorazione, non
+  ancora verificata» tra `<!-- in-lavorazione -->` e `<!-- /in-lavorazione -->` (tolto da sé se la pagina torna
+  accessibile). `--controlla` lo verifica come il resto. Per aprire una pagina basta cambiare la sua voce in
+  `parti/testata.html` in un collegamento e rigenerare.
+- **Nessun collegamento** del sito alle pagine in lavorazione (test `test_nessun_collegamento_interno_alle_pagine_in_lavorazione`,
+  come per le GME): tolti in Sitografia (PVGIS, Obblighi), in Cambiamento climatico (firma dalla pagina Consumi), fra le
+  pagine in lavorazione (LEED, CER, Facciate e tetti) e nelle Novità; Patrimonio e Modelli 3D non ne avevano.
+- **Tendine** larghe quanto la voce più lunga (`width: max-content`, al massimo 30rem e dentro la finestra): nessuna voce
+  va a capo a 900, 1000 e 1366 px (prima 17rem: «Cogeneratore sull'edificio…», «Consumi, firma…» su due righe).
+- **Barra di scorrimento a sinistra** nella colonna della mappa di **tutte** le pagine a due colonne (`main.strumento >
+  .mappa-area`: `overflow-y: auto`, `direction: rtl`, figli `ltr`), anche in Patrimonio (prima nascosta); telefono invariato.
+- **Ricerca**: esempio «viale Ghirotti 286», «Cesena» (foglio 149, particella 387 nel modulo catastale) in `cerca_luogo.js`;
+  il solo comune, in tutti e due i moduli, porta al centro del comune in Modelli 3D, Ortofoto e nelle 8 pagine 3D (provato
+  pagina per pagina in Chromium). **Previsioni**: il solo nome del comune (o «…, Comune») propone «Comune di X (PR)» che
+  sceglie il comune senza chiamare il server; le risposte senza coordinate (0,0) non compaiono (anche il server le scarta in
+  `/api/geocodifica`); esempio «Es. viale Ghirotti 286, Cesena, o solo il comune». Legge 10 e Dati climatici cercano solo
+  comuni: invariate.
+- **Apertura su Cesena** (`EUGENIO_CERCA.PARTENZA`, 44,1326 N 12,2597 E, zoom 15,6): Ortofoto, Modelli 3D e pagine 3D si
+  aprono sull'ospedale Bufalini e la collina se l'indirizzo non porta `lat`/`lon`, `sede`, `edificio`, `modello`, `dbtr`,
+  `archivio` e la regione scelta è l'Emilia-Romagna (con un'altra regione ricordata, Modelli 3D va su quella). Centro dal
+  DBTR di Cesena: i 59 corpi della particella foglio 149 n. 387 (baricentro 44,1338 N 12,2597 E, quote 38–59 m), spostato
+  di ~130 m a sud per la collina. Nota: il punto indicato nella richiesta (44,1405 N 12,2405 E) cade ~2 km più a nord-ovest,
+  in una zona residenziale. Patrimonio, Previsioni e Legge 10 non cambiano apertura.
+- Test: `test_costruisci_pagine.py` (menu, voci in lavorazione, avviso, nessun collegamento, «Nello stesso gruppo»,
+  esempio e partenza), `test_menu_browser.py` (sei gruppi, tendine su una riga, voci non cliccabili, tastiera),
+  `test_mappe_browser.py` (ricerca col solo comune e apertura su Cesena nelle 10 pagine, precedenza dei parametri,
+  Previsioni, barra a sinistra con le barre vere di Chromium); fase 4 `test_geocodifica_scarta_le_coordinate_zero`.
+
+## Tetti a falda, sagome del Veneto e terreno veneto (08/11/2026, stessa versione `?v=20261107b`)
+
+Decisioni di Paolo dell'08/11 (sezione I di `AGGIORNAMENTO_2026-11-07.md`):
+
+- **Forma dei tetti, tre fonti** (`edifici_calcoli.js`: `rettangoloTetto`, `tettoIpotizzato`, `zonaAltimetrica`,
+  `motivoTettoPiano`, `IPOTESI_TETTO`; gemello Python `fase10-edifici3d/edifici3d/tetti.py`): falde LiDAR → tetto stimato
+  dal colmo DBTR → **tetto ipotizzato a falde, 22° in pianura, 32° in montagna** (quota del terreno sotto il corpo ≥ 600 m
+  al Nord, ≥ 700 m al Centro-Sud; senza quota l'altitudine del comune del DPR 412/93) → piano per i corpi plausibilmente
+  piani (capannoni, commerciali, palestre, tettoie; oltre 1.500 m² o lato corto oltre 25 m; gronda sotto 3 m; cortili e
+  forme poco rettangolari). `edificio3d.js`: `conFalde` ricorda i valori del DBTR (`c.base`) e il record LiDAR,
+  `applicaTetto(c, scelta)` sceglie la fonte (`c.fonteTetto`: `lidar`, `colmo`, `ipotesi`, `piano`, `modello`, `utente`);
+  il modello DXF/IFC e i corpi corretti a mano non cambiano.
+  - **Modelli 3D**: cascata per ogni corpo; **nota sotto la mappa** `#nota-tetti` («Tetti: N misurati dal LiDAR, M stimati
+    dal colmo DBTR, K ipotizzati (22° pianura / 32° montagna: …), P piani»), voce di legenda `#legenda-falde` con i
+    conteggi, riga nell'immagine scaricata, sezione nel report (`tetti` del corpo del report, `fonte_tetto` per corpo),
+    motivo del tetto piano nella tabella dei corpi.
+  - **Edificio e Fotovoltaico** (8 pagine): selettore **«Forma dei tetti»** (`#forma-tetti`, nel passo «Corpi › Falde dei
+    tetti»): «Misurata (LiDAR) dove c'è», «Stimata dal colmo DBTR dove c'è», «Ipotesi automatica (22°/32°)», «Tutti piani»;
+    le scelte non disponibili sono spente con il motivo (nell'opzione e in `#motivi-forma-tetti`); predefinita la più
+    affidabile disponibile. Le prime due scendono la cascata dove manca la fonte. Il cambio ricalcola tetti, aree FV (non
+    quelle con inclinazione o orientamento corretti a mano), ombre, producibilità e sole sulle facciate (se erano già
+    calcolati); la scelta è scritta nei messaggi dei risultati, nella nota e nel report. Orizzonte vicino: stessa logica
+    (colmo o gronda dei corpi).
+  - Tabelle di obblighi, PVGIS e facciate dentro `.tabella-scorre` (a 375 px la tabella degli obblighi allargava la pagina).
+- **Sagome del Veneto con le altezze OSM**: la pagina chiede sempre `/api/edifici/osm`; in Veneto il server risponde con le
+  sagome della Regione (`regione_sagoma`, licenza `IODL 2.0; altezza ODbL 1.0`) e `sagome`. Messaggio «Sagome dalla
+  Regione del Veneto (IODL 2.0), altezze da OpenStreetMap dove ci sono, altrimenti stimate», stesso colore marrone degli
+  edifici OSM (legenda «edifici OpenStreetMap o sagome regionali»), livello «sagome regionali con altezze OSM o stimate»
+  nella fonte per corpo, origine `osm_vicini` nelle altezze, attribuzioni IODL 2.0 + ODbL in pagina, immagine e report.
+  Se i corpi hanno la quota dal DTM del server (`quota_terreno`), la vista 3D ha il terreno vero e il tetto usa la quota.
+  Privacy: voce del WFS della Regione del Veneto.
+- **Terreno da più DTM**: legenda dal nome del DTM della tessera (`X-Terreno-Nome`, es. «DTM 5 m da voli LiDAR Regione del
+  Veneto (IODL 2.0)»); attribuzione del terreno con ER e Veneto.
+- Novità (riga in «Nuovo»), `EUGENIO_PER_AGENTI.md`, `llms.txt`, test `test_tetti_in_cascata_in_modelli3d`,
+  `test_forma_dei_tetti_a_scelta_in_fotovoltaico`, `test_sagome_venete_con_altezze_osm_in_modelli3d`,
+  `test_tetti_e_sagome_regionali_documentati`.
+
+## Ortofoto spostabile di 1 m (08/11/2026, stessa versione `?v=20261107b`)
+
+Richiesta e decisioni di Paolo dell'08/11: frecce per compensare a occhio gli scarti di 1–5 m tra foto e cartografia
+(F.A.Q. `#sfasamento`).
+
+- `sito/sposta_ortofoto.js` (nuovo, `window.EUGENIO_SPOSTA`): quattro frecce a croce (↑ nord, ↓ sud, ← ovest, → est,
+  1 m a clic; con il fuoco su una freccia anche i tasti freccia), stato «Ortofoto spostata: 2 m E, 1 m S» e «Azzera».
+  Spostamento della **sola ortofoto**: particelle, contorni, sagome degli edifici e contesto Sentinel-2 restano fermi.
+  La pagina cambia solo l'indirizzo delle tessere della sorgente `ortofoto` (`setTiles`, con `&de=…&dn=…` e attesa di
+  350 ms dopo l'ultimo clic): nessun movimento della camera, uguale in 2D e in 3D. Il resto lo fa il proxy (README della
+  fase 4: BBOX WMS spostato, nessuna copia su disco).
+- **Attive solo** con un'ortofoto spostabile accesa (`spostabile` in `/api/ortofoto/fonti`: le fonti WMS – RER, Toscana,
+  Bolzano, Trento, Geoportale Nazionale) **e** almeno uno strato vettoriale acceso (Ortofoto: contorni dell'archivio,
+  particelle o contorni degli edifici dei livelli; pagine 3D: sono sempre disegnate le sagome degli edifici dell'archivio
+  o di OpenStreetMap, quindi basta l'ortofoto accesa). Altrimenti spente, con il motivo nel `title` dei pulsanti e del
+  gruppo e nel testo di stato (`aria-describedby`): «Accendi un'ortofoto e almeno uno strato vettoriale (particelle o
+  contorni) per allineare la foto alla cartografia»; Sentinel-2 cloudless e ortofoto dei siti in PMTiles: «tessere già
+  pronte…» (MapLibre non sa spostare uno strato raster). I confini ISTAT non contano (generalizzati, ~100 m).
+- Dove: in `#comandi-edificio` accanto a «Genera il 3D» nelle 9 pagine 3D (nascoste nella demo sintetica); in Ortofoto
+  sotto la mappa accanto a «Scarica l'immagine» (`.comandi-ortofoto`).
+- Sessione: `sessionStorage` (`eugenio-sposta-ortofoto:<pagina>`, con try/catch), ripreso solo per la stessa fonte;
+  cambiare fonte azzera.
+- Immagine scaricata: riga «Ortofoto spostata manualmente di 2 m E, 1 m S rispetto alla cartografia.»; report: `de` e
+  `dn` nella vista con l'ortofoto, la didascalia lo dichiara (`report_servizi.testo_spostamento`).
+- F.A.Q. `#sfasamento`: una frase sulle frecce. `novita.toml` riscritto (gruppi Nuovo / Migliorato / Verificato, sezione
+  «Novità» sotto): le frecce in «Nuovo» della voce `20261107b`; in fondo la voce
+  «Meet EuGEnio» del 26/10/2026 (solo `testo`, senza versione: `costruisci_pagine.py` accetta la versione mancante solo
+  per una voce con il solo testo; ancora `#d20261026`).
+- Test: `test_ortofoto_frecce_spostano_la_foto_non_i_vettori`, `test_modelli3d_frecce_in_2d_e_3d` (Modelli 3D e
+  Ombre FV: stati attivo/spento e tooltip, indirizzi delle tessere, vettori e camera fermi, «Azzera», Sentinel-2, nessun
+  errore in console), `test_spostamento_ortofoto_documentato`, «Meet EuGEnio» in `test_novita_versione_feed_e_menu`.
+
+## Correzioni dalle prove di Paolo (07/11/2026 sera, `?v=20261107b`)
+
+Dettagli e procedura J1–J12 nella sezione I di `AGGIORNAMENTO_2026-11-07.md`.
+
+- **Dati climatici e Legge 10** senza l'avviso «Servizio sperimentale» (validate, come Costi energetici Sanità).
+- **Pagine 3D e Ortofoto**: la ricerca (`cerca_luogo.js`) è il **passo 1 della colonna destra** (`#passo-cerca`), prima dei
+  livelli; con il **solo comune** la mappa va al centro del comune (baricentro del confine ISTAT di `dati/mappa/<regione>.json`,
+  zoom 14, nessuna chiamata); una risposta senza coordinate (vuota o 0,0) porta al centro del comune con l'avviso. Barra di
+  scorrimento della colonna della mappa **a sinistra** (`direction: rtl` del contenitore, sul computer).
+- **Modelli 3D** (`edificio3d.js`): quota del centro della camera = quota del terreno sotto l'edificio (prima 0 m: in collina
+  la camera finiva dentro il versante, vista nera); rilievo ombreggiato (`hillshade`) con i colori del tema, esagerazione
+  ×1/×1,5/×2 nella barra della vista 3D, legenda del terreno dalla fonte delle tessere (`X-Terreno-Fonte`); isometrica al
+  doppio dell'edificio; tetti a falde stimati dal colmo DBTR (`faldeStimate` in `edifici_calcoli.js`); edifici OSM in
+  marrone; nuova ricerca o mappa a oltre 2 km durante il 3D → 2D dritta e 3D azzerato; copertura vicino ai confini (corpo
+  dell'archivio entro 150 m); celle chieste solo se in `indice.nomi_celle`; `lidar/indice.json` solo se `archivi.json` ha
+  `lidar`; `archivi.json?v=<versione>` con `cache: "no-cache"`; Sentinel-2 cloudless anche nel selettore.
+- **Immagini** (`esporta_mappa.js`): download diretto; la finestra «Salva con nome» solo con «chiedi dove salvarlo».
+- **Aggiungi edifici**: zona «Trascina qui» (file e cartelle, senza finestre di sistema), esito di «Apri in Modelli 3D» e
+  «Togli» accanto ai pulsanti (`#messaggio-3d`), tempo massimo per IndexedDB.
+- **Pagina interna**: «Nessuna proposta in coda» con la coda vuota.
+- **F.A.Q.** nuove: `#sfasamento` (particelle, sagome e ortofoto: scarti dei dati, misurati) e `#finestra-bloccata` (Chrome
+  bloccato da una finestra di sistema).
+- Test nuovi (Chromium): 19 comuni coperti senza OSM (`punti_19_comuni.json`), prove di Paolo nel 3D, ricerca per comune e
+  0,0, telefono a 375 px senza scorrimento di lato, «Novità» con il colore di «F.A.Q.» in tutti i vestiti e temi.
+
 ## Preparazione
 
 I file di mappa (tutta Italia) e i caratteri sono già inclusi. Si rigenerano solo quando cambiano
@@ -281,6 +423,132 @@ in ODT. Sul server i due formati sono spenti (rispondono 410, variabile `REPORT_
 - Informativa privacy aggiornata (Turnstile tra i servizi di Cloudflare, conteggio dei 429 per 7 giorni, gettone nel
   browser). Provato in Node con browser, Turnstile e server simulati: verifica spenta, una sola verifica per più
   richieste anche contemporanee, rinnovo dopo un 401, errore leggibile se la verifica fallisce.
+
+## Novità: registro delle versioni (07/11/2026, regola permanente)
+
+- **Fonte unica** `novita.toml` (qui, accanto a `costruisci_pagine.py` e `parti/`): una voce `[[voce]]` per pubblicazione
+  **con novità per gli utenti**, la più recente in cima, con `data`, `versione` (quella di `?v=`), `titolo`, righe
+  `nuovo` (servizi pubblicati), `migliorato` (cosa si può fare di più o meglio), `verificato` (da sperimentale a
+  validato) – facoltative, 3–6 in tutto – `testo` e `collegamenti` facoltativi (`{ testo, indirizzo }`). **Regola
+  dell'08/11/2026 (Paolo)**: solo le funzioni per gli utenti, niente modifiche interne (protezione, menu, file per gli
+  agenti, copie, server, test); linguaggio semplice, nome della pagina con il gruppo del menu («Patrimonio › Modelli
+  3D»), niente gergo tecnico; campi sconosciuti (i vecchi `cambiato`, `corretto`) rifiutati. **La versione resta solo
+  qui** (test con `index.html`, tag della release): pagina, feed, newsletter e testo della release mostrano solo data,
+  titolo e gruppi; ancore e identificativi del feed per data (`#d20261107`, `#d20261107-2` per la seconda voce dello
+  stesso giorno). Mai dati GME/EEX, fase 2 o `uni_privato`.
+- `python costruisci_pagine.py` genera `sito/novita.html` (pagina di testo con l'indice laterale per versione) e
+  `sito/novita.xml` (feed Atom con indirizzi assoluti); `--controlla` li confronta come le altre pagine. La testata ha
+  «Novità» tra Mirror e Contattaci (computer e telefono) con `data-ultima` = versione dell'ultima voce; la testa comune ha
+  il `<link rel="alternate" type="application/atom+xml">`; `aspetto.js` mette un pallino sul collegamento se l'ultima
+  versione vista (`localStorage` «novita-vista», con try/catch, nessun cookie) è più vecchia; la prima visita non lo
+  mostra, aprire la pagina lo toglie. Caddy serve `/novita.xml` come `application/atom+xml; charset=utf-8`.
+- La newsletter mensile (`fase4-server/servizio/notiziario.py`) mette le voci del mese nella sezione «Novità di EuGEnio»
+  (`novita.toml` è copiato nell'immagine dell'api: va nel pacchetto del codice).
+- **A ogni pubblicazione**: una voce qui, insieme ad AGGIORNAMENTO, `EUGENIO_PER_AGENTI.md` e `llms.txt`; dopo il commit
+  la release su GitHub con lo stesso testo (`gh release create vAAAA.MM.GG --notes-file …`, passo F23 di
+  `AGGIORNAMENTO_2026-11-07.md`). Niente «Blog» per ora (DA_FARE).
+- Test: `test_novita_versione_feed_e_menu` (prima voce = versione di `index.html`, feed valido, menu, nessun dato di
+  mercato) e, in Chromium, `test_novita_telefono_e_pallino` (375 px senza scorrimento orizzontale, pallino).
+
+## Aggiornamento del 07/11/2026 sera – pagine 3D unificate e altezze OSM (stessa versione `?v=20261107a`)
+
+- **Pagine 3D unificate** (decisione di Paolo): Edificio › Geometria, Consumi, Obblighi e Fotovoltaico › Ombre,
+  Producibilità, Sole e irradiazione, Confronto PVGIS, D.Lgs. 199/2021 hanno la **stessa mappa di Modelli 3D** (ricerca,
+  mappa 2D, «Genera il 3D», livelli, immagine, demo della pagina stessa) e gli stessi script (`minimappa.js`,
+  `confini_gl.js`, `esporta_mappa.js`, `cerca_luogo.js`, `strati_gl.js`, `dbtr_locale.js`). In `edificio3d.js` i due
+  tempi valgono per ogni pagina con `#genera-3d`; `data-vista` sceglie solo il passo in evidenza; `archivi.json` (archivi
+  per comune, confine ISTAT o riquadro), ripiego OSM, DB topografico del browser e terreno da `/api/terreno` ovunque;
+  apertura da `?sede=locale`, `?dbtr=locale` (o la stessa scheda) e `?edificio=<id>&lon=&lat=`; la demo solo con
+  `?archivio=demo` o se non c'è né archivio né ripiego. Prima queste pagine aprivano `/edifici3d/cc-by/er/prodotti/` (che
+  non esiste più) e finivano sulla demo.
+- **Altezze OSM**: corpi senza `height` né piani → mediana dei corpi DBTR entro 200 m (il server con i suoi archivi, la
+  pagina con il file caricato nel browser), altrove 9 m; `origine_altezza` per corpo, nota `#nota-altezze-osm` sotto la
+  mappa, la stessa riga nell'immagine e nel report.
+- Overpass di riserva europea in privacy e Sitografia; F.A.Q. `#ripiego-osm` aggiornata.
+- Test: `test_altre_pagine_3d_come_modelli3d`, `test_pagine_3d_unificate_dbtr_osm_e_file_locale` (9 pagine con un archivio
+  DBTR per comune, Pesaro col ripiego OSM e il file nel browser), controlli dell'HTML in `test_costruisci_pagine.py`.
+  Prova su dati veri in AGGIORNAMENTO_2026-11-07.md, sezione F.
+
+## Aggiornamento del 07/11/2026 – «Aggiungi edifici (DB topografico)» e «Scaricare i DB topografici» (stessa versione `?v=20261107a`)
+
+Decisione di Paolo del 07/11/2026. Due pagine nuove nel gruppo **Patrimonio** (menu con «S» per la prima):
+
+- **`aggiungi-dbtr.html`** (`aggiungi_dbtr.js`): regione (`er`, `lom`, `fvg`, `lig`; `?regione=`), comune dall'elenco ISTAT
+  di `dati/mappa/<regione>.json`, casella «comune intero» (spuntata), file: zip del portale, GeoPackage o parti di uno
+  Shapefile, anche una cartella (fino a 300 MB). Lettura nel **Web Worker** `dbtr_worker.js` con `dbtr_lettore.js` (stessa
+  logica di `uvl.py` e `regionali.py`; zip con **fflate 0.8.2**, GeoPackage con **sql.js 1.14.2** caricato solo quando
+  serve, Shapefile e DBF letti dal file stesso, proj4js), riepilogo (corpi, scartati per motivo, gronda mediana/p95/max,
+  convenzione, cortili, foglio e numero, destinazione, comuni catastali, avvisi: regione sbagliata, corpi oltre 60 m, corpi
+  piccoli e altissimi, possibili dati personali), mappa con l'ortofoto e i corpi colorati per gronda. **Apri in Modelli
+  3D** salva i corpi con `dbtr_locale.js` (IndexedDB del sito, segnale nella memoria della scheda) e apre
+  `modelli3d.html?dbtr=locale`. **Proponi** (casella del consenso non spuntata, pulsante spento finché non c'è): impronta
+  SHA-256, `POST /api/dbtr/inizia` (Turnstile: `protezione.js` la conosce), pezzi `PUT …/pezzo/{n}` con tre tentativi,
+  `POST …/fine`; le proposte fatte da quel browser restano in `localStorage` (`eugenio-dbtr-proposte`) per vederne lo stato
+  e ritirarle. Le parti di uno Shapefile si impacchettano in uno zip nel worker prima dell'invio.
+- **`edificio3d.js`**: archivio «locale» (`stato.locale`, `{ locale: true }`, sorgente GeoJSON, celle di 0,01° in memoria)
+  dopo gli archivi del server e prima del ripiego OSM; in `contesto()` si legge per primo e i corpi del server che cadono
+  dentro i suoi si scartano; zona coperta per la sessione (confine ISTAT con «comune intero», altrimenti riquadro);
+  niente terreno dell'archivio (quota della base del DB topografico); righe nelle attribuzioni dell'immagine e nelle note
+  del report; «Togli gli edifici del file».
+- **`dbtr-istruzioni.html`**: istruzioni per Emilia-Romagna, Lombardia, Friuli Venezia Giulia, Liguria, Trento, Veneto e
+  tabella delle altre regioni («in attesa di chiarimento dalla Regione»); scelta di una pagina separata motivata in
+  `AGGIORNAMENTO_2026-11-07.md` (D.6).
+- **Pagina interna** `interno/edifici.html` + `edifici.js`: sezione «DB topografici proposti» in cima (tabella, dettaglio,
+  anteprima con MapLibre e l'ortofoto, Approva/Rifiuta con conferma e `X-EuGEnio-Interno`, registro, ultime decisioni).
+- Anche: `privacy.html` (riga `#dbtr`, «In breve» e data), F.A.Q. `#aggiungi-dbtr`, Modelli 3D (rimando), Sitografia
+  (sql.js, fflate), `lib/README.md`, `EUGENIO_PER_AGENTI.md` e `llms.txt`.
+- Test: `test_costruisci_pagine.py::test_aggiungi_dbtr_e_istruzioni` (nuovo; librerie solo nel worker della pagina,
+  consenso spento, istruzioni, privacy), conteggi del menu aggiornati (16 «S», 8 voci in Patrimonio). Le prove nel
+  browser (parità, invio, Modelli 3D, pagina interna) sono in `fase10-edifici3d/tests/test_dbtr_browser.py`.
+
+## Aggiornamento del 07/11/2026 – Modelli 3D col DBTR vero, cortili, zona coperta, zoom 17 (`?v=20261107a`, che sostituisce `?v=20261106a`)
+
+- **Cortili** (fori delle sagome): `edificio3d.js` porta gli anelli interni nei corpi (`buchi`), nel GeoJSON dell'edificio
+  scelto e del 3D; un punto in un cortile non è «dentro» l'edificio (la distanza di 30 m conta anche dai lati del
+  cortile); `edifici_calcoli.js` ha `areaCorpo`, `dentroCorpo`, `latiCorpo`: area, volume, S/V, superfici e pareti sul
+  cortile come in Python (test di parità in fase 10). Le ombre usano la sagoma esterna.
+- **Fuori zona**: `coperto(lon, lat)` sui riquadri degli archivi; fuori da tutti, ricerca, punto trascinato/clic e sede
+  dal Patrimonio scrivono «il punto è fuori dalla zona coperta dall'archivio degli edifici («DBTR Emilia-Romagna –
+  Rimini»): qui il 3D non si può ancora generare»; i riquadri coperti sono tratteggiati, discreti, sulla mappa 2D.
+- **Più archivi** (un archivio DBTR per comune): `archivi.json` fino a 60 archivi, letti solo quelli il cui riquadro tocca
+  il punto; archivi della stessa licenza non si escludono; terreno dell'archivio dell'edificio scelto; falde LiDAR
+  dall'archivio indicato da `"lidar"`. Ortofoto: contorni dell'archivio 3D da tutti gli archivi di `archivi.json`.
+- **Fonte del 3D**: «DB topografico regionale» per i corpi DBTR (prima la fonte «… da DTM DSM 2008» faceva scrivere «corpi dal
+  LiDAR»); scheda dell'edificio con nome, foglio e numero e destinazione d'uso del DBTR.
+- **Zoom dopo la ricerca**: costante comune `EUGENIO_CERCA.ZOOM = 17` (`cerca_luogo.js`), usata da Ortofoto e Modelli 3D
+  (prima 18, e in Ortofoto `Math.max(18, …)`).
+- **Livelli della mappa** di Modelli 3D: dalla colonna della mappa alla colonna destra, primo passo («1 Livelli della
+  mappa», come «Strati sopra la foto» in Ortofoto); legenda e attribuzioni restano sotto la mappa.
+- Test: `test_mappe_browser.py` con 2 test nuovi (posizione dei Livelli; archivio CC BY sintetico con un edificio a corte:
+  punto nel cortile, cortile nel 3D e nell'area, messaggio fuori zona, zoom 17); fase 5 **44 passed, 1 skipped** (pvlib).
+- Versione **`?v=20261107a`** (anche `interno/edifici.html`, a mano); `EUGENIO_PER_AGENTI.md` e `llms.txt` aggiornati.
+
+### Stesso giorno, poi: ripiego OpenStreetMap fuori dal DBTR (decisione di Paolo, stessa versione `?v=20261107a`)
+
+- **Ripiego al volo** (`edificio3d.js`): in Modelli 3D, se il punto (ricerca, punto trascinato, clic, sede dal Patrimonio)
+  è fuori da ogni archivio DBTR, `contesto()` chiede `GET /api/edifici/osm?lon=&lat=` (una richiesta per cella di 0,002°,
+  tenuta in memoria) e usa gli edifici OSM come corpi: scelta, «Genera il 3D», ombre, tabelle, immagine e report come con
+  l'archivio. Archivio «virtuale» `{ osm: true }` in fondo a `stato.archivi`, sorgente **GeoJSON** `corpi_<k>` (sagome 2D
+  tratteggiate); mai nella demo né con `?archivio=`.
+- **Dove c'è il DBTR, OSM non si mescola**: `coperto()` (ora asincrona) usa il **confine ISTAT del comune** per gli
+  archivi di un comune intero (`istat` in `archivi.json`; `C.comuneNelPunto` di `confini_gl.js`, confini di tutta Italia)
+  e il riquadro dei corpi per gli altri (il riquadro di Rimini sborda su Riccione, Coriano, Santarcangelo); i corpi OSM che
+  cadono in un comune coperto si scartano. Zone coperte tratteggiate: il confine del comune (`C.geometriaComune`, nuova).
+- **Licenze e messaggi**: ogni corpo OSM porta «ODbL 1.0»; messaggi «Qui non c'è ancora il DBTR: si usa OpenStreetMap come
+  ripiego (© OpenStreetMap contributors, ODbL 1.0), con qualità inferiore e altezze in parte stimate…»; riga `#fonti-osm`
+  nel piè; immagine con «Edifici fuori dal DBTR: © OpenStreetMap contributors, ODbL 1.0…» (righe degli archivi senza
+  doppioni); report con l'attribuzione degli archivi davvero usati (non più sempre quella del primo) e la nota del ripiego.
+  Edificio OSM: niente DTM (mappa e quote piatte, anche per i corpi DBTR vicini oltre il confine), comune dai confini
+  nazionali. Overpass giù o ripiego spento: «… OpenStreetMap, il ripiego per queste zone, non ha risposto (…): qui il 3D
+  non si può generare ora», nessun edificio scelto.
+- `protezione.js`: `/api/edifici/osm` tra le rotte con la verifica anti-robot. `privacy.html`: riga del trattamento e API
+  Overpass tra chi tratta i dati (solo il centro della cella, dal server). F.A.Q. `#ripiego-osm`; piè di Modelli 3D.
+- Test: `test_mappe_browser.py::test_modelli3d_ripiego_osm_fuori_dal_dbtr` (Pesaro con il lettore vero della fase 10:
+  scelta del multipoligono, Genera il 3D con il cortile, licenza ODbL in pagina, report e PDF, nessuna richiesta nella
+  stessa cella; Riccione non coperta dentro il riquadro di Rimini; corpo OSM nel comune di Rimini scartato; Cesena con
+  Overpass giù; Rimini senza richieste a OSM) e il test del cortile aggiornato (archivio virtuale, messaggio con OSM non
+  disponibile). Fase 5 **45 passed, 1 skipped**. Prova con i dati veri di Pesaro e Cesena (copia della rotta): scelta e 3D
+  in ~2 s, 87 e 507 corpi vicini, nessun errore in console.
 
 ## Aggiornamento del 06/11/2026 – file per gli agenti AI (`?v=20261106a`, che sostituisce `?v=20261105b`)
 
@@ -557,7 +825,7 @@ nel pulsante Menu, con il gruppo della pagina già aperto. `costruisci_pagine.py
 |---|---|
 | Clima e meteo | Dati climatici (`dati.html`), Legge 10 (`legge10.html`), Previsioni (`./`) |
 | Patrimonio | Patrimonio (`patrimonio.html`), Ortofoto, LiDAR, Modelli 3D, Visure |
-| Edificio | Geometria e luce naturale; Consumi, firma energetica e priorità; Fabbisogno con le metodiche UNI; Facciate e tetti (sole, tetti freddi e verdi); Pompe di calore e solare termico; Comunità energetiche; Clima che cambia; Obblighi di legge |
+| Edificio (dall'08/11/2026 «Edifici», vedi sopra) | Geometria e luce naturale; Consumi, firma energetica e priorità; Fabbisogno con le metodiche UNI; Facciate e tetti (sole, tetti freddi e verdi); Pompe di calore e solare termico; Comunità energetiche; Clima che cambia; Obblighi di legge |
 | Cogenerazione | Spark spread; Cogeneratore sull'edificio con FV e accumulo; Confronto tra alternative e trigenerazione; Emissioni; Rischio prezzo; Budget di dissipazione CAR (report 13–20) |
 | Fotovoltaico | Ombre e percorso del sole; Sole e irradiazione su tetti e facciate; Producibilità con le ombre; Confronto con PVGIS; D.Lgs. 199/2021 Allegato III; Prefattibilità LEED; Prezzo catturato, accumuli e mercato (report 1–12, in attesa della licenza GME) |
 

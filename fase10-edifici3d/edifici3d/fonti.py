@@ -108,18 +108,31 @@ def nome_da_url(url: str, predefinito: str) -> str:
     return n or predefinito
 
 
-def scarica_fonte(archivio: Path, zona: dict, chiave: str, client: httpx.Client | None = None) -> list[Path]:
+def scarica_fonte(archivio: Path, zona: dict, chiave: str, client: httpx.Client | None = None,
+                  quadranti: list[str] | None = None) -> list[Path]:
     """Scarica una fonte del TOML nell'archivio della sua licenza. Restituisce i file scaricati.
-    Una fonte senza URL (da completare a mano nel TOML) solleva un errore chiaro, senza tentativi."""
+    Una fonte senza URL (da completare a mano nel TOML) solleva un errore chiaro, senza tentativi.
+    `quadranti`: solo questi (per nome, es. ["SE"]) tra i quadranti della fonte; con `byte` nel TOML la dimensione si
+    controlla alla fine (07/11/2026: DTM 5 m in grezzi/dtm5/)."""
     f = fonti(zona)[chiave]
-    urls = [u for u in ([f.url] + list(f.dati.get("quadranti", []))) if u]
+    q = [x if isinstance(x, dict) else {"url": x} for x in f.dati.get("quadranti", [])]
+    if quadranti:
+        q = [x for x in q if str(x.get("nome", "")).upper() in {n.upper() for n in quadranti}]
+        if not q:
+            raise RuntimeError(f"fonte {chiave}: nessun quadrante tra {quadranti}")
+    attesi = {x["url"]: x.get("byte") for x in q if x.get("url")}
+    urls = [u for u in (([] if quadranti else [f.url]) + [x.get("url") for x in q]) if u]
     if not urls:
         raise RuntimeError(f"fonte {chiave}: URL vuoto in {zona['zona']['nome']}.toml – "
                            f"vedi {f.dati.get('pagina_download') or f.dati.get('scheda')}")
     out = []
     dest = cartella(archivio, zona, f.licenza)
+    if q:
+        dest = dest / chiave
     for u in urls:
         p = scarica(u, dest / nome_da_url(u, f"{chiave}.{f.dati.get('formato', 'bin')}"), client)
+        if attesi.get(u) and p.stat().st_size != attesi[u]:
+            raise RuntimeError(f"{p.name}: {p.stat().st_size} byte invece di {attesi[u]} (rilancia: riprende da dove è rimasto)")
         registra(archivio, zona, f, p, u)
         log.info("%s: %s (%d byte)", chiave, p.name, p.stat().st_size)
         out.append(p)

@@ -1,0 +1,41 @@
+# Fonti della zona Lazio (fase 10, adattatore `lazio_dbgt` del gruppo A, 08/11/2026). Stesso schema di lombardia.toml:
+# gli URL stanno qui, mai nel codice. Verifiche dal vivo (container di sviluppo, nessun login, nessun blocco aggirato):
+# - 08/11/2026: dati.lazio.it, pacchetto «2014 Carta Tecnica Regionale Numerica scala 1:5.000 – Provincia di Roma»,
+#   license_id «cc-by4»; schede RNDT delle classi DBGT 2014: «Unico vincolo: nominare la fonte del dato»; nel file RDF
+#   del pacchetto (dati.lazio.it, salvato da Paolo l'08/11) ogni risorsa ha dct:license =
+#   https://creativecommons.org/licenses/by/4.0/ (la pagina web mostra invece «nessuna licenza trovata»).
+# - 08/11/2026: `DBT_Lazio_RM374.zip` scaricato anche da Paolo a mano: i file UN_VOL.* sono identici byte per byte a
+#   quelli letti qui con Range.
+# - 08/11/2026: File Browser pubblico della Regione (modalità senza autenticazione: gettone anonimo da
+#   POST /cartografia/api/login, come fa il browser) → `DBT_Lazio_RM374.zip` (581.835.243 byte, 1.063 voci); letti con
+#   richieste Range solo `UN_VOL.shp/.shx/.dbf/.prj/.cpg` (36,7 MB compressi): PolygonZ, ETRS89/UTM 33N, 280.897
+#   volumi, UN_VOL_QE − z = UN_VOL_AV in tutti i volumi provati; porzione 08 = sotterranei (scartati).
+# - Nessun servizio WFS degli edifici (il GeoServer regionale pubblica solo `geonode:wms_edi_min_a`): si lavora sui file.
+# - DTM: solo DXF di punti 2002-03 per elemento 1:5.000 (non usato): la quota del terreno è UN_VOL_QE − UN_VOL_AV.
+# - DBGT 2020 per comune (Roma.zip, 1,19 GB): licenza non scritta per l'edizione 2020, NON usato finché la Regione non
+#   la conferma (lettera in documenti/LETTERE_REGIONI_DB_TOPOGRAFICI.md).
+
+[zona]
+nome = "Lazio"
+codice = "laz"
+crs = "EPSG:25833"                       # ETRS89 / UTM 33N, sistema degli Shapefile del DBGT (.prj)
+riquadro = [11.44, 40.78, 14.03, 42.84]  # WGS84 (lon_min, lat_min, lon_max, lat_max)
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "DBGT 2014 Regione Lazio – Tema Edificato, classe 020101 Unità volumetrica (UN_VOL), Shapefile per foglio 1:50.000"
+licenza = "CC BY 4.0"
+attribuzione = "Regione Lazio – DBGT 2014, Carta Tecnica Regionale Numerica 1:5.000, Unità volumetrica (CC BY 4.0)"
+scheda = "https://dati.lazio.it/catalog/it/dataset/2014-carta-tecnica-regionale-numerica-scala-1-5-000-provincia-di-roma"
+adattatore = "lazio_dbgt"
+servizio_tipo = "file"                   # nessun servizio: si scarica lo zip del foglio e si legge UN_VOL.shp
+crs_servizio = "EPSG:25833"
+# cartella del File Browser con gli zip per foglio (Provincia di Roma; le altre province nelle cartelle accanto)
+cartella = "https://geoportale.regione.lazio.it/cartografia/2014_DBGT_5K_SHP/strati-informativi/Roma/"
+# file del foglio 374 «Roma» (API del File Browser in modalità anonima: intestazione X-Auth col gettone di /api/login)
+url = "https://geoportale.regione.lazio.it/cartografia/api/raw/2014_DBGT_5K_SHP/strati-informativi/Roma/DBT_Lazio_RM374.zip"
+strato_nel_zip = "DBT_Lazio_RM374/UN_VOL.shp"
+quadro_unione = "https://geoportale.regione.lazio.it/geoserver/ows"   # WFS geonode:qu_5k, qu_10k, qu_50k (EPSG:4326)

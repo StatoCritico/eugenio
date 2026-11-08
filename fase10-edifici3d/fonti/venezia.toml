@@ -1,0 +1,33 @@
+# Fonti della zona «Venezia» (fase 10, adattatore `venezia_dbgt`, 08/11/2026): DBGT del Comune di Venezia. Gli URL stanno
+# qui, mai nel codice. Verifiche:
+# - 08/11/2026: «Carta Tecnica» su dati.venezia.it, Geodatabase del DBGT comunale aggiornato al 10/09/2026, scaricato da
+#   Paolo dal browser (dal container il portale risponde con il controllo anti-robot: nessun blocco aggirato). Licenza
+#   IODL 2.0 scritta in Informazioni_e_licenza.pdf dello scarico («Il Geodatabase geografico e tutti i relativi file …
+#   sono distribuiti con licenza IODL 2.0»).
+# - UN_VOL: Shapefile 2D senza .prj, EPSG:3004 (Gauss-Boaga fuso Est, dichiarato nel PDF), 178.391 volumi;
+#   UN_VOL_QG − UN_VOL_QB = UN_VOL_AV in 178.291; quota del terreno = UN_VOL_QB; colmo da UN_VOL_QE − UN_VOL_QB.
+# - EDIFC (40.733 edifici): edificio di appartenenza e destinazione (passo `unisci` di edifici3d/adattatori/venezia.py).
+# - Le vecchie esportazioni del geoportale in Web Mercator (uv_export*) NON si usano.
+# Zona con codice «ven» (Veneto): l'archivio del comune va in iodl/ven/venezia/ (cartelle per licenza: README, 08/11/2026).
+
+[zona]
+nome = "Veneto – Comune di Venezia"
+codice = "ven"
+crs = "EPSG:3004"                        # Monte Mario / Gauss-Boaga fuso Est, sistema del DBGT comunale
+riquadro = [12.17, 45.21, 12.62, 45.58]  # WGS84 (lon_min, lat_min, lon_max, lat_max): comune di Venezia
+
+[archivi]
+"IODL 2.0" = "iodl"
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "DBGT del Comune di Venezia – Tema Edificato, classe 020101 Unità volumetrica (UN_VOL) ed Edificio (EDIFC)"
+licenza = "IODL 2.0"
+attribuzione = "Comune di Venezia – DBGT, Unità volumetriche (IODL 2.0)"
+scheda = "https://dati.venezia.it"
+adattatore = "venezia_dbgt"
+servizio_tipo = "file"                   # scarico dal browser (Carta Tecnica): Strato02_Immobili_Antropizzazioni/Tema0201_Edificato
+crs_servizio = "EPSG:3004"
+url = ""
+strato_nel_zip = "Strato02_Immobili_Antropizzazioni/Tema0201_Edificato/UN_VOL.shp"

@@ -28,6 +28,9 @@ tipo = "wms"
 url = "https://servizigis.regione.emilia-romagna.it/wms/rer2023_24_rgb"
 livello = "RER2023_24_RGB"
 formato = "image/jpeg"
+# zone senza dati (colline di Brisighella agli zoom 12–14): in JPEG nere e opache; si chiedono in PNG trasparente
+# (07/11/2026 sera) e il proxy rende JPEG le tessere piene
+trasparente = true
 licenza = "CC BY 4.0"
 citazione = "Regione Emilia-Romagna – Ortofoto RER 2023-24 (CC BY 4.0)"
 scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/immagini/layer-14"

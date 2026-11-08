@@ -46,7 +46,8 @@ def corpi_da_osm(elementi: list[tuple[dict, object]], uvl: list[Corpo] = ()) -> 
         h, fonte_h = altezza(tag)
         uso = uso_da(osm_building=tag.get("building"))
         oid = str(tag.get("osm_id") or tag.get("@id") or f"osm{n}")
-        out.append(Corpo(id=oid, edificio=oid, sagoma=g, quota_terreno=None, gronda=h or 0.0,
+        edificio = str(tag.get("osm_edificio") or oid)        # i pezzi di un multipoligono restano un edificio solo
+        out.append(Corpo(id=oid, edificio=edificio, sagoma=g, quota_terreno=None, gronda=h or 0.0,
                          piani=int(numero(tag.get("building:levels"))) if numero(tag.get("building:levels")) else None,
                          fonte_sagoma=FONTE, licenza=LICENZA, fonte_altezza=fonte_h, uso=uso,
                          qualita="altezza mancante: da indicare" if h is None else "altezza da OSM"))

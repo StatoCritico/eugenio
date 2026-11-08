@@ -44,6 +44,26 @@ services:
     mem_limit: 4g
     restart: "no"
 
+  # coda «Aggiungi DBTR» (07/11/2026): prepara i DB topografici proposti dagli utenti, una richiesta alla volta e a bassa
+  # priorità (peso CPU 128 contro 1024 dell'api, nice nel processo figlio, pausa se il server calcola previsioni, nessuna
+  # preparazione dalle 3:15 alle 7:00 quando lavora la pipeline LiDAR), e installa quelli approvati nella pagina interna.
+  #   docker compose --profile edifici up -d edifici-coda
+  edifici-coda:
+    image: energia-edifici
+    profiles: ["edifici"]
+    depends_on: [api]
+    command: ["coda", "--ciclo", "--cartella", "/dati/edifici_coda", "--archivio", "/dati/edifici"]
+    volumes:
+      - ${CARTELLA_DATI:-/srv/energia/dati}:/dati
+      - ${CARTELLA_EDIFICI:-/srv/energia/dati/edifici}:/dati/edifici
+    environment:
+      TZ: Europe/Rome
+      CODA_MEMORIA_GB: "3.5"
+    cpus: 1
+    cpu_shares: 128
+    mem_limit: 4g
+    restart: unless-stopped
+
   caddy:
     image: caddy:2
     depends_on: [api]

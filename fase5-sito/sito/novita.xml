@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="it">
+  <title>Novità di EuGEnio</title>
+  <subtitle>Le novità di EuGEnio (Stato Critico), versione per versione.</subtitle>
+  <id>tag:eugenio.statocritico.it,2026:novita</id>
+  <link rel="self" type="application/atom+xml" href="https://eugenio.statocritico.it/novita.xml"/>
+  <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html"/>
+  <updated>2026-11-07T12:00:00Z</updated>
+  <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
+  <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
+  <entry>
+    <title>7 novembre 2026 – Tetti a falde, 3D in collina e ortofoto da allineare</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261107-2</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261107-2"/>
+    <updated>2026-11-07T12:00:00Z</updated>
+    <summary>Le pagine dei gruppi Edifici, Cogenerazione e Fotovoltaico sono in lavorazione: hanno il triangolo giallo, non si aprono ancora e si apriranno quando saranno verificate.</summary>
+    <content type="html">&lt;p class=&quot;novita-testo&quot;&gt;Le pagine dei gruppi Edifici, Cogenerazione e Fotovoltaico sono in lavorazione: hanno il triangolo giallo, non si aprono ancora e si apriranno quando saranno verificate.&lt;/p&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D: frecce sotto la mappa per spostare la foto aerea di 1 m alla volta, finché combacia con particelle e contorni; «Azzera» la rimette a posto. Lo spostamento è scritto nell&amp;#x27;immagine scaricata e nel report.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: tetti a capanna o a padiglione dove il database della Regione dà l&amp;#x27;altezza del colmo (circa 6.900 edifici a Rimini, Faenza e Santarcangelo), indicati come tetti stimati.&lt;/li&gt;&lt;li&gt;Vista 3D con il rilievo ombreggiato, che si può esagerare ×1,5 o ×2; in legenda da dove viene il terreno.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: dove non c&amp;#x27;è un rilievo, i tetti sono ipotizzati a falde (22° in pianura, 32° in montagna) e lo trovi scritto.&lt;/li&gt;&lt;li&gt;Fuori dai comuni con il database completo, in Veneto le sagome degli edifici arrivano dalla Regione, con le altezze di OpenStreetMap dove ci sono.&lt;/li&gt;&lt;li&gt;Vista 3D a Susegana e Conegliano con il terreno del rilievo LiDAR della Regione del Veneto.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: modelli 3D degli edifici anche in 15 città italiane – Milano, Torino, Genova (una parte), Venezia, Trieste, Trento, Bolzano, Firenze, Ancona, Roma (una parte), Bari (il centro), Potenza, Napoli, Palermo e Cagliari (Castello e Brotzu) – con le altezze dai database topografici di Regioni, Province e Comuni o dal rilievo laser; a Napoli dalle classi di altezza del Copernicus Urban Atlas. Per ogni edificio è scritto da dove viene l&amp;#x27;altezza.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Clima e meteo › Cambiamento climatico (prima «Clima che cambia»): ora nel gruppo Clima e meteo, con i gradi giorno dal 1940 del tuo comune.&lt;/li&gt;&lt;li&gt;Ricerca più comoda: è il primo passo della colonna di destra; se scrivi solo il comune la mappa va al suo centro. Le mappe di Modelli 3D e Ortofoto si aprono su Cesena, sull&amp;#x27;ospedale Bufalini.&lt;/li&gt;&lt;li&gt;Vista 3D in collina (Bagno di Romagna, Brisighella): ora parte sopra il terreno e non diventa più nera.&lt;/li&gt;&lt;li&gt;Patrimonio › Ortofoto: dove la foto della Regione non c&amp;#x27;è si vede la foto satellitare, al posto delle zone nere.&lt;/li&gt;&lt;li&gt;Le immagini delle mappe vanno subito nei download; in Patrimonio › Aggiungi edifici il file si trascina.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Verificato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Clima e meteo › Dati climatici e Clima e meteo › Legge 10: non più sperimentali.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-collegamenti&quot;&gt;&lt;a href=&quot;https://eugenio.statocritico.it/modelli3d.html&quot;&gt;Modelli 3D&lt;/a&gt; · &lt;a href=&quot;https://eugenio.statocritico.it/faq.html#sfasamento&quot;&gt;Perché particelle, sagome e foto non coincidono al metro&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>7 novembre 2026 – Edifici veri di 19 comuni della Romagna</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261107</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261107"/>
+    <updated>2026-11-07T12:00:00Z</updated>
+    <summary>Edifici veri di 19 comuni della Romagna</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D: sagome e altezze degli edifici dal database della Regione Emilia-Romagna per 19 comuni della Romagna, tra cui Rimini, Cesena, Forlì, Faenza e Lugo.&lt;/li&gt;&lt;li&gt;Fuori da questi comuni gli edifici arrivano da OpenStreetMap; per ognuno è scritto da dove viene l&amp;#x27;altezza.&lt;/li&gt;&lt;li&gt;Patrimonio › Aggiungi edifici: carichi il database degli edifici del tuo comune e lo usi subito, solo nel tuo browser; se vuoi, lo proponi per tutti. Le istruzioni per scaricarlo sono in una pagina a parte.&lt;/li&gt;&lt;li&gt;La pagina Novità, con il feed per seguirla.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D: cortili disegnati bene e un messaggio chiaro dove non ci sono edifici.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-collegamenti&quot;&gt;&lt;a href=&quot;https://eugenio.statocritico.it/modelli3d.html&quot;&gt;Modelli 3D&lt;/a&gt; · &lt;a href=&quot;https://eugenio.statocritico.it/aggiungi-dbtr.html&quot;&gt;Aggiungi edifici&lt;/a&gt; · &lt;a href=&quot;https://eugenio.statocritico.it/faq.html#ripiego-osm&quot;&gt;Perché alcuni edifici vengono da OpenStreetMap&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>5 novembre 2026 – Immagini delle mappe, ricerca in Ortofoto e costi della Sanità</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261105-2</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261105-2"/>
+    <updated>2026-11-05T12:00:00Z</updated>
+    <summary>Immagini delle mappe, ricerca in Ortofoto e costi della Sanità</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Statistiche › Costi energetici Sanità.&lt;/li&gt;&lt;li&gt;Patrimonio › Ortofoto: ricerca per indirizzo o particella; da vicino, sopra la foto, i confini delle particelle catastali e i contorni degli edifici.&lt;/li&gt;&lt;li&gt;Le mappe si scaricano come immagine (JPG, PNG o PDF), con le fonti scritte sotto.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D: il punto trovato con la ricerca si trascina per correggerlo.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Verificato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Statistiche › Costi energetici Sanità: validata dall&amp;#x27;inizio, senza l&amp;#x27;avviso di servizio sperimentale.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-collegamenti&quot;&gt;&lt;a href=&quot;https://eugenio.statocritico.it/ortofoto.html&quot;&gt;Ortofoto&lt;/a&gt; · &lt;a href=&quot;https://eugenio.statocritico.it/indicatori.html&quot;&gt;Costi energetici Sanità&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>5 novembre 2026 – Modelli 3D in due tempi</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261105</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261105"/>
+    <updated>2026-11-05T12:00:00Z</updated>
+    <summary>Modelli 3D in due tempi</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Ortofoto con i confini dei comuni, la piccola mappa d&amp;#x27;Italia e un avviso quando la foto non copre la zona.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D in due tempi: prima trovi l&amp;#x27;edificio (indirizzo, foglio e particella o un clic), poi «Genera il 3D».&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>4 novembre 2026 – I primi edifici in 3D</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261104</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261104"/>
+    <updated>2026-11-04T12:00:00Z</updated>
+    <summary>I primi edifici in 3D</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D: l&amp;#x27;edificio in 3D, con i vicini e il terreno.&lt;/li&gt;&lt;li&gt;Patrimonio › Ortofoto: le foto aeree delle Regioni come sfondo della mappa.&lt;/li&gt;&lt;li&gt;Patrimonio › Importa DXF/IFC: apri i tuoi disegni nel browser, senza mandarli a nessuno.&lt;/li&gt;&lt;li&gt;EuGEnio Visure: un programma per il PC che legge le visure catastali senza mandarle a nessuno.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Clima e meteo › Previsioni a schede, con la scheda «Solo clima».&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-collegamenti&quot;&gt;&lt;a href=&quot;https://eugenio.statocritico.it/modelli3d.html&quot;&gt;Modelli 3D&lt;/a&gt; · &lt;a href=&quot;https://eugenio.statocritico.it/visure.html&quot;&gt;Visure&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>29 ottobre 2026 – Patrimonio più ricco</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261029</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261029"/>
+    <updated>2026-10-29T12:00:00Z</updated>
+    <summary>Patrimonio più ricco</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio: la mappa 3D della regione e la scheda «Valori per sede».&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;File Excel e OpenDocument accettati in tutte le pagine che leggono i tuoi dati.&lt;/li&gt;&lt;li&gt;Ora le previsioni funzionano anche per le isole minori (Ischia, Eolie, Lampedusa e le altre).&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-collegamenti&quot;&gt;&lt;a href=&quot;https://eugenio.statocritico.it/patrimonio.html&quot;&gt;Patrimonio&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>28 ottobre 2026 – Report in PDF e dati in Excel o ODS</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261028</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261028"/>
+    <updated>2026-10-28T12:00:00Z</updated>
+    <summary>Report in PDF e dati in Excel o ODS</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Il report si scarica in PDF; i dati in Excel o in OpenDocument, anche in Clima e meteo › Dati climatici.&lt;/li&gt;&lt;li&gt;Zona climatica del DPR 412/93 con la regola nuova; clima dal 1940 e anno tipo rifatti di conseguenza.&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>27 ottobre 2026 – Dati climatici, DPR 412/93 e clima dal 1940</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261027</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261027"/>
+    <updated>2026-10-27T12:00:00Z</updated>
+    <summary>Dati climatici, DPR 412/93 e clima dal 1940</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Clima e meteo › Dati climatici: lo storico del meteo per comune, da scaricare.&lt;/li&gt;&lt;li&gt;Clima e meteo › Legge 10: zona climatica e gradi giorno del DPR 412/93 per ogni comune, clima dal 1940 e report.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-collegamenti&quot;&gt;&lt;a href=&quot;https://eugenio.statocritico.it/dati.html&quot;&gt;Dati climatici&lt;/a&gt; · &lt;a href=&quot;https://eugenio.statocritico.it/legge10.html&quot;&gt;Legge 10&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>26 ottobre 2026 – Meet EuGEnio</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261026</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261026"/>
+    <updated>2026-10-26T12:00:00Z</updated>
+    <summary>Siamo online</summary>
+    <content type="html">&lt;p class=&quot;novita-testo&quot;&gt;Siamo online&lt;/p&gt;</content>
+  </entry>
+</feed>

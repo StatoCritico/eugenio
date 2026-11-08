@@ -99,16 +99,110 @@ def test_controllo_attributi_sul_campione_wms():
     assert c["corpi"] == 5 and not c["mancanti"]
     assert c["pieni"]["H_GRONDA"] == 0 and c["campi_piani"] == []
     testo = U.rapporto(c)
-    assert "gronda o di colmo" in testo and "numero di piani" in testo
+    assert "altezza del corpo" in testo and "numero di piani" in testo
 
 
 def test_corpo_da_uvl_con_virgola_e_colmo():
-    p = {"Id_e": "x", "Edi_id_e": "E", "H_uvl": "6,5", "H_GRONDA": "Null", "H_COLMO": "9,0", "B_uvl": "12,3",
+    # WMS (nomi con l'iniziale maiuscola, virgola decimale): H_uvl intero = altezza; H_COLMO quota assoluta
+    p = {"Id_e": "x", "Edi_id_e": "E", "H_uvl": "6", "H_GRONDA": "Null", "H_COLMO": "21,3", "B_uvl": "12,3",
          "Tipo_fonte": "SIT", "Qualita": "20"}
     c = U.corpo_da(p, box(0, 0, 10, 10))
-    assert c.gronda == 6.5 and c.colmo == 9.0 and c.tetto == "capanna" and c.quota_terreno == 12.3
-    assert c.licenza == "CC BY 4.0" and "da verificare" in c.fonte_altezza
+    assert c.gronda == 6.0 and c.colmo == 9.0 and c.tetto == "capanna" and c.quota_terreno == 12.3
+    assert c.licenza == "CC BY 4.0" and "H_UVL" in c.fonte_altezza and "H_COLMO − B_UVL" in c.fonte_altezza
     assert U.corpo_da({"H_uvl": "Null"}, box(0, 0, 10, 10)) is None
+
+
+def test_altezze_dbtr_regole_del_geopackage():
+    """Regole verificate il 07/11/2026 sul DBTR di Rimini contro DTM 2025 e DSM LiDAR 2019 (README della fase 10)."""
+    a = U.altezze({"H_UVL": 7.0, "B_UVL": 5.2, "H_GRONDA": 5.4, "H_COLMO": 0.0})
+    assert a["gronda"] == 7.0 and a["colmo"] is None and a["tipo"] == "relativa"     # gronda come quota: non usata
+    a = U.altezze({"H_UVL": 18.37, "B_UVL": 6.02, "H_GRONDA": 0.0, "H_COLMO": 0.0})
+    assert a["gronda"] == pytest.approx(12.35) and a["tipo"] == "assoluta"           # H_UVL decimale = quota del tetto
+    assert U.altezze({"H_UVL": 27.31, "B_UVL": 27.3})["gronda"] is None              # quota senza altezza
+    assert U.altezze({"H_UVL": 0.0, "B_UVL": 3.0})["tipo"] == "nessuna"
+    assert U.altezze({"H_UVL": 66.0, "B_UVL": 60.5})["gronda"] == 5.5                # intero in collina: quota
+    assert U.altezze({"H_UVL": 7.0, "B_UVL": 60.5})["gronda"] == 7.0                 # intero in collina: altezza
+    # Faenza (07/11/2026): molti decimali sotto la base → convenzione «altezze», niente quote neanche sopra la base
+    faenza = [{"H_UVL": 6.5 + i % 5, "B_UVL": 33.0} for i in range(40)] + [{"H_UVL": 44.5, "B_UVL": 37.5}]
+    assert U.convenzione(faenza) == "altezze"
+    assert U.altezze({"H_UVL": 44.5, "B_UVL": 37.5}, "altezze")["gronda"] == 44.5     # campanile, non 7 m
+    assert U.altezze({"H_UVL": 24.0, "B_UVL": 16.72}, "altezze")["gronda"] == 24.0
+    rimini = [{"H_UVL": 18.37 + i, "B_UVL": 6.02} for i in range(40)]
+    assert U.convenzione(rimini) == "quote"
+    a = U.altezze({"H_UVL": 9.0, "B_UVL": 2.0, "H_COLMO": 13.5})
+    assert a["colmo"] == 11.5                                                        # 13,5 − 2,0
+    assert U.altezze({"H_UVL": 9.0, "B_UVL": 2.0, "H_COLMO": 10.0})["colmo"] is None  # colmo sotto la gronda
+    a = U.altezze({"H_UVL": 9.2, "B_UVL": 32.8, "H_COLMO": 9.9})                     # Faenza: decimali = altezze
+    assert a["gronda"] == 9.2 and a["tipo"] == "relativa" and a["colmo"] == pytest.approx(9.9)
+
+
+def test_gpkg_sintetico_con_nomi_veri_fori_ed_edifici(tmp_path):
+    """GeoPackage sintetico con gli strati e le colonne dell'estrazione vera (V_UVL_GPG, V_EDI_GPG, V_EDI_CT_USO_AVM)."""
+    import numpy as np
+    import pyogrio.raw as R
+    from shapely import to_wkb
+    from shapely.geometry import Polygon
+    gpkg = tmp_path / "estraz_procons.gpkg"
+    corte = Polygon([(0, 0), (40, 0), (40, 30), (0, 30)], [[(10, 10), (30, 10), (30, 20), (10, 20)]])
+    g = [corte, box(40, 0, 50, 30), box(100, 100, 110, 110)]
+    g = [Polygon([(x + 785000, y + 4884000) for x, y in p.exterior.coords], [[(x + 785000, y + 4884000) for x, y in r.coords] for r in p.interiors]) for p in g]
+    campi = {"ID_E": np.array(["u1", "u2", "u3"], dtype=object), "EDI_ID_E": np.array(["e1", "e1", "e2"], dtype=object),
+             "H_UVL": np.array([12.0, 15.0, 0.0], dtype="float32"), "B_UVL": np.array([7.0, 7.1, 6.0]),
+             "H_GRONDA": np.array([0.0, 0.0, 0.0], dtype="float32"), "H_COLMO": np.array([22.5, 0.0, 0.0], dtype="float32"),
+             "TIPO_FONTE": np.array(["DTM DSM 2008"] * 3, dtype=object), "QUALITA": np.array([20.0, 20.0, 20.0]),
+             "D_TETTO": np.array(["Non assegnato"] * 3, dtype=object), "D_TY_PORZ": np.array(["generica"] * 3, dtype=object),
+             "DATA_DA": np.array([20080101.0] * 3), "DATA_A": np.array([20081231.0] * 3)}
+    R.write(str(gpkg), np.array([to_wkb(x) for x in g], dtype=object), list(campi.values()), fields=list(campi), layer="V_UVL_GPG",
+            driver="GPKG", geometry_type="Polygon", crs="EPSG:7791")
+    e = {"ID_E": np.array(["e1", "e2"], dtype=object), "FOGLIO": np.array([74.0, 0.0]), "NUMERO": np.array(["1100 ", None], dtype=object),
+         "NOME": np.array(["Palazzo di prova", None], dtype=object), "D_TY_EDI": np.array(["edificio monumentale", "baracca"], dtype=object),
+         "D_STAT_E": np.array(["in esercizio", "in esercizio"], dtype=object), "COD_COM": np.array(["H294", "H294"], dtype=object)}
+    R.write(str(gpkg), np.array([to_wkb(g[0].union(g[1])), to_wkb(g[2])], dtype=object), list(e.values()), fields=list(e), layer="V_EDI_GPG",
+            driver="GPKG", geometry_type="Polygon", crs="EPSG:7791", append=True)
+    u = {"ID_E": np.array(["e1"], dtype=object), "CT_USO": np.array([303], dtype="int32"), "D_CT_USO": np.array(["sede di scuola"], dtype=object)}
+    R.write(str(gpkg), None, list(u.values()), fields=list(u), layer="V_EDI_CT_USO_AVM", driver="GPKG", append=True)
+    righe = U.leggi_gpkg(gpkg)
+    assert len(righe) == 3 and righe[0][0]["ID_E"] == "u1" and len(righe[0][1].interiors) == 1
+    edi = U.leggi_edifici(gpkg)
+    assert edi["e1"]["D_CT_USO"] == "sede di scuola"
+    ctl = U.controlla([p for p, _ in righe])
+    assert ctl["corpi"] == 3 and ctl["edifici"] == 2 and ctl["colmi"] == 1 and not ctl["mancanti"]
+    from edifici3d.__main__ import main
+    assert main(["prepara", "--gpkg", str(gpkg), "--archivio", str(tmp_path / "a"), "--archivi-json"]) == 0
+    out = tmp_path / "a" / "cc-by" / "er" / "prodotti"
+    ind = json.loads((out / "indice.json").read_text(encoding="utf-8"))
+    assert ind["corpi"] == 2 and ind["licenza"] == "CC BY 4.0" and "CC BY 4.0" in ind["attribuzione"] and ind["nome"] == "DBTR Emilia-Romagna"
+    fs = [f for c in out.glob("contesto/*.json") for f in json.loads(c.read_text(encoding="utf-8"))["features"]]
+    u1 = next(f for f in fs if f["properties"]["id"] == "u1")
+    assert len(u1["geometry"]["coordinates"]) == 2                                  # cortile
+    assert u1["properties"]["edificio"] == "e1" and u1["properties"]["foglio"] == "74" and u1["properties"]["numero"] == "1100"
+    assert u1["properties"]["uso"] == "scuola" and u1["properties"]["colmo"] == 15.5 and u1["properties"]["area"] == 1000.0
+    arch = json.loads((tmp_path / "a" / "archivi.json").read_text(encoding="utf-8"))
+    assert arch["archivi"][0]["base"] == "/edifici3d/cc-by/er/prodotti/"
+    assert "CC BY 4.0" in (tmp_path / "a" / "cc-by" / "er" / "LICENZE.txt").read_text(encoding="utf-8")
+
+
+def test_dtm_ritaglio_da_zip_senza_estrarre(tmp_path):
+    import zipfile
+    import numpy as np
+    import rasterio
+    from rasterio.transform import from_origin
+    from edifici3d import dtm_locale as DL
+    tif = tmp_path / "DTM5x5_prova_SE_7791.tif"
+    with rasterio.open(tif, "w", driver="GTiff", width=600, height=400, count=1, dtype="float32", crs="EPSG:7791", nodata=-9999,
+                       transform=from_origin(780000, 4890000, 5, 5)) as d:
+        a = np.tile(np.arange(600, dtype="float32"), (400, 1)); a[:, :10] = -9999
+        d.write(a[None])
+    z = tmp_path / "DTM5x5_prova_SE_7791.zip"
+    with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zz:
+        zz.write(tif, tif.name); zz.writestr("licenza/x.pdf", b"x")
+    assert DL.percorso_gdal(z).startswith("/vsizip/") and DL.grande(z)
+    e = DL.ritaglia(z, (781000, 4888500, 782000, 4889500), tmp_path / "r.tif", margine=50)
+    assert e["celle"] == [220, 220] and e["riquadro"] == [780950.0, 4888450.0, 782050.0, 4889550.0]
+    with rasterio.open(tmp_path / "r.tif") as r:
+        assert r.crs.to_epsg() == 7791 and float(r.read(1)[0, 0]) == 190.0 and r.profile["compress"] == "deflate"
+    with pytest.raises(ValueError, match="fuori"):
+        DL.ritaglia(z, (700000, 4800000, 701000, 4801000), tmp_path / "x.tif")
 
 
 def test_url_getfeatureinfo():
@@ -217,6 +311,20 @@ def test_pmtiles_rifiuta_licenze_mescolate(tmp_path):
         T.corpi_pmtiles(feat, tmp_path / "x.pmtiles", "CC BY 4.0", "x")
 
 
+def test_pmtiles_sagoma_autointersecante(tmp_path):
+    # Lugo, 07/11/2026: una sagoma con due vertici a 5 mm diventa autointersecante dopo l'arrotondamento a 7 decimali;
+    # il ritaglio sulla tessera dava una GeometryCollection e mapbox_vector_tile si fermava. Ora resta solo il poligono.
+    farfalla = {"type": "Polygon", "coordinates": [[[12.5, 44.0], [12.5002, 44.0002], [12.5002, 44.0], [12.5, 44.0002], [12.5, 44.0]]]}
+    feat = [{"type": "Feature", "geometry": farfalla, "properties": {"licenza": "CC BY 4.0", "id": "x"}},
+            {"type": "Feature", "geometry": box(12.5003, 44.0, 12.5004, 44.0001).__geo_interface__,
+             "properties": {"licenza": "CC BY 4.0", "id": "y"}}]
+    n = T.corpi_pmtiles(feat, tmp_path / "x.pmtiles", "CC BY 4.0", "x")
+    assert n > 0 and (tmp_path / "x.pmtiles").stat().st_size > 0
+    from shapely.geometry import GeometryCollection, Polygon, LineString
+    gc = GeometryCollection([Polygon([(0, 0), (1, 0), (1, 1)]), LineString([(0, 0), (2, 2)])])
+    assert T._solo_poligoni(gc).geom_type == "Polygon" and T._solo_poligoni(LineString([(0, 0), (1, 1)])) is None
+
+
 def test_quota_corpo_dal_dtm(tmp_path):
     tif = S.dtm(tmp_path / "d.tif")
     g = box(S.X0, S.Y0, S.X0 + 20, S.Y0 + 20)
@@ -272,3 +380,117 @@ def test_fonti_ortofoto_toml():
         for x in d["fonte"]:
             assert x["stato"] in ("confermata", "da confermare", "spenta") and x["licenza"] and x["citazione"], x["id"]
             assert "google" not in x["url"] and "arcgis" not in x["url"] and "bing" not in x["url"]
+
+
+def test_shapefile_e_piu_comuni(tmp_path):
+    """Cartella Shapefile con gli stessi nomi (Faenza) e due comuni nello stesso archivio cc-by/er/."""
+    import numpy as np
+    import pyogrio.raw as R
+    from shapely import to_wkb
+    def comune(cartella, dx, ids, driver):
+        cartella.mkdir()
+        g = [box(785000 + dx + 20 * k, 4884000, 785010 + dx + 20 * k, 4884010) for k in range(len(ids))]
+        campi = {"ID_E": np.array(ids, dtype=object), "EDI_ID_E": np.array([f"e{i}" for i in ids], dtype=object),
+                 "H_UVL": np.array([9.0] * len(ids)), "B_UVL": np.array([5.0] * len(ids))}
+        dest = cartella / ("V_UVL_GPG.shp" if driver == "ESRI Shapefile" else "estraz_procons.gpkg")
+        R.write(str(dest), np.array([to_wkb(x) for x in g], dtype=object), list(campi.values()), fields=list(campi),
+                layer="V_UVL_GPG", driver=driver, geometry_type="Polygon", crs="EPSG:7791")
+        return cartella if driver == "ESRI Shapefile" else dest
+    a = comune(tmp_path / "faenza", 0, ["f1", "f2"], "ESRI Shapefile")
+    b = comune(tmp_path / "lugo", 500, ["l1", "f2"], "GPKG")            # f2 in tutti e due: una volta sola
+    assert len(U.leggi_gpkg(a)) == 2 and U.leggi_edifici(a) == {}
+    assert main(["prepara", "--gpkg", str(a), str(b), "--archivio", str(tmp_path / "x")]) == 0
+    ind = json.loads((tmp_path / "x" / "cc-by" / "er" / "prodotti" / "indice.json").read_text(encoding="utf-8"))
+    assert ind["corpi"] == 3 and [x["uvl_nuove"] for x in ind["fonte_edifici"]] == [2, 1]
+
+
+def test_indicatori_con_cortile_python_e_sito_uguali():
+    """Corpo a corte (30×30 con cortile 10×10): area netta, pareti del cortile, stessi numeri in Python e nel sito."""
+    import shutil
+    import subprocess
+    from shapely.geometry import Polygon
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node non installato")
+    est = [(0, 0), (30, 0), (30, 30), (0, 30)]
+    foro = [(10, 10), (20, 10), (20, 20), (10, 20)]
+    c = M.Corpo(id="a", edificio="E", sagoma=Polygon(est, [foro]), quota_terreno=0, gronda=10)
+    py = M.indicatori(M.Edificio("E", [c]))
+    assert py["superficie_pavimento_terra"] == pytest.approx(800) and py["volume_lordo"] == pytest.approx(8000)
+    assert py["pareti_esposte"] == pytest.approx((120 + 40) * 10)
+    prova = r'''
+const E = require(process.argv[1]);
+const c = { id: "a", edificio: "E", ring: JSON.parse(process.argv[2]), buchi: [JSON.parse(process.argv[3])], gronda: 10 };
+const i = E.indicatori([c]);
+console.log(JSON.stringify({ i, a: E.areaCorpo(c), nelForo: E.dentroCorpo([15, 15], c), dentro: E.dentroCorpo([5, 5], c),
+  s: E.superfici([c]).superficie_lorda.valore }));
+'''
+    out = subprocess.run([node, "-e", prova, str(QUI.parents[1] / "fase5-sito" / "sito" / "edifici_calcoli.js"),
+                          json.dumps(est), json.dumps(foro)], capture_output=True, text=True, encoding="utf-8", check=True).stdout
+    d = json.loads(out)
+    assert d["a"] == pytest.approx(800) and d["nelForo"] is False and d["dentro"] is True
+    for k in ("volume_lordo", "superficie_pavimento_terra", "pareti_esposte", "superficie_disperdente", "s_su_v"):
+        assert d["i"][k] == pytest.approx(py[k]), k
+    for s_ in M.SETTORI:
+        assert d["i"]["pareti_per_orientamento"][s_] == pytest.approx(py["pareti_per_orientamento"][s_]), s_
+    assert d["s"] == pytest.approx(800 * M.stima_piani(10))
+
+
+def test_archivio_per_comune_archivi_json_e_controllo(tmp_path):
+    """prepara --comune: archivio autonomo cc-by/er/<comune>/; archivi-json con i comuni prima delle prove OSM; pipeline
+    LiDAR che trova i corpi dei comuni; controlla-archivio senza problemi."""
+    import numpy as np
+    import pyogrio.raw as R
+    from shapely import to_wkb
+    from edifici3d import pipeline as PL
+    for k, nome in enumerate(("rimini", "riccione")):
+        d = tmp_path / "dbtr" / nome; d.mkdir(parents=True)
+        g = [box(785000 + 1000 * k + 20 * i, 4884000, 785010 + 1000 * k + 20 * i, 4884010) for i in range(3)]
+        campi = {"ID_E": np.array([f"{nome}{i}" for i in range(3)], dtype=object), "EDI_ID_E": np.array([f"e{nome}"] * 3, dtype=object),
+                 "H_UVL": np.array([9.0, 6.0, 12.0]), "B_UVL": np.array([5.0] * 3)}
+        R.write(str(d / "estraz_procons.gpkg"), np.array([to_wkb(x) for x in g], dtype=object), list(campi.values()), fields=list(campi),
+                layer="V_UVL_GPG", driver="GPKG", geometry_type="Polygon", crs="EPSG:7791")
+        assert main(["prepara", "--comune", nome, "--gpkg", str(d / "estraz_procons.gpkg"), "--archivio", str(tmp_path / "a")]) == 0
+    prova = tmp_path / "a" / "odbl" / "rimini-prova" / "prodotti"; prova.mkdir(parents=True)
+    (prova / "indice.json").write_text(json.dumps({"licenza": "ODbL 1.0", "prova": True, "nome": "prova", "corpi": 1}), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        main(["prepara", "--comune", "Nome Sbagliato", "--gpkg", str(tmp_path / "dbtr" / "rimini"), "--archivio", str(tmp_path / "a")])
+    # 07/11/2026 (decisione di Paolo): l'archivio di prova OSM non si elenca più di predefinito (ripiego OSM al volo)
+    # (07/11/2026 sera) senza lidar/indice.json niente «lidar» (la pagina non chiede un file che non c'è)
+    assert main(["archivi-json", "--archivio", str(tmp_path / "a"), "--con-prova"]) == 0
+    assert "lidar" not in json.loads((tmp_path / "a" / "archivi.json").read_text(encoding="utf-8"))
+    (tmp_path / "a" / "cc-by" / "er" / "prodotti" / "lidar").mkdir(parents=True)
+    (tmp_path / "a" / "cc-by" / "er" / "prodotti" / "lidar" / "indice.json").write_text("{}", encoding="utf-8")
+    assert main(["archivi-json", "--archivio", str(tmp_path / "a"), "--con-prova"]) == 0
+    aj = json.loads((tmp_path / "a" / "archivi.json").read_text(encoding="utf-8"))
+    assert [x["base"] for x in aj["archivi"]] == ["/edifici3d/cc-by/er/riccione/prodotti/", "/edifici3d/cc-by/er/rimini/prodotti/",
+                                                  "/edifici3d/odbl/rimini-prova/prodotti/"]
+    assert aj["archivi"][1]["nome"] == "DBTR Emilia-Romagna – Rimini" and aj["lidar"] == "/edifici3d/cc-by/er/prodotti/"
+    assert len(aj["archivi"][0]["riquadro"]) == 4
+    # codice ISTAT del comune (confine del comune come zona coperta nella pagina); niente per le prove OSM
+    assert [x.get("istat") for x in aj["archivi"]] == ["099013", "099014", None]
+    ind = json.loads((tmp_path / "a" / "cc-by" / "er" / "rimini" / "prodotti" / "indice.json").read_text(encoding="utf-8"))
+    assert ind["istat"] == "099014" and "parziale" not in ind
+    for comando in (["archivi-json", "--archivio", str(tmp_path / "a")], ["archivi-json", "--archivio", str(tmp_path / "a"), "--senza-prova"]):
+        assert main(comando) == 0
+        assert [x["base"] for x in json.loads((tmp_path / "a" / "archivi.json").read_text(encoding="utf-8"))["archivi"]] == [
+            "/edifici3d/cc-by/er/riccione/prodotti/", "/edifici3d/cc-by/er/rimini/prodotti/"]
+    # un indice senza istat (archivio di Rimini preparato prima del 07/11) lo prende dalla tabella; un'estrazione parziale no
+    del ind["istat"]; ind["comune"] = "rimini"
+    (tmp_path / "a" / "cc-by" / "er" / "rimini" / "prodotti" / "indice.json").write_text(json.dumps(ind), encoding="utf-8")
+    assert main(["archivi-json", "--archivio", str(tmp_path / "a")]) == 0
+    assert json.loads((tmp_path / "a" / "archivi.json").read_text(encoding="utf-8"))["archivi"][1]["istat"] == "099014"
+    ind["parziale"] = True
+    (tmp_path / "a" / "cc-by" / "er" / "rimini" / "prodotti" / "indice.json").write_text(json.dumps(ind), encoding="utf-8")
+    assert main(["archivi-json", "--archivio", str(tmp_path / "a")]) == 0
+    assert "istat" not in json.loads((tmp_path / "a" / "archivi.json").read_text(encoding="utf-8"))["archivi"][1]
+    with pytest.raises(SystemExit):
+        main(["prepara", "--comune", "rimini", "--istat", "99014", "--gpkg", str(tmp_path / "dbtr" / "rimini" / "estraz_procons.gpkg"),
+              "--archivio", str(tmp_path / "a")])
+    pl = PL.Pipeline(PL.carica_zona("rimini"), tmp_path / "a", tmp_path / "stato")
+    corpi = PL.leggi_corpi(pl.contesti(), pl.z, pl.griglia, pl.lato)
+    assert len(corpi) == 6                                          # i corpi di tutti e due i comuni
+    from edifici3d.__main__ import controlla_archivio
+    r = controlla_archivio(tmp_path / "a" / "cc-by" / "er" / "rimini" / "prodotti", [(12.5654, 44.0608, "lontano")])
+    assert r["corpi"] == 3 and r["gronda_m"]["mediana"] == 9.0 and r["problemi"] == ["punto «lontano»: nessun edificio entro 30 m"]
+    assert r["terreno"] == "rotta del server" and not any("terreno" in x for x in r["avvisi"])

@@ -1,7 +1,7 @@
 """Processo di aggiornamento (container "worker").
 
-  previsioni meteo       ogni ORE_PREVISIONI ore
-  storico meteo          ogni giorno dopo ORA_STORICO_UTC
+  previsioni meteo       ogni ORE_PREVISIONI ore      } solo i comuni delle REGIONI_AGGIORNATE (vuoto = tutte le
+  storico meteo          ogni giorno dopo ORA_STORICO_UTC } REGIONI servite); giornaliero aggiornato a blocchi di comuni
   mercati (GME, TTF)     ogni notte alle ORA_MERCATI (ora italiana), con la sorveglianza delle fonti delle
                          convenzioni (email solo quando cambia qualcosa)
   newsletter dei dati    mensile, il giorno NOTIZIARIO_GIORNO (listmonk)
@@ -160,6 +160,8 @@ def _stato_scrivi(fatti: dict) -> None:
 
 
 def ciclo() -> None:
+    log.info("Meteo: regioni servite %s, aggiornate ogni giorno %s", ",".join(C.REGIONI) or "tutte",
+             ",".join(C.REGIONI_AGGIORNATE) or "tutte quelle servite")
     ultimo_prev = 0.0
     fatti: dict[str, dt.date] = _stato_leggi()   # sopravvive ai riavvii: niente notiziari doppi
     if not (C.DATI / "previsioni" / "ultima.parquet").exists():

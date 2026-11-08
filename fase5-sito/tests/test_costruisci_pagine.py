@@ -1,4 +1,5 @@
 """Prove di costruisci_pagine.py su una copia del sito."""
+import json
 import re
 import shutil
 import sys
@@ -70,8 +71,9 @@ def test_modifica_del_modello_arriva_in_tutte_le_pagine(sito, monkeypatch, tmp_p
 
 
 # ---------------------------------------------------------------- menu a gruppi e pagine segnaposto (03/11/2026)
-GRUPPI = {"clima": ["dati.html", "legge10.html", "./"],
-          "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "visure.html"],
+GRUPPI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html"],   # (08/11/2026) Cambiamento climatico, ultima
+          "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
+                         "dbtr-istruzioni.html", "visure.html"],
           "statistiche": ["indicatori.html"]}
 VIETATI = ("PUN Index GME =", "€/MWh", "Prezzo medio")   # nessun valore nelle pagine in attesa della licenza GME
 
@@ -81,7 +83,8 @@ def test_menu_sei_gruppi_e_voci_raggiungibili(sito):
     t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
     titoli = re.findall(r'<details class="voce-gruppo"[^>]*><summary>([^<]+)</summary>', t)
     # dal 05/11/2026 (seconda pubblicazione) il sesto gruppo Statistiche, con «Costi energetici Sanità» (indicatori.html)
-    assert titoli == ["Clima e meteo", "Patrimonio", "Edificio", "Cogenerazione", "Fotovoltaico", "Statistiche"]
+    # (08/11/2026) «Edificio» → «Edifici» (data-gruppo resta «edificio»: la scelta fissata nei browser non si perde)
+    assert titoli == ["Clima e meteo", "Patrimonio", "Edifici", "Cogenerazione", "Fotovoltaico", "Statistiche"]
     for gruppo, voci in GRUPPI.items():
         blocco = re.search(rf'data-gruppo="{gruppo}"><summary>.*?</details>', t, re.S).group(0)
         assert re.findall(r'href="([^"]+)"', blocco) == voci
@@ -105,6 +108,11 @@ def test_gruppo_attivo(sito):
     assert "indicatori.html" not in altre and ">Indicatori<" not in s
     assert "<h1>Costi energetici Sanità</h1>" in s and "Costi energetici Sanità</title>" in s
     assert "Servizio sperimentale non ancora verificato" not in s     # validata: niente avviso né «S» nel menu
+    # dal 07/11/2026 sera anche Dati climatici e Legge 10 sono validate: niente avviso né «S» nel menu
+    for nome in ("dati.html", "legge10.html"):
+        s = (sito / nome).read_text(encoding="utf-8")
+        assert "Servizio sperimentale non ancora verificato" not in s, nome
+        assert not re.search(r'href="%s">[^<]*<span class="cantiere' % re.escape(nome), s), nome
 
 
 def test_segnaposto_senza_dati_gme(sito):
@@ -180,8 +188,9 @@ def test_pagine_fase_b():
     for vietato in ("google.com", "googleapis", "arcgisonline", "virtualearth", "s2cloudless-20"):   # nessun indirizzo dei servizi esclusi
         assert vietato not in o.lower() and vietato not in js.lower()
     t = (QUI / "parti" / "testata.html").read_text(encoding="utf-8")
-    for href in ("ortofoto.html", "fv-irradiazione.html", "fv-pvgis.html", "fv-dlgs199.html", "edificio-obblighi.html"):
-        assert re.search(rf'href="{re.escape(href)}">[^<]*<span class="cantiere prova">sperimentale', t), href
+    assert re.search(r'href="ortofoto.html">[^<]*<span class="cantiere prova">sperimentale', t)
+    for href in ("fv-irradiazione.html", "fv-pvgis.html", "fv-dlgs199.html", "edificio-obblighi.html"):     # (08/11/2026) in lavorazione
+        assert f'href="{href}"' not in t and f'data-pagina="{href}"' in t, href
 
 
 def test_calcoli_fase_b_con_node():
@@ -476,8 +485,10 @@ def test_pagine_blocco_3_senza_gme_ne_uni():
     assert d["elettrico_g_kwh"]["anni"]["2024"] == [418.1, 370.7, 209.4, 192.6]
     assert d["gas_naturale"]["anni"]["2024"] == {"t_co2_tj": 59.089, "t_co2_1000_sm3": 2.026}
     t = (QUI / "parti" / "testata.html").read_text(encoding="utf-8")
-    for href in ("cog-emissioni.html", "edificio-cer.html", "edificio-clima.html", "fv-leed.html"):
-        assert re.search(rf'href="{re.escape(href)}">[^<]*<span class="cantiere prova">sperimentale', t), href
+    # (08/11/2026) Cambiamento climatico resta sperimentale e accessibile; le altre tre sono in lavorazione
+    assert re.search(r'href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale', t)
+    for href in ("cog-emissioni.html", "edificio-cer.html", "fv-leed.html"):
+        assert f'href="{href}"' not in t and t.count(f'<span class="voce-gme voce-corso" data-pagina="{href}"') == 2, href
     l = (QUI / "sito" / "fv-leed.html").read_text(encoding="utf-8")
     assert "non sono riprodotti" in l and "usgbc.org" in l
 
@@ -526,10 +537,15 @@ def test_ortofoto_e_modelli3d_05_11():
     assert 'href="modelli3d.html?archivio=demo"' in m
     for js in ("minimappa.js", "confini_gl.js", "esporta_mappa.js"):
         assert f'src="{js}?v=' in m, js
-    # le altre pagine 3D restano in un tempo solo e non caricano i moduli nuovi
+    # 07/11/2026 sera: tutte le pagine 3D hanno la mappa di Modelli 3D (stessi elementi e moduli), la demo è quella della pagina
     for nome in PAGINE_3D[1:]:
         s = (QUI / "sito" / nome).read_text(encoding="utf-8")
-        assert 'id="genera-3d"' not in s and "confini_gl.js" not in s, nome
+        for id_ in ("cerca-edificio", "genera-3d", "torna-2d", "apri-demo", "esci-demo", "scarica-3d", "fonti-corpi", "livelli-mappa", "caselle-strati"):
+            assert f'id="{id_}"' in s, (nome, id_)
+        for js in ("minimappa.js", "confini_gl.js", "esporta_mappa.js", "cerca_luogo.js", "strati_gl.js", "dbtr_locale.js"):
+            assert f'src="{js}?v=' in s, (nome, js)
+        assert f'href="{nome}?archivio=demo"' in s and f'id="esci-demo" href="{nome}"' in s, nome
+        assert s.index('src="dbtr_locale.js') < s.index('src="edificio3d.js'), nome
     # confini dai file già ospitati, nessun servizio esterno; PDF scritto nel browser, senza librerie
     for js in ("confini_gl.js", "esporta_mappa.js"):
         t = (QUI / "sito" / js).read_text(encoding="utf-8")
@@ -575,8 +591,11 @@ def test_etichette_brevi_nelle_tendine():
     s = re.findall(r'<span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> \(sperimentale\)</span></span>', tendine)
     v = re.findall(r'<span class="cantiere sviluppo breve" title="in sviluppo"><svg class="segnale"[^>]*aria-hidden="true"', tendine)
     g = re.findall(r'<span class="cantiere breve" title="licenza GME[^"]*" aria-hidden="true">GME</span>', tendine)
-    assert len(s) == pannello.count(">sperimentale<") == 15 and len(v) == pannello.count(">in sviluppo<") == 5 and len(g) == 6
-    assert tendine.count('fill="#f5c400"') == 5 and tendine.count('stroke="#1a1a1a"') >= 5      # giallo con il bordo scuro
+    # (08/11/2026) 5 «S» (Cambiamento climatico; Ortofoto, Modelli 3D, Importa DXF/IFC, Aggiungi edifici), 2 triangoli
+    # «in sviluppo» cliccabili (LiDAR, Visure), 16 voci in lavorazione con il triangolo e non cliccabili, 6 GME
+    assert len(s) == pannello.count(">sperimentale<") == 5 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 16
+    assert tendine.count('fill="#f5c400"') == 18 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
     assert ".cantiere.breve" in css and ".cantiere .segnale" in css
     # «Costi energetici Sanità» senza etichetta (pagina validata)
@@ -598,3 +617,203 @@ def test_ortofoto_e_modelli3d_seconda_pubblicazione():
     assert "trascinaPunto" in j and "puntoCambiato" in j and "EUGENIO_CERCA" in j and "EUGENIO_STRATI" in j
     st = (QUI / "sito" / "strati_gl.js").read_text(encoding="utf-8")
     assert "/api/ortofoto/strati" in st and "zornade" not in st.lower()     # nessuna dipendenza nuova da Zornade
+
+
+def test_aggiungi_dbtr_e_istruzioni():
+    """«Aggiungi DBTR» (07/11/2026): pagina dello strumento e pagina delle istruzioni nel gruppo Patrimonio; le librerie
+    dei GeoPackage e degli zip (sql.js, fflate) solo nel Web Worker di quella pagina; consenso non spuntato; privacy,
+    F.A.Q., Modelli 3D e protezione.js aggiornati."""
+    sito = QUI / "sito"
+    a = (sito / "aggiungi-dbtr.html").read_text(encoding="utf-8")
+    assert 'id="consenso"' in a and 'id="consenso" checked' not in a and 'id="proponi" type="button" disabled' in a
+    assert 'src="dbtr_locale.js?v=' in a and 'src="aggiungi_dbtr.js?v=' in a and 'href="dbtr-istruzioni.html"' in a
+    assert "sql-wasm" not in a and "fflate" not in a.split("<main")[1].split("piede-fonti")[0]
+    w = (sito / "dbtr_worker.js").read_text(encoding="utf-8")
+    assert "lib/sql.js/sql-wasm.js" in w and "lib/fflate/fflate.js" in w and "dbtr_lettore.js" in w and "fetch(" not in w
+    for f in sito.glob("*.html"):
+        if f.name != "aggiungi-dbtr.html":
+            t = f.read_text(encoding="utf-8")
+            assert "sql-wasm" not in t and "lib/fflate" not in t and "dbtr_worker" not in t, f.name
+    for f in ("sql.js/sql-wasm.js", "sql.js/sql-wasm.wasm", "sql.js/LICENSE", "fflate/fflate.js", "fflate/LICENSE"):
+        assert (sito / "lib" / f).is_file(), f
+    i = (sito / "dbtr-istruzioni.html").read_text(encoding="utf-8")
+    for regione in ("emilia-romagna", "lombardia", "friuli-venezia-giulia", "liguria", "trento", "veneto", "altre-regioni"):
+        assert f'id="{regione}"' in i
+    assert "EPSG:7791" in i and "un comune alla volta" in i and "in attesa di chiarimento dalla Regione" in i
+    assert "verifica sul portale" in i
+    p = (sito / "privacy.html").read_text(encoding="utf-8")
+    assert 'id="dbtr"' in p and "consenso" in p.split('id="dbtr"')[1][:2500]
+    assert 'id="aggiungi-dbtr"' in (sito / "faq.html").read_text(encoding="utf-8")
+    m = (sito / "modelli3d.html").read_text(encoding="utf-8")
+    assert m.index('src="dbtr_locale.js?v=') < m.index('src="edificio3d.js?v=') and 'href="aggiungi-dbtr.html"' in m
+    assert "dbtr\\/inizia" in (sito / "protezione.js").read_text(encoding="utf-8")
+
+
+
+# ---------------------------------------------------------------- Novità (07/11/2026)
+def test_novita_versione_feed_e_menu():
+    import tomllib
+    import xml.etree.ElementTree as ET
+    sys.path.insert(0, str(QUI))
+    import costruisci_pagine as CP
+    voci = tomllib.loads((QUI / "novita.toml").read_text(encoding="utf-8"))["voce"]
+    indice = (QUI / "sito" / "index.html").read_text(encoding="utf-8")
+    assert voci[0]["versione"] == CP.versione_attuale(QUI / "sito"), "la prima voce di novita.toml non è la versione di index.html"
+    assert CP.leggi_novita() == voci                                    # controlli superati (ordine, campi)
+    # nessun dato di mercato né cose private nelle voci
+    testo = json.dumps(voci, ensure_ascii=False)
+    assert not re.search(r"\b(PUN|PSV|IGI|TTF|EEX|fase 2|uni_privato|Arpae)\b", testo), testo
+    # pagina generata e aggiornata, con una sezione per voce
+    pag = (QUI / "sito" / "novita.html").read_text(encoding="utf-8")
+    assert pag.count('<div class="novita-voce"') == len(voci) and f'id="d{voci[0]["data"].replace("-", "")}"' in pag
+    assert CP._senza_parti(pag) == CP._senza_parti(CP.pagina_novita(voci).replace("{{versione}}", voci[0]["versione"]))
+    # feed Atom valido: elementi obbligatori, una entry per voce, indirizzi assoluti
+    A = "{http://www.w3.org/2005/Atom}"
+    xml = (QUI / "sito" / "novita.xml").read_text(encoding="utf-8")
+    assert xml == CP.feed_novita(voci)
+    r = ET.fromstring(xml.encode("utf-8"))
+    assert r.tag == f"{A}feed" and r.find(f"{A}id") is not None and r.find(f"{A}updated").text.startswith(voci[0]["data"])
+    entries = r.findall(f"{A}entry")
+    assert len(entries) == len(voci) and len({e.find(f"{A}id").text for e in entries}) == len(voci)
+    for e in entries:
+        for k in ("title", "id", "updated", "content"):
+            assert e.find(f"{A}{k}") is not None and e.find(f"{A}{k}").text, k
+        assert re.match(r"https://eugenio\.statocritico\.it/novita\.html#d\d{8}(-\d+)?$", e.find(f"{A}link").get("href"))
+        assert 'href="https://' in e.find(f"{A}content").text or "href" not in e.find(f"{A}content").text
+    # (08/11/2026) in fondo la messa online del 26/10/2026, senza versione: «Meet EuGEnio», «Siamo online»
+    ultima = voci[-1]
+    assert (ultima["data"], ultima["titolo"], ultima["testo"]) == ("2026-10-26", "Meet EuGEnio", "Siamo online") and "versione" not in ultima
+    assert '<h2 id="d20261026">26 ottobre 2026 – Meet EuGEnio</h2>' in pag and '<p class="novita-testo">Siamo online</p>' in pag
+    assert entries[-1].find(f"{A}id").text.endswith("novita/d20261026") and entries[-1].find(f"{A}summary").text == "Siamo online"
+    with pytest.raises(SystemExit):              # senza versione solo una voce con il solo testo
+        f = Path(__import__("tempfile").mkdtemp()) / "n.toml"
+        f.write_text('[[voce]]\ndata = "2026-10-26"\ntitolo = "X"\nnuovo = ["a"]\n', encoding="utf-8")
+        CP.leggi_novita(f)
+    # (08/11/2026, Paolo) la versione del sito resta solo in novita.toml: né in pagina né nel feed (ancore per data)
+    corpo_pag = pag[pag.index('<main class="articolo novita"'):pag.index("</main>")]
+    corpo_pag = re.sub(r'^<main[^>]*>', "", corpo_pag)
+    for v in voci:
+        if v.get("versione"):
+            assert v["versione"] not in corpo_pag and v["versione"] not in xml, v["versione"]
+    assert "Versione del sito" not in pag and "Versione del sito" not in xml
+    assert 'id="d20261107"' in pag and 'id="d20261107-2"' in pag             # due voci lo stesso giorno: ancore stabili
+    # (08/11/2026, Paolo) solo funzioni per gli utenti: gruppi Nuovo / Migliorato / Verificato, niente modifiche interne
+    assert set(re.findall(r'<p class="novita-tipo">([^<]+)</p>', pag)) <= {"Nuovo", "Migliorato", "Verificato"}
+    assert "Cambiato" not in pag and "Corretto" not in pag and "Verificato" in pag
+    for x in ("anti-robot", "Turnstile", "llms.txt", "assistente AI", "agenti", "proxy", "PMTiles", "WMS", "Caddy", "cache",
+              "rotta", "menu"):
+        assert x.lower() not in testo.lower(), x
+    assert any("Dati climatici" in r and "Legge 10" in r for r in voci[0]["verificato"])
+    with pytest.raises(SystemExit, match="campi sconosciuti"):
+        f = Path(__import__("tempfile").mkdtemp()) / "c.toml"
+        f.write_text('[[voce]]\ndata = "2026-11-01"\nversione = "20261101a"\ntitolo = "X"\ncorretto = ["a"]\n', encoding="utf-8")
+        CP.leggi_novita(f)
+    # testata: Novità tra Mirror e Contattaci, nel menu del computer e del telefono; feed nella testa comune
+    for nome in ("index.html", "faq.html", "modelli3d.html", "novita.html"):
+        s = (QUI / "sito" / nome).read_text(encoding="utf-8")
+        info = re.search(r'<nav class="menu-info"[^>]*>(.*?)</nav>', s, re.S).group(1)
+        assert re.findall(r">([^<]+)</a>", info) == ["Come funziona", "F.A.Q.", "Sitografia", "Mirror", "Novità", "Contattaci"], nome
+        assert s.count(f'class="voce-novita" data-ultima="{voci[0]["versione"]}"') >= 2, nome
+        assert '<link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">' in s, nome
+    assert "application/atom+xml" in (QUI.parent / "fase4-server" / "Caddyfile").read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------- menu dell'08/11/2026 (decisioni di Paolo, ore 12:19)
+# pagine «in lavorazione»: voce col triangolo giallo e non cliccabile, nessun collegamento nel sito, avviso in cima
+PAGINE_IN_CORSO = ["edificio-obblighi.html", "edificio-geometria.html", "edificio-consumi.html", "edificio-fabbisogno.html",
+                   "edificio-involucro.html", "edificio-impianti.html", "edificio-ecobonus.html", "edificio-conto-termico.html",
+                   "cog-emissioni.html", "fv-ombre.html", "fv-irradiazione.html", "fv-producibilita.html", "fv-pvgis.html",
+                   "fv-dlgs199.html", "fv-leed.html", "edificio-cer.html"]
+ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html"],
+               "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
+                              "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
+               "statistiche": ["indicatori.html"]}
+
+
+def test_menu_08_11_gruppi_e_voci_in_lavorazione(sito):
+    t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
+    gruppi = {g["id"]: g for g in C.gruppi_menu(t)}
+    assert [g["titolo"] for g in gruppi.values()] == ["Clima e meteo", "Patrimonio", "Edifici", "Cogenerazione", "Fotovoltaico", "Statistiche"]
+    for gid, voci in ACCESSIBILI.items():
+        assert [v["pagina"] for v in gruppi[gid]["voci"]] == voci and all(v["tipo"] == "" for v in gruppi[gid]["voci"]), gid
+    assert gruppi["clima"]["voci"][-1]["nome"] == "Cambiamento climatico"
+    # Edifici: «Obblighi di legge» prima voce, Ecobonus e Conto Termico in fondo, tutte in lavorazione
+    ed = gruppi["edificio"]["voci"]
+    assert ed[0]["nome"] == "Obblighi di legge" and [v["nome"] for v in ed[-2:]] == ["Ecobonus", "Conto Termico"]
+    assert all(v["tipo"] == "corso" for v in ed)
+    # Comunità energetiche nel Fotovoltaico, prima della voce GME
+    fv = gruppi["fotovoltaico"]["voci"]
+    assert [v["pagina"] for v in fv[-2:]] == ["edificio-cer.html", "fv-mercato.html"] and fv[-1]["tipo"] == "gme"
+    assert [v["tipo"] for v in gruppi["cogenerazione"]["voci"]].count("corso") == 1
+    assert sorted(C.pagine_in_corso(t)) == sorted(PAGINE_IN_CORSO)
+    for p in PAGINE_IN_CORSO:
+        assert f'href="{p}"' not in t, p                                       # né tendina né menu del telefono
+        voci = re.findall(rf'<span class="voce-gme voce-corso" data-pagina="{re.escape(p)}"[^>]*>', t)
+        assert len(voci) == 2 and all('aria-disabled="true"' in v and 'title="In lavorazione: disponibile prossimamente"' in v for v in voci), p
+        assert (QUI / "sito" / p).exists(), p                                  # la pagina resta nel sito
+    C.main(["--sito", str(sito)])
+    for p in PAGINE_IN_CORSO:
+        s = (sito / p).read_text(encoding="utf-8")
+        # avviso in cima, subito dopo la testata, una volta sola; il gruppo del menu resta segnato
+        assert s.count("Pagina in lavorazione, non ancora verificata.") == 1, p
+        assert s.index("<!-- /testata -->") < s.index("<!-- in-lavorazione -->") < s.index("<main"), p
+        assert len(re.findall(rf'<span class="voce-gme voce-corso" data-pagina="{re.escape(p)}"[^>]*aria-current="page"', s)) == 2, p
+        assert s.count("data-attivo") == 2, p
+    for p in ("modelli3d.html", "edificio-clima.html", "index.html", "cog-car.html"):
+        assert "<!-- in-lavorazione -->" not in (sito / p).read_text(encoding="utf-8"), p
+
+
+def test_nessun_collegamento_interno_alle_pagine_in_lavorazione(sito):
+    """Come le pagine GME: nessun collegamento del sito porta a una pagina in lavorazione (né il menu, né «Nello stesso
+    gruppo», né i testi, né le Novità); resta solo il collegamento della pagina a sé stessa."""
+    C.main(["--sito", str(sito)])
+    for f in sorted(sito.glob("*.html")):
+        s = f.read_text(encoding="utf-8")
+        for m in re.finditer(r'<a [^>]*href="([^"#?]+)[^"]*"[^>]*>', s):
+            if m.group(1) in PAGINE_IN_CORSO:
+                assert m.group(1) == f.name, (f.name, m.group(0))
+    for js in sorted((QUI / "sito").glob("*.js")):
+        t = js.read_text(encoding="utf-8")
+        for p in PAGINE_IN_CORSO:
+            assert not re.search(rf'["\'`]{re.escape(p)}', t), (js.name, p)   # nessun «Apri in…» verso le pagine in lavorazione
+    voci = C.leggi_novita()
+    assert not any(c["indirizzo"] in PAGINE_IN_CORSO for v in voci for c in v.get("collegamenti", []))
+    testo = json.dumps(voci, ensure_ascii=False)
+    for vecchio in ("Edificio ›", "Fotovoltaico:", "Cogenerazione ›", "Le pagine Edificio", "pagine 3D"):
+        assert vecchio not in testo, vecchio
+    assert any("Clima e meteo › Cambiamento climatico" in x for x in voci[0].get("migliorato", []))
+
+
+def test_stesso_gruppo_ed_etichetta_dal_menu(sito):
+    """«Nello stesso gruppo» e l'etichetta del gruppo sopra il titolo vengono dal menu della testata."""
+    C.main(["--sito", str(sito)])
+    s = (sito / "edificio-clima.html").read_text(encoding="utf-8")
+    assert '<p class="gruppo-servizio">Clima e meteo</p>' in s and "<h1>Cambiamento climatico</h1>" in s
+    assert "<title>EuGEnio – Cambiamento climatico</title>" in s and "Clima che cambia" not in s
+    blocco = re.search(r'<ul class="stesso-gruppo">(.*?)</ul>', s, re.S).group(1)
+    assert re.findall(r'href="([^"]+)"', blocco) == ["dati.html", "legge10.html", "./", "edificio-clima.html"]
+    s = (sito / "edificio-cer.html").read_text(encoding="utf-8")
+    assert '<p class="gruppo-servizio">Fotovoltaico</p>' in s
+    blocco = re.search(r'<ul class="stesso-gruppo">(.*?)</ul>', s, re.S).group(1)
+    assert blocco.count('class="voce-gme voce-corso"') == 6 and blocco.count('title="In attesa di autorizzazione dal GME"') == 1
+    assert re.findall(r'href="([^"]+)"', blocco) == ["edificio-cer.html"]
+    for p in ("edificio-geometria.html", "edificio-ecobonus.html", "edificio-conto-termico.html", "edificio-fabbisogno.html"):
+        assert '<p class="gruppo-servizio">Edifici</p>' in (sito / p).read_text(encoding="utf-8"), p
+    s = (sito / "lidar.html").read_text(encoding="utf-8")
+    blocco = re.search(r'<ul class="stesso-gruppo">(.*?)</ul>', s, re.S).group(1)
+    assert re.findall(r'href="([^"]+)"', blocco) == ACCESSIBILI["patrimonio"]
+    for p in ("edificio-ecobonus.html", "edificio-conto-termico.html"):
+        s = (sito / p).read_text(encoding="utf-8")
+        assert 'class="articolo segnaposto"' in s and 'class="stato-pagina"' in s and 'id="fonti"' in s, p
+
+
+def test_ricerca_esempio_cesena_e_partenza():
+    js = (QUI / "sito" / "cerca_luogo.js").read_text(encoding="utf-8")
+    assert 'placeholder: "viale Ghirotti 286"' in js and 'placeholder: "Cesena"' in js and "Gambalunga" not in js
+    m = re.search(r"const PARTENZA = \{ lon: ([\d.]+), lat: ([\d.]+), zoom: ([\d.]+)", js)
+    lon, lat, z = map(float, m.groups())
+    # ospedale Bufalini (particella foglio 149 n. 387 dell'archivio DBTR di Cesena: 44,1319–44,1364 N, 12,2580–12,2625 E)
+    assert 12.2580 < lon < 12.2625 and 44.1310 < lat < 44.1364 and 15 <= z <= 16.5
+    assert "partenza()" in (QUI / "sito" / "edificio3d.js").read_text(encoding="utf-8")
+    assert "P0.zoom" in (QUI / "sito" / "ortofoto.js").read_text(encoding="utf-8")
+    assert 'placeholder="Es. viale Ghirotti 286, Cesena' in (QUI / "sito" / "index.html").read_text(encoding="utf-8")
