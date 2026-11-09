@@ -100,6 +100,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "ORTOFOTO_SOLO_CONFERMATE", False)
     O.fonti(ricarica=True)
     O.ritmo.svuota()
+    O.guasti.svuota()
     P.limiti.clear()
     chiamate = []
 
@@ -157,18 +158,64 @@ def test_fonte_spenta_dal_env_e_solo_confermate(client, monkeypatch):
     assert not chiamate[:-1]
 
 
-def test_errore_wms_non_si_copia_e_ritmo_503(client, tmp_path, monkeypatch):
+def _errore(r, motivo):
+    """Tessera d'errore «pulita» (09/11/2026 c): 200, PNG trasparente, mai in copia, motivo e Retry-After."""
+    return (r.status_code == 200 and r.headers["content-type"] == "image/png" and r.headers["cache-control"] == "no-store"
+            and r.headers.get("x-ortofoto-errore") == motivo and int(r.headers["retry-after"]) >= 1 and O.vuota(r.content))
+
+
+def test_errore_wms_non_si_copia_e_turno_mancato(client, tmp_path, monkeypatch):
+    """09/11/2026 c (prove P9: «502 Bad Gateway» a raffica da AGEA 2012): un errore della fonte o il turno non arrivato
+    in tempo danno una tessera vuota pulita (200, no-store, X-Ortofoto-Errore), non 502 o 503."""
     c, chiamate = client
     f = O.fonti()["toscana2023"]
     monkeypatch.setattr(f, "url", f.url + "&errore=1")
     r = c.get("/api/ortofoto/toscana2023/16/34800/23900.jpg")
-    assert r.status_code == 502 and not (tmp_path / "copia" / "toscana2023").exists()
+    assert _errore(r, "fonte") and not (tmp_path / "copia" / "toscana2023").exists()
     monkeypatch.setattr(f, "al_secondo", 1)
     monkeypatch.setattr(C, "ORTOFOTO_ATTESA_S", 0)
     O.ritmo.svuota()
-    assert c.get("/api/ortofoto/toscana2023/16/34800/23901.jpg").status_code == 502   # errore della fonte, conta
-    r = c.get("/api/ortofoto/toscana2023/16/34800/23902.jpg")
-    assert r.status_code == 503 and "retry-after" in r.headers
+    assert _errore(c.get("/api/ortofoto/toscana2023/16/34800/23901.jpg"), "fonte")   # errore della fonte, conta
+    assert _errore(c.get("/api/ortofoto/toscana2023/16/34800/23902.jpg"), "occupata")
+
+
+def test_fonte_ferma_dopo_errori_ripetuti(client, monkeypatch):
+    """Dopo GUASTI_SOGLIA errori di fila la fonte è ferma: tessere vuote subito, senza chiamarla; una risposta buona dopo
+    il fermo la fa ripartire. Anche un timeout della fonte è un errore pulito."""
+    import asyncio
+    c, chiamate = client
+    f = O.fonti()["pcn2012"]
+    monkeypatch.setattr(f, "url", f.url + "&errore=1")
+    for i in range(O.GUASTI_SOGLIA):
+        assert _errore(c.get(f"/api/ortofoto/pcn2012/17/69900/{47700 + i}.jpg"), "fonte")
+    n = len(chiamate)
+    r = c.get("/api/ortofoto/pcn2012/17/69900/47790.jpg")
+    assert _errore(r, "ferma") and len(chiamate) == n and 30 <= int(r.headers["retry-after"]) <= 60
+    O.guasti.svuota()
+    monkeypatch.setattr(f, "url", f.url.replace("&errore=1", ""))
+    assert c.get("/api/ortofoto/pcn2012/17/69900/47791.jpg").headers["content-type"] == "image/jpeg"
+
+    async def lenta(url):
+        await asyncio.sleep(5)
+    monkeypatch.setattr(O, "_scarica", lenta)
+    monkeypatch.setattr(C, "ORTOFOTO_TIMEOUT_S", 0.2)
+    assert _errore(c.get("/api/ortofoto/pcn2012/17/69900/47792.jpg"), "fonte")
+
+
+def test_guasti_fermo_che_raddoppia():
+    g = O.Guasti()
+    for k in range(O.GUASTI_SOGLIA - 1):
+        assert g.errore("x", ora=100.0 + k) == 0
+    assert g.errore("x", ora=106.0) == O.GUASTI_PAUSA_S and g.ferma_per("x", ora=110.0) == O.GUASTI_PAUSA_S - 4
+    assert g.ferma_per("x", ora=200.0) == 0
+    for k in range(O.GUASTI_SOGLIA - 1):
+        g.errore("x", ora=300.0 + k)
+    assert g.errore("x", ora=306.0) == 2 * O.GUASTI_PAUSA_S                    # secondo fermo: il doppio
+    g.buona("x")
+    for k in range(O.GUASTI_SOGLIA - 1):
+        g.errore("x", ora=1000.0 + k)
+    assert g.errore("x", ora=1006.0) == O.GUASTI_PAUSA_S                       # dopo una risposta buona si riparte da 60 s
+    assert g.errore("y", ora=1.0) == 0
 
 
 def test_pulizia_della_copia(tmp_path, monkeypatch):

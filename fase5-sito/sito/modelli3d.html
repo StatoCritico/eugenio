@@ -11,20 +11,20 @@ try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
 var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261109b";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261109b"></script>
-<link rel="stylesheet" href="stile.css?v=20261109b">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261109b">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261109b">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261109c";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261109c"></script>
+<link rel="stylesheet" href="stile.css?v=20261109c">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261109c">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261109c">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
-<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261109b">
+<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261109c">
 </head>
 <body>
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261109b" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261109c" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -32,7 +32,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261109b">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261109c">Novità</a>
       <a href="contatti.html">Contattaci</a>
     </nav>
     <details class="menu-tutto">
@@ -58,7 +58,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="indicatori.html">Costi energetici Sanità</a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261109b">Novità</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261109c">Novità</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -185,7 +185,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <span><i class="pallino vicini"></i>edifici vicini (DB topografico)</span>
       <span id="legenda-osm"><i class="pallino osm"></i>edifici OpenStreetMap o sagome regionali (altezza da OSM o stimata)</span>
       <span><i class="pallino ombra"></i>ombre</span>
-      <span id="legenda-falde"><i class="pallino falde"></i>falde dei tetti: LiDAR, stimate dal colmo DBTR o ipotizzate a 22°/32° (dall'arancio, a sud, al blu, a nord)</span>
+      <span id="legenda-falde"><i class="pallino falde"></i>tetti a falde scelti dall'utente (dall'arancio, a sud, al blu, a nord); gli altri piani</span>
       <span><i class="pallino fv"></i>aree FV</span>
       <span><i class="pallino facciate"></i>facciate al sole (dal chiaro allo scuro: più kWh/m²)</span>
     </div>
@@ -204,14 +204,14 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <a href="https://www.agenziaentrate.gov.it/portale/schede/fabbricatiterreni/consultazione-cartografia-catastale/servizio-consultazione-cartografia">Agenzia
         delle Entrate – Cartografia catastale</a> (CC BY 4.0); contorni degli edifici: DBTR Emilia-Romagna (CC BY 4.0) e, fuori
         dall'Emilia-Romagna, © contributori OpenStreetMap (ODbL 1.0). Ricerca: ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)
-        e <a href="https://zornade.com">dati elaborati da Zornade</a>. Falde dei tetti, dove ci sono: rilievi
+        e <a href="https://zornade.com">dati elaborati da Zornade</a>. Alberi, dove ci sono: chiome dai rilievi
         LiDAR della <a href="https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/cartografia-di-base/quadri-di-unione/layer-16">Regione
-        Emilia-Romagna</a> (CC BY 4.0) elaborati da EuGEnio; fonte e licenza di ogni falda nella tabella.</p>
+        Emilia-Romagna</a> (CC BY 4.0) elaborati da EuGEnio.</p>
       <p>Altezze del DBTR approssimate (circa ±3 m): piani, superfici, ombre e producibilità sono stime e vanno
         verificate prima di usarle in un progetto.</p>
       </div>
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261109b" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261109c" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
   <!-- /piede -->
     </footer>
@@ -271,6 +271,30 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       </details>
     </div>
 
+    <div class="passo" id="passo-coperture">
+      <h2><span class="n">4</span>Coperture</h2>
+      <p class="aiuto">Tutti i tetti partono piani. Accendi la tegola e fai clic su un edificio della mappa (anche un vicino, in 2D
+        o in 3D): gli dai un tetto a falde con l'inclinazione scritta qui sotto, a capanna sul lato lungo o a padiglione; un
+        secondo clic sullo stesso edificio lo riporta piano. Con la tegola accesa il clic non sceglie l'edificio (Esc la spegne).
+        Le scelte restano in questo browser: esportale per portarle su un altro PC. Entrano nell'immagine, nel report e nella
+        tabella dei corpi («tetto a falde scelto dall'utente»).</p>
+      <div class="riga-campi coperture-comandi">
+        <button class="bottone secondario tegola" id="tegola" type="button" aria-pressed="false" title="Tetto a falde: clic su un edificio per cambiarlo" aria-label="Tetto a falde: clic su un edificio per cambiarlo"><svg class="icona-tegola" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M2.6 11.6 12 6.2l9.4 5.4L12 17z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M2.6 11.6v2.6L12 19.6l9.4-5.4v-2.6M12 17v2.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.3 9.5l9.4 5.4M9.4 7.7l9.4 5.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span>Tegola</span></button>
+        <label class="inclinazione-tetti">Inclinazione <input id="inclinazione-tetti" type="number" min="5" max="60" step="1" value="22" inputmode="decimal"> °</label>
+      </div>
+      <div class="riga-campi coperture-comandi">
+        <button class="bottone secondario" id="reset-piani" type="button" disabled>Reset piani</button>
+        <span class="conferma-reset" id="conferma-reset" role="group" aria-label="Conferma" hidden><span id="conferma-reset-testo">Riporto piani tutti i tetti scelti?</span>
+          <button class="bottone" id="reset-si" type="button">Sì, riporta tutti piani</button>
+          <button class="bottone secondario" id="reset-no" type="button">Annulla</button></span>
+      </div>
+      <div class="riga-campi coperture-comandi">
+        <button class="bottone secondario" id="esporta-tetti" type="button" disabled>Esporta tetti</button>
+        <label class="bottone secondario importa-tetti">Importa tetti <input id="importa-tetti" type="file" accept=".json,application/json"></label>
+      </div>
+      <p class="aiuto stato-tetti" id="stato-tetti" role="status" aria-live="polite">Nessun tetto a falde scelto: tutti i tetti sono piani.</p>
+    </div>
+
     <div class="passo" id="passo-corpi" hidden>
       <h2><span class="n">2</span>Corpi</h2>
       <p class="aiuto">Ogni corpo è un prisma con altezza e tetto propri. Puoi correggere gronda, colmo, tetto e piani (il
@@ -278,12 +302,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <div class="tabella-scorre"><table class="corpi" id="tabella-corpi"></table></div>
       <div class="falde-tetti" id="falde-tetti">
         <h3>Falde dei tetti</h3>
-        <p class="aiuto">La forma dei tetti viene, per ogni corpo, dalla fonte più affidabile che c'è: le falde misurate dal
-          rilievo LiDAR (o dal tuo modello), poi il tetto stimato dal colmo del DB topografico, altrimenti un tetto a falde
-          ipotizzato (22° in pianura, 32° in montagna; piano per capannoni, commerciali, corpi molto grandi o bassi). Per ogni
-          falda: pendenza, orientamento (gradi da nord, 180 = sud) e superficie inclinata; sulla mappa le falde inclinate si
-          vedono a gradini, dal giallo-arancio (verso sud) al blu (verso nord). Le aree FV disegnate su una falda ne prendono
-          inclinazione e orientamento. Se correggi un corpo, le sue falde non valgono più.</p>
+        <p class="aiuto">I tetti sono piani, salvo quelli a cui hai dato un tetto a falde con la tegola della sezione «Coperture».
+          Per ogni falda: pendenza, orientamento (gradi da nord, 180 = sud) e superficie inclinata; sulla mappa le falde
+          inclinate si vedono a gradini, dal giallo-arancio (verso sud) al blu (verso nord). Le aree FV disegnate su una falda
+          ne prendono inclinazione e orientamento; ombre, sole e producibilità si ricalcolano quando cambi un tetto (le
+          inclinazioni e gli orientamenti che hai corretto a mano restano). Se correggi un corpo, le sue falde non valgono più.</p>
         <div class="messaggio" id="messaggio-falde" role="status" aria-live="polite"></div>
         <div class="tabella-scorre"><table class="corpi" id="tabella-falde"></table></div>
       </div>
@@ -466,21 +489,21 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   </section>
 </main>
 
-<script src="aspetto.js?v=20261109b"></script>
-<script src="grafici.js?v=20261109b"></script>
-<script src="divisore.js?v=20261109b"></script>
-<script src="report.js?v=20261109b"></script>
-<script src="tabelle.js?v=20261109b"></script>
-<script src="lib/maplibre-gl/maplibre-gl.js?v=20261109b"></script>
-<script src="lib/pmtiles/pmtiles.js?v=20261109b"></script>
-<script src="edifici_calcoli.js?v=20261109b"></script>
-<script src="minimappa.js?v=20261109b"></script>
-<script src="confini_gl.js?v=20261109b"></script>
-<script src="esporta_mappa.js?v=20261109b"></script>
-<script src="cerca_luogo.js?v=20261109b"></script>
-<script src="strati_gl.js?v=20261109b"></script>
-<script src="dbtr_locale.js?v=20261109b"></script>
-<script src="sposta_ortofoto.js?v=20261109b"></script>
-<script src="edificio3d.js?v=20261109b"></script>
+<script src="aspetto.js?v=20261109c"></script>
+<script src="grafici.js?v=20261109c"></script>
+<script src="divisore.js?v=20261109c"></script>
+<script src="report.js?v=20261109c"></script>
+<script src="tabelle.js?v=20261109c"></script>
+<script src="lib/maplibre-gl/maplibre-gl.js?v=20261109c"></script>
+<script src="lib/pmtiles/pmtiles.js?v=20261109c"></script>
+<script src="edifici_calcoli.js?v=20261109c"></script>
+<script src="minimappa.js?v=20261109c"></script>
+<script src="confini_gl.js?v=20261109c"></script>
+<script src="esporta_mappa.js?v=20261109c"></script>
+<script src="cerca_luogo.js?v=20261109c"></script>
+<script src="strati_gl.js?v=20261109c"></script>
+<script src="dbtr_locale.js?v=20261109c"></script>
+<script src="sposta_ortofoto.js?v=20261109c"></script>
+<script src="edificio3d.js?v=20261109c"></script>
 </body>
 </html>

@@ -108,10 +108,20 @@
     a.append("Ortofoto: ", f.citazione, " – licenza ");
     const l = h("a", null, f.licenza); l.href = f.scheda; a.appendChild(l); a.append(".");
   }
-  function sfondo() {
+  // (09/11/2026 c) solo le fonti applicabili nel punto (regione e riquadro, EUGENIO_CONFINI.fontiNelPunto): a Bologna non
+  // più la Toscana, il cui riquadro arriva fin lì
+  async function applicabili(c) {
+    const C = window.EUGENIO_CONFINI;
+    try { if (C && C.fontiNelPunto) return await C.fontiNelPunto(stato.fonti, c[0], c[1]); } catch { /* sotto */ }
+    return stato.fonti.filter((x) => copre(x, c));
+  }
+  let giro = 0;
+  async function sfondo() {
     const m = stato.mappa; if (!m) return;
-    const c = [m.getCenter().lng, m.getCenter().lat];
-    const f = stato.fonti.find((x) => copre(x, c) && x.copia) || stato.fonti.find((x) => copre(x, c)) || null;
+    const c = [m.getCenter().lng, m.getCenter().lat], mio = ++giro;
+    const qui = await applicabili(c);
+    if (mio !== giro) return;
+    const f = qui.find((x) => x.copia) || qui[0] || null;
     if (f !== stato.fonte) {
       if (m.getLayer("ortofoto")) m.removeLayer("ortofoto");
       if (m.getSource("ortofoto")) m.removeSource("ortofoto");

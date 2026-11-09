@@ -21,6 +21,20 @@ Container:
 
 Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, vedi fase 3).
 
+## Correzioni del 09/11/2026 c (`?v=20261109c`, procedura Q di `AGGIORNAMENTO_2026-11-09c.md`)
+
+- **Ortofoto, errori della fonte** (`servizio/ortofoto.py`, prove P9: «502 Bad Gateway» a raffica di AGEA 2012 e ortofoto
+  «a pezzi»): la rotta delle tessere è **asincrona** (`async def tessera`, `asyncio.sleep` per il turno, `httpx.AsyncClient`;
+  prima ogni tessera in attesa del turno teneva un thread: con 40 thread fermi le richieste in coda superavano i 30 s di
+  `read_timeout` di Caddy, che rispondeva 502); chiamata alla fonte al più `ORTOFOTO_TIMEOUT_S` (12 s, nuovo, facoltativo nel
+  `.env`); al più `2 × ritmo.al_secondo` chiamate in volo per fonte. Un errore della fonte (timeout, rete, 5xx, XML
+  d'errore, immagine illeggibile) o il turno non arrivato in tempo danno una **tessera vuota pulita**: 200, PNG trasparente,
+  `Cache-Control: no-store`, `X-Ortofoto-Errore: fonte|occupata|ferma`, `Retry-After` (prima 502 e 503). Dopo 6 errori di fila
+  in 60 s la fonte è **ferma** 60 s (poi 120, fino a 5 minuti; una risposta buona azzera): tessere vuote subito, senza
+  chiamarla e senza contarle nel limite. La pagina conta gli errori e scrive la nota sotto la mappa (fase 5, `protezione.js`).
+- **Zoom massimi reali** (TOML della fase 10): regionali a 20 cm 19 (prima 20), AGEA 2012 18 (prima 19), Sentinel-2 15.
+- Test: `test_ortofoto.py` (errore pulito e turno mancato, fonte ferma dopo errori ripetuti e timeout, fermo che raddoppia).
+
 ## Correzioni del 09/11/2026 b (`?v=20261109b`, procedura P1–P10 di `AGGIORNAMENTO_2026-11-09b.md`)
 
 - **Ortofoto, tessere segnaposto** (`servizio/ortofoto.py`): campo `segnaposto` delle fonti (TOML della fase 10, oggi

@@ -9,6 +9,17 @@
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
   <entry>
+    <title>9 novembre 2026 – Tetti a falde scelti da te e foto aerea scelta da sola</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261109-3</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261109-3"/>
+    <updated>2026-11-09T12:00:00Z</updated>
+    <summary>Tetti a falde scelti da te e foto aerea scelta da sola</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D, nuova sezione «Coperture»: tutti i tetti partono piani; accendi la tegola, scrivi l&amp;#x27;inclinazione (22° all&amp;#x27;inizio) e fai clic su un edificio, anche vicino, per dargli un tetto a falde; un secondo clic lo riporta piano. «Reset piani» li riporta tutti piani, dopo una conferma.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D, «Coperture»: i tetti che scegli restano in questo browser anche alle visite successive; con «Esporta tetti» e «Importa tetti» li porti su un altro computer in un piccolo file. Entrano nell&amp;#x27;immagine scaricata, nel report e nella tabella dei corpi.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D e Ortofoto: la fonte della foto aerea si sceglie da sola nel punto della mappa, la migliore che c&amp;#x27;è (in Emilia-Romagna e in Toscana le ortofoto regionali a 20 cm, altrove l&amp;#x27;ortofoto nazionale AGEA 2012), e la casella mostra solo le fonti che coprono quel punto. Se scegli tu una fonte, resta finché la mappa è nella sua zona.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D e Ortofoto: se una fonte della foto aerea non risponde, sotto la mappa compare una nota e la pagina riprova da sola dopo qualche minuto, invece di mostrare la foto a pezzi.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: la casella «Alberi» mostra le chiome anche nella mappa 2D, e se in quel punto non ci sono chiome misurate lo dice.&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
     <title>9 novembre 2026 – Ricerca con un solo comune e comandi sotto la mappa</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261109-2</id>
     <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261109-2"/>

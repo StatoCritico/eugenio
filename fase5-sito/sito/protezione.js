@@ -11,6 +11,11 @@
 // e ripete la richiesta. Senza verifica sul server (prove, mirror) non fa nulla.
 // Dal 09/11/2026 gestisce anche i limiti orari delle fonti della mappa (429 di ortofoto, strati, edifici OSM, terreno):
 // pausa della fonte per il tempo del Retry-After e nota sotto la mappa (vedi «limiti orari delle fonti della mappa»).
+// Dal 09/11/2026 c anche le fonti che non rispondono (tessere vuote con X-Ortofoto-Errore, risposte 5xx, rete caduta):
+// dopo errori ripetuti la fonte si ferma qualche minuto, con la nota «La fonte … non risponde, riprovo tra N minuti»
+// (vedi «fonti che non rispondono»). Turnstile si carica solo alla prima richiesta protetta (ricerca, edifici
+// OpenStreetMap, Patrimonio…): le righe di challenges.cloudflare.com in Console (CSP «connect-src … data:», «OTS parsing
+// error», avvisi WebGPU) vengono dal suo riquadro e dalla sua pagina, non da EuGEnio.
 (function () {
   "use strict";
   const PROTETTE = /\/api\/(previsione|patrimonio|geocodifica|particella|storici\/estrai|edifici\/osm|dbtr\/inizia)(?:[/?#]|$)/;
@@ -221,6 +226,11 @@
       if (p.fino > ora) righe.push(`${nome}: raggiunto il limite orario di richieste per il tuo indirizzo. Mi fermo e riprovo da solo tra ${minuti(p.fino - ora)}.`);
       else righe.push(`${nome}: riprovo adesso…`);
     }
+    for (const g of Object.values(guasti)) {
+      if (!g.nome) continue;
+      if (g.fino > ora) righe.push(`${g.nome}: la fonte non risponde (o è molto richiesta). Mi fermo e riprovo da solo tra ${minuti(g.fino - ora)}.`);
+      else if (g.prova) righe.push(`${g.nome}: riprovo adesso…`);
+    }
     const n = preparaNota();
     if (!n) return;
     n.textContent = righe.join(" ");
@@ -254,18 +264,84 @@
     }
     if (cambiato) disegnaNota();
   }
-  async function conLimiti(fam, chiama) {
+  // ------------------------------------------------------------------ fonti che non rispondono (09/11/2026 c)
+  // Prove P9 di Paolo: righe rosse «502 Bad Gateway» di AGEA 2012 e ortofoto «a pezzi», senza nessuna spiegazione. Il
+  // server ora risponde a un errore della fonte con una tessera vuota (200, X-Ortofoto-Errore: fonte, occupata o ferma,
+  // Retry-After): niente righe rosse. Qui si contano questi errori (e le risposte 5xx o la rete caduta, per tutte le
+  // fonti della mappa): dopo ERRORI_SOGLIA errori in ERRORI_FINESTRA_S secondi, o subito se il server dice «ferma», la
+  // fonte si ferma per il tempo del Retry-After (da 30 s a 20 minuti), con la nota sotto la mappa; finita la pausa le
+  // tessere si ricaricano. Un errore isolato fa solo ricaricare le tessere di quella fonte poco dopo (i buchi si riempiono).
+  const ERRORI_SOGLIA = 4, ERRORI_FINESTRA_S = 60;
+  const nomiFonti = {};          // id della fonte di ortofoto → nome (da /api/ortofoto/fonti)
+  const guasti = {};             // chiave (ortofoto:<id>, strati, terreno…) → { errori: [ms], fino, timer, nome, fam }
+  let ricarica = null;
+  function chiaveFonte(fam, url, r) {
+    if (fam !== "ortofoto") return fam;
+    const id = (r && r.headers && r.headers.get("X-Ortofoto-Fonte")) || ((/\/api\/ortofoto\/([^/]+)\//.exec(url) || [])[1]) || "?";
+    return `ortofoto:${id}`;
+  }
+  function nomeGuasto(k, fam) {
+    if (k.startsWith("ortofoto:")) { const id = k.slice(9); return `Ortofoto «${nomiFonti[id] || id}»`; }
+    return FONTI_LIMITE[fam] || fam;
+  }
+  function guastoAttivo(k) { const g = guasti[k]; return g && g.fino > Date.now() ? g : null; }
+  function ricaricaPresto(fam, secondi) {
+    // un errore isolato: le tessere di quella famiglia si richiedono una volta, dopo il Retry-After (15–90 s)
+    if (ricarica) return;
+    const s = Math.min(90, Math.max(15, Number.isFinite(secondi) ? secondi : 30));
+    ricarica = setTimeout(() => { ricarica = null; document.dispatchEvent(new CustomEvent("eugenio:limite", { detail: { tipo: fam, famiglie: [fam], fermo: false } })); }, s * 1000);
+  }
+  function erroreFonte(fam, url, r, motivo, secondi) {
+    const k = chiaveFonte(fam, url, r), ora = Date.now();
+    const g = guasti[k] = guasti[k] || { errori: [], fino: 0, fam };
+    if (g.fino > ora) return;
+    g.errori = g.errori.filter((t) => ora - t < ERRORI_FINESTRA_S * 1000).concat(ora);
+    if (motivo !== "ferma" && g.errori.length < ERRORI_SOGLIA) { ricaricaPresto(fam, secondi); return; }
+    const s = Math.min(PAUSA_MAX_S, Math.max(PAUSA_MIN_S, Number.isFinite(secondi) && secondi > 0 ? secondi : 120));
+    g.fino = ora + s * 1000; g.errori = []; g.nome = nomeGuasto(k, fam);
+    if (g.timer) clearTimeout(g.timer);
+    g.timer = setTimeout(() => {
+      g.prova = true; disegnaNota();
+      document.dispatchEvent(new CustomEvent("eugenio:limite", { detail: { tipo: fam, famiglie: [fam], fermo: false, fonte: k } }));
+    }, s * 1000);
+    if (window.console && console.info) console.info(`EuGEnio: ${g.nome} non risponde, ferma per ${Math.round(s)} s`);
+    disegnaNota();
+    if (!orologio) orologio = setInterval(disegnaNota, 15000);
+    document.dispatchEvent(new CustomEvent("eugenio:limite", { detail: { tipo: fam, famiglie: [fam], fermo: true, secondi: s, fonte: k } }));
+  }
+  function fonteBuona(fam, url, r) {
+    const k = chiaveFonte(fam, url, r), g = guasti[k];
+    if (!g) return;
+    if (g.fino > Date.now()) return;
+    delete guasti[k];
+    if (g.prova || g.nome) disegnaNota();
+  }
+  async function conLimiti(fam, chiama, url) {
     const p = inPausa(fam);
     if (p) {
       return new Response(JSON.stringify({ detail: "Fonte ferma per il limite orario: riprovo più tardi." }), {
         status: 429, headers: { "Content-Type": "application/json; charset=utf-8", "X-EuGEnio-Pausa": "1",
           "Retry-After": String(Math.ceil((p.fino - Date.now()) / 1000)) } });
     }
-    const r = await chiama();
+    const g = guastoAttivo(chiaveFonte(fam, url, null));
+    if (g) {
+      return new Response(JSON.stringify({ detail: "Fonte che non risponde: riprovo più tardi." }), {
+        status: 503, headers: { "Content-Type": "application/json; charset=utf-8", "X-EuGEnio-Pausa": "1",
+          "Retry-After": String(Math.ceil((g.fino - Date.now()) / 1000)) } });
+    }
+    let r;
+    try { r = await chiama(); }
+    catch (e) {
+      if (!(e && e.name === "AbortError")) erroreFonte(fam, url, null, "rete", NaN);
+      throw e;
+    }
+    const errore = r.headers.get("X-Ortofoto-Errore");
     if (r.status === 429) {
       const tipo = r.headers.get("X-EuGEnio-Limite") || fam;
       ferma(FONTI_LIMITE[tipo] ? tipo : fam, parseInt(r.headers.get("Retry-After") || "", 10));
-    } else if (r.ok) rispostaBuona(fam);
+    } else if (errore || (r.status >= 500 && r.status !== 501)) {
+      erroreFonte(fam, url, r, errore || String(r.status), parseInt(r.headers.get("Retry-After") || "", 10));
+    } else if (r.ok) { rispostaBuona(fam); fonteBuona(fam, url, r); }
     return r;
   }
   // mappa MapLibre: gli errori delle tessere (429, 503, 404 fuori zona) non vanno in Console uno per uno (MapLibre scrive
@@ -305,13 +381,20 @@
       }
     });
   }
-  window.EUGENIO_LIMITI = { famigliaDi, inPausa, ferma, riprendi, pause, collega, FONTI: FONTI_LIMITE };
+  window.EUGENIO_LIMITI = { famigliaDi, inPausa, ferma, riprendi, pause, collega, FONTI: FONTI_LIMITE, guasti, nomiFonti, erroreFonte };
 
+  // nomi delle fonti di ortofoto per la nota (dalla risposta di /api/ortofoto/fonti, chiunque la chieda)
+  function leggiNomi(r) {
+    try { r.clone().json().then((d) => ((d && d.fonti) || []).forEach((f) => { if (f && f.id) nomiFonti[f.id] = f.nome || f.id; })).catch(() => {}); }
+    catch (e) { /* niente */ }
+    return r;
+  }
   window.fetch = async function (input, init) {
     const url = indirizzo(input);
     const fam = famigliaDi(url);
-    if (!PROTETTE.test(url)) return fam ? conLimiti(fam, () => originale(input, init)) : originale(input, init);
-    if (fam) return conLimiti(fam, () => protetta(url, input, init));
+    if (/\/api\/ortofoto\/fonti(?:[?#]|$)/.test(url)) return originale(input, init).then(leggiNomi);
+    if (!PROTETTE.test(url)) return fam ? conLimiti(fam, () => originale(input, init), url) : originale(input, init);
+    if (fam) return conLimiti(fam, () => protetta(url, input, init), url);
     return protetta(url, input, init);
   };
   async function protetta(url, input, init) {

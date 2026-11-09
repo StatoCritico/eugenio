@@ -24,7 +24,7 @@ scheda = "https://cloudless.eox.at/pricing"
 stato = "confermata"
 attiva = true
 cache = true
-zoom = [5, 15]
+zoom = [5, 15]                     # 10 m a terra = zoom 14; EOX dà tessere fino al 17 (ingrandite), qui fino al 15
 riquadro = [6.6, 35.4, 18.6, 47.1]
 ritmo = { al_secondo = 4, all_ora = 3000 }
 priorita = 9
@@ -44,7 +44,7 @@ stato = "confermata"               # confermata come sola consultazione dal vivo
 attiva = true
 cache = false
 nei_report = false
-zoom = [12, 19]
+zoom = [12, 18]                    # 09/11/2026 c: 50 cm a terra = zoom 18 (0,43 m/pixel a 44° N); oltre la mappa ingrandisce le tessere del 18
 riquadro = [6.6, 35.4, 18.6, 47.1]
 ritmo = { al_secondo = 4, all_ora = 4000 }   # 09/11/2026: 2 → 4 al secondo, 2000 → 4000 all'ora (una vista 3D inclinata chiede 50–80 tessere)
 priorita = 8

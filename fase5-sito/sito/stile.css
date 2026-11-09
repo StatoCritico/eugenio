@@ -1446,3 +1446,18 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
   main.pagina-patrimonio > .mappa-area { scrollbar-width: thin; }
   main.pagina-patrimonio > .mappa-area::-webkit-scrollbar { display: initial; }
 }
+
+/* (09/11/2026 c) sezione «Coperture» delle pagine 3D: tegola (interruttore), inclinazione, «Reset piani» con conferma nella
+   pagina (niente confirm() del browser), esporta e importa i tetti */
+.coperture-comandi { align-items: center; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
+.coperture-comandi > * { margin: 0; }
+.bottone.tegola { display: inline-flex; align-items: center; gap: .45em; }
+.bottone.tegola .icona-tegola { flex: 0 0 auto; }
+.bottone.tegola[aria-pressed="true"], .bottone.tegola[aria-pressed="true"]:hover { background: #b04a24; border-color: #b04a24; color: #fff; }
+.inclinazione-tetti input { width: 5.5em; }
+.conferma-reset { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.conferma-reset[hidden] { display: none; }
+.importa-tetti { position: relative; cursor: pointer; }
+.importa-tetti input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.importa-tetti:focus-within { outline: 2px solid var(--primario); outline-offset: 2px; }
+.stato-tetti { margin-top: var(--s2); }

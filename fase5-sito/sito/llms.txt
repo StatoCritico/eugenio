@@ -5,8 +5,9 @@
 > ombre e fotovoltaico, costi energetici della sanità. Sito in italiano; servizio sperimentale. Ultimo aggiornamento:
 > 09/11/2026 (edifici 3D di Roma e Bari per il comune intero; colore degli edifici e alberi in Modelli 3D, sotto la mappa;
 > ricerca con un solo Comune in cima, poi Indirizzo, Foglio e Particella e un solo «Reset», tutti i comuni italiani; limiti
-> per IP solo sulle tessere chieste alla fonte e 429 con Retry-After; Previsioni non più sperimentale), versione del sito
-> ?v=20261109b.
+> per IP solo sulle tessere chieste alla fonte e 429 con Retry-After; Previsioni non più sperimentale; tetti tutti piani
+> in partenza e tetti a falde scelti dall'utente nella sezione «Coperture»; fonte dell'ortofoto scelta da sola nel punto),
+> versione del sito ?v=20261109c.
 
 Le istruzioni complete per gli agenti AI (pagine, parametri dell'indirizzo, formati dei file, API libere e protette,
 limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un solo file: leggilo prima di usare il servizio.
@@ -37,8 +38,11 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
   Ancona, Roma, Bari, Potenza, Napoli (altezze dalle classi del Copernicus Urban Atlas Building Height
   2012), Palermo e Cagliari (parte). Sagome regionali al volo senza altezze anche in Sardegna e Campania. Citare
   l'attribuzione dell'archivio; la fonte dell'altezza è scritta per ogni corpo.
-- Tetti nelle pagine 3D: falde LiDAR, poi stima dal colmo DBTR, poi tetto ipotizzato a 22° in pianura e 32° in montagna (o
-  piano per capannoni e corpi grandi); nelle pagine Edifici e Fotovoltaico (in lavorazione) la forma si sceglie («Forma dei tetti»).
+- Tetti nelle pagine 3D (dal 09/11/2026 c): tutti piani in partenza; la persona sceglie i tetti a falde con la tegola della
+  sezione «Coperture» (inclinazione 22° all'inizio, scelte nel browser, esporta e importa in JSON); niente ipotesi automatica.
+  Nelle pagine Edifici e Fotovoltaico (in lavorazione) «Forma dei tetti»: «Scelti dall'utente» o «Tutti piani».
+- Ortofoto: la pagina sceglie da sola la fonte applicabile nel punto (regionale a 20 cm, poi AGEA 2012, poi Sentinel-2). Una
+  tessera con X-Ortofoto-Errore (200, PNG vuoto, no-store, Retry-After) vuol dire che la fonte non ha risposto: riprova dopo.
 - Pagine in lavorazione (dall'08/11/2026 tutte quelle dei gruppi Edifici, Cogenerazione e Fotovoltaico, tranne le voci GME):
   voce del menu con il triangolo giallo e non cliccabile, nessun collegamento nel sito, avviso «Pagina in lavorazione, non
   ancora verificata»; non proporle come servizi disponibili. Accessibili: Clima e meteo (con Cambiamento climatico),

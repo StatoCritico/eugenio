@@ -22,6 +22,20 @@
 
 [[voce]]
 data = "2026-11-09"
+versione = "20261109c"
+titolo = "Tetti a falde scelti da te e foto aerea scelta da sola"
+nuovo = [
+  "Patrimonio › Modelli 3D, nuova sezione «Coperture»: tutti i tetti partono piani; accendi la tegola, scrivi l'inclinazione (22° all'inizio) e fai clic su un edificio, anche vicino, per dargli un tetto a falde; un secondo clic lo riporta piano. «Reset piani» li riporta tutti piani, dopo una conferma.",
+  "Patrimonio › Modelli 3D, «Coperture»: i tetti che scegli restano in questo browser anche alle visite successive; con «Esporta tetti» e «Importa tetti» li porti su un altro computer in un piccolo file. Entrano nell'immagine scaricata, nel report e nella tabella dei corpi.",
+]
+migliorato = [
+  "Patrimonio › Modelli 3D e Ortofoto: la fonte della foto aerea si sceglie da sola nel punto della mappa, la migliore che c'è (in Emilia-Romagna e in Toscana le ortofoto regionali a 20 cm, altrove l'ortofoto nazionale AGEA 2012), e la casella mostra solo le fonti che coprono quel punto. Se scegli tu una fonte, resta finché la mappa è nella sua zona.",
+  "Patrimonio › Modelli 3D e Ortofoto: se una fonte della foto aerea non risponde, sotto la mappa compare una nota e la pagina riprova da sola dopo qualche minuto, invece di mostrare la foto a pezzi.",
+  "Patrimonio › Modelli 3D: la casella «Alberi» mostra le chiome anche nella mappa 2D, e se in quel punto non ci sono chiome misurate lo dice.",
+]
+
+[[voce]]
+data = "2026-11-09"
 versione = "20261109b"
 titolo = "Ricerca con un solo comune e comandi sotto la mappa"
 migliorato = [

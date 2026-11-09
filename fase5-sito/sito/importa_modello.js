@@ -349,11 +349,17 @@
     const l = h("a", null, f.licenza); l.href = f.scheda; a.appendChild(l);
     a.append(f.stato === "da confermare" ? ". Uso tramite il server di EuGEnio in attesa di conferma della fonte." : ".");
   }
-  function sfondo() {
+  // (09/11/2026 c) solo le fonti applicabili nel punto (regione e riquadro, EUGENIO_CONFINI.fontiNelPunto)
+  let giro = 0;
+  async function sfondo() {
     const m = stato.mappa; if (!m) return;
-    const c = [m.getCenter().lng, m.getCenter().lat];
-    if (stato.fonte && copre(stato.fonte, c)) return;
-    const f = stato.fonti.find((x) => copre(x, c) && x.copia) || stato.fonti.find((x) => copre(x, c)) || null;
+    const c = [m.getCenter().lng, m.getCenter().lat], mio = ++giro, C = window.EUGENIO_CONFINI;
+    let qui = null;
+    try { if (C && C.fontiNelPunto) qui = await C.fontiNelPunto(stato.fonti, c[0], c[1]); } catch { /* sotto */ }
+    if (!qui) qui = stato.fonti.filter((x) => copre(x, c));
+    if (mio !== giro) return;
+    if (stato.fonte && qui.some((x) => x.id === stato.fonte.id)) return;
+    const f = qui.find((x) => x.copia) || qui[0] || null;
     if (m.getLayer("ortofoto")) m.removeLayer("ortofoto");
     if (m.getSource("ortofoto")) m.removeSource("ortofoto");
     stato.fonte = f;

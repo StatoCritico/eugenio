@@ -40,7 +40,7 @@ scheda = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografic
 stato = "da confermare"            # in attesa della risposta dell'Archivio Cartografico (§ 14.1)
 attiva = true
 cache = true
-zoom = [12, 20]
+zoom = [12, 19]                    # 09/11/2026 c: 20 cm a terra = zoom 19 (0,21 m/pixel a 44° N); oltre la mappa ingrandisce le tessere del 19
 riquadro = [9.19, 43.73, 12.84, 45.16]
 ritmo = { al_secondo = 8, all_ora = 6000 }   # 09/11/2026: 4 → 8 al secondo (misurate 0,3–0,5 s a tessera con 4 richieste insieme)
 priorita = 1

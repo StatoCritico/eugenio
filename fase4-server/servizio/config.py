@@ -152,6 +152,8 @@ STRATI_ORA = int(os.environ.get("STRATI_ORA", "12000"))                   # tess
 # tessere servite dalla copia su disco (ortofoto, strati, terreno insieme): non toccano le fonti esterne, tetto anti-abuso
 TESSERE_COPIA_ORA = int(os.environ.get("TESSERE_COPIA_ORA", "60000"))
 ORTOFOTO_ATTESA_S = float(os.environ.get("ORTOFOTO_ATTESA_S", "8"))       # attesa massima del turno verso la fonte (09/11/2026: 6 → 8)
+# (09/11/2026 c) tempo massimo di una chiamata alla fonte: attesa del turno + chiamata restano sotto i 30 s di Caddy
+ORTOFOTO_TIMEOUT_S = float(os.environ.get("ORTOFOTO_TIMEOUT_S", "12"))
 # strati sopra le ortofoto (particelle catastali, contorni degli edifici; servizio/strati.py, 05/11/2026): spenti dal .env
 STRATI_SPENTI = {s.strip() for s in os.environ.get("STRATI_SPENTI", "").split(",") if s.strip()}
 

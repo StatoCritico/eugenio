@@ -476,3 +476,11 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
   (che prende solo il suo spazio, `flex: 0 1 auto`; stato al più 10rem con i puntini); etichetta visibile breve «Colore»,
   nome intero nel `title`. A colonna stretta il gruppo va a capo intero.
 - **Clic sulla mappa**: non sposta mai la vista (regione e comune si evidenziano con il bordo nel colore principale).
+- **Coperture** (09/11/2026 c): passo `#passo-coperture` del pannello di destra, tra «Edificio» e «Corpi». Tegola: pulsante
+  `.bottone.secondario.tegola` con l'icona `svg.icona-tegola` (24×24, tratto `currentColor` 1,6, rombo isometrico con lo
+  spessore e due scanalature) e la scritta «Tegola»; acceso (`aria-pressed="true"`) sfondo mattone `#b04a24` e testo
+  bianco (contrasto 5,4:1); sulla mappa il cursore è una tegola mattone `#c4572e` con il mirino (data URI, ripiego
+  `crosshair`) e nel 2D i corpi con il tetto a falde hanno il bordo `#c4572e`. Inclinazione: campo numerico 5,5em con «°».
+  «Reset piani» apre accanto `.conferma-reset` («Sì, riporta tutti piani» pieno, «Annulla» secondario): mai `confirm()`.
+  «Importa tetti» è un'etichetta-pulsante con il campo file trasparente sopra (focus visibile con `:focus-within`).
+- **Rilievo** (09/11/2026 c): niente più gruppo «Rilievo ×1 ×1,5 ×2» nella barra della vista 3D.

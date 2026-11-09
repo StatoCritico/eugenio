@@ -96,6 +96,48 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Correzioni dalle prove P9 di Paolo (09/11/2026 c, `?v=20261109c`)
+
+Procedura Q di `AGGIORNAMENTO_2026-11-09c.md`; prove nel browser `tests/test_prove_0911c_browser.py` (9).
+
+- **Tetti (decisione di Paolo del 09/11/2026, sostituisce la cascata automatica dell'08/11)**: **tutti i tetti partono
+  piani** (altezza di gronda). Sezione nuova **«(4) Coperture»** nel pannello di destra delle 9 pagine 3D, tra «Edificio» e
+  «Corpi» (i passi si rinumerano da soli, `numeraPassi`): pulsante-interruttore **tegola** (`#tegola`, icona SVG isometrica,
+  `aria-pressed`, tooltip «Tetto a falde: clic su un edificio per cambiarlo»; cursore della mappa con la tegola; Esc la
+  spegne), **Inclinazione** (`#inclinazione-tetti`, 22° all'inizio, 5–60°), **«Reset piani»** con la conferma **nella
+  pagina** (`#conferma-reset`: «Sì, riporta tutti piani» / «Annulla»; mai `confirm()`), **«Esporta tetti» / «Importa
+  tetti»** (JSON `{"tipo": "eugenio-tetti", "versione": 1, "tetti": {"<archivio>|<id corpo>": {"i": 22, "t": …}}}`, al
+  più 2 MB, voci controllate) e la riga di stato `#stato-tetti`. Con la tegola accesa un clic (2D o 3D, `cliccaTegola`)
+  trova il corpo sotto il puntatore (edificio scelto, vicini, o dalle celle dell'archivio con `contesto`) e alterna piano ↔
+  falde all'inclinazione corrente; il clic non sceglie l'edificio. Forma: `E.tettoScelto` (`edifici_calcoli.js`): capanna
+  sul lato lungo, padiglione se quasi quadrato o se la pianta riempie meno del 70 % del rettangolo minimo
+  (`faldeStimate(…, {forza: true})`); restano piani solo i corpi con cortile o più stretti di 2 m (lo dice la riga di
+  stato). **Dove si registra**: nel browser, `localStorage` chiave `eugenio-tetti-v1` (con try/catch: senza archivio le
+  scelte valgono fino alla chiusura); chiave `archivio|id del corpo`, archivio = percorso sul server (`cc-by/er/cesena`),
+  `osm`, `reg-<regione>` (sagome regionali), `locale`, `demo`. I vicini con il tetto a falde si disegnano nel layer
+  `tetti-vicini` (prisma fino alla gronda) e nelle falde a gradini; la loro versione piatta delle tessere si nasconde; in
+  2D bordo color mattone (`corpi*-2d-tetto`). Nota «Tetti: N a falde scelti dall'utente (22°), P piani» sotto la mappa, in
+  legenda, nell'immagine, nella tabella dei corpi («tetto a falde scelto dall'utente (22°)») e nel report
+  (`tetti.scelti`). Pagine Edificio e Fotovoltaico: «Forma dei tetti» con **«Scelti dall'utente»** e **«Tutti piani»**.
+  Le falde LiDAR (le celle `lidar/falde/` non si chiedono più), la stima dal colmo DBTR e l'ipotesi 22°/32°
+  (`tettoIpotizzato`) restano nel codice ma sono **sospese**.
+- **Rilievo**: tolta la riga «Rilievo ×1 ×1,5 ×2» della barra 3D (modifica di Paolo delle 11:56): terreno sempre ×1.
+- **Fonte dell'ortofoto scelta da sola** (`confini_gl.js`, `fontiNelPunto`): le fonti nazionali (regione «00») valgono nel
+  riquadro, quelle regionali solo nella loro regione (confini ISTAT; entro ~150 m dal confine anche la regione accanto).
+  Modelli 3D e pagine 3D (`opzioni` di `edificio3d.js`), Ortofoto (`elenco`), Aggiungi edifici e Importa DXF/IFC (con
+  `confini_gl.js` caricato) mostrano solo le fonti applicabili e scelgono la migliore (regionale a 20 cm dove ha
+  immagini, poi AGEA 2012, poi Sentinel-2); scelta a mano tenuta finché applicabile, poi automatico con ««…» non copre
+  questo punto: torno alla scelta automatica».
+- **Fonti che non rispondono** (`protezione.js`): le tessere d'errore del server (`X-Ortofoto-Errore`), i 5xx e la rete
+  caduta si contano per fonte; 4 errori in 60 s, o «ferma» dal server, fermano la fonte per il `Retry-After` (30 s–20
+  min) con la nota sotto la mappa «Ortofoto «…»: la fonte non risponde (o è molto richiesta). Mi fermo e riprovo da solo
+  tra N minuti.»; un errore isolato fa ricaricare le tessere poco dopo. I nomi delle fonti arrivano da `/api/ortofoto/fonti`.
+- **Alberi**: anche nella mappa 2D (layer `alberi-2d`, da zoom 15, chiome attorno al centro) e nota se lì non ce ne sono
+  (oggi le chiome esistono solo nella fascia costiera della zona di Rimini, dove la pipeline ha il DSM della costa 2019).
+- **Console**: le righe di `challenges.cloudflare.com` (CSP «connect-src … data:», «OTS parsing error», avvisi WebGPU
+  «powerPreference … ignored», «No available adapters») vengono dal riquadro di Turnstile, che si carica solo alla prima
+  richiesta protetta (ricerca, edifici OSM, Patrimonio…): EuGEnio non usa WebGPU e la sua CSP ha solo `frame-ancestors`.
+
 ## Correzioni dalle prove N10 di Paolo (09/11/2026 b, `?v=20261109b`)
 
 Procedura P1–P10 in `AGGIORNAMENTO_2026-11-09b.md`. Prove nel browser in `tests/test_prove_0911b_browser.py` (10).
@@ -219,6 +261,8 @@ Per la newsletter del 12/11 il sito mostra come servizi solo quelli usabili.
   Previsioni, barra a sinistra con le barre vere di Chromium); fase 4 `test_geocodifica_scarta_le_coordinate_zero`.
 
 ## Tetti a falda, sagome del Veneto e terreno veneto (08/11/2026, stessa versione `?v=20261107b`)
+
+> **Sospeso dal 09/11/2026 c**: la cascata automatica dei tetti descritta qui sotto non è più usata dalle pagine (tutti i tetti partono piani, tetti a falde scelti dall'utente in «Coperture»: vedi la sezione del 09/11/2026 c). Resta come documentazione del codice.
 
 Decisioni di Paolo dell'08/11 (sezione I di `AGGIORNAMENTO_2026-11-07.md`):
 

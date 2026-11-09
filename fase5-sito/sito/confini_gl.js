@@ -14,6 +14,7 @@
 //  C.alza(mappa)                    i confini tornano sopra a tutto (dopo aver aggiunto un'ortofoto o gli edifici)
 //  await C.riquadroRegione("08")    [ovest, sud, est, nord] in gradi
 //  await C.regioneNelPunto(lon, lat) "08" o null
+//  await C.fontiNelPunto(fonti, lon, lat)   fonti di ortofoto applicabili nel punto (regione e riquadro; 09/11/2026 c)
 //  C.ITALIA                         riquadro dell'Italia
 //  C.ATTRIBUZIONE                   testo per la mappa e per le immagini scaricate
 (function () {
@@ -106,6 +107,20 @@
       const f = it.features.find((x) => lon >= x.bbox[0] && lon <= x.bbox[2] && lat >= x.bbox[1] && lat <= x.bbox[3] && contiene(x, [lon, lat]));
       return f ? f.properties.cod : null;
     } catch { return null; }
+  }
+  // fonti di ortofoto applicabili nel punto (09/11/2026 c, prove P9 di Paolo): le fonti nazionali (regione «00», o senza
+  // regione) dentro il loro riquadro; quelle regionali solo dentro la loro regione (confini ISTAT generalizzati: entro
+  // ~150 m dal confine valgono anche quelle della regione accanto). Così a Firenze c'è la Toscana e non la RER, a Bologna
+  // la RER e non la Toscana (il riquadro della Toscana arriva fino a Bologna), in Veneto AGEA 2012 e Sentinel-2. Fuori dai
+  // confini (mare) o senza i dati dei confini vale il solo riquadro. L'ordine resta quello del server (priorità).
+  async function fontiNelPunto(fonti, lon, lat) {
+    const dlat = 0.00135, dlon = dlat / Math.cos(lat * Math.PI / 180);
+    const regs = new Set((await Promise.all([[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]
+      .map(([a, b]) => regioneNelPunto(lon + a * dlon, lat + b * dlat)))).filter(Boolean));
+    const nelRiquadro = (f) => !Array.isArray(f.riquadro) || f.riquadro.length !== 4
+      || (lon >= f.riquadro[0] && lon <= f.riquadro[2] && lat >= f.riquadro[1] && lat <= f.riquadro[3]);
+    const regionale = (f) => f.regione && String(f.regione) !== "00" && !f.pmtiles;
+    return (fonti || []).filter((f) => nelRiquadro(f) && (!regionale(f) || !regs.size || regs.has(String(f.regione))));
   }
   async function comuneNelPunto(lon, lat) {
     const cod = await regioneNelPunto(lon, lat);
@@ -241,6 +256,6 @@
     return stato;
   }
 
-  window.EUGENIO_CONFINI = { aggiungi, alza, riquadroRegione, riquadroComune, geometriaComune, regioneNelPunto, comuneNelPunto, utmLonlat, svgLonlat,
+  window.EUGENIO_CONFINI = { aggiungi, alza, riquadroRegione, riquadroComune, geometriaComune, regioneNelPunto, comuneNelPunto, fontiNelPunto, utmLonlat, svgLonlat,
     ITALIA, ATTRIBUZIONE };
 })();

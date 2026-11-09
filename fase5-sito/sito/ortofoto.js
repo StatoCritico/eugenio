@@ -112,11 +112,24 @@
     const m = stato.mappa, f = stato.scelta, src = m && m.getSource("ortofoto");
     if (src && f && !f.pmtiles && src.setTiles) src.setTiles([tessere(f, true)]);    // la camera non si muove
   }
-  function elenco() {
+  // (09/11/2026 c, prove P9 di Paolo) solo le fonti applicabili nel punto (regione e riquadro: EUGENIO_CONFINI.fontiNelPunto):
+  // a Firenze la Toscana e non la RER, in Veneto AGEA 2012 e Sentinel-2. Finché l'utente non sceglie a mano si usa la
+  // migliore (regionale a 20 cm dove ha immagini, poi AGEA 2012, poi Sentinel-2); una scelta a mano resta finché la fonte
+  // è applicabile, poi si torna all'automatico con una nota breve
+  let giro = 0;
+  async function elenco() {
+    const mio = ++giro, c = stato.mappa.getCenter();
+    let qui;
+    try { qui = C && C.fontiNelPunto ? await C.fontiNelPunto(stato.fonti, c.lng, c.lat) : null; } catch { qui = null; }
+    if (!qui) qui = stato.fonti.filter((f) => copre(f, [c.lng, c.lat]));
+    if (mio !== giro) return;
     const fs = $("fonti");
     fs.querySelectorAll("label").forEach((x) => x.remove());
-    const c = stato.mappa.getCenter(), qui = stato.fonti.filter((f) => copre(f, [c.lng, c.lat]));
-    if (!qui.length) messaggio("Nessuna ortofoto copre questa zona: restano i confini.", true); else messaggio("");
+    let nota = "";
+    if (stato.manuale && stato.scelta && !qui.some((f) => f.id === stato.scelta.id)) {
+      nota = `«${stato.scelta.nome}» non copre questo punto: torno alla scelta automatica`;
+      stato.manuale = false;
+    }
     for (const f of qui) {
       const l = h("label"), i = h("input"); i.type = "radio"; i.name = "fonte"; i.value = f.id; i.checked = stato.scelta && stato.scelta.id === f.id;
       i.addEventListener("change", () => { stato.manuale = true; scegli(f.id); });
@@ -130,13 +143,13 @@
     const nessuna = h("label"), i0 = h("input"); i0.type = "radio"; i0.name = "fonte"; i0.value = ""; i0.checked = !stato.scelta;
     i0.addEventListener("change", () => { stato.manuale = true; scegli(""); });
     nessuna.append(i0, h("span", "nome-fonte", "Nessuna ortofoto (solo il contesto e i confini)")); fs.appendChild(nessuna);
-    // finché l'utente non sceglie a mano si usa sempre la migliore che copre la zona (l'elenco è già in ordine di
-    // dettaglio); dopo una scelta a mano si cambia solo se la fonte scelta non copre più la zona
     // (09/11/2026) le fonti che il server ha dichiarato vuote in questa zona (X-Ortofoto-Vuota: RER 2023-24 a Bologna,
     // Modena, Faenza…) non si scelgono da sole
     const migliore = qui.find((f) => f.id !== CONTESTO && !stato.vuote.has(zonaVuota(f, c))) || qui[0];
     if (!stato.manuale && migliore && (!stato.scelta || stato.scelta.id !== migliore.id)) scegli(migliore.id);
-    else if (stato.scelta && !copre(stato.scelta, [c.lng, c.lat]) && qui.length) scegli(migliore.id);
+    if (nota) messaggio(`${nota}${migliore ? ` («${migliore.nome}»)` : ""}.`);
+    else if (!qui.length) messaggio("Nessuna ortofoto copre questa zona: restano i confini.", true);
+    else if (/^Nessuna ortofoto copre/.test($("messaggio").textContent)) messaggio("");
     if (!stato.manuale && stato.scelta) provaVuota(stato.scelta);
     aggiornaAvviso();
   }
@@ -153,7 +166,7 @@
       if (r.ok && r.headers.get("X-Ortofoto-Vuota") === "1") {
         stato.vuote.add(k);
         if (!stato.manuale && stato.scelta && stato.scelta.id === f.id) {
-          elenco();
+          await elenco();
           const g = stato.scelta;
           messaggio(`«${f.nome}» non ha immagini in questa zona${g && g.id !== f.id ? `: uso «${g.nome}»` : ""}. Puoi scegliere un'altra fonte.`);
         }
@@ -167,7 +180,7 @@
     // archivi di /edifici3d/archivi.json (dal 07/11/2026 un archivio DBTR per comune), altrimenti il DBTR dell'ER
     let basi = ["/edifici3d/cc-by/er/prodotti/"];
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261109b", { cache: "no-cache" });
+      const r = await fetch("/edifici3d/archivi.json?v=20261109c", { cache: "no-cache" });
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const l = ((await r.json()).archivi || []).map((x) => x && x.base)
           .filter((b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes(".."));
@@ -308,10 +321,10 @@
     $("edifici").addEventListener("change", (e) => (stato.stratiEdifici || []).forEach((id) => { if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", e.target.checked ? "visible" : "none"); }));
     $("edifici").addEventListener("change", aggiornaSposta);
     if ($("caselle-strati")) $("caselle-strati").addEventListener("change", aggiornaSposta);
-    const c = [m.getCenter().lng, m.getCenter().lat], qui = stato.fonti.filter((f) => copre(f, c) && f.id !== CONTESTO);
+    // fonte chiesta nell'indirizzo (?fonte=): vale come scelta a mano (resta finché è applicabile); altrimenti la migliore
     const chiesta = stato.fonti.find((f) => f.id === q.get("fonte"));
-    scegli(chiesta ? chiesta.id : qui.length ? qui[0].id : "");
-    elenco();
+    if (chiesta) { stato.manuale = true; scegli(chiesta.id); }
+    await elenco();
     m.on("moveend", elenco);
     m.on("zoomend", aggiornaAvviso);
     m.on("error", (e) => { if (e && (e.sourceId === "ortofoto" || e.sourceId === "contesto")) messaggio("Alcune tessere non sono arrivate (fonte lenta o fuori zona).", true); });

@@ -177,7 +177,7 @@ def test_celle_lidar_solo_quelle_che_esistono(browser, base, tmp_path, con_elenc
         pg.evaluate(f"(() => {{ {M3D}.mappa.jumpTo({{ center: [{lon}, {lat}], zoom: 18 }}); {E}.impostaPunto({lon}, {lat}, 'clic'); return {E}.puntoCambiato(); }})()")
         pg.wait_for_timeout(1200)
     if con_elenco:
-        assert lidar == [f"falde/{cella}.json"], lidar                    # una sola cella, quella che c'è; nessun albero
+        assert lidar == [], lidar        # 09/11/2026 c: le falde LiDAR sono sospese (non si chiedono); nessun albero nell'elenco
     else:
         assert lidar and all(re.match(r"(falde|alberi)/12\d\d_44\d\d\.json$", x) for x in lidar), lidar   # solo attorno a Cesena
     if con_elenco:
@@ -211,7 +211,7 @@ def _terreno_copernicus(quota=70.0):
 
 def test_susegana_in_rilievo_con_le_quote_copernicus(browser, base, tmp_path):
     """Punto 5 («c'è ma è piatta»): fuori dai DTM regionali il server dà ai corpi OSM la quota del Copernicus DEM: la pagina
-    accende il terreno (non più piatto), la legenda dice Copernicus e l'esagerazione ×1,5 e ×2 funziona."""
+    accende il terreno (non più piatto) e la legenda dice Copernicus (dal 09/11/2026 c sempre al rilievo vero, ×1)."""
     _diciannove_comuni(tmp_path)
     lon0, lat0 = SUSEGANA
     kx, ky = 111320 * math.cos(math.radians(lat0)), 110574
@@ -238,9 +238,7 @@ def test_susegana_in_rilievo_con_le_quote_copernicus(browser, base, tmp_path):
     attendi(pg, f"{M3D}.in3d && {M3D}.corpi.length === 1 && !!{M3D}.mappa.getTerrain()", 25000)
     assert "Quote dei corpi dal terreno del server (DTM regionale o, dove manca, Copernicus DEM 90 m)." in pg.text_content("#messaggio")
     attendi(pg, "/Terreno: Copernicus DEM GLO-90/.test(document.getElementById('legenda-terreno').textContent)")
-    for x in (1.5, 2, 1):
-        pg.evaluate(f"{E}.esagera({x})")
-        assert pg.evaluate(f"{M3D}.mappa.getTerrain().exaggeration") == x
+    assert pg.evaluate(f"{M3D}.mappa.getTerrain().exaggeration") == 1          # 09/11/2026 c: niente più ×1,5 e ×2
     assert abs(pg.evaluate(f"{M3D}.mappa.getCenterElevation()") - 70.9) < 15
     assert not pg.errori, pg.errori
     ctx.close()

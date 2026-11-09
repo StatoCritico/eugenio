@@ -896,8 +896,8 @@ def _terreno_in_pendenza(lat0=44.05):
 
 def test_modelli3d_prove_di_paolo(browser, base, tmp_path):
     """Punti 2–6 delle prove del 07/11/2026 sera: barra di scorrimento della colonna a sinistra (lontana dal divisore);
-    rilievo ombreggiato, terreno in pendenza sotto i corpi ed esagerazione ×2 dichiarata; legenda del terreno dalla
-    fonte delle tessere; tetto a capanna stimato dal colmo DBTR (pagina, tabella, report, immagine); isometrica a circa il
+    rilievo ombreggiato, terreno in pendenza sotto i corpi (dal 09/11/2026 c senza esagerazione); legenda del terreno dalla
+    fonte delle tessere; tetti piani (dal 09/11/2026 c; prima stimati dal colmo DBTR); isometrica a circa il
     doppio dell'edificio; edifici OSM in marrone; nuova ricerca nel 3D → mappa 2D dritta e 3D azzerato; mappa portata
     lontano → 2D."""
     (lon1, lat1), (lon2, lat2) = _archivio_prove_paolo(tmp_path)
@@ -932,16 +932,13 @@ def test_modelli3d_prove_di_paolo(browser, base, tmp_path):
         pg.wait_for_timeout(500)
         cam = pg.evaluate(f"(() => {{ const m = {s}.mappa; return [m.getZoom(), m.getPitch(), m.getCenter().lng, m.getCenter().lat]; }})()")
         assert all(abs(x - y) < 1e-6 for x, y in zip(cam, cam0)), (fonte, cam, cam0)
-    # 6: tetto stimato dal colmo
-    t = pg.evaluate(f"{s}.corpi.map((c) => [c.id, c.tettoStimato, c.tetto, (c.falde || []).length, (c.falde || [])[0] && c.falde[0].fonte])")
-    # T2 senza colmo: dall'08/11/2026 tetto ipotizzato a 22° (pianura, 12×12 m → padiglione)
-    assert sorted(t) == [["T1", True, "capanna", 2, "tetto stimato dal colmo DBTR"],
-                         ["T2", True, "padiglione", 4, "tetto ipotizzato a 22° (pianura: quota del terreno 112 m)"]], t
-    assert pg.evaluate(f"{s}.mappa.getSource('falde').serialize().data.features.length") > 4
-    assert "tetto stimato dal colmo DBTR" in pg.text_content("#tabella-falde") and "tetto stimato dal colmo DBTR" in pg.text_content("#tabella-corpi")
-    assert "Tetto a falde stimato dal colmo DBTR per 1 corpo" in pg.text_content("#messaggio-falde")
+    # 6: dal 09/11/2026 c tutti i tetti partono piani (anche T1, che ha il colmo nel DBTR); falde solo scelte con la tegola
+    t = pg.evaluate(f"{s}.corpi.map((c) => [c.id, c.tettoStimato, c.tetto, (c.falde || []).length])")
+    assert sorted(t) == [["T1", False, "piano", 0], ["T2", False, "piano", 0]], t
+    assert pg.evaluate(f"{s}.mappa.getSource('falde').serialize().data.features.length") == 0
+    assert "Tetti piani" in pg.text_content("#messaggio-falde") and "tetto piano" in pg.text_content("#tabella-corpi")
     rep = pg.evaluate(f"{E}.corpoReport()")
-    assert any("stimato dal colmo DBTR" in n for n in rep["note"]) and {f["corpo"]: f["fonte"] for f in rep["falde"]} == {"T1": "tetto stimato dal colmo DBTR", "T2": "tetto ipotizzato a 22° (pianura: quota del terreno 112 m)"}
+    assert rep["falde"] == [] and rep["tetti"]["conteggi"]["piano"] == 2
     # terreno in pendenza: le basi dei due corpi sono a quote diverse; ombreggiatura del rilievo visibile
     try:
         attendi(pg, f"""(() => {{ const m = {s}.mappa, a = m.queryTerrainElevation([{lon1}, {lat1}]), b = m.queryTerrainElevation([{lon2}, {lat2}]);
@@ -951,11 +948,9 @@ def test_modelli3d_prove_di_paolo(browser, base, tmp_path):
     assert pg.evaluate(f"{s}.mappa.getLayoutProperty('rilievo', 'visibility')") == "visible"
     assert pg.evaluate(f"{s}.mappa.getLayer('rilievo').type") == "hillshade"
     attendi(pg, "/Terreno: DTM 5 m Regione Emilia-Romagna/.test(document.getElementById('legenda-terreno').textContent)")
-    pg.evaluate(f"{E}.esagera(2)")
-    assert pg.evaluate(f"{s}.mappa.getTerrain().exaggeration") == 2
+    assert pg.evaluate(f"{s}.mappa.getTerrain().exaggeration") == 1        # 09/11/2026 c: niente più esagerazione
     righe = " ".join(pg.evaluate(f"{E}.opzioniImmagine().righe"))
-    assert "rilievo esagerato ×2" in righe and "stimato dal colmo DBTR" in righe and "Colori:" in righe, righe
-    pg.evaluate(f"{E}.esagera(1)")
+    assert "esagerato" not in righe and "Tetti: 2 piani." in righe and "Colori:" in righe, righe
     # 3: isometrica, inquadratura circa il doppio dell'edificio
     pg.evaluate(f"{E}.vistaNominata('iso')")
     pg.wait_for_timeout(900)
@@ -1162,8 +1157,8 @@ def test_modelli3d_frecce_in_2d_e_3d(browser, base, tmp_path):
 
 
 def _archivio_tetti(radice):
-    """Edificio E-K: K1 con il colmo del DBTR (30×12), K2 senza colmo (20×10, ipotesi 22°), K3 capannone (piano);
-    un vicino V1 a 30 m. Quota 100 m (pianura)."""
+    """Edificio E-K: K1 con il colmo del DBTR (30×12), K2 senza colmo (20×10), K3 capannone (20×22); un vicino V1 a 30 m.
+    Quota 100 m. Dal 09/11/2026 c tutti piani in partenza (archivio «cc-by/er» nella chiave dei tetti)."""
     import sys
     sys.path.insert(0, str(SITO.parents[1] / "fase10-edifici3d"))
     from shapely.geometry import box
@@ -1190,9 +1185,20 @@ def _genera(pg, lon, lat, s, E, edificio="E-K", n=3):
     attendi(pg, f"{s}.in3d && {s}.corpi.length === {n}", 25000)
 
 
-def test_tetti_in_cascata_in_modelli3d(browser, base, tmp_path):
-    """08/11/2026: in Modelli 3D le tre fonti valgono in cascata (colmo DBTR → ipotesi 22°/32° → piano); nota sotto la
-    mappa, legenda, immagine e report; nessun selettore."""
+def _clic_su_corpo(pg, s, corpo):
+    """Clic sulla mappa al centro del corpo (dell'edificio scelto o vicino), con la vista dall'alto (in prospettiva il
+    punto a terra può stare dietro un corpo più alto, come per chi clicca)."""
+    pg.evaluate(f"{s}.mappa.jumpTo({{ pitch: 0, bearing: 0 }})")
+    pg.wait_for_timeout(300)
+    pg.evaluate(f"""(() => {{ const c = [...{s}.corpi, ...{s}.vicini].find((x) => x.id === '{corpo}');
+        const ll = {s}.proj.indietro(window.EUGENIO_EDIFICI.centroide(c.ring));
+        {s}.mappa.fire('click', {{ lngLat: {{ lng: ll[0], lat: ll[1] }}, point: {s}.mappa.project(ll) }}); }})()""")
+
+
+def test_tetti_piani_e_tegola_in_modelli3d(browser, base, tmp_path):
+    """09/11/2026 c (decisione di Paolo, sostituisce la cascata dell'08/11): tutti i tetti partono piani, anche K1 che ha il
+    colmo del DBTR; con la tegola di «Coperture» un clic dà a K2 un tetto a falde di 22° (capanna sul lato lungo), anche al
+    capannone K3 (nessuna regola automatica); nota, legenda, tabella dei corpi, immagine e report lo dicono."""
     lon, lat = _archivio_tetti(tmp_path)
     ctx, pg = pagina(browser)
     _con_strati(pg)
@@ -1203,31 +1209,40 @@ def test_tetti_in_cascata_in_modelli3d(browser, base, tmp_path):
     s, E = "window.EUGENIO_EDIFICIO3D.stato", "window.EUGENIO_EDIFICIO3D"
     _genera(pg, lon, lat, s, E)
     assert pg.locator("#forma-tetti").count() == 0
+    t = pg.evaluate(f"Object.fromEntries({s}.corpi.map((c) => [c.id, [c.fonteTetto, c.tetto, (c.falde || []).length, c.colmo, c.gronda]]))")
+    assert all(v[:4] == ["piano", "piano", 0, None] for v in t.values()) and t["K1"][4] == 7, t
+    assert pg.text_content("#nota-tetti").startswith("Tetti: 3 piani."), pg.text_content("#nota-tetti")
+    pg.click("#tegola")
+    assert pg.get_attribute("#tegola", "aria-pressed") == "true"
+    _clic_su_corpo(pg, s, "K2"); _clic_su_corpo(pg, s, "K3")
+    attendi(pg, f"{s}.corpi.filter((c) => c.fonteTetto === 'falde').length === 2")
+    assert pg.evaluate(f"{s}.edificio") == "E-K"                      # con la tegola il clic non sceglie
     t = pg.evaluate(f"Object.fromEntries({s}.corpi.map((c) => [c.id, [c.fonteTetto, c.tetto, (c.falde || []).length, c.colmo]]))")
-    assert t["K1"][:3] == ["colmo", "capanna", 2] and t["K1"][3] == 10
-    assert t["K2"][:3] == ["ipotesi", "capanna", 2] and abs(t["K2"][3] - (9 + 5 * math.tan(math.radians(22)))) < 0.02, t
-    assert t["K3"][:3] == ["piano", "piano", 0], t
+    assert t["K2"][:3] == ["falde", "capanna", 2] and abs(t["K2"][3] - (9 + 5 * math.tan(math.radians(22)))) < 0.02, t
+    assert t["K3"][0] == "falde" and t["K1"][0] == "piano", t
     nota = pg.text_content("#nota-tetti")
-    assert pg.is_visible("#nota-tetti")
-    assert nota.startswith("Tetti: 0 misurati dal LiDAR, 1 stimato dal colmo DBTR, 1 ipotizzato (22° pianura / 32° montagna: 1 a 22°), 1 piano."), nota
-    assert "1 ipotizzate (22°/32°)" in pg.text_content("#legenda-falde")
-    assert "tetto piano (uso produttivo (capannone))" in pg.text_content("#tabella-corpi")
-    assert "tetto ipotizzato a 22°" in pg.text_content("#tabella-falde")
+    assert nota.startswith("Tetti: 2 a falde scelti dall'utente (22°), 1 piano."), nota
+    assert "tetti a falde scelti dall'utente: 2" in pg.text_content("#legenda-falde")
+    assert "tetto a falde scelto dall'utente (22°)" in pg.text_content("#tabella-corpi")
+    assert "tetto a falde scelto dall'utente (22°)" in pg.text_content("#tabella-falde")
+    assert "22°/32°" not in pg.text_content("main") and "ipotizzat" not in pg.text_content("main")
     righe = " ".join(pg.evaluate(f"{E}.opzioniImmagine().righe"))
-    assert "Tetti: 0 misurati dal LiDAR, 1 stimato dal colmo DBTR, 1 ipotizzato" in righe and "tetto ipotizzato a falde per 1 corpo" in righe, righe
+    assert "Tetti: 2 a falde scelti dall'utente (22°), 1 piano." in righe and "Tetto a falde scelto dall'utente per 2 corpi" in righe, righe
     rep = pg.evaluate(f"{E}.corpoReport()")
-    assert rep["tetti"]["conteggi"]["ipotesi"] == 1 and rep["tetti"]["scelta"].startswith("in cascata")
-    assert {c["id"]: c["fonte_tetto"] for c in rep["corpi"]} == {"K1": "colmo", "K2": "ipotesi", "K3": "piano"}
+    assert rep["tetti"]["conteggi"]["falde"] == 2 and rep["tetti"]["scelti"][0]["fonte"] == "tetto a falde scelto dall'utente"
+    assert {c["id"]: c["fonte_tetto"] for c in rep["corpi"]} == {"K1": "piano", "K2": "falde", "K3": "falde"}
     assert not pg.errori, pg.errori
     ctx.close()
 
 
 def test_forma_dei_tetti_a_scelta_in_fotovoltaico(browser, base, tmp_path):
-    """08/11/2026: nelle pagine Edificio e Fotovoltaico il selettore «Forma dei tetti»: LiDAR spento con il motivo,
-    predefinita la stima dal colmo; «Tutti piani» e «Ipotesi automatica» cambiano tetti, aree FV e producibilità
-    (ricalcolata); l'inclinazione corretta a mano resta; scelta dichiarata nei risultati e nel report."""
+    """09/11/2026 c: nelle pagine Edificio e Fotovoltaico «Forma dei tetti» ha due scelte, «Scelti dall'utente»
+    (predefinita) e «Tutti piani»; il tetto a falde dato con la tegola (ricordato nel browser) cambia aree FV e
+    producibilità; «Tutti piani» li appiattisce tutti, l'inclinazione corretta a mano resta; scelta nel report."""
     lon, lat = _archivio_tetti(tmp_path)
     ctx, pg = pagina(browser)
+    ctx.add_init_script("""try { localStorage.setItem('eugenio-tetti-v1', JSON.stringify({ versione: 1,
+        tetti: { 'cc-by/er|K1': { i: 30, t: 1 } } })); } catch (e) {}""")
     _con_strati(pg)
     pg.route(re.compile(r"^http://127\.0\.0\.1:\d+/edifici3d/"), _servi_archivio(tmp_path))
     pg.route("**/api/terreno/**", _terreno_in_pendenza(lat))
@@ -1235,12 +1250,12 @@ def test_forma_dei_tetti_a_scelta_in_fotovoltaico(browser, base, tmp_path):
     webgl(pg)
     s, E = "window.EUGENIO_EDIFICIO3D.stato", "window.EUGENIO_EDIFICIO3D"
     _genera(pg, lon, lat, s, E)
-    opz = pg.evaluate("[...document.querySelectorAll('#forma-tetti option')].map((o) => [o.value, o.disabled, o.textContent])")
-    assert [o[:2] for o in opz] == [["lidar", True], ["colmo", False], ["ipotesi", False], ["piani", False]], opz
-    assert "non disponibile: nessun rilievo LiDAR" in opz[0][2]
-    assert pg.input_value("#forma-tetti") == "colmo" and pg.evaluate(f"{s}.formaTetti") == "colmo"
-    assert "Non disponibili per questo edificio" in pg.text_content("#motivi-forma-tetti")
-    assert "Forma dei tetti scelta: «Stimata dal colmo DBTR dove c'è»" in pg.text_content("#nota-tetti")
+    opz = pg.evaluate("[...document.querySelectorAll('#forma-tetti option')].map((o) => o.value)")
+    assert opz == ["utente", "piani"], opz
+    assert pg.input_value("#forma-tetti") == "utente" and pg.evaluate(f"{s}.formaTetti") == "utente"
+    t = pg.evaluate(f"Object.fromEntries({s}.corpi.map((c) => [c.id, [c.fonteTetto, c.inclinazione]]))")
+    assert t == {"K1": ["falde", 30], "K2": ["piano", None], "K3": ["piano", None]}, t
+    assert "Forma dei tetti: «Scelti dall'utente" in pg.text_content("#nota-tetti")
     # due aree FV: su K1 (falda sud) e su K2; la seconda con l'inclinazione corretta a mano
     def area_su(corpo):
         pg.evaluate("document.getElementById('aggiungi-fv').click()")
@@ -1250,12 +1265,12 @@ def test_forma_dei_tetti_a_scelta_in_fotovoltaico(browser, base, tmp_path):
     area_su("K1"); area_su("K2")
     attendi(pg, f"{s}.aree.length === 2")
     a = pg.evaluate(f"{s}.aree.map((x) => [x.corpo, x.inclinazione, Math.abs(x.orientamento - 180) < 5, x.montaggio])")
-    assert a == [["K1", 27, True, "aderente"], ["K2", 22, True, "aderente"]], a      # colmo DBTR: atan(3 / 6) = 26,6°
+    assert a == [["K1", 30, True, "aderente"], ["K2", 10, True, "telai"]], a
     pg.fill("#tabella-fv tbody tr:nth-child(2) input >> nth=0", "30")
     pg.dispatch_event("#tabella-fv tbody tr:nth-child(2) input >> nth=0", "change")
     pg.evaluate("document.getElementById('calcola-fv').click()")
     attendi(pg, f"!!{s}.fv", 60000)
-    attendi(pg, "/Forma dei tetti: «Stimata dal colmo DBTR dove c'è»/.test(document.getElementById('messaggio-fv').textContent)")
+    attendi(pg, "/Forma dei tetti: «Scelti dall'utente/.test(document.getElementById('messaggio-fv').textContent)")
     kwh0 = pg.evaluate(f"{s}.fv.find((x) => x.id === 'A1').kwh")
     # «Tutti piani»: K1 piano, l'area su K1 diventa a telai a 10° verso sud; quella corretta a mano resta a 30°
     pg.select_option("#forma-tetti", "piani")
@@ -1263,18 +1278,14 @@ def test_forma_dei_tetti_a_scelta_in_fotovoltaico(browser, base, tmp_path):
     t = pg.evaluate(f"{s}.corpi.map((c) => [c.id, c.tetto, (c.falde || []).length])")
     assert all(x[1] == "piano" and x[2] == 0 for x in t), t
     a = pg.evaluate(f"{s}.aree.map((x) => [x.inclinazione, Math.abs(x.orientamento - 180) < 5, x.montaggio])")
-    assert a == [[10, True, "telai"], [30, True, "aderente"]], a
+    assert a == [[10, True, "telai"], [30, True, "telai"]], a           # K2 è piano: telai, a 30° corretti a mano
     attendi(pg, "/Forma dei tetti: «Tutti piani»/.test(document.getElementById('messaggio-fv').textContent)")
     assert pg.evaluate(f"{s}.fv.find((x) => x.id === 'A1').kwh") != kwh0
-    assert pg.text_content("#nota-tetti").startswith("Tetti: 0 misurati dal LiDAR, 0 stimati dal colmo DBTR, 0 ipotizzati (22° pianura / 32° montagna), 3 piani.")
-    # «Ipotesi automatica»: anche K1 ipotizzato a 22° (colmo = gronda + 6 × tan 22°), K3 capannone resta piano
-    pg.select_option("#forma-tetti", "ipotesi")
-    attendi(pg, f"{s}.formaTetti === 'ipotesi' && !!{s}.fv", 60000)
-    t = pg.evaluate(f"Object.fromEntries({s}.corpi.map((c) => [c.id, [c.fonteTetto, c.colmo]]))")
-    assert t["K1"][0] == "ipotesi" and abs(t["K1"][1] - (7 + 6 * math.tan(math.radians(22)))) < 0.05 and t["K3"][0] == "piano", t
-    assert pg.evaluate(f"{s}.aree[0].inclinazione") == 22
+    assert pg.text_content("#nota-tetti").startswith("Tetti: 3 piani. Forma dei tetti: «Tutti piani»."), pg.text_content("#nota-tetti")
+    pg.select_option("#forma-tetti", "utente")
+    attendi(pg, f"{s}.formaTetti === 'utente' && !!{s}.fv && {s}.aree[0].inclinazione === 30", 60000)
     rep = pg.evaluate(f"{E}.corpoReport()")
-    assert rep["tetti"]["scelta"] == "Ipotesi automatica (22°/32°)" and rep["tetti"]["conteggi"]["ipotesi"] == 2
+    assert rep["tetti"]["scelta"].startswith("Scelti dall'utente") and rep["tetti"]["conteggi"]["falde"] == 1
     # telefono: niente scorrimento di lato
     pg.set_viewport_size({"width": 375, "height": 800})
     pg.wait_for_timeout(400)
@@ -1333,7 +1344,7 @@ def test_sagome_venete_con_altezze_osm_in_modelli3d(browser, base, tmp_path):
     pg.evaluate("document.getElementById('genera-3d').click()")
     attendi(pg, f"{s}.in3d && {s}.corpi.length === 1", 25000)
     c = pg.evaluate(f"(() => {{ const c = {s}.corpi[0]; return [c.licenza, c.quota, c.fonteTetto, c.ipotesi && c.ipotesi.inclinazione, {E}.livelloFonte(c)]; }})()")
-    assert c == ["IODL 2.0; altezza ODbL 1.0", 80, "ipotesi", 22, "sagome regionali con altezze OSM o stimate"], c
+    assert c == ["IODL 2.0; altezza ODbL 1.0", 80, "piano", None, "sagome regionali con altezze OSM o stimate"], c     # 09/11/2026 c: piani
     assert pg.evaluate(f"!!{s}.mappa.getTerrain()")                                  # quote dal DTM: terreno acceso
     assert "Quote dei corpi dal terreno del server" in pg.text_content("#messaggio")
     nota = pg.text_content("#nota-altezze-osm")

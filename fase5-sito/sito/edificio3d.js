@@ -40,7 +40,7 @@
 // affidabilità) se c'è, altrimenti il DBTR dell'Emilia-Romagna; i corpi di un archivio meno affidabile che cadono dentro
 // quelli di uno più affidabile non si usano.
 //
-// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261109b):
+// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261109c):
 //  - il punto trovato con la ricerca (cerca_luogo.js, modulo comune con Ortofoto) si **trascina** per correggerlo (l'ANNCSU
 //    è a volte impreciso) e, da zoom 15, un clic sulla mappa lo sposta lì; la scelta dell'edificio usa sempre il punto
 //    corretto (l'edificio che lo contiene, o il più vicino entro 30 m) e «Genera il 3D» parte da lì;
@@ -98,6 +98,9 @@
   const ATTRIBUZIONE_TERRENO = "Terreno: DTM regionali (Regione Emilia-Romagna – DTM 5×5 m, CC BY 4.0; Regione del Veneto – DTM 5 m da voli LiDAR, IODL 2.0); altrove Copernicus DEM GLO-90 (© DLR e Airbus)";
   const TESSERE_TERRENO = "/api/terreno/{z}/{x}/{y}.png";
   const MARGINE_CONFINE = 150;             // m: un punto a questa distanza da un corpo DBTR è coperto (confini ISTAT generalizzati)
+  // tegola (09/11/2026 c): colore del bordo 2D dei corpi con il tetto a falde scelto e cursore della mappa con la tegola accesa
+  const COLORE_TEGOLA = "#c4572e";
+  const CURSORE_TEGOLA = `url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"><path d="M3 12.2 12 7l9 5.2-9 5.2z" fill="#c4572e" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><path d="M3 12.2v2.4l9 5.2 9-5.2v-2.4" fill="none" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><path d="M1 1h5M1 1v5" stroke="#111" stroke-width="1.6"/></svg>')}") 1 1, crosshair`;
   const COLORE_OSM = "#9a6440";            // marrone: edifici OpenStreetMap (altezza dal dato OSM, dai piani, dai vicini o 9 m)
   // colore degli edifici del DB topografico (09/11/2026, richiesta di Paolo): menu a discesa come quello dell'asterisco della
   // testata; grigio (predefinito, --serie-6 del tema), giallo, rosso, indaco, violetto. L'edificio scelto resta nel colore
@@ -162,7 +165,7 @@
     let elenco = null;
     const valida = (b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes("..");
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261109b", { cache: "no-cache" });   // mai l'elenco vecchio
+      const r = await fetch("/edifici3d/archivi.json?v=20261109c", { cache: "no-cache" });   // mai l'elenco vecchio
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const d = await r.json();
         elenco = d.archivi;
@@ -257,8 +260,8 @@
     const archivi = stato.archivi.length ? stato.archivi : stato.base ? [{ base: stato.base, indice: stato.indice }] : [];
     if (!archivi.length) return [];
     const nomi0 = nomiCelle({ cella: (stato.lidar && stato.lidar.cella) || 0.01 }, lon, lat);
-    await Promise.all([Promise.all(nomi0.filter((n) => haCellaLidar("falde", n, lon, lat)).map(cellaFalde)),
-      Promise.all(nomi0.filter((n) => haCellaLidar("alberi", n, lon, lat)).map(cellaAlberi))]);
+    // (09/11/2026 c) le falde LiDAR sono sospese (tetti scelti dall'utente): si chiedono solo le celle degli alberi
+    await Promise.all(nomi0.filter((n) => haCellaLidar("alberi", n, lon, lat)).map(cellaAlberi));
     const pr = E.proiezione(lon, lat), visti = new Map(), sagome = [];
     const vicino = (a) => { const r = a.indice && a.indice.riquadro, m = 0.004;          // ~300 m: i 250 m del contesto
       return !Array.isArray(r) || r.length !== 4 || (lon >= r[0] - m && lon <= r[2] + m && lat >= r[1] - m && lat <= r[3] + m); };
@@ -509,9 +512,9 @@
     const g = geom && (geom.type === "MultiPolygon" ? geom.coordinates[0] : geom.coordinates);
     return Array.isArray(g) ? g.filter((r) => Array.isArray(r) && r.length >= 4) : [];
   }
-  function aCorpo(f) {
-    const p = f.properties, [esterno, ...fori] = anelli(f.geometry), ring = esterno.map(stato.proj.avanti);
-    const buchi = fori.slice(0, 200).map((r) => r.map(stato.proj.avanti));
+  function aCorpo(f, pr = stato.proj) {
+    const p = f.properties, [esterno, ...fori] = anelli(f.geometry), ring = esterno.map(pr.avanti);
+    const buchi = fori.slice(0, 200).map((r) => r.map(pr.avanti));
     return { id: String(p.id), edificio: String(p.edificio), ring, buchi, lonlat: f.geometry, gronda: +p.gronda, colmo: p.colmo ? +p.colmo : null,
       tetto: p.tetto || "piano", falde: +p.falde || 0, piani: p.piani ? +p.piani : null, quota: p.quota_terreno !== undefined ? +p.quota_terreno : 0,
       fonte_sagoma: p.fonte_sagoma || "", fonte_altezza: p.fonte_altezza || "", licenza: p.licenza || "", qualita: p.qualita || "",
@@ -527,6 +530,7 @@
       return `altezza stimata (dato DBTR non plausibile: ${(+c.h_scartata).toLocaleString("it-IT", { maximumFractionDigits: 1 })} m)`;
     if (c.tettoStimato) return `${c.fonte_altezza}; ${c.falde && c.falde[0] ? c.falde[0].fonte : FONTE_STIMA_TETTO} (${c.tetto === "padiglione" ? "a padiglione" : c.tetto === "monofalda" ? "a una falda" : "a capanna"})`;
     if (c.fonteTetto === "piano" && !c.modificato && c.motivoPiano) return `${c.fonte_altezza}; tetto piano (${c.motivoPiano})`;
+    if (c.fonteTetto === "piano" && !c.modificato) return `${c.fonte_altezza}; tetto piano`;
     return c.fonte_altezza;
   }
   // tetto a falde stimato dal colmo del DB topografico (07/11/2026 sera): dove non ci sono falde misurate e il colmo è più
@@ -540,119 +544,133 @@
     c.falde = r.falde.map((f) => ({ ...f, fonte })); c.tetto = r.tipo; c.tettoStimato = true;
     return c;
   }
-  // ------------------------------------------------------------------ forma dei tetti: tre fonti (08/11/2026, decisione di Paolo)
-  // 1. falde misurate dal LiDAR (pipeline notturna, lidar/indice.json dell'archivio); 2. tetto stimato dal colmo DBTR
-  // (stimaTetto); 3. tetto ipotizzato a falde, 22° in pianura e 32° in montagna (E.tettoIpotizzato: stessa forma, colmo =
-  // gronda + semiluce × tan(inclinazione)), o piano dove la regola dice piano (capannoni, commerciali, corpi molto grandi,
-  // bassi, con cortile o poco rettangolari). In Modelli 3D le fonti valgono in cascata per ogni corpo; nelle pagine
-  // Edificio e Fotovoltaico l'utente sceglie la forma con «Forma dei tetti» (#forma-tetti): «lidar» e «colmo» partono da
-  // quella fonte e scendono la cascata dove manca, «ipotesi» ipotizza tutti i corpi (salvo i piani), «piani» li fa tutti
-  // piani. Il modello dell'utente (DXF/IFC) e i corpi corretti a mano non cambiano: hanno la precedenza.
-  const SCELTE_TETTO = { auto: ["lidar", "colmo", "ipotesi"], lidar: ["lidar", "colmo", "ipotesi"], colmo: ["colmo", "ipotesi"], ipotesi: ["ipotesi"], piani: [] };
-  const NOMI_SCELTA_TETTO = { auto: "in cascata: LiDAR, poi colmo DBTR, poi ipotesi automatica", lidar: "Misurata (LiDAR) dove c'è",
-    colmo: "Stimata dal colmo DBTR dove c'è", ipotesi: "Ipotesi automatica (22°/32°)", piani: "Tutti piani" };
+  // ------------------------------------------------------------------ coperture: tetti a falde scelti dall'utente (09/11/2026 c)
+  // Decisione di Paolo del 09/11/2026 (sostituisce la cascata dell'08/11 «LiDAR → colmo DBTR → ipotesi 22°/32°», che si
+  // faceva ingannare dai tetti complessi con UTA e simili: l'Ospedale Infermi di Rimini, piano, usciva a falde; le case
+  // di via Ovidio, a falde, uscivano piane). **Tutti i tetti partono piani** (all'altezza di gronda); nella sezione
+  // «Coperture» l'utente accende la tegola e con un clic su un edificio (qualsiasi corpo, anche vicino: DBTR, OSM o
+  // sagome regionali) gli dà un tetto a falde con l'inclinazione scritta (22° all'inizio); un secondo clic lo riporta
+  // piano. Forma: capanna sul lato lungo, padiglione se quasi quadrato o se la pianta è complessa (E.tettoScelto). Le
+  // scelte restano nel browser (localStorage, chiave «eugenio-tetti-v1»: archivio|id del corpo → inclinazione), si
+  // esportano e si importano in un piccolo JSON, entrano nel PNG, nel report e nella tabella dei corpi. Le falde
+  // misurate dal LiDAR, la stima dal colmo DBTR e l'ipotesi 22°/32° restano nel codice (E.faldeStimate, E.tettoIpotizzato,
+  // conLidar; fase 10 `tetti.py`) ma sono **sospese**: la vista non le usa. Nelle pagine Edificio e Fotovoltaico
+  // «Forma dei tetti» ha due scelte: «Scelti dall'utente» e «Tutti piani».
+  const CHIAVE_TETTI = "eugenio-tetti-v1", INCLINAZIONE_TETTO = 22, INCLINAZIONE_MIN = 5, INCLINAZIONE_MAX = 60;
+  const FONTE_TETTO_UTENTE = "tetto a falde scelto dall'utente";
+  const gradi = (v) => Number(v).toLocaleString("it-IT", { maximumFractionDigits: 1 });
+  const SCELTE_TETTO = { utente: "Scelti dall'utente (tegola in «Coperture»)", piani: "Tutti piani" };
+  const NOMI_SCELTA_TETTO = SCELTE_TETTO;
   const SELETTORE_TETTI = () => (VISTA !== "modelli" ? $("forma-tetti") : null);
-  stato.formaTetti = "auto";
-  // un corpo con le sue falde: il modello dell'utente resta com'è; per gli altri si ricordano i valori del DB topografico
-  // (c.base) e il record LiDAR, poi applicaTetto sceglie la fonte
+  stato.formaTetti = "utente";
+  stato.tegola = false;
+  function leggiTetti() {
+    try {
+      const d = JSON.parse(localStorage.getItem(CHIAVE_TETTI) || "null");
+      return d && d.tetti && typeof d.tetti === "object" ? pulisciTetti(d.tetti) : {};
+    } catch { return {}; }
+  }
+  // solo voci «archivio|id» → { i: gradi tra 5 e 60, t: istante }; il resto si scarta (file importati, browser vecchi)
+  function pulisciTetti(t) {
+    const out = {};
+    for (const [k, v] of Object.entries(t || {}).slice(0, 20000)) {
+      const i = Number(v && typeof v === "object" ? v.i : v);
+      if (typeof k !== "string" || k.length > 300 || !k.includes("|") || !Number.isFinite(i)) continue;
+      out[k] = { i: Math.round(Math.min(INCLINAZIONE_MAX, Math.max(INCLINAZIONE_MIN, i)) * 10) / 10, t: Number(v && v.t) || Date.now() };
+    }
+    return out;
+  }
+  function scriviTetti() {
+    try { localStorage.setItem(CHIAVE_TETTI, JSON.stringify({ versione: 1, tetti: stato.tetti })); return true; }
+    catch { return false; }                                  // browser senza archivio: le scelte valgono fino alla chiusura
+  }
+  stato.tetti = leggiTetti();
+  // archivio di un corpo, per la chiave: percorso dell'archivio sul server (cc-by/er/cesena), «osm», «reg-<regione>»
+  // (sagome regionali), «locale» (DB topografico letto nel browser), «demo»
+  function chiaveArchivio(a, p = {}) {
+    if (!a) return stato.indice && stato.indice.sintetico ? "demo" : "archivio";
+    if (a.osm) return p.regione_sagoma ? `reg-${p.regione_sagoma}` : "osm";
+    if (a.locale) return "locale";
+    if (a.indice && a.indice.sintetico) return "demo";
+    return String(a.base || "").replace(/^\/edifici3d\//, "").replace(/\/?prodotti\/?$/, "").replace(/\/$/, "") || "archivio";
+  }
+  function chiaveTetto(c) {
+    const a = stato.archivi[c.archivio] || (stato.base ? { base: stato.base, indice: stato.indice || {} } : null);
+    return `${chiaveArchivio(a, c)}|${c.id}`;
+  }
+  function inclinazioneScelta(c) { const v = stato.tetti[chiaveTetto(c)]; return v ? v.i : null; }
+  function inclinazioneCorrente() {
+    const i = $("inclinazione-tetti"), v = i ? E.numero(i.value) : null;
+    return v === null || !Number.isFinite(v) ? INCLINAZIONE_TETTO : Math.min(INCLINAZIONE_MAX, Math.max(INCLINAZIONE_MIN, v));
+  }
+  // un corpo: si ricordano i valori dell'archivio (c.base) e il record LiDAR (sospeso), poi applicaTetto
   function conFalde(c, p) {
     c.base = { gronda: c.gronda, colmo: c.colmo, tetto: c.tetto, fonte_altezza: c.fonte_altezza, qualita: c.qualita };
-    if (c.edificio === "MODELLO") {                                  // modello dell'utente (importa-modello)
+    if (c.edificio === "MODELLO") {                                  // modello dell'utente (importa-modello): resta com'è
       c.tettoFisso = true; c.fonteTetto = "modello";
       if (Array.isArray(p.falde) && p.falde.length) c.falde = faldeLocali(p.falde, p.fonte_altezza || "modello dell'utente");
       else stimaTetto(c, "tetto stimato dal colmo del modello");
       return c;
     }
-    c.recLidar = stato.falde.get(c.id) || null;
     return applicaTetto(c);
   }
-  // quota per la regola pianura/montagna: terreno sotto il corpo (DTM, nei corpi DBTR) o, senza, altitudine del comune (DPR 412/93)
+  // quota per la regola pianura/montagna (sospesa con l'ipotesi automatica; resta per i dati del corpo)
   function quotaPerTetto(c) {
     if (c.quotaNota) return { quota: c.quota, testo: `quota del terreno ${fmt(c.quota)} m` };
     const riga = stato.dpr && stato.comune ? stato.dpr.comuni[stato.comune.istat] : null;
     if (riga && Number.isFinite(+riga[2])) return { quota: +riga[2], testo: `altitudine del comune ${fmt(riga[2])} m, DPR 412/93` };
     return { quota: null, testo: "quota non nota" };
   }
-  function ipotesiDi(c) {
-    const q = quotaPerTetto(c);
-    return { ...E.tettoIpotizzato(c, { quota: q.quota, istat: stato.comune ? stato.comune.istat : null }), testoQuota: q.testo };
-  }
-  function applicaTetto(c, scelta = stato.formaTetti || "auto") {
+  // tetto del corpo: piano all'altezza di gronda, oppure a falde se l'utente l'ha scelto (e «Forma dei tetti» non è
+  // «Tutti piani»)
+  function applicaTetto(c, scelta = stato.formaTetti || "utente") {
     if (c.tettoFisso || c.modificato) return c;                      // modello dell'utente e correzioni a mano: precedenza
     const b = c.base || {};
-    Object.assign(c, { gronda: b.gronda, colmo: b.colmo, tetto: b.tetto, fonte_altezza: b.fonte_altezza, qualita: b.qualita,
-      falde: null, lidar: null, tettoStimato: false, ipotesi: null, motivoPiano: null, fonteTetto: "piano" });
-    const rec = c.recLidar;
-    if (rec && rec.stato !== "ok") conLidar(c, rec);                 // solo le note (resta l'altezza del DBTR)
-    for (const f of SCELTE_TETTO[scelta] || SCELTE_TETTO.auto) {
-      if (f === "lidar" && rec && rec.stato === "ok") { conLidar(c, rec); c.fonteTetto = "lidar"; return c; }
-      if (f === "colmo") { stimaTetto(c); if (c.tettoStimato) { c.fonteTetto = "colmo"; return c; } }
-      if (f === "ipotesi") {
-        const r = ipotesiDi(c);
-        if (r.piano) { c.motivoPiano = r.motivo; break; }
-        const fonte = `tetto ipotizzato a ${r.inclinazione}° (${r.montagna ? "montagna" : "pianura"}: ${r.testoQuota})`;
-        Object.assign(c, { colmo: r.colmo, tetto: r.tipo, falde: r.falde.map((x) => ({ ...x, fonte })), tettoStimato: true, fonteTetto: "ipotesi",
-          ipotesi: { inclinazione: r.inclinazione, montagna: r.montagna, quota: r.quota, testo: r.testoQuota } });
-        return c;
-      }
-    }
-    if (scelta === "piani") { c.colmo = null; c.tetto = "piano"; c.motivoPiano = "scelta «Tutti piani»"; }
+    Object.assign(c, { gronda: b.gronda, colmo: null, tetto: "piano", fonte_altezza: b.fonte_altezza, qualita: b.qualita,
+      falde: null, lidar: null, tettoStimato: false, ipotesi: null, motivoPiano: null, fonteTetto: "piano", inclinazione: null });
+    const i = scelta === "piani" ? null : inclinazioneScelta(c);
+    if (i === null) { if (scelta === "piani" && inclinazioneScelta(c) !== null) c.motivoPiano = "scelta «Tutti piani»"; return c; }
+    const r = E.tettoScelto(c, i);
+    if (r.piano) { c.motivoPiano = r.motivo; return c; }
+    const fonte = `${FONTE_TETTO_UTENTE} (${gradi(i)}°)`;
+    Object.assign(c, { colmo: r.colmo, tetto: r.tipo, falde: r.falde.map((x) => ({ ...x, fonte })), tettoStimato: true,
+      fonteTetto: "falde", inclinazione: i });
     return c;
   }
   function testoSceltaTetti() {
-    return `Forma dei tetti: ${VISTA !== "modelli" && SELETTORE_TETTI() ? `«${NOMI_SCELTA_TETTO[stato.formaTetti] || NOMI_SCELTA_TETTO.auto}»` : NOMI_SCELTA_TETTO.auto}.`;
+    return VISTA !== "modelli" && SELETTORE_TETTI() ? `Forma dei tetti: «${NOMI_SCELTA_TETTO[stato.formaTetti] || NOMI_SCELTA_TETTO.utente}».` : "";
   }
   function applicaTetti() { [...stato.corpi, ...stato.vicini].forEach((c) => applicaTetto(c)); }
-  // fonte del tetto di ogni corpo: lidar, colmo, ipotesi, piano, modello, utente
-  function fonteTettoDi(c) { return c.modificato ? "utente" : c.fonteTetto || (c.falde && c.falde.length ? "colmo" : "piano"); }
+  // fonte del tetto di ogni corpo: falde (scelto dall'utente), piano, modello, utente (corretto a mano nella tabella)
+  function fonteTettoDi(c) { return c.modificato ? "utente" : c.fonteTetto || "piano"; }
   function contaTetti(corpi = stato.corpi) {
-    const n = { lidar: 0, colmo: 0, ipotesi: 0, piano: 0, modello: 0, utente: 0, pianura: 0, montagna: 0 };
-    corpi.forEach((c) => { const f = fonteTettoDi(c); n[f] = (n[f] || 0) + 1; if (f === "ipotesi" && c.ipotesi) n[c.ipotesi.montagna ? "montagna" : "pianura"]++; });
+    const n = { falde: 0, piano: 0, modello: 0, utente: 0 };
+    corpi.forEach((c) => { const f = fonteTettoDi(c); n[f] = (n[f] || 0) + 1; });
     return n;
   }
-  // «Tetti: N misurati dal LiDAR, M stimati dal colmo DBTR, K ipotizzati (22° pianura / 32° montagna), P piani»
+  // «Tetti: 2 a falde scelti dall'utente (22°), 1 piano»
   function testoTetti(corpi = stato.corpi) {
     if (!corpi.length) return "";
     const n = contaTetti(corpi), pl = (k, s, p) => `${k} ${k === 1 ? s : p}`;
-    const qui = [n.pianura ? `${n.pianura} a 22°` : "", n.montagna ? `${n.montagna} a 32°` : ""].filter(Boolean).join(", ");
-    const parti = [`${pl(n.lidar, "misurato", "misurati")} dal LiDAR`, `${pl(n.colmo, "stimato", "stimati")} dal colmo DBTR`,
-      `${pl(n.ipotesi, "ipotizzato", "ipotizzati")} (22° pianura / 32° montagna${qui ? `: ${qui}` : ""})`, pl(n.piano, "piano", "piani")];
+    const incl = [...new Set(corpi.filter((c) => fonteTettoDi(c) === "falde").map((c) => `${gradi(c.inclinazione)}°`))];
+    const parti = [];
+    if (n.falde) parti.push(`${pl(n.falde, "a falde scelto", "a falde scelti")} dall'utente (${incl.join(", ")})`);
+    parti.push(pl(n.piano, "piano", "piani"));
     if (n.modello) parti.push(`${n.modello} dal modello dell'utente`);
     if (n.utente) parti.push(`${pl(n.utente, "corretto", "corretti")} a mano`);
-    const scelta = VISTA !== "modelli" && SELETTORE_TETTI() ? ` Forma dei tetti scelta: «${NOMI_SCELTA_TETTO[stato.formaTetti] || NOMI_SCELTA_TETTO.auto}».` : "";
-    return `Tetti: ${parti.join(", ")}.${scelta}`;
+    const scelta = testoSceltaTetti();
+    return `Tetti: ${parti.join(", ")}.${scelta ? ` ${scelta}` : ""}`;
   }
-  // opzioni del selettore per l'edificio scelto: disponibili o spente con il motivo; predefinita la più affidabile
-  function opzioniTetti() {
-    const corpi = stato.corpi.filter((c) => !c.tettoFisso);
-    const out = { lidar: null, colmo: null, ipotesi: null, piani: null };
-    if (!corpi.length) { const m = "tetti dal modello dell'utente"; return { lidar: m, colmo: m, ipotesi: m, piani: m }; }
-    if (!corpi.some((c) => c.recLidar && c.recLidar.stato === "ok"))
-      out.lidar = stato.lidar ? "la pipeline LiDAR non ha ancora misurato le falde di questo edificio" : "nessun rilievo LiDAR elaborato per questo archivio";
-    if (!corpi.some((c) => E.faldeStimate({ ring: c.ring, buchi: c.buchi, gronda: c.base.gronda, colmo: c.base.colmo })))
-      out.colmo = corpi.some((c) => c.base.colmo > c.base.gronda) ? "forma dei corpi non adatta alla stima dal colmo" : "il DB topografico non dà il colmo di questi corpi";
-    const ip = corpi.map((c) => ipotesiDi({ ...c, gronda: c.base.gronda }));
-    if (ip.every((r) => r.piano)) out.ipotesi = `corpi plausibilmente piani (${ip[0].motivo})`;
-    return out;
-  }
-  function preparaSelettoreTetti(nuovo = false) {
+  function preparaSelettoreTetti() {
     const sel = SELETTORE_TETTI();
     if (!sel) return;
-    const off = opzioniTetti(), nota = $("motivi-forma-tetti");
-    [...sel.options].forEach((o) => {
-      o.textContent = NOMI_SCELTA_TETTO[o.value] + (off[o.value] ? ` – non disponibile: ${off[o.value]}` : "");
-      o.disabled = !!off[o.value]; o.title = off[o.value] || "";
-    });
-    if (nuovo || off[stato.formaTetti] || stato.formaTetti === "auto") stato.formaTetti = ["lidar", "colmo", "ipotesi", "piani"].find((k) => !off[k]) || "piani";
     sel.value = stato.formaTetti; sel.disabled = stato.corpi.every((c) => c.tettoFisso);
-    if (nota) {
-      const spente = Object.entries(off).filter(([, m]) => m).map(([k, m]) => `«${NOMI_SCELTA_TETTO[k]}»: ${m}`);
-      nota.textContent = spente.length ? `Non disponibili per questo edificio: ${spente.join("; ")}.` : "";
-    }
+    const nota = $("motivi-forma-tetti");
+    if (nota) nota.textContent = "";
   }
-  // dopo un cambio di forma: aree FV sulle falde nuove (salvo inclinazione e orientamento corretti a mano), ombre, sole e
+  // dopo un cambio di tetto: aree FV sulle falde nuove (salvo inclinazione e orientamento corretti a mano), ombre, sole e
   // producibilità ricalcolati se erano già stati calcolati
-  function cambiaFormaTetti(scelta) {
+  function cambiaFormaTetti(scelta = stato.formaTetti) {
     stato.formaTetti = scelta;
     applicaTetti();
     stato.originali = stato.corpi.map((c) => ({ ...c, ring: c.ring.map((p) => [...p]), buchi: (c.buchi || []).map((b) => b.map((p) => [...p])) }));
@@ -669,12 +687,140 @@
     stato.fv = null; stato.pvgis = null; stato.facciate = null; mostraFacciate();
     if ($("pvgis")) $("pvgis").innerHTML = "";
     if ($("calcola-pvgis")) $("calcola-pvgis").disabled = true;
-    aggiorna(); tabellaFv(); fontiCorpi();
+    if (stato.corpi.length) { aggiorna(); tabellaFv(); }
+    fontiCorpi();
     if (stato.in3d && stato.mappa) ridisegna();
+    evidenziaTetti2d();
     if (fv && stato.aree.length) $("calcola-fv").click();
     if (facc) $("calcola-facciate").click();
   }
-  if (SELETTORE_TETTI()) SELETTORE_TETTI().addEventListener("change", (e) => { if (stato.corpi.length) cambiaFormaTetti(e.target.value); });
+  if (SELETTORE_TETTI()) SELETTORE_TETTI().addEventListener("change", (e) => { if (stato.corpi.length) cambiaFormaTetti(e.target.value); else stato.formaTetti = e.target.value; });
+  // ---- sezione «Coperture»: tegola, inclinazione, «Reset piani» con conferma nella pagina, esporta e importa
+  function nTetti() { return Object.keys(stato.tetti).length; }
+  function statoTetti(extra = "") {
+    const el = $("stato-tetti");
+    if (!el) return;
+    const n = nTetti();
+    el.textContent = (n ? `${n} ${n === 1 ? "tetto a falde scelto" : "tetti a falde scelti"} (in questo browser).` : "Nessun tetto a falde scelto: tutti i tetti sono piani.")
+      + (extra ? ` ${extra}` : "");
+    const r = $("reset-piani"); if (r) r.disabled = !n;
+    const x = $("esporta-tetti"); if (x) x.disabled = !n;
+  }
+  function accendiTegola(si) {
+    stato.tegola = !!si;
+    const b = $("tegola");
+    if (b) { b.setAttribute("aria-pressed", String(stato.tegola)); b.classList.toggle("attivo", stato.tegola); }
+    const m = stato.mappa;
+    if (m) { m.getCanvasContainer().classList.toggle("cursore-tegola", stato.tegola); m.getCanvas().style.cursor = stato.tegola ? CURSORE_TEGOLA : ""; }
+    if (stato.tegola) { if (stato.modo) finisciModo(); statoTetti(`Tegola accesa: fai clic su un edificio per dargli un tetto a falde di ${gradi(inclinazioneCorrente())}° (secondo clic: torna piano).`); }
+    else statoTetti();
+  }
+  // corpo sotto il clic: tra quelli già costruiti (edificio scelto e vicini), altrimenti dalle celle dell'archivio
+  async function corpoSotto(e) {
+    const m = stato.mappa;
+    const ids = (stato.in3d ? ["scelto", "tetti-vicini", "falde", ...(stato.sorgentiCorpi || [])] : stato.strati2d || []).filter((id) => m.getLayer(id));
+    const f = ids.length ? m.queryRenderedFeatures(e.point, { layers: ids })[0] : null;
+    const lon = e.lngLat.lng, lat = e.lngLat.lat;
+    const id = f ? String(f.properties.corpo || f.properties.id || "") : "";
+    let c = id ? [...stato.corpi, ...stato.vicini].find((x) => x.id === id) : null;
+    if (c) return c;
+    // dalle celle dell'archivio (2D, o un corpo oltre i vicini): sagoma intera, con la proiezione del punto se serve
+    const fs = await contesto(lon, lat);
+    const g = id ? fs.find((x) => String(x.properties.id) === id) : edificioNelPunto(fs, lon, lat);
+    if (!g) return null;
+    const pr = stato.proj || E.proiezione(lon, lat);
+    c = aCorpo(g, pr); c.base = { gronda: c.gronda, colmo: c.colmo, tetto: c.tetto, fonte_altezza: c.fonte_altezza, qualita: c.qualita };
+    return c;
+  }
+  async function cliccaTegola(e) {
+    const c = await corpoSotto(e);
+    if (!c) { statoTetti("Nessun edificio sotto il clic."); return; }
+    if (c.tettoFisso) { statoTetti(`Corpo ${c.id}: è del tuo modello, il tetto resta quello del modello.`); return; }
+    const k = chiaveTetto(c);
+    if (stato.tetti[k]) {
+      delete stato.tetti[k];
+      scriviTetti();
+      aggiornaCorpoTetto(c);
+      statoTetti(`Corpo ${c.id}: tetto piano.`);
+      return;
+    }
+    const i = inclinazioneCorrente(), r = E.tettoScelto(c, i);
+    if (r.piano) { statoTetti(`Corpo ${c.id}: il tetto a falde non si può disegnare (${r.motivo}); resta piano.`); return; }
+    stato.tetti[k] = { i, t: Date.now() };
+    const ok = scriviTetti();
+    aggiornaCorpoTetto(c);
+    statoTetti(`Corpo ${c.id}: tetto a falde di ${gradi(i)}° (${r.tipo === "padiglione" ? "a padiglione" : "a capanna"}); un altro clic lo riporta piano.`
+      + (ok ? "" : " Il browser non permette di ricordarlo dopo la chiusura della pagina."));
+  }
+  function aggiornaCorpoTetto(c) {
+    const qui = [...stato.corpi, ...stato.vicini].find((x) => x.id === c.id);
+    if (qui && (stato.formaTetti !== "piani" || !stato.corpi.includes(qui))) {
+      if (stato.corpi.includes(qui)) cambiaFormaTetti(); else { applicaTetto(qui); if (stato.in3d) ridisegna(); }
+    }
+    if (stato.corpi.length) fontiCorpi();
+    evidenziaTetti2d();
+  }
+  // mappa 2D: i corpi con il tetto a falde scelto hanno il bordo color mattone (un filtro per archivio)
+  function evidenziaTetti2d() {
+    const m = stato.mappa;
+    if (!m || !DUE_TEMPI) return;
+    (stato.sorgentiCorpi || []).forEach((id, k) => {
+      const l = `${id}-2d-tetto`;
+      if (!m.getLayer(l)) return;
+      const a = stato.archivi[k], pref = a ? chiaveArchivio(a) : "";
+      const ids = Object.keys(stato.tetti).filter((x) => (a && a.osm ? /^(osm|reg-[^|]*)\|/.test(x) : x.startsWith(`${pref}|`))).map((x) => x.slice(x.indexOf("|") + 1));
+      m.setFilter(l, ["in", ["to-string", ["get", "id"]], ["literal", ids]]);
+    });
+  }
+  function resetPiani(conferma) {
+    const box = $("conferma-reset");
+    if (!conferma) {
+      if (box) { box.hidden = false; $("conferma-reset-testo").textContent = `Riporto piani ${nTetti() === 1 ? "il tetto scelto" : `tutti i ${nTetti()} tetti scelti`}?`; $("reset-si").focus(); }
+      return;
+    }
+    stato.tetti = {};
+    scriviTetti();
+    if (box) box.hidden = true;
+    cambiaFormaTetti();
+    statoTetti("Tutti i tetti sono di nuovo piani.");
+  }
+  function esportaTetti() {
+    const dati = JSON.stringify({ tipo: "eugenio-tetti", versione: 1, creato: new Date().toISOString(),
+      nota: "Tetti a falde scelti in EuGEnio (Coperture): archivio|id del corpo → inclinazione in gradi", tetti: stato.tetti }, null, 1);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([dati], { type: "application/json" }));
+    a.download = `eugenio_tetti_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    statoTetti(`Esportati ${nTetti()} tetti in ${a.download}.`);
+  }
+  async function importaTetti(file) {
+    if (!file) return;
+    try {
+      if (file.size > 2e6) throw new Error("file troppo grande (oltre 2 MB)");
+      const d = JSON.parse(await file.text());
+      const nuovi = pulisciTetti(d && d.tetti);
+      const n = Object.keys(nuovi).length;
+      if (!n) throw new Error("nessun tetto nel file");
+      Object.assign(stato.tetti, nuovi);
+      scriviTetti();
+      cambiaFormaTetti();
+      statoTetti(`Importati ${n} tetti (uniti a quelli che c'erano).`);
+    } catch (e) { statoTetti(`File dei tetti non letto: ${e.message || e}.`); }
+  }
+  function controlliCoperture() {
+    if (!$("tegola") || $("tegola").dataset.pronto) return;
+    $("tegola").dataset.pronto = "1";
+    $("tegola").addEventListener("click", () => accendiTegola(!stato.tegola));
+    $("inclinazione-tetti").addEventListener("change", () => { $("inclinazione-tetti").value = String(inclinazioneCorrente()); if (stato.tegola) accendiTegola(true); });
+    $("reset-piani").addEventListener("click", () => resetPiani(false));
+    $("reset-si").addEventListener("click", () => resetPiani(true));
+    $("reset-no").addEventListener("click", () => { $("conferma-reset").hidden = true; statoTetti(); });
+    $("esporta-tetti").addEventListener("click", esportaTetti);
+    $("importa-tetti").addEventListener("change", (e) => { importaTetti(e.target.files && e.target.files[0]); e.target.value = ""; });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && stato.tegola) accendiTegola(false); });
+    statoTetti();
+  }
   function conLidar(c, r) {
     c.lidar = { stato: r.stato, qualita: r.qualita || null, rmse: r.rmse, copertura: r.copertura, fonte: r.descrizione_fonte || r.fonte,
       note: Array.isArray(r.note) ? r.note.slice(0, 5).map(String) : [], sintetico: !!r.sintetico, versione: r.versione };
@@ -689,7 +835,7 @@
     return c;
   }
 
-  // ------------------------------------------------------------------ rilievo: ombreggiatura, esagerazione, fonte
+  // ------------------------------------------------------------------ rilievo: ombreggiatura e fonte
   function paintRilievo(conFoto) {
     const scuro = !document.documentElement.matches('[data-theme="light"]') && (document.documentElement.matches('[data-theme="dark"]')
       || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches));
@@ -703,33 +849,27 @@
     const p = paintRilievo(ortoVisibile && ortoVisibile() && !!stato.ortofoto);
     Object.entries(p).forEach(([k, v]) => { try { m.setPaintProperty("rilievo", k, v); } catch { /* proprietà non supportata */ } });
   }
-  // esagerazione verticale del rilievo nella vista 3D: ×1 (predefinito), ×1,5, ×2
+  // terreno della vista 3D, sempre con il rilievo vero (09/11/2026 c, decisione di Paolo: tolta la riga «Rilievo ×1 ×1,5 ×2»)
   function terreno3d() {
     const m = stato.mappa;
     if (!m || !stato.in3d) return;
     const osm = stato.corpi.some((c) => (archivioDi(c) || {}).osm && !c.quotaNota);   // sagome regionali con la quota dal DTM: terreno vero
-    try { if (osm || !m.getSource("terreno")) m.setTerrain(null); else m.setTerrain({ source: "terreno", exaggeration: stato.esagera || 1 }); } catch { /* piatta */ }
+    try { if (osm || !m.getSource("terreno")) m.setTerrain(null); else m.setTerrain({ source: "terreno", exaggeration: 1 }); } catch { /* piatta */ }
     quotaCamera();
   }
   // (07/11/2026 sera, «diventa nera» a Bagno di Romagna) la camera guarda il centro della mappa alla quota del centro: con
   // il terreno appena acceso MapLibre la teneva a 0 m finché le tessere non arrivavano, e in collina (550–780 m) la camera
   // finiva dentro il versante (tutto nero, nessuna tessera chiesta). Si dà subito la quota del terreno sotto l'edificio
-  // (dal DTM, già nei corpi), moltiplicata per l'esagerazione; poi MapLibre la affina con le tessere
+  // (dal DTM, già nei corpi); poi MapLibre la affina con le tessere
   function quotaDelCentro() {
     const m = stato.mappa;
     if (!m || !m.getTerrain || !m.getTerrain() || !stato.corpi.length) return 0;
-    return (Number.isFinite(stato.q0) ? stato.q0 : 0) * (stato.esagera || 1);
+    return Number.isFinite(stato.q0) ? stato.q0 : 0;
   }
   function quotaCamera() {
     const m = stato.mappa;
     if (!m || typeof m.setCenterElevation !== "function") return;
     try { m.setCenterElevation(stato.in3d ? quotaDelCentro() : 0); } catch { /* versione senza quota del centro */ }
-  }
-  function esagera(x) {
-    stato.esagera = x;
-    if (stato.barra3d) stato.barra3d.querySelectorAll("[data-esagera]").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.esagera === x)));
-    terreno3d();
-    legendaTerreno();
   }
   // fonte delle tessere del terreno al centro della vista (intestazione X-Terreno-Fonte della rotta /api/terreno)
   const NOMI_TERRENO = { dtm: "DTM 5 m Regione Emilia-Romagna (CC BY 4.0)", "dtm+copernicus": "DTM 5 m Regione Emilia-Romagna e Copernicus DEM GLO-90",
@@ -755,7 +895,7 @@
     const dtm = /^dtm/.test(stato.fonteTerreno || "") && stato.nomeTerreno
       ? `${stato.nomeTerreno}${/copernicus/.test(stato.fonteTerreno) ? " e Copernicus DEM GLO-90" : ""}` : null;
     const f = osm ? "piatto (edifici OpenStreetMap: nessuna quota del terreno)" : dtm || NOMI_TERRENO[stato.fonteTerreno] || (stato.fonteTerreno ? stato.fonteTerreno : "dal server");
-    el.textContent = `Terreno: ${f}${stato.esagera && stato.esagera !== 1 ? `, rilievo esagerato ×${String(stato.esagera).replace(".", ",")}` : ""}`;
+    el.textContent = `Terreno: ${f}`;
     el.hidden = !stato.in3d;
   }
 
@@ -777,7 +917,7 @@
     const P = partenza();
     const [lon, lat] = P ? [P.lon, P.lat] : stato.indice ? stato.indice.centro : [12.5683, 44.0594];
     const vuota = () => ({ type: "geojson", data: { type: "FeatureCollection", features: [] } });
-    const sources = { ombre: vuota(), scelto: vuota(), fv: vuota(), linea: vuota(), facciate: vuota(), falde: vuota(), alberi: vuota(), cercato: vuota() };
+    const sources = { ombre: vuota(), scelto: vuota(), "tetti-vicini": vuota(), fv: vuota(), linea: vuota(), facciate: vuota(), falde: vuota(), alberi: vuota(), cercato: vuota() };
     const archivi = stato.archivi.length ? stato.archivi : stato.base ? [{ base: stato.base, indice: stato.indice }] : [];
     {
       // terreno: dal server (se la rotta risponde), o dalle tessere dell'archivio di partenza se le ha
@@ -811,6 +951,9 @@
     layers.push(
       { id: "scelto", type: "fill-extrusion", source: "scelto",
         paint: { "fill-extrusion-color": colore("--primario"), "fill-extrusion-height": ["get", "altezza"], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.95 } },
+      // (09/11/2026 c) edifici vicini con il tetto a falde scelto dall'utente: prisma fino alla gronda, falde nel layer «falde»
+      { id: "tetti-vicini", type: "fill-extrusion", source: "tetti-vicini",
+        paint: { "fill-extrusion-color": ["get", "colore"], "fill-extrusion-height": ["get", "altezza"], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.85 } },
       // falde inclinate (LiDAR o modello) a gradini: dal giallo-arancio (verso sud) al blu (verso nord)
       { id: "falde", type: "fill-extrusion", source: "falde",
         paint: { "fill-extrusion-color": ["interpolate", ["linear"], ["get", "t"], 0, "#f4a261", 0.5, "#9c89b8", 1, "#457b9d"],
@@ -840,6 +983,9 @@
           paint: { "fill-color": colore("--primario"), "fill-opacity": 0.75 } });
         layers.push({ id: `${id}-2d-bordo`, type: "line", source: id, ...strato(k), filter: ["==", ["get", "edificio"], ""],
           paint: { "line-color": colore("--inchiostro"), "line-width": 2.5 } });
+        // (09/11/2026 c) corpi con il tetto a falde scelto dall'utente: bordo color mattone (filtro in evidenziaTetti2d)
+        layers.push({ id: `${id}-2d-tetto`, type: "line", source: id, ...strato(k), minzoom: 13, filter: ["in", ["to-string", ["get", "id"]], ["literal", []]],
+          paint: { "line-color": COLORE_TEGOLA, "line-width": ["interpolate", ["linear"], ["zoom"], 14, 1.5, 19, 3.5] } });
         stato.strati2d.push(`${id}-2d`);
       });
       // zone coperte dagli archivi veri: riquadro tratteggiato, discreto (07/11/2026)
@@ -849,6 +995,9 @@
       sources.zone = { type: "geojson", data: { type: "FeatureCollection", features: zone } };
       layers.push({ id: "zone-coperte", type: "line", source: "zone",
         paint: { "line-color": colore("--inchiostro"), "line-width": 1.2, "line-opacity": 0.55, "line-dasharray": [3, 3] } });
+      // (09/11/2026 c) alberi anche nella mappa 2D: chiome piatte in verde attorno al centro (casella «Alberi»)
+      layers.push({ id: "alberi-2d", type: "fill", source: "alberi", minzoom: 14, layout: { visibility: "none" },
+        paint: { "fill-color": ["interpolate", ["linear"], ["get", "h"], 3, "#3f6f2f", 12, "#5f9a45", 25, "#86b860"], "fill-opacity": 0.75 } });
       layers.push({ id: "cercato", type: "circle", source: "cercato",
         paint: { "circle-radius": 7, "circle-color": colore("--primario"), "circle-stroke-color": "#fff", "circle-stroke-width": 2 } });
     }
@@ -868,7 +1017,7 @@
     if (DUE_TEMPI) zoneComuni(m, archivi);
     if (!DUE_TEMPI) { try { if (m.getSource("terreno")) m.setTerrain({ source: "terreno", exaggeration: 1 }); } catch { /* terreno non disponibile: mappa piatta */ } }
     m.on("click", (e) => clic(e));
-    m.on("moveend", () => { if (!stato.in3d) notaAltezzeOsm(); else if (DUE_TEMPI) lontanoDal3d(); });
+    m.on("moveend", () => { if (!stato.in3d) { notaAltezzeOsm(); if (stato.alberiVisibili) alberi2d(); } else if (DUE_TEMPI) lontanoDal3d(); });
     m.on("mousemove", (e) => {
       if (stato.trascino) return;
       if (DUE_TEMPI && !stato.in3d && m.getLayer("cercato") && m.queryRenderedFeatures(e.point, { layers: ["cercato"] }).length) {
@@ -876,7 +1025,7 @@
       }
       const ids = (stato.in3d ? [...stato.sorgentiCorpi, "scelto"] : stato.strati2d).filter((id) => m.getLayer(id));
       const f = ids.length ? m.queryRenderedFeatures(e.point, { layers: ids }) : [];
-      m.getCanvas().style.cursor = stato.modo ? "crosshair" : f.length ? "pointer" : "";
+      m.getCanvas().style.cursor = stato.tegola ? CURSORE_TEGOLA : stato.modo ? "crosshair" : f.length ? "pointer" : "";
     });
     document.addEventListener("eugenio:aspetto", () => {
       m.setPaintProperty("sfondo", "background-color", colore("--carta"));
@@ -933,8 +1082,8 @@
 
   // ------------------------------------------------------------------ Modelli 3D in due tempi (05/11/2026)
   function vedi(m, ids, si) { ids.forEach((id) => { if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", si ? "visible" : "none"); }); }
-  const strati3d = () => [...(stato.sorgentiCorpi || []), "rilievo", "ombre", "scelto", "falde", "fv", "facciate", "alberi", "linea"];
-  const strati2dTutti = () => (stato.sorgentiCorpi || []).flatMap((id) => [`${id}-2d`, `${id}-2d-linea`, `${id}-2d-scelto`, `${id}-2d-bordo`]).concat(["zone-coperte", "cercato"]);
+  const strati3d = () => [...(stato.sorgentiCorpi || []), "rilievo", "ombre", "scelto", "tetti-vicini", "falde", "fv", "facciate", "alberi", "linea"];
+  const strati2dTutti = () => (stato.sorgentiCorpi || []).flatMap((id) => [`${id}-2d`, `${id}-2d-linea`, `${id}-2d-scelto`, `${id}-2d-bordo`, `${id}-2d-tetto`]).concat(["zone-coperte", "cercato"]);
   function evidenzia2d(edificio) {
     const m = stato.mappa;
     (stato.sorgentiCorpi || []).forEach((id) => ["2d-scelto", "2d-bordo"].forEach((suf) => {
@@ -1090,7 +1239,7 @@
     if (!DUE_TEMPI || !m) return;
     stato.in3d = true;
     vedi(m, strati3d(), true); vedi(m, strati2dTutti(), false); vedi(m, ["confini-comuni", "confini-province"], false);
-    vedi(m, ["alberi"], !!stato.alberiVisibili);           // casella «Alberi» (09/11/2026)
+    vedi(m, ["alberi"], !!stato.alberiVisibili); vedi(m, ["alberi-2d"], false);   // casella «Alberi» (09/11/2026)
     // edificio OSM (ripiego): niente DTM, mappa piatta come le quote dei corpi
     terreno3d(); coloriRilievo(); fonteTerreno();
     m.dragRotate.enable(); m.touchPitch.enable(); m.touchZoomRotate.enableRotation(); m.doubleClickZoom.disable();
@@ -1118,7 +1267,7 @@
       m.jumpTo({ pitch: 0, bearing: 0, roll: 0 });
       stato.corpi = []; stato.vicini = []; stato.originali = []; stato.aree = []; stato.edificio = null; stato.daGenerare = null;
       evidenzia2d("");
-      ["scelto", "falde", "fv", "ombre", "facciate", "linea", "alberi"].forEach((id) => { const g = m.getSource(id); if (g) g.setData({ type: "FeatureCollection", features: [] }); });
+      ["scelto", "tetti-vicini", "falde", "fv", "ombre", "facciate", "linea"].forEach((id) => { const g = m.getSource(id); if (g) g.setData({ type: "FeatureCollection", features: [] }); });
     } else m.easeTo({ pitch: 0, bearing: 0, roll: 0, duration: 600 });
     $("torna-2d").hidden = true; $("genera-3d").hidden = false; $("genera-3d").disabled = !stato.daGenerare;
     $("aiuto-2d").hidden = false; $("aiuto-3d").hidden = true;
@@ -1126,6 +1275,7 @@
     messaggio("messaggio", azzera ? "Mappa 2D: il 3D dell'edificio di prima è stato tolto. Scegli l'edificio con un clic, poi «Genera il 3D»."
       : "Mappa 2D: scegli un altro edificio con un clic (o cercalo), poi «Genera il 3D». A destra restano i dati dell'ultimo edificio generato.");
     fontiCorpi();
+    stato.alberi2d = null; if (stato.alberiVisibili) applicaAlberi();
   }
   // nella vista 3D la mappa portata a più di 2 km dall'edificio: si torna al 2D (stesso comportamento della ricerca)
   const LONTANO_3D = 2000;
@@ -1169,15 +1319,12 @@
       ["Ruota", [["↺", "Ruota la mappa a sinistra", () => ruota(-15)], ["↻", "Ruota la mappa a destra", () => ruota(15)]]],
       ["Inclina", [["−", "Inclina di meno, verso la vista dall'alto", () => inclina(-10)], ["+", "Inclina di più", () => inclina(10)]]],
       ["Rollio", [["↺", "Rollio a sinistra", () => rolla(-15)], ["↻", "Rollio a destra", () => rolla(15)]]],
-      ["Rilievo", [["×1", "Rilievo vero (predefinito)", () => esagera(1), 1], ["×1,5", "Rilievo esagerato una volta e mezza", () => esagera(1.5), 1.5],
-        ["×2", "Rilievo esagerato due volte", () => esagera(2), 2]]],
     ];
     for (const [nome, pulsanti] of gruppi) {
       const g = h("span", "mappa3d-gruppo"); g.setAttribute("role", "group"); g.setAttribute("aria-label", nome); g.dataset.gruppo = nome;
       g.appendChild(h("span", "mappa3d-nome", nome));
-      for (const [t, titolo, fa, x] of pulsanti) {
+      for (const [t, titolo, fa] of pulsanti) {
         const b = h("button", null, t); b.type = "button"; b.title = titolo; b.setAttribute("aria-label", titolo); b.addEventListener("click", fa);
-        if (x) { b.dataset.esagera = String(x); b.setAttribute("aria-pressed", String(x === 1)); }
         g.appendChild(b);
       }
       comandi.appendChild(g);
@@ -1257,14 +1404,12 @@
       .map(([l, ids]) => `${l}: ${ids.length > 6 ? `${ids.length} corpi` : ids.join(", ")}`);
     return `Fonte del 3D per corpo (dalla più affidabile): ${parti.join("; ")}. Il dettaglio (sagoma, altezza, licenza) è nella tabella «Corpi».`;
   }
-  // tetti stimati e ipotizzati: forma e precedenza, per la nota, l'immagine e il report
-  function testoTettiStimati() {
-    const n = contaTetti(), t = [];
-    if (n.colmo) t.push(`Tetto a falde stimato dal colmo DBTR per ${n.colmo} ${n.colmo === 1 ? "corpo" : "corpi"}`);
-    if (n.ipotesi) t.push(`tetto ipotizzato a falde per ${n.ipotesi} ${n.ipotesi === 1 ? "corpo" : "corpi"} (22° in pianura, 32° in montagna: quota del terreno da 600 m al Nord, da 700 m al Centro-Sud)`);
-    if (!t.length) return "";
-    const s = t.join("; ");
-    return `${s[0].toUpperCase()}${s.slice(1)}: forma a capanna sul lato lungo o a padiglione; le falde LiDAR, quando ci saranno, prendono il posto delle stime.`;
+  // tetti a falde scelti dall'utente (09/11/2026 c): forma, per la nota, l'immagine e il report
+  function testoTettiStimati(corpi = stato.corpi) {
+    const n = corpi.filter((c) => fonteTettoDi(c) === "falde").length;
+    if (!n) return "";
+    return `Tetto a falde scelto dall'utente per ${n} ${n === 1 ? "corpo" : "corpi"} (sezione «Coperture»): forma a capanna sul lato lungo o a padiglione, `
+      + "colmo dalla metà del lato corto e dall'inclinazione scelta; gli altri tetti sono piani.";
   }
   function fontiCorpi() {
     const p = $("fonti-corpi");
@@ -1275,10 +1420,10 @@
     if (nt) { nt.textContent = tt; nt.hidden = !tt; }
     const lf = $("legenda-falde");
     if (lf) {
-      const n = contaTetti();
+      const n = contaTetti([...stato.corpi, ...stato.vicini]);
       lf.lastChild.textContent = stato.in3d && stato.corpi.length
-        ? `falde dei tetti: ${n.lidar} LiDAR, ${n.colmo} dal colmo DBTR, ${n.ipotesi} ipotizzate (22°/32°), ${n.piano} piani (dall'arancio, a sud, al blu, a nord)`
-        : "falde dei tetti: LiDAR, stimate dal colmo DBTR o ipotizzate a 22°/32° (dall'arancio, a sud, al blu, a nord)";
+        ? `tetti a falde scelti dall'utente: ${n.falde}, gli altri piani (falde dall'arancio, a sud, al blu, a nord)`
+        : "tetti a falde scelti dall'utente (dall'arancio, a sud, al blu, a nord); gli altri piani";
     }
     const lo = $("legenda-osm"); if (lo) lo.hidden = !(stato.osm && stato.osm.visti && stato.osm.visti.size);
     legendaTerreno();
@@ -1306,17 +1451,17 @@
       righe.push("Edifici fuori dal DBTR: © OpenStreetMap contributors, ODbL 1.0 (openstreetmap.org/copyright), tramite l'API Overpass; "
         + "ripiego con altezze in parte stimate.");
     if (archivi.some((a) => a.osm) && (stato.osm.visti.size || stato.in3d)) { const t = testoAltezzeOsm(altezzeOsmVista(), stato.in3d ? " dell'edificio e dei vicini" : " nella vista"); if (t) righe.push(t); }
-    if (stato.in3d && stato.lidar && stato.corpi.some((c) => c.lidar && c.lidar.stato === "ok"))
-      Object.values(stato.lidar.attribuzioni || {}).forEach((a) => righe.push(`Falde dei tetti: ${a.attribuzione || a.descrizione} (${a.licenza}).`));
+    if (stato.lidar && stato.alberiVisibili && alberiVicini().length)
+      Object.values(stato.lidar.attribuzioni || {}).forEach((a) => righe.push(`Alberi (chiome dal LiDAR): ${a.attribuzione || a.descrizione} (${a.licenza}).`));
     if (stato.in3d && stato.terrenoServer && !stato.sintetico && !stato.corpi.some((c) => (archivioDi(c) || {}).osm)) righe.push(`${ATTRIBUZIONE_TERRENO}; quote dei corpi dal DTM 5×5 m.`);
     else if (stato.in3d && stato.terrenoServer && stato.nomeTerreno) righe.push(`Terreno: ${stato.nomeTerreno}; altrove Copernicus DEM GLO-90 (© DLR e Airbus).`);
     // legenda dei colori e del terreno nella vista 3D (07/11/2026 sera)
     if (stato.in3d) {
       const osmVisti = stato.osmAttivo && (stato.osm.visti.size || stato.vicini.some((c) => (archivioDi(c) || {}).osm));
-      const ts = testoTettiStimati();
+      const ts = testoTettiStimati([...stato.corpi, ...stato.vicini]);
       const alberiVisti = stato.alberiVisibili && alberiVicini().length;
       righe.push(`Colori: edificio scelto in evidenza; edifici vicini del DB topografico in ${voceColore().nome.toLowerCase()}${osmVisti ? "; edifici OpenStreetMap in marrone (altezza da OSM o stimata)" : ""}`
-        + `${stato.corpi.some((c) => c.falde && c.falde.length) ? "; falde dei tetti dall'arancio (a sud) al blu (a nord)" : ""}`
+        + `${[...stato.corpi, ...stato.vicini].some((c) => c.falde && c.falde.length) ? "; falde dei tetti dall'arancio (a sud) al blu (a nord)" : ""}`
         + `${alberiVisti ? "; alberi in verde (chiome dal LiDAR, DSM meno DTM)" : ""}.`
         + (ts ? ` ${ts}` : ""));
       if (stato.corpi.length) righe.push(testoTetti());
@@ -1407,7 +1552,7 @@
       const t = (1 - Math.cos(az - Math.PI)) / 2;
       for (let k = 0; k < n; k++) {
         const r = taglia(f.ring, d, s0 + (s1 - s0) * k / n, s0 + (s1 - s0) * (k + 1) / n);
-        if (r) out.push({ type: "Feature", properties: { z: f.alto - (f.alto - f.basso) * k / n, t },
+        if (r) out.push({ type: "Feature", properties: { z: f.alto - (f.alto - f.basso) * k / n, t, corpo: c.id },
           geometry: { type: "Polygon", coordinates: [r.map(stato.proj.indietro)] } });
       }
     }
@@ -1417,11 +1562,20 @@
     const m = stato.mappa;
     if (!m) return;
     m.getSource("scelto").setData(geojson(stato.corpi));
-    m.getSource("falde").setData({ type: "FeatureCollection", features: stato.corpi.flatMap(strisce) });
+    // (09/11/2026 c) vicini con il tetto a falde scelto: prisma fino alla gronda nel loro colore e falde a gradini; la loro
+    // versione nelle tessere (piatta) si nasconde
+    const viciniFalde = stato.vicini.filter((c) => inclinate(c).length);
+    if (m.getSource("tetti-vicini")) {
+      const g = geojson(viciniFalde);
+      g.features.forEach((f, k) => { f.properties.colore = (archivioDi(viciniFalde[k]) || {}).osm ? COLORE_OSM : coloreEdifici(); });
+      m.getSource("tetti-vicini").setData(g);
+    }
+    m.getSource("falde").setData({ type: "FeatureCollection", features: [...stato.corpi, ...viciniFalde].flatMap(strisce) });
     if (m.getSource("alberi")) m.getSource("alberi").setData({ type: "FeatureCollection", features: alberiVicini().map((a) => ({ type: "Feature",
       properties: { h: a.h }, geometry: { type: "Polygon", coordinates: [ottagono(a).map(stato.proj.indietro)] } })) });
+    stato.alberi2d = null;
     // corpi modificati o divisi: si nasconde la loro versione nelle tessere
-    const nascosti = [...new Set(stato.originali.map((c) => c.id).concat(stato.nascostiExtra))];
+    const nascosti = [...new Set(stato.originali.map((c) => c.id).concat(stato.nascostiExtra, viciniFalde.map((c) => c.id)))];
     (stato.sorgentiCorpi || ["corpi"]).forEach((id) => { if (m.getLayer(id)) m.setFilter(id, nascosti.length ? ["!", ["in", ["get", "id"], ["literal", nascosti]]] : null); });
     m.getSource("fv").setData({ type: "FeatureCollection", features: stato.aree.map((a) => ({ type: "Feature",
       properties: { quota: a.quota }, geometry: { type: "Polygon", coordinates: [E.chiudi(a.ring).map(stato.proj.indietro)] } })) });
@@ -1430,6 +1584,7 @@
 
   // ------------------------------------------------------------------ selezione
   async function clic(e) {
+    if (stato.tegola) return cliccaTegola(e);                 // (09/11/2026 c) con la tegola il clic cambia il tetto, non sceglie
     if (DUE_TEMPI && !stato.in3d) return clic2d(e);
     const p = stato.proj ? stato.proj.avanti([e.lngLat.lng, e.lngLat.lat]) : null;
     if (stato.modo === "dividi") return puntoDivisione(p);
@@ -1491,7 +1646,7 @@
     stato.comune = daOsm ? await comuneNelPunto(lon, lat) : await comuneDi(lon, lat);
     // forma dei tetti (08/11/2026): con il comune (soglia di montagna 600/700 m, altitudine del comune per i corpi senza quota)
     await datiDpr();
-    preparaSelettoreTetti(true); applicaTetti();
+    preparaSelettoreTetti(); applicaTetti();
     stato.originali = corpi.map((c) => ({ ...c, ring: c.ring.map((p) => [...p]) }));
     $("avviso-sintetico").hidden = !stato.sintetico;
     ["passo-corpi", "passo-superfici", "passo-geometria", "passo-obblighi", "passo-ombre", "passo-facciate", "passo-fv", "passo-pvgis",
@@ -1529,7 +1684,7 @@
   // comune che contiene il punto (confini ISTAT del sito, dati/mappa/08.json, stesse coordinate di patrimonio.js)
   async function comuneDi(lon, lat) {
     try {
-      const m = await json("dati/mappa/08.json?v=20261109b");
+      const m = await json("dati/mappa/08.json?v=20261109c");
       const p = lonlatSvg(lon, lat);
       for (const c of m.comuni) {
         for (const parte of c.d.split("M").filter(Boolean)) {
@@ -1606,8 +1761,8 @@
       (c.lidar && c.lidar.note || []).forEach((n) => note.push(`corpo ${c.id}: ${n}`));
     });
     if (!con.length) {
-      messaggio("messaggio-falde", (stato.lidar ? "Nessuna falda misurata per questo edificio" : "Nessun rilievo LiDAR in questo archivio")
-        + `: tetti piani. ${testoTetti()}` + (note.length ? ` ${note.join("; ")}.` : ""));
+      messaggio("messaggio-falde", `Tetti piani: per un tetto a falde accendi la tegola in «Coperture» e fai clic sull'edificio. ${testoTetti()}`
+        + (note.length ? ` ${note.join("; ")}.` : ""));
       return;
     }
     const r1 = t.createTHead().insertRow();
@@ -1857,7 +2012,7 @@
   let lavoratore = null;
   function orizzonti(punti, ostacoli, lontano = null) {
     return new Promise((ok, ko) => {
-      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261109b"); } catch (e) { ko(e); return; }
+      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261109c"); } catch (e) { ko(e); return; }
       const id = Math.random();
       const f = (e) => { if (e.data.id === id) { lavoratore.removeEventListener("message", f); ok(e.data.orizzonti); } };
       lavoratore.addEventListener("message", f);
@@ -2055,11 +2210,43 @@
     });
     document.querySelectorAll(".legenda .pallino.vicini").forEach((x) => { x.style.background = voceColore().colore || ""; });
   }
+  // (09/11/2026 c, prove P9: «attivando Alberi non si vedono più») gli alberi si vedono anche nella mappa 2D (chiome piatte
+  // attorno al centro, da zoom 15) e, se qui non ci sono chiome, la pagina lo dice invece di non mostrare nulla
   function applicaAlberi() {
     const m = stato.mappa;
-    if (m) vedi(m, ["alberi"], !!stato.alberiVisibili && stato.in3d);
+    if (m) { vedi(m, ["alberi"], !!stato.alberiVisibili && stato.in3d); vedi(m, ["alberi-2d"], !!stato.alberiVisibili && !stato.in3d); }
     const l = $("legenda-alberi");
     if (l) l.hidden = !stato.alberiVisibili;
+    if (stato.alberiVisibili && m && !stato.in3d) alberi2d();
+    else if (stato.alberiVisibili && stato.in3d) notaAlberi(alberiVicini().length);
+  }
+  function notaAlberi(n) {
+    if (n) return;
+    messaggio("messaggio", stato.lidar
+      ? "Alberi: nessuna chioma dal LiDAR qui attorno. Le chiome ci sono solo dove la pipeline LiDAR del server ha già elaborato il rilievo: per ora la fascia costiera della zona di Rimini (DSM della costa 2019, larga 1–1,5 km)."
+      : "Alberi: il server non ha ancora chiome dal LiDAR (nessun rilievo elaborato in questo archivio).");
+  }
+  async function alberi2d() {
+    const m = stato.mappa;
+    if (!m || stato.in3d || !stato.alberiVisibili || !m.getSource("alberi")) return;
+    if (m.getZoom() < 15) return;
+    const c = m.getCenter(), lon = c.lng, lat = c.lat;
+    if (stato.alberi2d && Math.hypot((lon - stato.alberi2d[0]) * 111320 * Math.cos(lat * Math.PI / 180), (lat - stato.alberi2d[1]) * 110574) < 150) return;
+    stato.alberi2d = [lon, lat];
+    const nomi = nomiCelle({ cella: (stato.lidar && stato.lidar.cella) || 0.01 }, lon, lat).filter((n) => haCellaLidar("alberi", n, lon, lat));
+    await Promise.all(nomi.map(cellaAlberi));
+    if (stato.in3d) return;
+    const kx = 111320 * Math.cos(lat * Math.PI / 180), ky = 110574, R = RAGGIO + 150, fs = [];
+    for (const a of stato.alberi.values()) {
+      const x = (a[0] - lon) * kx, y = (a[1] - lat) * ky;
+      if (Math.hypot(x, y) > R) continue;
+      const r = (a[4] || 2) * 0.62, anello = [];
+      for (let k = 0; k < 8; k++) { const t = (k + 0.5) * Math.PI / 4; anello.push([a[0] + r * Math.cos(t) / kx, a[1] + r * Math.sin(t) / ky]); }
+      anello.push(anello[0]);
+      fs.push({ type: "Feature", properties: { h: a[2] }, geometry: { type: "Polygon", coordinates: [anello] } });
+    }
+    m.getSource("alberi").setData({ type: "FeatureCollection", features: fs });
+    notaAlberi(fs.length);
   }
   function controlliAspetto3d() {
     const box = $("caselle-strati");
@@ -2174,26 +2361,41 @@
         if (r.ok && r.headers.get("X-Ortofoto-Vuota") === "1") {
           stato.vuote.add(k);
           if (!stato.manuale && stato.ortofoto && stato.ortofoto.id === f.id) {
-            opzioni();
+            await opzioni();
             const g = stato.ortofoto;
             messaggio("messaggio-cerca", `«${f.nome}» non ha immagini in questa zona${g && g.id !== f.id ? `: uso «${g.nome}»` : ""}. Puoi scegliere un'altra fonte nei livelli.`);
           }
         }
       } catch { /* niente: resta la fonte scelta */ }
     }
-    function opzioni() {
-      // (07/11/2026 sera) stesso elenco e stesso ordine della pagina Ortofoto: anche Sentinel-2 cloudless, che resta pure come contesto sotto
-      const c = stato.mappa.getCenter(), qui = fonti.filter((f) => copre(f, [c.lng, c.lat]));
+    // (09/11/2026 c, prove P9 di Paolo) la casella mostra solo le fonti applicabili nel punto (regione e riquadro:
+    // EUGENIO_CONFINI.fontiNelPunto) e propone da sola la migliore: regionale a 20 cm dove c'è e ha immagini, poi AGEA 2012,
+    // poi Sentinel-2. Una scelta a mano resta finché la fonte è applicabile; fuori dalla sua zona si torna all'automatico
+    let giro = 0;
+    async function opzioni() {
+      const mio = ++giro, c = stato.mappa.getCenter();
+      let qui;
+      try { qui = C && C.fontiNelPunto ? await C.fontiNelPunto(fonti, c.lng, c.lat) : null; } catch { qui = null; }
+      if (!qui) qui = fonti.filter((f) => copre(f, [c.lng, c.lat]));
+      if (mio !== giro) return;                                            // la mappa si è già mossa di nuovo
       const auto = qui.filter((f) => !stato.vuote.has(zonaVuota(f, c)));       // per la scelta automatica, senza le fonti vuote qui
-      const prima = sel.value;
       while (sel.options.length > 1) sel.remove(1);
       qui.forEach((f) => { const o = h("option", null, f.nome + (f.stato === "da confermare" ? " (licenza da confermare)" : "")); o.value = f.id; sel.appendChild(o); });
       stato.fontiOrtofoto = qui;
       sel.disabled = !qui.length || !ortoVisibile();
       sel.options[0].textContent = qui.length ? "nessuna ortofoto" : "ortofoto non disponibili qui";
-      if (qui.some((f) => f.id === prima) && (stato.manuale || auto.some((f) => f.id === prima))) sel.value = prima;
-      else if (prima) { sel.value = auto.length && !stato.manuale ? auto[0].id : ""; sfondo(sel.value); }
-      else if (!stato.manuale && auto.length && !stato.ortofoto) { sel.value = auto[0].id; sfondo(sel.value); }
+      const prima = stato.ortofoto;
+      let nota = "";
+      if (stato.manuale && prima && !qui.some((f) => f.id === prima.id)) {
+        stato.manuale = false;
+        nota = `«${prima.nome}» non copre questo punto: torno alla scelta automatica`;
+      }
+      if (!stato.manuale) {
+        const migliore = auto[0] || null;
+        if ((migliore && migliore.id) !== (prima && prima.id)) sfondo(migliore ? migliore.id : "");
+        if (nota) messaggio("messaggio-cerca", `${nota}${migliore ? ` («${migliore.nome}»)` : ""}.`);
+      }
+      sel.value = stato.ortofoto ? stato.ortofoto.id : "";
       if (!stato.manuale && stato.ortofoto) provaVuota(stato.ortofoto);
     }
     sel.addEventListener("change", () => { stato.manuale = true; sfondo(sel.value); });
@@ -2397,7 +2599,7 @@
   async function datiDpr() {
     if (stato.dpr === null) {
       stato.dpr = false;
-      try { stato.dpr = await json("dati/dpr412.json?v=20261109b"); } catch { /* senza file: niente zona */ }
+      try { stato.dpr = await json("dati/dpr412.json?v=20261109c"); } catch { /* senza file: niente zona */ }
     }
     return stato.dpr || null;
   }
@@ -2582,8 +2784,10 @@
     { const t = testoTettiStimati(); if (t) note.push(`${t} Falde, pendenze e superfici dei tetti di questi corpi sono stime.`); }
     if (stato.obblighi) fonti.push("D.Lgs. 8 novembre 2021, n. 199, art. 26 e Allegato III (testo vigente, Normattiva); DPR 412/93, Allegato A; DM 26/6/2015 come modificato dal DM 28/10/2025 (GU n. 283 del 5/12/2025)");
     return {
-      tetti: stato.corpi.length ? { scelta: VISTA !== "modelli" && SELETTORE_TETTI() ? NOMI_SCELTA_TETTO[stato.formaTetti] : NOMI_SCELTA_TETTO.auto,
-        testo: testoTetti(), conteggi: contaTetti() } : null,
+      tetti: stato.corpi.length ? { scelta: VISTA !== "modelli" && SELETTORE_TETTI() ? NOMI_SCELTA_TETTO[stato.formaTetti] : NOMI_SCELTA_TETTO.utente,
+        testo: testoTetti(), conteggi: contaTetti(),
+        scelti: stato.corpi.filter((c) => fonteTettoDi(c) === "falde").map((c) => ({ corpo: c.id, inclinazione: c.inclinazione, forma: c.tetto,
+          fonte: FONTE_TETTO_UTENTE })) } : null,
       titolo: "Edificio in 3D", sintetico: stato.sintetico || !!(stato.firma && stato.firma.sintetici),
       edificio: { id: stato.edificio, nome: stato.modello ? `Modello dell'utente «${stato.modello}»` : `Edificio ${stato.edificio}`, comune: stato.comune ? stato.comune.nome : null },
       superfici: sup, geometria: stato.geometria,
@@ -2656,7 +2860,7 @@
     stato.fvOrizzonti = {}; mostraFacciate();
     stato.comune = await comuneDi(lon, lat);
     await datiDpr();
-    preparaSelettoreTetti(true); applicaTetti();
+    preparaSelettoreTetti(); applicaTetti();
     stato.originali = corpi.map((c) => ({ ...c, ring: c.ring.map((q) => [...q]) }));
     $("avviso-sintetico").hidden = true;
     ["passo-corpi", "passo-superfici", "passo-geometria", "passo-obblighi", "passo-ombre", "passo-facciate", "passo-fv", "passo-pvgis",
@@ -2726,9 +2930,10 @@
       }
       const base = stato.base, indice = stato.indice;
       if (base) {
-        // falde: con gli archivi per comune solo se archivi.json dice dove sono (07/11/2026 sera: niente 404 prima della pipeline)
+        // LiDAR (alberi; le falde sono sospese dal 09/11/2026 c): con gli archivi per comune solo se archivi.json dice dove
+        // sono (07/11/2026 sera: niente 404 prima della pipeline)
         stato.lidar = DUE_TEMPI && !SCELTA && !stato.baseLidar && !(indice && indice.sintetico) ? null : await json(`${stato.baseLidar || base}lidar/indice.json`).catch(() => null);
-        if (stato.lidar) $("fonti-3d").append(" ", h("span", null, "Falde dei tetti: " + Object.values(stato.lidar.attribuzioni || {})
+        if (stato.lidar) $("fonti-3d").append(" ", h("span", null, "Alberi (chiome dal LiDAR): " + Object.values(stato.lidar.attribuzioni || {})
           .map((a) => `${a.attribuzione || a.descrizione} (${a.licenza})`).join("; ") + "."));
         if (indice.sintetico) $("avviso-sintetico").hidden = false;
         // una riga per attribuzione (i DBTR dei comuni hanno tutti la stessa)
@@ -2747,6 +2952,7 @@
         o.id = "fonti-osm"; o.hidden = true; $("fonti-3d").append(" ", o);
       }
       stato.mappa = await creaMappa();
+      controlliCoperture(); evidenziaTetti2d();             // sezione «Coperture» (09/11/2026 c)
       // livelli sopra la foto (particelle, contorni degli edifici): non nella demo, i cui edifici sono inventati
       if (DUE_TEMPI && window.EUGENIO_STRATI && $("caselle-strati")) {
         if (indice && indice.sintetico) {
@@ -2840,5 +3046,6 @@
   })();
   window.EUGENIO_EDIFICIO3D = { stato, corpoReport, scegli, apriModello, edificioNelPunto, alberiVicini, ostacoliRelativi, genera, entra3d, esci3d,
     vistaNominata, opzioniImmagine, livelloFonte, scegli2d, impostaPunto, puntoCambiato, trovato, coperto, nessunEdificio, geojson, edificiOsm,
-    esagera, fonteTerreno, testoAltezza, lontanoDal3d, testoTetti, contaTetti, cambiaFormaTetti };
+    fonteTerreno, testoAltezza, lontanoDal3d, testoTetti, contaTetti, cambiaFormaTetti, accendiTegola, cliccaTegola, chiaveTetto, statoTetti,
+    esportaTetti, importaTetti, resetPiani };
 })();

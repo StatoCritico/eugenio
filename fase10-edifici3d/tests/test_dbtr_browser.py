@@ -176,7 +176,7 @@ def test_apertura_in_modelli_3d_senza_server(pagina, tmp_path):
         const r = f.geometry.coordinates[0]; return E.scegli('E2', (r[0][0] + r[1][0]) / 2, (r[0][1] + r[2][1]) / 2 + 0.00001); }""")
     assert ok
     corpi = pagina.pg.evaluate("window.EUGENIO_EDIFICIO3D.stato.corpi.map((c) => [c.id, c.gronda, c.colmo, c.buchi.length])")
-    assert sorted(corpi) == [["U2", 12, 14.5, 1], ["U3", 12.15, None, 0]]
+    assert sorted(corpi) == [["U2", 12, None, 1], ["U3", 12.15, None, 0]]     # 09/11/2026 c: tetti tutti piani in partenza
     assert not [m for m in pagina.richieste if m[0] != "GET"]
     assert not pagina.errori, pagina.errori
     # stessa sessione, la pagina si riapre senza parametro: il file vale ancora; «Togli» lo toglie

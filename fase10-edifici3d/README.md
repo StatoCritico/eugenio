@@ -1,5 +1,16 @@
 # Fase 10 – Edifici 3D, ortofoto, LiDAR e analisi energetiche
 
+Stato al 09/11/2026 c (sito `?v=20261109c`, procedura Q di `AGGIORNAMENTO_2026-11-09c.md`, dopo le prove P9):
+- **Tetti (decisione di Paolo del 09/11/2026)**: le pagine 3D partono con **tutti i tetti piani** e l'utente sceglie i tetti
+  a falde con la tegola della sezione «Coperture» (fase 5). `edifici3d/tetti.py` (stima dal colmo e ipotesi 22°/32°) e le
+  falde per corpo del LiDAR (`lidar.py`, `lidar/falde/`) restano nel codice e nella pipeline ma sono **sospesi nella
+  vista**: la pagina non li usa e non chiede più le celle `lidar/falde/`. Le chiome (`lidar/alberi/`) restano.
+- **Zoom massimi reali delle ortofoto** (`ortofoto/*.toml`, campo `zoom`): 20 cm a terra = zoom 19 (0,21 m/pixel a
+  44° N) per RER 2023-24, Toscana 2023, Trento 2015 e Bolzano 2023 (prima 20); AGEA 2012, 50 cm = zoom 18 (prima 19);
+  Sentinel-2 10 m = zoom 14, servito fino al 15 (EOX ha tessere fino al 17, solo ingrandite). Oltre lo zoom massimo la
+  mappa ingrandisce le tessere disponibili. Il campo `regione` dei TOML («00» nazionale) serve ora anche alla pagina per
+  mostrare solo le fonti applicabili nel punto.
+
 Stato al 09/11/2026 b (sito `?v=20261109b`, procedura P1–P10 di `AGGIORNAMENTO_2026-11-09b.md`, dopo le prove N10):
 - **Celle LiDAR**: `lidar/indice.json` ha ora l'elenco `celle` (`falde`, `alberi`: i nomi `<i>_<j>` delle celle di 0,01°
   che esistono), scritto dalla pipeline a ogni tessera (`Pipeline._indice` → `celle_presenti`) e, per gli indici di prima,

@@ -118,8 +118,10 @@ def test_spostamento_ortofoto_documentato():
 
 
 def test_tetti_e_sagome_regionali_documentati():
-    """08/11/2026: tetti ipotizzati 22°/32° con il selettore, sagome del Veneto con le altezze OSM, terreno da più DTM."""
+    """08/11/2026: sagome del Veneto con le altezze OSM, terreno da più DTM; dal 09/11/2026 c tetti tutti piani e tetti a
+    falde scelti dall'utente in «Coperture» (l'ipotesi 22°/32° è sospesa), fonte dell'ortofoto automatica."""
     md, llms = _testo(NOME), _testo("llms.txt")
-    assert "22° in pianura e 32° in montagna" in md and "«Forma dei tetti»" in md and "Tetti: N misurati dal LiDAR" in md
+    assert "«Coperture»" in md and "«Forma dei tetti»" in md and "eugenio-tetti-v1" in md and "Tetti: N a falde scelti" in md
+    assert "**sospese**" in md and "X-Ortofoto-Errore" in md
     assert "IODL 2.0" in md and "osm_vicini" in md and "X-Terreno-Nome" in md and "Edifici del Veneto (feb. 2022)" in md
-    assert "Veneto" in llms and "22° in pianura e 32° in montagna" in llms and "Forma dei tetti" in llms
+    assert "Veneto" in llms and "Coperture" in llms and "Forma dei tetti" in llms and "X-Ortofoto-Errore" in llms

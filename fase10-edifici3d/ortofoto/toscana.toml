@@ -22,7 +22,7 @@ scheda = "https://geodati.gov.it/resource/id/r_toscan:66ca3807-815a-4bd1-b626-98
 stato = "confermata"               # licenza nella scheda RNDT; il proxy con copia non richiede altro
 attiva = true
 cache = true
-zoom = [12, 20]
+zoom = [12, 19]                    # 09/11/2026 c: 20 cm a terra = zoom 19 (0,21 m/pixel a 44° N); oltre la mappa ingrandisce le tessere del 19
 riquadro = [9.68, 42.23, 12.38, 44.48]
 ritmo = { al_secondo = 4, all_ora = 6000 }
 priorita = 1

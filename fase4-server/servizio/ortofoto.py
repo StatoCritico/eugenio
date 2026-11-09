@@ -28,12 +28,24 @@ Regole:
     «private, max-age=86400», solo il browser, dal 09/11/2026), ETag, X-Ortofoto-Fonte,
     X-Ortofoto-Licenza; fuori dal riquadro o dagli zoom della fonte 404 senza chiamare la fonte;
   * nessuna immagine Google, Esri, Bing, EOX 2018+, AGEA infrarosso o WMS regionali AGEA: il proxy serve **solo** le
-    fonti dei TOML e rifiuta all'avvio quelle con URL di quei servizi (elenco ESCLUSI).
+    fonti dei TOML e rifiuta all'avvio quelle con URL di quei servizi (elenco ESCLUSI);
+  * **errori della fonte** (09/11/2026 c, prove P9 di Paolo: decine di «502 Bad Gateway» di AGEA 2012 in Console e
+    l'ortofoto che arrivava «a pezzi»): la rotta è asincrona (l'attesa del turno e la chiamata alla fonte non tengono
+    occupato un thread: prima con 40 thread tutti fermi ad aspettare, le richieste in coda superavano i 30 s di Caddy, che
+    rispondeva 502), la chiamata alla fonte dura al più ORTOFOTO_TIMEOUT_S, al più `2 × ritmo.al_secondo` chiamate in
+    volo per fonte. Un errore della fonte (timeout, rete, 5xx, XML di errore), o il turno non arrivato in tempo, dà una
+    **tessera vuota pulita**: 200, PNG trasparente, `Cache-Control: no-store` (mai in copia: né server, né Cloudflare, né
+    browser), `X-Ortofoto-Errore: fonte|occupata|ferma` e `Retry-After`. Nessuna riga rossa in Console; la pagina conta
+    questi errori e, se si ripetono, ferma la fonte e lo scrive sotto la mappa (protezione.js). Dopo GUASTI_SOGLIA errori
+    di fila in GUASTI_FINESTRA_S secondi senza una risposta buona la fonte è **ferma** per GUASTI_PAUSA_S secondi: in quel
+    tempo le tessere nuove rispondono subito vuote con `X-Ortofoto-Errore: ferma`, senza chiamare la fonte.
 """
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import hashlib
+import inspect
 import logging
 import math
 import os
@@ -383,9 +395,95 @@ def pulisci(forza: bool = False) -> int:
     return tolti
 
 
-def _scarica(url: str) -> httpx.Response:
-    with httpx.Client(timeout=20, follow_redirects=True, headers={"User-Agent": "EuGEnio/1.0 (+https://eugenio.statocritico.it)"}) as c:
-        return c.get(url)
+_client: httpx.AsyncClient | None = None
+
+
+async def _scarica(url: str) -> httpx.Response:
+    """Chiamata alla fonte, asincrona (09/11/2026 c): mentre aspetta la fonte non occupa un thread dell'api."""
+    global _client
+    if _client is None or _client.is_closed:
+        _client = httpx.AsyncClient(timeout=C.ORTOFOTO_TIMEOUT_S, follow_redirects=True,
+                                    headers={"User-Agent": "EuGEnio/1.0 (+https://eugenio.statocritico.it)"},
+                                    limits=httpx.Limits(max_connections=64, max_keepalive_connections=16))
+    return await _client.get(url)
+
+
+async def _chiama(url: str) -> httpx.Response:
+    """`_scarica` con il tempo massimo; accetta anche una funzione sincrona (i test la sostituiscono)."""
+    async def uno():
+        r = _scarica(url)
+        return await r if inspect.isawaitable(r) else r
+    return await asyncio.wait_for(uno(), timeout=C.ORTOFOTO_TIMEOUT_S + 1)
+
+
+# ---------------------------------------------------------------------------------------------- fonti che non rispondono
+GUASTI_SOGLIA = 6          # errori di fila (senza una risposta buona in mezzo)…
+GUASTI_FINESTRA_S = 60.0   # …in questi secondi
+GUASTI_PAUSA_S = 60.0      # → fonte ferma per questo tempo (raddoppia a ogni nuovo fermo, fino a 5 minuti)
+GUASTI_PAUSA_MAX_S = 300.0
+
+
+class Guasti:
+    """Errori recenti per fonte e fermo dopo errori ripetuti (09/11/2026 c), per tutti gli utenti insieme."""
+
+    def __init__(self):
+        self._b = threading.Lock()
+        self._errori: dict[str, list[float]] = {}
+        self._ferma: dict[str, float] = {}
+        self._pausa: dict[str, float] = {}
+
+    def ferma_per(self, fid: str, ora: float | None = None) -> float:
+        """Secondi di fermo che restano alla fonte (0 se non è ferma)."""
+        t = time.monotonic() if ora is None else ora
+        with self._b:
+            return max(0.0, self._ferma.get(fid, 0.0) - t)
+
+    def errore(self, fid: str, ora: float | None = None) -> float:
+        """Conta un errore; restituisce i secondi di fermo se la fonte si ferma ora, altrimenti 0."""
+        t = time.monotonic() if ora is None else ora
+        with self._b:
+            e = [x for x in self._errori.get(fid, []) if t - x < GUASTI_FINESTRA_S] + [t]
+            self._errori[fid] = e
+            if len(e) < GUASTI_SOGLIA:
+                return 0.0
+            p = min(GUASTI_PAUSA_MAX_S, self._pausa.get(fid, GUASTI_PAUSA_S / 2) * 2)
+            self._pausa[fid], self._ferma[fid], self._errori[fid] = p, t + p, []
+            log.warning("Ortofoto %s: %d errori in %d s, fonte ferma per %d s", fid, GUASTI_SOGLIA, GUASTI_FINESTRA_S, p)
+            return p
+
+    def buona(self, fid: str) -> None:
+        with self._b:
+            self._errori.pop(fid, None)
+            self._pausa.pop(fid, None)
+
+    def svuota(self):
+        with self._b:
+            self._errori.clear()
+            self._ferma.clear()
+            self._pausa.clear()
+
+
+guasti = Guasti()
+_in_volo: dict[tuple[int, str], asyncio.Semaphore] = {}
+
+
+def _semaforo(f: Fonte) -> asyncio.Semaphore:
+    """Chiamate in volo verso la fonte: al più 2 × ritmo.al_secondo (un semaforo per ciclo degli eventi)."""
+    k = (id(asyncio.get_running_loop()), f.id)
+    s = _in_volo.get(k)
+    if s is None:
+        s = _in_volo[k] = asyncio.Semaphore(max(2, int(2 * f.al_secondo)))
+    return s
+
+
+def tessera_errore(f: Fonte, motivo: str, riprova: float) -> Response:
+    """Tessera vuota «pulita» al posto di un errore della fonte: 200, PNG trasparente, mai in copia. La pagina la
+    riconosce da X-Ortofoto-Errore (fonte: la fonte ha risposto male o non ha risposto; occupata: turno non arrivato in
+    tempo; ferma: fonte ferma dopo errori ripetuti) e la richiede dopo Retry-After secondi."""
+    return Response(vuota_png(), media_type="image/png", headers={
+        "Cache-Control": "no-store", "X-Ortofoto-Fonte": f.id, "X-Ortofoto-Errore": motivo,
+        "Retry-After": str(max(1, int(math.ceil(riprova)))),
+        "Access-Control-Expose-Headers": "X-Ortofoto-Fonte, X-Ortofoto-Licenza, X-Ortofoto-Vuota, X-Ortofoto-Errore, Retry-After"})
 
 
 def _intestazioni(f: Fonte, dati: bytes, copia: str) -> dict[str, str]:
@@ -395,7 +493,8 @@ def _intestazioni(f: Fonte, dati: bytes, copia: str) -> dict[str, str]:
     h = {"Cache-Control": f"public, max-age={C.ORTOFOTO_CACHE_S}" if f.cache else "private, max-age=86400",
          "ETag": '"' + hashlib.sha1(dati).hexdigest()[:20] + '"',
          "X-Ortofoto-Fonte": f.id, "X-Ortofoto-Licenza": f.licenza.encode("ascii", "replace").decode(),
-         "X-Ortofoto-Copia": copia, "Access-Control-Expose-Headers": "X-Ortofoto-Fonte, X-Ortofoto-Licenza, X-Ortofoto-Vuota"}
+         "X-Ortofoto-Copia": copia,
+         "Access-Control-Expose-Headers": "X-Ortofoto-Fonte, X-Ortofoto-Licenza, X-Ortofoto-Vuota, X-Ortofoto-Errore, Retry-After"}
     if (f.trasparente or f.segnaposto) and vuota(dati):
         h["X-Ortofoto-Vuota"] = "1"          # la pagina passa da sola a un'altra fonte (09/11/2026)
     return h
@@ -412,9 +511,9 @@ def elenco(request: Request):
 
 
 @router.get("/{fonte}/{z}/{x}/{y}.{ext}")
-def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str,
-            de: int = Query(0, ge=-SPOSTAMENTO_MAX_M, le=SPOSTAMENTO_MAX_M, description="metri verso est (ortofoto spostata)"),
-            dn: int = Query(0, ge=-SPOSTAMENTO_MAX_M, le=SPOSTAMENTO_MAX_M, description="metri verso nord (ortofoto spostata)")):
+async def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str,
+                  de: int = Query(0, ge=-SPOSTAMENTO_MAX_M, le=SPOSTAMENTO_MAX_M, description="metri verso est (ortofoto spostata)"),
+                  dn: int = Query(0, ge=-SPOSTAMENTO_MAX_M, le=SPOSTAMENTO_MAX_M, description="metri verso nord (ortofoto spostata)")):
     f = fonti().get(fonte)
     if f is None or not f.accesa():
         raise HTTPException(404, "Fonte di ortofoto non disponibile")
@@ -441,35 +540,40 @@ def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str,
             if request.headers.get("if-none-match") == h["ETag"]:
                 return Response(status_code=304, headers=h)
             return Response(dati, media_type=tipo_di(dati, f.formato), headers=h)
+    # (09/11/2026 c) fonte ferma dopo errori ripetuti: tessera vuota subito, senza chiamarla né contarla nel limite
+    if (resta := guasti.ferma_per(f.id)) > 0:
+        return tessera_errore(f, "ferma", resta)
     P.limita(request, "ortofoto")                       # tessera da chiedere alla fonte (09/11/2026: solo queste contano)
-    # una mappa chiede 15–30 tessere insieme: si aspetta il proprio turno per qualche secondo, poi 503
+    # una mappa chiede 15–30 tessere insieme: si aspetta il proprio turno per qualche secondo (senza occupare un thread)
     fine = time.monotonic() + C.ORTOFOTO_ATTESA_S
     while (attesa := ritmo.prova(f)) and time.monotonic() + attesa <= fine:
-        time.sleep(attesa)
+        await asyncio.sleep(attesa)
     if attesa:
-        raise HTTPException(503, "Fonte delle ortofoto molto richiesta: riprova tra poco",
-                            headers={"Retry-After": str(int(math.ceil(attesa)))})
+        return tessera_errore(f, "occupata", attesa)
     try:
-        r = _scarica(url_tessera(f, z, x, y, de, dn))
-    except httpx.HTTPError as e:
-        log.warning("Ortofoto %s: fonte non raggiungibile (%s)", f.id, e)
-        raise HTTPException(502, "La fonte delle ortofoto non risponde")
+        async with _semaforo(f):
+            r = await _chiama(url_tessera(f, z, x, y, de, dn))
+    except (httpx.HTTPError, asyncio.TimeoutError, OSError) as e:
+        log.warning("Ortofoto %s: fonte non raggiungibile (%s)", f.id, type(e).__name__)
+        return tessera_errore(f, "fonte", guasti.errore(f.id) or 30)
     tipo = r.headers.get("content-type", "").split(";")[0].strip()
     if r.status_code == 404 and f.tipo == "xyz":
+        guasti.buona(f.id)                              # la fonte risponde: la tessera non c'è
         raise HTTPException(404, "Tessera non disponibile nella fonte")
     if r.status_code != 200 or not tipo.startswith("image/"):
         # i WMS rispondono 200 con un XML di errore (ServiceException): non si copia
         log.warning("Ortofoto %s: risposta %s %s", f.id, r.status_code, tipo)
-        raise HTTPException(502, "La fonte delle ortofoto ha risposto con un errore")
+        return tessera_errore(f, "fonte", guasti.errore(f.id) or 30)
     dati = r.content
     if f.segnaposto and segnaposto_bianco(dati):
         dati, tipo = vuota_png(), "image/png"   # 09/11/2026 b: tessera segnaposto (fuori dalla regione) = vuota
     elif f.trasparente:
         try:
-            dati, tipo = senza_buchi(dati)
+            dati, tipo = await asyncio.to_thread(senza_buchi, dati)
         except (OSError, ValueError) as e:      # immagine illeggibile: non si copia
             log.warning("Ortofoto %s: tessera illeggibile (%s)", f.id, e)
-            raise HTTPException(502, "La fonte delle ortofoto ha risposto con un'immagine illeggibile")
+            return tessera_errore(f, "fonte", guasti.errore(f.id) or 30)
+    guasti.buona(f.id)
     if copia:
         try:
             scrivi_copia(p, dati)

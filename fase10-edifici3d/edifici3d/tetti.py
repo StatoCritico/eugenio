@@ -1,5 +1,12 @@
 """Forma dei tetti dei corpi: stima dal colmo del DB topografico e ipotesi automatica (08/11/2026, decisione di Paolo).
 
+**SOSPESO NELLA VISTA dal 09/11/2026 c** (decisione di Paolo: l'ipotesi automatica «si fa ingannare da tetti complessi con
+UTA e simili»: l'Ospedale Infermi di Rimini, piano, usciva a falde; le case di via Ovidio, a falde, uscivano piane). Le
+pagine 3D partono con **tutti i tetti piani** e l'utente sceglie i tetti a falde con la tegola della sezione «Coperture»
+(`edifici_calcoli.js`, `tettoScelto`: stessa forma, inclinazione scelta, 22° all'inizio). Questo modulo resta per i
+conteggi negli archivi e come riferimento (gemello di `faldeStimate` e `tettoIpotizzato`, test di parità invariato), ma
+la vista, il PNG, il report e la pagina Fotovoltaico non lo usano più.
+
 Stesse regole e stessi numeri di `fase5-sito/sito/edifici_calcoli.js` (`faldeStimate`, `tettoIpotizzato`): un test di
 parità (`tests/test_tetti.py`) li confronta in node. Serve per contare i corpi per fonte del tetto negli archivi (numeri
 nei documenti) e come riferimento della regola fuori dal browser.

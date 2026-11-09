@@ -733,10 +733,11 @@
     if (s1 - s0 < t1 - t0) { const ou = u; u = v; v = [-ou[0], -ou[1]]; [s0, s1, t0, t1] = [t0, t1, -s1, -s0]; }
     return { A: m.A, u, v, s0, s1, t0, t1, La: s1 - s0, Lb: t1 - t0, anello, h };
   }
-  function faldeStimate(c, tipoVoluto = null) {
+  // opz.forza (09/11/2026 c, tetto scelto dall'utente): anche le piante poco rettangolari (sotto il 70 % del rettangolo)
+  function faldeStimate(c, tipoVoluto = null, opz = {}) {
     if (!c || !Array.isArray(c.ring) || !(c.colmo > c.gronda + SALTO_MIN) || cortiliDi(c).length) return null;
     const m = rettangoloTetto(c);
-    if (!m || m.A < 1 || areaCorpo(c) / m.A < RIEMPIMENTO_MIN) return null;
+    if (!m || m.A < 1 || (!opz.forza && areaCorpo(c) / m.A < RIEMPIMENTO_MIN)) return null;
     const { u, v, s0, s1, t0, t1, anello } = m;
     const La = s1 - s0, Lb = t1 - t0, semi = Lb / 2, salto = c.colmo - c.gronda;
     if (Lb < 2) return null;
@@ -775,7 +776,30 @@
     return falde.length ? { tipo, falde } : null;
   }
 
+  // ------------------------------------------------------------------ tetto scelto dall'utente (09/11/2026 c, decisione di Paolo)
+  // Tutti i tetti partono piani; con la tegola della sezione «Coperture» l'utente dà a un corpo un tetto a falde con
+  // l'inclinazione scritta (22° all'inizio). Stessa forma della stima dal colmo: capanna sul lato lungo, padiglione se il
+  // corpo è quasi quadrato (lato lungo / lato corto < 1,3) o se la pianta è complessa (sotto il 70 % del rettangolo
+  // minimo); colmo = gronda + semiluce × tan(inclinazione). Nessuna regola di «tetto piano» (l'ha scelto l'utente): solo i
+  // corpi che non si possono disegnare restano piani (cortile, più stretti di 2 m, senza gronda).
+  // c: { ring, buchi, gronda }; inclinazione in gradi (5–60) → { tipo, falde, colmo, inclinazione } o { piano: true, motivo }
+  function tettoScelto(c, inclinazione) {
+    if (!c || !Array.isArray(c.ring) || !(+c.gronda > 0)) return { piano: true, motivo: "corpo senza gronda" };
+    const i = Math.min(60, Math.max(5, Number.isFinite(+inclinazione) ? +inclinazione : 22));
+    if (cortiliDi(c).length) return { piano: true, motivo: "corpo con cortile" };
+    const m = rettangoloTetto(c);
+    if (!m || m.A < 1) return { piano: true, motivo: "forma non valida" };
+    if (m.Lb < 2) return { piano: true, motivo: "corpo più stretto di 2 m" };
+    const complessa = areaCorpo(c) / m.A < RIEMPIMENTO_MIN;
+    const colmo = Math.round((+c.gronda + m.Lb / 2 * Math.tan(i * GRAD)) * 100) / 100;
+    const r = faldeStimate({ ring: c.ring, buchi: c.buchi, gronda: +c.gronda, colmo }, complessa ? "padiglione" : null, { forza: true });
+    if (!r) return { piano: true, motivo: "forma non adatta" };
+    return { tipo: r.tipo, falde: r.falde, colmo, inclinazione: i, complessa };
+  }
+
   // ------------------------------------------------------------------ tetto ipotizzato (08/11/2026, decisione di Paolo)
+  // SOSPESO dal 09/11/2026 c (decisione di Paolo: si faceva ingannare dai tetti complessi con UTA e simili): la vista non
+  // lo usa più; resta per eventuali altri usi (stesse regole di edifici3d/tetti.py nella fase 10).
   // Dove non ci sono né falde LiDAR né il colmo del DB topografico, il tetto si **ipotizza a falde**: 22° in pianura (e in
   // collina), 32° in montagna; stessa forma della stima dal colmo (capanna sul lato lungo, padiglione se lato lungo / lato
   // corto < 1,3), con colmo = gronda + semiluce × tan(inclinazione) (semiluce = metà del lato corto del rettangolo minimo).
@@ -830,7 +854,7 @@
     return { tipo: r.tipo, falde: r.falde, colmo, inclinazione: z.inclinazione, montagna: z.montagna, quota: z.quota, soglia: z.soglia };
   }
 
-  const API = { INTERPIANI, CORTILE_MIN_M2, cortiliDi, faldeStimate, rettangoloTetto, IPOTESI_TETTO, USI_TETTO_PIANO, comuneDelNord, zonaAltimetrica, motivoTettoPiano, tettoIpotizzato, RAPPORTO_PADIGLIONE, UN_PIANO, SOVRALZO, NETTA_SU_LORDA, SETTORI, FACOLTATIVE, ETICHETTE, numero, norm, colonnaFacoltativa,
+  const API = { INTERPIANI, CORTILE_MIN_M2, cortiliDi, faldeStimate, rettangoloTetto, IPOTESI_TETTO, USI_TETTO_PIANO, comuneDelNord, zonaAltimetrica, motivoTettoPiano, tettoIpotizzato, tettoScelto, RAPPORTO_PADIGLIONE, UN_PIANO, SOVRALZO, NETTA_SU_LORDA, SETTORI, FACOLTATIVE, ETICHETTE, numero, norm, colonnaFacoltativa,
     mappaFacoltative, leggiFacoltative, usoDa, stimaPiani, scegli, superfici, area, centroide, lati, chiudi, indicatori, dividi,
     areaCorpo, dentroCorpo, latiCorpo, anelliOrientati,
     inviluppo, dentro, rettangoloMinimo, proiezione, sole, ombra, orizzonte, altezzaOrizzonte, svf, trasponi, producibilita,
