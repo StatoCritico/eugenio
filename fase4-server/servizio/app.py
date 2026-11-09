@@ -90,6 +90,12 @@ def comuni(request: Request):
     # (07/11/2026 sera: la rotta rispondeva 500 sul server) colonne mancanti e valori vuoti (NaN) non fermano la risposta
     col = [c for c in ("istat", "nome", "belfiore", "provincia", "lat", "lon", "svg_x", "svg_y") if c in cm.columns]
     t = cm[col].astype(object)
+    # (09/11/2026) l'elenco ISTAT letto con i valori mancanti di pandas: il comune «None» (TO) e la sigla «NA» (Napoli, 92
+    # comuni) erano diventati vuoti; qui si rimettono (l'elenco nuovo della fase 3 li legge già come testi)
+    if "nome" in t.columns and "istat" in t.columns:
+        t.loc[t["nome"].isna() & (t["istat"] == "001168"), "nome"] = "None"
+    if "provincia" in t.columns and "istat" in t.columns:
+        t.loc[t["provincia"].isna() & t["istat"].astype(str).str.startswith("063"), "provincia"] = "NA"
     return t.where(t.notna(), None).to_dict(orient="records")
 
 

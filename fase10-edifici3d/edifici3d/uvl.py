@@ -62,8 +62,10 @@ COMUNI_ISTAT = {
     "lugo": "039012", "russi": "039016", "brisighella": "039004", "cervia": "039007",
     "bellaria-igea-marina": "099001", "cesenatico": "040008", "modigliana": "040022", "bagnacavallo": "039002",
     "conselice": "039008", "alfonsine": "039001", "cotignola": "039009",
-    "bologna": "037006",   # estrazione dell'08/11: 281 fogli su 305 (mancano soprattutto i fogli 1–10 a nord)
-    # Ravenna (039014) manca apposta: le estrazioni del 06/11 e dell'08/11 coprono la città, non tutto il comune, e con
+    "bologna": "037006",   # 08/11 + 09/11 (354168 e 354187): mancano solo i fogli 63–66, 89, 133, 250 (rurali)
+    "castel-bolognese": "039006",   # 09/11 (354181): fogli 1–36, tutti
+    # Ravenna (039014) manca apposta: le estrazioni del 06/11, dell'08/11 e del 09/11 coprono la città e parte del forese,
+    # non tutto il comune, e con
     # il confine del comune il forese risulterebbe «coperto» senza edifici; finché non c'è il comune intero vale il
     # riquadro dei corpi
     # (aggiungere qui la riga, o `prepara --istat 039014`, quando arriva l'estrazione completa)

@@ -138,6 +138,7 @@
     try {
       const m = new window.maplibregl.Map({ container: box, center: [12.0, 44.3], zoom: 7, maxZoom: 20, minZoom: 5, attributionControl: false,
         style: { version: 8, sources: {}, layers: [{ id: "sfondo", type: "background", paint: { "background-color": colore("--carta") } }] } });
+      if (window.EUGENIO_LIMITI) window.EUGENIO_LIMITI.collega(m);   // 429 delle fonti (09/11/2026)
       stato.mappa = m;
       m.addControl(new window.maplibregl.NavigationControl({ showCompass: false }), "top-right");
       m.addControl(new window.maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");

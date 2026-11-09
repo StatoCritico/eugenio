@@ -31,6 +31,7 @@ import hmac
 import ipaddress
 import json
 import logging
+import math
 import secrets
 import threading
 import time
@@ -125,6 +126,21 @@ class Limitatore:
                 c[1] += peso
             return c[1]
 
+    def attesa(self, chiave: str, tipo: str, n: int, finestra: float = 3600, libere: int = 1,
+               ora: float | None = None) -> int:
+        """Secondi finché nella finestra non restano almeno `libere` unità sotto `n` (09/11/2026: Retry-After dei 429)."""
+        ora = time.time() if ora is None else ora
+        with self._blocco:
+            c = self._coda(chiave, tipo, finestra, ora)
+            da_liberare = c[1] - (n - max(1, libere))
+            if da_liberare <= 0:
+                return 0
+            for istante, peso in c[0]:
+                da_liberare -= peso
+                if da_liberare <= 0:
+                    return max(1, int(math.ceil(istante + finestra - ora)))
+            return int(finestra)
+
     def clear(self) -> None:
         with self._blocco:
             self._code.clear()
@@ -142,12 +158,21 @@ _DINAMICI = {"dati": lambda: C.LIMITE_DATI_ORA, "sessione": lambda: C.SESSIONI_O
              "stima": lambda: C.STORICI_STIME_ORA, "estrazione": lambda: C.STORICI_ESTRAZIONI_ORA,
              "ortofoto": lambda: C.ORTOFOTO_ORA, "pvgis": lambda: C.PVGIS_ORA, "orizzonte": lambda: C.ORIZZONTE_ORA, "terreno": lambda: C.TERRENO_ORA,
              "interno": lambda: C.INTERNO_ORA, "edifici_osm": lambda: C.EDIFICI_OSM_ORA,
-             "dbtr_pezzi": lambda: C.DBTR_PEZZI_ORA}
+             "dbtr_pezzi": lambda: C.DBTR_PEZZI_ORA,
+             # (09/11/2026) strati sopra le ortofoto con un limite proprio (prima contavano come ortofoto); tessere e celle
+             # servite dalla copia su disco: tetto alto anti-abuso, separato dai limiti delle fonti esterne
+             "strati": lambda: C.STRATI_ORA, "tessere_copia": lambda: C.TESSERE_COPIA_ORA,
+             "edifici_osm_copia": lambda: C.EDIFICI_OSM_COPIA_ORA}
 # limiti giornalieri (finestra mobile di 24 ore): file proposti all'archivio comune («Aggiungi DBTR», 07/11/2026)
 _GIORNALIERI = {"dbtr": lambda: C.DBTR_CARICAMENTI_GIORNO}
 _UNITA = {"patrimonio": "edifici", "estrazione": "download", "stima": "stime", "sessione": "verifiche",
           "ortofoto": "tessere di ortofoto", "pvgis": "confronti PVGIS", "orizzonte": "profili d'orizzonte", "terreno": "tessere del terreno",
-          "edifici_osm": "richieste di edifici OpenStreetMap", "dbtr": "file proposti", "dbtr_pezzi": "pezzi di file"}
+          "edifici_osm": "richieste di edifici OpenStreetMap", "dbtr": "file proposti", "dbtr_pezzi": "pezzi di file",
+          "strati": "tessere di particelle e contorni", "tessere_copia": "tessere dalla copia del server",
+          "edifici_osm_copia": "richieste di edifici OpenStreetMap dalla copia"}
+# 429 con Retry-After (09/11/2026): la pagina ferma per quel tempo le richieste della fonte e lo dice sotto la mappa. Si
+# indica quando si libera almeno il 10 % del limite (con un solo posto libero la pagina ripartirebbe e riprenderebbe 429).
+QUOTA_RIPRESA = 0.10
 
 
 def soglia(tipo: str) -> tuple[int, int]:
@@ -166,7 +191,10 @@ def limita(req: Request, tipo: str, peso: int = 1) -> None:
         registro_429.registra(chiave, tipo)
         unita = _UNITA.get(tipo, "richieste")
         quando = "al giorno" if finestra >= 86400 else "all'ora"
-        raise HTTPException(429, f"Troppe richieste: massimo {n} {unita} {quando}. Riprova più tardi.")
+        attesa = max(1, limiti.attesa(chiave, tipo, n, finestra, max(peso, int(n * QUOTA_RIPRESA))))
+        raise HTTPException(429, f"Troppe richieste: massimo {n} {unita} {quando}. Riprova più tardi.",
+                            headers={"Retry-After": str(attesa), "X-EuGEnio-Limite": tipo,
+                                     "Access-Control-Expose-Headers": "Retry-After, X-EuGEnio-Limite"})
 
 
 # ---------------------------------------------------------------------------------------------- tetti globali

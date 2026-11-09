@@ -51,6 +51,10 @@ def main():
         import pandas as pd
         righe = pd.read_parquet(a.comuni).to_dict(orient="records")
     info = {r["istat"]: r for r in righe}
+    # (09/11/2026) l'elenco dei comuni letto con i valori mancanti di pandas aveva NaN al posto del comune «None» (TO) e della
+    # sigla «NA» (Napoli): il file 01.json non era JSON valido per il browser (Torino e tutto il Piemonte «non trovati»)
+    def testo(v, ripiego: str) -> str:
+        return ripiego if v is None or (isinstance(v, float) and v != v) else str(v)
     dest = Path(a.uscita)
     dest.mkdir(parents=True, exist_ok=True)
 
@@ -70,7 +74,8 @@ def main():
             continue
         r = info[istat]
         per_regione.setdefault(r["regione_cod"], []).append(
-            {"istat": istat, "nome": r["nome"], "prov": r["provincia"], "d": s["d"], "x": r["svg_x"], "y": r["svg_y"]})
+            {"istat": istat, "nome": testo(r["nome"], s.get("name") or "None"), "prov": testo(r["provincia"], "NA"), "d": s["d"],
+             "x": r["svg_x"], "y": r["svg_y"]})
     for cod, comuni in sorted(per_regione.items()):
         nome = next((x["nome"] for x in regioni if x["cod"] == cod), cod)
         f = dest / f"{cod}.json"
@@ -80,7 +85,7 @@ def main():
         f.write_text(json.dumps({"viewBox": _bbox([c["d"] for c in comuni]), "regione": cod, "nome": nome,
                                  "fonte": geo_c.get("source"), "versione": gramscii.revisione(), "comuni": comuni,
                                  "province": prov, "fonte_province": geo_p.get("source")},
-                                ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+                                ensure_ascii=False, separators=(",", ":"), allow_nan=False), encoding="utf-8")
         print(f"{cod} {nome:32s} {len(comuni):5d} comuni {len(prov):3d} province  {f.stat().st_size // 1024:5d} kB")
     print(f"italia.json: {(dest / 'italia.json').stat().st_size // 1024} kB")
 

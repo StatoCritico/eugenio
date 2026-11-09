@@ -128,7 +128,7 @@ def costruisci(cartella: Path, regioni: list[str] | None, usa_sezioni: bool = Tr
     geo = json.loads(gramscii.scarica("italy-municipalities.geo.json", src)
                      .read_text(encoding="utf-8"))
     el = pd.read_csv(scarica(ISTAT_ELENCO, src / "Elenco-comuni-italiani.csv", max_giorni=30), sep=";", encoding="latin-1",
-                     dtype=str)
+                     dtype=str, keep_default_na=False, na_values=[""])  # «None» (TO) e «NA» (Napoli) sono testi, non vuoti
     # colonne per posizione (le intestazioni ISTAT contengono a capo e note)
     el = pd.DataFrame({
         "regione_cod": el.iloc[:, 0].str.zfill(2), "istat": el.iloc[:, 4].str.zfill(6),

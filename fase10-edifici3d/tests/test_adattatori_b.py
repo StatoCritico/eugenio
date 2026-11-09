@@ -193,3 +193,45 @@ def test_confine_comune():
     g = B.confine_comune("048017", "EPSG:7791", margine=0)
     assert 95e6 < g.area < 106e6                                                      # Firenze, 102 km²
     assert g.contains(box(681600, 4849100, 681700, 4849200))                          # Duomo
+
+
+def _foglio_dbgt(dest: Path, righe):
+    """Shapefile UN_VOL sintetico (PolygonZ, campi del DBGT Lazio) con righe (id, istat, altezza, poligono)."""
+    import pyogrio.raw as PR
+    import shapely
+    from shapely.geometry import Polygon
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    geoms = [shapely.to_wkb(Polygon([(x, y, 20.0) for x, y in p.exterior.coords])) for _i, _c, _h, p in righe]
+    campi = [np.array([r[0] for r in righe], dtype=object), np.array([r[1] for r in righe], dtype=object),
+             np.array([r[2] for r in righe], dtype=float)]
+    PR.write(str(dest), np.array(geoms, dtype=object), campi, fields=["CLASSID", "COD_ISTAT", "UN_VOL_AV"],
+             crs="EPSG:25833", driver="ESRI Shapefile", geometry_type="Polygon Z")
+    return dest
+
+
+def test_dbgt_fogli_comune_doppioni_e_id(tmp_path):
+    """Unione dei fogli DBGT (09/11/2026): solo il comune, codice vuoto deciso dal confine, doppioni ai bordi tolti,
+    id ripetuto con geometria diversa rinominato, z conservata."""
+    import pyogrio.raw as PR
+    import shapely
+    a = _foglio_dbgt(tmp_path / "rm374" / "UN_VOL.shp", [
+        ("RM374_1", "058091", 10.0, box(0, 0, 10, 10)),
+        ("RM374_2", "058120", 8.0, box(20, 0, 30, 10)),          # altro comune (Fiumicino)
+        ("RM374_3", "058000", 6.0, box(40, 0, 50, 10)),          # codice di comodo, nel confine
+        ("RM374_4", "058000", 6.0, box(500, 0, 510, 10)),        # codice di comodo, fuori
+        ("COMUNE_9", "058091", 5.0, box(60, 0, 70, 10))])
+    b = _foglio_dbgt(tmp_path / "rm387" / "UN_VOL.shp", [
+        ("RM387_1", "058091", 10.0, box(0, 0, 10, 10)),          # doppione del bordo (stessa geometria e altezza)
+        ("COMUNE_9", "058091", 7.0, box(80, 0, 90, 10)),         # id ripetuto, geometria diversa
+        ("RM387_2", "058091", 9.0, box(100, 0, 110, 10))])
+    out = B.dbgt_fogli([a, b], tmp_path / "roma.gpkg", "058091", confine=box(-5, -5, 200, 20))
+    assert out["tenuti"] == 5
+    assert out["fogli"]["374"] == {"letti": 5, "codice del comune": 2, "altro comune": 1, "codice vuoto, nel confine": 1,
+                                   "codice vuoto, fuori dal confine": 1, "tenuti": 3}
+    assert out["fogli"]["387"]["doppioni tolti"] == 1 and out["id ripetuti (suffisso del foglio)"] == 1
+    meta, _f, geom, campi = PR.read(str(tmp_path / "roma.gpkg"))
+    ids = list(campi[list(meta["fields"]).index("CLASSID")])
+    assert ids == ["RM374_1", "RM374_3", "COMUNE_9", "COMUNE_9_387", "RM387_2"]
+    assert shapely.has_z(shapely.from_wkb(geom[0]))
+    righe, _crs = R.leggi_file(tmp_path / "roma.gpkg")
+    assert len(righe) == 5

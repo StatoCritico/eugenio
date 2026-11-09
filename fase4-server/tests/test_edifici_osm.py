@@ -46,6 +46,10 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "TURNSTILE_SITEKEY", "")
     monkeypatch.setattr(C, "TURNSTILE_SECRET", "")
     monkeypatch.setattr(EO.time, "sleep", lambda s: None)
+    from servizio import terreno as TR                  # Copernicus simulato (quote dei corpi, 09/11/2026 b): nessuna rete
+    monkeypatch.setattr(TR, "quote_copernicus", lambda punti: [123.4] * len(punti))
+    monkeypatch.setattr(C, "CARTELLA_TERRENO", tmp_path / "terreno_vuoto")
+    monkeypatch.setattr(TR, "_dtm_cache", None)
     P.limiti.clear()
     chiamate = []
 
@@ -82,6 +86,8 @@ def test_corpi_osm_con_licenza_copia_e_riserva(client, tmp_path):
     assert fs["r400_0"]["properties"]["edificio"] == "r400" and fs["r400_0"]["properties"]["gronda"] == 15.0
     assert fs["w303"]["properties"]["qualita"] == "stima" and fs["w303"]["properties"]["fonte_altezza"].startswith("stima")
     assert all(f["properties"]["licenza"] == "ODbL 1.0" for f in d["features"]) and d["altezze_stimate"] == 1
+    # (09/11/2026 b) anche gli edifici OSM alla quota del terreno (qui nessun DTM regionale: Copernicus), vista 3D in rilievo
+    assert d["quote_fonte"] == "copernicus" and all(f["properties"]["quota_terreno"] == 123.4 for f in d["features"])
     # principale 504 → riserva; query piccola sul centro della cella (non il punto esatto), in XML
     assert [x[0] for x in chiamate] == ["https://principale/api/interpreter", "https://riserva/api/interpreter"]
     q = chiamate[0][1]
@@ -109,9 +115,17 @@ def test_limiti_tetto_e_spegnimento(client, monkeypatch):
     monkeypatch.setattr(C, "EDIFICI_OSM_ORA", 2)
     h = {"X-Forwarded-For": "203.0.113.7"}
     assert c.get("/api/edifici/osm?lon=12.9061&lat=43.9041", headers=h).status_code == 200
-    assert c.get("/api/edifici/osm?lon=12.9061&lat=43.9041", headers=h).status_code == 200      # anche la copia conta
-    r = c.get("/api/edifici/osm?lon=12.9061&lat=43.9041", headers=h)
+    # (09/11/2026) la copia non consuma il limite di Overpass: la stessa cella più volte resta 200
+    for _ in range(5):
+        assert c.get("/api/edifici/osm?lon=12.9061&lat=43.9041", headers=h).status_code == 200
+    assert c.get("/api/edifici/osm?lon=12.93&lat=43.92", headers=h).status_code == 200            # seconda cella nuova
+    r = c.get("/api/edifici/osm?lon=12.96&lat=43.94", headers=h)                                   # terza: oltre il limite
     assert r.status_code == 429 and "OpenStreetMap" in r.json()["detail"]
+    assert int(r.headers["retry-after"]) > 0 and r.headers["x-eugenio-limite"] == "edifici_osm"
+    # la copia ha il suo tetto alto
+    monkeypatch.setattr(C, "EDIFICI_OSM_COPIA_ORA", 5)   # già 5 dalla copia
+    r = c.get("/api/edifici/osm?lon=12.9061&lat=43.9041", headers=h)
+    assert r.status_code == 429 and r.headers["x-eugenio-limite"] == "edifici_osm_copia"
     # tetto per tutto il sito: la cella nuova non chiama Overpass
     monkeypatch.setattr(C, "EDIFICI_OSM_TETTO_ORA", 1)
     n = len(chiamate)

@@ -7,6 +7,8 @@
 #   scarto 0,3 m); poligoni con LAYER/DESCR («edificio civile», «capannone», «chiesa», «atrio (cavedio)»…), punti «quota
 #   gronda edificio» e «quota piede fabbricato», linee «dividente edificio civile» che dividono gli isolati in corpi.
 #   DTM 8 m per elemento: ASCII Grid con la virgola decimale, mare a 0, vuoti −9999.
+# - 09/11/2026: comune intero di Bari, 31 elementi CTR (91 MB) e 33 DTM (12 MB) dei fogli 438 e 439, tutti senza login:
+#   43.090 edifici → 74.817 corpi nel confine ISTAT +150 m, 73.205 con altezza (archivio iodl/pug/bari, --istat 072006).
 # - Il file per `prepara-regione` si costruisce con `python -m edifici3d.b_regioni puglia-ctr --ctr <zip…>` (divisione
 #   degli isolati, gronde e piedi assegnati ai corpi); il DTM con `b_regioni puglia-dtm --asc <zip…>`.
 # - Licenza IODL 2.0 (attribuzione, compatibile con CC BY): archivio separato in `iodl/` (vedi MODIFICHE_CONDIVISE del
@@ -35,8 +37,14 @@ servizio_tipo = "file"
 modello_url = "https://cartografia.sit.puglia.it/download/CTR/SHP/{foglio}/{elemento}_ctr.zip"
 crs_servizio = "EPSG:32633"
 url = ""
-# elementi di Bari usati l'08/11/2026 (centro, Policlinico, Murattiano, Bari Vecchia, San Paolo, Japigia)
-elementi_bari = ["438061", "438062", "438072", "438073", "438074"]
+# elementi di Bari (comune intero 072006, 09/11/2026): quadro d'unione calcolato (foglio IGM 1:50.000 di 20'×12', sezione
+# 1:10.000 di 5'×3' numerata 01–16 da NO per righe, elemento 1:5.000 di 2'30"×1'30": 1 = NE, 2 = SE, 3 = SO, 4 = NO),
+# elementi che toccano il confine ISTAT +700 m; 438033 e 438082 (solo mare) non hanno la CTR (404), il DTM sì.
+# L'08/11/2026 (parziale) erano solo 438061, 438062, 438072, 438073, 438074.
+elementi_bari = ["438011", "438012", "438022", "438023", "438051", "438052", "438061", "438062", "438063", "438064",
+                 "438071", "438072", "438073", "438074", "438083", "438101", "438102", "438111", "438112", "438113",
+                 "438114", "438121", "438122", "438123", "438124", "438151", "438153", "438154", "439091", "439093",
+                 "439094"]
 
 [fonti.dtm]
 descrizione = "Regione Puglia – DTM 8 m (Intesa GIS, riprese 2006), ASCII Grid per elemento"

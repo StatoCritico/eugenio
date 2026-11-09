@@ -265,7 +265,7 @@ def test_ortofoto_ricerca_strati_e_immagine(browser, base, tmp_path):
     attendi(pg, f"window.EUGENIO_ORTOFOTO && {st}.strati && document.getElementById('strato-particelle')")
     # ricerca per indirizzo: la mappa va sul punto con il segnaposto
     pg.fill("#cerca-via", "via Gambalunga 27"); pg.fill("#cerca-comune", "Rimini")
-    pg.click("#cerca-indirizzo button[type=submit]")
+    pg.click("#cerca-indirizzo")
     attendi(pg, f"/ANNCSU/.test(document.getElementById('messaggio-cerca').textContent) && Math.abs({st}.mappa.getCenter().lat - 44.0601) < 1e-4 && !{st}.mappa.isMoving()")
     assert abs(pg.evaluate(f"{st}.mappa.getZoom()") - 17) < 0.05              # zoom comune di cerca_luogo.js (07/11/2026)
     assert pg.evaluate("window.EUGENIO_CERCA.ZOOM") == 17
@@ -437,7 +437,7 @@ def test_modelli3d_archivio_con_cortile_e_fuori_zona(browser, base, tmp_path):
     assert pg.evaluate(f"{E}.coperto({muro[0]}, {muro[1]})") is True
     # ricerca: zoom 17
     pg.fill("#cerca-via", "via Gambalunga 27"); pg.fill("#cerca-comune", "Rimini")
-    pg.click("#cerca-indirizzo button[type=submit]")
+    pg.click("#cerca-indirizzo")
     attendi(pg, f"/ANNCSU/.test(document.getElementById('messaggio-cerca').textContent) && !{s}.mappa.isMoving() && Math.abs({s}.mappa.getZoom() - 17) < 0.05")
     assert not pg.errori, pg.errori
     ctx.close()
@@ -992,13 +992,13 @@ def test_ricerca_solo_comune_e_coordinate_zero(browser, base):
         webgl(pg)
         attendi(pg, f"!!({s_mappa}) && !!document.getElementById('cerca-comune')", 25000)
         pg.fill("#cerca-comune", "Novafeltria")
-        pg.click("#cerca-indirizzo button[type=submit]")
+        pg.click("#cerca-indirizzo")
         attendi(pg, "/centro del comune di Novafeltria/.test(document.getElementById('messaggio-cerca').textContent)")
         pg.wait_for_timeout(1300)
         c = pg.evaluate(f"(() => {{ const c = {s_mappa}.getCenter(); return [c.lng, c.lat, {s_mappa}.getZoom()]; }})()")
         assert chiamate == [] and abs(c[0] - 12.29) < 0.08 and abs(c[1] - 43.89) < 0.08 and c[2] < 15, c
         pg.fill("#cerca-via", "via XXIV Maggio 10")
-        pg.click("#cerca-indirizzo button[type=submit]")
+        pg.click("#cerca-indirizzo")
         attendi(pg, "/senza coordinate/.test(document.getElementById('messaggio-cerca').textContent)")
         pg.wait_for_timeout(1300)
         c = pg.evaluate(f"(() => {{ const c = {s_mappa}.getCenter(); return [c.lng, c.lat]; }})()")
@@ -1335,7 +1335,7 @@ def test_sagome_venete_con_altezze_osm_in_modelli3d(browser, base, tmp_path):
     c = pg.evaluate(f"(() => {{ const c = {s}.corpi[0]; return [c.licenza, c.quota, c.fonteTetto, c.ipotesi && c.ipotesi.inclinazione, {E}.livelloFonte(c)]; }})()")
     assert c == ["IODL 2.0; altezza ODbL 1.0", 80, "ipotesi", 22, "sagome regionali con altezze OSM o stimate"], c
     assert pg.evaluate(f"!!{s}.mappa.getTerrain()")                                  # quote dal DTM: terreno acceso
-    assert "Quote dei corpi dal DTM del server" in pg.text_content("#messaggio")
+    assert "Quote dei corpi dal terreno del server" in pg.text_content("#messaggio")
     nota = pg.text_content("#nota-altezze-osm")
     assert "con la sagoma della Regione" in nota and "dalla mediana dei vicini con l'altezza OSM" in nota, nota
     righe = " ".join(pg.evaluate(f"{E}.opzioniImmagine().righe"))
@@ -1373,15 +1373,15 @@ def test_ricerca_solo_comune_in_ogni_pagina_e_apertura_su_cesena(browser, base, 
     lo, la, z = _centro(pg, s_mappa)
     assert abs(lo - CESENA_BUFALINI[0]) < 0.002 and abs(la - CESENA_BUFALINI[1]) < 0.002 and 15 <= z <= 16.5, (nome, lo, la, z)
     assert pg.get_attribute("#cerca-via", "placeholder") == "viale Ghirotti 286" and pg.get_attribute("#cerca-comune", "placeholder") == "Cesena"
-    assert pg.get_attribute("#catasto-comune", "placeholder") == "Cesena"
+    assert pg.locator("#catasto-comune").count() == 0 and pg.locator("#cerca-comune").count() == 1   # un solo Comune (09/11 b)
     pg.fill("#cerca-comune", "Bagno di Romagna")
-    pg.click("#cerca-indirizzo button[type=submit]")
+    pg.click("#cerca-indirizzo")
     attendi(pg, "/centro del comune di Bagno di Romagna/.test(document.getElementById('messaggio-cerca').textContent)")
     pg.wait_for_timeout(1300)
     lo, la, z = _centro(pg, s_mappa)
     assert abs(lo - 11.96) < 0.1 and abs(la - 43.84) < 0.1 and z < 15, (nome, lo, la, z)
-    pg.fill("#catasto-comune", "Cesena")
-    pg.click("#cerca-catasto button[type=submit]")
+    pg.fill("#cerca-comune", "Cesena")
+    pg.click("#cerca-particella")
     attendi(pg, "/centro del comune di Cesena/.test(document.getElementById('messaggio-cerca').textContent)")
     pg.wait_for_timeout(1300)
     lo, la, z = _centro(pg, s_mappa)

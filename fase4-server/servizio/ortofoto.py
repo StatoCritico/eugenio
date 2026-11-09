@@ -20,14 +20,19 @@ Regole:
   * **ritmo verso la fonte** per tutti gli utenti insieme: al massimo `ritmo.al_secondo` chiamate al secondo e
     `ritmo.all_ora` all'ora (dal TOML); una richiesta aspetta il suo turno al più ORTOFOTO_ATTESA_S secondi, poi 503 con
     Retry-After; le tessere già in copia non contano;
-  * **limite per indirizzo**: tipo «ortofoto» di protezione.py (ORTOFOTO_ORA tessere all'ora per IP);
-  * **intestazioni**: Cache-Control public (ORTOFOTO_CACHE_S, così anche Cloudflare tiene la copia), ETag, X-Ortofoto-Fonte,
+  * **limite per indirizzo** (09/11/2026): solo le tessere chieste davvero alla fonte contano nel tipo «ortofoto» di
+    protezione.py (ORTOFOTO_ORA all'ora per IP); quelle servite dalla copia su disco contano nel tetto anti-abuso
+    «tessere_copia» (TESSERE_COPIA_ORA, comune con strati e terreno). Il 429 porta Retry-After e X-EuGEnio-Limite: la
+    pagina ferma le richieste di quella fonte e lo dice sotto la mappa (protezione.js);
+  * **intestazioni**: Cache-Control public (ORTOFOTO_CACHE_S, così anche Cloudflare tiene la copia; per le fonti senza copia
+    «private, max-age=86400», solo il browser, dal 09/11/2026), ETag, X-Ortofoto-Fonte,
     X-Ortofoto-Licenza; fuori dal riquadro o dagli zoom della fonte 404 senza chiamare la fonte;
   * nessuna immagine Google, Esri, Bing, EOX 2018+, AGEA infrarosso o WMS regionali AGEA: il proxy serve **solo** le
     fonti dei TOML e rifiuta all'avvio quelle con URL di quei servizi (elenco ESCLUSI).
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import logging
 import math
@@ -82,6 +87,11 @@ class Fonte:
     # allo zoom 13 sulle colline di Brisighella); con `trasparente = true` si chiede PNG con TRANSPARENT=TRUE, il proxy
     # rende JPEG le tessere piene e PNG con la trasparenza quelle con buchi (sotto si vede il contesto)
     trasparente: bool = False
+    # (09/11/2026 b) fuori dalla sua regione la WMS della Toscana risponde 200 con un JPEG bianco di ~1,7 kB e la scritta
+    # «Fonte dei dati: Regione Toscana – Base informativa territoriale…» (a Bagno di Romagna, Cesena, Bologna, La Spezia,
+    # Perugia: dentro il riquadro della fonte). Con `segnaposto = true` queste tessere diventano vuote (PNG trasparente
+    # con X-Ortofoto-Vuota: 1), come quelle della RER senza immagini: la pagina passa da sola alla fonte successiva
+    segnaposto: bool = False
     _istanti: list = field(default_factory=list, repr=False)
 
     @property
@@ -100,7 +110,10 @@ class Fonte:
                 "priorita": self.priorita, "formato": self.formato,
                 # (08/11/2026) le frecce sotto la mappa spostano l'ortofoto di 1 m: solo le fonti WMS (BBOX spostato)
                 "spostabile": self.tipo == "wms", "spostamento_max": SPOSTAMENTO_MAX_M if self.tipo == "wms" else 0,
-                "tessere": f"/api/ortofoto/{self.id}/{{z}}/{{x}}/{{y}}.{self.estensione}" + ("?t=1" if self.trasparente else "")}
+                # «?t=1» (trasparente) e «?s=1» (segnaposto, 09/11/2026 b): indirizzi nuovi, così browser e Cloudflare non
+                # usano le tessere copiate prima (nere, o bianche con la scritta)
+                "tessere": f"/api/ortofoto/{self.id}/{{z}}/{{x}}/{{y}}.{self.estensione}"
+                           + ("?t=1" if self.trasparente else "?s=1" if self.segnaposto else "")}
 
 
 def leggi_toml(file: Path) -> list[Fonte]:
@@ -125,7 +138,8 @@ def leggi_toml(file: Path) -> list[Fonte]:
                          nei_report=bool(f.get("nei_report", True)), zoom=tuple(f.get("zoom", (0, 20))),
                          riquadro=tuple(f.get("riquadro", (-180, -85, 180, 85))),
                          al_secondo=float(ritmo.get("al_secondo", 4)), all_ora=int(ritmo.get("all_ora", 6000)),
-                         priorita=int(f.get("priorita", 5)), trasparente=bool(f.get("trasparente", False))))
+                         priorita=int(f.get("priorita", 5)), trasparente=bool(f.get("trasparente", False)),
+                         segnaposto=bool(f.get("segnaposto", False))))
     return out
 
 
@@ -223,6 +237,57 @@ def senza_buchi(dati: bytes) -> tuple[bytes, str]:
         return out.getvalue(), "image/jpeg"
     im.save(out, "PNG", optimize=True)
     return out.getvalue(), "image/png"
+
+
+def vuota(dati: bytes) -> bool:
+    """Tessera PNG tutta trasparente (zona senza dati della fonte, 09/11/2026: la RER 2023-24 non ha immagini a Bologna,
+    Modena, Parma, Imola, Ferrara, Faenza, Bagno di Romagna, Comacchio). Le tessere vuote sono PNG di poche centinaia di
+    byte: le altre non si decodificano."""
+    if dati[:8] != b"\x89PNG\r\n\x1a\n" or len(dati) > 4000:
+        return False
+    try:
+        import io
+        import numpy as np
+        from PIL import Image
+        a = np.asarray(Image.open(io.BytesIO(dati)).convert("RGBA"))
+        return int(a[..., 3].max()) == 0
+    except (OSError, ValueError):
+        return False
+
+
+_VUOTA_PNG: bytes | None = None
+
+
+def vuota_png() -> bytes:
+    """Tessera PNG 256×256 tutta trasparente (al posto dei segnaposto: sotto si vede il contesto)."""
+    global _VUOTA_PNG
+    if _VUOTA_PNG is None:
+        import io
+        from PIL import Image
+        b = io.BytesIO()
+        Image.new("RGBA", (256, 256), (0, 0, 0, 0)).save(b, "PNG", optimize=True)
+        _VUOTA_PNG = b.getvalue()
+    return _VUOTA_PNG
+
+
+def segnaposto_bianco(dati: bytes) -> bool:
+    """Tessera «segnaposto» di una WMS fuori dalla sua zona: immagine piccola (≤ 4000 byte: una foto vera di 256×256 pesa
+    10–30 kB) quasi tutta bianca (≥ 95 % dei pixel sopra 235 in tutti e tre i canali), anche con una scritta."""
+    if len(dati) > 4000 or not (dati[:3] == b"\xff\xd8\xff" or dati[:8] == b"\x89PNG\r\n\x1a\n"):
+        return False
+    try:
+        import io
+        import numpy as np
+        from PIL import Image
+        im = Image.open(io.BytesIO(dati))
+        if im.mode in ("RGBA", "LA", "P") and dati[:4] == b"\x89PNG":
+            a = np.asarray(im.convert("RGBA"))
+            if int(a[..., 3].max()) == 0:
+                return False                         # già trasparente: la gestisce vuota()
+        a = np.asarray(im.convert("RGB"))
+        return float((a > 235).all(axis=2).mean()) >= 0.95
+    except (OSError, ValueError):
+        return False
 
 
 def tipo_di(dati: bytes, predefinito: str) -> str:
@@ -324,10 +389,15 @@ def _scarica(url: str) -> httpx.Response:
 
 
 def _intestazioni(f: Fonte, dati: bytes, copia: str) -> dict[str, str]:
-    h = {"Cache-Control": f"public, max-age={C.ORTOFOTO_CACHE_S}" if f.cache else "no-store",
+    # fonti senza copia (consultazione dal vivo, AGEA 2012 del Geoportale): nessuna copia sul server né su Cloudflare, ma
+    # (09/11/2026) la copia privata del browser per un giorno, come qualsiasi visualizzatore WMS: prima «no-store» faceva
+    # richiedere alla fonte ogni tessera a ogni ritorno sulla stessa zona
+    h = {"Cache-Control": f"public, max-age={C.ORTOFOTO_CACHE_S}" if f.cache else "private, max-age=86400",
          "ETag": '"' + hashlib.sha1(dati).hexdigest()[:20] + '"',
          "X-Ortofoto-Fonte": f.id, "X-Ortofoto-Licenza": f.licenza.encode("ascii", "replace").decode(),
-         "X-Ortofoto-Copia": copia, "Access-Control-Expose-Headers": "X-Ortofoto-Fonte, X-Ortofoto-Licenza"}
+         "X-Ortofoto-Copia": copia, "Access-Control-Expose-Headers": "X-Ortofoto-Fonte, X-Ortofoto-Licenza, X-Ortofoto-Vuota"}
+    if (f.trasparente or f.segnaposto) and vuota(dati):
+        h["X-Ortofoto-Vuota"] = "1"          # la pagina passa da sola a un'altra fonte (09/11/2026)
     return h
 
 
@@ -353,7 +423,6 @@ def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str,
     spostata = bool(de or dn)
     if spostata and f.tipo != "wms":
         raise HTTPException(400, "Spostamento dell'ortofoto possibile solo per le fonti WMS (non per le tessere già pronte)")
-    P.limita(request, "ortofoto")
     p = file_copia(f, z, x, y)
     # (08/11/2026) tessere spostate: mai copia su disco. Ogni passo da 1 m è un'altra serie di tessere, quasi uguali a
     # quelle normali e usate da una sola persona per pochi minuti: copiarle riempirebbe ORTOFOTO_MAX_GB e la pulizia
@@ -362,11 +431,17 @@ def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str,
     copia = f.cache and not spostata
     if copia:
         dati = leggi_copia(p)
+        if dati is not None and f.segnaposto and segnaposto_bianco(dati):
+            dati = vuota_png()                  # segnaposto copiati prima del 09/11 b: vuoti anche dalla copia
+            with contextlib.suppress(OSError):
+                scrivi_copia(p, dati)
         if dati is not None:
+            P.limita(request, "tessere_copia")
             h = _intestazioni(f, dati, "si")
             if request.headers.get("if-none-match") == h["ETag"]:
                 return Response(status_code=304, headers=h)
             return Response(dati, media_type=tipo_di(dati, f.formato), headers=h)
+    P.limita(request, "ortofoto")                       # tessera da chiedere alla fonte (09/11/2026: solo queste contano)
     # una mappa chiede 15–30 tessere insieme: si aspetta il proprio turno per qualche secondo, poi 503
     fine = time.monotonic() + C.ORTOFOTO_ATTESA_S
     while (attesa := ritmo.prova(f)) and time.monotonic() + attesa <= fine:
@@ -387,7 +462,9 @@ def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str,
         log.warning("Ortofoto %s: risposta %s %s", f.id, r.status_code, tipo)
         raise HTTPException(502, "La fonte delle ortofoto ha risposto con un errore")
     dati = r.content
-    if f.trasparente:
+    if f.segnaposto and segnaposto_bianco(dati):
+        dati, tipo = vuota_png(), "image/png"   # 09/11/2026 b: tessera segnaposto (fuori dalla regione) = vuota
+    elif f.trasparente:
         try:
             dati, tipo = senza_buchi(dati)
         except (OSError, ValueError) as e:      # immagine illeggibile: non si copia

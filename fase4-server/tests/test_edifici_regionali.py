@@ -72,6 +72,8 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "CARTELLA_EDIFICI_INTERNA", tmp_path / "edifici")
     monkeypatch.setattr(C, "CARTELLA_TERRENO", tmp_path / "terreno")
     monkeypatch.setattr(T, "_dtm_cache", None)
+    # Copernicus simulato (09/11/2026 b: ripiego delle quote fuori dai DTM regionali), nessuna rete
+    monkeypatch.setattr(T, "quote_copernicus", lambda punti: [64.0] * len(punti))
     EO._archivi_cache.update(mtime=None, archivi=[]); EO._celle_cache.clear()
     for k, v in {"EDIFICI_OSM": True, "EDIFICI_REGIONALI": True, "EDIFICI_OSM_URL": [], "TURNSTILE_SITEKEY": "", "TURNSTILE_SECRET": ""}.items():
         monkeypatch.setattr(C, k, v)
@@ -140,6 +142,16 @@ def test_quote_dal_dtm_veneto(client):
     DL.cog_server(src, tmp / "terreno" / "dtm5_veneto_tv.tif", regione="veneto")
     d = c.get(f"/api/edifici/osm?lon={LON}&lat={LAT}").json()
     assert d["quote_dtm"] == len(d["features"]) and all(abs(f["properties"]["quota_terreno"] - 87.5) < 0.01 for f in d["features"])
+    assert d["quote_fonte"] == "dtm"
+
+
+def test_quote_da_copernicus_senza_il_dtm_veneto(client):
+    """09/11/2026 b (Susegana «c'è ma è piatta»): senza il DTM del Veneto sul server (J5 bis non fatto) i corpi prendono la
+    quota del Copernicus DEM 90 m, come le tessere del terreno; prima restavano senza quota e la pagina spegneva il terreno."""
+    c, _, _ = client
+    d = c.get(f"/api/edifici/osm?lon={LON}&lat={LAT}").json()
+    assert d["sagome"]["regione"] == "Veneto" and d["quote_fonte"] == "copernicus"
+    assert d["quote_dtm"] == len(d["features"]) and all(f["properties"]["quota_terreno"] == 64.0 for f in d["features"])
 
 
 def test_wfs_giu_e_spegnimento(client, monkeypatch):

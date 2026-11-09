@@ -18,8 +18,9 @@ Regole:
     (`X-Terreno-Fonte: piatta`, nessuna copia, Cache-Control breve); fuori dall'Italia 404 (MapLibre la ignora);
   * **copia su disco** (CARTELLA_TERRENO_TESSERE/<versione>/<z>/<x>/<y>.png, versione = impronta dei DTM presenti: un
     DTM nuovo non mescola tessere vecchie) con tetto TERRENO_MAX_GB e pulizia delle più vecchie (come le ortofoto);
-  * **limiti**: le tessere già in copia non contano; quelle da generare TERRENO_ORA all'ora per IP (tipo «terreno» di
-    protezione.py) e al più TERRENO_PARALLELE generate insieme (CPU del server);
+  * **limiti**: le tessere già in copia contano solo nel tetto anti-abuso «tessere_copia» (TESSERE_COPIA_ORA, 09/11/2026);
+    quelle da generare TERRENO_ORA all'ora per IP (tipo «terreno» di protezione.py) e al più TERRENO_PARALLELE generate
+    insieme (CPU del server);
   * **intestazioni**: Cache-Control public TERRENO_CACHE_S (30 giorni, anche Cloudflare), ETag, X-Terreno-Fonte
     («dtm», «dtm+copernicus», «copernicus», «piatta»), X-Terreno-Licenza;
   * TERRENO_ATTIVO=false spegne la rotta (404): la pagina mostra la mappa piatta, quote dei corpi e ombre non cambiano
@@ -128,12 +129,64 @@ def dtm_disponibili(ricarica: bool = False) -> list[dict]:
         return out
 
 
-def quote_punti(punti: list[tuple[float, float]]) -> list[float | None]:
+def quote_copernicus(punti: list[tuple[float, float]]) -> list[float | None]:
+    """(09/11/2026 b) Quote del Copernicus DEM 90 m nei punti WGS84 (le stesse delle tessere del terreno fuori dai DTM
+    regionali): una finestra sola attorno ai punti, bilineare; None se il DEM non risponde."""
+    if not punti:
+        return []
+    from . import orizzonte as O
+    lon0, lon1 = min(p[0] for p in punti), max(p[0] for p in punti)
+    lat0, lat1 = min(p[1] for p in punti), max(p[1] for p in punti)
+    clat, clon = (lat0 + lat1) / 2, (lon0 + lon1) / 2
+    raggio = max((lat1 - lat0) / 2 * 111000.0, (lon1 - lon0) / 2 * 111320.0 * math.cos(math.radians(clat))) + 200
+    if raggio > 5000 and len(punti) > 1:                # punti lontani tra loro: una finestra piccola per ognuno
+        return [q for p in punti for q in quote_copernicus([p])]
+    try:
+        g, la0, lo0 = O.finestra_dem(clat, clon, raggio)
+    except Exception as e:                              # noqa: BLE001 - S3 non raggiungibile: punti senza quota
+        log.warning("Terreno: Copernicus non disponibile per le quote (%s)", e)
+        return [None] * len(punti)
+    g = np.asarray(g, dtype="float64")
+    g[g < -900] = 0.0
+    rg = O.RIGHE_GRADO
+    out: list[float | None] = []
+    for lon, lat in punti:
+        i, j = (lat - la0) * rg - 0.5, (lon - lo0) * rg - 0.5
+        i0 = min(max(int(math.floor(i)), 0), g.shape[0] - 2)
+        j0 = min(max(int(math.floor(j)), 0), g.shape[1] - 2)
+        di, dj = min(max(i - i0, 0.0), 1.0), min(max(j - j0, 0.0), 1.0)
+        v = (g[i0, j0] * (1 - di) * (1 - dj) + g[i0 + 1, j0] * di * (1 - dj)
+             + g[i0, j0 + 1] * (1 - di) * dj + g[i0 + 1, j0 + 1] * di * dj)
+        out.append(round(float(v), 2) if math.isfinite(v) else None)
+    return out
+
+
+def quote_punti(punti: list[tuple[float, float]], ripiego: bool = False, fonti: list | None = None) -> list[float | None]:
     """Quote del terreno (m) nei punti WGS84 dal DTM regionale più dettagliato che li copre (None dove nessuno li copre).
-    Serve alle sagome regionali al volo (08/11/2026): corpi alla quota vera, terreno 3D acceso anche fuori dal DBTR."""
+    Serve alle sagome regionali al volo (08/11/2026): corpi alla quota vera, terreno 3D acceso anche fuori dal DBTR.
+    (09/11/2026 b) Con `ripiego` i punti fuori dai DTM regionali prendono la quota del Copernicus DEM 90 m, come le
+    tessere del terreno: a Susegana senza il DTM del Veneto (J5 bis non fatto) i corpi restavano senza quota e la pagina
+    spegneva il terreno («c'è ma è piatta»). In `fonti` (se data) «dtm» e/o «copernicus»."""
     out: list[float | None] = [None] * len(punti)
     if not punti:
         return out
+    try:
+        _quote_dtm(punti, out)
+    except Exception as e:                              # noqa: BLE001 - senza rasterio o DTM illeggibili: resta il ripiego
+        log.warning("Terreno: quote dai DTM non lette (%s)", e)
+    if any(q is not None for q in out) and fonti is not None:
+        fonti.append("dtm")
+    mancano = [i for i, q in enumerate(out) if q is None]
+    if ripiego and mancano:
+        cop = quote_copernicus([punti[i] for i in mancano])
+        for i, v in zip(mancano, cop):
+            out[i] = v
+        if fonti is not None and any(v is not None for v in cop):
+            fonti.append("copernicus")
+    return out
+
+
+def _quote_dtm(punti: list[tuple[float, float]], out: list[float | None]) -> None:
     import rasterio
     from pyproj import Transformer
     for d in dtm_disponibili():
@@ -154,7 +207,6 @@ def quote_punti(punti: list[tuple[float, float]]) -> list[float | None]:
                         out[i] = round(q, 2)
         except Exception as e:                       # noqa: BLE001 - file illeggibile: restano senza quota
             log.warning("Terreno: quote non lette da %s (%s)", d.get("file"), e)
-    return out
 
 
 def versione() -> str:
@@ -355,6 +407,7 @@ def tessera(request: Request, z: int, x: int, y: int):
         dati = p.read_bytes()
         meta = p.with_suffix(".txt").read_text(encoding="utf-8").split("\n")
         h = _intestazioni(dati, meta[0], meta[1] if len(meta) > 1 else "", "si", meta[2] if len(meta) > 2 else "")
+        P.limita(request, "tessere_copia")             # dalla copia: tetto anti-abuso comune con le ortofoto (09/11/2026)
         if request.headers.get("if-none-match") == h["ETag"]:
             return Response(status_code=304, headers=h)
         return Response(dati, media_type="image/png", headers=h)

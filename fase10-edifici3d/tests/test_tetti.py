@@ -42,6 +42,10 @@ CASI = [
     {"nome": "basso", "c": {"ring": RETT, "gronda": 2.5}, "o": {}},
     {"nome": "elle", "c": {"ring": ELLE, "gronda": 9}, "o": {}},
     {"nome": "cortile", "c": {"ring": GRANDE[:], "buchi": [[[20, 10], [40, 10], [40, 20], [20, 20]]], "gronda": 12}, "o": {}},
+    # (09/11/2026) cavedio di 3 × 3 m in una casa di 16 × 10 m: non è un cortile, tetto a falde
+    {"nome": "cavedio", "c": {"ring": RETT, "buchi": [[[6, 4], [9, 4], [9, 7], [6, 7]]], "gronda": 10}, "o": {"quota": 511, "istat": "040001"}},
+    # cortile vero in una casa piccola: 5 × 4 = 20 m² sotto i 25 m² ma oltre il 10 % della pianta
+    {"nome": "cortile_quota", "c": {"ring": RETT, "buchi": [[[5, 3], [10, 3], [10, 7], [5, 7]]], "gronda": 10}, "o": {}},
 ]
 COLMO = [
     {"nome": "colmo_capanna", "c": {"ring": RETT, "gronda": 9, "colmo": 12}},
@@ -136,3 +140,13 @@ def test_conta_tetti_cascata():
     n = T.conta_tetti(fs, "040001", lidar={"e": {"stato": "ok"}})
     assert (n["lidar"], n["colmo"], n["ipotesi"], n["pianura"], n["montagna"], n["piano"]) == (1, 1, 2, 1, 1, 1)
     assert n["motivi_piano"] == {"uso produttivo": 1}
+
+
+def test_cavedio_non_e_un_cortile():
+    """09/11/2026, prova 13 di Paolo (Bagno di Romagna, foglio 54 particella 216): un buco piccolo (cavedio o volume
+    interno) non rende piano il tetto ipotizzato; un cortile vero sì."""
+    casi = {k["nome"]: k for k in CASI}
+    r = py_ipotesi(casi["cavedio"])
+    assert not r.get("piano") and r["inclinazione"] == 22, r
+    assert py_ipotesi(casi["cortile_quota"])["motivo"] == "corpo con cortile"
+    assert py_ipotesi(casi["cortile"])["motivo"] == "corpo con cortile"

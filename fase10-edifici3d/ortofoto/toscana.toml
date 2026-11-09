@@ -26,3 +26,8 @@ zoom = [12, 20]
 riquadro = [9.68, 42.23, 12.38, 44.48]
 ritmo = { al_secondo = 4, all_ora = 6000 }
 priorita = 1
+# (09/11/2026 b, prove di Paolo) fuori dalla Toscana, ma dentro il riquadro (Bagno di Romagna, Cesena, Bologna, La Spezia,
+# Perugia), la WMS risponde 200 con un JPEG bianco di ~1,7 kB e la scritta «Fonte dei dati: Regione Toscana – Base
+# informativa territoriale…»: il proxy lo tratta come tessera vuota (PNG trasparente, X-Ortofoto-Vuota: 1) e la pagina
+# passa da sola alla fonte successiva
+segnaposto = true

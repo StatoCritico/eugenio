@@ -132,10 +132,33 @@
     nessuna.append(i0, h("span", "nome-fonte", "Nessuna ortofoto (solo il contesto e i confini)")); fs.appendChild(nessuna);
     // finché l'utente non sceglie a mano si usa sempre la migliore che copre la zona (l'elenco è già in ordine di
     // dettaglio); dopo una scelta a mano si cambia solo se la fonte scelta non copre più la zona
-    const migliore = qui.find((f) => f.id !== CONTESTO) || qui[0];
+    // (09/11/2026) le fonti che il server ha dichiarato vuote in questa zona (X-Ortofoto-Vuota: RER 2023-24 a Bologna,
+    // Modena, Faenza…) non si scelgono da sole
+    const migliore = qui.find((f) => f.id !== CONTESTO && !stato.vuote.has(zonaVuota(f, c))) || qui[0];
     if (!stato.manuale && migliore && (!stato.scelta || stato.scelta.id !== migliore.id)) scegli(migliore.id);
     else if (stato.scelta && !copre(stato.scelta, [c.lng, c.lat]) && qui.length) scegli(migliore.id);
+    if (!stato.manuale && stato.scelta) provaVuota(stato.scelta);
     aggiornaAvviso();
+  }
+  const zonaVuota = (f, c) => { const n = 2 ** 12; return `${f.id}@${Math.floor((c.lng + 180) / 360 * n)}_${Math.floor((1 - Math.asinh(Math.tan(c.lat * Math.PI / 180)) / Math.PI) / 2 * n)}`; };
+  stato.vuote = new Set(); stato.provate = new Set();
+  async function provaVuota(f) {
+    const m = stato.mappa, c = m.getCenter(), k = zonaVuota(f, c);
+    if (!f.tessere || f.pmtiles || f.id === CONTESTO || stato.provate.has(k) || m.getZoom() < f.zoom[0] - 0.5) return;
+    stato.provate.add(k);
+    const z = Math.max(f.zoom[0], Math.min(f.zoom[1], Math.floor(m.getZoom()))), n = 2 ** z;
+    const x = Math.floor((c.lng + 180) / 360 * n), y = Math.floor((1 - Math.asinh(Math.tan(c.lat * Math.PI / 180)) / Math.PI) / 2 * n);
+    try {
+      const r = await fetch(location.origin + f.tessere.replace("{z}", z).replace("{x}", x).replace("{y}", y));
+      if (r.ok && r.headers.get("X-Ortofoto-Vuota") === "1") {
+        stato.vuote.add(k);
+        if (!stato.manuale && stato.scelta && stato.scelta.id === f.id) {
+          elenco();
+          const g = stato.scelta;
+          messaggio(`«${f.nome}» non ha immagini in questa zona${g && g.id !== f.id ? `: uso «${g.nome}»` : ""}. Puoi scegliere un'altra fonte.`);
+        }
+      }
+    } catch { /* resta la fonte scelta */ }
   }
 
   async function edifici(m) {
@@ -144,20 +167,21 @@
     // archivi di /edifici3d/archivi.json (dal 07/11/2026 un archivio DBTR per comune), altrimenti il DBTR dell'ER
     let basi = ["/edifici3d/cc-by/er/prodotti/"];
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261107b", { cache: "no-cache" });
+      const r = await fetch("/edifici3d/archivi.json?v=20261109b", { cache: "no-cache" });
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const l = ((await r.json()).archivi || []).map((x) => x && x.base)
           .filter((b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes(".."));
-        if (l.length) basi = l.slice(0, 60);
+        if (l.length) basi = l.slice(0, 150);       // 150 archivi al massimo (60 fino al 09/11/2026)
       }
     } catch { /* solo l'archivio regionale */ }
     const ids = [];
+    // indici chiesti tutti insieme (09/11/2026: 69 archivi; prima uno dopo l'altro), strati aggiunti nell'ordine dell'elenco
+    const indici = await Promise.all(basi.map((b) => fetch(`${b}indice.json`)
+      .then((r) => (r.ok && /json/.test(r.headers.get("Content-Type") || "") ? r.json() : null)).catch(() => null)));
     for (const [k, b] of basi.entries()) {
       try {
-        const r = await fetch(`${b}indice.json`);
-        if (!r.ok || !/json/.test(r.headers.get("Content-Type") || "")) continue;
-        const ind = await r.json();
-        if (ind.sintetico) continue;
+        const ind = indici[k];
+        if (!ind || ind.sintetico) continue;
         const id = k ? `edifici-${k}` : "edifici";
         m.addSource(`corpi-${k}`, { type: "vector", url: `pmtiles://${new URL(b + "corpi.pmtiles", location.href).href}`, attribution: ind.attribuzione || "" });
         m.addLayer({ id, type: "line", source: `corpi-${k}`, "source-layer": "corpi", paint: { "line-color": colore("--primario"), "line-width": 1.2 } });
@@ -183,25 +207,26 @@
   }
 
   // ------------------------------------------------------------------ regioni e comuni (piccola mappa e mappa grande)
-  async function vaiRegione(cod) {
+  // sposta = false (clic sulla mappa grande, 09/11/2026): un clic sulla mappa non sposta mai la vista
+  async function vaiRegione(cod, sposta = true) {
     const b = C && await C.riquadroRegione(cod);
     if (!b) return;
     stato.regione = cod; stato.comune = null;
     if (stato.confini) { stato.confini.scegliRegione(cod); stato.confini.scegliComune(""); }
     if (window.EUGENIO && window.EUGENIO.seleziona) window.EUGENIO.seleziona(cod);
-    stato.mappa.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 20, duration: 700 });
+    if (sposta) stato.mappa.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 20, duration: 700 });
   }
-  function togliRegione() {
+  function togliRegione(sposta = true) {
     stato.regione = null; stato.comune = null;
     if (stato.confini) { stato.confini.scegliRegione(""); stato.confini.scegliComune(""); }
     if (window.EUGENIO && window.EUGENIO.evidenziaPiccola) window.EUGENIO.evidenziaPiccola(null);
     const I = C ? C.ITALIA : [6.6, 35.4, 18.6, 47.1];
-    stato.mappa.fitBounds([[I[0], I[1]], [I[2], I[3]]], { padding: 10, duration: 700 });
+    if (sposta) stato.mappa.fitBounds([[I[0], I[1]], [I[2], I[3]]], { padding: 10, duration: 700 });
   }
   if (window.EUGENIO) {
     window.EUGENIO.suRegione = (cod) => { vaiRegione(cod); };
     window.EUGENIO.suStessaRegione = (cod) => { if (stato.regione === cod) togliRegione(); else vaiRegione(cod); };
-    window.EUGENIO.mappaPrincipale = { nazionale: togliRegione };
+    window.EUGENIO.mappaPrincipale = { nazionale: () => togliRegione() };
   }
 
   // ------------------------------------------------------------------ immagine della vista
@@ -229,6 +254,7 @@
       attributionControl: false, canvasContextAttributes: { preserveDrawingBuffer: true },
       style: { version: 8, sources: {}, layers: [{ id: "sfondo", type: "background", paint: { "background-color": colore("--carta") } }] } });
     stato.mappa = m;
+    if (window.EUGENIO_LIMITI) window.EUGENIO_LIMITI.collega(m);      // 429 delle fonti: pausa, nota e niente righe rosse (09/11/2026)
     m.addControl(new window.maplibregl.NavigationControl({ showCompass: false }), "top-right");
     m.addControl(new window.maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
     m.addControl(new window.maplibregl.AttributionControl({ compact: true }), "bottom-right");
@@ -247,14 +273,13 @@
     if (C) {
       try {
         stato.confini = await C.aggiungi(m, {
-          suRegione: (cod) => { if (stato.regione === cod) togliRegione(); else vaiRegione(cod); },
+          // (09/11/2026, punto J) il clic sulla mappa evidenzia soltanto: la vista non si sposta mai
+          suRegione: (cod) => { if (stato.regione === cod) togliRegione(false); else vaiRegione(cod, false); },
           suComune: async (c) => {
             stato.comune = c;
             const x = $("messaggio-mappa");
             if (!c) { x.textContent = ""; return; }
-            const b = await C.riquadroComune(c.istat);
-            if (b) m.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 30, duration: 700, maxZoom: 16 });
-            x.textContent = `Comune di ${c.nome}${c.prov ? ` (${c.prov})` : ""}: un secondo clic sul comune lo toglie.`;
+            x.textContent = `Comune di ${c.nome}${c.prov ? ` (${c.prov})` : ""}: avvicinati con la rotella o cerca l'indirizzo; un secondo clic sul comune lo toglie.`;
           },
         });
       } catch { /* confini non disponibili */ }

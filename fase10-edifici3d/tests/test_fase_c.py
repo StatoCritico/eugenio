@@ -131,6 +131,9 @@ def test_pipeline_campione_completa_e_idempotente(radice, tmp_path):
     assert celle["C10"]["stato"] == "non presente nel rilievo"
     ind = json.loads((prod / "indice.json").read_text())
     assert ind["sintetico"] and ind["attribuzioni"]["campione_dsm"]["tessere"] >= 6
+    # (09/11/2026 b) elenco delle celle che esistono: la pagina chiede solo quelle (niente 404 in Console)
+    assert ind["celle"]["falde"] == sorted(p.stem for p in (prod / "falde").glob("*.json")) and ind["celle"]["falde"]
+    assert ind["celle"]["alberi"] == sorted(p.stem for p in (prod / "alberi").glob("*.json"))
     # di nuovo: niente da rifare
     e2 = _pipeline(radice, tmp_path).esegui(subito=True)
     assert e2["tessere_fatte"] == 0 and e2["esito"] == "completata"
@@ -367,3 +370,23 @@ def test_import_senza_posa(dxf):
         I.importa_sicuro(dxf)
     r = I.importa_sicuro(dxf, posa=I.posa_da_argomenti(["0,0=12.5665,44.06", "10,0=12.5668,44.06"]))
     assert any("scala" in a for a in r["avvisi"])          # 10 m nel disegno, ~24 m tra i due punti
+
+
+def test_lidar_celle_aggiorna_gli_indici_vecchi(tmp_path, capsys):
+    """09/11/2026 b: `lidar-celle` scrive l'elenco delle celle negli indici scritti prima (senza `celle`), salta le copie in
+    cartelle con «_» e lascia il resto dell'indice com'è."""
+    lid = tmp_path / "cc-by" / "er" / "prodotti" / "lidar"
+    (lid / "falde").mkdir(parents=True); (lid / "alberi").mkdir()
+    for n in ("1225_4413", "1224_4413"):
+        (lid / "falde" / f"{n}.json").write_text("{}")
+    (lid / "alberi" / "1225_4413.json").write_text("{}")
+    (lid / "falde" / "leggimi.json").write_text("{}")                     # non è una cella
+    (lid / "indice.json").write_text(json.dumps({"cella": 0.01, "attribuzioni": {"rer": {}}, "zone": {}}))
+    vecchia = tmp_path / "_precedenti" / "x" / "lidar"; vecchia.mkdir(parents=True)
+    (vecchia / "indice.json").write_text("{}")
+    assert main(["lidar-celle", "--archivio", str(tmp_path)]) == 0
+    esiti = json.loads(capsys.readouterr().out)
+    assert esiti == [{"indice": "cc-by/er/prodotti/lidar/indice.json", "falde": 2, "alberi": 1}]
+    d = json.loads((lid / "indice.json").read_text())
+    assert d["celle"] == {"falde": ["1224_4413", "1225_4413"], "alberi": ["1225_4413"]} and d["attribuzioni"] == {"rer": {}}
+    assert json.loads((vecchia / "indice.json").read_text()) == {}

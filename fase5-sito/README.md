@@ -96,6 +96,80 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Correzioni dalle prove N10 di Paolo (09/11/2026 b, `?v=20261109b`)
+
+Procedura P1–P10 in `AGGIORNAMENTO_2026-11-09b.md`. Prove nel browser in `tests/test_prove_0911b_browser.py` (10).
+
+- **Ricerca unificata** (`cerca_luogo.js`, `stile.css`; Modelli 3D, Ortofoto e le 8 pagine 3D): un solo modulo
+  `#cerca-luogo-modulo` con **Comune** una volta sola in cima (`#cerca-comune`), **Indirizzo** (`#cerca-via`), **Foglio** e
+  **Particella** affiancati (`#catasto-foglio`, `#catasto-particella`), poi «Cerca l'indirizzo» (`#cerca-indirizzo`: solo
+  Comune e Indirizzo), «Cerca la particella» (`#cerca-particella`: solo Comune, Foglio e Particella) e un solo «Reset»
+  (`#cerca-reset`). Con il solo Comune tutti e due vanno al centro del comune. Invio in Indirizzo cerca l'indirizzo, in
+  Foglio o Particella la particella, nel Comune quello che è scritto. Spariscono `#catasto-comune`, `#reset-indirizzo`,
+  `#reset-particella` e i due `<form>`. Prima, con due «Comune» diversi (Bagno di Romagna nella particella, Susegana rimasto
+  nell'indirizzo) la ricerca finiva a «via San Salvatore 13, Susegana». In più un risultato in un **altro comune** (il
+  server scrive «comune catastale … diverso da quello indicato» e i nomi non hanno nulla in comune) non sposta la mappa lì:
+  si va al centro del comune scritto, con l'avviso. Apertura su Cesena e precedenza dei parametri invariate.
+- **Colore e Alberi sotto la mappa** (`edificio3d.js`, `controlliAspetto3d`; `stile.css`): la riga `#aspetto-3d` va in
+  `#comandi-edificio`, dopo `#sposta-ortofoto` (frecce, stato, «Azzera»), non più nel pannello di destra sotto i livelli;
+  etichetta visibile «Colore» (il nome intero «Colore degli edifici» nel tooltip e nell'`aria-label` del pulsante), stato
+  dell'ortofoto al più 10rem: a 1366 px Genera il 3D, frecce, stato, Azzera, Colore e Alberi su una riga; con la colonna
+  stretta il gruppo va a capo intero, nessuno scorrimento di lato a 375 px. In Ortofoto non ci sono questi comandi.
+- **Celle LiDAR** (`edificio3d.js`, `haCellaLidar`): falde e alberi si chiedono solo per le celle dell'elenco `celle` di
+  `lidar/indice.json` (fase 10); con un indice senza elenco solo dentro il riquadro di un archivio dell'Emilia-Romagna. Prima
+  ogni cella attorno al punto, anche a Roma e a Susegana: decine di 404 in Console. `importa_modello.js` chiede le celle di
+  contesto solo se sono in `nomi_celle`. Demo del sito con l'elenco.
+- **Terreno fuori dall'Emilia-Romagna**: la pagina accendeva già il terreno ovunque, ma lo spegneva per gli edifici OSM e
+  le sagome regionali **senza quota**; il server ora dà la quota Copernicus (fase 4), quindi Susegana è in rilievo anche
+  senza il DTM del Veneto ed esagerazione ×1,5/×2 funziona. Messaggio «Quote dei corpi dal terreno del server (DTM regionale
+  o, dove manca, Copernicus DEM 90 m).».
+- **Ortofoto segnaposto**: con le tessere della Toscana vuote (fase 4) a Bagno di Romagna la pagina passa da RER (vuota) a
+  Toscana (vuota) ad AGEA 2012 e lo scrive; prima restava la Toscana con le scritte bianche.
+- Novità: voce `20261109b` (ricerca e comandi sotto la mappa).
+
+## Correzioni dalle prove J10 di Paolo (09/11/2026, `?v=20261109a`)
+
+Procedura N1–N12 in `AGGIORNAMENTO_2026-11-09.md` (con Roma e Bari intere). Prove nel browser in
+`tests/test_prove_0911_browser.py` (7: limite orario, ricerca e Torino, clic, colore e alberi, frecce su una riga a 360,
+375 e 1366 px).
+
+- **Limiti orari delle fonti della mappa** (`protezione.js`, `window.EUGENIO_LIMITI`): un 429 di ortofoto, strati
+  (particelle e contorni), edifici OSM o terreno ferma quella fonte per il tempo del `Retry-After` del server (da 30 s a
+  20 minuti; senza intestazione 3 minuti); intanto la pagina risponde da sé con un 429 senza rete (niente righe in
+  Console, nessun carico). Nota `#nota-limiti` (classe `aiuto nota-limiti`) **sotto la mappa, prima di
+  `#comandi-edificio`** (o di `.comandi-ortofoto`): «Ortofoto: raggiunto il limite orario di richieste per il tuo
+  indirizzo. Mi fermo e riprovo da solo tra N minuti.»; alla fine della pausa evento `eugenio:limite` (`fermo: false`): le
+  mappe collegate con `EUGENIO_LIMITI.collega(m)` (Modelli 3D e pagine 3D, Ortofoto, Aggiungi edifici, Importa DXF/IFC)
+  **tolgono e rimettono** sorgente e strati della fonte (`setTiles` e `refreshTiles` su tessere raster in errore fanno
+  fallire il disegno in MapLibre 5.24: TypeError «reading 'bind'»), `strati_gl.js` richiede le tessere OSM mancanti (gli
+  errori non si ricordano più); la nota sparisce alla prima risposta buona. `collega` toglie anche gli errori delle tessere
+  dalla Console. Prova a mano: `EUGENIO_LIMITI.ferma('ortofoto', 120)` nella Console.
+- **Previsioni** (`index.html`): tolto l'avviso «Servizio sperimentale» (come Dati climatici e Legge 10).
+- **Frecce dell'ortofoto** su una riga (`sposta_ortofoto.js`, `stile.css`): ← ↑ ↓ →, «1 m», stato (accorciato con i
+  puntini, intero nel `title`) e «Azzera», anche con la colonna stretta; il contenitore nei comandi si restringe
+  (`min-width: 0`), nessuno scorrimento di lato a 360 px.
+- **Ricerca** (`cerca_luogo.js`): Comune prima dell'Indirizzo; «Reset» (`#reset-indirizzo`, `#reset-particella`) svuota i
+  campi del suo blocco e il messaggio. `dati/mappa/01.json` e `15.json` avevano `NaN` (comune «None» di Torino, sigla
+  «NA» di Napoli letti come vuoti): il browser non li leggeva e **Piemonte e Campania** mancavano alla ricerca per comune.
+  Corretti i file, `costruisci_mappa.py` (`allow_nan=False`, nome e sigla testuali) e la lettura dell'elenco ISTAT nella
+  fase 3; test `test_confini_json_validi_per_il_browser`.
+- **Clic sulla mappa** (`edificio3d.js`, `ortofoto.js`): non sposta mai la vista; regione e comune si evidenziano con il
+  messaggio (prima `fitBounds` sul comune o sulla regione: a Roma «la mappa impazzisce»). La piccola mappa, la ricerca, la
+  rotella e il trascinamento spostano la vista come prima.
+- **Colore degli edifici e alberi** (Modelli 3D e pagine 3D, riga `#aspetto-3d` sotto i livelli): menu `#colore-edifici`
+  con le classi del menu dell'asterisco (`vestito-pulsante`, `vestito-elenco a-discesa`) e la stessa tastiera; grigio
+  (`--serie-6`), giallo `#e0b400`, rosso `#c62828`, indaco `#4757c9`, violetto `#8a4fd0`; scelto in arancio (`--primario`),
+  OSM marrone. Casella `#strato-alberi` spenta in partenza; chiome come ottagoni un po' più larghi della cella di 2 m (si
+  fondono), verde per altezza, base al 40 %. `localStorage`: `eugenio-colore-edifici`, `eugenio-alberi-3d` (try/catch).
+  Legenda (`.pallino.vicini` col colore, `#legenda-alberi`) e riga «Colori: …» del PNG coerenti.
+- **Tetti ipotizzati** (`edifici_calcoli.js`, `cortiliDi`): cortile solo se il buco è di almeno 25 m² o del 10 % della
+  pianta (Bagno di Romagna, foglio 54 particella 216: un buco di 8 m² occupato da un corpo interno rendeva piano il tetto);
+  stessa regola in `fase10-edifici3d/edifici3d/tetti.py`.
+- **Fonti vuote** (`edificio3d.js`, `ortofoto.js`): con la fonte scelta da sola, la pagina prova la tessera al centro;
+  se il server dice `X-Ortofoto-Vuota: 1` (RER 2023-24 senza immagini, per esempio a Bologna) passa alla fonte successiva
+  e lo scrive; zone ricordate a tessere dello zoom 12. Una scelta a mano non si cambia.
+- `costruisci_pagine.py` aggiorna anche il `?v=` delle pagine di `sito/interno/` (prima a mano).
+
 ## Menu dell'08/11/2026, ricerca col solo comune, apertura su Cesena (decisioni di Paolo, stessa versione `?v=20261107b`)
 
 Per la newsletter del 12/11 il sito mostra come servizi solo quelli usabili.
@@ -186,7 +260,7 @@ Decisioni di Paolo dell'08/11 (sezione I di `AGGIORNAMENTO_2026-11-07.md`):
 Richiesta e decisioni di Paolo dell'08/11: frecce per compensare a occhio gli scarti di 1–5 m tra foto e cartografia
 (F.A.Q. `#sfasamento`).
 
-- `sito/sposta_ortofoto.js` (nuovo, `window.EUGENIO_SPOSTA`): quattro frecce a croce (↑ nord, ↓ sud, ← ovest, → est,
+- `sito/sposta_ortofoto.js` (nuovo, `window.EUGENIO_SPOSTA`): quattro frecce (dal 09/11/2026 su una riga ← ↑ ↓ →; prima a croce) (↑ nord, ↓ sud, ← ovest, → est,
   1 m a clic; con il fuoco su una freccia anche i tasti freccia), stato «Ortofoto spostata: 2 m E, 1 m S» e «Azzera».
   Spostamento della **sola ortofoto**: particelle, contorni, sagome degli edifici e contesto Sentinel-2 restano fermi.
   La pagina cambia solo l'indirizzo delle tessere della sorgente `ortofoto` (`setTiles`, con `&de=…&dn=…` e attesa di
@@ -510,7 +584,7 @@ Decisione di Paolo del 07/11/2026. Due pagine nuove nel gruppo **Patrimonio** (m
 - **Fuori zona**: `coperto(lon, lat)` sui riquadri degli archivi; fuori da tutti, ricerca, punto trascinato/clic e sede
   dal Patrimonio scrivono «il punto è fuori dalla zona coperta dall'archivio degli edifici («DBTR Emilia-Romagna –
   Rimini»): qui il 3D non si può ancora generare»; i riquadri coperti sono tratteggiati, discreti, sulla mappa 2D.
-- **Più archivi** (un archivio DBTR per comune): `archivi.json` fino a 60 archivi, letti solo quelli il cui riquadro tocca
+- **Più archivi** (un archivio DBTR per comune): `archivi.json` fino a 150 archivi (60 fino al 09/11/2026: con gli archivi del 09/11 sono 69), letti solo quelli il cui riquadro tocca
   il punto; archivi della stessa licenza non si escludono; terreno dell'archivio dell'edificio scelto; falde LiDAR
   dall'archivio indicato da `"lidar"`. Ortofoto: contorni dell'archivio 3D da tutti gli archivi di `archivi.json`.
 - **Fonte del 3D**: «DB topografico regionale» per i corpi DBTR (prima la fonte «… da DTM DSM 2008» faceva scrivere «corpi dal

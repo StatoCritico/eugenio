@@ -9,6 +9,8 @@
   python -m edifici3d dtm-server --file DTM5x5_ed2025_SE_7791.zip --uscita /dati/terreno/dtm5_er_se.tif   # COG per /api/terreno
   python -m edifici3d dtm-server --regione veneto --crs EPSG:6876 --file tavole_veneto/ --uscita /dati/terreno/dtm5_veneto_tv.tif
   python -m edifici3d archivi-json --archivio /srv/energia/dati/edifici      # solo DBTR e archivi veri (--con-prova: anche le prove OSM)
+  python -m edifici3d dividi --gpkg 354184/estraz_procons.gpkg --elenco      # estrazione raggruppata: COD_COM → comune ISTAT
+  python -m edifici3d dividi --gpkg 354184/estraz_procons.gpkg --codici D899 --istat 040015 --uscita divisi/gambettola
   python -m edifici3d demo --uscita ../fase5-sito/sito/dati/edifici3d               # dati sintetici per la pagina 3D
   python -m edifici3d ortofoto-sito --sito ospedale-rimini --anno 2023 --archivio … t1.tif t2.tif   # AGEA a mano (Fase B)
 
@@ -18,6 +20,7 @@ Fase C (LiDAR e pipeline notturna; zone in zone/*.toml):
   python -m edifici3d lidar … --subito --max-minuti 20 --tessere 32_78504884   # prova fuori finestra su una tessera
   python -m edifici3d lidar … --aggiorna             # aggiornamento annuale: solo le tessere con fonte cambiata
   python -m edifici3d lidar-stato --stato …          # riepilogo delle zone (lo stesso della pagina di stato)
+  python -m edifici3d lidar-celle --archivio …       # elenco delle celle di falde e alberi in lidar/indice.json (09/11 b)
   python -m edifici3d lidar-fonti --zona rimini [--prova]   # fonti, stato e motivo; --prova controlla dal vivo
   python -m edifici3d campione --uscita /tmp/campione       # campione LiDAR sintetico (prove)
   python -m edifici3d importa-modello edificio.ifc --uscita modello.geojson [--posa …]   # DXF/IFC dell'utente
@@ -289,6 +292,13 @@ def main(argv=None) -> int:
     qa = sub.add_parser("controlla-archivio", help="controlli di qualità di un archivio preparato (indice, celle, altezze, cortili)")
     qa.add_argument("cartella", type=Path, help="…/cc-by/er/<comune>/prodotti")
     qa.add_argument("--punto", nargs=3, action="append", metavar=("LON", "LAT", "NOME"), help="punto che deve cadere in un edificio")
+    dv = sub.add_parser("dividi", help="estrazione DBTR raggruppata → un GeoPackage ridotto per comune (COD_COM, o confine "
+                        "ISTAT per gli edifici senza codice), da passare a prepara --gpkg")
+    dv.add_argument("--gpkg", type=Path, nargs="+", required=True, help="estrazioni (GeoPackage o cartelle Shapefile)")
+    dv.add_argument("--codici", nargs="+", default=[], help="codici catastali COD_COM del comune (es. A944)")
+    dv.add_argument("--istat", nargs="+", default=[], help="codici ISTAT del comune per gli edifici senza COD_COM (es. 037006)")
+    dv.add_argument("--uscita", type=Path, help="cartella: <uscita>/<estrazione>/estraz_procons.gpkg")
+    dv.add_argument("--elenco", action="store_true", help="solo l'elenco dei COD_COM con il comune ISTAT che li contiene")
     aj = sub.add_parser("archivi-json", help="scrive <archivio>/archivi.json dagli archivi presenti (DBTR dei comuni prima; "
                         "le prove OSM solo con --con-prova)")
     aj.add_argument("--archivio", type=Path, required=True)
@@ -308,6 +318,9 @@ def main(argv=None) -> int:
     li.add_argument("--max-minuti", type=float); li.add_argument("--tessere", nargs="+")
     li.add_argument("--aggiorna", action="store_true", help="ricontrolla le tessere fatte (aggiornamento annuale)")
     ls = sub.add_parser("lidar-stato"); ls.add_argument("--stato", type=Path, required=True)
+    lce = sub.add_parser("lidar-celle", help="elenco delle celle di falde e alberi in ogni lidar/indice.json dell'archivio "
+                                             "(la pagina 3D chiede solo quelle; 09/11/2026 b)")
+    lce.add_argument("--archivio", type=Path, required=True)
     lf = sub.add_parser("lidar-fonti"); lf.add_argument("--zona", default="rimini"); lf.add_argument("--prova", action="store_true")
     lc = sub.add_parser("lidar-copertura", help="maschera della copertura di una fonte (zone/coperture/), una richiesta")
     lc.add_argument("--zona", required=True); lc.add_argument("--fonte", required=True); lc.add_argument("--passo", type=float, default=100.0)
@@ -424,6 +437,16 @@ def main(argv=None) -> int:
         r = controlla_archivio(a.cartella, [(float(x), float(y), n) for x, y, n in (a.punto or [])])
         print(json.dumps(r, ensure_ascii=False, indent=1))
         return 0 if not r["problemi"] else 1
+    if a.cmd == "dividi":
+        from . import dividi as DV
+        if a.elenco:
+            _, codici = DV.edifici(a.gpkg)
+            print(json.dumps(codici, ensure_ascii=False, indent=1))
+            return 0
+        if not a.uscita or not a.codici:
+            p.error("dividi: servono --codici e --uscita (o --elenco)")
+        print(json.dumps(DV.dividi(a.gpkg, a.codici, a.istat, a.uscita), ensure_ascii=False, indent=1))
+        return 0
     if a.cmd == "archivi-json":
         print(json.dumps(scrivi_archivi_json(a.archivio, prova=a.con_prova and not a.senza_prova), ensure_ascii=False, indent=1))
         return 0
@@ -466,6 +489,10 @@ def main(argv=None) -> int:
             print(f"{z.get('nome')} ({z.get('zona')}): {z.get('conteggi')} su {z.get('totale_tessere')} tessere; "
                   f"ultima esecuzione: {(z.get('esecuzioni') or [{}])[-1].get('esito', '—')}")
         print(json.dumps(r, ensure_ascii=False, indent=1)[:4000])
+        return 0
+    if a.cmd == "lidar-celle":
+        from . import pipeline as PL
+        print(json.dumps(PL.aggiorna_celle_archivio(a.archivio), ensure_ascii=False, indent=1))
         return 0
     if a.cmd == "lidar-fonti":
         return _fonti(a)

@@ -12,6 +12,9 @@
 #   zoom        [minimo, massimo] delle tessere servite
 #   riquadro    [lon_min, lat_min, lon_max, lat_max] WGS84: fuori dal riquadro il proxy non chiama la fonte
 #   ritmo       chiamate al secondo verso la fonte (tutti gli utenti insieme) e massimo all'ora
+#   trasparente true = si chiede PNG con TRANSPARENT=TRUE (zone senza dati trasparenti, tessere vuote dichiarate)
+#   segnaposto  true = le tessere piccole e quasi tutte bianche (segnaposto con una scritta, fuori dalla zona della
+#               fonte) diventano vuote (PNG trasparente, X-Ortofoto-Vuota: 1) e la pagina passa alla fonte successiva
 #
 # Prova dal container di sviluppo del 04/11/2026: GetCapabilities e GetMap del WMS rer2023_24_rgb rispondono (JPEG
 # 256×256 su Rimini, strato RER2023_24_RGB, EPSG:3857 tra i sistemi offerti, AccessConstraints e Fees vuoti). La
@@ -39,5 +42,5 @@ attiva = true
 cache = true
 zoom = [12, 20]
 riquadro = [9.19, 43.73, 12.84, 45.16]
-ritmo = { al_secondo = 4, all_ora = 6000 }
+ritmo = { al_secondo = 8, all_ora = 6000 }   # 09/11/2026: 4 → 8 al secondo (misurate 0,3–0,5 s a tessera con 4 richieste insieme)
 priorita = 1

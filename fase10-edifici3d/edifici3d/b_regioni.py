@@ -17,7 +17,9 @@ file insieme, e si scrive un GeoJSON «pronto» che `prepara-regione --file` leg
   diverse: si tiene la più alta);
 - `fvg-wfs`: CTRN ed. 2 del FVG da più strati (fogli) del WFS, nel confine del comune;
 - `toscana-dtm`: DTM LiDAR 2023 del Comune di Firenze (zip di tessere ASCII 0,5 m, Deflate64) → GeoTIFF a passo più
-  grosso, una tessera alla volta (`unzip -p`), senza estrarre lo zip.
+  grosso, una tessera alla volta (`unzip -p`), senza estrarre lo zip;
+- `dbgt-fogli` (09/11/2026): `UN_VOL` di più fogli 1:50.000 del DBGT 2014 del Lazio → GeoPackage del solo comune
+  (`COD_ISTAT`; codice vuoto o «058000»: punto interno nel confine ISTAT), doppioni ai bordi tolti, id controllati.
 
 Confine del comune: i file `dati/mappa/RR.json` del sito (ISTAT, unità amministrative 2026 generalizzate, CC BY 4.0,
 percorsi SVG in UTM 32N con la scala di `fase3-storico/meteo_storico/comuni.py`), con un margine (150 m) perché sono
@@ -30,6 +32,7 @@ Comandi (dalla cartella fase10-edifici3d):
   python -m edifici3d.b_regioni puglia-dtm --asc 438061_asc.zip … --crs EPSG:25833 --uscita dtm_bari_25833.tif
   python -m edifici3d.b_regioni marche-dbgt --edifici edificio.zip --punti punto_quotato.zip --istat 042002 --uscita ancona.geojson
   python -m edifici3d.b_regioni palermo-uv --file unita_volumetriche_7792.zip --uscita palermo_uv.geojson
+  python -m edifici3d.b_regioni dbgt-fogli --shp rm364/UN_VOL.shp rm374/UN_VOL.shp … --istat 058091 --uscita roma_un_vol.gpkg
   python -m edifici3d.b_regioni fvg-wfs --istat 032006 --strati EDIFICI:EDIFICATO_CTRN_ED2_110 EDIFICI:EDIFICATO_CTRN_ED2_131 --uscita trieste.geojson
 """
 from __future__ import annotations
@@ -52,7 +55,8 @@ UA = {"User-Agent": "EuGEnio-edifici3d (eugenio.statocritico.it)"}
 
 # scala dei percorsi SVG dei file di mappa del sito (confini_gl.js): svg = S·E + AX, −S·N + AY, in UTM 32N (WGS84)
 _S, _AX, _AY = 0.0010012596459353985, -313.67365575107954, 5226.851664605516
-REGIONE_ISTAT = {"048": "09", "072": "16", "042": "11", "082": "19", "032": "06"}   # provincia → regione (i 5 comuni)
+REGIONE_ISTAT = {"048": "09", "072": "16", "042": "11", "082": "19", "032": "06", "058": "12",   # provincia → regione
+                 **{p: "08" for p in ("033", "034", "035", "036", "037", "038", "039", "040", "099")}}   # ER (09/11/2026)
 
 
 # --------------------------------------------------------------------------------------------- confine del comune
@@ -652,6 +656,85 @@ def fvg_wfs(fonte: dict, strati: list[str], riquadro, dest: Path, confine=None, 
     return {"oggetti": len(feat), "strati": per_strato, "file": str(dest)}
 
 
+# --------------------------------------------------------------------------------------------- DBGT per fogli (Lazio)
+CODICI_VUOTI = ("", "None", "000000")
+
+
+def dbgt_fogli(shp: list[Path], dest: Path, istat: str, confine=None, campo_istat: str = "COD_ISTAT",
+               campo_id: str = "CLASSID", campo_altezza: str = "UN_VOL_AV") -> dict:
+    """UN_VOL di più fogli 1:50.000 del DBGT (Lazio 2014: uno zip per foglio) → un GeoPackage del solo comune `istat`,
+    con la geometria originale (PolygonZ) e tutti i campi. Si tiene un volume se `COD_ISTAT` = `istat`; se il codice
+    manca o è di comodo (`058000`, cioè provincia + 000) decide il punto interno nel `confine` (ISTAT, senza margine).
+    Doppioni ai bordi dei fogli: stessa geometria (vertici al cm, forma normalizzata) e stessa altezza → tolto; un id
+    già visto con geometria diversa prende il suffisso del foglio."""
+    import warnings
+    import numpy as np
+    import pyogrio.raw as PR
+    import shapely
+    if confine is not None:
+        shapely.prepare(confine)
+    nomi, crs, wkb, valori = None, None, [], []
+    visti_g, visti_id, per_foglio, note = set(), set(), {}, Counter()
+    for f in shp:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            meta, _fid, geom, campi = PR.read(str(f))
+        if nomi is None:
+            nomi, crs = list(meta["fields"]), meta.get("crs")
+        if list(meta["fields"]) != nomi:
+            raise ValueError(f"{f}: campi diversi dal primo foglio")
+        i_ist, i_id = nomi.index(campo_istat), nomi.index(campo_id)
+        i_h = nomi.index(campo_altezza) if campo_altezza in nomi else None
+        gg = shapely.from_wkb(geom)
+        dentro = (shapely.contains(confine, shapely.point_on_surface(gg)) if confine is not None
+                  else np.zeros(len(gg), dtype=bool))
+        foglio = re.search(r"(\d{3})", Path(f).parent.name + Path(f).name)
+        foglio = foglio.group(1) if foglio else Path(f).parent.name
+        c = Counter(letti=len(gg))
+        for k, g in enumerate(gg):
+            cod = str(campi[i_ist][k] or "").strip()
+            if g is None or g.is_empty:
+                c["senza geometria"] += 1
+                continue
+            if cod == istat:
+                c["codice del comune"] += 1
+            elif cod in CODICI_VUOTI or cod == istat[:3] + "000":
+                if not dentro[k]:
+                    c["codice vuoto, fuori dal confine"] += 1
+                    continue
+                c["codice vuoto, nel confine"] += 1
+            else:
+                c["altro comune"] += 1
+                continue
+            h = campi[i_h][k] if i_h is not None else None
+            chiave = (shapely.to_wkb(shapely.normalize(shapely.set_precision(g, 0.01)), output_dimension=3), str(h))
+            if chiave in visti_g:
+                c["doppioni tolti"] += 1
+                continue
+            visti_g.add(chiave)
+            vid = str(campi[i_id][k])
+            if vid in visti_id:
+                note["id ripetuti (suffisso del foglio)"] += 1
+                vid = f"{vid}_{foglio}"
+                campi[i_id][k] = vid
+            visti_id.add(vid)
+            wkb.append(geom[k])
+            valori.append([campi[j][k] for j in range(len(nomi))])
+            c["tenuti"] += 1
+        per_foglio[foglio] = dict(c)
+    if not wkb:
+        raise ValueError(f"nessun volume del comune {istat} nei fogli")
+    dest = Path(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_name(dest.stem + ".tmp.gpkg")
+    tmp.unlink(missing_ok=True)
+    colonne = [np.array([r[j] for r in valori], dtype=object) for j in range(len(nomi))]
+    PR.write(str(tmp), np.array(wkb, dtype=object), colonne, fields=nomi, crs=crs, driver="GPKG",
+             geometry_type="Unknown", layer="un_vol")
+    tmp.replace(dest)
+    return {"tenuti": len(wkb), "fogli": per_foglio, **dict(note), "file": str(dest)}
+
+
 # --------------------------------------------------------------------------------------------- comandi
 def main(argv=None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -685,7 +768,16 @@ def main(argv=None) -> int:
     t.add_argument("--passo", type=float, default=2.0); t.add_argument("--riquadro", nargs=4, type=float)
     t.add_argument("--istat", help="tessere che toccano il confine del comune (riquadro)")
     t.add_argument("--confini", type=Path)
+    u = sub.add_parser("dbgt-fogli", help="UN_VOL di più fogli DBGT (Lazio) → GeoPackage del solo comune, senza doppioni")
+    u.add_argument("--shp", type=Path, nargs="+", required=True, help="UN_VOL.shp dei fogli (estratti dagli zip)")
+    u.add_argument("--istat", required=True); u.add_argument("--uscita", type=Path, required=True)
+    u.add_argument("--crs", default="EPSG:25833", help="sistema dei file (per il confine ISTAT)")
+    u.add_argument("--confini", type=Path)
     a = p.parse_args(argv)
+    if a.cmd == "dbgt-fogli":
+        esito = dbgt_fogli(a.shp, a.uscita, a.istat, confine_comune(a.istat, a.crs, 0, a.confini))
+        print(json.dumps(esito, ensure_ascii=False, indent=1))
+        return 0
     sistemi = {"toscana-wfs": "EPSG:3003", "puglia-ctr": "EPSG:32633", "marche-dbgt": "EPSG:7792", "palermo-uv": "EPSG:7792",
                "fvg-wfs": "EPSG:6708", "toscana-dtm": "EPSG:7791"}
     confine = confine_comune(a.istat, sistemi[a.cmd], cartella=a.confini) if getattr(a, "istat", None) else None

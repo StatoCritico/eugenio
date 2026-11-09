@@ -451,3 +451,28 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
 - **Ricerca** (`cerca_luogo.js`): stessi due moduli in Ortofoto e Modelli 3D (`.cerca-edificio`), con la riga
   `#messaggio-cerca` che cita la fonte del punto (ANNCSU o Zornade come collegamento); il punto è un pallino nel colore
   principale con il bordo bianco; in Modelli 3D si trascina (cursore «move», poi «grabbing»).
+
+## Sotto la mappa: frecce, limiti, colore degli edifici, ricerca (09/11/2026)
+
+- **Frecce dell'ortofoto** (`.sposta-ortofoto`): una sola riga, mai a capo: quattro frecce quadrate di 1,85 rem (← ↑ ↓ →),
+  «1 m» in tenue, lo stato (`.sposta-stato`, accorciato con i puntini e intero nel `title`; in grassetto quando la foto è
+  spostata) e «Azzera» (`.bottone.secondario.piccolo`). Il contenitore `#sposta-ortofoto` si restringe (`min-width: 0`).
+- **Nota dei limiti** (`.aiuto.nota-limiti`, creata da `protezione.js`): stesso testo delle altre note sotto la mappa, ma
+  con il colore dell'inchiostro, in grassetto e con il bordo sinistro `--attenzione` (come `.fonti-corpi` usa il primario):
+  si vede, non è un errore rosso. Va **subito sotto la mappa, prima di «Genera il 3D»** (`#comandi-edificio`) o dei comandi
+  di Ortofoto; sparisce da sola quando la fonte risponde.
+- **Colore degli edifici** (Modelli 3D e pagine 3D): menu a discesa con le classi del menu dell'asterisco della testata
+  (`.vestito.colore-edifici`, `.vestito-pulsante`, `.vestito-elenco.a-discesa`, voce scelta «in uso»), ma il pulsante è
+  una pillola con un quadratino del colore (`.campione-colore`) e il nome; l'elenco si apre verso destra (`left: 0`). Colori
+  fissi uguali nei due temi (giallo `#e0b400`, rosso `#c62828`, indaco `#4757c9`, violetto `#8a4fd0`; grigio = `--serie-6`
+  del tema); l'edificio scelto resta nel colore principale del vestito, gli edifici OSM marroni `#9a6440`. Accanto la
+  casella «Alberi» (`label.casella-strato`), pallino `.pallino.alberi` `#5f9a45` in legenda. Dal 09/11/2026 b sotto la
+  mappa (vedi sotto), non più nel pannello di destra.
+- **Ricerca** (09/11/2026 b): **un solo modulo** `.cerca-edificio form.cerca-modulo` a righe (`.riga-cerca`): Comune
+  (tutta la larghezza), Indirizzo (tutta la larghezza), Foglio e Particella affiancati (`.riga-catasto`, ognuno almeno
+  8rem; sotto 600 px metà e metà), poi `.riga-pulsanti` con «Cerca l'indirizzo», «Cerca la particella» e un solo «Reset»
+  (`.cerca-reset`), tutti `.bottone.secondario`; modulo al più 36rem. Niente più due blocchi con due «Comune».
+- **Colore e Alberi sotto la mappa** (09/11/2026 b): `.aspetto-3d` sta in `.comandi-edificio`, dopo `#sposta-ortofoto`
+  (che prende solo il suo spazio, `flex: 0 1 auto`; stato al più 10rem con i puntini); etichetta visibile breve «Colore»,
+  nome intero nel `title`. A colonna stretta il gruppo va a capo intero.
+- **Clic sulla mappa**: non sposta mai la vista (regione e comune si evidenziano con il bordo nel colore principale).

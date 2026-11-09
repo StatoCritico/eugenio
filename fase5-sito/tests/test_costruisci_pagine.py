@@ -108,8 +108,9 @@ def test_gruppo_attivo(sito):
     assert "indicatori.html" not in altre and ">Indicatori<" not in s
     assert "<h1>Costi energetici Sanità</h1>" in s and "Costi energetici Sanità</title>" in s
     assert "Servizio sperimentale non ancora verificato" not in s     # validata: niente avviso né «S» nel menu
-    # dal 07/11/2026 sera anche Dati climatici e Legge 10 sono validate: niente avviso né «S» nel menu
-    for nome in ("dati.html", "legge10.html"):
+    # dal 07/11/2026 sera anche Dati climatici e Legge 10 sono validate: niente avviso né «S» nel menu; dal 09/11/2026
+    # anche Previsioni (index.html)
+    for nome in ("dati.html", "legge10.html", "index.html"):
         s = (sito / nome).read_text(encoding="utf-8")
         assert "Servizio sperimentale non ancora verificato" not in s, nome
         assert not re.search(r'href="%s">[^<]*<span class="cantiere' % re.escape(nome), s), nome
@@ -703,7 +704,9 @@ def test_novita_versione_feed_e_menu():
     for x in ("anti-robot", "Turnstile", "llms.txt", "assistente AI", "agenti", "proxy", "PMTiles", "WMS", "Caddy", "cache",
               "rotta", "menu"):
         assert x.lower() not in testo.lower(), x
-    assert any("Dati climatici" in r and "Legge 10" in r for r in voci[0]["verificato"])
+    v07b = next(v for v in voci if v.get("versione") == "20261107b")          # (09/11/2026: non è più la prima voce)
+    assert any("Dati climatici" in r and "Legge 10" in r for r in v07b["verificato"])
+    assert any("Previsioni" in r for r in next(v for v in voci if v.get("versione") == "20261109a")["verificato"])
     with pytest.raises(SystemExit, match="campi sconosciuti"):
         f = Path(__import__("tempfile").mkdtemp()) / "c.toml"
         f.write_text('[[voce]]\ndata = "2026-11-01"\nversione = "20261101a"\ntitolo = "X"\ncorretto = ["a"]\n', encoding="utf-8")
@@ -781,7 +784,7 @@ def test_nessun_collegamento_interno_alle_pagine_in_lavorazione(sito):
     testo = json.dumps(voci, ensure_ascii=False)
     for vecchio in ("Edificio ›", "Fotovoltaico:", "Cogenerazione ›", "Le pagine Edificio", "pagine 3D"):
         assert vecchio not in testo, vecchio
-    assert any("Clima e meteo › Cambiamento climatico" in x for x in voci[0].get("migliorato", []))
+    assert any("Clima e meteo › Cambiamento climatico" in x for x in next(v for v in voci if v.get("versione") == "20261107b").get("migliorato", []))
 
 
 def test_stesso_gruppo_ed_etichetta_dal_menu(sito):
@@ -817,3 +820,23 @@ def test_ricerca_esempio_cesena_e_partenza():
     assert "partenza()" in (QUI / "sito" / "edificio3d.js").read_text(encoding="utf-8")
     assert "P0.zoom" in (QUI / "sito" / "ortofoto.js").read_text(encoding="utf-8")
     assert 'placeholder="Es. viale Ghirotti 286, Cesena' in (QUI / "sito" / "index.html").read_text(encoding="utf-8")
+
+
+def test_confini_json_validi_per_il_browser():
+    """09/11/2026 (prove J10, «Comune "torino" non trovato»): 01.json aveva un NaN (comune «None» di Torino) e 15.json 92
+    NaN (sigla «NA» di Napoli): JSON.parse del browser falliva e tutto il Piemonte e la Campania mancavano. Ogni file deve
+    essere JSON stretto, con nome e sigla di provincia testuali per tutti i comuni."""
+    import json
+    cartella = Path(__file__).resolve().parents[1] / "sito" / "dati" / "mappa"
+    def no_nan(x):
+        raise ValueError(f"valore non JSON: {x}")
+    n = 0
+    for f in sorted(cartella.glob("[0-9][0-9].json")):
+        d = json.loads(f.read_text(encoding="utf-8"), parse_constant=no_nan)
+        for c in d["comuni"]:
+            assert isinstance(c["nome"], str) and c["nome"] and isinstance(c["prov"], str) and c["prov"], (f.name, c["istat"])
+            n += 1
+    assert n > 7800
+    d = {c["istat"]: c for c in json.loads((cartella / "01.json").read_text(encoding="utf-8"))["comuni"]}
+    assert d["001272"]["nome"] == "Torino" and d["001168"]["nome"] == "None"
+    assert all(c["prov"] == "NA" for c in json.loads((cartella / "15.json").read_text(encoding="utf-8"))["comuni"] if c["istat"].startswith("063"))

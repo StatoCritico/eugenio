@@ -21,7 +21,7 @@ def elenco_istat() -> tuple[pd.DataFrame, str]:
     r = httpx.get(ISTAT_ELENCO, timeout=120, follow_redirects=True)
     r.raise_for_status()
     sha = hashlib.sha256(r.content).hexdigest()
-    el = pd.read_csv(io.BytesIO(r.content), sep=";", encoding="latin-1", dtype=str)
+    el = pd.read_csv(io.BytesIO(r.content), sep=";", encoding="latin-1", dtype=str, keep_default_na=False, na_values=[""])  # «None» e «NA» restano testi (09/11/2026)
     df = pd.DataFrame({"istat": el.iloc[:, 4].str.zfill(6), "nome": el.iloc[:, 6], "provincia": el.iloc[:, 14],
                        "belfiore": el.iloc[:, 19], "regione_cod": el.iloc[:, 0].str.zfill(2)})
     return df, sha

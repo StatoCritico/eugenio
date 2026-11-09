@@ -230,3 +230,28 @@ def test_piu_dtm_veneto_in_6876_il_piu_dettagliato_prima(client, tmp_path, monke
     assert r2.headers["x-terreno-copia"] == "si" and r2.headers["x-terreno-nome"] == r.headers["x-terreno-nome"]
     f = cl.get("/api/terreno/fonti").json()["dtm"]
     assert {d["licenza"] for d in f} >= {"IODL 2.0"} and any(d.get("data") for d in f)
+
+
+def test_quote_dei_punti_con_il_ripiego_copernicus(client, monkeypatch):
+    """09/11/2026 b: `quote_punti(ripiego=True)` dà la quota del DTM regionale dove c'è e del Copernicus DEM altrove (una
+    finestra sola, bilineare); senza ripiego i punti fuori restano senza quota, come prima."""
+    from servizio import orizzonte as O
+    rg = O.RIGHE_GRADO
+
+    def finestra(lat, lon, raggio):                    # Copernicus simulato: quota = 100 + 1000·(lat − 45)
+        r0, c0 = math.floor((lat - 0.05) * rg), math.floor((lon + 180 - 0.05) * rg)
+        n = int(0.1 * rg) + 2
+        la = (r0 + np.arange(n) + 0.5) / rg
+        return np.broadcast_to((100 + 1000 * (la - 45))[:, None], (n, n)).copy(), r0 / rg, c0 / rg - 180
+    monkeypatch.setattr(O, "finestra_dem", finestra)
+    dentro, fuori = (11.80, 44.21), (12.256, 45.854)    # Brisighella (DTM di prova), Susegana (nessun DTM)
+    fonti = []
+    q = T.quote_punti([dentro, fuori], ripiego=True, fonti=fonti)
+    assert q[0] is not None and 100 < q[0] < 300 and abs(q[1] - (100 + 1000 * 0.854)) < 1.0, q
+    assert fonti == ["dtm", "copernicus"]
+    assert T.quote_punti([fuori]) == [None]
+
+    def rotto(*a):
+        raise OSError("S3 non raggiungibile")
+    monkeypatch.setattr(O, "finestra_dem", rotto)
+    assert T.quote_punti([fuori], ripiego=True) == [None]

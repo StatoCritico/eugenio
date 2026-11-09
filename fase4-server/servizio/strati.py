@@ -337,11 +337,18 @@ def tessera(request: Request, sid: str, z: int, x: int, y: int, ext: str):
         raise HTTPException(404, "Strato non disponibile")
     if ext != s.estensione or (s.tipo == "overpass" and z != ZOOM_OSM) or not _dentro(s, z, x, y):
         raise HTTPException(404, "Tessera fuori dalla zona o dagli zoom dello strato")
-    P.limita(request, "ortofoto")
     p = C.CARTELLA_ORTOFOTO / "strati" / s.id / str(z) / str(x) / f"{y}.{s.estensione}"
     tipo = "application/json" if s.tipo == "overpass" else "image/png"
     dati = O.leggi_copia(p)
-    if dati is None:
+    if dati is not None:
+        P.limita(request, "tessere_copia")             # dalla copia: tetto anti-abuso (09/11/2026)
+    else:
+        # (09/11/2026) dalla fonte: le tessere OSM consumano Overpass come il ripiego degli edifici (stesso limite per IP
+        # e stesso tetto per tutto il sito), particelle e contorni regionali il loro limite «strati»
+        P.limita(request, "edifici_osm" if s.tipo == "overpass" else "strati")
+        if s.tipo == "overpass" and not P.tetto_globale("overpass", C.EDIFICI_OSM_TETTO_ORA):
+            raise HTTPException(503, "Gli edifici OpenStreetMap hanno esaurito la quota di quest'ora per tutti gli utenti "
+                                     "del sito: riprova più tardi.", headers={"Retry-After": "600"})
         fine = time.monotonic() + C.ORTOFOTO_ATTESA_S
         while (attesa := O.ritmo.prova(s)) and time.monotonic() + attesa <= fine:
             time.sleep(attesa)

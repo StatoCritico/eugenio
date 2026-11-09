@@ -9,6 +9,8 @@
 // sessione (POST /api/sessione, valido mezz'ora) e lo manda nell'intestazione X-EuGEnio-Sessione. Se il server
 // risponde 401 con X-EuGEnio-Verifica (sessione scaduta, rete cambiata, api riavviata) rifà la verifica una volta
 // e ripete la richiesta. Senza verifica sul server (prove, mirror) non fa nulla.
+// Dal 09/11/2026 gestisce anche i limiti orari delle fonti della mappa (429 di ortofoto, strati, edifici OSM, terreno):
+// pausa della fonte per il tempo del Retry-After e nota sotto la mappa (vedi «limiti orari delle fonti della mappa»).
 (function () {
   "use strict";
   const PROTETTE = /\/api\/(previsione|patrimonio|geocodifica|particella|storici\/estrai|edifici\/osm|dbtr\/inizia)(?:[/?#]|$)/;
@@ -155,9 +157,164 @@
     return originale(input, opts);
   }
 
+  // ------------------------------------------------------------------ limiti orari delle fonti della mappa (09/11/2026)
+  // Prove J10 di Paolo: dopo il primo 429 la mappa chiedeva ancora migliaia di tessere, tutte rifiutate (righe rosse in
+  // Console, ortofoto e terreno neri). Ora un 429 di ortofoto, strati (particelle e contorni), edifici OpenStreetMap o
+  // terreno ferma le richieste di quella fonte per il tempo indicato dal server (Retry-After, tra 30 secondi e 20 minuti):
+  // nel frattempo la pagina risponde da sé con un 429 «finto», senza rete (niente righe in Console né carico sul server).
+  // Sotto la mappa, prima di «Genera il 3D» (o dei comandi di Ortofoto), una nota dice quale fonte è ferma, che è il
+  // limite orario e tra quanto riprova; finita la pausa le pagine ricaricano le tessere (evento «eugenio:limite») e la
+  // nota sparisce alla prima risposta buona della fonte.
+  const FONTI_LIMITE = {
+    ortofoto: "Ortofoto", strati: "Particelle catastali e contorni degli edifici", edifici_osm: "Edifici OpenStreetMap",
+    terreno: "Terreno 3D", tessere_copia: "Tessere della mappa (ortofoto, particelle, terreno)", edifici_osm_copia: "Edifici OpenStreetMap" };
+  // un limite della copia ferma tutte le famiglie che ne dipendono
+  const COPRE = { tessere_copia: ["ortofoto", "strati", "terreno"], edifici_osm_copia: ["edifici_osm"] };
+  const PAUSA_MIN_S = 30, PAUSA_MAX_S = 1200;
+  const pause = {};            // tipo → { fino, prova } (prova: pausa finita, si aspetta la prima risposta buona)
+  let nota = null, orologio = null;
+  function famigliaDi(url) {
+    let pth;
+    try { pth = new URL(url, location.href).pathname; } catch (e) { return null; }
+    if (/^\/api\/terreno\/\d/.test(pth)) return "terreno";
+    if (/^\/api\/edifici\/osm(?:[/?#]|$)/.test(pth)) return "edifici_osm";
+    const m = /^\/api\/ortofoto\/strati\/([^/]+)\/\d/.exec(pth);
+    if (m) return /osm/.test(m[1]) ? "edifici_osm" : "strati";
+    if (/^\/api\/ortofoto\/(?!fonti|strati)[^/]+\/\d+\/\d+\/\d+\./.test(pth)) return "ortofoto";
+    return null;
+  }
+  function inPausa(fam) {
+    const ora = Date.now();
+    for (const [tipo, p] of Object.entries(pause)) {
+      if (p.fino <= ora) continue;
+      if (tipo === fam || (COPRE[tipo] || []).includes(fam)) return p;
+    }
+    return null;
+  }
+  function minuti(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    if (s < 60) return `${s} secondi`;
+    const m = Math.ceil(s / 60);
+    return m === 1 ? "1 minuto" : `${m} minuti`;
+  }
+  // dove va la nota: sotto la mappa, prima di «Genera il 3D» (#comandi-edificio) o dei comandi di Ortofoto; altrimenti
+  // subito dopo la prima mappa della pagina
+  function preparaNota() {
+    if (nota && document.body.contains(nota)) return nota;
+    nota = document.getElementById("nota-limiti");
+    if (!nota) {
+      nota = document.createElement("p");
+      nota.id = "nota-limiti"; nota.className = "aiuto nota-limiti"; nota.setAttribute("role", "status"); nota.setAttribute("aria-live", "polite");
+      nota.hidden = true;
+      const prima = document.getElementById("comandi-edificio") || document.querySelector(".comandi-ortofoto");
+      const mappa = document.querySelector(".mappa-gl, .mappa");
+      if (prima && prima.parentNode) prima.parentNode.insertBefore(nota, prima);
+      else if (mappa && mappa.parentNode) mappa.after(nota);
+      else (document.querySelector("main") || document.body).prepend(nota);
+    }
+    return nota;
+  }
+  function disegnaNota() {
+    const ora = Date.now(), righe = [];
+    for (const [tipo, p] of Object.entries(pause)) {
+      const nome = FONTI_LIMITE[tipo] || tipo;
+      if (p.fino > ora) righe.push(`${nome}: raggiunto il limite orario di richieste per il tuo indirizzo. Mi fermo e riprovo da solo tra ${minuti(p.fino - ora)}.`);
+      else righe.push(`${nome}: riprovo adesso…`);
+    }
+    const n = preparaNota();
+    if (!n) return;
+    n.textContent = righe.join(" ");
+    n.hidden = !righe.length;
+    if (!righe.length && orologio) { clearInterval(orologio); orologio = null; }
+  }
+  function riprendi(tipo) {
+    const p = pause[tipo];
+    if (!p || p.prova) return;
+    p.prova = true;
+    disegnaNota();
+    document.dispatchEvent(new CustomEvent("eugenio:limite", { detail: { tipo, famiglie: [tipo, ...(COPRE[tipo] || [])], fermo: false } }));
+  }
+  function ferma(tipo, secondi) {
+    const s = Math.min(PAUSA_MAX_S, Math.max(PAUSA_MIN_S, Number.isFinite(secondi) ? secondi : 180));
+    const vecchia = pause[tipo];
+    if (vecchia && vecchia.fino > Date.now() && !vecchia.prova) return;      // già ferma: un solo messaggio
+    pause[tipo] = { fino: Date.now() + s * 1000, prova: false };
+    if (vecchia && vecchia.timer) clearTimeout(vecchia.timer);
+    pause[tipo].timer = setTimeout(() => riprendi(tipo), s * 1000);
+    if (window.console && console.info) console.info(`EuGEnio: ${FONTI_LIMITE[tipo] || tipo} ferma per ${Math.round(s)} s (limite orario raggiunto)`);
+    disegnaNota();
+    if (!orologio) orologio = setInterval(disegnaNota, 15000);
+    document.dispatchEvent(new CustomEvent("eugenio:limite", { detail: { tipo, famiglie: [tipo, ...(COPRE[tipo] || [])], fermo: true, secondi: s } }));
+  }
+  function rispostaBuona(fam) {
+    let cambiato = false;
+    for (const [tipo, p] of Object.entries(pause)) {
+      if (p.fino > Date.now()) continue;
+      if (tipo === fam || (COPRE[tipo] || []).includes(fam)) { delete pause[tipo]; cambiato = true; }
+    }
+    if (cambiato) disegnaNota();
+  }
+  async function conLimiti(fam, chiama) {
+    const p = inPausa(fam);
+    if (p) {
+      return new Response(JSON.stringify({ detail: "Fonte ferma per il limite orario: riprovo più tardi." }), {
+        status: 429, headers: { "Content-Type": "application/json; charset=utf-8", "X-EuGEnio-Pausa": "1",
+          "Retry-After": String(Math.ceil((p.fino - Date.now()) / 1000)) } });
+    }
+    const r = await chiama();
+    if (r.status === 429) {
+      const tipo = r.headers.get("X-EuGEnio-Limite") || fam;
+      ferma(FONTI_LIMITE[tipo] ? tipo : fam, parseInt(r.headers.get("Retry-After") || "", 10));
+    } else if (r.ok) rispostaBuona(fam);
+    return r;
+  }
+  // mappa MapLibre: gli errori delle tessere (429, 503, 404 fuori zona) non vanno in Console uno per uno (MapLibre scrive
+  // console.error per ogni tessera se nessuno ascolta «error»); finita una pausa si ricaricano le sorgenti di quella fonte
+  function collega(m) {
+    if (!m || m.__eugenioLimiti) return;
+    m.__eugenioLimiti = true;
+    let avvisati = 0;
+    m.on("error", (e) => {
+      const st = e && e.error && (e.error.status || (/\((\d{3})\)/.exec(String(e.error.message || "")) || [])[1]);
+      if (e && (e.tile || e.sourceId) && /^(4|5)\d\d$/.test(String(st || ""))) return;      // tessera rifiutata: la nota basta
+      if (avvisati++ < 3 && window.console) console.warn("Mappa:", (e && e.error && e.error.message) || e);
+    });
+    document.addEventListener("eugenio:limite", (ev) => {
+      if (!ev.detail || ev.detail.fermo) return;
+      const fam = ev.detail.famiglie || [];
+      let stile;
+      try { stile = m.getStyle(); } catch (e) { return; }
+      const strati = (stile && stile.layers) || [];
+      for (const [id, def] of Object.entries((stile && stile.sources) || {})) {
+        const t = def && def.tiles && def.tiles[0];
+        if (!t || !fam.includes(famigliaDi(t.replace(/\{[xyz]\}/g, "1")))) continue;
+        // si tolgono e si rimettono sorgente e strati, nello stesso ordine: ricaricare le tessere raster finite in errore
+        // (setTiles o refreshTiles) fa fallire il disegno dentro MapLibre 5 (TypeError «reading 'bind'»)
+        try {
+          const usa = strati.map((l, k) => [l, k]).filter(([l]) => l.source === id);
+          const dopo = usa.map(([, k]) => { const s2 = strati.slice(k + 1).find((l) => l.source !== id && m.getLayer(l.id)); return s2 ? s2.id : undefined; });
+          const terreno = m.getTerrain && m.getTerrain();
+          const sotto = terreno && terreno.source === id;
+          if (sotto) m.setTerrain(null);
+          usa.forEach(([l]) => { if (m.getLayer(l.id)) m.removeLayer(l.id); });
+          m.removeSource(id);
+          m.addSource(id, def);
+          usa.forEach(([l], k) => m.addLayer(l, dopo[k] && m.getLayer(dopo[k]) ? dopo[k] : undefined));
+          if (sotto) m.setTerrain(terreno);
+        } catch (e) { /* sorgente cambiata nel frattempo: la pagina la rifà da sé */ }
+      }
+    });
+  }
+  window.EUGENIO_LIMITI = { famigliaDi, inPausa, ferma, riprendi, pause, collega, FONTI: FONTI_LIMITE };
+
   window.fetch = async function (input, init) {
     const url = indirizzo(input);
-    if (!PROTETTE.test(url)) return originale(input, init);
+    const fam = famigliaDi(url);
+    if (!PROTETTE.test(url)) return fam ? conLimiti(fam, () => originale(input, init)) : originale(input, init);
+    if (fam) return conLimiti(fam, () => protetta(url, input, init));
+    return protetta(url, input, init);
+  };
+  async function protetta(url, input, init) {
     const b = base(url);
     let g;
     try { g = await gettone(b, false); } catch (e) { return errore(e.message); }

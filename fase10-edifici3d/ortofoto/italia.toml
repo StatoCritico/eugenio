@@ -46,5 +46,5 @@ cache = false
 nei_report = false
 zoom = [12, 19]
 riquadro = [6.6, 35.4, 18.6, 47.1]
-ritmo = { al_secondo = 2, all_ora = 2000 }
+ritmo = { al_secondo = 4, all_ora = 4000 }   # 09/11/2026: 2 → 4 al secondo, 2000 → 4000 all'ora (una vista 3D inclinata chiede 50–80 tessere)
 priorita = 8

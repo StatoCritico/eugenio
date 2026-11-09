@@ -3,9 +3,10 @@
 > Servizio open source (AGPL-3.0, dati CC BY 4.0) di Stato Critico per chi si occupa di energia: previsione dei consumi
 > con TiRex-2 e meteo per comune, dati climatici per la Legge 10, gradi giorno, patrimonio edilizio sul catasto, edifici 3D,
 > ombre e fotovoltaico, costi energetici della sanità. Sito in italiano; servizio sperimentale. Ultimo aggiornamento:
-> 08/11/2026 (menu: pagine dei gruppi Edifici, Cogenerazione e Fotovoltaico in lavorazione e non accessibili; Cambiamento
-> climatico in Clima e meteo; mappe che si aprono su Cesena; edifici 3D di 15 città fuori dall'Emilia-Romagna), versione del
-> sito ?v=20261107b.
+> 09/11/2026 (edifici 3D di Roma e Bari per il comune intero; colore degli edifici e alberi in Modelli 3D, sotto la mappa;
+> ricerca con un solo Comune in cima, poi Indirizzo, Foglio e Particella e un solo «Reset», tutti i comuni italiani; limiti
+> per IP solo sulle tessere chieste alla fonte e 429 con Retry-After; Previsioni non più sperimentale), versione del sito
+> ?v=20261109b.
 
 Le istruzioni complete per gli agenti AI (pagine, parametri dell'indirizzo, formati dei file, API libere e protette,
 limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un solo file: leggilo prima di usare il servizio.
@@ -30,9 +31,10 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
   ortofoto spostata di quei metri a est e a nord rispetto alla cartografia (frecce sotto la mappa), senza copia sul server.
 - Fuori dal DBTR, /api/edifici/osm (con la verifica anti-robot) dà in Veneto le sagome della Regione (IODL 2.0) con le
   altezze di OpenStreetMap (ODbL) dove ci sono, altrimenti stimate; altrove gli edifici OpenStreetMap. Non per scaricare zone.
-- Edifici 3D dai DB topografici (archivi elencati in /edifici3d/archivi.json, ognuno con licenza e attribuzione): 28
-  comuni della Romagna e, dall'08/11/2026, Milano, Torino, Genova (parte), Venezia, Trieste, Trento, Bolzano, Firenze,
-  Ancona, Roma (parte), Bari (centro), Potenza, Napoli (altezze dalle classi del Copernicus Urban Atlas Building Height
+- Edifici 3D dai DB topografici (archivi elencati in /edifici3d/archivi.json, ognuno con licenza e attribuzione): 54
+  archivi DBTR dell'Emilia-Romagna (dal 09/11/2026 Bologna intera, Ravenna con parte del forese, comuni della Romagna e
+  della cintura di Bologna, molti parziali: «centro e frazioni principali») e, dall'08/11/2026, Milano, Torino, Genova (parte), Venezia, Trieste, Trento, Bolzano, Firenze,
+  Ancona, Roma, Bari, Potenza, Napoli (altezze dalle classi del Copernicus Urban Atlas Building Height
   2012), Palermo e Cagliari (parte). Sagome regionali al volo senza altezze anche in Sardegna e Campania. Citare
   l'attribuzione dell'archivio; la fonte dell'altezza è scritta per ogni corpo.
 - Tetti nelle pagine 3D: falde LiDAR, poi stima dal colmo DBTR, poi tetto ipotizzato a 22° in pianura e 32° in montagna (o

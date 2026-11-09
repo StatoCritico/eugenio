@@ -313,7 +313,10 @@
     const nomi = [];
     for (let i = Math.floor((c.lng - 0.005) / cella); i <= Math.floor((c.lng + 0.005) / cella); i++)
       for (let j = Math.floor((c.lat - 0.004) / cella); j <= Math.floor((c.lat + 0.004) / cella); j++) nomi.push(`${i}_${j}`);
+    // (09/11/2026 b) solo le celle che l'archivio ha davvero (indice.nomi_celle): niente 404 in Console fuori dagli edifici
+    const ha = Array.isArray(a.indice.nomi_celle) ? new Set(a.indice.nomi_celle) : null;
     for (const n of nomi) {
+      if (ha && !ha.has(n)) continue;
       if (!stato.celle.has(n)) stato.celle.set(n, leggiJson(`${a.base}contesto/${n}.json`).catch(() => ({ features: [] })));
       ((await stato.celle.get(n)).features || []).forEach((f) => feats.set(String(f.properties.id), f));
     }
@@ -368,6 +371,7 @@
       const m = new window.maplibregl.Map({ container: box, center: [Number(q.get("lon")) || 12.5683, Number(q.get("lat")) || 44.0594],
         zoom: Number(q.get("z")) || 15, maxZoom: 20, minZoom: 5, attributionControl: false,
         style: { version: 8, sources: {}, layers: [{ id: "sfondo", type: "background", paint: { "background-color": colore("--carta") } }] } });
+      if (window.EUGENIO_LIMITI) window.EUGENIO_LIMITI.collega(m);   // 429 delle fonti (09/11/2026)
       stato.mappa = m;
       m.addControl(new window.maplibregl.NavigationControl({ showCompass: false }), "top-right");
       m.addControl(new window.maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");

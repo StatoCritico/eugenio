@@ -21,6 +21,23 @@ Container:
 
 Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, vedi fase 3).
 
+## Correzioni del 09/11/2026 b (`?v=20261109b`, procedura P1–P10 di `AGGIORNAMENTO_2026-11-09b.md`)
+
+- **Ortofoto, tessere segnaposto** (`servizio/ortofoto.py`): campo `segnaposto` delle fonti (TOML della fase 10, oggi
+  solo `toscana2023`). Una tessera piccola (≤ 4.000 byte) e quasi tutta bianca (≥ 95 % dei pixel sopra 235), come quella
+  che la WMS della Toscana dà fuori dalla regione con la scritta «Fonte dei dati: Regione Toscana…», diventa un **PNG
+  trasparente con `X-Ortofoto-Vuota: 1`**, anche se era già nella copia su disco (la copia si corregge da sola); la pagina
+  passa alla fonte successiva come per la RER senza immagini. L'indirizzo pubblicato delle tessere di queste fonti ha
+  `?s=1` (browser e Cloudflare non riusano le tessere bianche di prima). Test `test_segnaposto_della_toscana_diventa_vuoto`.
+- **Quote dei corpi fuori dai DTM regionali** (`servizio/terreno.py`, `servizio/edifici_osm.py`): `quote_punti(...,
+  ripiego=True)` dà ai punti fuori dai DTM regionali la quota del **Copernicus DEM 90 m** (`quote_copernicus`: una finestra
+  sola attorno ai punti, bilineare, le stesse quote delle tessere `/api/terreno`); `con_quote` la usa per le sagome
+  regionali **e per gli edifici OSM** (prima solo il DTM regionale e solo le sagome regionali). Risposta con `quote_dtm` e
+  `quote_fonte` (`dtm`, `copernicus`, `dtm+copernicus`). Prima a Susegana, senza il DTM del Veneto sul server (J5 bis),
+  i corpi restavano senza quota e la pagina spegneva il terreno: «c'è ma è piatta». Con `TERRENO_ATTIVO=false` niente
+  quote. Test `test_quote_dei_punti_con_il_ripiego_copernicus`, `test_quote_da_copernicus_senza_il_dtm_veneto` e la
+  quota nel test dei corpi OSM (Copernicus simulato, nessuna rete).
+
 ## Aggiunte dell'08/11/2026 (stessa versione `?v=20261107b`)
 
 - **Sagome regionali al volo** (`servizio/edifici_osm.py`, `edifici3d/sagome_regionali.py` e `fonti/sagome_regionali.toml`
@@ -608,7 +625,21 @@ bloccherebbe anche chi usa le API dei dati aperti con uno script.
 | `dati` | `/api/meteo`, `/api/clima-legge10`, `/api/mappa`, `/api/comuni`, `/api/metodologia` | `LIMITE_DATI_ORA` (600) |
 | `stima`, `estrazione` | `/api/storici/stima`, `/api/storici/estrai` | `STORICI_STIME_ORA` (600), `STORICI_ESTRAZIONI_ORA` (30) |
 | `sessione` | `/api/sessione` | `SESSIONI_ORA` (60) |
-| `edifici_osm` | `/api/edifici/osm` (07/11/2026, anche le risposte dalla copia) | `EDIFICI_OSM_ORA` (60) |
+| `edifici_osm` | `/api/edifici/osm` e tessere OSM dei «Contorni degli edifici» che chiamano davvero Overpass o il WFS regionale (09/11/2026: prima anche la copia) | `EDIFICI_OSM_ORA` (300) |
+| `edifici_osm_copia` | `/api/edifici/osm` con la cella già in copia (09/11/2026) | `EDIFICI_OSM_COPIA_ORA` (3.000) |
+| `ortofoto` | tessere di `/api/ortofoto/{fonte}/…` chieste alla fonte (09/11/2026: solo queste) | `ORTOFOTO_ORA` (12.000) |
+| `strati` | tessere di particelle e contorni regionali chieste alla fonte (09/11/2026; prima contavano come ortofoto) | `STRATI_ORA` (12.000) |
+| `terreno` | tessere di `/api/terreno/…` da generare | `TERRENO_ORA` (6.000) |
+| `tessere_copia` | tessere di ortofoto, strati e terreno servite dalla copia su disco (09/11/2026, tetto anti-abuso) | `TESSERE_COPIA_ORA` (60.000) |
+
+**429 con `Retry-After` (09/11/2026, prove J10: migliaia di 429 in Modelli 3D)**: ogni 429 dei limiti per IP porta
+`Retry-After` (secondi finché si libera il 10 % del limite, `Limitatore.attesa`) e `X-EuGEnio-Limite` (il tipo). Nella
+pagina `protezione.js` ferma per quel tempo (da 30 s a 20 minuti) le richieste di quella fonte della mappa (ortofoto,
+strati, edifici OSM, terreno), risponde da sé senza rete, scrive la nota sotto la mappa (prima di «Genera il 3D» o dei
+comandi di Ortofoto: fonte, «limite orario», tra quanto riprova) e alla fine ricarica le tessere; la nota sparisce alla
+prima risposta buona. Un 429 senza `X-EuGEnio-Limite` viene da Cloudflare (regola di rate limiting su `/api/`). I limiti
+contano solo quello che costa alle fonti esterne o alla CPU: le tessere e le celle già in copia hanno solo i tetti alti
+anti-abuso.
 
 L'indirizzo è quello che Caddy mette in `X-Forwarded-For` (il `CF-Connecting-IP` di Cloudflare, non falsificabile
 perché il server si raggiunge solo dal tunnel). Gli IPv4 contano uno per uno, gli **IPv6 per rete /64**: chi ha IPv6
@@ -671,8 +702,12 @@ l'informativa privacy.
   rifiuta all'avvio le fonti con indirizzi esclusi (Google, Esri, Bing, EOX 2018+, WMS AGEA). Copia su disco in
   `/dati/ortofoto/<fonte>/<z>/<x>/<y>.jpg` (`ORTOFOTO_GIORNI`, `ORTOFOTO_MAX_GB`, pulizia delle più vecchie), ritmo verso
   la fonte dal TOML (`ritmo.al_secondo`, `ritmo.all_ora`, attesa del turno fino a `ORTOFOTO_ATTESA_S`), limite per IP
-  `ORTOFOTO_ORA`, intestazioni `Cache-Control: public, max-age=ORTOFOTO_CACHE_S` (così anche Cloudflare tiene la copia;
-  `no-store` per le fonti solo dal vivo), `ETag` e 304, `X-Ortofoto-Fonte`, `X-Ortofoto-Licenza`.
+  `ORTOFOTO_ORA` (dal 09/11/2026 solo per le tessere chieste alla fonte; dalla copia `TESSERE_COPIA_ORA`), intestazioni
+  `Cache-Control: public, max-age=ORTOFOTO_CACHE_S` (così anche Cloudflare tiene la copia; per le fonti solo dal vivo
+  `private, max-age=86400`, solo il browser, dal 09/11/2026: prima `no-store`), `ETag` e 304, `X-Ortofoto-Fonte`,
+  `X-Ortofoto-Licenza`, `X-Ortofoto-Vuota: 1` per le tessere tutte trasparenti delle fonti `trasparente` (09/11/2026: la RER
+  2023-24 non ha immagini a Bologna, Modena, Parma, Imola, Ferrara, Faenza, Bagno di Romagna, Comacchio; le pagine passano
+  da sole alla fonte successiva). Ritmo dal 09/11/2026: RER 8/s, AGEA 2012 4/s e 4.000/h, attesa `ORTOFOTO_ATTESA_S` 8 s.
   **Spegnere una fonte** senza toccare i TOML: `ORTOFOTO_SPENTE=rer2023` nel `.env` e riavvio dell'api; oppure
   `ORTOFOTO_SOLO_CONFERMATE=true` (servite solo le fonti «confermata»); oppure `attiva = false`/`stato = "spenta"` nel TOML.
 - **`servizio/orizzonte.py`** – orizzonte lontano: finestra di ±25 km del Copernicus DEM GLO-90 dai file
@@ -684,7 +719,7 @@ l'informativa privacy.
   con `edifici-lidar dtm-server`), aprendo la panoramica adatta allo zoom (una tessera legge al più ~1 MB); vuoti e zone
   fuori dai DTM dal Copernicus DEM dei file `.om` dell'orizzonte; copia in `CARTELLA_TERRENO_TESSERE/<versione>/` (la
   versione cambia quando cambiano i DTM) con tetto `TERRENO_MAX_GB` (5) e pulizia delle più vecchie; limite per IP
-  `TERRENO_ORA` (3000 tessere nuove all'ora), `TERRENO_PARALLELE` (2) generazioni insieme. `rasterio` (GDAL nella ruota)
+  `TERRENO_ORA` (6.000 tessere nuove all'ora dal 09/11/2026; quelle in copia nel tetto `TESSERE_COPIA_ORA`), `TERRENO_PARALLELE` (2) generazioni insieme. `rasterio` (GDAL nella ruota)
   è nell'immagine dell'api. Prove: `tests/test_terreno.py` (8, DTM sintetico e Copernicus simulato).
 - **`servizio/pvgis.py`** – confronto PVGIS: `PVcalc` della v5.3 chiamato dal server (PVGIS non ha CORS), con
   `userhorizon` (36 direzioni, massimo dei gruppi) e senza; ritmo per tutto il sito sotto le 30 chiamate al secondo del JRC
@@ -704,7 +739,9 @@ l'informativa privacy.
 ## Strati sopra le ortofoto (05/11/2026, seconda pubblicazione)
 
 - **`servizio/strati.py`** – stesso schema del proxy delle ortofoto (copia in `CARTELLA_ORTOFOTO/strati/`, ritmo verso la
-  fonte per tutti gli utenti, limite per indirizzo «ortofoto», `Cache-Control` di 30 giorni), per immagini **trasparenti**:
+  fonte per tutti gli utenti, limite per indirizzo «strati» dal 09/11/2026 (prima «ortofoto»; le tessere OSM consumano
+  «edifici_osm» e il tetto di Overpass del sito; dalla copia «tessere_copia»), `Cache-Control` di 30 giorni), per
+  immagini **trasparenti**:
   - **particelle catastali** (`catasto`): WMS INSPIRE dell'Agenzia delle Entrate, CC BY 4.0, senza EPSG:3857 né CORS. Si
     chiede il riquadro in EPSG:4258 (WMS 1.3.0, assi lat,lon) e si **riproiettano le righe** in web mercator (la longitudine
     è lineare in tutte e due: basta spostare le righe secondo la latitudine, esatto al pixel); con `metatessera = 2` si

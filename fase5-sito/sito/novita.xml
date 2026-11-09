@@ -5,9 +5,31 @@
   <id>tag:eugenio.statocritico.it,2026:novita</id>
   <link rel="self" type="application/atom+xml" href="https://eugenio.statocritico.it/novita.xml"/>
   <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html"/>
-  <updated>2026-11-07T12:00:00Z</updated>
+  <updated>2026-11-09T12:00:00Z</updated>
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
+  <entry>
+    <title>9 novembre 2026 – Ricerca con un solo comune e comandi sotto la mappa</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261109-2</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261109-2"/>
+    <updated>2026-11-09T12:00:00Z</updated>
+    <summary>Ricerca con un solo comune e comandi sotto la mappa</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D e Ortofoto, ricerca: il comune si scrive una volta sola, in cima; sotto l&amp;#x27;indirizzo, poi foglio e particella affiancati. «Cerca l&amp;#x27;indirizzo» usa comune e indirizzo, «Cerca la particella» comune, foglio e particella; con il solo comune la mappa va al centro del comune. Un solo «Reset» svuota tutto.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: «Colore» degli edifici e «Alberi» sono ora sotto la mappa, sulla stessa riga delle frecce della foto aerea e di «Azzera».&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>9 novembre 2026 – Roma, Bari e Bologna intere, colori degli edifici e ricerca più comoda</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261109</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261109"/>
+    <updated>2026-11-09T12:00:00Z</updated>
+    <summary>Roma, Bari e Bologna intere, colori degli edifici e ricerca più comoda</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D: modelli 3D di tutto il comune di Roma (Ostia ed EUR compresi) e di tutto il comune di Bari (Palese, Santo Spirito, Carbonara, Torre a Mare compresi).&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: modelli 3D di tutto il comune di Bologna e di Castel Bolognese, di Ravenna con Marina di Ravenna e Punta Marina, di quasi tutto Coriano e dei centri di altri 25 comuni dell&amp;#x27;Emilia-Romagna, tra cui Casalecchio di Reno, San Lazzaro di Savena, Massa Lombarda, Fusignano, Meldola, Bertinoro, Verucchio e Gambettola.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: puoi scegliere il colore degli edifici (grigio, giallo, rosso, indaco o violetto); l&amp;#x27;edificio scelto resta arancione. Il colore resta per le visite successive ed entra nell&amp;#x27;immagine scaricata.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: la casella «Alberi» accende e spegne le chiome degli alberi misurate dal rilievo laser, ora disegnate come chiome e non più come cubetti. Partono spente.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D e Ortofoto, ricerca: prima il comune, poi l&amp;#x27;indirizzo; accanto a «Cerca l&amp;#x27;indirizzo» e a «Cerca la particella» il pulsante «Reset» svuota i campi.&lt;/li&gt;&lt;li&gt;Ricerca per particella o per solo comune: ora trova tutti i comuni italiani, anche Torino e i comuni del Piemonte e della provincia di Napoli.&lt;/li&gt;&lt;li&gt;Un clic sulla mappa non sposta più la vista: regioni e comuni si evidenziano e basta.&lt;/li&gt;&lt;li&gt;Frecce per spostare la foto aerea, stato e «Azzera» tutti su una riga sotto la mappa.&lt;/li&gt;&lt;li&gt;Dove la foto aerea della Regione Emilia-Romagna non ha immagini (per esempio a Bologna) la mappa passa da sola a un&amp;#x27;altra foto aerea e lo dice.&lt;/li&gt;&lt;li&gt;Tetti ipotizzati a falde anche sugli edifici con un piccolo cavedio o un corpo interno (prima restavano piani, per esempio a Bagno di Romagna).&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Verificato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Clima e meteo › Previsioni.&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
   <entry>
     <title>7 novembre 2026 – Tetti a falde, 3D in collina e ortofoto da allineare</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261107-2</id>

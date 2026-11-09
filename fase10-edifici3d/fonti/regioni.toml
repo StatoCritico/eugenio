@@ -665,8 +665,8 @@ verifica = "2026-11-08"
 scheda = "https://dati.lazio.it/catalog/it/dataset/2014-carta-tecnica-regionale-numerica-scala-1-5-000-provincia-di-roma"
 altezza = "UN_VOL_AV, UN_VOL_QE; z = base"
 motivo = "adattatore lazio_dbgt; DBGT 2020 per comune: licenza non scritta, non usato"
-prova = "08/11/2026: UN_VOL del foglio 374, 280.897 volumi; RDF dct:license CC BY 4.0"
-usata_in = "fonti/lazio.toml, edifici3d/adattatori/lazio.py (lazio_dbgt)"
+prova = "08/11/2026: UN_VOL del foglio 374, 280.897 volumi; RDF dct:license CC BY 4.0. 09/11/2026: fogli 364, 365, 373, 374, 375, 386, 387 per il comune di Roma intero, 388.033 volumi con COD_ISTAT 058091"
+usata_in = "fonti/lazio.toml, edifici3d/adattatori/lazio.py (lazio_dbgt), edifici3d/b_regioni.py (dbgt-fogli)"
 
 [[regione.fonte]]
 tema = "dtm"
@@ -845,7 +845,7 @@ scheda = "https://geodati.gov.it/resource/id/r_puglia:e5fdf473-4457-420a-9cef-3a
 servizio = "https://cartografia.sit.puglia.it/download/CTR/SHP/<foglio>/<elemento>_ctr.zip"
 url_prova = "https://cartografia.sit.puglia.it/download/CTR/SHP/438/438073_ctr.zip"
 altezza = "punti «quota gronda edificio» − «quota piede fabbricato»; isolati divisi dalle linee «dividente edificio civile»"
-prova = "08/11/2026: elementi 438061/062/072/073/074 di Bari (23,5 MB): 11.464 edifici → 32.786 corpi, 32.105 con altezza; allineamento con OSM: spostamento 0–0,5 m"
+prova = "08/11/2026: elementi 438061/062/072/073/074 di Bari (23,5 MB): 11.464 edifici → 32.786 corpi, 32.105 con altezza; allineamento con OSM: spostamento 0–0,5 m. 09/11/2026: comune intero, 31 elementi dei fogli 438 e 439 (91 MB): 74.817 corpi, 73.205 con altezza"
 usata_in = "fonti/puglia.toml, edifici3d/adattatori/puglia.py (puglia_ctr), edifici3d/b_regioni.py (puglia-ctr, puglia-dtm)"
 
 [[regione.fonte]]
@@ -855,8 +855,8 @@ licenza = "IODL 2.0"
 stato = "attiva"
 verifica = "2026-11-08"
 scheda = "https://geodati.gov.it/resource/id/r_puglia:85898eba-d4b0-4c3b-a2c7-6ea666522591"
-motivo = "licenza IODL 2.0 nella scheda; download non provato"
-prova = "08/11/2026: 5 elementi di Bari, ASCII con la virgola decimale, mosaico in EPSG:7792 (b_regioni puglia-dtm)"
+motivo = "licenza IODL 2.0 nella scheda; download diretto per elemento"
+prova = "08/11/2026: 5 elementi di Bari, ASCII con la virgola decimale, mosaico in EPSG:7792 (b_regioni puglia-dtm). 09/11/2026: 33 elementi del comune di Bari (12 MB)"
 
 [[regione.fonte]]
 tema = "dsm"

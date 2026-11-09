@@ -145,15 +145,23 @@ ORTOFOTO_SOLO_CONFERMATE = os.environ.get("ORTOFOTO_SOLO_CONFERMATE", "false").l
 ORTOFOTO_GIORNI = int(os.environ.get("ORTOFOTO_GIORNI", "180"))          # validità della copia di una tessera
 ORTOFOTO_MAX_GB = float(os.environ.get("ORTOFOTO_MAX_GB", "15"))          # tetto della copia su disco
 ORTOFOTO_CACHE_S = int(os.environ.get("ORTOFOTO_CACHE_S", "2592000"))     # Cache-Control verso browser e Cloudflare (30 giorni)
-ORTOFOTO_ORA = int(os.environ.get("ORTOFOTO_ORA", "3000"))                # tessere per IP all'ora
-ORTOFOTO_ATTESA_S = float(os.environ.get("ORTOFOTO_ATTESA_S", "6"))       # attesa massima del turno verso la fonte
+# (09/11/2026, prove J10: migliaia di 429 in Modelli 3D) contano solo le tessere chieste davvero alla fonte (non in copia);
+# una sessione intensa in 3D (viste inclinate, più fonti, più zoom) ne chiede facilmente qualche migliaio all'ora
+ORTOFOTO_ORA = int(os.environ.get("ORTOFOTO_ORA", "12000"))               # tessere scaricate dalla fonte per IP all'ora
+STRATI_ORA = int(os.environ.get("STRATI_ORA", "12000"))                   # tessere di particelle e contorni dalla fonte per IP all'ora
+# tessere servite dalla copia su disco (ortofoto, strati, terreno insieme): non toccano le fonti esterne, tetto anti-abuso
+TESSERE_COPIA_ORA = int(os.environ.get("TESSERE_COPIA_ORA", "60000"))
+ORTOFOTO_ATTESA_S = float(os.environ.get("ORTOFOTO_ATTESA_S", "8"))       # attesa massima del turno verso la fonte (09/11/2026: 6 → 8)
 # strati sopra le ortofoto (particelle catastali, contorni degli edifici; servizio/strati.py, 05/11/2026): spenti dal .env
 STRATI_SPENTI = {s.strip() for s in os.environ.get("STRATI_SPENTI", "").split(",") if s.strip()}
 
 # ripiego OpenStreetMap per Modelli 3D (servizio/edifici_osm.py, decisione di Paolo del 07/11/2026): edifici OSM intorno
 # al punto dall'API Overpass dove non c'è un archivio DBTR. EDIFICI_OSM=false lo spegne (la rotta risponde 404).
 EDIFICI_OSM = os.environ.get("EDIFICI_OSM", "true").lower() not in ("false", "0", "no", "spento")
-EDIFICI_OSM_ORA = int(os.environ.get("EDIFICI_OSM_ORA", "60"))             # richieste per IP all'ora (anche dalla copia)
+# (09/11/2026) EDIFICI_OSM_ORA conta solo le richieste che vanno davvero a Overpass o al WFS regionale (cella non in copia),
+# comprese le tessere OSM dei «Contorni degli edifici»; le celle in copia contano in EDIFICI_OSM_COPIA_ORA
+EDIFICI_OSM_ORA = int(os.environ.get("EDIFICI_OSM_ORA", "300"))            # richieste a Overpass per IP all'ora
+EDIFICI_OSM_COPIA_ORA = int(os.environ.get("EDIFICI_OSM_COPIA_ORA", "3000"))  # richieste servite dalla copia per IP all'ora
 EDIFICI_OSM_TETTO_ORA = int(os.environ.get("EDIFICI_OSM_TETTO_ORA", "300"))  # chiamate a Overpass all'ora per tutto il sito
 EDIFICI_OSM_GIORNI = int(os.environ.get("EDIFICI_OSM_GIORNI", "30"))       # validità della copia su disco di una cella
 EDIFICI_OSM_ATTESA_S = float(os.environ.get("EDIFICI_OSM_ATTESA_S", "15"))  # attesa massima del turno (una chiamata alla volta)
@@ -185,7 +193,7 @@ CARTELLA_TERRENO_TESSERE = Path(os.environ.get("CARTELLA_TERRENO_TESSERE", str(D
 TERRENO_ZOOM_MIN = int(os.environ.get("TERRENO_ZOOM_MIN", "8"))
 TERRENO_MAX_GB = float(os.environ.get("TERRENO_MAX_GB", "5"))
 TERRENO_CACHE_S = int(os.environ.get("TERRENO_CACHE_S", "2592000"))      # 30 giorni
-TERRENO_ORA = int(os.environ.get("TERRENO_ORA", "3000"))                 # tessere da generare per IP all'ora
+TERRENO_ORA = int(os.environ.get("TERRENO_ORA", "6000"))                 # tessere da generare per IP all'ora (09/11/2026: 3000 → 6000)
 TERRENO_PARALLELE = int(os.environ.get("TERRENO_PARALLELE", "2"))        # tessere generate insieme
 TERRENO_ATTESA_S = float(os.environ.get("TERRENO_ATTESA_S", "10"))
 ORIZZONTE_RAGGIO_KM = float(os.environ.get("ORIZZONTE_RAGGIO_KM", "25"))

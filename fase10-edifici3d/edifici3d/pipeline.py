@@ -204,6 +204,44 @@ def leggi_json(p: Path, predefinito=None):
         return predefinito
 
 
+_CELLA_RE = re.compile(r"^-?\d+_-?\d+$")
+
+
+def celle_presenti(lidar: Path) -> dict[str, list[str]]:
+    """(09/11/2026 b) Nomi delle celle di 0,01° che esistono in `lidar/falde/` e `lidar/alberi/`: la pagina 3D chiede solo
+    queste (prima chiedeva tutte le celle attorno al punto, anche a Roma o in Veneto, con decine di 404 in Console)."""
+    out = {}
+    for tipo in ("falde", "alberi"):
+        d = Path(lidar) / tipo
+        out[tipo] = sorted(p.stem for p in d.glob("*.json") if _CELLA_RE.match(p.stem)) if d.is_dir() else []
+    return out
+
+
+def aggiorna_celle_indice(lidar: Path) -> dict | None:
+    """Scrive l'elenco delle celle in `lidar/indice.json` (se l'indice c'è). Restituisce l'indice aggiornato."""
+    p = Path(lidar) / "indice.json"
+    d = leggi_json(p, None)
+    if not isinstance(d, dict):
+        return None
+    d["celle"] = celle_presenti(lidar)
+    scrivi_json(p, d)
+    return d
+
+
+def aggiorna_celle_archivio(archivio: Path) -> list[dict]:
+    """Comando `lidar-celle`: aggiorna l'elenco delle celle in ogni `lidar/indice.json` dell'archivio degli edifici (una
+    volta dopo l'aggiornamento del 09/11 b; poi lo fa la pipeline a ogni tessera)."""
+    esiti = []
+    for ind in sorted(Path(archivio).glob("**/lidar/indice.json")):
+        if any(x.startswith("_") for x in ind.relative_to(archivio).parts):
+            continue
+        d = aggiorna_celle_indice(ind.parent)
+        if d is not None:
+            esiti.append({"indice": ind.relative_to(archivio).as_posix(), "falde": len(d["celle"]["falde"]),
+                          "alberi": len(d["celle"]["alberi"])})
+    return esiti
+
+
 def pulisci_errore(e: BaseException) -> str:
     """Messaggio d'errore per la pagina di stato: niente parametri delle query (possono contenere chiavi) né percorsi
     lunghi, al più 300 caratteri."""
@@ -912,6 +950,7 @@ class Pipeline:
         a["tessere"] = sum(1 for v in self.stato["tessere"].values() if v.get("fonte") == k and v["stato"] == "fatta")
         d["zone"][self.zona["codice"]] = {"nome": self.zona["nome"], "aggiornato": _adesso()}
         d["aggiornato"] = _adesso()
+        d["celle"] = celle_presenti(prodotti)            # 09/11/2026 b: la pagina chiede solo le celle che ci sono
         if f.get("sintetico"):
             d["sintetico"] = True
             d["avviso"] = "Rilievo LiDAR sintetico di esempio: falde e altezze sono inventate e non rappresentano edifici reali."

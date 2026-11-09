@@ -378,6 +378,15 @@ def main(argv=None) -> int:
                 diverse.append(pagina.name)
             if not a.controlla:
                 pagina.write_text(nuovo, encoding="utf-8")
+    # (09/11/2026) pagine interne (interno/*.html, Cloudflare Access): niente parti comuni, solo il numero di versione dei
+    # file che caricano (prima si cambiava a mano e restava indietro)
+    for pagina in sorted((sito / "interno").glob("*.html")) if (sito / "interno").is_dir() else []:
+        t = pagina.read_text(encoding="utf-8")
+        n = VERS.sub(versione, t)
+        if n != t:
+            diverse.append(f"interno/{pagina.name}")
+            if not a.controlla:
+                pagina.write_text(n, encoding="utf-8")
     for js in sorted(sito.glob("*.js")):            # versioni scritte negli script (dati letti con fetch)
         t = js.read_text(encoding="utf-8")
         n = VERS_JS.sub(lambda m: m.group(1) + versione + m.group(3), VERS.sub(versione, t))

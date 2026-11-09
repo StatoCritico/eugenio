@@ -85,9 +85,10 @@
       await Promise.all(nuove.map(async (k) => {
         try {
           const r = await fetch(location.origin + osm.tessere.replace("{z}/{x}/{y}", `16/${k}`));
-          st.osm.set(k, r.ok ? ((await r.json()).features || []) : []);
-          if (!r.ok) st.errori++;
-        } catch { st.osm.set(k, []); st.errori++; }
+          // (09/11/2026) solo le risposte buone si ricordano: dopo un 429 o un errore la tessera si richiede più tardi (prima
+          // restava vuota fino al ricaricamento della pagina)
+          if (r.ok) st.osm.set(k, (await r.json()).features || []); else st.errori++;
+        } catch { st.errori++; }
       }));
       if (st.osm.size > 200) [...st.osm.keys()].slice(0, st.osm.size - 200).forEach((k) => st.osm.delete(k));
       const src = m.getSource("strato-osm");
@@ -120,6 +121,8 @@
     cP.addEventListener("change", () => { st.particelle = cP.checked; vedi("strato-particelle", cP.checked); legenda(); });
     cE.addEventListener("change", () => { st.edifici = cE.checked; scegliEdifici(); });
     m.on("moveend", () => { if (st.edifici) scegliEdifici(); else legenda(); });
+    // fine della pausa dopo un limite orario (protezione.js): si richiedono le tessere OSM mancanti
+    document.addEventListener("eugenio:limite", (ev) => { if (ev.detail && !ev.detail.fermo && st.edifici) scegliEdifici(); });
 
     function righe() {
       const out = [], z = m.getZoom();

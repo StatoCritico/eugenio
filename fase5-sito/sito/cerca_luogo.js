@@ -7,9 +7,17 @@
 // verifica anti-robot (Turnstile) la aggiunge da sé protezione.js, che avvolge fetch.
 //
 //  EUGENIO_CERCA.crea(contenitore, { suTrovato(lon, lat, riga), prima() })
-//    crea i due moduli (indirizzo; comune, foglio, particella), la nota sulle fonti e la riga dei messaggi
-//    (id: cerca-indirizzo, cerca-via, cerca-comune, cerca-catasto, catasto-comune, catasto-foglio, catasto-particella,
-//    messaggio-cerca). suTrovato riceve il punto e la riga della risposta; prima() si chiama prima di ogni ricerca.
+//    (09/11/2026 b, prove di Paolo) crea **un solo modulo** (#cerca-luogo-modulo): Comune una volta sola in cima
+//    (#cerca-comune), Indirizzo (#cerca-via), Foglio e Particella affiancati (#catasto-foglio, #catasto-particella), poi i
+//    pulsanti «Cerca l'indirizzo» (#cerca-indirizzo: Comune + Indirizzo), «Cerca la particella» (#cerca-particella: Comune +
+//    Foglio + Particella) e un solo «Reset» (#cerca-reset) che svuota tutto; la nota sulle fonti e la riga dei messaggi
+//    (#messaggio-cerca). Con il solo Comune tutti e due i pulsanti portano al centro del comune. Invio in Indirizzo cerca
+//    l'indirizzo, in Foglio o Particella la particella, nel Comune quello che è scritto (indirizzo, poi particella, poi
+//    centro del comune). Prima c'erano due moduli con due «Comune» e due «Reset»: con un comune diverso nei due blocchi
+//    (Bagno di Romagna nella particella, Susegana rimasto nell'indirizzo) la ricerca finiva nel comune sbagliato.
+//    suTrovato riceve il punto e la riga della risposta; prima() si chiama prima di ogni ricerca.
+//  Un risultato in un altro comune (comune catastale diverso da quello scritto, per esempio una via omonima trovata da
+//    Zornade altrove) non sposta la mappa sul punto: si va al centro del comune scritto, con l'avviso.
 //  EUGENIO_CERCA.cerca({ indirizzo, comune, foglio, particella }) → la riga trovata (o null) e il messaggio scritto.
 //  EUGENIO_CERCA.ZOOM: zoom della mappa sul punto trovato, uguale in Modelli 3D e Ortofoto (07/11/2026: 17, l'isolato
 //    intero con il segnaposto; prima 18 in tutte e due).
@@ -69,6 +77,13 @@
   // coordinate vere: numeri, non 0,0, dentro l'Italia larga (mai la mappa sul golfo di Guinea)
   const vero = (lat, lon) => lat !== null && lon !== null && lat !== "" && lon !== "" && Number.isFinite(+lat) && Number.isFinite(+lon)
     && !(Math.abs(+lat) < 1e-6 && Math.abs(+lon) < 1e-6) && +lat > 35 && +lat < 48 && +lon > 6 && +lon < 19.5;
+  // comune catastale della risposta diverso da quello scritto: il server lo segnala nella nota (codice catastale diverso)
+  // e i nomi non hanno nulla in comune (i comuni nati da fusione contengono il nome di quello d'origine: Montescudo)
+  function altroComune(x, comune) {
+    const a = piano(x && x.comune_catasto), b = piano(comune);
+    if (!a || !b || a === b || a.includes(b) || b.includes(a)) return false;
+    return /diverso da quello indicato/.test(String((x && x.nota) || ""));
+  }
   async function alCentro(comune, perche) {
     const c = await centroComune(comune);
     if (!c) { messaggio(`${perche}Comune «${comune}» non trovato nei confini ISTAT: controlla il nome.`, true); return null; }
@@ -99,6 +114,11 @@
       }
       messaggio(`Non trovato${x && x.nota ? `: ${x.nota}` : ""}. Controlla il testo o prova con foglio e particella.`, true); return null;
     }
+    // (09/11/2026 b) risultato in un altro comune: mai la mappa lì (Bagno di Romagna → «via San Salvatore 13, Susegana»)
+    if (campi.comune && altroComune(x, campi.comune)) {
+      const cosa = campi.indirizzo ? "L'indirizzo trovato" : "La particella trovata";
+      return alCentro(campi.comune, `${cosa} è nel comune di ${x.comune_catasto}, non in quello scritto (${campi.comune}). `);
+    }
     const lat = +x.lat, lon = +x.lon;
     const dove = [x.indirizzo_trovato, x.comune_catasto].filter(Boolean).join(", ");
     const part = x.mappale ? `particella ${x.foglio_catasto ? `foglio ${x.foglio_catasto}, ` : ""}${x.mappale}` : "";
@@ -116,20 +136,27 @@
   function crea(dove, opz = {}) {
     if (!dove) return null;
     dove.classList.add("cerca-edificio");
-    const f1 = h("form", "riga-campi"); f1.id = "cerca-indirizzo";
-    f1.append(campo("Indirizzo", "cerca-via", { autocomplete: "street-address", placeholder: "viale Ghirotti 286" }),
-      campo("Comune", "cerca-comune", { autocomplete: "address-level2", placeholder: "Cesena" }));
-    const b1 = h("button", "bottone secondario", "Cerca l'indirizzo"); b1.type = "submit"; f1.appendChild(b1);
-    const f2 = h("form", "riga-campi"); f2.id = "cerca-catasto";
-    f2.append(campo("Comune", "catasto-comune", { placeholder: "Cesena" }), campo("Foglio", "catasto-foglio", { inputmode: "numeric", size: "5", placeholder: "149" }),
-      campo("Particella", "catasto-particella", { inputmode: "numeric", size: "6", placeholder: "387" }));
-    const b2 = h("button", "bottone secondario", "Cerca la particella"); b2.type = "submit"; f2.appendChild(b2);
+    const f = h("form", "cerca-modulo"); f.id = "cerca-luogo-modulo"; f.noValidate = true;
+    const riga = (cls, ...figli) => { const r = h("div", `riga-cerca ${cls}`); r.append(...figli); return r; };
+    const pulsante = (id, testo, cls, title) => { const b = h("button", cls, testo); b.type = "button"; b.id = id; if (title) b.title = title; return b; };
+    const bInd = pulsante("cerca-indirizzo", "Cerca l'indirizzo", "bottone secondario", "Cerca con Comune e Indirizzo (solo il Comune: al centro del comune)");
+    const bPar = pulsante("cerca-particella", "Cerca la particella", "bottone secondario", "Cerca con Comune, Foglio e Particella (solo il Comune: al centro del comune)");
+    const bReset = pulsante("cerca-reset", "Reset", "bottone secondario cerca-reset", "Svuota tutti i campi della ricerca");
+    f.append(
+      riga("riga-comune", campo("Comune", "cerca-comune", { autocomplete: "address-level2", placeholder: "Cesena" })),
+      riga("riga-indirizzo", campo("Indirizzo", "cerca-via", { autocomplete: "street-address", placeholder: "viale Ghirotti 286" })),
+      riga("riga-catasto", campo("Foglio", "catasto-foglio", { inputmode: "numeric", size: "5", placeholder: "149" }),
+        campo("Particella", "catasto-particella", { inputmode: "numeric", size: "6", placeholder: "387" })),
+      riga("riga-pulsanti", bInd, bPar, bReset));
     const aiuto = h("p", "aiuto");
-    aiuto.append("Gli indirizzi si cercano prima nell'archivio nazionale dei civici ANNCSU (Agenzia delle Entrate e ISTAT, CC BY 4.0) e, "
-      + "se mancano, con la geocodifica di Zornade; foglio e particella con le particelle catastali di Zornade, come nella pagina ");
+    aiuto.append("Scrivi il comune una volta sola, poi l'indirizzo («Cerca l'indirizzo») oppure foglio e particella («Cerca la "
+      + "particella»); con il solo comune la mappa va al centro del comune. Gli indirizzi si cercano prima nell'archivio nazionale "
+      + "dei civici ANNCSU (Agenzia delle Entrate e ISTAT, CC BY 4.0) e, se mancano, con la geocodifica di Zornade; foglio e "
+      + "particella con le particelle catastali di Zornade, come nella pagina ");
     const a = h("a", null, "Patrimonio"); a.href = "patrimonio.html"; aiuto.append(a, ". I dati catastali non sostituiscono visure ed estratti ufficiali.");
     msg = h("div", "messaggio"); msg.id = "messaggio-cerca"; msg.setAttribute("role", "status"); msg.setAttribute("aria-live", "polite");
-    dove.append(f1, f2, aiuto, msg);
+    dove.append(f, aiuto, msg);
+    const val = (id) => f.querySelector(`#${id}`).value.trim();
     const vaiAlComune = async (comune) => {
       if (opz.prima) opz.prima();
       messaggio("Cerco il comune…");
@@ -141,21 +168,37 @@
       const t = await cerca(campi);
       if (t && opz.suTrovato) await opz.suTrovato(t.lon, t.lat, t.riga);
     };
-    f1.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const via = f1.querySelector("#cerca-via").value.trim(), comune = f1.querySelector("#cerca-comune").value.trim();
-      if (comune.length < 2) { messaggio(via ? "Scrivi anche il comune." : "Scrivi il comune (e, se vuoi, via e civico).", true); return; }
-      if (via.length < 3) { vaiAlComune(comune); return; }          // solo il comune: al centro, senza server
-      vai({ indirizzo: via, comune });
-    });
-    f2.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const comune = f2.querySelector("#catasto-comune").value.trim(), particella = f2.querySelector("#catasto-particella").value.trim();
-      if (comune.length < 2) { messaggio("Scrivi il comune e la particella (e, se lo sai, il foglio).", true); return; }
+    // «indirizzo» usa solo Comune + Indirizzo, «particella» solo Comune + Foglio + Particella: l'altro gruppo di campi non
+    // entra mai nella richiesta, anche se è pieno
+    function esegui(azione) {
+      const comune = val("cerca-comune"), via = val("cerca-via"), foglio = val("catasto-foglio"), particella = val("catasto-particella");
+      if (azione === "auto") azione = via ? "indirizzo" : particella ? "particella" : "indirizzo";
+      if (comune.length < 2) {
+        messaggio(azione === "particella" ? "Scrivi il comune (il primo campo), poi foglio e particella."
+          : via ? "Scrivi anche il comune (il primo campo)." : "Scrivi il comune (e, se vuoi, l'indirizzo o foglio e particella).", true);
+        f.querySelector("#cerca-comune").focus();
+        return;
+      }
+      if (azione === "indirizzo") {
+        if (via.length < 3) { vaiAlComune(comune); return; }          // solo il comune: al centro, senza server
+        vai({ indirizzo: via, comune });
+        return;
+      }
       if (!particella) { vaiAlComune(comune); return; }
-      vai({ comune, foglio: f2.querySelector("#catasto-foglio").value.trim(), particella });
+      vai({ comune, foglio, particella });
+    }
+    bInd.addEventListener("click", () => esegui("indirizzo"));
+    bPar.addEventListener("click", () => esegui("particella"));
+    bReset.addEventListener("click", () => { f.reset(); f.querySelectorAll("input").forEach((i) => { i.value = ""; }); messaggio(""); });
+    // Invio: secondo il campo in cui si scrive (con quattro campi di testo e nessun pulsante «submit» il modulo non si invia da sé)
+    const PER_CAMPO = { "cerca-via": "indirizzo", "catasto-foglio": "particella", "catasto-particella": "particella", "cerca-comune": "auto" };
+    f.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" || !e.target || !PER_CAMPO[e.target.id]) return;
+      e.preventDefault();
+      esegui(PER_CAMPO[e.target.id]);
     });
-    return { messaggio };
+    f.addEventListener("submit", (e) => { e.preventDefault(); esegui("auto"); });
+    return { messaggio, esegui };
   }
 
   const ZOOM = 17;

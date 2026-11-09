@@ -1,5 +1,40 @@
 # Fase 10 – Edifici 3D, ortofoto, LiDAR e analisi energetiche
 
+Stato al 09/11/2026 b (sito `?v=20261109b`, procedura P1–P10 di `AGGIORNAMENTO_2026-11-09b.md`, dopo le prove N10):
+- **Celle LiDAR**: `lidar/indice.json` ha ora l'elenco `celle` (`falde`, `alberi`: i nomi `<i>_<j>` delle celle di 0,01°
+  che esistono), scritto dalla pipeline a ogni tessera (`Pipeline._indice` → `celle_presenti`) e, per gli indici di prima,
+  dal comando nuovo **`python -m edifici3d lidar-celle --archivio <archivio>`** (`aggiorna_celle_archivio`: tutti i
+  `**/lidar/indice.json`, salta le cartelle con «_»). La pagina 3D chiede solo quelle celle: prima chiedeva ogni cella
+  attorno al punto, anche a Roma o in Veneto, con decine di 404 in Console. Test `test_lidar_celle_aggiorna_gli_indici_vecchi`
+  e controllo dell'elenco in `test_pipeline_campione_completa_e_idempotente`; la demo del sito (`fase5-sito/sito/dati/edifici3d/lidar/indice.json`) ha l'elenco.
+- **Ortofoto della Toscana**: fuori dalla regione, ma dentro il suo riquadro (Bagno di Romagna, Cesena, Bologna, La Spezia,
+  Perugia, provate il 09/11), la WMS risponde 200 con un JPEG bianco di ~1,7 kB e la scritta «Fonte dei dati: Regione
+  Toscana – Base informativa territoriale…» («strane scritte sul terreno bianco» nelle prove di Paolo). Campo nuovo
+  `segnaposto = true` in `ortofoto/toscana.toml` (documentato in `emilia_romagna.toml`): il proxy rende queste tessere vuote
+  (fase 4).
+
+Stato al 09/11/2026 (sito `?v=20261109a`, procedura N1–N12 di `AGGIORNAMENTO_2026-11-09.md`):
+- **Roma** e **Bari** per il comune intero (archivi del 09/11; comando `b_regioni dbgt-fogli`).
+- **Archivi DBTR del 09/11** (estrazioni 354181–354187): **Bologna intera** (mancano solo 7 fogli rurali), Castel
+  Bolognese intero, Ravenna con parte del forese, Misano rifatto con quasi tutto Coriano, 17 comuni della Romagna e 8
+  comuni vicini a Bologna parziali: 29 archivi (`archivi_er_0911/`), **69 voci** in `archivi.json`. Le estrazioni
+  raggruppate si dividono per comune con il nuovo comando `dividi` (`edifici3d/dividi.py`, test `test_dividi.py`);
+  sezione «Comuni dell'08/11 e del 09/11/2026». La pagina legge ora fino a **150 archivi** (prima 60).
+- **Tetti ipotizzati**: cortile solo se il buco è di almeno 25 m² o del 10 % della pianta (`tetti.cortili`,
+  `CORTILE_MIN_M2`, `CORTILE_MIN_QUOTA`; uguale a `cortiliDi` della pagina): a Bagno di Romagna (foglio 54 particella 216)
+  il corpo di 178 m² con un buco di 8 m² occupato da un corpo interno restava piano, ora capanna a 22°. Soglia di montagna
+  600 m invariata. Test `test_cavedio_non_e_un_cortile` e casi di parità `cavedio`, `cortile_quota`.
+- **Ortofoto**: ritmo verso la fonte RER 8/s (misurate 0,3–0,5 s a tessera) e AGEA 2012 4/s e 4.000/h; la RER 2023-24 **non
+  ha immagini** a Bologna, Modena, Parma, Imola, Ferrara, Faenza, Bagno di Romagna, Comacchio (tessere vuote a ogni scala,
+  prove del 09/11): il proxy le dichiara (`X-Ortofoto-Vuota`) e le pagine passano da sole alla fonte successiva. I WMS AGEA
+  della Regione (`agea2011_rgb`, `agea2020_rgb`, `agea2023_rgb`) esistono ma restano esclusi (§ 6).
+- **Alberi** della pagina 3D: vengono dalla pipeline LiDAR (`lidar_corpi.alberi`: celle di 2 m del DSM − DTM alte e
+  fuori dalle sagome, entro 50 m dagli edifici, `lidar/alberi/<cella>.json`), non da OSM; nella pagina ora sono chiome
+  (ottagoni che si fondono), accese dalla casella «Alberi» (spenta in partenza); restano ostacoli per le ombre.
+- **Due Torri di Bologna**: nel DBTR un solo volume (UVL 47888, 157,8 m², edificio «Altro», foglio 0) **senza altezza**
+  (`H_UVL` 0, `H_GRONDA` e `H_COLMO` vuoti), scartato dalla preparazione; la Garisenda non ha un volume suo. Per vederle
+  serve una correzione dell'archivio (`DA_FARE.md`).
+
 Stato all'08/11/2026 (stessa versione `?v=20261107b`, decisioni di Paolo):
 - **Lettori regionali e 15 città** (08/11/2026 notte): 17 adattatori (`edifici3d/adattatori/`), archivi di Milano,
   Torino, Genova, Venezia, Trieste, Trento, Bolzano, Firenze, Ancona, Roma, Bari, Potenza, Napoli, Palermo e Cagliari;
@@ -902,7 +937,7 @@ preparazione.
 attribuzione, riquadro, numero di corpi e, per gli archivi di un comune intero, `istat` (dall'indice, scritto da `prepara`
 dal 07/11/2026, o dalla tabella `uvl.COMUNI_ISTAT` per gli archivi preparati prima, come Rimini; mai per i `parziale`), più `"lidar": "/edifici3d/cc-by/er/prodotti/"` (le falde della
 pipeline notturna restano nell'archivio regionale); copia il file precedente in `archivi.json.prima`. La pagina legge fino
-a 60 archivi e interroga solo quelli il cui riquadro tocca il punto (più 300 m); i corpi di archivi con la **stessa
+a 150 archivi (60 fino al 09/11/2026, quando sono diventati 69) e interroga solo quelli il cui riquadro tocca il punto (più 300 m); i corpi di archivi con la **stessa
 licenza** (due comuni vicini) non si escludono a vicenda; il terreno 3D viene dalla rotta del server (uno solo per tutti
 gli archivi; le tessere dell'archivio solo se l'indice ha ancora `tessere_terreno`: demo sintetica e archivi vecchi).
 La pipeline LiDAR (`lidar`) legge i corpi di `cc-by/er/prodotti/contesto` **e** di tutti i `cc-by/er/<comune>/prodotti/contesto`.
@@ -1088,30 +1123,102 @@ Restano (non toccati, da guardare con l'ortofoto se serve): a Mercato Saraceno ~
 32–40 m con vicini simili (probabile convenzione delle quote diversa in quella zona); a Lugo il secondo corpo dello stesso
 edificio a 39 m (57 m², snellezza 5).
 
-## Comuni dell'08/11/2026: 28 archivi e quadrante NE del DTM
+## Comuni dell'08/11 e del 09/11/2026: 54 archivi DBTR e quadrante NE del DTM
 
-Estrazioni scaricate da Paolo l'08/11 (`downloadDBTR_354162`–`354171`), riconosciute dal codice catastale `COD_COM` di
-`V_EDI_GPG` e preparate con `prepara --comune` sui **due quadranti** SE e NE del DTM 5 m (`--dtm` accetta più quadranti):
+Estrazioni scaricate da Paolo l'08/11 (`downloadDBTR_354162`–`354171`) e il 09/11 (`354181`–`354187`), riconosciute dal
+codice catastale `COD_COM` di `V_EDI_GPG` e preparate con `prepara --comune` sui **due quadranti** SE e NE del DTM 5 m
+(`--dtm` accetta più quadranti). Dal 09/11 le estrazioni **raggruppate** (più comuni in un solo GeoPackage: 354184, 354185,
+354168, 354187) si dividono prima con `dividi` (sotto); i pezzi dei comuni che hanno già un archivio (Cesena, Rimini,
+Riccione, Faenza, Lugo, Forlì, Forlimpopoli, Bagnacavallo, Cotignola, Brisighella, Conselice, Russi, Imola…) restano fuori.
 
-| Comune | ISTAT | Fogli | Corpi | Note |
-|---|---|---|---|---|
-| Bologna | 037006 | 281 su 305 (mancano soprattutto 1–10, a nord) | 66.283 (392 scartati) | gronda fino a 103,7 m, 52 corpi oltre 60 m; nello stesso zip pezzi di San Lazzaro, Casalecchio, Calderara e Zola (tenuti nell'archivio, zona coperta = confine di Bologna); 491 s, tar 38 MB |
-| Cesenatico | 040008 | 54 su 54 | 11.659 (1.659 senza altezza, scartati) | tar 6,3 MB |
-| Bellaria-Igea Marina | 099001 | 25 su 27 | 7.479 | |
-| Bagnacavallo | 039002 | 94 su 95 | 11.467 | Shapefile |
-| Conselice | 039008 | 62 su 65 | 6.722 | Shapefile, tutto nel quadrante NE |
-| Modigliana | 040022 | 95 su 96 | 2.814 | |
-| Alfonsine | 039001 | 111 su 113 | 6.978 | |
-| Cotignola | 039009 | 38 su 38 | 4.958 | |
-| Misano Adriatico, Morciano e parte di Coriano | — (`--parziale`) | estrazione raggruppata: Misano 24 su 26, Morciano 7 su 8, Coriano 18 fogli; pezzi di Riccione, Rimini, San Clemente | 11.964 (484 scartati; 391 con H_UVL come quota) | zona coperta = riquadro dei corpi; tar 6,4 MB |
-| Ravenna (città) | — (`--parziale`) | estrazione dell'ospedale del 06/11 + 84 fogli dell'08/11 | 27.525 | i corpi delle due estrazioni uniti per `ID_E`; il forese manca: zona coperta = riquadro dei corpi |
+| Comune | ISTAT | Fogli | Corpi | Gronda max | Note |
+|---|---|---|---|---|---|
+| **Bologna** (09/11) | 037006 | tutti tranne 63, 64, 65, 66, 89, 133, 250 (354168 + 354187) | 61.813 | 103,7 m (52 oltre 60 m) | comune intero; prima 66.283 corpi con i pezzi dei comuni vicini, ora solo Bologna (i vicini hanno archivi loro); tar 35 MB |
+| Cesenatico | 040008 | 54 su 54 | 11.659 (1.659 senza altezza, scartati) | | tar 6,3 MB |
+| Bellaria-Igea Marina | 099001 | 25 su 27 | 7.479 | | |
+| Bagnacavallo | 039002 | 94 su 95 | 11.467 | | Shapefile |
+| Conselice | 039008 | 62 su 65 | 6.722 | | Shapefile, tutto nel quadrante NE |
+| Modigliana | 040022 | 95 su 96 | 2.814 | | |
+| Alfonsine | 039001 | 111 su 113 | 6.978 | | |
+| Cotignola | 039009 | 38 su 38 | 4.958 | 15 m | |
+| **Castel Bolognese** (09/11) | 039006 | 36 su 36 (354181, Shapefile, + 1 corpo da 354184) | 2.815 | 24 m | comune intero |
+| **Misano Adriatico, Morciano e Coriano** (09/11) | — (`--parziale`) | Misano 24 su 26, Morciano 7 su 8, **Coriano 39 su 46** (354171 + Coriano e Misano di 354184) | 14.347 | 30 m | rifatto il 09/11 (prima 11.964 corpi, Coriano 18 fogli); nome «… Misano Adriatico, Morciano e Coriano (centro e frazioni principali)» |
+| **Ravenna** (09/11) | — (`--parziale`) | 186 fogli: ospedale del 06/11 + 354163 + 354183 (altri fogli del forese) | 42.574 | 55 m | prima 27.525 corpi (città); nome «… Ravenna (città e parte del forese)»; corpi uniti per `ID_E`; tar 23 MB |
+| Gambettola (09/11) | — (`--parziale`) | 10 su 14 | 2.691 | 23 m | i 18 comuni sotto: «… <Comune> (centro e frazioni principali)» |
+| Predappio | — | 30 su 98 | 1.620 | 40 m | 354184 + 15 corpi di 354185 |
+| Riolo Terme | — | 22 su 47 | 1.612 | 21 m | 354184 + 8 corpi di 354181 |
+| Longiano | — | 10 su 29 | 659 | 21 m | |
+| Gatteo | — | 5 su 15 | 119 | 9 m | solo i fogli verso Gambettola e Savignano |
+| Massa Lombarda | — | 34 su 47 | 3.422 | 21 m | |
+| Fusignano | — | 22 su 28 | 3.991 | 28 m | mancano 3, 10, 11, 12, 13, 18 (con edifici: sotto) |
+| Meldola | — | 29 su 60 | 2.782 | 27 m | 354185 + 9 corpi di 354184 |
+| Verucchio | — | 20 su 21 | 3.096 | 36 m | manca il foglio 2 (con edifici: sotto) |
+| Castrocaro Terme e Terra del Sole | — | 33 su 39 | 2.408 | 31 m | |
+| Bertinoro | — | 30 su 65 | 1.805 | 37 m | |
+| Solarolo | — | 16 su 25 | 1.715 | 19 m | |
+| Sant'Agata sul Santerno | — | 8 su 12 | 1.118 | 19 m | |
+| Sarsina | — | 14 su 55 | 914 | 27 m | |
+| Dovadola | — | 21 su 33 | 662 | 37 m | |
+| Premilcuore | — | 11 su 47 | 441 | 30 m | |
+| Sant'Agata Feltria | — | 8 su 13 | 249 | 12,5 m | |
+| Casalecchio di Reno (09/11) | — (`--parziale`) | 26 fogli (354168 + 354187) | 3.950 | 37 m | gli 8 comuni vicini a Bologna con almeno ~1.000 volumi: «… <Comune> (zona verso Bologna)» |
+| San Lazzaro di Savena | — | 33 fogli | 3.723 | 30 m | |
+| Zola Predosa | — | 18 fogli | 2.361 | 30 m | |
+| Calderara di Reno | — | 24 fogli | 2.357 | 33 m | |
+| Castel Maggiore | — | 26 fogli | 1.770 | 26 m | |
+| Granarolo dell'Emilia | — | 23 fogli (354187) | 1.290 | 36 m | |
+| Sasso Marconi | — | 16 fogli (354187) | 1.129 | 20 m | |
+| Pianoro | — | 14 fogli (354187) | 1.016 | 29 m | |
 
-Tutti con `"problemi": []` e `"avvisi": []`. Le 8 voci nuove sono in `uvl.COMUNI_ISTAT`; Ravenna resta fuori apposta.
-Il quadrante **NE** (`DTM5x5_ed2025_NE_7791.zip`, 1.153.456.683 byte, riquadro 655500–802800 E, 4922500–5002000 N, ora
-nel TOML) serve a Bologna e al nord di Ravenna, Bagnacavallo, Conselice e Alfonsine; sul server diventa
-`dtm5_er_ne.tif` per la rotta `/api/terreno` (passo J5 ter di `AGGIORNAMENTO_2026-11-07.md`). Il comando di
-preparazione usato nel container è in `prep_uno3.sh` (fuori dal repository): `prepara --comune <c> --gpkg <file o
-cartelle> --dtm <SE.zip> <NE.zip> --archivio <cartella>`.
+Tutti con `"problemi": []` e `"avvisi": []` (`controlla-archivio`, 09/11/2026). In `uvl.COMUNI_ISTAT` dal 09/11 anche
+`castel-bolognese`; Ravenna (186 fogli, il forese non è completo), Misano e i 26 comuni parziali restano fuori apposta (zona
+coperta = vicinanza ai corpi, sicura). Fuori dagli archivi: Anzola dell'Emilia (539 volumi) e Castenaso (229) nelle
+estrazioni di Bologna, e i pezzi di poche decine di edifici di Imola, Mordano, San Clemente, Civitella, Sogliano, Portico,
+Poggio Torriana, Santarcangelo. Archivi del 09/11 in `archivi_er_0911/` (29 tar, 91 MB, `SHA256SUMS_er_2026-11-09.txt`):
+con i 28 dell'08/11 (Bologna, Ravenna e Misano sostituiti), le 15 città e Roma e Bari intere `archivi-json` dà **69 voci**.
+
+**Fogli mancanti, confronto con OpenStreetMap** (09/11/2026; edifici OSM con il centro nel confine ISTAT generalizzato, a
+più di 30 m da ogni corpo del DBTR; riferimento: Castel Bolognese, che ha tutti i fogli, 105 su 2.185 = **4,8 %**, sparsi,
+per lo più tettoie e baracche che il DBTR non ha e i bordi del confine generalizzato):
+- **Bologna**: 1.897 su 51.655 = **3,7 %**, sotto il riferimento, nessun gruppo oltre 75 edifici in una cella di 500 m (il
+  più grande al bordo est, verso Villanova di Castenaso, dove il confine generalizzato entra nel comune vicino): i fogli
+  63, 64, 65, 66, 89, 133 e 250 sono **rurali o con pochi edifici**. Bologna è preparata come comune intero.
+- **Verucchio**: 434 su 2.413 = **18 %**, con gruppi di 20–50 edifici a ovest del capoluogo: il foglio 2 ha edifici →
+  archivio parziale.
+- **Fusignano**: 629 su 2.486 = **25 %**, un gruppo di 93 edifici a nord-ovest del centro: i 6 fogli mancanti hanno edifici
+  → archivio parziale.
+
+**Coriano** (scelta del 09/11/2026): rifatto l'archivio `misano-adriatico` con il nuovo Coriano, invece di un archivio
+Coriano separato. Delle 34 tavole di Coriano in 354184, 13 sono già in 354171 (6–9, 17–20, 31, 32, 38, 40, 46) e 5 tavole
+sono solo in 354171 (28–30, 39, 47): un archivio separato senza i volumi di Misano avrebbe diviso Coriano in due archivi,
+con le tavole di confine metà qui e metà là; rifacendo `misano-adriatico` la deduplica per `ID_E` di `prepara` basta
+(2.393 corpi nuovi su 4.203), Coriano sta in un archivio solo (39 fogli su 46) e si sostituisce una cartella che c'è già.
+
+### Estrazioni raggruppate: `dividi` (09/11/2026)
+
+`prepara` non filtra per comune: `python -m edifici3d dividi` (modulo `edifici3d/dividi.py`) scrive per ogni estrazione un
+GeoPackage ridotto con i quattro strati filtrati in modo coerente (`V_EDI_GPG` del comune, `V_UVL_GPG` con `EDI_ID_E`
+tenuto, `V_EDI_GPGSA` e `V_EDI_CT_USO_AVM` con `ID_E` tenuto). Un edificio è del comune se il suo `COD_COM` è uno dei codici
+dati, oppure se `COD_COM` è vuoto (circa il 10 % degli edifici) e il suo punto interno cade nel **confine ISTAT** del comune
+(`b_regioni.confine_comune`, senza margine; per le province dell'ER ora la ricerca va diretta al file `08.json`). Il codice
+vince sul confine (il confine è generalizzato a circa 100 m). `--elenco` dice, per ogni `COD_COM` delle estrazioni, il
+comune ISTAT che contiene la maggior parte dei suoi edifici (Bologna 0,997; Castel Maggiore C204 0,954; Calderara B399
+0,89): così si riconoscono i comuni.
+
+```
+python -m edifici3d dividi --gpkg …/354168/estraz_procons.gpkg …/354187/estraz_procons.gpkg --elenco
+python -m edifici3d dividi --gpkg …/354168/estraz_procons.gpkg …/354187/estraz_procons.gpkg --codici A944 --istat 037006 --uscita divisi/bologna
+python -m edifici3d prepara --comune bologna --gpkg divisi/bologna/354168/estraz_procons.gpkg divisi/bologna/354187/estraz_procons.gpkg \
+       --dtm …/DTM5x5_ed2025_SE_7791.zip …/DTM5x5_ed2025_NE_7791.zip --archivio …
+python -m edifici3d prepara --comune pianoro --parziale --nome "DBTR Emilia-Romagna – Pianoro (zona verso Bologna)" --gpkg divisi/pianoro/354187/estraz_procons.gpkg --dtm … --archivio …
+```
+
+Il quadrante **NE** (`DTM5x5_ed2025_NE_7791.zip`, 1.153.456.683 byte, riquadro 655500–802800 E, 4922500–5002000 N, nel
+TOML) serve a Bologna e ai suoi vicini, al nord di Ravenna, Bagnacavallo, Conselice, Alfonsine, Fusignano e Massa
+Lombarda; sul server è `dtm5_er_ne.tif` per la rotta `/api/terreno` (passo J5 ter di `AGGIORNAMENTO_2026-11-07.md`). Il
+comando di preparazione usato nel container (`prep.sh`, fuori dal repository) è `prepara --comune <c> --gpkg <file
+divisi> --dtm <SE.zip> <NE.zip> --archivio <cartella> [--parziale --nome "…"]`, poi `controlla-archivio` e `tar czf
+edifici_dbtr_<c>_2026-11-09.tar.gz cc-by/er/<c>`.
 
 ## Lettori regionali e città di riferimento (08/11/2026)
 
@@ -1141,9 +1248,11 @@ entrano mai negli archivi CC BY o IODL: restano nelle sagome al volo e nel ripie
 ### Città (archivi in `archivi_citta/edifici_<zona>_<comune>_2026-11-08.tar.gz`, tutti con `"problemi": []`)
 
 Stato finale delle 16:10 dell'08/11/2026: 15 archivi (383 MB), `SHA256SUMS_citta_2026-11-08.txt`; con i 28 dell'ER
-`archivi.json` ha **43 voci** (prima `cc-by/` in ordine di percorso, poi `iodl/`). **Non** in questa pubblicazione:
-Roma intera (altri fogli del DBGT 2014) e Bari intero (altri elementi della CTR): si scaricano dal container dopo la
-pubblicazione con gli stessi comandi.
+`archivi.json` ha **43 voci** (prima `cc-by/` in ordine di percorso, poi `iodl/`); pubblicati con `v2026.11.07b`
+(08/11, 22:42). **09/11/2026**: **Roma** e **Bari** rifatti per il **comune intero** (`--istat`, non più `--parziale`) in
+`archivi_bari_roma/` (`edifici_laz_roma_2026-11-09.tar.gz`, `edifici_pug_bari_2026-11-09.tar.gz`,
+`SHA256SUMS_bari_roma_2026-11-09.txt`), da mettere sul server con `AGGIORNAMENTO_2026-11-09.md` al posto delle cartelle
+dell'08/11; le voci di `archivi.json` restano 43.
 
 | Città | Zona / adattatore | Copertura | Corpi | Controlli di altezza | Licenza | Cartella |
 |---|---|---|---|---|---|---|
@@ -1156,8 +1265,8 @@ pubblicazione con gli stessi comandi.
 | Bolzano | `bolzano` / `bolzano_inspire` | comune intero 021008 | 20.377 | campanile del Duomo 53,9 m (navata 14,4 m); altezze da DSM − DTM 0,5 m | CC0 1.0 | `cc-by/bz/bolzano` |
 | Firenze | `toscana` / `toscana_uv` | comune intero 048017 | 104.475 | cupola del Duomo 112,6 m; Palazzo Vecchio 40,5 m; DSM LiDAR 2023 p90 − `uv_qe` +1,5 m; DTM LiDAR 2023 del Comune | CC BY 4.0 | `cc-by/tos/firenze` |
 | Ancona | `marche` / `marche_dbgt` | comune intero 042002 | 11.289 | San Ciriaco 10,4 m (una gronda per edificio, 1:10.000); massimo 69,4 m | CC BY 4.0 | `cc-by/mar/ancona` |
-| Roma | `lazio` / `lazio_dbgt` | foglio 1:50.000 n. 374 «Roma», parziale | 277.918 | Basilica di San Pietro 45,6 m; Vittoriano 63,3 m; massimo 111,3 m | CC BY 4.0 | `cc-by/laz/roma` |
-| Bari | `puglia` / `puglia_ctr` | 5 elementi CTR (centro, Murattiano, Policlinico, San Paolo, Japigia), parziale | 32.105 | Teatro Petruzzelli 25,1 m; Policlinico fino a 22,1 m; DTM 8 m | IODL 2.0 | `iodl/pug/bari` |
+| Roma | `lazio` / `lazio_dbgt` | comune intero 058091 (fogli 1:50.000 364, 365, 373, 374, 375, 386, 387 del DBGT 2014; `COD_ISTAT` del DB) | 384.621 (250.170 edifici) | Torre Europarco 111,3 m (massimo); Vittoriano fino a 63,3 m; Basilica di San Pietro 45,6 m; Palazzo della Civiltà Italiana fino a 60,2 m; Gemelli fino a 46,0 m; Umberto I fino a 29,5 m; Ostia 3.334 corpi entro 1 km (fino a 24,3 m); Fiumicino (058120) escluso; quota da `UN_VOL_QE − UN_VOL_AV`; archivio 390 MB (tar 126 MB): corpi.pmtiles 88,5 MB contro 64,2 MB, 1.462 celle contro 705, cella più grande invariata (1,57 MB, centro) | CC BY 4.0 | `cc-by/laz/roma` |
+| Bari | `puglia` / `puglia_ctr` | comune intero 072006 (31 elementi CTR dei fogli 438 e 439, Palese, Santo Spirito, Carbonara, Torre a Mare compresi) | 73.205 (30.778 edifici) | Cattedrale fino a 37,2 m (corpo colpito 31,8 m); San Nicola fino a 26,1 m; Policlinico fino a 37,7 m entro 120 m; Petruzzelli 23,4 m; Palese 4.902 corpi entro 1 km, Torre a Mare 2.522; massimo 65,2 m; DTM 8 m (33 elementi) | IODL 2.0 | `iodl/pug/bari` |
 | Potenza | `basilicata` / `basilicata_dbgt` | comune intero 076063 | 27.286 | Ospedale San Carlo 38,6 m (gruppo A); massimo 50,3 m; DTM 5 m dal WCS | IODL 2.0 | `iodl/bas/potenza` |
 | Napoli | `campania_napoli` (zona cam) / `campania_dbt` | comune intero 063049 (DBT 2020) | 29.698 | altezze: classe Copernicus UA Building Height 2012 in circa 25.600 corpi (86 %), mediana dei vicini in circa 3.540, stima dall'uso in circa 560; Ospedale Cardarelli (DEA) classe 20–30 m → 25 m; torri del Centro Direzionale classe 100–368 m → 100 m (20 corpi oltre 60 m); DTM 2020 5 m | CC BY 4.0 (+ Copernicus) | `cc-by/cam/napoli` |
 | Palermo | `sicilia` / `palermo_uv` | comune intero 082053 (unità volumetriche del Comune) | 99.023 | Teatro Massimo 39,3 m; massimo 204,1 m nell'area del porto (da controllare: probabile errore di quota) | CC BY 4.0 | `cc-by/sic/palermo` |
@@ -1181,6 +1290,34 @@ python -m edifici3d --zona campania_napoli prepara-regione --file napoli_ua.geoj
 python -m edifici3d archivi-json --archivio ARCH
 ```
 
+Comandi di **Bari** e **Roma per il comune intero** (09/11/2026, dalla cartella della fase 10; `G` = cartella dei file
+grezzi, cancellabile alla fine):
+
+```
+# Bari: elementi 1:5.000 che toccano il confine ISTAT (+700 m), elenco in fonti/puglia.toml (elementi_bari); 438033 e
+# 438082 sono solo mare (CTR 404, DTM sì). Quadro d'unione calcolato: foglio 20'×12', sezione 5'×3' (01–16 da NO per
+# righe), elemento 2'30"×1'30" (1 NE, 2 SE, 3 SO, 4 NO).
+for e in $(python -c "import tomllib;print(' '.join(tomllib.load(open('fonti/puglia.toml','rb'))['fonti']['edifici']['elementi_bari']))"); do
+  curl -fsS -o $G/ctr/${e}_ctr.zip https://cartografia.sit.puglia.it/download/CTR/SHP/${e:0:3}/${e}_ctr.zip
+  curl -fsS -o $G/dtm/${e}_asc.zip https://cartografia.sit.puglia.it/download/DTM/ASC/${e:0:3}/${e}_asc.zip; done
+python -m edifici3d.b_regioni puglia-ctr --ctr $G/ctr/*_ctr.zip --istat 072006 --uscita $G/bari_ctr.geojson   # 74.817 corpi
+python -m edifici3d.b_regioni puglia-dtm --asc $G/dtm/*_asc.zip --crs EPSG:7792 --uscita $G/dtm_bari_8m_7792.tif
+python -m edifici3d --zona puglia prepara-regione --file $G/bari_ctr.geojson --dtm $G/dtm_bari_8m_7792.tif --archivio ARCH \
+    --comune bari --istat 072006 --nome "Bari – CTR 2006 Regione Puglia"                               # ~6 min
+# LICENZE.txt: stesso testo dell'archivio dell'08/11 (con la scheda RNDT del DTM 8 m)
+
+# Roma: fogli 1:50.000 che toccano il confine (WFS geonode:qu_50k): 364, 365, 373, 374, 375, 386, 387 (fonti/lazio.toml,
+# fogli_roma). Solo UN_VOL.* di ogni zip, con richieste Range e il gettone anonimo del File Browser (come il browser).
+python -m edifici3d.b_regioni dbgt-fogli --shp $G/rm3{64,65,73,74,75,86,87}/UN_VOL.shp --istat 058091 \
+    --uscita $G/roma_un_vol.gpkg                       # 742.377 letti → 388.033 (COD_ISTAT 058091), 0 doppioni, 0 id ripetuti
+python -m edifici3d --zona lazio prepara-regione --file $G/roma_un_vol.gpkg --archivio ARCH --comune roma \
+    --istat 058091 --nome "DB topografico Regione Lazio 2014 – Roma"                           # ~33 min, 384.621 corpi
+python -m edifici3d controlla-archivio ARCH/cc-by/laz/roma/prodotti; python -m edifici3d controlla-archivio ARCH/iodl/pug/bari/prodotti
+```
+I volumi del foglio 374 fuori dal comune (18.806 di altri comuni: Fiumicino, Ciampino, …) non sono più nell'archivio;
+i 142 con codice «058000» sono tenuti perché il punto interno cade nel confine ISTAT, i 44 fuori sono scartati; 819
+volumi con `COD_ISTAT` 058091 cadono fuori dal confine generalizzato +150 m (bordi del confine ISTAT a ~100 m): tenuti.
+
 Altre fonti provate ma senza archivio: CTR 2012-13 della Sicilia (`sicilia_ctr`: serve un DTM con licenza aperta),
 sagome al volo di **Sardegna** (WFS) e **Campania** (ArcGIS REST) in `fonti/sagome_regionali.d/`; Bolzano e Trento non
 sono nelle sagome al volo (il riquadro del Veneto li contiene: `fonte_nel_punto` prende la prima fonte; vale l'archivio
@@ -1199,7 +1336,7 @@ archivio per ora (nessun DB con gli edifici).
 | `edifici3d/adattatori/toscana.py`, `puglia.py`, `marche.py`, `sicilia.py`, `friuli_venezia_giulia.py` | `toscana_uv`, `puglia_ctr`, `marche_dbgt`, `palermo_uv`, `sicilia_ctr`, `fvg_ctrn_ed2` (gruppo B) |
 | `edifici3d/adattatori/trento.py`, `bolzano.py`, `sardegna.py`, `campania.py` | `trento_pat3d`, `bolzano_inspire`, `sardegna_dbgt_lidar`, `campania_dbt` (gruppo C) |
 | `edifici3d/adattatori/venezia.py` | `venezia_dbgt`: DBGT del Comune di Venezia (EPSG:3004 senza `.prj`, gronda `UN_VOL_AV` = `UN_VOL_QG − UN_VOL_QB`, quota `UN_VOL_QB`, colmo `UN_VOL_QE − UN_VOL_QB`, sotto 0,5 m scartati); passo `unisci` con lo strato `EDIFC` (edificio di appartenenza e destinazione) |
-| `edifici3d/a_comuni.py`, `edifici3d/b_regioni.py` | comune intero dai servizi o dai file, ritaglio sul confine ISTAT, DTM a blocchi (A); passi `toscana-wfs`, `puglia-ctr`, `marche-dbgt`, `palermo-uv`, `fvg-wfs`… (B) |
+| `edifici3d/a_comuni.py`, `edifici3d/b_regioni.py` | comune intero dai servizi o dai file, ritaglio sul confine ISTAT, DTM a blocchi (A); passi `toscana-wfs`, `puglia-ctr`, `marche-dbgt`, `palermo-uv`, `fvg-wfs`… (B); `dbgt-fogli` (09/11/2026: UN_VOL di più fogli DBGT del Lazio per un comune, senza doppioni) |
 | `edifici3d/altezze_dsm.py` | altezze da DSM − DTM per sagoma (`annota`, `confronta`, `mosaico`); comando `confronta-dsm` (C) |
 | `edifici3d/altezze_ua.py` | altezze dal **Copernicus Urban Atlas Building Height 2012** (Napoli): il servizio dà **classi** (1 = 2–4 m … 10 = 100–368 m), non metri; 90° percentile delle classi dei pixel nella sagoma, altezza centrale della classe, poi mediana dei vicini |
 | `edifici3d/regionali.py` | `scegli_adattatore`: l'adattatore del TOML o uno di `alternativi` se al file mancano i campi (FVG: ED2 predefinita, ED1 per i file della coda); `controlla` usa la `coerenza()` degli adattatori esterni |

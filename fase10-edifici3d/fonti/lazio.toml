@@ -10,6 +10,9 @@
 #   POST /cartografia/api/login, come fa il browser) → `DBT_Lazio_RM374.zip` (581.835.243 byte, 1.063 voci); letti con
 #   richieste Range solo `UN_VOL.shp/.shx/.dbf/.prj/.cpg` (36,7 MB compressi): PolygonZ, ETRS89/UTM 33N, 280.897
 #   volumi, UN_VOL_QE − z = UN_VOL_AV in tutti i volumi provati; porzione 08 = sotterranei (scartati).
+# - 09/11/2026: fogli 364, 365, 373, 375, 386, 387 dallo stesso File Browser (solo UN_VOL.*, 398 MB estratti):
+#   con il 374, 742.377 volumi letti, 388.033 con COD_ISTAT 058091 (142 con codice «058000» tenuti perché nel confine
+#   ISTAT, 44 scartati perché fuori), nessun doppione geometrico né id ripetuto tra i fogli.
 # - Nessun servizio WFS degli edifici (il GeoServer regionale pubblica solo `geonode:wms_edi_min_a`): si lavora sui file.
 # - DTM: solo DXF di punti 2002-03 per elemento 1:5.000 (non usato): la quota del terreno è UN_VOL_QE − UN_VOL_AV.
 # - DBGT 2020 per comune (Roma.zip, 1,19 GB): licenza non scritta per l'edizione 2020, NON usato finché la Regione non
@@ -38,4 +41,8 @@ cartella = "https://geoportale.regione.lazio.it/cartografia/2014_DBGT_5K_SHP/str
 # file del foglio 374 «Roma» (API del File Browser in modalità anonima: intestazione X-Auth col gettone di /api/login)
 url = "https://geoportale.regione.lazio.it/cartografia/api/raw/2014_DBGT_5K_SHP/strati-informativi/Roma/DBT_Lazio_RM374.zip"
 strato_nel_zip = "DBT_Lazio_RM374/UN_VOL.shp"
+# comune di Roma intero (058091, 09/11/2026): i fogli che toccano il confine ISTAT secondo `geonode:qu_50k`, stessi
+# percorsi `.../DBT_Lazio_RM<foglio>.zip`, letti solo i file UN_VOL.* con richieste Range (gettone anonimo come sopra);
+# unione con `python -m edifici3d.b_regioni dbgt-fogli` (COD_ISTAT = 058091, nessun doppione geometrico ai bordi)
+fogli_roma = ["364", "365", "373", "374", "375", "386", "387"]
 quadro_unione = "https://geoportale.regione.lazio.it/geoserver/ows"   # WFS geonode:qu_5k, qu_10k, qu_50k (EPSG:4326)

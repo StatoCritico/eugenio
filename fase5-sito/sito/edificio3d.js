@@ -40,7 +40,7 @@
 // affidabilità) se c'è, altrimenti il DBTR dell'Emilia-Romagna; i corpi di un archivio meno affidabile che cadono dentro
 // quelli di uno più affidabile non si usano.
 //
-// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261107b):
+// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261109b):
 //  - il punto trovato con la ricerca (cerca_luogo.js, modulo comune con Ortofoto) si **trascina** per correggerlo (l'ANNCSU
 //    è a volte impreciso) e, da zoom 15, un clic sulla mappa lo sposta lì; la scelta dell'edificio usa sempre il punto
 //    corretto (l'edificio che lo contiene, o il più vicino entro 30 m) e «Genera il 3D» parte da lì;
@@ -88,7 +88,10 @@
     giornaliero: null, sintetico: false, ortofoto: null, fontiOrtofoto: [], lontano: null, facciate: null, pvgis: null,
     fvOrizzonti: {}, obblighi: null, dpr: null, lidar: null, falde: new Map(), celleFalde: new Map(), nascostiExtra: [], modello: null,
     alberi: new Map(), celleAlberi: new Map(), visura: {}, sede: null, archivi: [], in3d: !DUE_TEMPI, daGenerare: null, regione: null,
-    osmAttivo: false, osm: { celle: new Map(), visti: new Map(), errore: null, info: null } };
+    osmAttivo: false, osm: { celle: new Map(), visti: new Map(), errore: null, info: null },
+    // (09/11/2026) colore degli edifici e alberi accesi (spenti in partenza): preferenze del browser
+    coloreEdifici: (() => { try { return localStorage.getItem("eugenio-colore-edifici") || "grigio"; } catch { return "grigio"; } })(),
+    alberiVisibili: (() => { try { return localStorage.getItem("eugenio-alberi-3d") === "1"; } catch { return false; } })() };
   // archivio «virtuale» del ripiego OpenStreetMap (07/11/2026): ultimo di stato.archivi, senza file statici
   const ATTRIBUZIONE_OSM = "© OpenStreetMap contributors (ODbL 1.0)";
   // terreno 3D dal server (07/11/2026, fase4-server/servizio/terreno.py): DTM regionale, altrove Copernicus DEM 90 m
@@ -96,6 +99,18 @@
   const TESSERE_TERRENO = "/api/terreno/{z}/{x}/{y}.png";
   const MARGINE_CONFINE = 150;             // m: un punto a questa distanza da un corpo DBTR è coperto (confini ISTAT generalizzati)
   const COLORE_OSM = "#9a6440";            // marrone: edifici OpenStreetMap (altezza dal dato OSM, dai piani, dai vicini o 9 m)
+  // colore degli edifici del DB topografico (09/11/2026, richiesta di Paolo): menu a discesa come quello dell'asterisco della
+  // testata; grigio (predefinito, --serie-6 del tema), giallo, rosso, indaco, violetto. L'edificio scelto resta nel colore
+  // primario (arancio), gli edifici OpenStreetMap restano marroni (dicono la fonte). Scelta ricordata nel browser.
+  const COLORI_EDIFICI = [
+    { id: "grigio", nome: "Grigio", colore: null }, { id: "giallo", nome: "Giallo", colore: "#e0b400" },
+    { id: "rosso", nome: "Rosso", colore: "#c62828" }, { id: "indaco", nome: "Indaco", colore: "#4757c9" },
+    { id: "violetto", nome: "Violetto", colore: "#8a4fd0" }];
+  const CHIAVE_COLORE = "eugenio-colore-edifici", CHIAVE_ALBERI = "eugenio-alberi-3d";
+  const leggiPref = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  const scriviPref = (k, v) => { try { localStorage.setItem(k, v); } catch { /* archivio del browser non disponibile */ } };
+  const voceColore = () => COLORI_EDIFICI.find((c) => c.id === stato.coloreEdifici) || COLORI_EDIFICI[0];
+  const coloreEdifici = () => voceColore().colore || colore("--serie-6");
   // l'archivio ha ancora le sue tessere del terreno? (indice.tessere_terreno: demo sintetica, archivi preparati prima del 07/11)
   const terrenoProprio = (a) => !!(a && a.base && !a.osm && !a.locale && a.indice && a.indice.tessere_terreno);
   const ARCHIVIO_OSM = { base: null, osm: true, indice: { nome: "OpenStreetMap (ripiego fuori dal DBTR)", licenza: "ODbL 1.0", attribuzione: ATTRIBUZIONE_OSM } };
@@ -147,17 +162,18 @@
     let elenco = null;
     const valida = (b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes("..");
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261107b", { cache: "no-cache" });   // mai l'elenco vecchio
+      const r = await fetch("/edifici3d/archivi.json?v=20261109b", { cache: "no-cache" });   // mai l'elenco vecchio
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const d = await r.json();
         elenco = d.archivi;
         if (valida(d.lidar)) stato.baseLidar = d.lidar;        // falde LiDAR dell'ER (07/11/2026: archivi per comune)
       }
     } catch { /* nessun elenco: solo l'archivio dell'Emilia-Romagna */ }
-    // fino a 60 archivi (un archivio DBTR per comune dal 07/11/2026): la pagina legge le celle solo di quelli vicini al punto
+    // fino a 150 archivi (un archivio DBTR per comune dal 07/11/2026; 60 fino al 09/11/2026, quando sono diventati 69): la
+    // pagina legge le celle solo di quelli vicini al punto
     // `istat` (07/11/2026): archivio di un comune intero, zona coperta = confine ISTAT del comune
     const voci = (Array.isArray(elenco) && elenco.length ? elenco : [{ base: "/edifici3d/cc-by/er/prodotti/" }])
-      .filter((x) => x && valida(x.base)).slice(0, 60);
+      .filter((x) => x && valida(x.base)).slice(0, 150);
     const codice = (v) => (/^\d{6}$/.test(String(v || "")) ? String(v) : null);
     const trovati = await Promise.all(voci.map((v) => json(`${v.base}indice.json`)
       .then((i) => ({ base: v.base, indice: i, istat: i.parziale ? null : codice(v.istat) || codice(i.istat) })).catch(() => null)));
@@ -177,6 +193,23 @@
     if (!haCella(base, nome)) return { features: [] };
     if (!stato.celle.has(k)) stato.celle.set(k, json(`${base}contesto/${nome}.json`).catch(() => ({ features: [] })));
     return stato.celle.get(k);
+  }
+  // (09/11/2026 b, righe rosse in Console) celle LiDAR che esistono davvero: `lidar/indice.json` ha dal 09/11 b l'elenco
+  // `celle.falde` e `celle.alberi` (scritto dalla pipeline a ogni tessera e dal comando `lidar-celle`); le altre non si
+  // chiedono più (prima: 404 per ogni cella attorno al punto, anche a Roma, Susegana, Firenze, dove la pipeline non passa).
+  // Indice senza elenco (pipeline di prima): solo dentro il riquadro di un archivio dell'Emilia-Romagna (unica zona della
+  // pipeline), mai altrove
+  function haCellaLidar(tipo, nome, lon, lat) {
+    const L = stato.lidar;
+    if (!L) return false;
+    const el = L.celle && L.celle[tipo];
+    if (Array.isArray(el)) {
+      const k = `insieme_${tipo}`;
+      if (!L[k]) Object.defineProperty(L, k, { value: new Set(el), enumerable: false });
+      return L[k].has(nome);
+    }
+    return stato.archivi.some((a) => a.base && a.base.startsWith("/edifici3d/cc-by/er/") && Array.isArray(a.indice && a.indice.riquadro)
+      && lon >= a.indice.riquadro[0] && lon <= a.indice.riquadro[2] && lat >= a.indice.riquadro[1] && lat <= a.indice.riquadro[3]);
   }
   // alberi dal DSM (05/11/2026): quadrati di 2 m con l'altezza della chioma, per tessera, nelle stesse celle di 0,01°
   async function cellaAlberi(nome) {
@@ -223,8 +256,9 @@
   async function contesto(lon, lat) {
     const archivi = stato.archivi.length ? stato.archivi : stato.base ? [{ base: stato.base, indice: stato.indice }] : [];
     if (!archivi.length) return [];
-    const nomi0 = nomiCelle(archivi[0].indice, lon, lat);
-    await Promise.all([stato.lidar ? Promise.all(nomi0.map(cellaFalde)) : null, stato.lidar ? Promise.all(nomi0.map(cellaAlberi)) : null]);
+    const nomi0 = nomiCelle({ cella: (stato.lidar && stato.lidar.cella) || 0.01 }, lon, lat);
+    await Promise.all([Promise.all(nomi0.filter((n) => haCellaLidar("falde", n, lon, lat)).map(cellaFalde)),
+      Promise.all(nomi0.filter((n) => haCellaLidar("alberi", n, lon, lat)).map(cellaAlberi))]);
     const pr = E.proiezione(lon, lat), visti = new Map(), sagome = [];
     const vicino = (a) => { const r = a.indice && a.indice.riquadro, m = 0.004;          // ~300 m: i 250 m del contesto
       return !Array.isArray(r) || r.length !== 4 || (lon >= r[0] - m && lon <= r[2] + m && lat >= r[1] - m && lat <= r[3] + m); };
@@ -771,7 +805,7 @@
     if (sources.rilievo) layers.push({ id: "rilievo", type: "hillshade", source: "rilievo", paint: paintRilievo(false) });
     layers.push({ id: "ombre", type: "fill", source: "ombre", paint: { "fill-color": "#000", "fill-opacity": 0.32 } });
     // colori (07/11/2026 sera): edifici del DB topografico come prima, quelli di OpenStreetMap (ripiego) in marrone
-    const coloreDi = (k) => (archivi[k].osm ? COLORE_OSM : colore("--serie-6"));
+    const coloreDi = (k) => (archivi[k].osm ? COLORE_OSM : coloreEdifici());
     stato.sorgentiCorpi.forEach((id, k) => layers.push({ id, type: "fill-extrusion", source: id, ...strato(k),
       paint: { "fill-extrusion-color": coloreDi(k), "fill-extrusion-height": ["+", ["get", "altezza"], 0], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.85 } }));
     layers.push(
@@ -786,9 +820,11 @@
       { id: "facciate", type: "fill-extrusion", source: "facciate",
         paint: { "fill-extrusion-color": ["interpolate", ["linear"], ["get", "t"], 0, "#ffffcc", 0.5, "#41b6c4", 1, "#253494"],
           "fill-extrusion-height": ["get", "z1"], "fill-extrusion-base": ["get", "z0"], "fill-extrusion-opacity": 0.95 } },
+      // alberi (chiome dal LiDAR: DSM − DTM, celle di 2 m): dal 09/11/2026 ottagoni un po' più larghi della cella, così le
+      // celle vicine si fondono in una chioma (niente «cubetti»), verde più chiaro per le chiome più alte; spenti in partenza
       { id: "alberi", type: "fill-extrusion", source: "alberi",
-        paint: { "fill-extrusion-color": "#4f8a3c", "fill-extrusion-height": ["get", "h"], "fill-extrusion-base": ["*", ["get", "h"], 0.35],
-          "fill-extrusion-opacity": 0.7 } },
+        paint: { "fill-extrusion-color": ["interpolate", ["linear"], ["get", "h"], 3, "#3f6f2f", 12, "#5f9a45", 25, "#86b860"],
+          "fill-extrusion-height": ["get", "h"], "fill-extrusion-base": ["*", ["get", "h"], 0.4], "fill-extrusion-opacity": 0.82 } },
       { id: "linea", type: "line", source: "linea", paint: { "line-color": colore("--segno"), "line-width": 3 } });
     // mappa 2D (Modelli 3D in due tempi): sagome piatte, sagoma scelta in evidenza, punto cercato
     stato.strati2d = [];
@@ -826,6 +862,7 @@
     m.addControl(new ml.NavigationControl({ visualizePitch: true, showCompass: !DUE_TEMPI }), "top-right");
     m.addControl(new ml.AttributionControl({ compact: true, customAttribution: "MapLibre" }), "bottom-right");
     if (DUE_TEMPI) m.addControl(new ml.ScaleControl({ unit: "metric" }), "bottom-left");
+    if (window.EUGENIO_LIMITI) window.EUGENIO_LIMITI.collega(m);      // 429 delle fonti: pausa, nota e niente righe rosse (09/11/2026)
     await new Promise((ok) => m.on("load", ok));
     if (DUE_TEMPI) m.getContainer().querySelectorAll(".maplibregl-compact-show").forEach((x) => x.classList.remove("maplibregl-compact-show"));
     if (DUE_TEMPI) zoneComuni(m, archivi);
@@ -844,7 +881,7 @@
     document.addEventListener("eugenio:aspetto", () => {
       m.setPaintProperty("sfondo", "background-color", colore("--carta"));
       stato.sorgentiCorpi.forEach((id, k) => {
-        const col = (stato.archivi[k] || {}).osm ? COLORE_OSM : colore("--serie-6");
+        const col = (stato.archivi[k] || {}).osm ? COLORE_OSM : coloreEdifici();
         m.setPaintProperty(id, "fill-extrusion-color", col);
         if (m.getLayer(`${id}-2d`)) { m.setPaintProperty(`${id}-2d`, "fill-color", col); m.setPaintProperty(`${id}-2d-scelto`, "fill-color", colore("--primario")); }
       });
@@ -861,12 +898,13 @@
           stato.confini = await C.aggiungi(m, {
             // da zoom 15 il clic sposta il punto (o sceglie l'edificio): regioni e comuni si scelgono da più lontano
             attivo: (ev) => !stato.in3d && !stato.modo && m.getZoom() < 15 && !(stato.strati2d.length && m.queryRenderedFeatures(ev.point, { layers: stato.strati2d.filter((id) => m.getLayer(id)) }).length),
-            suRegione: (cod) => { if (stato.regione === cod) togliRegione(); else vaiRegione(cod); },
+            // (09/11/2026, punto J delle prove di Paolo: «cliccando la mappa impazzisce» e tornava al comune intero) un clic
+            // sulla mappa non sposta MAI la vista: regione e comune si evidenziano soltanto; ci si sposta con la piccola mappa,
+            // la ricerca, la rotella e il trascinamento
+            suRegione: (cod) => { if (stato.regione === cod) togliRegione(false); else vaiRegione(cod, false); },
             suComune: async (c) => {
               if (!c) { messaggio("messaggio-cerca", ""); return; }
-              const b = await C.riquadroComune(c.istat);
-              if (b) m.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 30, duration: 700, maxZoom: 16 });
-              messaggio("messaggio-cerca", `Comune di ${c.nome}${c.prov ? ` (${c.prov})` : ""}: avvicinati e fai clic su un edificio (secondo clic sul comune: lo togli).`);
+              messaggio("messaggio-cerca", `Comune di ${c.nome}${c.prov ? ` (${c.prov})` : ""}: avvicinati con la rotella (o cerca l'indirizzo) e fai clic su un edificio (secondo clic sul comune: lo togli).`);
             },
           });
         } catch { /* confini non disponibili */ }
@@ -1052,6 +1090,7 @@
     if (!DUE_TEMPI || !m) return;
     stato.in3d = true;
     vedi(m, strati3d(), true); vedi(m, strati2dTutti(), false); vedi(m, ["confini-comuni", "confini-province"], false);
+    vedi(m, ["alberi"], !!stato.alberiVisibili);           // casella «Alberi» (09/11/2026)
     // edificio OSM (ripiego): niente DTM, mappa piatta come le quote dei corpi
     terreno3d(); coloriRilievo(); fonteTerreno();
     m.dragRotate.enable(); m.touchPitch.enable(); m.touchZoomRotate.enableRotation(); m.doubleClickZoom.disable();
@@ -1168,28 +1207,29 @@
     e.preventDefault();
   }
   // regione dalla piccola mappa o dalla mappa: si va lì (e si torna al 2D); secondo clic sulla stessa = Italia intera
-  async function vaiRegione(cod) {
+  // sposta = false (clic sulla mappa grande, 09/11/2026): si sceglie ed evidenzia la regione senza muovere la vista
+  async function vaiRegione(cod, sposta = true) {
     const b = C && await C.riquadroRegione(cod);
     if (!b || !stato.mappa) return;
-    esci3d();
+    if (sposta) esci3d();
     stato.regione = cod;
     if (stato.confini) { stato.confini.scegliRegione(cod); stato.confini.scegliComune(""); }
     if (window.EUGENIO && window.EUGENIO.seleziona) window.EUGENIO.seleziona(cod);
-    stato.mappa.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 20, duration: 700 });
+    if (sposta) stato.mappa.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 20, duration: 700 });
   }
-  function togliRegione() {
+  function togliRegione(sposta = true) {
     if (!stato.mappa) return;
-    esci3d();
+    if (sposta) esci3d();
     stato.regione = null;
     if (stato.confini) { stato.confini.scegliRegione(""); stato.confini.scegliComune(""); }
     if (window.EUGENIO && window.EUGENIO.evidenziaPiccola) window.EUGENIO.evidenziaPiccola(null);
     const I = C ? C.ITALIA : [6.6, 35.4, 18.6, 47.1];
-    stato.mappa.fitBounds([[I[0], I[1]], [I[2], I[3]]], { padding: 10, duration: 700 });
+    if (sposta) stato.mappa.fitBounds([[I[0], I[1]], [I[2], I[3]]], { padding: 10, duration: 700 });
   }
   if (DUE_TEMPI && window.EUGENIO) {
     window.EUGENIO.suRegione = (cod) => { vaiRegione(cod); };
     window.EUGENIO.suStessaRegione = (cod) => { if (stato.regione === cod) togliRegione(); else vaiRegione(cod); };
-    window.EUGENIO.mappaPrincipale = { nazionale: togliRegione };
+    window.EUGENIO.mappaPrincipale = { nazionale: () => togliRegione() };
   }
 
   // fonte usata per ogni corpo, dalla più affidabile (05/11/2026): falde LiDAR → DB topografico regionale con le altezze →
@@ -1274,8 +1314,10 @@
     if (stato.in3d) {
       const osmVisti = stato.osmAttivo && (stato.osm.visti.size || stato.vicini.some((c) => (archivioDi(c) || {}).osm));
       const ts = testoTettiStimati();
-      righe.push(`Colori: edificio scelto in evidenza; edifici vicini del DB topografico in grigio${osmVisti ? "; edifici OpenStreetMap in marrone (altezza da OSM o stimata)" : ""}`
-        + `${stato.corpi.some((c) => c.falde && c.falde.length) ? "; falde dei tetti dall'arancio (a sud) al blu (a nord)" : ""}.`
+      const alberiVisti = stato.alberiVisibili && alberiVicini().length;
+      righe.push(`Colori: edificio scelto in evidenza; edifici vicini del DB topografico in ${voceColore().nome.toLowerCase()}${osmVisti ? "; edifici OpenStreetMap in marrone (altezza da OSM o stimata)" : ""}`
+        + `${stato.corpi.some((c) => c.falde && c.falde.length) ? "; falde dei tetti dall'arancio (a sud) al blu (a nord)" : ""}`
+        + `${alberiVisti ? "; alberi in verde (chiome dal LiDAR, DSM meno DTM)" : ""}.`
         + (ts ? ` ${ts}` : ""));
       if (stato.corpi.length) righe.push(testoTetti());
       const t = $("legenda-terreno");
@@ -1377,7 +1419,7 @@
     m.getSource("scelto").setData(geojson(stato.corpi));
     m.getSource("falde").setData({ type: "FeatureCollection", features: stato.corpi.flatMap(strisce) });
     if (m.getSource("alberi")) m.getSource("alberi").setData({ type: "FeatureCollection", features: alberiVicini().map((a) => ({ type: "Feature",
-      properties: { h: a.h }, geometry: { type: "Polygon", coordinates: [a.ring.map(stato.proj.indietro)] } })) });
+      properties: { h: a.h }, geometry: { type: "Polygon", coordinates: [ottagono(a).map(stato.proj.indietro)] } })) });
     // corpi modificati o divisi: si nasconde la loro versione nelle tessere
     const nascosti = [...new Set(stato.originali.map((c) => c.id).concat(stato.nascostiExtra))];
     (stato.sorgentiCorpi || ["corpi"]).forEach((id) => { if (m.getLayer(id)) m.setFilter(id, nascosti.length ? ["!", ["in", ["get", "id"], ["literal", nascosti]]] : null); });
@@ -1456,7 +1498,7 @@
       "passo-consumi", "passo-report"].forEach((id) => { $(id).hidden = false; });
     $("aggiungi-priorita").disabled = false; $("calcola-pvgis").disabled = true;
     messaggio("messaggio", `Edificio ${edificio}: ${corpi.length} ${corpi.length === 1 ? "corpo" : "corpi"}, ${stato.vicini.length} corpi vicini.`
-      + (stato.comune ? ` Comune: ${stato.comune.nome}.` : "") + (daOsm ? avvisoOsm(corpi[0].archivio) + (conQuota ? " Quote dei corpi dal DTM del server." : " Quote del terreno non disponibili: edifici sullo stesso piano.") : ""));
+      + (stato.comune ? ` Comune: ${stato.comune.nome}.` : "") + (daOsm ? avvisoOsm(corpi[0].archivio) + (conQuota ? " Quote dei corpi dal terreno del server (DTM regionale o, dove manca, Copernicus DEM 90 m)." : " Quote del terreno non disponibili: edifici sullo stesso piano.") : ""));
     aggiorna();
     if (!DUE_TEMPI) stato.mappa.easeTo({ center: [lon, lat], zoom: 17.6, duration: 600 });
     apriVista();
@@ -1487,7 +1529,7 @@
   // comune che contiene il punto (confini ISTAT del sito, dati/mappa/08.json, stesse coordinate di patrimonio.js)
   async function comuneDi(lon, lat) {
     try {
-      const m = await json("dati/mappa/08.json?v=20261107b");
+      const m = await json("dati/mappa/08.json?v=20261109b");
       const p = lonlatSvg(lon, lat);
       for (const c of m.comuni) {
         for (const parte of c.d.split("M").filter(Boolean)) {
@@ -1815,7 +1857,7 @@
   let lavoratore = null;
   function orizzonti(punti, ostacoli, lontano = null) {
     return new Promise((ok, ko) => {
-      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261107b"); } catch (e) { ko(e); return; }
+      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261109b"); } catch (e) { ko(e); return; }
       const id = Math.random();
       const f = (e) => { if (e.data.id === id) { lavoratore.removeEventListener("message", f); ok(e.data.orizzonti); } };
       lavoratore.addEventListener("message", f);
@@ -1971,6 +2013,15 @@
     }
     return out;
   }
+  // resa della chioma (09/11/2026): ottagono di raggio 0,62 × lato attorno al centro della cella (le celle di 2 m vicine si
+  // sovrappongono e formano una chioma unica); per ombre e calcoli resta il quadrato della cella
+  function ottagono(a) {
+    const cx = (a.ring[0][0] + a.ring[2][0]) / 2, cy = (a.ring[0][1] + a.ring[2][1]) / 2, r = Math.abs(a.ring[2][0] - a.ring[0][0]) * 0.62;
+    const out = [];
+    for (let k = 0; k < 8; k++) { const t = (k + 0.5) * Math.PI / 4; out.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); }
+    out.push(out[0]);
+    return out;
+  }
   function ostacoliRelativi() {
     return [...stato.corpi, ...stato.vicini].map((c) => ({ ring: c.ring, cima: rel(c) + (c.colmo || c.gronda) }))
       .concat(alberiVicini().map((a) => ({ ring: a.ring, cima: a.cima })));
@@ -1992,6 +2043,90 @@
   }
 
   // ------------------------------------------------------------------ Fase B: ortofoto (proxy del server)
+  // ------------------------------------------------------------------ colore degli edifici e alberi (09/11/2026)
+  // menu a discesa con lo stesso aspetto e la stessa tastiera di quello dell'asterisco della testata (aspetto.js: frecce,
+  // Home/Fine, Invio, Esc, clic fuori) e casella «Alberi»; tutto ricordato nel browser, entra nel PNG e nella legenda
+  function applicaColoreEdifici() {
+    const m = stato.mappa, col = coloreEdifici();
+    if (m) (stato.sorgentiCorpi || []).forEach((id, k) => {
+      if ((stato.archivi[k] || {}).osm) return;
+      if (m.getLayer(id)) m.setPaintProperty(id, "fill-extrusion-color", col);
+      if (m.getLayer(`${id}-2d`)) m.setPaintProperty(`${id}-2d`, "fill-color", col);
+    });
+    document.querySelectorAll(".legenda .pallino.vicini").forEach((x) => { x.style.background = voceColore().colore || ""; });
+  }
+  function applicaAlberi() {
+    const m = stato.mappa;
+    if (m) vedi(m, ["alberi"], !!stato.alberiVisibili && stato.in3d);
+    const l = $("legenda-alberi");
+    if (l) l.hidden = !stato.alberiVisibili;
+  }
+  function controlliAspetto3d() {
+    const box = $("caselle-strati");
+    if (!box || $("colore-edifici")) return;
+    const riga = h("div", "riga-campi aspetto-3d"); riga.id = "aspetto-3d";
+    // (09/11/2026 b) nella riga sotto la mappa l'etichetta visibile è «Colore» (il nome intero è nel tooltip e nell'aria-label
+    // del pulsante): con «Colore degli edifici» per intero a 1366 px il gruppo andava a capo
+    const et = h("span", "etichetta-colore", "Colore"); et.title = "Colore degli edifici"; et.setAttribute("aria-hidden", "true");
+    const blocco = h("div", "vestito colore-edifici"); blocco.id = "colore-edifici";
+    const quad = (c) => { const i = h("i", "campione-colore"); i.setAttribute("aria-hidden", "true"); i.style.background = c.colore || "var(--serie-6)"; return i; };
+    const pul = h("button", "vestito-pulsante colore-edifici-pulsante"); pul.type = "button";
+    pul.setAttribute("aria-haspopup", "listbox"); pul.setAttribute("aria-expanded", "false"); pul.setAttribute("aria-controls", "colore-edifici-elenco");
+    const ul = h("ul", "vestito-elenco a-discesa"); ul.id = "colore-edifici-elenco"; ul.setAttribute("role", "listbox");
+    ul.setAttribute("aria-label", "Colore degli edifici"); ul.tabIndex = -1; ul.hidden = true;
+    const voci = COLORI_EDIFICI.map((c) => { const li = h("li"); li.setAttribute("role", "option"); li.id = `colore-edifici-${c.id}`; li.dataset.colore = c.id;
+      li.append(quad(c), c.nome); ul.appendChild(li); return li; });
+    blocco.append(pul, ul);
+    let i = 0;
+    const scelto = () => Math.max(0, COLORI_EDIFICI.findIndex((c) => c.id === stato.coloreEdifici));
+    function disegna() {
+      const v = voceColore();
+      pul.innerHTML = ""; pul.append(quad(v), h("span", "nome-colore", v.nome));
+      const t = `Colore degli edifici: ${v.nome}`; pul.setAttribute("aria-label", t); pul.title = t;
+      voci.forEach((o) => o.setAttribute("aria-selected", String(o.dataset.colore === v.id)));
+    }
+    function evidenzia(n) { i = (n + voci.length) % voci.length; voci.forEach((o, k) => o.classList.toggle("attiva", k === i)); ul.setAttribute("aria-activedescendant", voci[i].id); }
+    const fuori = (e) => { if (!ul.contains(e.target) && !pul.contains(e.target)) chiudi(false); };
+    function apri() { ul.hidden = false; pul.setAttribute("aria-expanded", "true"); evidenzia(scelto()); ul.focus(); document.addEventListener("pointerdown", fuori, true); }
+    function chiudi(rimetti) { ul.hidden = true; pul.setAttribute("aria-expanded", "false"); document.removeEventListener("pointerdown", fuori, true); if (rimetti) pul.focus(); }
+    function conferma(k) {
+      evidenzia(k); chiudi(true);
+      stato.coloreEdifici = COLORI_EDIFICI[k].id; scriviPref(CHIAVE_COLORE, stato.coloreEdifici);
+      disegna(); applicaColoreEdifici();
+    }
+    ul.addEventListener("keydown", (e) => {
+      switch (e.key) {
+        case "ArrowDown": case "ArrowRight": evidenzia(i + 1); break;
+        case "ArrowUp": case "ArrowLeft": evidenzia(i - 1); break;
+        case "Home": evidenzia(0); break;
+        case "End": evidenzia(voci.length - 1); break;
+        case "Enter": case " ": conferma(i); break;
+        case "Escape": chiudi(true); break;
+        case "Tab": chiudi(false); return;
+        default: return;
+      }
+      e.preventDefault();
+    });
+    voci.forEach((o, k) => o.addEventListener("click", () => conferma(k)));
+    pul.addEventListener("click", () => (ul.hidden ? apri() : chiudi(true)));
+    pul.addEventListener("keydown", (e) => { if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); apri(); } });
+    // alberi: chiome dal LiDAR (dove la pipeline delle falde è passata); restano tra gli ostacoli delle ombre anche spenti
+    const la = h("label", "casella-strato casella-alberi"), ca = h("input"); ca.type = "checkbox"; ca.id = "strato-alberi"; ca.checked = !!stato.alberiVisibili;
+    la.title = "Chiome degli alberi dal LiDAR (DSM meno DTM, celle di 2 m), nella vista 3D. Anche spente restano tra gli ostacoli per le ombre.";
+    la.append(ca, " Alberi");
+    ca.addEventListener("change", () => { stato.alberiVisibili = ca.checked; scriviPref(CHIAVE_ALBERI, ca.checked ? "1" : "0"); applicaAlberi(); });
+    riga.append(et, blocco, la);
+    // (09/11/2026 b, richiesta di Paolo) sotto la mappa, nella riga di «Genera il 3D» e delle frecce dell'ortofoto, dopo
+    // «Azzera»: non più nel pannello di destra sotto i livelli; con la colonna stretta il gruppo va a capo intero
+    const sotto = $("comandi-edificio");
+    if (sotto) sotto.appendChild(riga); else box.after(riga);
+    const leg = $("legenda-3d");
+    if (leg && !$("legenda-alberi")) {
+      const s0 = h("span"); s0.id = "legenda-alberi"; const p0 = h("i", "pallino alberi"); s0.append(p0, "alberi (chiome dal LiDAR)");
+      const f = $("legenda-falde"); if (f) f.after(s0); else leg.appendChild(s0);
+    }
+    disegna(); applicaColoreEdifici(); applicaAlberi();
+  }
   async function caricaOrtofoto() {
     const sel = $("sfondo-ortofoto");
     if (!sel) return;
@@ -2024,18 +2159,42 @@
         stato.mappa.getLayer("rilievo") ? "rilievo" : "ombre");
       if (stato.strati) stato.strati.alza();
     }
+    // (09/11/2026) la RER 2023-24 ha zone senza immagini (Bologna, Modena, Parma, Faenza, Bagno di Romagna…): il server
+    // dichiara le tessere vuote (X-Ortofoto-Vuota); finché l'utente non sceglie a mano si passa alla fonte successiva
+    const zonaVuota = (f, c) => { const z = 12, n = 2 ** z; return `${f.id}@${Math.floor((c.lng + 180) / 360 * n)}_${Math.floor((1 - Math.asinh(Math.tan(c.lat * Math.PI / 180)) / Math.PI) / 2 * n)}`; };
+    stato.vuote = stato.vuote || new Set(); stato.provate = stato.provate || new Set();
+    async function provaVuota(f) {
+      const m = stato.mappa, c = m.getCenter(), z = Math.max(f.zoom[0], Math.min(f.zoom[1], Math.floor(m.getZoom())));
+      const k = zonaVuota(f, c);
+      if (!f.tessere || f.pmtiles || stato.provate.has(k) || m.getZoom() < f.zoom[0] - 0.5) return;
+      stato.provate.add(k);
+      const n = 2 ** z, x = Math.floor((c.lng + 180) / 360 * n), y = Math.floor((1 - Math.asinh(Math.tan(c.lat * Math.PI / 180)) / Math.PI) / 2 * n);
+      try {
+        const r = await fetch(location.origin + f.tessere.replace("{z}", z).replace("{x}", x).replace("{y}", y));
+        if (r.ok && r.headers.get("X-Ortofoto-Vuota") === "1") {
+          stato.vuote.add(k);
+          if (!stato.manuale && stato.ortofoto && stato.ortofoto.id === f.id) {
+            opzioni();
+            const g = stato.ortofoto;
+            messaggio("messaggio-cerca", `«${f.nome}» non ha immagini in questa zona${g && g.id !== f.id ? `: uso «${g.nome}»` : ""}. Puoi scegliere un'altra fonte nei livelli.`);
+          }
+        }
+      } catch { /* niente: resta la fonte scelta */ }
+    }
     function opzioni() {
       // (07/11/2026 sera) stesso elenco e stesso ordine della pagina Ortofoto: anche Sentinel-2 cloudless, che resta pure come contesto sotto
       const c = stato.mappa.getCenter(), qui = fonti.filter((f) => copre(f, [c.lng, c.lat]));
+      const auto = qui.filter((f) => !stato.vuote.has(zonaVuota(f, c)));       // per la scelta automatica, senza le fonti vuote qui
       const prima = sel.value;
       while (sel.options.length > 1) sel.remove(1);
       qui.forEach((f) => { const o = h("option", null, f.nome + (f.stato === "da confermare" ? " (licenza da confermare)" : "")); o.value = f.id; sel.appendChild(o); });
       stato.fontiOrtofoto = qui;
       sel.disabled = !qui.length || !ortoVisibile();
       sel.options[0].textContent = qui.length ? "nessuna ortofoto" : "ortofoto non disponibili qui";
-      if (qui.some((f) => f.id === prima)) sel.value = prima;
-      else if (prima) { sel.value = qui.length && !stato.manuale ? qui[0].id : ""; sfondo(sel.value); }
-      else if (!stato.manuale && qui.length && !stato.ortofoto) { sel.value = qui[0].id; sfondo(sel.value); }
+      if (qui.some((f) => f.id === prima) && (stato.manuale || auto.some((f) => f.id === prima))) sel.value = prima;
+      else if (prima) { sel.value = auto.length && !stato.manuale ? auto[0].id : ""; sfondo(sel.value); }
+      else if (!stato.manuale && auto.length && !stato.ortofoto) { sel.value = auto[0].id; sfondo(sel.value); }
+      if (!stato.manuale && stato.ortofoto) provaVuota(stato.ortofoto);
     }
     sel.addEventListener("change", () => { stato.manuale = true; sfondo(sel.value); });
     if ($("strato-ortofoto")) $("strato-ortofoto").addEventListener("change", vediOrtofoto);
@@ -2238,7 +2397,7 @@
   async function datiDpr() {
     if (stato.dpr === null) {
       stato.dpr = false;
-      try { stato.dpr = await json("dati/dpr412.json?v=20261107b"); } catch { /* senza file: niente zona */ }
+      try { stato.dpr = await json("dati/dpr412.json?v=20261109b"); } catch { /* senza file: niente zona */ }
     }
     return stato.dpr || null;
   }
@@ -2600,6 +2759,7 @@
           } catch { /* strati non disponibili */ }
         }
       }
+      if (DUE_TEMPI && !(indice && indice.sintetico)) controlliAspetto3d();
       caricaOrtofoto();
       if (DUE_TEMPI && window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-3d"), stato.mappa, opzioniImmagine, $("messaggio-immagine"));
       // demo sintetica: si esce sempre con «Esci dalla demo», che riapre la pagina normale (mappa 2D vera, ortofoto, ricerca)

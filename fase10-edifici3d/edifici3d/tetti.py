@@ -140,9 +140,20 @@ def clip_convesso(poli, taglio):
     return out if len(out) >= 3 and area(out) > 0.05 else None
 
 
+# cortili veri per i tetti (09/11/2026, come cortiliDi in JS): buchi di almeno 25 m² o del 10 % della pianta; cavedi e buchi
+# occupati da un corpo interno (Bagno di Romagna, foglio 54 particella 216: 8 m² in 178 m²) non rendono piano il tetto
+CORTILE_MIN_M2 = 25.0
+CORTILE_MIN_QUOTA = 0.10
+
+
+def cortili(ring, buchi=()) -> list:
+    A = area(ring)
+    return [b for b in buchi if len(b) >= 3 and (area(b) >= CORTILE_MIN_M2 or area(b) >= CORTILE_MIN_QUOTA * A)]
+
+
 def falde_stimate(ring, gronda: float, colmo: float | None, buchi=(), tipo_voluto: str | None = None):
     """Falde del tetto stimato da gronda e colmo (anelli in metri): {tipo, falde} o None (come faldeStimate in JS)."""
-    if colmo is None or not (colmo > gronda + SALTO_MIN) or any(len(b) >= 3 for b in buchi):
+    if colmo is None or not (colmo > gronda + SALTO_MIN) or cortili(ring, buchi):
         return None
     m = rettangolo_tetto(ring)
     if not m or m["A"] < 1 or area_corpo(ring, buchi) / m["A"] < RIEMPIMENTO_MIN:
@@ -230,7 +241,7 @@ def motivo_tetto_piano(ring, gronda, uso=None, tipo_edificio=None, buchi=(), m=F
         return f"uso {'sportivo' if u == 'palestra' else 'commerciale' if u == 'commerciale' else 'produttivo'} ({u})"
     if TIPI_TETTO_PIANO.search(tipo):
         return f"tipo di edificio «{tipo}»"
-    if any(len(b) >= 3 for b in buchi):
+    if cortili(ring, buchi):
         return "corpo con cortile"
     A = area_corpo(ring, buchi)
     if A > IPOTESI_TETTO["area_piano"]:

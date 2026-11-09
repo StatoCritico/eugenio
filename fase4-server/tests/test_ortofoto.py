@@ -135,9 +135,9 @@ def test_rotte_copia_e_intestazioni(client, tmp_path):
     assert r2.headers["x-ortofoto-copia"] == "si" and len(chiamate) == 1          # dalla copia, senza chiamare
     r3 = c.get("/api/ortofoto/rer2023/17/70114/47547.jpg", headers={"If-None-Match": r2.headers["etag"]})
     assert r3.status_code == 304
-    # solo dal vivo: niente copia, no-store
+    # solo dal vivo: niente copia sul server né su Cloudflare, solo il browser (09/11/2026)
     r = c.get("/api/ortofoto/pcn2012/17/70114/47547.jpg")
-    assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
+    assert r.status_code == 200 and r.headers["cache-control"] == "private, max-age=86400"
     assert not (tmp_path / "copia" / "pcn2012").exists()
     # fuori zona, estensione sbagliata, fonte sconosciuta
     assert c.get("/api/ortofoto/rer2023/17/0/0.jpg").status_code == 404
@@ -263,10 +263,100 @@ def test_spostamento_rotta_limiti_e_niente_copia(client, tmp_path):
     r = c.get("/api/ortofoto/rer2023/17/70114/47547.jpg?t=1&de=-1&dn=0")
     assert r.status_code == 200 and "TRANSPARENT=TRUE" in chiamate[-1] and not (tmp_path / "copia" / "rer2023_t").exists()
     r = c.get("/api/ortofoto/pcn2012/17/70114/47547.jpg?de=0&dn=5")
-    assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
+    assert r.status_code == 200 and r.headers["cache-control"] == "private, max-age=86400"
     # limiti: interi da -20 a 20; tessere già pronte (Sentinel-2) non spostabili
     n0 = len(chiamate)
     for q in ("de=21", "dn=-21", "de=1.5", "de=a"):
         assert c.get(f"{base}?{q}").status_code == 422, q
     assert c.get("/api/ortofoto/s2cloudless2016/12/2190/1478.jpg?de=1").status_code == 400
     assert len(chiamate) == n0                                                         # nessuna chiamata alla fonte
+
+
+def test_limite_solo_sulle_tessere_dalla_fonte_e_429_con_retry_after(client, monkeypatch):
+    """09/11/2026 (prove J10: migliaia di 429 in Modelli 3D): la copia su disco non consuma il limite «ortofoto», solo il
+    tetto anti-abuso «tessere_copia»; il 429 dice quanto aspettare (Retry-After) e quale limite (X-EuGEnio-Limite)."""
+    c, chiamate = client
+    monkeypatch.setattr(C, "ORTOFOTO_ORA", 2)
+    h = {"X-Forwarded-For": "198.51.100.9"}
+    assert c.get("/api/ortofoto/rer2023/17/70114/47547.jpg", headers=h).status_code == 200
+    for _ in range(10):                                   # dalla copia: non contano nel limite della fonte
+        assert c.get("/api/ortofoto/rer2023/17/70114/47547.jpg", headers=h).headers["x-ortofoto-copia"] == "si"
+    assert c.get("/api/ortofoto/rer2023/17/70115/47547.jpg", headers=h).status_code == 200
+    r = c.get("/api/ortofoto/rer2023/17/70116/47547.jpg", headers=h)
+    assert r.status_code == 429 and "tessere di ortofoto" in r.json()["detail"]
+    assert 1 <= int(r.headers["retry-after"]) <= 3600 and r.headers["x-eugenio-limite"] == "ortofoto"
+    assert len(chiamate) == 2                             # la terza non è andata alla fonte
+    # un altro indirizzo non è toccato
+    assert c.get("/api/ortofoto/rer2023/17/70116/47547.jpg", headers={"X-Forwarded-For": "198.51.100.10"}).status_code == 200
+    # tetto della copia
+    monkeypatch.setattr(C, "TESSERE_COPIA_ORA", 3)
+    P.limiti.clear()
+    for _ in range(3):
+        assert c.get("/api/ortofoto/rer2023/17/70114/47547.jpg", headers=h).status_code == 200
+    r = c.get("/api/ortofoto/rer2023/17/70114/47547.jpg", headers=h)
+    assert r.status_code == 429 and r.headers["x-eugenio-limite"] == "tessere_copia"
+
+
+def test_attesa_del_limitatore():
+    L = P.Limitatore()
+    for t in range(10):
+        assert L.prova("a", "x", 10, 3600, ora=1000.0 + t * 60)
+    assert not L.prova("a", "x", 10, 3600, ora=1600.0)
+    # per liberare 1 posto basta che scada il primo (istante 1000 + 3600 − 1600 = 3000 s); per liberarne 3 il terzo
+    assert L.attesa("a", "x", 10, 3600, 1, ora=1600.0) == 3000
+    assert L.attesa("a", "x", 10, 3600, 3, ora=1600.0) == 3120
+    assert L.attesa("b", "x", 10, 3600, 3, ora=1600.0) == 0
+
+
+def test_tessera_vuota_dichiarata(client, tmp_path, monkeypatch):
+    """09/11/2026: la RER 2023-24 ha zone senza immagini (Bologna, Modena, Faenza…): tessera tutta trasparente con
+    X-Ortofoto-Vuota, la pagina passa da sola a un'altra fonte."""
+    from PIL import Image
+    c, chiamate = client
+    b = io.BytesIO(); Image.new("RGBA", (256, 256), (0, 0, 0, 0)).save(b, "PNG")
+    monkeypatch.setattr(O, "_scarica", lambda url: httpx.Response(200, content=b.getvalue(), headers={"content-type": "image/png"}))
+    r = c.get("/api/ortofoto/rer2023/17/69665/47409.jpg")
+    assert r.status_code == 200 and r.headers.get("x-ortofoto-vuota") == "1" and r.headers["content-type"] == "image/png"
+    r = c.get("/api/ortofoto/rer2023/17/69665/47409.jpg")               # dalla copia: sempre dichiarata
+    assert r.headers["x-ortofoto-copia"] == "si" and r.headers.get("x-ortofoto-vuota") == "1"
+    assert "x-ortofoto-vuota" not in c.get("/api/ortofoto/pcn2012/17/69665/47409.jpg").headers
+
+
+def _jpeg_segnaposto():
+    """Come la WMS della Toscana fuori dalla regione: JPEG 256×256 bianco con una riga di testo scuro."""
+    from PIL import Image, ImageDraw
+    im = Image.new("RGB", (256, 256), (255, 255, 255))
+    ImageDraw.Draw(im).text((4, 120), "Fonte dei dati: Regione Toscana - Base informativa T", fill=(60, 60, 60))
+    b = io.BytesIO(); im.save(b, "JPEG", quality=75)
+    return b.getvalue()
+
+
+def test_segnaposto_della_toscana_diventa_vuoto(client, tmp_path, monkeypatch):
+    """09/11/2026 b (prove di Paolo, «strane scritte sul terreno bianco»): fuori dalla Toscana la WMS risponde 200 con un JPEG
+    bianco e la scritta della fonte; il proxy lo rende una tessera vuota (PNG trasparente, X-Ortofoto-Vuota: 1), anche
+    quando era già nella copia; una foto vera non si tocca."""
+    import numpy as np
+    from PIL import Image
+    c, _ = client
+    seg = _jpeg_segnaposto()
+    assert len(seg) < 4000 and O.segnaposto_bianco(seg)
+    foto = io.BytesIO(); Image.fromarray(np.random.default_rng(1).integers(0, 255, (256, 256, 3), dtype=np.uint8)).save(foto, "JPEG")
+    assert not O.segnaposto_bianco(foto.getvalue()) and not O.segnaposto_bianco(O.vuota_png())
+    assert O.fonti()["toscana2023"].segnaposto and not O.fonti()["pcn2012"].segnaposto
+    t = next(x for x in c.get("/api/ortofoto/fonti").json()["fonti"] if x["id"] == "toscana2023")
+    assert t["tessere"].endswith(".jpg?s=1")                        # indirizzi nuovi: niente segnaposto dalle copie di prima
+    monkeypatch.setattr(O, "_scarica", lambda url: httpx.Response(200, content=seg, headers={"content-type": "image/jpeg"}))
+    r = c.get("/api/ortofoto/toscana2023/16/34800/23900.jpg?s=1")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/png" and r.headers.get("x-ortofoto-vuota") == "1"
+    a = np.asarray(Image.open(io.BytesIO(r.content)).convert("RGBA"))
+    assert a.shape == (256, 256, 4) and int(a[..., 3].max()) == 0
+    # segnaposto copiato prima della correzione: dalla copia esce vuoto e la copia si corregge
+    p = O.file_copia(O.fonti()["toscana2023"], 16, 34800, 23901)
+    p.parent.mkdir(parents=True, exist_ok=True); p.write_bytes(seg)
+    r = c.get("/api/ortofoto/toscana2023/16/34800/23901.jpg")
+    assert r.headers["x-ortofoto-copia"] == "si" and r.headers.get("x-ortofoto-vuota") == "1" and r.headers["content-type"] == "image/png"
+    assert p.read_bytes() == O.vuota_png()
+    # una foto vera della Toscana passa com'è
+    monkeypatch.setattr(O, "_scarica", lambda url: httpx.Response(200, content=foto.getvalue(), headers={"content-type": "image/jpeg"}))
+    r = c.get("/api/ortofoto/toscana2023/16/34800/23902.jpg")
+    assert r.headers["content-type"] == "image/jpeg" and "x-ortofoto-vuota" not in r.headers

@@ -246,3 +246,25 @@ def test_overpass_riserva_dal_env(monkeypatch):
     assert chiamate == [s.url]
     monkeypatch.setattr(T.C, "OVERPASS_RISERVA", ["https://altra.example/api/interpreter", "https://maps.google.com/x"])
     assert T.istanze_overpass() == [s.url, "https://altra.example/api/interpreter"]      # servizi esclusi tolti
+
+
+def test_limiti_degli_strati(client, monkeypatch):
+    """09/11/2026: particelle e contorni regionali hanno il limite «strati», le tessere OSM consumano il limite e il tetto di
+    Overpass come il ripiego degli edifici; la copia conta solo nel tetto anti-abuso «tessere_copia»."""
+    c, chiamate = client
+    h = {"X-Forwarded-For": "198.51.100.20"}
+    monkeypatch.setattr(C, "STRATI_ORA", 1)
+    assert c.get("/api/ortofoto/strati/catasto/18/140223/95260.png", headers=h).status_code == 200
+    for _ in range(5):
+        assert c.get("/api/ortofoto/strati/catasto/18/140223/95260.png", headers=h).status_code == 200    # copia
+    r = c.get("/api/ortofoto/strati/catasto/18/140224/95260.png", headers=h)
+    assert r.status_code == 429 and r.headers["x-eugenio-limite"] == "strati" and int(r.headers["retry-after"]) > 0
+    monkeypatch.setattr(C, "EDIFICI_OSM_ORA", 1)
+    assert c.get("/api/ortofoto/strati/osm_edifici/16/34894/23807.json", headers=h).status_code == 200
+    r = c.get("/api/ortofoto/strati/osm_edifici/16/34895/23807.json", headers=h)
+    assert r.status_code == 429 and r.headers["x-eugenio-limite"] == "edifici_osm"
+    # tetto di Overpass per tutto il sito: nessuna chiamata oltre il tetto
+    monkeypatch.setattr(C, "EDIFICI_OSM_TETTO_ORA", 1)
+    n = len(chiamate)
+    r = c.get("/api/ortofoto/strati/osm_edifici/16/34896/23807.json", headers={"X-Forwarded-For": "198.51.100.21"})
+    assert r.status_code == 503 and len(chiamate) == n

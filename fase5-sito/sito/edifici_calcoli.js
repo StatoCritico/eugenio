@@ -127,6 +127,11 @@
   // cortile: i fori si percorrono nel verso opposto all'esterno)
   const buchiDi = (c) => (c && Array.isArray(c.buchi) ? c.buchi.filter((b) => Array.isArray(b) && b.length >= 3) : []);
   function areaCorpo(c) { return Math.max(0, area(c.ring) - buchiDi(c).reduce((s, b) => s + area(b), 0)); }
+  // cortili veri per i tetti (09/11/2026, prova 13 di Paolo a Bagno di Romagna, foglio 54 particella 216: il corpo di 178 m²
+  // aveva un «buco» di 8 m² occupato da un altro corpo, un volume interno alto 4 m, e il tetto restava piano): contano solo i
+  // buchi di almeno 25 m² o del 10 % della pianta; cavedi e buchi riempiti da corpi interni non rendono piano il tetto
+  const CORTILE_MIN_M2 = 25, CORTILE_MIN_QUOTA = 0.10;
+  function cortiliDi(c) { const A = c && Array.isArray(c.ring) ? area(c.ring) : 0; return buchiDi(c).filter((b) => area(b) >= CORTILE_MIN_M2 || area(b) >= CORTILE_MIN_QUOTA * A); }
   function dentroCorpo(p, c) { return dentro(p, c.ring) && !buchiDi(c).some((b) => dentro(p, b)); }
   function anelliOrientati(c) {
     const ccw = areaConSegno(c.ring) > 0;
@@ -729,7 +734,7 @@
     return { A: m.A, u, v, s0, s1, t0, t1, La: s1 - s0, Lb: t1 - t0, anello, h };
   }
   function faldeStimate(c, tipoVoluto = null) {
-    if (!c || !Array.isArray(c.ring) || !(c.colmo > c.gronda + SALTO_MIN) || buchiDi(c).length) return null;
+    if (!c || !Array.isArray(c.ring) || !(c.colmo > c.gronda + SALTO_MIN) || cortiliDi(c).length) return null;
     const m = rettangoloTetto(c);
     if (!m || m.A < 1 || areaCorpo(c) / m.A < RIEMPIMENTO_MIN) return null;
     const { u, v, s0, s1, t0, t1, anello } = m;
@@ -802,7 +807,7 @@
     const uso = String((c && c.uso) || "").toLowerCase(), tipo = String((c && (c.tipo_edificio || c.destinazione)) || "");
     if (USI_TETTO_PIANO.includes(uso)) return `uso ${uso === "palestra" ? "sportivo" : uso === "commerciale" ? "commerciale" : "produttivo"} (${uso})`;
     if (TIPI_TETTO_PIANO.test(tipo)) return `tipo di edificio «${tipo}»`;
-    if (buchiDi(c).length) return "corpo con cortile";
+    if (cortiliDi(c).length) return "corpo con cortile";
     const A = areaCorpo(c);
     if (A > IPOTESI_TETTO.area_piano) return `corpo molto grande (${Math.round(A)} m²)`;
     if (!(c.gronda >= IPOTESI_TETTO.gronda_piano)) return "corpo basso, accessorio (gronda sotto 3 m)";
@@ -825,7 +830,7 @@
     return { tipo: r.tipo, falde: r.falde, colmo, inclinazione: z.inclinazione, montagna: z.montagna, quota: z.quota, soglia: z.soglia };
   }
 
-  const API = { INTERPIANI, faldeStimate, rettangoloTetto, IPOTESI_TETTO, USI_TETTO_PIANO, comuneDelNord, zonaAltimetrica, motivoTettoPiano, tettoIpotizzato, RAPPORTO_PADIGLIONE, UN_PIANO, SOVRALZO, NETTA_SU_LORDA, SETTORI, FACOLTATIVE, ETICHETTE, numero, norm, colonnaFacoltativa,
+  const API = { INTERPIANI, CORTILE_MIN_M2, cortiliDi, faldeStimate, rettangoloTetto, IPOTESI_TETTO, USI_TETTO_PIANO, comuneDelNord, zonaAltimetrica, motivoTettoPiano, tettoIpotizzato, RAPPORTO_PADIGLIONE, UN_PIANO, SOVRALZO, NETTA_SU_LORDA, SETTORI, FACOLTATIVE, ETICHETTE, numero, norm, colonnaFacoltativa,
     mappaFacoltative, leggiFacoltative, usoDa, stimaPiani, scegli, superfici, area, centroide, lati, chiudi, indicatori, dividi,
     areaCorpo, dentroCorpo, latiCorpo, anelliOrientati,
     inviluppo, dentro, rettangoloMinimo, proiezione, sole, ombra, orizzonte, altezzaOrizzonte, svf, trasponi, producibilita,

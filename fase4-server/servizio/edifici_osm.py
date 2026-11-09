@@ -20,8 +20,9 @@ Regole:
     va il centro della cella, non il punto esatto dell'utente;
   * **una chiamata alla volta** per tutto il sito, almeno un secondo tra due chiamate (niente raffiche), attesa del turno
     al massimo EDIFICI_OSM_ATTESA_S secondi, poi 503; tetto EDIFICI_OSM_TETTO_ORA chiamate all'ora per tutto il sito;
-  * limite per indirizzo «edifici_osm» (EDIFICI_OSM_ORA all'ora) e **verifica anti-robot** (Turnstile, gettone di
-    sessione) come patrimonio e geocodifica: la rotta consuma le quote di Overpass del server;
+  * limite per indirizzo «edifici_osm» (EDIFICI_OSM_ORA all'ora, solo le richieste che chiamano davvero Overpass o il
+    WFS regionale: dal 09/11/2026 le celle già in copia contano in «edifici_osm_copia», EDIFICI_OSM_COPIA_ORA) e **verifica
+    anti-robot** (Turnstile, gettone di sessione) come patrimonio e geocodifica: la rotta consuma le quote di Overpass;
   * EDIFICI_OSM=false nel .env la spegne (404 con il motivo, la pagina lo dice);
   * **altezze** (decisione di Paolo del 07/11/2026): ai corpi senza `height` né `building:levels` si dà la **mediana dei
     corpi DBTR vicini** (entro 200 m, almeno 3, letti dalle celle di contesto degli archivi del server elencati in
@@ -41,7 +42,8 @@ riquadro di 800 m attorno al centro della cella (non il punto dell'utente), nel 
 per il Veneto: in EPSG:4326 il filtro non trova nulla). Stessa verifica anti-robot e stessi limiti per IP; una chiamata
 alla volta ai WFS, almeno un secondo tra due, tetto EDIFICI_REGIONALI_TETTO_ORA all'ora; copia su disco delle sagome
 (DATI/edifici_regionali/<regione>/, EDIFICI_OSM_GIORNI giorni). Le quote dei corpi si leggono dal DTM del server
-(`terreno.quote_punti`: in Veneto il DTM 5 m da voli LiDAR, se è sul server), così la vista 3D ha il terreno. Se il WFS
+(`terreno.quote_punti`: in Veneto il DTM 5 m da voli LiDAR, se è sul server; dal 09/11/2026 b, dove non c'è un DTM
+regionale, il Copernicus DEM 90 m delle tessere del terreno, anche per gli edifici OSM), così la vista 3D ha il terreno. Se il WFS
 non risponde o non trova sagome resta il ripiego OSM, con l'avviso. EDIFICI_REGIONALI=false le spegne.
 """
 from __future__ import annotations
@@ -267,6 +269,25 @@ def _copia_reg(regione: str, nome: str) -> Path:
     return C.DATI / "edifici_regionali" / regione / f"{nome}.json"
 
 
+def _copia_reg_valida(fonte_id: str, nome: str) -> bool:
+    f = _copia_reg(fonte_id, nome)
+    try:
+        return f.exists() and time.time() - f.stat().st_mtime < C.EDIFICI_OSM_GIORNI * 86400
+    except OSError:
+        return False
+
+
+def regionali_in_copia(lo: float, la: float, nome: str) -> bool:
+    """La cella non chiede nulla al WFS regionale (fuori dalle regioni con le sagome al volo, o sagome già in copia)?"""
+    if not C.EDIFICI_REGIONALI or SR is None:
+        return True
+    try:
+        fonte = SR.fonte_nel_punto(lo, la)
+    except Exception:   # noqa: BLE001
+        return True
+    return not fonte or _copia_reg_valida(fonte["id"], nome)
+
+
 def sagome_wfs(fonte: dict, lo: float, la: float, nome: str) -> dict | None:
     """Sagome del WFS regionale per la cella (copia su disco o una chiamata, una alla volta); None se non risponde."""
     f = _copia_reg(fonte["id"], nome)
@@ -314,12 +335,18 @@ def sagome_wfs(fonte: dict, lo: float, la: float, nome: str) -> dict | None:
 
 
 def con_quote(d: dict) -> dict:
-    """quota_terreno dei corpi dal DTM del server (centro del corpo), dove c'è."""
+    """quota_terreno dei corpi dal DTM del server (centro del corpo), dove c'è; (09/11/2026 b) altrimenti dal Copernicus DEM
+    90 m, lo stesso delle tessere del terreno: senza quote la pagina spegneva il terreno (Susegana «piatta» senza il DTM
+    del Veneto). Vale per le sagome regionali e per gli edifici OSM. In `quote_fonte` le fonti usate."""
+    if not C.TERRENO_ATTIVO:
+        return d
     try:
         from . import terreno as TR
         fs = d.get("features", [])
         centri = [OC._centro(f.get("geometry")) for f in fs]
-        q = TR.quote_punti([c for c in centri if c is not None])
+        fonti: list[str] = []
+        q = TR.quote_punti([c for c in centri if c is not None], ripiego=True, fonti=fonti)
+        d["quote_fonte"] = "+".join(fonti) or None
         it = iter(q)
         n = 0
         for f, c in zip(fs, centri):
@@ -372,9 +399,10 @@ def edifici_osm(request: Request, lon: float = Query(...), lat: float = Query(..
     if not (ITALIA[0] <= lon <= ITALIA[2] and ITALIA[1] <= lat <= ITALIA[3]):
         raise HTTPException(400, "Punto fuori dall'Italia.")
     P.richiedi_sessione(request)
-    P.limita(request, "edifici_osm")
     lo, la, nome = cella(lon, lat)
     d = leggi_copia(nome)
+    # (09/11/2026) la copia non consuma il limite di Overpass: conta solo nel tetto alto «edifici_osm_copia»
+    P.limita(request, "edifici_osm_copia" if d is not None and regionali_in_copia(lo, la, nome) else "edifici_osm")
     if d is None:
         if not _turno.acquire(timeout=C.EDIFICI_OSM_ATTESA_S):
             raise HTTPException(503, "OpenStreetMap è molto richiesto in questo momento: riprova tra poco.",
@@ -399,5 +427,7 @@ def edifici_osm(request: Request, lon: float = Query(...), lat: float = Query(..
         finally:
             _turno.release()
     risposta = con_sagome_regionali(con_altezze_vicine(d), nome)
+    if "quote_dtm" not in risposta:
+        risposta = con_quote(risposta)                  # 09/11/2026 b: anche gli edifici OSM alla quota del terreno
     lic = "IODL 2.0; ODbL 1.0" if risposta.get("sagome") else "ODbL 1.0"
     return JSONResponse(risposta, headers={"Cache-Control": "private, max-age=3600", "X-Licenza": lic})

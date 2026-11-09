@@ -1,5 +1,6 @@
 "use strict";
-// Spostamento manuale dell'ortofoto rispetto alla cartografia (08/11/2026, richiesta di Paolo): quattro frecce a croce
+// Spostamento manuale dell'ortofoto rispetto alla cartografia (08/11/2026, richiesta di Paolo): quattro frecce (dal 09/11/2026
+// affiancate su una riga con lo stato e «Azzera»)
 // sotto la mappa (Modelli 3D e pagine 3D unificate accanto a «Genera il 3D», Ortofoto accanto a «Scarica l'immagine»)
 // spostano la foto di 1 m a nord, sud, ovest o est; «Azzera» la rimette al suo posto. Serve a compensare a occhio gli
 // scarti di 1–5 m tra la foto e particelle, contorni e sagome (F.A.Q. #sfasamento): i vettori restano dove sono.
@@ -21,11 +22,12 @@
 //  s.riga()                  «Ortofoto spostata manualmente di 2 m E, 1 m S rispetto alla cartografia» o ""
 //  s.de, s.dn, s.sposta(de, dn), s.imposta(de, dn), s.azzera()
 (function () {
+  // ordine a schermo (09/11/2026): ← ↑ ↓ → affiancate su una riga
   const DIREZIONI = [
-    { id: "n", freccia: "↑", nome: "nord", de: 0, dn: 1, tasto: "ArrowUp" },
     { id: "o", freccia: "←", nome: "ovest", de: -1, dn: 0, tasto: "ArrowLeft" },
-    { id: "e", freccia: "→", nome: "est", de: 1, dn: 0, tasto: "ArrowRight" },
+    { id: "n", freccia: "↑", nome: "nord", de: 0, dn: 1, tasto: "ArrowUp" },
     { id: "s", freccia: "↓", nome: "sud", de: 0, dn: -1, tasto: "ArrowDown" },
+    { id: "e", freccia: "→", nome: "est", de: 1, dn: 0, tasto: "ArrowRight" },
   ];
   function h(tag, cls, t) { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; }
   function testo(de, dn) {
@@ -59,7 +61,7 @@
       b.addEventListener("click", () => sposta(d.de, d.dn));
       pulsanti[d.id] = b; croce.appendChild(b);
     }
-    const mezzo = h("span", "passo", "1 m"); mezzo.setAttribute("aria-hidden", "true"); croce.appendChild(mezzo);
+    const mezzo = h("span", "passo", "1 m"); mezzo.setAttribute("aria-hidden", "true"); croce.appendChild(mezzo);   // dopo le quattro frecce
     const lato = h("div", "sposta-lato");
     const stato = h("span", "sposta-stato"); stato.setAttribute("role", "status"); stato.setAttribute("aria-live", "polite");
     stato.id = `sposta-stato-${Math.random().toString(36).slice(2, 8)}`;
@@ -86,6 +88,7 @@
       const conta = t && st.fonte && st.fonte.spostabile;
       stato.textContent = !st.attiva ? `${conta ? `Ortofoto spostata: ${t}. ` : ""}${st.motivo}` : t ? `Ortofoto spostata: ${t}` : "Ortofoto al suo posto";
       stato.classList.toggle("spostata", !!conta);
+      stato.title = stato.textContent;
       for (const d of DIREZIONI) {
         const b = pulsanti[d.id], oltre = Math.abs(st.de + d.de) > st.max || Math.abs(st.dn + d.dn) > st.max;
         b.disabled = !st.attiva || oltre;

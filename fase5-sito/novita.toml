@@ -21,6 +21,37 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
+data = "2026-11-09"
+versione = "20261109b"
+titolo = "Ricerca con un solo comune e comandi sotto la mappa"
+migliorato = [
+  "Patrimonio › Modelli 3D e Ortofoto, ricerca: il comune si scrive una volta sola, in cima; sotto l'indirizzo, poi foglio e particella affiancati. «Cerca l'indirizzo» usa comune e indirizzo, «Cerca la particella» comune, foglio e particella; con il solo comune la mappa va al centro del comune. Un solo «Reset» svuota tutto.",
+  "Patrimonio › Modelli 3D: «Colore» degli edifici e «Alberi» sono ora sotto la mappa, sulla stessa riga delle frecce della foto aerea e di «Azzera».",
+]
+
+[[voce]]
+data = "2026-11-09"
+versione = "20261109a"
+titolo = "Roma, Bari e Bologna intere, colori degli edifici e ricerca più comoda"
+nuovo = [
+  "Patrimonio › Modelli 3D: modelli 3D di tutto il comune di Roma (Ostia ed EUR compresi) e di tutto il comune di Bari (Palese, Santo Spirito, Carbonara, Torre a Mare compresi).",
+  "Patrimonio › Modelli 3D: modelli 3D di tutto il comune di Bologna e di Castel Bolognese, di Ravenna con Marina di Ravenna e Punta Marina, di quasi tutto Coriano e dei centri di altri 25 comuni dell'Emilia-Romagna, tra cui Casalecchio di Reno, San Lazzaro di Savena, Massa Lombarda, Fusignano, Meldola, Bertinoro, Verucchio e Gambettola.",
+  "Patrimonio › Modelli 3D: puoi scegliere il colore degli edifici (grigio, giallo, rosso, indaco o violetto); l'edificio scelto resta arancione. Il colore resta per le visite successive ed entra nell'immagine scaricata.",
+  "Patrimonio › Modelli 3D: la casella «Alberi» accende e spegne le chiome degli alberi misurate dal rilievo laser, ora disegnate come chiome e non più come cubetti. Partono spente.",
+]
+migliorato = [
+  "Patrimonio › Modelli 3D e Ortofoto, ricerca: prima il comune, poi l'indirizzo; accanto a «Cerca l'indirizzo» e a «Cerca la particella» il pulsante «Reset» svuota i campi.",
+  "Ricerca per particella o per solo comune: ora trova tutti i comuni italiani, anche Torino e i comuni del Piemonte e della provincia di Napoli.",
+  "Un clic sulla mappa non sposta più la vista: regioni e comuni si evidenziano e basta.",
+  "Frecce per spostare la foto aerea, stato e «Azzera» tutti su una riga sotto la mappa.",
+  "Dove la foto aerea della Regione Emilia-Romagna non ha immagini (per esempio a Bologna) la mappa passa da sola a un'altra foto aerea e lo dice.",
+  "Tetti ipotizzati a falde anche sugli edifici con un piccolo cavedio o un corpo interno (prima restavano piani, per esempio a Bagno di Romagna).",
+]
+verificato = [
+  "Clima e meteo › Previsioni.",
+]
+
+[[voce]]
 data = "2026-11-07"
 versione = "20261107b"
 titolo = "Tetti a falde, 3D in collina e ortofoto da allineare"
