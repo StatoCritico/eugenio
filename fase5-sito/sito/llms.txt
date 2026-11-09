@@ -8,7 +8,7 @@
 > per IP solo sulle tessere chieste alla fonte e 429 con Retry-After; Previsioni non più sperimentale; tetti tutti piani
 > in partenza e tetti a falde scelti dall'utente nella sezione «Coperture», anche con il cortile; fonte dell'ortofoto
 > scelta da sola nel punto; alberi indicativi da OpenStreetMap dove manca il LiDAR; verifica anti-robot valida
-> un'ora per browser), versione del sito ?v=20261109e.
+> un'ora per browser), versione del sito ?v=20261109f; dal 09/11 f Obblighi di legge, Geometria e luce naturale e Consumi di Edifici sono di nuovo accessibili, sperimentali.
 
 Le istruzioni complete per gli agenti AI (pagine, parametri dell'indirizzo, formati dei file, API libere e protette,
 limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un solo file: leggilo prima di usare il servizio.

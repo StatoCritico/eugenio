@@ -22,6 +22,16 @@
 
 [[voce]]
 data = "2026-11-09"
+versione = "20261109f"
+titolo = "Tre pagine di Edifici, sperimentali"
+nuovo = [
+  "Edifici › Obblighi di legge: la pagina è di nuovo disponibile, sperimentale (S).",
+  "Edifici › Geometria e luce naturale: la pagina è di nuovo disponibile, sperimentale (S).",
+  "Edifici › Consumi, firma energetica e priorità: la pagina è di nuovo disponibile, sperimentale (S).",
+]
+
+[[voce]]
+data = "2026-11-09"
 versione = "20261109e"
 titolo = "Clessidra sulla mappa"
 migliorato = [

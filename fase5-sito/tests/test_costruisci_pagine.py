@@ -190,7 +190,7 @@ def test_pagine_fase_b():
         assert vietato not in o.lower() and vietato not in js.lower()
     t = (QUI / "parti" / "testata.html").read_text(encoding="utf-8")
     assert re.search(r'href="ortofoto.html">[^<]*<span class="cantiere prova">sperimentale', t)
-    for href in ("fv-irradiazione.html", "fv-pvgis.html", "fv-dlgs199.html", "edificio-obblighi.html"):     # (08/11/2026) in lavorazione
+    for href in ("fv-irradiazione.html", "fv-pvgis.html", "fv-dlgs199.html"):     # (08/11/2026) in lavorazione
         assert f'href="{href}"' not in t and f'data-pagina="{href}"' in t, href
 
 
@@ -593,10 +593,11 @@ def test_etichette_brevi_nelle_tendine():
     v = re.findall(r'<span class="cantiere sviluppo breve" title="in sviluppo"><svg class="segnale"[^>]*aria-hidden="true"', tendine)
     g = re.findall(r'<span class="cantiere breve" title="licenza GME[^"]*" aria-hidden="true">GME</span>', tendine)
     # (08/11/2026) 5 «S» (Cambiamento climatico; Ortofoto, Modelli 3D, Importa DXF/IFC, Aggiungi edifici), 2 triangoli
-    # «in sviluppo» cliccabili (LiDAR, Visure), 16 voci in lavorazione con il triangolo e non cliccabili, 6 GME
-    assert len(s) == pannello.count(">sperimentale<") == 5 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
-    assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 16
-    assert tendine.count('fill="#f5c400"') == 18 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
+    # «in sviluppo» cliccabili (LiDAR, Visure), 16 voci in lavorazione con il triangolo e non cliccabili, 6 GME;
+    # (09/11/2026 f) + 3 «S» (Edifici: Obblighi di legge, Geometria e luce naturale, Consumi): 8 «S», 13 in lavorazione
+    assert len(s) == pannello.count(">sperimentale<") == 8 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
+    assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
     assert ".cantiere.breve" in css and ".cantiere .segnale" in css
     # «Costi energetici Sanità» senza etichetta (pagina validata)
@@ -723,7 +724,8 @@ def test_novita_versione_feed_e_menu():
 
 # ---------------------------------------------------------------- menu dell'08/11/2026 (decisioni di Paolo, ore 12:19)
 # pagine «in lavorazione»: voce col triangolo giallo e non cliccabile, nessun collegamento nel sito, avviso in cima
-PAGINE_IN_CORSO = ["edificio-obblighi.html", "edificio-geometria.html", "edificio-consumi.html", "edificio-fabbisogno.html",
+EDIFICI_SPERIMENTALI = ["edificio-obblighi.html", "edificio-geometria.html", "edificio-consumi.html"]   # (09/11/2026 f) riattivate, «S»
+PAGINE_IN_CORSO = ["edificio-fabbisogno.html",
                    "edificio-involucro.html", "edificio-impianti.html", "edificio-ecobonus.html", "edificio-conto-termico.html",
                    "cog-emissioni.html", "fv-ombre.html", "fv-irradiazione.html", "fv-producibilita.html", "fv-pvgis.html",
                    "fv-dlgs199.html", "fv-leed.html", "edificio-cer.html"]
@@ -740,10 +742,14 @@ def test_menu_08_11_gruppi_e_voci_in_lavorazione(sito):
     for gid, voci in ACCESSIBILI.items():
         assert [v["pagina"] for v in gruppi[gid]["voci"]] == voci and all(v["tipo"] == "" for v in gruppi[gid]["voci"]), gid
     assert gruppi["clima"]["voci"][-1]["nome"] == "Cambiamento climatico"
-    # Edifici: «Obblighi di legge» prima voce, Ecobonus e Conto Termico in fondo, tutte in lavorazione
+    # Edifici: «Obblighi di legge» prima voce, Ecobonus e Conto Termico in fondo; (09/11/2026 f) le prime tre accessibili
+    # e sperimentali, le altre in lavorazione
     ed = gruppi["edificio"]["voci"]
     assert ed[0]["nome"] == "Obblighi di legge" and [v["nome"] for v in ed[-2:]] == ["Ecobonus", "Conto Termico"]
-    assert all(v["tipo"] == "corso" for v in ed)
+    assert [v["pagina"] for v in ed[:3]] == EDIFICI_SPERIMENTALI and all(v["tipo"] == "" for v in ed[:3])
+    assert all(v["tipo"] == "corso" for v in ed[3:])
+    for p in EDIFICI_SPERIMENTALI:
+        assert len(re.findall(rf'href="{re.escape(p)}">[^<]*<span class="cantiere prova', t)) == 2, p
     # Comunità energetiche nel Fotovoltaico, prima della voce GME
     fv = gruppi["fotovoltaico"]["voci"]
     assert [v["pagina"] for v in fv[-2:]] == ["edificio-cer.html", "fv-mercato.html"] and fv[-1]["tipo"] == "gme"

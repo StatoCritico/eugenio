@@ -96,6 +96,14 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Tre pagine di Edifici sperimentali (09/11/2026 f, `?v=20261109f`)
+
+Decisione di Paolo delle 22:15: **Obblighi di legge**, **Geometria e luce naturale** e **Consumi, firma energetica e
+priorità** tornano voci cliccabili del gruppo Edifici con l'etichetta **sperimentale** (`cantiere prova`: «S» nelle
+tendine, parola intera nel menu del telefono). Le pagine non hanno più l'avviso «Pagina in lavorazione»
+(`costruisci_pagine.py` lo mette solo alle voci `voce-corso`). Le altre voci di Edifici restano in lavorazione. Test in
+`tests/test_costruisci_pagine.py` (`EDIFICI_SPERIMENTALI`, 8 «S», 13 voci in lavorazione).
+
 ## Correzioni dalle prove di Paolo delle 21:05 (09/11/2026 e, `?v=20261109e`)
 
 Procedura T di `AGGIORNAMENTO_2026-11-09e.md`; prove nel browser `tests/test_prove_0911e_browser.py` (6).
