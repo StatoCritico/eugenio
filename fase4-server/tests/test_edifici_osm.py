@@ -181,8 +181,10 @@ def test_serve_la_verifica_anti_robot(client, monkeypatch):
     h = {"X-Forwarded-For": "203.0.113.30"}
     r = c.get("/api/edifici/osm?lon=12.9061&lat=43.9041", headers=h)
     assert r.status_code == 401 and r.headers["x-eugenio-verifica"] == "1" and not chiamate
-    g, _ = P.crea_sessione("203.0.113.30")
+    g, _ = P.crea_sessione("203.0.113.30|testclient")              # 09/11/2026 e: rete e browser
     assert c.get("/api/edifici/osm?lon=12.9061&lat=43.9041", headers={**h, "X-EuGEnio-Sessione": g}).status_code == 200
+    g2, _ = P.crea_sessione("203.0.113.30")                          # stessa rete, browser diverso: non vale
+    assert c.get("/api/edifici/osm?lon=12.9061&lat=43.9041", headers={**h, "X-EuGEnio-Sessione": g2}).status_code == 401
     assert "edifici_osm" in P.TIPI_PROTETTI
 
 

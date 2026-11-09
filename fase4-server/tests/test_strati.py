@@ -146,6 +146,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "STRATI_SPENTI", set())
     T.strati(ricarica=True)
     O.ritmo.svuota()
+    T.guasti.svuota()
     P.limiti.clear()
     chiamate = []
 
@@ -197,8 +198,37 @@ def test_errore_della_fonte_non_si_copia(client, tmp_path, monkeypatch):
     c, _ = client
     s = T.strati()["dbtr_edifici"]
     monkeypatch.setattr(s, "url", s.url + "?errore=1")
-    assert c.get("/api/ortofoto/strati/dbtr_edifici/18/140223/95260.png").status_code == 502
+    r = c.get("/api/ortofoto/strati/dbtr_edifici/18/140223/95260.png")     # 09/11/2026 d: tessera vuota pulita, non 502
+    assert r.status_code == 200 and r.headers["x-ortofoto-errore"] == "fonte" and r.headers["cache-control"] == "no-store"
+    assert O.vuota(r.content) and int(r.headers["retry-after"]) >= 1
     assert not (tmp_path / "copia" / "strati" / "dbtr_edifici").exists()
+
+
+def test_blocco_intero_in_copia_e_turno_mancato(client, tmp_path, monkeypatch):
+    """09/11/2026 d (prove Q8: 503 a raffica sulle particelle): le quattro tessere del blocco 2×2 chiesto all'Agenzia
+    delle Entrate vanno tutte in copia (una chiamata invece di quattro); il turno non arrivato in tempo dà una tessera
+    vuota pulita «occupata» (prima 503); dopo errori ripetuti lo strato è fermo e la fonte non si chiama."""
+    c, chiamate = client
+    assert c.get("/api/ortofoto/strati/catasto/18/140223/95260.png").status_code == 200
+    n = len(chiamate)
+    for x, y in ((140222, 95260), (140222, 95261), (140223, 95261)):
+        assert (tmp_path / "copia" / "strati" / "catasto" / "18" / str(x) / f"{y}.png").exists(), (x, y)
+        assert c.get(f"/api/ortofoto/strati/catasto/18/{x}/{y}.png").status_code == 200
+    assert len(chiamate) == n
+    s = T.strati()["catasto"]
+    monkeypatch.setattr(s, "al_secondo", 1)
+    monkeypatch.setattr(C, "ORTOFOTO_ATTESA_S", 0)
+    O.ritmo.svuota()
+    assert c.get("/api/ortofoto/strati/catasto/18/140231/95260.png").status_code == 200
+    r = c.get("/api/ortofoto/strati/catasto/18/140235/95260.png")
+    assert r.headers["x-ortofoto-errore"] == "occupata" and r.headers["cache-control"] == "no-store"
+    monkeypatch.setattr(C, "ORTOFOTO_ATTESA_S", 8)
+    monkeypatch.setattr(s, "al_secondo", 50)
+    monkeypatch.setattr(s, "url", s.url + "&errore=1")
+    for i in range(O.GUASTI_SOGLIA):
+        assert c.get(f"/api/ortofoto/strati/catasto/18/{140300 + 2 * i}/95260.png").headers["x-ortofoto-errore"] == "fonte"
+    n = len(chiamate)
+    assert c.get("/api/ortofoto/strati/catasto/18/140400/95260.png").headers["x-ortofoto-errore"] == "ferma" and len(chiamate) == n
 
 
 def test_overpass_istanza_di_riserva(monkeypatch):
@@ -257,7 +287,7 @@ def test_limiti_degli_strati(client, monkeypatch):
     assert c.get("/api/ortofoto/strati/catasto/18/140223/95260.png", headers=h).status_code == 200
     for _ in range(5):
         assert c.get("/api/ortofoto/strati/catasto/18/140223/95260.png", headers=h).status_code == 200    # copia
-    r = c.get("/api/ortofoto/strati/catasto/18/140224/95260.png", headers=h)
+    r = c.get("/api/ortofoto/strati/catasto/18/140226/95260.png", headers=h)       # altro blocco 2×2
     assert r.status_code == 429 and r.headers["x-eugenio-limite"] == "strati" and int(r.headers["retry-after"]) > 0
     monkeypatch.setattr(C, "EDIFICI_OSM_ORA", 1)
     assert c.get("/api/ortofoto/strati/osm_edifici/16/34894/23807.json", headers=h).status_code == 200
@@ -267,4 +297,4 @@ def test_limiti_degli_strati(client, monkeypatch):
     monkeypatch.setattr(C, "EDIFICI_OSM_TETTO_ORA", 1)
     n = len(chiamate)
     r = c.get("/api/ortofoto/strati/osm_edifici/16/34896/23807.json", headers={"X-Forwarded-For": "198.51.100.21"})
-    assert r.status_code == 503 and len(chiamate) == n
+    assert r.status_code == 200 and r.headers["x-ortofoto-errore"] == "ferma" and r.json()["features"] == [] and len(chiamate) == n

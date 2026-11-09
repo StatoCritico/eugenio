@@ -9,6 +9,26 @@
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
   <entry>
+    <title>9 novembre 2026 – Clessidra sulla mappa</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261109-5</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261109-5"/>
+    <updated>2026-11-09T12:00:00Z</updated>
+    <summary>Clessidra sulla mappa</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D e Ortofoto: mentre le tessere arrivano, sulla mappa compare una piccola clessidra (prima un orologio che a volte diventava enorme e copriva la mappa).&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <title>9 novembre 2026 – Tetti a falde anche con il cortile, mappa più alta e alberi a Cesena</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261109-4</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261109-4"/>
+    <updated>2026-11-09T12:00:00Z</updated>
+    <summary>Tetti a falde anche con il cortile, mappa più alta e alberi a Cesena</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D: la mappa si allunga e si accorcia trascinando la maniglia sotto di essa (anche col dito); l&amp;#x27;altezza scelta resta per le visite successive.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: dove non ci sono le chiome misurate dal rilievo laser, la casella «Alberi» mostra alberi indicativi da OpenStreetMap, più chiari e con l&amp;#x27;altezza stimata, e lo dice sotto la mappa e nell&amp;#x27;immagine.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Modelli 3D, «Coperture»: anche gli edifici con il cortile prendono il tetto a falde, che scende verso la strada e verso il cortile.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: nella vista 3D il clic sceglie l&amp;#x27;edificio che vedi davanti, anche toccandone la parete o il tetto, non la sua pianta a terra.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D: la tegola si spegne da sola quando cerchi un altro indirizzo o un&amp;#x27;altra particella.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D e Ortofoto: un piccolo orologio sulla mappa avvisa che le tessere stanno arrivando (o che il 3D si sta generando) e dice quale fonte è lenta.&lt;/li&gt;&lt;li&gt;Patrimonio › Modelli 3D e Ortofoto: le particelle catastali e la foto aerea arrivano senza buchi quando la fonte è lenta: la pagina riprova da sola.&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
     <title>9 novembre 2026 – Tetti a falde scelti da te e foto aerea scelta da sola</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261109-3</id>
     <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261109-3"/>

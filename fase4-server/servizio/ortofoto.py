@@ -550,11 +550,13 @@ async def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str
         await asyncio.sleep(attesa)
     if attesa:
         return tessera_errore(f, "occupata", attesa)
+    t0 = time.monotonic()
     try:
         async with _semaforo(f):
             r = await _chiama(url_tessera(f, z, x, y, de, dn))
     except (httpx.HTTPError, asyncio.TimeoutError, OSError) as e:
-        log.warning("Ortofoto %s: fonte non raggiungibile (%s)", f.id, type(e).__name__)
+        # (09/11/2026 d) nel registro anche il tempo: «TimeoutError dopo 18,0 s» = fonte lenta, pochi decimi = rete o rifiuto
+        log.warning("Ortofoto %s: fonte non raggiungibile (%s dopo %.1f s)", f.id, type(e).__name__, time.monotonic() - t0)
         return tessera_errore(f, "fonte", guasti.errore(f.id) or 30)
     tipo = r.headers.get("content-type", "").split(";")[0].strip()
     if r.status_code == 404 and f.tipo == "xyz":
@@ -562,7 +564,7 @@ async def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str
         raise HTTPException(404, "Tessera non disponibile nella fonte")
     if r.status_code != 200 or not tipo.startswith("image/"):
         # i WMS rispondono 200 con un XML di errore (ServiceException): non si copia
-        log.warning("Ortofoto %s: risposta %s %s", f.id, r.status_code, tipo)
+        log.warning("Ortofoto %s: risposta %s %s dopo %.1f s", f.id, r.status_code, tipo, time.monotonic() - t0)
         return tessera_errore(f, "fonte", guasti.errore(f.id) or 30)
     dati = r.content
     if f.segnaposto and segnaposto_bianco(dati):

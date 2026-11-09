@@ -6,7 +6,8 @@
 // Si carica in tutte le pagine (parti/testa.html) e avvolge window.fetch: le pagine non cambiano. Alla prima
 // richiesta protetta legge /api/protezione; se il server ha la verifica accesa carica Turnstile, ottiene un gettone
 // (di solito senza chiedere nulla: il riquadro compare solo se Cloudflare vuole un clic), lo scambia con un gettone di
-// sessione (POST /api/sessione, valido mezz'ora) e lo manda nell'intestazione X-EuGEnio-Sessione. Se il server
+// sessione (POST /api/sessione, valido un'ora dal 09/11/2026 e, legato a rete e browser, tenuto in localStorage e comune
+// a tutte le schede) e lo manda nell'intestazione X-EuGEnio-Sessione. Se il server
 // risponde 401 con X-EuGEnio-Verifica (sessione scaduta, rete cambiata, api riavviata) rifà la verifica una volta
 // e ripete la richiesta. Senza verifica sul server (prove, mirror) non fa nulla.
 // Dal 09/11/2026 gestisce anche i limiti orari delle fonti della mappa (429 di ortofoto, strati, edifici OSM, terreno):
@@ -28,15 +29,31 @@
   let sessione = null;        // { g, scade, base }
   let riquadro = null;
 
+  // (09/11/2026 e, prove di Paolo: «le righe rosse ci sono ancora», quelle di challenges.cloudflare.com a ogni ricerca)
+  // il gettone di sessione sta in localStorage, comune a tutte le schede del sito e alle visite successive finché vale
+  // (60 minuti, legato a rete e browser dal server): Turnstile, e con lui le righe del suo riquadro in Console, si carica
+  // al più una volta all'ora invece che a ogni scheda nuova. Prima sessionStorage (una verifica per scheda). Se
+  // localStorage non c'è (navigazione anonima con i dati bloccati) si ripiega su sessionStorage.
+  const memoria = (() => {
+    for (const nome of ["localStorage", "sessionStorage"]) {
+      try { const m = window[nome]; m.setItem("eugenio-prova", "1"); m.removeItem("eugenio-prova"); return m; } catch (e) { /* prossima */ }
+    }
+    return null;
+  })();
   try {
-    const s = JSON.parse(sessionStorage.getItem(CHIAVE) || "null");
+    const s = memoria && JSON.parse(memoria.getItem(CHIAVE) || "null");
     if (s && s.g && s.scade * 1000 > Date.now()) sessione = s;
   } catch (e) { /* archivio del browser non disponibile: si rifà la verifica */ }
 
   function salva(s) {
     sessione = s;
-    try { s ? sessionStorage.setItem(CHIAVE, JSON.stringify(s)) : sessionStorage.removeItem(CHIAVE); } catch (e) { /* niente */ }
+    try { if (memoria) { if (s) memoria.setItem(CHIAVE, JSON.stringify(s)); else memoria.removeItem(CHIAVE); } } catch (e) { /* niente */ }
   }
+  // una scheda che ha appena fatto la verifica la passa alle altre (evento storage): nessuna seconda verifica
+  window.addEventListener("storage", (e) => {
+    if (e.key !== CHIAVE) return;
+    try { const s = JSON.parse(e.newValue || "null"); if (s && s.g && s.scade * 1000 > Date.now()) sessione = s; } catch (x) { /* niente */ }
+  });
 
   function indirizzo(input) {
     if (typeof input === "string") return input;
@@ -149,6 +166,9 @@
   }
 
   async function gettone(b, forza) {
+    if (!forza && !sessione) {               // un'altra scheda può averla scritta nel frattempo
+      try { const s = memoria && JSON.parse(memoria.getItem(CHIAVE) || "null"); if (s && s.g && s.scade * 1000 > Date.now()) sessione = s; } catch (e) { /* niente */ }
+    }
     if (!forza && sessione && sessione.base === b && sessione.scade * 1000 - Date.now() > 60000) return sessione.g;
     if (forza) salva(null);
     return nuovaSessione(b);
@@ -182,7 +202,7 @@
     let pth;
     try { pth = new URL(url, location.href).pathname; } catch (e) { return null; }
     if (/^\/api\/terreno\/\d/.test(pth)) return "terreno";
-    if (/^\/api\/edifici\/osm(?:[/?#]|$)/.test(pth)) return "edifici_osm";
+    if (/^\/api\/edifici\/osm(?:[/?#]|$)/.test(pth) || /^\/api\/alberi\/osm\//.test(pth)) return "edifici_osm";
     const m = /^\/api\/ortofoto\/strati\/([^/]+)\/\d/.exec(pth);
     if (m) return /osm/.test(m[1]) ? "edifici_osm" : "strati";
     if (/^\/api\/ortofoto\/(?!fonti|strati)[^/]+\/\d+\/\d+\/\d+\./.test(pth)) return "ortofoto";
@@ -274,7 +294,7 @@
   const ERRORI_SOGLIA = 4, ERRORI_FINESTRA_S = 60;
   const nomiFonti = {};          // id della fonte di ortofoto → nome (da /api/ortofoto/fonti)
   const guasti = {};             // chiave (ortofoto:<id>, strati, terreno…) → { errori: [ms], fino, timer, nome, fam }
-  let ricarica = null;
+  const ricariche = {};
   function chiaveFonte(fam, url, r) {
     if (fam !== "ortofoto") return fam;
     const id = (r && r.headers && r.headers.get("X-Ortofoto-Fonte")) || ((/\/api\/ortofoto\/([^/]+)\//.exec(url) || [])[1]) || "?";
@@ -287,14 +307,18 @@
   function guastoAttivo(k) { const g = guasti[k]; return g && g.fino > Date.now() ? g : null; }
   function ricaricaPresto(fam, secondi) {
     // un errore isolato: le tessere di quella famiglia si richiedono una volta, dopo il Retry-After (15–90 s)
-    if (ricarica) return;
+    if (ricariche[fam]) return;                                // un timer per famiglia (09/11/2026 d)
     const s = Math.min(90, Math.max(15, Number.isFinite(secondi) ? secondi : 30));
-    ricarica = setTimeout(() => { ricarica = null; document.dispatchEvent(new CustomEvent("eugenio:limite", { detail: { tipo: fam, famiglie: [fam], fermo: false } })); }, s * 1000);
+    ricariche[fam] = setTimeout(() => { delete ricariche[fam]; document.dispatchEvent(new CustomEvent("eugenio:limite", { detail: { tipo: fam, famiglie: [fam], fermo: false } })); }, s * 1000);
   }
   function erroreFonte(fam, url, r, motivo, secondi) {
     const k = chiaveFonte(fam, url, r), ora = Date.now();
     const g = guasti[k] = guasti[k] || { errori: [], fino: 0, fam };
     if (g.fino > ora) return;
+    // (09/11/2026 d, prove Q8: «Sentinel-2 cloudless 2016 non risponde, ferma per 30 s») «occupata» vuol dire solo che il
+    // turno verso la fonte non è arrivato in tempo (il nostro ritmo, per tutti gli utenti): la fonte risponde. Non conta
+    // come errore: la tessera si richiede poco dopo
+    if (motivo === "occupata") { ricaricaPresto(fam, secondi); return; }
     g.errori = g.errori.filter((t) => ora - t < ERRORI_FINESTRA_S * 1000).concat(ora);
     if (motivo !== "ferma" && g.errori.length < ERRORI_SOGLIA) { ricaricaPresto(fam, secondi); return; }
     const s = Math.min(PAUSA_MAX_S, Math.max(PAUSA_MIN_S, Number.isFinite(secondi) && secondi > 0 ? secondi : 120));
@@ -330,11 +354,12 @@
           "Retry-After": String(Math.ceil((g.fino - Date.now()) / 1000)) } });
     }
     let r;
+    const volo = iniziaVolo(fam, url);
     try { r = await chiama(); }
     catch (e) {
       if (!(e && e.name === "AbortError")) erroreFonte(fam, url, null, "rete", NaN);
       throw e;
-    }
+    } finally { fineVolo(volo); }
     const errore = r.headers.get("X-Ortofoto-Errore");
     if (r.status === 429) {
       const tipo = r.headers.get("X-EuGEnio-Limite") || fam;
@@ -344,11 +369,75 @@
     } else if (r.ok) { rispostaBuona(fam); fonteBuona(fam, url, r); }
     return r;
   }
+  // ------------------------------------------------------------------ tessere in arrivo (09/11/2026 d, richiesta di Paolo)
+  // Con attese fino a 18–20 s per tessera, sulla mappa (in basso a sinistra, sopra la scala) un piccolo orologio con
+  // «Carico le tessere… (N)» quando ci sono richieste di tessere in volo (ortofoto, particelle e contorni, terreno, edifici
+  // e alberi OSM); se una aspetta più di 3 s, il nome della fonte lenta («Ortofoto «…»: risposta lenta»). Compare solo dopo
+  // 400 ms (niente lampeggi a ogni spostamento), sparisce quando non c'è più nulla in volo; aria-live polite; con
+  // prefers-reduced-motion l'orologio non gira. È un elemento HTML sopra la mappa: non entra nel PNG (che copia la tela).
+  // Le pagine possono segnalare un lavoro lungo loro (EUGENIO_LIMITI.lavoro(testo) → funzione che lo chiude), per esempio
+  // «Genera il 3D».
+  const RITARDO_MS = 400, LENTA_MS = 3000;
+  const inVolo = new Map();       // numero → { fam, chiave, t0 }
+  const lavori = new Map();       // numero → { testo, t0 }
+  let progressivo = 0, giroCarico = null;
+  const indicatori = new Set();
+  function nomeVolo(v) {
+    if (v.chiave && v.chiave.startsWith("ortofoto:")) { const id = v.chiave.slice(9); return `Ortofoto «${nomiFonti[id] || id}»`; }
+    if (v.fam === "edifici_osm" && /alberi/.test(v.url || "")) return "Alberi da OpenStreetMap";
+    return FONTI_LIMITE[v.fam] || v.fam;
+  }
+  function disegnaCarico() {
+    const ora = Date.now(), voli = [...inVolo.values()], testi = [...lavori.values()].filter((l) => ora - l.t0 >= RITARDO_MS).map((l) => l.testo);
+    const pronti = voli.filter((v) => ora - v.t0 >= RITARDO_MS);
+    const lente = [...new Set(voli.filter((v) => ora - v.t0 >= LENTA_MS).map(nomeVolo))];
+    let t = "";
+    if (testi.length) t = testi.join(" · ");
+    if (pronti.length) t = `${t ? `${t} · ` : ""}Carico le tessere… (${voli.length})${lente.length ? ` – ${lente.map((n) => `${n}: risposta lenta`).join("; ")}` : ""}`;
+    for (const el of indicatori) {
+      if (!document.body.contains(el)) { indicatori.delete(el); continue; }
+      el.hidden = !t;
+      el.querySelector(".carico-testo").textContent = t;
+      el.title = t;
+    }
+    if (!voli.length && !lavori.size && giroCarico) { clearInterval(giroCarico); giroCarico = null; }
+  }
+  function svegliaCarico() { if (!giroCarico) giroCarico = setInterval(disegnaCarico, 250); }
+  function iniziaVolo(fam, url) {
+    const n = ++progressivo;
+    inVolo.set(n, { fam, url, chiave: chiaveFonte(fam, url, null), t0: Date.now() });
+    svegliaCarico();
+    return n;
+  }
+  function fineVolo(n) { inVolo.delete(n); if (!inVolo.size) disegnaCarico(); }
+  function lavoro(testo) {
+    const n = ++progressivo;
+    lavori.set(n, { testo: String(testo || "Elaboro…"), t0: Date.now() });
+    svegliaCarico();
+    setTimeout(disegnaCarico, RITARDO_MS);
+    return () => { lavori.delete(n); disegnaCarico(); };
+  }
+  function indicatore(m) {
+    const box = m.getContainer();
+    if (box.querySelector(".carico-mappa")) return;
+    const el = document.createElement("div");
+    el.className = "carico-mappa"; el.hidden = true;
+    el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite");
+    // (09/11/2026 e) clessidra al posto dell'orologio (Paolo: «non si capisce che è un orologio»), con width e height
+    // espliciti: la regola generica «.mappa svg { width: 100% }» di stile.css la faceva larga quanto il riquadro (600–700 px)
+    el.innerHTML = '<svg class="carico-icona" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">'
+      + '<g class="carico-clessidra"><path d="M6 3h12M6 21h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+      + '<path d="M7.5 3.5c0 4.5 4.5 5.5 4.5 8.5s-4.5 4-4.5 8.5M16.5 3.5c0 4.5-4.5 5.5-4.5 8.5s4.5 4 4.5 8.5" fill="none" stroke="currentColor" stroke-width="1.8"/>'
+      + '<path d="M9.2 18.8c1-1.6 2-2.4 2.8-2.6.8.2 1.8 1 2.8 2.6z" fill="currentColor"/></g></svg><span class="carico-testo"></span>';
+    box.appendChild(el);
+    indicatori.add(el);
+  }
   // mappa MapLibre: gli errori delle tessere (429, 503, 404 fuori zona) non vanno in Console uno per uno (MapLibre scrive
   // console.error per ogni tessera se nessuno ascolta «error»); finita una pausa si ricaricano le sorgenti di quella fonte
   function collega(m) {
     if (!m || m.__eugenioLimiti) return;
     m.__eugenioLimiti = true;
+    try { indicatore(m); } catch (e) { /* senza indicatore */ }
     let avvisati = 0;
     m.on("error", (e) => {
       const st = e && e.error && (e.error.status || (/\((\d{3})\)/.exec(String(e.error.message || "")) || [])[1]);
@@ -381,7 +470,8 @@
       }
     });
   }
-  window.EUGENIO_LIMITI = { famigliaDi, inPausa, ferma, riprendi, pause, collega, FONTI: FONTI_LIMITE, guasti, nomiFonti, erroreFonte };
+  window.EUGENIO_LIMITI = { famigliaDi, inPausa, ferma, riprendi, pause, collega, FONTI: FONTI_LIMITE, guasti, nomiFonti, erroreFonte,
+    lavoro, inVolo };
 
   // nomi delle fonti di ortofoto per la nota (dalla risposta di /api/ortofoto/fonti, chiunque la chieda)
   function leggiNomi(r) {

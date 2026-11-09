@@ -21,6 +21,39 @@ Container:
 
 Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, vedi fase 3).
 
+## Correzioni del 09/11/2026 e (`?v=20261109e`, procedura T di `AGGIORNAMENTO_2026-11-09e.md`)
+
+- **Gettone di sessione della verifica anti-robot** (`servizio/protezione.py`, `rete_sessione`): legato a rete (IPv4, IPv6
+  /64) **e browser** (User-Agent, solo come impronta firmata), `SESSIONE_MINUTI` predefinito **60** (prima 30). Con
+  `SESSIONE_CHIAVE` nel `.env` (passo T5) i gettoni restano validi dopo un riavvio dell'api; senza, la chiave casuale cambia a
+  ogni avvio e ogni rebuild rifaceva la verifica a tutti. La pagina tiene il gettone in `localStorage` (fase 5): Turnstile al
+  più una volta all'ora per browser. La protezione non si indebolisce: stesso Turnstile, stessa firma HMAC, legame più
+  stretto (anche il browser). Alternativa non fatta: la «pre-clearance» di Turnstile (cookie `cf_clearance` di Cloudflare),
+  che richiede regole WAF e cambia il modo di proteggere le rotte.
+- Test: `test_edifici_osm.py` (gettone di un altro browser rifiutato).
+
+## Correzioni del 09/11/2026 d (`?v=20261109d`, procedura S di `AGGIORNAMENTO_2026-11-09d.md`)
+
+- **Strati, origine dei 503** (prove Q8: «errori console piovono», decine di `GET …/api/ortofoto/strati/catasto/18|19/… 503`):
+  erano **nostri**, non dell'Agenzia delle Entrate né del limite per IP: la rotta degli strati era ancora sincrona e, dopo
+  `ORTOFOTO_ATTESA_S` secondi di attesa del turno (catasto: 2 chiamate al secondo per tutto il sito), rispondeva 503 «Fonte
+  dello strato molto richiesta»; i 502 erano errori o lentezze della fonte. Ora `servizio/strati.py` fa come le ortofoto della
+  c: rotta asincrona, chiamata alla fonte al più `ORTOFOTO_TIMEOUT_S`, semaforo per strato, **tessera vuota pulita** (200,
+  `no-store`, `X-Ortofoto-Errore: fonte|occupata|ferma`, `Retry-After`; per lo strato OSM una FeatureCollection vuota),
+  strato fermo dopo errori ripetuti (`strati.guasti`). In più **tutte le tessere del blocco 2×2** chiesto all'Agenzia vanno in
+  copia (prima solo quella chiesta: le altre tre si richiedevano una per una, quattro volte le chiamate). Particelle fino
+  allo zoom 19 (prima 20).
+- **Terreno**: attesa del turno asincrona fino a 20 s (prima un thread fermo e 503 dopo `TERRENO_ATTESA_S`), generazione in
+  un thread; il 503 resta solo per un server sommerso (una tessera del terreno vuota sarebbe una quota sbagliata).
+- **Ortofoto**: `ORTOFOTO_TIMEOUT_S` predefinito **18 s** (prima 12; in Q5 AGEA 2012 dal server dava 32 tessere «fonte» su
+  40); nel registro il tempo di ogni errore («ReadTimeout dopo 18,0 s» = lenta, pochi decimi = rifiuto o rete).
+- **Alberi indicativi da OpenStreetMap** (`servizio/alberi_osm.py`, nuovo): `GET /api/alberi/osm/{i}_{j}.json`, cella di
+  0,01° come `lidar/alberi/`; `natural=tree` (altezza da `height`/`est_height` o 8 m, chioma da `diameter_crown` o 5 m) e
+  `natural=tree_row` (una chioma ogni 6 m); boschi non usati; ODbL 1.0, `"stima": true`; limite `edifici_osm` e tetto di
+  Overpass, copia su disco (`CARTELLA_ORTOFOTO/alberi_osm/`), cella vuota pulita se Overpass non risponde. La pagina la
+  chiede solo per le celle senza LiDAR e solo con «Alberi» acceso.
+- Test: `test_strati.py` (errore pulito, blocco intero in copia, turno mancato, strato fermo), `test_alberi_osm.py` (nuovo).
+
 ## Correzioni del 09/11/2026 c (`?v=20261109c`, procedura Q di `AGGIORNAMENTO_2026-11-09c.md`)
 
 - **Ortofoto, errori della fonte** (`servizio/ortofoto.py`, prove P9: «502 Bad Gateway» a raffica di AGEA 2012 e ortofoto

@@ -22,6 +22,30 @@
 
 [[voce]]
 data = "2026-11-09"
+versione = "20261109e"
+titolo = "Clessidra sulla mappa"
+migliorato = [
+  "Patrimonio › Modelli 3D e Ortofoto: mentre le tessere arrivano, sulla mappa compare una piccola clessidra (prima un orologio che a volte diventava enorme e copriva la mappa).",
+]
+
+[[voce]]
+data = "2026-11-09"
+versione = "20261109d"
+titolo = "Tetti a falde anche con il cortile, mappa più alta e alberi a Cesena"
+nuovo = [
+  "Patrimonio › Modelli 3D: la mappa si allunga e si accorcia trascinando la maniglia sotto di essa (anche col dito); l'altezza scelta resta per le visite successive.",
+  "Patrimonio › Modelli 3D: dove non ci sono le chiome misurate dal rilievo laser, la casella «Alberi» mostra alberi indicativi da OpenStreetMap, più chiari e con l'altezza stimata, e lo dice sotto la mappa e nell'immagine.",
+]
+migliorato = [
+  "Patrimonio › Modelli 3D, «Coperture»: anche gli edifici con il cortile prendono il tetto a falde, che scende verso la strada e verso il cortile.",
+  "Patrimonio › Modelli 3D: nella vista 3D il clic sceglie l'edificio che vedi davanti, anche toccandone la parete o il tetto, non la sua pianta a terra.",
+  "Patrimonio › Modelli 3D: la tegola si spegne da sola quando cerchi un altro indirizzo o un'altra particella.",
+  "Patrimonio › Modelli 3D e Ortofoto: un piccolo orologio sulla mappa avvisa che le tessere stanno arrivando (o che il 3D si sta generando) e dice quale fonte è lenta.",
+  "Patrimonio › Modelli 3D e Ortofoto: le particelle catastali e la foto aerea arrivano senza buchi quando la fonte è lenta: la pagina riprova da sola.",
+]
+
+[[voce]]
+data = "2026-11-09"
 versione = "20261109c"
 titolo = "Tetti a falde scelti da te e foto aerea scelta da sola"
 nuovo = [

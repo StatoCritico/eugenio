@@ -133,3 +133,64 @@
     scrivi(quota);
   });
 })();
+
+// (09/11/2026 d, richiesta di Paolo) maniglia sotto le mappe MapLibre delle pagine con la colonna della mappa (Modelli 3D e
+// le pagine 3D, Ortofoto, Aggiungi edifici, Importa DXF/IFC): trascinandola si cambia l'altezza della mappa (mouse e dito,
+// pointer events), con le frecce quando ha il fuoco (Maiuscolo: passi grandi); doppio clic o Canc: altezza predefinita.
+// Altezza tra 280 px e il 92 % della finestra, ricordata per pagina e per mappa nel browser. Durante e dopo il
+// trascinamento emette "eugenio:ridimensiona": le mappe chiamano resize() (anche nella vista 3D).
+(function () {
+  const mappe = document.querySelectorAll("main.strumento .mappa.mappa-gl");
+  if (!mappe.length) return;
+  const pagina = (location.pathname.split("/").pop() || "index.html").replace(/\.html?$/, "") || "index";
+  const MIN = 280, PASSO = 24, PASSO_GRANDE = 96;
+  const massimo = () => Math.max(MIN + 40, Math.round(window.innerHeight * 0.92));
+  let attesa = 0;
+  const avvisa = () => { if (attesa) return; attesa = requestAnimationFrame(() => { attesa = 0; document.dispatchEvent(new CustomEvent("eugenio:ridimensiona")); }); };
+  mappe.forEach((m, k) => {
+    const chiave = `altezza-mappa:${pagina}:${m.id || k}`;
+    const h = document.createElement("div");
+    h.className = "maniglia-mappa";
+    h.setAttribute("role", "separator"); h.setAttribute("aria-orientation", "horizontal"); h.tabIndex = 0;
+    h.setAttribute("aria-label", "Altezza della mappa: trascina in su o in giù (frecce con la tastiera, doppio clic per tornare all'altezza predefinita)");
+    h.title = "Trascina per cambiare l'altezza della mappa (doppio clic: altezza predefinita)";
+    m.after(h);
+    const leggi = () => { try { const v = parseInt(localStorage.getItem(chiave), 10); return v >= MIN ? v : null; } catch (e) { return null; } };
+    const scrivi = (v) => { try { if (v === null) localStorage.removeItem(chiave); else localStorage.setItem(chiave, String(v)); } catch (e) { /* niente memoria */ } };
+    function applica(px, salva) {
+      if (px === null) { m.style.height = ""; m.classList.remove("altezza-scelta"); h.removeAttribute("aria-valuenow"); if (salva) scrivi(null); avvisa(); return; }
+      const v = Math.round(Math.min(massimo(), Math.max(MIN, px)));
+      m.style.height = `${v}px`; m.classList.add("altezza-scelta");
+      h.setAttribute("aria-valuenow", String(v)); h.setAttribute("aria-valuemin", String(MIN)); h.setAttribute("aria-valuemax", String(massimo()));
+      if (salva) scrivi(v);
+      avvisa();
+    }
+    const iniziale = leggi();
+    if (iniziale) applica(iniziale, false);
+    let y0 = 0, h0 = 0, id = null;
+    h.addEventListener("pointerdown", (e) => {
+      if (e.button !== undefined && e.button !== 0) return;
+      e.preventDefault();
+      id = e.pointerId; y0 = e.clientY; h0 = m.getBoundingClientRect().height;
+      try { h.setPointerCapture(id); } catch (x) { /* niente */ }
+      h.classList.add("trascina");
+    });
+    h.addEventListener("pointermove", (e) => { if (id === e.pointerId) applica(h0 + e.clientY - y0, false); });
+    const fine = (e) => {
+      if (id !== e.pointerId) return;
+      id = null; h.classList.remove("trascina");
+      applica(m.getBoundingClientRect().height, true);
+    };
+    h.addEventListener("pointerup", fine);
+    h.addEventListener("pointercancel", fine);
+    h.addEventListener("dblclick", () => applica(null, true));
+    h.addEventListener("keydown", (e) => {
+      const passo = e.shiftKey ? PASSO_GRANDE : PASSO, ora = m.getBoundingClientRect().height;
+      if (e.key === "ArrowDown") applica(ora + passo, true);
+      else if (e.key === "ArrowUp") applica(ora - passo, true);
+      else if (e.key === "Delete" || e.key === "Backspace") applica(null, true);
+      else return;
+      e.preventDefault();
+    });
+  });
+})();

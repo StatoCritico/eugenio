@@ -1,5 +1,12 @@
 # Fase 10 – Edifici 3D, ortofoto, LiDAR e analisi energetiche
 
+Stato al 09/11/2026 d (sito `?v=20261109d`, procedura S di `AGGIORNAMENTO_2026-11-09d.md`, dopo le prove Q8):
+- **Particelle catastali** (`ortofoto/strati/catasto.toml`): zoom massimo 19 (prima 20); le quattro tessere del blocco 2×2
+  chiesto all'Agenzia delle Entrate vanno tutte in copia (fase 4, `strati.py`).
+- **Alberi**: le chiome LiDAR (`lidar/alberi/`) restano la fonte principale (oggi solo la fascia costiera della zona di
+  Rimini); dove mancano, chiome indicative da OpenStreetMap dal server (fase 4, `alberi_osm.py`). Open data comunali dei
+  censimenti del verde: da verificare (DA_FARE).
+
 Stato al 09/11/2026 c (sito `?v=20261109c`, procedura Q di `AGGIORNAMENTO_2026-11-09c.md`, dopo le prove P9):
 - **Tetti (decisione di Paolo del 09/11/2026)**: le pagine 3D partono con **tutti i tetti piani** e l'utente sceglie i tetti
   a falde con la tegola della sezione «Coperture» (fase 5). `edifici3d/tetti.py` (stima dal colmo e ipotesi 22°/32°) e le

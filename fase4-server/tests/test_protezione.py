@@ -151,8 +151,12 @@ def test_richiedi_sessione_solo_se_turnstile_acceso(monkeypatch):
     with pytest.raises(HTTPException) as e:
         P.richiedi_sessione(richiesta())
     assert e.value.status_code == 401 and e.value.headers["X-EuGEnio-Verifica"] == "1"
-    g, _ = P.crea_sessione("2001:db8:1:2::/64")
+    # (09/11/2026 e) gettone legato a rete e browser: stessa /64 e stesso User-Agent valido, altro browser no
+    ua = richiesta("2001:db8:1:2::77").headers.get("user-agent") or ""
+    g, _ = P.crea_sessione(f"2001:db8:1:2::/64|{ua}")
     P.richiedi_sessione(richiesta("2001:db8:1:2::77", **{"X-EuGEnio-Sessione": g}))   # stessa /64: valido
+    with pytest.raises(HTTPException):
+        P.richiedi_sessione(richiesta("2001:db8:1:2::77", **{"X-EuGEnio-Sessione": g, "User-Agent": "altro browser"}))
 
 
 def test_verifica_turnstile(monkeypatch):

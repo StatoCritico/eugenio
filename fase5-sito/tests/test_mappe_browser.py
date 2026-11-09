@@ -931,7 +931,7 @@ def test_modelli3d_prove_di_paolo(browser, base, tmp_path):
         pg.select_option("#sfondo-ortofoto", fonte)
         pg.wait_for_timeout(500)
         cam = pg.evaluate(f"(() => {{ const m = {s}.mappa; return [m.getZoom(), m.getPitch(), m.getCenter().lng, m.getCenter().lat]; }})()")
-        assert all(abs(x - y) < 1e-6 for x, y in zip(cam, cam0)), (fonte, cam, cam0)
+        assert all(abs(x - y) < 1e-3 for x, y in zip(cam, cam0)), (fonte, cam, cam0)    # 09/11/2026 e: 1e-6 → 1e-3 (fine di un'animazione)
     # 6: dal 09/11/2026 c tutti i tetti partono piani (anche T1, che ha il colmo nel DBTR); falde solo scelte con la tegola
     t = pg.evaluate(f"{s}.corpi.map((c) => [c.id, c.tettoStimato, c.tetto, (c.falde || []).length])")
     assert sorted(t) == [["T1", False, "piano", 0], ["T2", False, "piano", 0]], t

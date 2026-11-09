@@ -1322,7 +1322,9 @@ label.casella { display: flex; gap: var(--s2); align-items: center; font-weight:
    restano tagliati sotto la finestra); la rotella sopra la mappa resta lo zoom della mappa */
 @media (min-width: 861px) {
   main.pagina-edificio3d[data-vista="modelli"] > .mappa-area, main.pagina-ortofoto > .mappa-area { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-  main.pagina-edificio3d[data-vista="modelli"] > .mappa-area > *, main.pagina-ortofoto > .mappa-area > * { flex-shrink: 0; }
+  /* (09/11/2026 d) tutte le pagine 3D, non solo Modelli 3D: nelle pagine Edificio e Fotovoltaico la mappa si restringeva
+     sotto il testo introduttivo più lungo (prove Q8: «in fv-producibilita la mappa è più bassa») */
+  main.pagina-edificio3d > .mappa-area > *, main.pagina-ortofoto > .mappa-area > * { flex-shrink: 0; }
 }
 
 /* ------------------------------------------------------------------------------- seconda pubblicazione del 05/11/2026 */
@@ -1461,3 +1463,29 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .importa-tetti input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
 .importa-tetti:focus-within { outline: 2px solid var(--primario); outline-offset: 2px; }
 .stato-tetti { margin-top: var(--s2); }
+
+/* (09/11/2026 d) maniglia sotto le mappe MapLibre (divisore.js): trascinandola (mouse o dito) o con le frecce si cambia
+   l'altezza della mappa, da 280 px al 92 % della finestra; ricordata per pagina; doppio clic: altezza predefinita */
+.maniglia-mappa { flex: none; height: 16px; margin: calc(-1 * var(--s3) + 2px) 0 0; display: flex; align-items: center; justify-content: center;
+  cursor: ns-resize; touch-action: none; user-select: none; -webkit-user-select: none; border-radius: var(--r); }
+.maniglia-mappa::before { content: ""; width: 56px; height: 5px; border-radius: 3px; background: var(--bordo); }
+.maniglia-mappa:hover::before, .maniglia-mappa.trascina::before { background: var(--inchiostro); }
+.maniglia-mappa:focus-visible { outline: 3px solid var(--primario); outline-offset: 1px; }
+.mappa.mappa-gl.altezza-scelta { flex: none; }
+
+/* (09/11/2026 d, e) tessere in arrivo (protezione.js): clessidra in basso a sinistra sopra la scala; HTML sopra la mappa,
+   quindi fuori dal PNG. (e) Il 09/11 sera l'icona diventava enorme (600–700 px): la regola generica «.mappa img, .mappa svg
+   { width: 100%; height: auto }» la faceva larga quanto il riquadro. Ora selettore più forte, dimensione proporzionale
+   alla finestra ma limitata, flex: none; con prefers-reduced-motion la clessidra resta ferma */
+.carico-mappa { position: absolute; left: 10px; bottom: 34px; z-index: 3; display: inline-flex; align-items: center; gap: .4em;
+  max-width: min(calc(100% - 70px), 34em); max-height: 40px; padding: 3px 9px; border-radius: 999px;
+  font-size: clamp(11px, .85vw, 14px); line-height: 1.3; box-sizing: border-box;
+  background: color-mix(in srgb, var(--foglio) 88%, transparent); color: var(--inchiostro); border: 1px solid var(--bordo);
+  pointer-events: none; }
+.carico-mappa[hidden] { display: none; }
+.carico-mappa .carico-testo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.mappa .carico-mappa svg.carico-icona { flex: none; display: block; width: clamp(16px, 1.4vw, 26px); height: clamp(16px, 1.4vw, 26px);
+  max-width: 26px; max-height: 26px; cursor: inherit; touch-action: auto; }
+.carico-clessidra { transform-box: view-box; transform-origin: 12px 12px; animation: giro-clessidra 2.4s ease-in-out infinite; }
+@keyframes giro-clessidra { 0%, 65% { transform: rotate(0deg); } 100% { transform: rotate(180deg); } }
+@media (prefers-reduced-motion: reduce) { .carico-clessidra { animation: none; } }

@@ -484,3 +484,13 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
   «Reset piani» apre accanto `.conferma-reset` («Sì, riporta tutti piani» pieno, «Annulla» secondario): mai `confirm()`.
   «Importa tetti» è un'etichetta-pulsante con il campo file trasparente sopra (focus visibile con `:focus-within`).
 - **Rilievo** (09/11/2026 c): niente più gruppo «Rilievo ×1 ×1,5 ×2» nella barra della vista 3D.
+- **Maniglia della mappa** (09/11/2026 d): `.maniglia-mappa` sotto la mappa, alta 16 px, con una barretta di 56 × 5 px
+  (`--bordo`, `--inchiostro` al passaggio e durante il trascinamento), cursore `ns-resize`, `touch-action: none`, focus
+  visibile; la mappa con l'altezza scelta ha `.altezza-scelta` (`flex: none`).
+- **Indicatore di caricamento** (09/11/2026 d, e): `.carico-mappa` in basso a sinistra sopra la scala, pillola con fondo
+  `--foglio` all'88 %, bordo `--bordo`, al più 40 px di altezza, testo `clamp(11px, .85vw, 14px)`; **clessidra** SVG
+  (`svg.carico-icona`, width/height espliciti, `clamp(16px, 1.4vw, 26px)`, tratto `currentColor`) che si capovolge in 2,4 s
+  (ferma con `prefers-reduced-motion`); non intercetta il mouse. Attenzione: dentro `.mappa` la regola generica `.mappa svg
+  { width: 100% }` vale per ogni SVG: un'icona va sempre dimensionata con un selettore più forte.
+- **Alberi indicativi da OpenStreetMap** (09/11/2026 d): verde chiaro `#a9c98a`, distinto dalle chiome LiDAR (dal `#3f6f2f`
+  al `#86b860` secondo l'altezza).

@@ -313,11 +313,18 @@ def sessione_valida(gettone: str | None, rete: str, ora: float | None = None) ->
     return hmac.compare_digest(parti[2], _impronta(rete))
 
 
+def rete_sessione(req: Request) -> str:
+    """(09/11/2026 e) A cosa è legato il gettone di sessione: rete (IPv4, o IPv6 /64) e browser (User-Agent). Con il legame
+    anche al browser la sessione può durare di più (SESSIONE_MINUTI, 60 di base) senza che un gettone copiato serva da un
+    altro programma sulla stessa rete. Il gettone contiene solo un'impronta firmata, mai la rete o il browser in chiaro."""
+    return f"{chiave_ip(req)}|{(req.headers.get('user-agent') or '')[:300]}"
+
+
 def richiedi_sessione(req: Request) -> None:
     """401 se la verifica anti-robot è accesa e manca un gettone di sessione valido per questa rete."""
     if not turnstile_attivo():
         return
-    if not sessione_valida(req.headers.get(INTESTAZIONE_SESSIONE), chiave_ip(req)):
+    if not sessione_valida(req.headers.get(INTESTAZIONE_SESSIONE), rete_sessione(req)):
         raise HTTPException(401, "Serve la verifica anti-robot: ricarica la pagina e riprova.",
                             headers={"X-EuGEnio-Verifica": "1"})
 

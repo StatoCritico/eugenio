@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
-from . import analisi, config as C, dbtr_coda, edifici, edifici_osm, interno, meteo, modello, orizzonte, ortofoto, protezione as P, pvgis, report, storici, strati, tabelle, terreno
+from . import alberi_osm, analisi, config as C, dbtr_coda, edifici, edifici_osm, interno, meteo, modello, orizzonte, ortofoto, protezione as P, pvgis, report, storici, strati, tabelle, terreno
 from .report_servizi import CON_FORMATO as REPORT_CON_FORMATO, TIPI as TIPI_REPORT
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -30,6 +30,7 @@ if C.ORIGINI_CORS:
 
 app.include_router(storici.router)   # pagina "Dati climatici": /api/storici/...
 app.include_router(edifici.router)   # edifici 3D (fase 10): gradi giorno mensili e clima orario per firma e FV
+app.include_router(alberi_osm.router)   # alberi indicativi da OpenStreetMap dove manca il LiDAR (09/11/2026 d)
 app.include_router(edifici_osm.router)   # ripiego OpenStreetMap di Modelli 3D fuori dal DBTR (07/11/2026)
 app.include_router(strati.router)   # strati sopra le ortofoto (particelle, contorni edifici), prima delle tessere
 app.include_router(ortofoto.router)  # ortofoto (fase 10, Fase B): proxy con copia su disco, una fonte per TOML
@@ -78,7 +79,7 @@ async def sessione(request: Request, token: str = Body(..., embed=True, max_leng
     ip = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip() or None
     if not await P.verifica_turnstile(token, ip):
         raise HTTPException(403, "Verifica anti-robot non superata: ricarica la pagina e riprova.")
-    g, scade = P.crea_sessione(P.chiave_ip(request))
+    g, scade = P.crea_sessione(P.rete_sessione(request))      # 09/11/2026 e: rete e browser
     return {"sessione": g, "scade": scade}
 
 

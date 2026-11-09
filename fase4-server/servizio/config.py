@@ -125,7 +125,9 @@ TURNSTILE_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 # gettone di sessione rilasciato dopo la verifica: firmato con SESSIONE_CHIAVE (vuota = chiave casuale a ogni avvio,
 # le sessioni aperte si rinnovano da sole), valido SESSIONE_MINUTI e legato alla rete di chi l'ha chiesto
 SESSIONE_CHIAVE = os.environ.get("SESSIONE_CHIAVE", "")
-SESSIONE_MINUTI = int(os.environ.get("SESSIONE_MINUTI", "30"))
+# (09/11/2026 e) 30 → 60 minuti: il gettone è legato anche al browser (User-Agent); con SESSIONE_CHIAVE nel .env le
+# sessioni restano valide anche dopo un riavvio dell'api (senza, la chiave casuale cambia e ogni riavvio rifà la verifica)
+SESSIONE_MINUTI = int(os.environ.get("SESSIONE_MINUTI", "60"))
 SESSIONI_ORA = int(os.environ.get("SESSIONI_ORA", "60"))                 # verifiche per IP all'ora
 # avviso email solo quando la stessa rete supera i limiti almeno AVVISO_429_SOGLIA volte al giorno per
 # AVVISO_429_GIORNI giorni consecutivi; i conteggi (con gli IP) restano AVVISO_429_CONSERVA_GIORNI giorni
@@ -153,7 +155,8 @@ STRATI_ORA = int(os.environ.get("STRATI_ORA", "12000"))                   # tess
 TESSERE_COPIA_ORA = int(os.environ.get("TESSERE_COPIA_ORA", "60000"))
 ORTOFOTO_ATTESA_S = float(os.environ.get("ORTOFOTO_ATTESA_S", "8"))       # attesa massima del turno verso la fonte (09/11/2026: 6 → 8)
 # (09/11/2026 c) tempo massimo di una chiamata alla fonte: attesa del turno + chiamata restano sotto i 30 s di Caddy
-ORTOFOTO_TIMEOUT_S = float(os.environ.get("ORTOFOTO_TIMEOUT_S", "12"))
+# (09/11/2026 d) 12 → 18 s: in Q5 AGEA 2012 dal server era lenta (tessere «fonte»); attesa 8 + 18 < 30 s di Caddy
+ORTOFOTO_TIMEOUT_S = float(os.environ.get("ORTOFOTO_TIMEOUT_S", "18"))
 # strati sopra le ortofoto (particelle catastali, contorni degli edifici; servizio/strati.py, 05/11/2026): spenti dal .env
 STRATI_SPENTI = {s.strip() for s in os.environ.get("STRATI_SPENTI", "").split(",") if s.strip()}
 

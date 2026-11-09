@@ -28,6 +28,8 @@ Regole:
 """
 from __future__ import annotations
 
+import asyncio
+
 import hashlib
 import io
 import json
@@ -394,8 +396,19 @@ def fonti(request: Request):
                     "corpi degli edifici sono calcolate dal DTM regionale quando si prepara l'archivio, non da queste tessere."}
 
 
+_attese: dict[int, asyncio.Semaphore] = {}
+
+
+def _turno() -> asyncio.Semaphore:
+    """Tessere generate insieme (TERRENO_PARALLELE), un semaforo per ciclo degli eventi (09/11/2026 d)."""
+    k = id(asyncio.get_running_loop())
+    if k not in _attese:
+        _attese[k] = asyncio.Semaphore(max(1, C.TERRENO_PARALLELE))
+    return _attese[k]
+
+
 @router.get("/{z}/{x}/{y}.png")
-def tessera(request: Request, z: int, x: int, y: int):
+async def tessera(request: Request, z: int, x: int, y: int):
     if not C.TERRENO_ATTIVO:
         raise HTTPException(404, "Terreno spento")
     if not (C.TERRENO_ZOOM_MIN <= z <= ZOOM_MAX) or not (0 <= x < 2 ** z and 0 <= y < 2 ** z):
@@ -414,13 +427,19 @@ def tessera(request: Request, z: int, x: int, y: int):
     except (FileNotFoundError, IndexError):
         pass
     P.limita(request, "terreno")
-    if not _parallele.acquire(timeout=C.TERRENO_ATTESA_S):
-        raise HTTPException(503, "Server molto occupato: riprova tra poco", headers={"Retry-After": "2"})
+    # (09/11/2026 d) attesa asincrona del turno (prima un thread fermo e 503 dopo TERRENO_ATTESA_S): fino a 20 s, sotto i
+    # 30 s di Caddy; la generazione (CPU) gira in un thread. Il 503 resta solo se il server è davvero sommerso: una
+    # tessera del terreno vuota non si può dare (sarebbe una quota sbagliata)
+    sem = _turno()
+    try:
+        await asyncio.wait_for(sem.acquire(), timeout=max(C.TERRENO_ATTESA_S, 20))
+    except asyncio.TimeoutError:
+        raise HTTPException(503, "Server molto occupato: riprova tra poco", headers={"Retry-After": "5"})
     try:
         nomi: list[str] = []
-        quote, fonte, licenza = genera(z, x, y, nomi)
+        quote, fonte, licenza = await asyncio.to_thread(genera, z, x, y, nomi)
     finally:
-        _parallele.release()
+        sem.release()
     nome = " e ".join(dict.fromkeys(nomi))
     dati = png(codifica(quote))
     if fonte != "piatta":

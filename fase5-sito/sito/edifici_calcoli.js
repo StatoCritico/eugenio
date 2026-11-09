@@ -786,15 +786,95 @@
   function tettoScelto(c, inclinazione) {
     if (!c || !Array.isArray(c.ring) || !(+c.gronda > 0)) return { piano: true, motivo: "corpo senza gronda" };
     const i = Math.min(60, Math.max(5, Number.isFinite(+inclinazione) ? +inclinazione : 22));
-    if (cortiliDi(c).length) return { piano: true, motivo: "corpo con cortile" };
     const m = rettangoloTetto(c);
     if (!m || m.A < 1) return { piano: true, motivo: "forma non valida" };
     if (m.Lb < 2) return { piano: true, motivo: "corpo più stretto di 2 m" };
-    const complessa = areaCorpo(c) / m.A < RIEMPIMENTO_MIN;
+    const complessa = areaCorpo(c) / m.A < RIEMPIMENTO_MIN, cortile = cortiliDi(c).length > 0;
+    // (09/11/2026 d, via Ovidio a Rimini e Bufalini: «corpo con cortile, resta piano») corpi con cortile e piante complesse
+    // (L, U, T, sotto il 70 % del rettangolo minimo): falde «a distanza dal bordo» (tettoDistanza)
+    if (cortile || complessa) {
+      const r = tettoDistanza(c, i);
+      return r ? { tipo: "padiglione", falde: r.falde, colmo: r.colmo, inclinazione: i, complessa, cortile } : { piano: true, motivo: "forma non adatta" };
+    }
     const colmo = Math.round((+c.gronda + m.Lb / 2 * Math.tan(i * GRAD)) * 100) / 100;
-    const r = faldeStimate({ ring: c.ring, buchi: c.buchi, gronda: +c.gronda, colmo }, complessa ? "padiglione" : null, { forza: true });
+    const r = faldeStimate({ ring: c.ring, buchi: c.buchi, gronda: +c.gronda, colmo }, null, { forza: true });
     if (!r) return { piano: true, motivo: "forma non adatta" };
-    return { tipo: r.tipo, falde: r.falde, colmo, inclinazione: i, complessa };
+    return { tipo: r.tipo, falde: r.falde, colmo, inclinazione: i, complessa: false, cortile: false };
+  }
+  // ---- tetto a falde «a distanza dal bordo» (09/11/2026 d): approssimazione dello straight skeleton per i corpi con
+  // cortile e le piante complesse. Ogni punto del tetto è alto gronda + tan(inclinazione) × distanza dal bordo più vicino,
+  // esterno o di un cortile (i cavedi piccoli, che non sono cortili, si coprono): il tetto scende verso il bordo esterno e
+  // verso quello del cortile. Una falda per ogni lato (lati quasi allineati uniti, < 12°): la zona dei punti più vicini a
+  // quel lato, trovata su una griglia (passo da 0,3 m, al più ~15.000 punti), è piana con la pendenza scelta e scende
+  // perpendicolare al lato. Per ogni falda: anello (inviluppo dei punti, allargato di mezzo passo e ritagliato sulla
+  // sagoma), pendenza, orientamento, superficie in pianta e inclinata, quote in alto e in basso: lo stesso formato delle
+  // altre falde (tabella, falde a gradini, aree FV, report). Falde sotto 0,5 m² tralasciate; al più 60.
+  function latiUniti(r) {
+    const a = chiudi(r).slice(0, -1), n = a.length, out = [];
+    if (n < 3) return out;
+    const dir = (p, q) => Math.atan2(q[1] - p[1], q[0] - p[0]);
+    // parte da un vertice d'angolo, così un lato lungo non resta diviso a metà dall'inizio dell'anello
+    let k0 = 0;
+    for (let k = 0; k < n; k++) { const d1 = dir(a[(k - 1 + n) % n], a[k]), d2 = dir(a[k], a[(k + 1) % n]);
+      if (Math.abs(((d2 - d1 + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) > 12 * GRAD) { k0 = k; break; } }
+    let ini = a[k0], prec = a[k0], dprec = null;
+    for (let t = 1; t <= n; t++) {
+      const q = a[(k0 + t) % n], d = dir(prec, q);
+      if (dprec !== null && Math.abs(((d - dprec + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) > 12 * GRAD) { out.push([ini, prec]); ini = prec; }
+      dprec = dprec === null ? d : d; prec = q;
+    }
+    out.push([ini, prec]);
+    return out.filter(([p, q]) => Math.hypot(q[0] - p[0], q[1] - p[1]) > 0.05);
+  }
+  function tettoDistanza(c, inclinazione) {
+    const esterno = chiudi(c.ring), cortili = cortiliDi(c), tanp = Math.tan(inclinazione * GRAD);
+    const lati = [esterno, ...cortili].flatMap((r) => latiUniti(r));
+    if (!lati.length) return null;
+    const xs = esterno.map((p) => p[0]), ys = esterno.map((p) => p[1]);
+    const A = areaCorpo(c), passo = Math.max(0.3, Math.sqrt(A / 15000));
+    const gr = lati.map(() => ({ n: 0, dmin: Infinity, dmax: 0, pts: [] }));
+    let dmaxTot = 0;
+    for (let x = Math.min(...xs) + passo / 2; x < Math.max(...xs); x += passo) {
+      for (let y = Math.min(...ys) + passo / 2; y < Math.max(...ys); y += passo) {
+        const p = [x, y];
+        if (!dentro(p, esterno) || cortili.some((b) => dentro(p, b))) continue;
+        let best = -1, bd = Infinity;
+        for (let k = 0; k < lati.length; k++) {
+          const [a, b] = lati[k], ex = b[0] - a[0], ey = b[1] - a[1], l2 = ex * ex + ey * ey;
+          const t = Math.max(0, Math.min(1, ((x - a[0]) * ex + (y - a[1]) * ey) / l2));
+          const d = Math.hypot(x - a[0] - t * ex, y - a[1] - t * ey);
+          if (d < bd) { bd = d; best = k; }
+        }
+        // la falda è piana: la quota viene dalla distanza dalla retta del lato (vicino agli spigoli rientranti dei
+        // cortili la distanza dal segmento è dall'estremo, curva: qui si usa la retta, come lo straight skeleton)
+        const [a, b] = lati[best], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        const dl = Math.abs((b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0])) / L;
+        const g = gr[best];
+        g.n++; g.dmin = Math.min(g.dmin, dl); g.dmax = Math.max(g.dmax, dl); g.pts.push(p);
+        dmaxTot = Math.max(dmaxTot, dl);
+      }
+    }
+    if (!(dmaxTot > 0)) return null;
+    const cella = passo * passo, pend = Math.round(inclinazione * 10) / 10, falde = [];
+    gr.map((g, k) => ({ g, k })).filter(({ g }) => g.n * cella >= 0.5).sort((u, v) => v.g.n - u.g.n).slice(0, 60).forEach(({ g, k }) => {
+      const [a, b] = lati[k], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      let nrm = [-(b[1] - a[1]) / L, (b[0] - a[0]) / L];             // perpendicolare al lato
+      const cx = g.pts.reduce((s, p) => s + p[0], 0) / g.n, cy = g.pts.reduce((s, p) => s + p[1], 0) / g.n;
+      // la falda scende verso il suo lato: la normale punta dal centro della falda verso il lato
+      if ((a[0] - cx) * nrm[0] + (a[1] - cy) * nrm[1] < 0) nrm = [-nrm[0], -nrm[1]];
+      const h = inviluppo(g.pts.flatMap((p) => [[p[0] - passo / 2, p[1] - passo / 2], [p[0] + passo / 2, p[1] - passo / 2],
+        [p[0] + passo / 2, p[1] + passo / 2], [p[0] - passo / 2, p[1] + passo / 2]]));
+      const pezzo = h.length >= 3 ? (clipConvesso(esterno.slice(0, -1), h) || h) : null;
+      if (!pezzo) return;
+      const ap = Math.round(g.n * cella * 10) / 10;
+      falde.push({ id: `D${falde.length + 1}`, ring: chiudi(pezzo), pendenza: pend,
+        orientamento: Math.round(((Math.atan2(nrm[0], nrm[1]) / GRAD) + 360) % 360),
+        superficie: Math.round(ap / Math.cos(inclinazione * GRAD) * 10) / 10, area_pianta: ap,
+        alto: Math.round((+c.gronda + (g.dmax + passo / 2) * tanp) * 100) / 100,
+        basso: Math.round((+c.gronda + Math.max(0, g.dmin - passo / 2) * tanp) * 100) / 100 });
+    });
+    if (!falde.length) return null;
+    return { falde, colmo: Math.max(...falde.map((f) => f.alto)) };
   }
 
   // ------------------------------------------------------------------ tetto ipotizzato (08/11/2026, decisione di Paolo)
@@ -854,7 +934,7 @@
     return { tipo: r.tipo, falde: r.falde, colmo, inclinazione: z.inclinazione, montagna: z.montagna, quota: z.quota, soglia: z.soglia };
   }
 
-  const API = { INTERPIANI, CORTILE_MIN_M2, cortiliDi, faldeStimate, rettangoloTetto, IPOTESI_TETTO, USI_TETTO_PIANO, comuneDelNord, zonaAltimetrica, motivoTettoPiano, tettoIpotizzato, tettoScelto, RAPPORTO_PADIGLIONE, UN_PIANO, SOVRALZO, NETTA_SU_LORDA, SETTORI, FACOLTATIVE, ETICHETTE, numero, norm, colonnaFacoltativa,
+  const API = { INTERPIANI, CORTILE_MIN_M2, cortiliDi, faldeStimate, rettangoloTetto, IPOTESI_TETTO, USI_TETTO_PIANO, comuneDelNord, zonaAltimetrica, motivoTettoPiano, tettoIpotizzato, tettoScelto, tettoDistanza, RAPPORTO_PADIGLIONE, UN_PIANO, SOVRALZO, NETTA_SU_LORDA, SETTORI, FACOLTATIVE, ETICHETTE, numero, norm, colonnaFacoltativa,
     mappaFacoltative, leggiFacoltative, usoDa, stimaPiani, scegli, superfici, area, centroide, lati, chiudi, indicatori, dividi,
     areaCorpo, dentroCorpo, latiCorpo, anelliOrientati,
     inviluppo, dentro, rettangoloMinimo, proiezione, sole, ombra, orizzonte, altezzaOrizzonte, svf, trasponi, producibilita,

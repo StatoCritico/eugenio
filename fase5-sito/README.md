@@ -96,6 +96,60 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Correzioni dalle prove di Paolo delle 21:05 (09/11/2026 e, `?v=20261109e`)
+
+Procedura T di `AGGIORNAMENTO_2026-11-09e.md`; prove nel browser `tests/test_prove_0911e_browser.py` (6).
+
+- **Indicatore di caricamento «impazzito»** (orologio di 600–700 px): causa vera la regola generica `.mappa img, .mappa svg
+  { width: 100%; height: auto }` di `stile.css`, che dava all'icona dentro la mappa la larghezza del suo riquadro (fino a
+  `calc(100% - 70px)`). Ora **clessidra** (`svg.carico-icona` con `width`/`height`, selettore `.mappa .carico-mappa
+  svg.carico-icona` più forte, `clamp(16px, 1,4vw, 26px)`, `flex: none`, `max-width`/`max-height` 26 px; testo
+  `clamp(11px, 0,85vw, 14px)`; riquadro al più 40 px di altezza e 34em di larghezza); la clessidra si capovolge piano
+  (2,4 s), ferma con `prefers-reduced-motion`. Provato a 375, 1366, 1920 px, con lo zoom del browser al 150 %, con la
+  mappa allungata dalla maniglia, in 2D e in 3D, in Modelli 3D e in Ortofoto.
+- **Verifica anti-robot meno frequente** (`protezione.js`): il gettone di sessione sta in `localStorage` (comune a tutte le
+  schede e alle visite successive finché vale; evento `storage` tra le schede; ripiego su `sessionStorage`); dal server vale
+  60 minuti ed è legato a rete e browser. Turnstile (e le righe del suo riquadro in Console) si carica al più una volta
+  all'ora per browser, non più a ogni scheda.
+
+## Correzioni dalle prove Q8 di Paolo (09/11/2026 d, `?v=20261109d`)
+
+Procedura S di `AGGIORNAMENTO_2026-11-09d.md`; prove nel browser `tests/test_prove_0911d_browser.py` (7).
+
+- **Indicatore di caricamento** (aggiunta delle 15:49, `protezione.js`, `.carico-mappa`): conta le richieste di tessere in
+  volo (ortofoto, strati, terreno, edifici e alberi OSM) e mostra sulla mappa (in basso a sinistra, sopra la scala) un
+  orologio con «Carico le tessere… (N)», il nome della fonte se una tessera aspetta più di 3 s («… risposta lenta») e i
+  lavori lunghi delle pagine (`EUGENIO_LIMITI.lavoro(testo)` → funzione che lo chiude; «Genero il 3D…»); compare dopo
+  400 ms, `aria-live="polite"`, lancetta ferma con `prefers-reduced-motion`; HTML sopra la mappa, fuori dal PNG. Su tutte le
+  mappe agganciate con `EUGENIO_LIMITI.collega(m)`.
+
+- **Righe rosse delle particelle** (`protezione.js`): con la fase 4 le tessere d'errore sono risposte 200; «occupata» (turno
+  verso la fonte non arrivato in tempo: il nostro ritmo) **non conta più come errore** e non ferma la fonte, fa solo
+  ricaricare le tessere poco dopo (era la causa di «Sentinel-2 cloudless 2016 non risponde, ferma per 30 s»); un timer di
+  ricarica per famiglia (prima uno solo per tutte).
+- **Tegola**: si spegne con «Cerca l'indirizzo», «Cerca la particella», «Reset», Invio nei campi della ricerca e con un
+  edificio scelto dalla ricerca (`trovato`).
+- **Tetto a falde con il cortile** (`edifici_calcoli.js`, `tettoDistanza`): per i corpi con cortile e le piante complesse
+  (L, U, T, sotto il 70 % del rettangolo minimo) ogni punto del tetto è alto gronda + tan(inclinazione) × distanza dal
+  bordo più vicino, esterno o del cortile (approssimazione dello straight skeleton: lati quasi allineati uniti, griglia da
+  0,3 m al più ~15.000 punti, una falda piana per lato con quota dalla retta del lato); stesse falde di sempre (tabella,
+  gradini, aree FV, report). La corte di prova 40 × 30 m con cortile 20 × 10 m dà 8 falde (4 verso la strada, 4 verso il
+  cortile) e colmo a gronda + 5 m × tan 22°. I corpi rettangolari restano a capanna o a padiglione.
+- **Maniglia dell'altezza della mappa** (`divisore.js`, `.maniglia-mappa`): sotto ogni mappa MapLibre delle pagine con la
+  colonna della mappa (Modelli 3D e le pagine 3D, Ortofoto, Aggiungi edifici, Importa DXF/IFC); mouse, dito (pointer
+  events) e frecce; da 280 px al 92 % della finestra; ricordata per pagina (`altezza-mappa:<pagina>:<id>`); doppio clic:
+  predefinita; `eugenio:ridimensiona` durante e dopo (resize di MapLibre, anche in 3D). Patrimonio ha la mappa SVG e non
+  ne ha bisogno. In più `flex-shrink: 0` per tutte le pagine 3D: in fv-producibilita la mappa si restringeva sotto il testo.
+- **Clic nella vista 3D** (`piuVicinoAllaCamera`): MapLibre trova già i prismi estrusi sotto il puntatore (pareti e tetti:
+  provato, 60 px sopra la pianta di un corpo alto si trova il corpo) ma nell'ordine degli strati; la pagina prende il più
+  vicino alla camera (`transform.getCameraLngLat`/`getCameraAltitude`, centro del prisma a metà altezza). Vale per la
+  scelta e per la tegola, anche per i vicini; in 2D resta la sagoma.
+- **Alberi da OpenStreetMap** dove manca il LiDAR: con «Alberi» acceso la pagina chiede `/api/alberi/osm/<cella>.json`
+  per le celle senza LiDAR (dove c'è vince il LiDAR); chiome più chiare (`#a9c98a`), quota del terreno dell'edificio,
+  dichiarate nella nota («chiome indicative da OpenStreetMap…, entrano anche nelle ombre, come stima»), in legenda,
+  nell'immagine e nel report. **Decisione**: entrano nelle ombre, come stima, solo con la casella «Alberi» accesa (spenta:
+  restano solo le chiome LiDAR, che stanno sempre tra gli ostacoli).
+
 ## Correzioni dalle prove P9 di Paolo (09/11/2026 c, `?v=20261109c`)
 
 Procedura Q di `AGGIORNAMENTO_2026-11-09c.md`; prove nel browser `tests/test_prove_0911c_browser.py` (9).

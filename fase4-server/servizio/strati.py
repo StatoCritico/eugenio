@@ -26,7 +26,9 @@ Spegnimento: `attiva = false` o `stato = "spenta"` nel TOML, oppure STRATI_SPENT
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import inspect
 import io
 import json
 import logging
@@ -189,8 +191,10 @@ def righe_mercatore(z: int, y0: int, m: int):
     return np.clip(np.rint(src), 0, lato - 1).astype(int)
 
 
-def elabora(s: Strato, dati: bytes, z: int, x: int, y: int) -> bytes:
-    """Riproiezione (se serve), contorni ricolorati (se chiesti) e ritaglio della tessera dal blocco. PNG RGBA."""
+def elabora_blocco(s: Strato, dati: bytes, z: int, x: int, y: int) -> dict[tuple[int, int], bytes]:
+    """Riproiezione (se serve), contorni ricolorati (se chiesti) e taglio del blocco m×m chiesto alla fonte in tessere PNG
+    RGBA: {(x, y): png} per tutte le tessere del blocco (09/11/2026 d: prima si teneva solo quella chiesta e le altre tre
+    del blocco 2×2 si richiedevano alla fonte una per una)."""
     import numpy as np
     from PIL import Image
     x0, y0, m = blocco(s, z, x, y)
@@ -201,13 +205,23 @@ def elabora(s: Strato, dati: bytes, z: int, x: int, y: int) -> bytes:
     a = np.asarray(im).copy()
     if s.crs != "EPSG:3857":
         a = a[righe_mercatore(z, y0, m)]
-    c0, r0 = (x - x0) * 256, 0
-    a = a[r0:r0 + 256, c0:c0 + 256]
-    if s.contorni:
-        a = solo_contorni(a, s.colore)
-    out = io.BytesIO()
-    Image.fromarray(a, "RGBA").save(out, "PNG", optimize=True)
-    return out.getvalue()
+    out = {}
+    for i in range(m):
+        for j in range(m):
+            if not (0 <= x0 + i < 2 ** z and 0 <= y0 + j < 2 ** z):
+                continue
+            t = a[j * 256:(j + 1) * 256, i * 256:(i + 1) * 256]
+            if s.contorni:
+                t = solo_contorni(t, s.colore)
+            b = io.BytesIO()
+            Image.fromarray(np.ascontiguousarray(t), "RGBA").save(b, "PNG", optimize=True)
+            out[(x0 + i, y0 + j)] = b.getvalue()
+    return out
+
+
+def elabora(s: Strato, dati: bytes, z: int, x: int, y: int) -> bytes:
+    """La tessera (x, y) del blocco elaborato (PNG RGBA)."""
+    return elabora_blocco(s, dati, z, x, y)[(x, y)]
 
 
 def solo_contorni(a, colore: str):
@@ -330,56 +344,108 @@ def elenco(request: Request):
                     "di ciascuna fonte. Per gli edifici vale lo strato della regione, se c'è; altrove OpenStreetMap."}
 
 
+# (09/11/2026 d, prove Q8 di Paolo: «errori console piovono», decine di 503 e qualche 502 su strati/catasto/18–19) la
+# rotta era sincrona: ogni tessera in attesa del turno verso l'Agenzia delle Entrate (2 al secondo) teneva un thread, e
+# dopo ORTOFOTO_ATTESA_S secondi rispondeva 503 «Fonte dello strato molto richiesta» (il nostro ritmo, non la fonte né il
+# limite per IP). Ora come le ortofoto (09/11/2026 c): asincrona, chiamata alla fonte al più ORTOFOTO_TIMEOUT_S, semaforo
+# per strato, tessera vuota pulita (200, no-store, X-Ortofoto-Errore: fonte|occupata|ferma, Retry-After) al posto di 502 e
+# 503, strato fermo dopo errori ripetuti; in più tutte le tessere del blocco chiesto alla fonte vanno in copia.
+guasti = O.Guasti()
+VUOTO_JSON = b'{"type":"FeatureCollection","features":[]}'
+
+
+def tessera_errore(s: Strato, motivo: str, riprova: float) -> Response:
+    dati, tipo = (VUOTO_JSON, "application/json") if s.tipo == "overpass" else (O.vuota_png(), "image/png")
+    return Response(dati, media_type=tipo, headers={
+        "Cache-Control": "no-store", "X-Strato": s.id, "X-Ortofoto-Errore": motivo, "Retry-After": str(max(1, int(math.ceil(riprova)))),
+        "Access-Control-Expose-Headers": "X-Strato, X-Ortofoto-Errore, Retry-After"})
+
+
+async def _chiama(fn, *a):
+    """Chiamata alla fonte in un thread (httpx sincrono, Overpass con le riserve), con il tempo massimo."""
+    async def uno():
+        r = await asyncio.to_thread(fn, *a)
+        return await r if inspect.isawaitable(r) else r
+    return await asyncio.wait_for(uno(), timeout=C.ORTOFOTO_TIMEOUT_S + 1)     # sotto i 30 s di Caddy, anche per Overpass
+
+
+_in_volo: dict[tuple[int, str], asyncio.Semaphore] = {}
+
+
+def _semaforo(s: Strato) -> asyncio.Semaphore:
+    k = (id(asyncio.get_running_loop()), s.id)
+    if k not in _in_volo:
+        _in_volo[k] = asyncio.Semaphore(max(2, int(2 * s.al_secondo)))
+    return _in_volo[k]
+
+
+def _copia(s: Strato, z: int, x: int, y: int) -> Path:
+    return C.CARTELLA_ORTOFOTO / "strati" / s.id / str(z) / str(x) / f"{y}.{s.estensione}"
+
+
 @router.get("/{sid}/{z}/{x}/{y}.{ext}")
-def tessera(request: Request, sid: str, z: int, x: int, y: int, ext: str):
+async def tessera(request: Request, sid: str, z: int, x: int, y: int, ext: str):
     s = strati().get(sid)
     if s is None or not s.accesa():
         raise HTTPException(404, "Strato non disponibile")
     if ext != s.estensione or (s.tipo == "overpass" and z != ZOOM_OSM) or not _dentro(s, z, x, y):
         raise HTTPException(404, "Tessera fuori dalla zona o dagli zoom dello strato")
-    p = C.CARTELLA_ORTOFOTO / "strati" / s.id / str(z) / str(x) / f"{y}.{s.estensione}"
+    p = _copia(s, z, x, y)
     tipo = "application/json" if s.tipo == "overpass" else "image/png"
     dati = O.leggi_copia(p)
     if dati is not None:
         P.limita(request, "tessere_copia")             # dalla copia: tetto anti-abuso (09/11/2026)
     else:
+        if (resta := guasti.ferma_per(s.id)) > 0:
+            return tessera_errore(s, "ferma", resta)
         # (09/11/2026) dalla fonte: le tessere OSM consumano Overpass come il ripiego degli edifici (stesso limite per IP
         # e stesso tetto per tutto il sito), particelle e contorni regionali il loro limite «strati»
         P.limita(request, "edifici_osm" if s.tipo == "overpass" else "strati")
         if s.tipo == "overpass" and not P.tetto_globale("overpass", C.EDIFICI_OSM_TETTO_ORA):
-            raise HTTPException(503, "Gli edifici OpenStreetMap hanno esaurito la quota di quest'ora per tutti gli utenti "
-                                     "del sito: riprova più tardi.", headers={"Retry-After": "600"})
+            return tessera_errore(s, "ferma", 600)
         fine = time.monotonic() + C.ORTOFOTO_ATTESA_S
         while (attesa := O.ritmo.prova(s)) and time.monotonic() + attesa <= fine:
-            time.sleep(attesa)
+            await asyncio.sleep(attesa)
         if attesa:
-            raise HTTPException(503, "Fonte dello strato molto richiesta: riprova tra poco",
-                                headers={"Retry-After": str(int(math.ceil(attesa)))})
+            return tessera_errore(s, "occupata", attesa)
         try:
-            if s.tipo == "overpass":
-                r = _overpass(s, query_overpass(z, x, y))
-            else:
-                r = _scarica(url_wms(s, z, x, y)[0])
-        except httpx.HTTPError as e:
-            log.warning("Strato %s: fonte non raggiungibile (%s)", s.id, e)
-            raise HTTPException(502, "La fonte dello strato non risponde")
-        ct = r.headers.get("content-type", "").split(";")[0].strip()
-        if r.status_code != 200 or not (ct.startswith("image/") or (s.tipo == "overpass" and "json" in ct)):
-            log.warning("Strato %s: risposta %s %s", s.id, r.status_code, ct)
-            raise HTTPException(502, "La fonte dello strato ha risposto con un errore")
-        try:
-            if s.tipo == "overpass":
-                dati = json.dumps(geojson_da_overpass(r.json()), separators=(",", ":")).encode()
-            else:
-                dati = elabora(s, r.content, z, x, y)
-        except Exception as e:   # noqa: BLE001 - immagine o JSON illeggibile
-            log.warning("Strato %s: risposta non leggibile (%s)", s.id, e)
-            raise HTTPException(502, "La fonte dello strato ha risposto con dati non leggibili")
-        try:
-            O.scrivi_copia(p, dati)
-            O.pulisci()
-        except OSError as e:
-            log.warning("Strato %s: copia non scritta (%s)", s.id, e)
+            async with _semaforo(s):
+                dati2 = O.leggi_copia(p)               # un'altra richiesta dello stesso blocco l'ha già scritta
+                if dati2 is not None:
+                    r = None
+                elif s.tipo == "overpass":
+                    r = await _chiama(_overpass, s, query_overpass(z, x, y))
+                else:
+                    r = await _chiama(_scarica, url_wms(s, z, x, y)[0])
+        except (httpx.HTTPError, asyncio.TimeoutError, OSError) as e:
+            log.warning("Strato %s: fonte non raggiungibile (%s)", s.id, type(e).__name__)
+            return tessera_errore(s, "fonte", guasti.errore(s.id) or 30)
+        if r is None:
+            dati = dati2
+        else:
+            ct = r.headers.get("content-type", "").split(";")[0].strip()
+            if r.status_code != 200 or not (ct.startswith("image/") or (s.tipo == "overpass" and "json" in ct)):
+                log.warning("Strato %s: risposta %s %s", s.id, r.status_code, ct)
+                return tessera_errore(s, "fonte", guasti.errore(s.id) or 30)
+            try:
+                if s.tipo == "overpass":
+                    dati = json.dumps(geojson_da_overpass(r.json()), separators=(",", ":")).encode()
+                    blocco_t = {(x, y): dati}
+                else:
+                    blocco_t = await asyncio.to_thread(elabora_blocco, s, r.content, z, x, y)
+                    dati = blocco_t[(x, y)]
+            except Exception as e:   # noqa: BLE001 - immagine o JSON illeggibile
+                log.warning("Strato %s: risposta non leggibile (%s)", s.id, e)
+                return tessera_errore(s, "fonte", guasti.errore(s.id) or 30)
+            guasti.buona(s.id)
+            try:
+                for (xx, yy), d in blocco_t.items():
+                    q = _copia(s, z, xx, yy)
+                    if (xx, yy) == (x, y) or not q.exists():
+                        O.scrivi_copia(q, d)
+                O.pulisci()
+            except OSError as e:
+                log.warning("Strato %s: copia non scritta (%s)", s.id, e)
     h = {"Cache-Control": f"public, max-age={C.ORTOFOTO_CACHE_S}",
          "ETag": '"' + hashlib.sha1(dati).hexdigest()[:20] + '"',
          "X-Strato": s.id, "X-Strato-Licenza": s.licenza.encode("ascii", "replace").decode()}
