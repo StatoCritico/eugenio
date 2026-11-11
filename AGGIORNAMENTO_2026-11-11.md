@@ -333,15 +333,13 @@ Cosa aspettarsi: oggetto «EuGEnio – prezzi e freddo di ottobre 2026»; «Benv
 variazione su ottobre 2025); «Il freddo di ottobre 2026» con 10 capoluoghi; Novità dal 26 ottobre all'11 novembre.
 Incollamela qui.
 
-### W5. [Server, poi listmonk] Bozza sulla lista Prove e invio
+### W5. [Server, poi listmonk] Bozza sulla lista Prove (ID 4) e invio
 ```bash
-docker compose exec postgres psql -U listmonk -d listmonk -tAc "select id, name from lists"
-```
-Al posto di `N` metti il numero della riga «Prove»:
-```bash
-docker compose run --rm --no-deps -e LISTA_MENSILE=N -e NOTIZIARIO_INVIO_AUTOMATICO=false worker python -c "from servizio import notiziario as n; print(n.mensile(2026,10))"
+docker compose run --rm --no-deps -e LISTA_MENSILE=4 -e NOTIZIARIO_INVIO_AUTOMATICO=false worker python -c "from servizio import notiziario as n; print(n.mensile(2026,10))"
 exit
 ```
+Cosa aspettarsi: il numero della campagna.
+
 **[listmonk]** `https://notizie.statocritico.it/admin` → **Campagne** → l'ultima «Mensile 2026-10» → in **Liste** solo
 **Prove** → **Avvia**. Rileggi l'email (PC e telefono): tabelle dei prezzi e del freddo, collegamenti.
 
@@ -385,9 +383,22 @@ Se tutto è a posto: `ssh eugenio "rm -rf ~/energia_prima_20261111 ~/convenzioni
 Cosa fare se va male: righe dal terzo comando → `git restore --staged <percorso>` per ognuna e dimmelo; push rifiutato →
 `git pull --rebase` e di nuovo `git push`.
 
-### W9. Il 12/11 dopo le 9
-1. Arriva l'avviso «newsletter in bozza: EuGEnio – prezzi e freddo di ottobre 2026».
-2. **[listmonk]** **Campagne** → la nuova «Mensile 2026-10» sulla lista **EuGEnio mensile** → rileggila → **Invia prova**
-   ai tuoi indirizzi (devono essere iscritti in listmonk) → se va bene, **Avvia**.
-3. Dopo l'invio, sul server: `NOTIZIARIO_INVIO_AUTOMATICO=true` nel `.env`, poi
-   `cd ~/energia/fase4-server && docker compose up -d --force-recreate worker`.
+### W9. [Server] Invio automatico da domani (decisione di Paolo, 23:54), dopo W3
+Il worker ricorda gli invii in `worker_stato.json` anche dopo un riavvio: la newsletter parte una volta sola.
+```bash
+ssh eugenio
+cd ~/energia/fase4-server
+sed -i 's/^NOTIZIARIO_INVIO_AUTOMATICO=.*/NOTIZIARIO_INVIO_AUTOMATICO=true/' .env
+sed -i 's/^NOTIZIARIO_GIORNO=.*/NOTIZIARIO_GIORNO=12/' .env
+grep -E "^NOTIZIARIO_(INVIO_AUTOMATICO|GIORNO)|^LISTA_MENSILE" .env
+docker compose up -d --force-recreate worker
+docker compose exec worker python -c "from servizio import config as C; print(C.NOTIZIARIO_INVIO_AUTOMATICO, C.NOTIZIARIO_GIORNO, C.LISTA_MENSILE)"
+exit
+```
+Cosa aspettarsi: `NOTIZIARIO_INVIO_AUTOMATICO=true`, `NOTIZIARIO_GIORNO=12` e `LISTA_MENSILE=3`; poi `True 12 3`.
+(L'11/11 sera il `.env` del server aveva ancora `NOTIZIARIO_GIORNO=3`, valore del vecchio esempio: la seconda riga lo
+porta a 12.)
+
+Il 12/11 dopo le 9: in listmonk, **Campagne**, «Mensile 2026-10» sulla lista **EuGEnio mensile** passa da sola a «In
+corso» e poi «Completata»; nessun avviso di bozza. Se un mese si vuole rileggere prima, `false` e
+`--force-recreate worker`.
