@@ -81,6 +81,8 @@ LISTMONK_API_TOKEN = os.environ.get("LISTMONK_API_TOKEN", "")
 LISTA_MENSILE = int(os.environ.get("LISTA_MENSILE", "0") or 0)
 NOTIZIARIO_INVIO_AUTOMATICO = os.environ.get("NOTIZIARIO_INVIO_AUTOMATICO", "true").lower() == "true"
 NOTIZIARIO_GIORNO = int(os.environ.get("NOTIZIARIO_GIORNO", "12"))     # giorno del mese del numero mensile
+# mese d'invio (AAAA-MM) del primo numero: benvenuto e tutte le novità dall'inizio (11/11/2026)
+NOTIZIARIO_PRIMO_NUMERO = os.environ.get("NOTIZIARIO_PRIMO_NUMERO", "2026-11")
 SMTP_SERVER = os.environ.get("SMTP_SERVER", "")
 SMTP_PORTA = int(os.environ.get("SMTP_PORTA", "587"))
 SMTP_UTENTE = os.environ.get("SMTP_UTENTE", "")

@@ -44,8 +44,14 @@ quelli importati. Le fasce F1/F2/F3 seguono la definizione ARERA con i festivi n
 
 ## Uso dei dati: solo interno
 
-I dati GME (PUN, prezzi zonali, volumi, PSV MGP-GAS, IGI) e quelli TTF/EEX, compreso il PFOR
-ricostruito, **non si pubblicano e non si possono scaricare dal sito**: restano sul server e servono
+> **Dall'11/11/2026 (decisioni di Paolo)** si pubblicano, nella pagina Statistiche › Indici dei prezzi e nella newsletter,
+> solo: i **prezzi dei listini** pubblicati dalle centrali (Intercent-ER energia elettrica e gas, Consip energia
+> elettrica), così come pubblicati; il **PSV day-ahead pubblicato da ARERA** (`PSV_DA`, CC BY-SA 4.0); il **PFOR,t
+> ricostruito** (elaborazione di EuGEnio: nessun valore TTF o dei future esce). PUN, prezzi zonali, PSV del GME, IGI, TTF
+> e future restano interni. Sezione «Listini e indici dei prezzi pubblicabili» qui sotto.
+
+I dati GME (PUN, prezzi zonali, volumi, PSV MGP-GAS, IGI) e quelli TTF/EEX **non si pubblicano e non si possono
+scaricare dal sito** (il PFOR ricostruito sì, dall'11/11/2026): restano sul server e servono
 solo a simulazioni e analisi (prezzi delle convenzioni, scenari di costo). Nessuna rotta dell'API li
 espone e la newsletter non li riporta. Motivi:
 - **GME**: licenza personale, gratuita, non commerciale; vietato pubblicare, trasmettere o
@@ -244,6 +250,32 @@ GN23 e i lotti CET si aggiungono quando la sorveglianza avrà scaricato il primo
 python -m mercati_energia sorveglianza          # controllo subito (lo stesso della notte), stampa le novità
 python -m mercati_energia sorveglianza stato    # pagine controllate, ultima modifica, errori, documenti scaricati
 ```
+
+## Listini e indici dei prezzi pubblicabili (11/11/2026)
+
+`mercati_energia/listini.py` legge ogni notte (passo di `notturno.esegui`) i listini mensili pubblicati dalle centrali e
+ne tiene **solo il prezzo** (le colonne del solo PUN o del solo PSV non si leggono), nel dataset `listini` dell'archivio
+(chiave convenzione + lotto + fascia + mese; `prezzo` con `unita`, €/MWh o €/Smc; `serie` e `titolo`). `precedenti =
+[{ id, titolo, url }]` (nel TOML della convenzione o in `fonti/listini.toml`) aggiunge le convenzioni precedenti con gli
+stessi lotti alla stessa serie, per il confronto con l'anno prima. Il **PFOR** della pagina viene prima da
+`mercati_energia/dati/pfor_storico.csv` (anno;trimestre;pfor_eur_smc, dal 2015 al IV/2026, valori di Paolo dell'11/11/2026,
+convertiti in €/MWh con il PCS 0,03852 GJ/Smc; cartella fuori da git), poi dal calcolo per i trimestri mancanti:
+
+| Fonte | Dove è scritta | Formato |
+|---|---|---|
+| Intercent-ER, Energia elettrica 19 (2026) e 18 (2025, `precedenti`) | sezione `[listino]` di `convenzioni/intercenter_ee19_2026.toml` | `listini.zip`, un Excel per lotto, fasce F1–F3, €/kWh → €/MWh |
+| Intercent-ER, Gas naturale 22 e 21 (`precedenti`, anno termico 2024/25) | `convenzioni/fonti/listini.toml` | come sopra, in €/Smc (4 decimali), usi (termici, non termici, cogenerazione) al posto delle fasce |
+| Consip, Energia Elettrica 22 (17 lotti) | `convenzioni/fonti/listini.toml` | «EE22 - Corrispettivi - MMAA.xlsx» da acquistinretepa.it (accesso con cookie, il client li tiene): un foglio per lotto, prezzo variabile per fascia F0–F3 |
+| File copiati a mano | `<archivio>/listini_manuali/<id>/` con `listino.toml` facoltativo (`centrale`, `titolo`, `serie`, `formato`) | come sopra |
+
+**Attenzione (Consip)**: l'`id` di `getDocument` cambia ogni mese. Il file contiene tutti i mesi dal novembre 2024,
+quindi basta mettere in `listini.toml` l'indirizzo del file del mese nuovo (DA_FARE).
+
+`mercati_energia/prezzi_pubblici.py` (`costruisci`, `scrivi`) prepara il file del sito `/sito/dati/prezzi/indici.json`
+(scritto dal worker dopo i mercati di ogni notte, e con `python -m servizio.worker prezzi`): sezioni `elettricita`
+(Intercent-ER, Consip) e `gas` (listini Intercent-ER, `PSV_DA`, PFOR ripetuto nei tre mesi del trimestre, con metodo e
+«provvisorio»), anno in corso e anno prima. `INDICI_AMMESSI = {"PSV_DA", "PFOR"}`: nessun altro indice mensile. Prove:
+`tests/test_prezzi_pubblici.py` (il file non contiene valori del PUN né del TTF).
 
 ## Spazio occupato
 

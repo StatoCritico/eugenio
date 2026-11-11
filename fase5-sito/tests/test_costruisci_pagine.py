@@ -74,7 +74,7 @@ def test_modifica_del_modello_arriva_in_tutte_le_pagine(sito, monkeypatch, tmp_p
 GRUPPI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html"],   # (08/11/2026) Cambiamento climatico, ultima
           "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
                          "dbtr-istruzioni.html", "visure.html"],
-          "statistiche": ["indicatori.html"]}
+          "statistiche": ["indici-prezzi.html", "indicatori.html"]}   # (11/11/2026) Indici dei prezzi prima
 VIETATI = ("PUN Index GME =", "€/MWh", "Prezzo medio")   # nessun valore nelle pagine in attesa della licenza GME
 
 
@@ -664,7 +664,11 @@ def test_novita_versione_feed_e_menu():
     assert CP.leggi_novita() == voci                                    # controlli superati (ordine, campi)
     # nessun dato di mercato né cose private nelle voci
     testo = json.dumps(voci, ensure_ascii=False)
-    assert not re.search(r"\b(PUN|PSV|IGI|TTF|EEX|fase 2|uni_privato|Arpae)\b", testo), testo
+    assert not re.search(r"\b(PUN|IGI|TTF|EEX|fase 2|uni_privato|Arpae)\b", testo), testo
+    # (11/11/2026) il PSV day-ahead pubblicato da ARERA è autorizzato da Paolo: solo accanto ad ARERA, mai del GME
+    for m in re.finditer(r"\bPSV\b", testo):
+        intorno = testo[max(0, m.start() - 80):m.end() + 80]
+        assert "ARERA" in intorno and "GME" not in intorno, intorno
     # pagina generata e aggiornata, con una sezione per voce
     pag = (QUI / "sito" / "novita.html").read_text(encoding="utf-8")
     assert pag.count('<div class="novita-voce"') == len(voci) and f'id="d{voci[0]["data"].replace("-", "")}"' in pag
@@ -732,7 +736,7 @@ PAGINE_IN_CORSO = ["edificio-fabbisogno.html",
 ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html"],
                "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
-               "statistiche": ["indicatori.html"]}
+               "statistiche": ["indici-prezzi.html", "indicatori.html"]}   # (11/11/2026) Indici dei prezzi prima
 
 
 def test_menu_08_11_gruppi_e_voci_in_lavorazione(sito):

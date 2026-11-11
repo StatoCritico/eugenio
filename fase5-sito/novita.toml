@@ -21,6 +21,14 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
+data = "2026-11-11"
+versione = "20261111b"
+titolo = "Indici dei prezzi dell'energia"
+nuovo = [
+  "Statistiche › Indici dei prezzi: i prezzi dell'energia elettrica delle convenzioni Intercent-ER e Consip (si sceglie il lotto) e del gas delle convenzioni Intercent-ER, il PSV day-ahead pubblicato da ARERA e il PFOR,t ricostruito, mese per mese, quest'anno e l'anno scorso, con la variazione.",
+]
+
+[[voce]]
 data = "2026-11-09"
 versione = "20261109f"
 titolo = "Tre pagine di Edifici, sperimentali"

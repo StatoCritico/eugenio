@@ -1,0 +1,36 @@
+# Listini e corrispettivi mensili pubblicati dalle centrali per convenzioni che EuGEnio non calcola: se ne leggono solo i
+# prezzi, così come pubblicati, per la pagina Statistiche › Indici dei prezzi e per la newsletter (11/11/2026, Paolo).
+# I listini delle convenzioni che hanno un TOML in convenzioni/ stanno nella loro sezione [listino].
+#
+#   id, serie, centrale, titolo, url
+#   formato            «consip» (un foglio per lotto) o «intercenter» (un Excel per lotto)
+#   nome               nome della serie nella pagina
+#   lotto_predefinito  lotto mostrato all'apertura della pagina e nella newsletter
+
+# Consip, Energia Elettrica 22 (prezzo variabile, 17 lotti), corrispettivi mensili su acquistinretepa.it.
+# ATTENZIONE: l'id del documento cambia a ogni mese (questo è «EE22 - Corrispettivi - 1026», ottobre 2026): il file
+# contiene tutti i mesi dal novembre 2024, quindi basta aggiornare l'indirizzo con quello del mese nuovo.
+[[listino]]
+id = "consip-ee22"
+centrale = "Consip"
+titolo = "Energia Elettrica 22"
+nome = "Consip – Energia Elettrica 22, prezzo variabile"
+formato = "consip"
+lotto_predefinito = "6"
+url = "https://www.acquistinretepa.it/downloadservices/getDocument?id=8fdd33af320a1e0e"
+
+# Intercent-ER, Gas naturale 22 (fornitura 1/10/2025 – 30/9/2026 per il lotto 1, anno 2026 per il lotto 2): listini con
+# il PSV e il prezzo (PSV + spread) per mese, in €/Smc. Si legge solo il prezzo.
+[[listino]]
+id = "intercenter-gn22"
+centrale = "Intercent-ER"
+titolo = "Gas naturale 22"
+nome = "Intercent-ER – Gas naturale, convenzioni per la sanità e le PA dell'Emilia-Romagna"
+formato = "intercenter"
+lotto_predefinito = "1"
+lotti = { "1" = "Lotto 1 – aziende sanitarie e altre amministrazioni", "2" = "Lotto 2 – cogeneratori delle aziende sanitarie" }
+url = "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-attive/2025/gas-naturale-22/allegati/listini_lotti_1_2_gn_22_20250624.zip/@@download/file"
+# convenzione precedente con gli stessi lotti (anno termico 2024/25; lotto 2 anno 2025): confronto con l'anno prima
+precedenti = [
+  { id = "intercenter-gn21", titolo = "Gas naturale 21", url = "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-scadute-e-o-esaurite/2024/gas-naturale-21/allegati/listini_gn_21.zip/@@download/file" },
+]

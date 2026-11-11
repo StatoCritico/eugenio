@@ -26,3 +26,6 @@ fase11-visure/docker/lavoro/
 Visure_*/
 intestatari_DATI_PERSONALI.csv
 visure_vere/
+
+# file scritto ogni notte dal worker sul server (indici dei prezzi, 11/11/2026): mai nel repository
+fase5-sito/sito/dati/prezzi/

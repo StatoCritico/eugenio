@@ -180,7 +180,7 @@
     // archivi di /edifici3d/archivi.json (dal 07/11/2026 un archivio DBTR per comune), altrimenti il DBTR dell'ER
     let basi = ["/edifici3d/cc-by/er/prodotti/"];
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261109f", { cache: "no-cache" });
+      const r = await fetch("/edifici3d/archivi.json?v=20261111b", { cache: "no-cache" });
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const l = ((await r.json()).archivi || []).map((x) => x && x.base)
           .filter((b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes(".."));

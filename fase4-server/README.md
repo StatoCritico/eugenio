@@ -14,7 +14,7 @@ Container:
 | Container | Cosa fa |
 |---|---|
 | `api` | FastAPI: riceve il CSV dei consumi, costruisce le covariate meteo e di calendario, chiama **TiRex-2** e restituisce la previsione probabilistica (quantili 10–90 %). Fa anche da proxy verso **Zornade** (la chiave resta sul server) e geolocalizza i patrimoni edilizi (ANNCSU + Zornade) |
-| `worker` | previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
+| `worker` | (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
 | `caddy` | sito statico della fase 5 e instradamento verso l'API, solo dentro la rete Docker |
 | `cloudflared` | **Cloudflare Tunnel**: collega il server a Cloudflare senza aprire porte; l'HTTPS lo fa Cloudflare |
 | `listmonk` + `postgres` | newsletter automatica dei dati: liste, doppia conferma, cancellazione, invii |
@@ -580,8 +580,9 @@ tratto e retino propri, adatte a chi confonde rosso e verde e leggibili anche st
 
 Separata da Substack, che resta per gli articoli. Gira tutta sul server: [listmonk](https://listmonk.app)
 (open source, AGPL-3.0) con PostgreSQL. Una lista **mensile**, con **doppia conferma** e cancellazione
-con un clic in ogni email: il 12 del mese arrivano i gradi giorno osservati nel mese appena concluso nei
-capoluoghi, rispetto agli anni precedenti, e gli ultimi prezzi Eurostat dell'energia per le PMI.
+con un clic in ogni email: il 12 del mese arrivano la temperatura e i gradi giorno del mese appena concluso nei
+capoluoghi, confrontati con lo stesso mese degli anni precedenti e con il 1991–2020, e le Novità di EuGEnio (contenuto
+dell'11/11/2026 nella sezione «Newsletter: contenuto del primo numero»).
 
 Le campagne partono da sole (`NOTIZIARIO_INVIO_AUTOMATICO=true`); con `false` restano in bozza e arriva un avviso.
 I dati GME e TTF non compaiono. Iscrizione: `https://notizie.statocritico.it/subscription/form`
@@ -867,11 +868,31 @@ mescola (lo decide la pagina, README della fase 5).
 
 ## Newsletter: sezione «Novità di EuGEnio» (07/11/2026)
 
-`servizio/notiziario.py` (`novita_del_mese`): nella newsletter mensile, dopo i prezzi Eurostat, le voci del mese concluso
-del registro delle versioni `fase5-sito/novita.toml` (README della fase 5), con il rimando a `novita.html`. Il file è
-copiato nell'immagine (`COPY fase5-sito/novita.toml /app/novita.toml`, `NOVITA_TOML` in `config.py`): il pacchetto del
-codice (F5) lo deve comprendere. Nessun dato di mercato. Prova: `tests/test_notiziario_novita.py` (2). Caddy serve
-`/novita.xml` come `application/atom+xml; charset=utf-8`.
+`servizio/notiziario.py` (`novita_tra`): nella newsletter mensile le voci del registro delle versioni
+`fase5-sito/novita.toml` (README della fase 5), con il rimando a `novita.html`. Il file è copiato nell'immagine
+(`COPY fase5-sito/novita.toml /app/novita.toml`, `NOVITA_TOML` in `config.py`): il pacchetto del codice (F5) lo deve
+comprendere. Nessun dato di mercato. Caddy serve `/novita.xml` come `application/atom+xml; charset=utf-8`.
+
+## Newsletter: contenuto del primo numero (11/11/2026, decisioni di Paolo)
+
+Dopo l'anteprima del 12/11/2026 (dati di ottobre), `servizio/notiziario.py`:
+
+| Parte | Regola |
+|---|---|
+| Indici dei prezzi (in cima) | dal file del sito `/sito/dati/prezzi/indici.json` (scritto dal worker dopo i mercati, `prezzi`): energia elettrica Intercent-ER lotti 1 e 2 e Consip lotto predefinito (6, Emilia-Romagna) con F1, F2, F3 in colonna; gas: listino Intercent-ER (primo lotto con il valore del mese), PSV ARERA, PFOR; tra parentesi la variazione sullo stesso mese dell'anno prima; collegamento a `indici-prezzi.html`. Oggetto «EuGEnio – prezzi e freddo di <mese>», titolo «EuGEnio, <mese>». |
+| Capoluoghi | quelli segnati in `comuni.parquet` più i secondi capoluoghi di `CO_CAPOLUOGHI` (Cesena accanto a Forlì; Urbino, Carrara, Andria, Trani se serviti). Senza capoluoghi la sezione si salta con un avviso nel registro e **il giornaliero non si legge** (prima, senza filtro, si sarebbe letto tutto l'archivio nazionale). |
+| Frase di sintesi | «Ottobre 2026 è stato più caldo della media 2015–2025 in N capoluoghi su M: in media +X °C con il Y % di gradi giorno in meno. Rispetto al clima del 1991–2020 lo scarto medio è di +Z °C.» |
+| Tabella | temperatura media, scarto in °C dalla media dello stesso mese nell'archivio (periodo **dichiarato**: anni precedenti con almeno 25 giorni del mese), scarto dal 1991–2020, gradi giorno base 20 °C di **tutti i giorni del mese** (detto nel testo: anche fuori dal periodo di accensione), media e scarto in %. Segno meno tipografico (−). |
+| Scarto dal 1991–2020 | scarto dalla media dell'archivio + (media del mese negli stessi anni − normale 1991–2020) nella serie del **clima dal 1940** (fase 9, `/sito/dati/clima/<RR>/<istat>.json` e `_mensili.json`): i due termini vengono ciascuno da una sola fonte, così ERA5 corretto/ICON e ERA5-Land non si confrontano direttamente. Se manca un anno o un file, la colonna resta «—» (o sparisce se manca per tutti). |
+| Novità | voci di `novita.toml` con data **dopo il numero precedente e fino al giorno dell'invio** (`novita_tra`); nel **primo numero** (`NOTIZIARIO_PRIMO_NUMERO`, predefinito `2026-11`) tutte dall'inizio. |
+| Altri comuni | subito sotto la tabella, «Il tuo comune non c'è?» con il collegamento a Clima e meteo › Dati climatici (`dati.html`). |
+| Benvenuto | due righe solo nel primo numero. |
+| Eurostat | **tolto** (dato semestrale: per ora non dice niente). I file e i Dati storici restano. |
+
+Anteprima senza invio, dal server: `cd ~/energia/fase4-server`, poi
+`docker compose run --rm --no-deps worker python -c "import datetime as d; from servizio import notiziario as n; o,c=n.testo_mensile(2026,10,d.date(2026,11,12)); print(o); print(); print(c)"`.
+Bozza su un'altra lista (prove): `docker compose run --rm --no-deps -e LISTA_MENSILE=<id> -e NOTIZIARIO_INVIO_AUTOMATICO=false worker python -c "from servizio import notiziario as n; print(n.mensile(2026,10))"`.
+Prove: `tests/test_notiziario_novita.py` (3), `tests/test_notiziario_freddo.py` (7).
 
 ## «Aggiungi DBTR»: proposte di DB topografici e approvazione interna (07/11/2026)
 

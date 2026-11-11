@@ -1028,3 +1028,19 @@ nelle fonti) e `patrimonio.js` (testo di licenza nei file scaricati).
 Provato con Chrome senza interfaccia (Playwright) a 1440, 1000 e 390 px: nessun errore, nessuno scorrimento
 orizzontale, tastiera sui gruppi (↓ apre e porta alla prima voce, → passa al gruppo accanto, Esc chiude).
 Pubblicazione: `AGGIORNAMENTO_2026-11-03.md`.
+
+## Statistiche › Indici dei prezzi (11/11/2026)
+
+`sito/indici-prezzi.html` e `sito/indici_prezzi.js` (con `grafici.js` e `tabelle.js`), voce di Statistiche prima di
+Costi energetici Sanità; non sperimentale (valori pubblicati dalle fonti; il PFOR ha il metodo dichiarato nella F.A.Q.
+`#indici-prezzi`). Legge `dati/prezzi/indici.json`, che **non è nel repository** (lo scrive il worker sul server ogni
+notte; `.gitignore`); senza il file la pagina dice che i valori tornano dopo l'aggiornamento notturno.
+- Per ogni indice: barre affiancate gennaio–dicembre (anno prima tenue, anno in corso pieno; verde elettricità, arancio
+  gas: `--prezzi-ele`, `--prezzi-gas` in `stile.css`), tabella con la variazione (vuota dove manca un anno), lotto dalla
+  casella a discesa (Intercent-ER, Consip), fascia o uso con i pulsanti; €/Smc con 4 decimali.
+- **Confronto sui consumi** (`#confronto-consumi`): file CSV, Excel o ODS con «mese», «F1», «F2», «F3» (kWh; MWh se il
+  titolo lo dice), letto nel browser con `tabelle.js`; costo dell'energia con Intercent-ER lotto 1 e 2 e Consip (lotto a
+  scelta) nei due anni, **sugli stessi mesi** (quelli con i prezzi di tutte e tre le offerte in entrambi gli anni), un
+  grafico con 6 barre e una tabella (€ e €/MWh, sottolineato il più basso). Esempio inventato:
+  `sito/esempi/consumi_fasce_esempio.csv`.
+- Prova nel browser: `tests/test_indici_prezzi_browser.py` (file dei prezzi servito dalla prova).

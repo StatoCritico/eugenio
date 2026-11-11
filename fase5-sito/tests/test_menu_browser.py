@@ -238,8 +238,12 @@ def test_menu_08_11_sei_gruppi_tendine_e_tastiera(base, browser):
             pg.wait_for_timeout(250)
         assert pg.locator(G.format("clima") + " .tendina > li").last.text_content().strip().startswith("Cambiamento climatico")
         assert pg.locator(G.format("edificio") + " .tendina > li").first.text_content().strip().startswith("Obblighi di legge")
-        assert pg.locator(G.format("edificio") + " .tendina a").count() == 0
-        assert pg.locator(G.format("edificio") + " .tendina .voce-corso").count() == 8
+        # (09/11/2026 f) Obblighi di legge, Geometria e luce naturale, Consumi di nuovo cliccabili (sperimentali)
+        assert pg.locator(G.format("edificio") + " .tendina a").count() == 3
+        assert pg.locator(G.format("edificio") + " .tendina .voce-corso").count() == 5
+        # (11/11/2026) Statistiche: Indici dei prezzi prima di Costi energetici Sanità
+        assert [x.strip() for x in pg.locator(G.format("statistiche") + " .tendina a").all_text_contents()] == \
+            ["Indici dei prezzi", "Costi energetici Sanità"]
         ctx.close()
     ctx, pg = pagina(browser, 1366)
     pg.goto(base + "faq.html")

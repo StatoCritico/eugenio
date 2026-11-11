@@ -75,3 +75,16 @@ campo = "spread"
 fonti = "aggiudic|Det_Dir_agg"
 cerca = 'Lotto 2:.{0,700}?spread rispetto al PUN.{0,160}?pari a\s*([0-9]+(?:[.,][0-9]+)?)\s*€/MWh'
 applica = true
+
+# Listini mensili pubblicati da Intercent-ER sulla pagina della convenzione (11/11/2026): un Excel per lotto con il PUN
+# medio mensile per fascia e il prezzo (PUN + spread). EuGEnio legge e pubblica solo il prezzo (mercati_energia/listini.py),
+# nella pagina Statistiche › Indici dei prezzi e nella newsletter.
+[listino]
+url = "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-attive/2025/energia-elettrica-19/allegati/listini.zip/@@download/file"
+nome = "Intercent-ER – Energia elettrica, convenzioni per la sanità e le PA dell'Emilia-Romagna"
+lotto_predefinito = "1"
+lotti = { "1" = "Lotto 1 – aziende sanitarie, media tensione", "2" = "Lotto 2 – bassa tensione e altre amministrazioni" }
+# listini delle convenzioni precedenti con gli stessi lotti (confronto con l'anno prima nella pagina Indici dei prezzi)
+precedenti = [
+  { id = "intercenter-ee18-2025", titolo = "Energia elettrica 18 – fornitura 2025", url = "https://intercenter.regione.emilia-romagna.it/bandi-e-strumenti-di-acquisto/strumenti-di-acquisto/convenzioni/convenzioni-scadute-e-o-esaurite/2024/energia-elettrica-18/allegati/listini_ee_18.zip/@@download/file" },
+]

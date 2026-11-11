@@ -159,6 +159,14 @@ def esegui(cfg: Config) -> dict:
         except Exception as e:
             log.exception("forward TTF")
             esito["errori"].append(f"forward TTF: {e}")
+    if cfg.convenzioni or (cfg.cartella / "listini_manuali").exists():
+        # listini mensili pubblicati dalle centrali (11/11/2026): solo i prezzi, pubblicati nella pagina Indici dei prezzi
+        try:
+            from . import listini
+            esito["listini"] = listini.aggiorna(cfg.cartella, cfg.convenzioni)
+        except Exception as e:
+            log.exception("listini")
+            esito["errori"].append(f"listini delle convenzioni: {e}")
     if cfg.sorveglianza and cfg.convenzioni:
         # pagine delle centrali e documenti delle convenzioni: novità, valori cambiati, PSV ARERA in ritardo
         try:

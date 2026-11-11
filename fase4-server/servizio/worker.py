@@ -3,7 +3,8 @@
   previsioni meteo       ogni ORE_PREVISIONI ore      } solo i comuni delle REGIONI_AGGIORNATE (vuoto = tutte le
   storico meteo          ogni giorno dopo ORA_STORICO_UTC } REGIONI servite); giornaliero aggiornato a blocchi di comuni
   mercati (GME, TTF)     ogni notte alle ORA_MERCATI (ora italiana), con la sorveglianza delle fonti delle
-                         convenzioni (email solo quando cambia qualcosa)
+                         convenzioni (email solo quando cambia qualcosa), i listini delle convenzioni e, subito dopo,
+                         gli indici dei prezzi pubblicabili per il sito (prezzi: /sito/dati/prezzi/indici.json)
   newsletter dei dati    mensile, il giorno NOTIZIARIO_GIORNO (listmonk)
   verifica territorio    il 2 di ogni mese: nuovi comuni ISTAT o nuova versione dei confini Gramscii
   indirizzario ANNCSU    il giorno ANNCSU_GIORNO di ogni mese (o subito, se manca): civici georeferenziati
@@ -14,7 +15,7 @@ lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
 
   python -m servizio.worker                 ciclo continuo
-  python -m servizio.worker previsioni|storico|mercati|mensile|territorio|anncsu|indicatori|clima
+  python -m servizio.worker previsioni|storico|mercati|prezzi|mensile|territorio|anncsu|indicatori|clima
                                             una sola esecuzione (anche con docker compose run --rm worker …)
 """
 from __future__ import annotations
@@ -57,10 +58,25 @@ def mercati() -> None:
         log.info("Mercati: GME saltato, credenziali non configurate")
     if errori:
         avvisi.invia("dati di mercato: aggiornamento incompleto", json.dumps(esito, indent=1, default=str))
+    _sicuro(prezzi, "indici dei prezzi")      # un errore qui non ferma l'avviso della sorveglianza
     s = esito.get("sorveglianza") or {}
     if s.get("da_segnalare"):
         from mercati_energia.sorveglianza import riepilogo
         avvisi.invia("convenzioni e fonti: novità", riepilogo(s))
+
+
+def prezzi() -> None:
+    """Indici dei prezzi pubblicabili (11/11/2026): listini delle convenzioni, PSV ARERA, PFOR ricostruito, mai PUN né
+    TTF. File del sito /sito/dati/prezzi/indici.json, letto dalla pagina Statistiche › Indici dei prezzi e dalla
+    newsletter. Gira dopo i mercati di ogni notte (e da solo con `python -m servizio.worker prezzi`)."""
+    if not Path(C.MERCATI_CONFIG).exists():          # mirror o prove senza dati di mercato: niente file, niente email
+        log.info("Indici dei prezzi: configurazione dei mercati assente (%s)", C.MERCATI_CONFIG)
+        return
+    from mercati_energia import prezzi_pubblici
+    from mercati_energia.config import carica
+    cfg = carica(C.MERCATI_CONFIG)
+    dati = prezzi_pubblici.scrivi(cfg.cartella, cfg.convenzioni, C.SITO_DATI / "prezzi" / "indici.json")
+    log.info("Indici dei prezzi: %s", {s["id"]: len(s["indici"]) for s in dati["sezioni"]})
 
 
 def mensile() -> None:
@@ -204,5 +220,5 @@ def ciclo() -> None:
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "ciclo"
     {"ciclo": ciclo, "previsioni": meteo.aggiorna_previsioni, "storico": meteo.aggiorna_storico,
-     "mercati": mercati, "mensile": mensile, "territorio": territorio, "anncsu": anncsu,
+     "mercati": mercati, "prezzi": prezzi, "mensile": mensile, "territorio": territorio, "anncsu": anncsu,
      "indicatori": indicatori, "clima": clima}[cmd]()

@@ -6,14 +6,14 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>EuGEnio – stato interno degli edifici</title>
-<link rel="stylesheet" href="../lib/maplibre-gl/maplibre-gl.css?v=20261109f">
+<link rel="stylesheet" href="../lib/maplibre-gl/maplibre-gl.css?v=20261111b">
 <!-- Pagina interna (fase 10, Fase C, § 12): fuori da menu e mappa del sito, non nel robots.txt, X-Robots-Tag noindex
      da Caddy. Accesso solo con Cloudflare Access (Caddy rifiuta le richieste senza l'intestazione, l'api verifica il
      JWT). Pipeline: sola lettura, i comandi si danno via ssh. Coda «Aggiungi DBTR» (07/11/2026): Approva / Rifiuta con
      POST /api/interno/dbtr/{id}/approva|rifiuta (intestazione X-EuGEnio-Interno). -->
 <script>try{if(localStorage.getItem("tema")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
-<link rel="stylesheet" href="../stile.css?v=20261109f">
-<link rel="stylesheet" href="interno.css?v=20261109f">
+<link rel="stylesheet" href="../stile.css?v=20261111b">
+<link rel="stylesheet" href="interno.css?v=20261111b">
 </head>
 <body>
 <main class="interno">
@@ -48,7 +48,7 @@
   <div id="zone"></div>
   <p class="aiuto">Aggiornato: <span id="generato">—</span>. <button class="bottone secondario" id="ricarica" type="button">Ricarica</button></p>
 </main>
-<script src="../lib/maplibre-gl/maplibre-gl.js?v=20261109f"></script>
-<script src="edifici.js?v=20261109f"></script>
+<script src="../lib/maplibre-gl/maplibre-gl.js?v=20261111b"></script>
+<script src="edifici.js?v=20261111b"></script>
 </body>
 </html>

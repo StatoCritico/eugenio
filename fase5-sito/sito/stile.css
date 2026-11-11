@@ -1489,3 +1489,21 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .carico-clessidra { transform-box: view-box; transform-origin: 12px 12px; animation: giro-clessidra 2.4s ease-in-out infinite; }
 @keyframes giro-clessidra { 0%, 65% { transform: rotate(0deg); } 100% { transform: rotate(180deg); } }
 @media (prefers-reduced-motion: reduce) { .carico-clessidra { animation: none; } }
+
+/* ---- Statistiche › Indici dei prezzi (11/11/2026): verde elettricità, arancio gas (colori delle barre del 29/10/2026);
+        l'anno prima più tenue, l'anno in corso pieno ---- */
+:root { --prezzi-ele: #6fcf8f; --prezzi-gas: #f2a24b; }
+[data-theme="light"] { --prezzi-ele: #2e7a34; --prezzi-gas: #b85a0c; }
+.indici-prezzi .gruppo-servizio { margin: 0; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
+.indici-prezzi .sotto { color: var(--tenue); max-width: 72ch; }
+.indici-prezzi .ip-indice { border-top: 1px solid var(--linea); padding-top: var(--s4); margin-top: var(--s5); }
+.indici-prezzi .ip-indice h3 { margin-top: 0; }
+.indici-prezzi .ip-indice .aiuto { max-width: 80ch; }
+.indici-prezzi .ip-corpo { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--s5); align-items: start; }
+@media (max-width: 860px) { .indici-prezzi .ip-corpo { grid-template-columns: minmax(0, 1fr); } }
+.indici-prezzi .grafico .prima { fill-opacity: .42; }
+.indici-prezzi td.su { color: var(--errore); }
+.indici-prezzi td.giu { color: var(--successo); }
+.indici-prezzi td small, .indici-prezzi th small { display: block; font: 400 var(--c-xs) var(--testo); color: var(--tenue); }
+.indici-prezzi .ip-attesa { color: var(--tenue); }
+.indici-prezzi .ip-note ul { max-width: 80ch; }
