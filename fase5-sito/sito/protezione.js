@@ -1,6 +1,6 @@
 // Verifica anti-robot (Cloudflare Turnstile) per le richieste che costano o consumano quote: previsione, patrimonio,
 // geocodifica, particella, estrazione dei Dati climatici, edifici OpenStreetMap al volo di Modelli 3D e proposta di un DB
-// topografico all'archivio comune (07/11/2026;
+// topografico all'archivio comune (07/11/2026), collegamento personale di «Dati per email» (14/11/2026;
 // servizio/protezione.py sul server).
 //
 // Si carica in tutte le pagine (parti/testa.html) e avvolge window.fetch: le pagine non cambiano. Alla prima
@@ -19,7 +19,7 @@
 // error», avvisi WebGPU) vengono dal suo riquadro e dalla sua pagina, non da EuGEnio.
 (function () {
   "use strict";
-  const PROTETTE = /\/api\/(previsione|patrimonio|geocodifica|particella|storici\/estrai|edifici\/osm|dbtr\/inizia)(?:[/?#]|$)/;
+  const PROTETTE = /\/api\/(previsione|patrimonio|geocodifica|particella|storici\/estrai|edifici\/osm|dbtr\/inizia|email\/link)(?:[/?#]|$)/;
   const SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
   const CHIAVE = "eugenio_sessione";
   const originale = window.fetch.bind(window);

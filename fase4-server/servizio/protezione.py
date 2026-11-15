@@ -46,7 +46,7 @@ from . import avvisi, config as C
 log = logging.getLogger(__name__)
 ROMA = ZoneInfo("Europe/Rome")
 INTESTAZIONE_SESSIONE = "X-EuGEnio-Sessione"
-TIPI_PROTETTI = ("previsione", "patrimonio", "geocodifica", "particella", "estrazione", "edifici_osm", "dbtr")
+TIPI_PROTETTI = ("previsione", "patrimonio", "geocodifica", "particella", "estrazione", "edifici_osm", "dbtr", "email_link")
 
 
 # ---------------------------------------------------------------------------------------------- indirizzo
@@ -162,7 +162,9 @@ _DINAMICI = {"dati": lambda: C.LIMITE_DATI_ORA, "sessione": lambda: C.SESSIONI_O
              # (09/11/2026) strati sopra le ortofoto con un limite proprio (prima contavano come ortofoto); tessere e celle
              # servite dalla copia su disco: tetto alto anti-abuso, separato dai limiti delle fonti esterne
              "strati": lambda: C.STRATI_ORA, "tessere_copia": lambda: C.TESSERE_COPIA_ORA,
-             "edifici_osm_copia": lambda: C.EDIFICI_OSM_COPIA_ORA}
+             "edifici_osm_copia": lambda: C.EDIFICI_OSM_COPIA_ORA,
+             # (14/11/2026) collegamenti personali della pagina «Dati per email»
+             "email_link": lambda: C.EMAIL_LINK_ORA, "email_pref": lambda: C.LIMITE_DATI_ORA}
 # limiti giornalieri (finestra mobile di 24 ore): file proposti all'archivio comune («Aggiungi DBTR», 07/11/2026)
 _GIORNALIERI = {"dbtr": lambda: C.DBTR_CARICAMENTI_GIORNO}
 _UNITA = {"patrimonio": "edifici", "estrazione": "download", "stima": "stime", "sessione": "verifiche",

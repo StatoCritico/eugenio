@@ -585,8 +585,9 @@ capoluoghi, confrontati con lo stesso mese degli anni precedenti e con il 1991�
 dell'11/11/2026 nella sezione «Newsletter: contenuto del primo numero»).
 
 Le campagne partono da sole (`NOTIZIARIO_INVIO_AUTOMATICO=true`); con `false` restano in bozza e arriva un avviso.
+Dal 14/11/2026 il mensile parte come **un messaggio per iscritto** con le sue regioni (sezione «Newsletter e avvisi» più sotto).
 I dati GME e TTF non compaiono. Iscrizione: `https://notizie.statocritico.it/subscription/form`
-(collegata dal menu del sito, "Dati per email").
+(dal 14/11/2026 il menu del sito porta a Clima e meteo › «Newsletter e avvisi», `dati-per-email.html`).
 
 **Invio: OCI Email Delivery** (stesso account Oracle, dati in UE). Limiti dell'account a consumo: **50.000 email ogni
 24 ore**, 18.000 al minuto, messaggi fino a 2 MB (ogni destinatario conta come un'email); l'account solo Always Free
@@ -891,8 +892,80 @@ Dopo l'anteprima del 12/11/2026 (dati di ottobre), `servizio/notiziario.py`:
 
 Anteprima senza invio, dal server: `cd ~/energia/fase4-server`, poi
 `docker compose run --rm --no-deps worker python -c "import datetime as d; from servizio import notiziario as n; o,c=n.testo_mensile(2026,10,d.date(2026,11,12)); print(o); print(); print(c)"`.
-Bozza su un'altra lista (prove): `docker compose run --rm --no-deps -e LISTA_MENSILE=<id> -e NOTIZIARIO_INVIO_AUTOMATICO=false worker python -c "from servizio import notiziario as n; print(n.mensile(2026,10))"`.
+Bozza sulla lista **Prove** (ID 4 in listmonk, privata, opt-in singolo): `docker compose run --rm --no-deps -e LISTA_MENSILE=4 -e NOTIZIARIO_INVIO_AUTOMATICO=false worker python -c "from servizio import notiziario as n; print(n.mensile(2026,10))"`.
 Prove: `tests/test_notiziario_novita.py` (3), `tests/test_notiziario_freddo.py` (7).
+
+## Newsletter e avvisi: mensile per regione, previsioni settimanali, avvisi meteo (dal 14/11/2026)
+
+Decisione di Paolo del 14/11/2026: tre servizi **separati**, ognuno con la sua lista in listmonk, e la zona scelta da chi
+si iscrive nella pagina del sito **`dati-per-email.html`** (menu Clima e meteo › «Newsletter e avvisi», dal 15/11/2026; prima «Iscriviti»).
+
+| Servizio | Lista | Quando | Contenuto |
+|---|---|---|---|
+| Newsletter mensile | «EuGEnio mensile» (`LISTA_MENSILE`, 3) | il 12, dalle 9 | prezzi nazionali (Consip con i **lotti delle regioni scelte**), freddo e gradi giorno del mese **regione per regione** (media dei capoluoghi), i **capoluoghi** delle regioni scelte (fino a `EMAIL_MAX_REGIONI` = 3), novità |
+| Previsioni settimanali | «EuGEnio settimanale» (`LISTA_SETTIMANALE`, 0 = creata) | domenica dalle 17 | da lunedì a domenica per fino a `EMAIL_MAX_COMUNI` = 5 comuni: min e max, pioggia, neve, raffica, gradi giorno, giorni oltre le soglie degli avvisi; gradi giorno della settimana contro gli stessi giorni degli anni dell'archivio |
+| Avvisi meteo | «EuGEnio avvisi meteo» (`LISTA_AVVISI`, 0 = creata) | ogni giorno dalle 15 | domani nei comuni scelti, solo per i fenomeni scelti: **pioggia forte** ≥ 40 mm/24 h o ≥ 15 mm/1 h, **neve** ≥ 2 cm, **vento molto forte** raffiche ≥ 75 km/h (`AVVISO_*` nel `.env`) |
+
+Gli avvisi **non sono allerte**: in ogni avviso, nella pagina e nelle F.A.Q. c'è scritto che il servizio è gratuito, non
+fornisce garanzie e non sostituisce le allerte della Protezione Civile e degli enti pubblici, con il collegamento al
+bollettino nazionale di criticità.
+
+**Come funziona**
+- `servizio/preferenze_email.py` (rotte `/api/email/…`): `opzioni`, `comuni` (elenco nazionale), `link` (collegamento
+  personale per email, con la verifica anti-robot, 10 all'ora per IP e 3 al giorno per indirizzo; l'indirizzo non entra
+  in listmonk finché non si salva), `leggi`, `salva` (liste già confermate: il collegamento conferma l'indirizzo), `via`
+  (cancellazione da un servizio, anche con un clic dal programma di posta, RFC 8058). Gettoni firmati con
+  `NOTIZIE_CHIAVE` (o `SESSIONE_CHIAVE`): senza chiave la pagina dice «non ancora attivo».
+- `servizio/listmonk.py`: liste (create la prima volta, private e a doppia conferma), iscritti con le scelte negli
+  attributi `eugenio` (`regioni`, `comuni`, `avvisi`), **messaggi personali** con l'API transazionale e il modello
+  «EuGEnio – messaggio personale» (creato da solo).
+- `servizio/notiziario.py`: testi Markdown → HTML (pacchetto `markdown`), un messaggio per iscritto, piè con
+  «Cambia servizi, regioni e comuni» e «Cancellati con un clic»; registro degli invii in `/dati/invii_email/` (niente
+  doppioni se il worker riparte; cancellato dopo 120 giorni). `NOTIZIE_PERSONALI=false` riporta il mensile alla campagna
+  unica di prima (settimanale e avvisi fermi).
+- `servizio/meteo_email.py`: previsioni Open-Meteo (`best_match`, con raffiche e neve) per i soli comuni scelti, a blocchi
+  di 50 con il limitatore del server; vale anche fuori dalle `REGIONI_AGGIORNATE`.
+- Worker: `settimanale` e `avvisi` nel ciclo (`SETTIMANALE_GIORNO`, `SETTIMANALE_ORA`, `AVVISI_ORA`) e a mano
+  (`python -m servizio.worker settimanale|avvisi`). Lo storico di ogni giorno comprende i **capoluoghi di tutte le
+  regioni** (`STORICO_CAPOLUOGHI_ITALIA=true`, ~110 punti in più) per gli indicatori regionali del mensile.
+
+Anteprima del mensile per una regione, dal server (`cd ~/energia/fase4-server`):
+`docker compose run --rm --no-deps worker python -c "import datetime as d; from servizio import notiziario as n; c=n._capoluoghi_italia(); v=n._voci_freddo(c,2026,10); print(n.testo_mensile_regioni(2026,10,d.date(2026,11,12),['08'],v,n._nomi_regioni(c))[1])"`.
+Prove: `tests/test_email_personali.py` (13) e, nel sito, `tests/test_dati_per_email_browser.py` (4).
+
+## Aggiornamento del server da GitHub (`aggiorna_da_github.sh`, dal 12/11/2026)
+
+Decisione di Paolo del 12/11/2026 (strade «1» e «2a»): Claude lavora sul repository con **pull request** che Paolo
+approva; dopo l'approvazione si crea la **release** (`vAAAA.MM.GG`, `vAAAA.MM.GGb` …) e il server si aggiorna da solo da
+quella release con `aggiorna_da_github.sh`. Il repository è pubblico: il server lo legge in HTTPS, **senza chiavi**.
+Niente pacchetti `codice.tar.gz`/`sito.tar.gz` da copiare con scp.
+
+| Comando (sul server) | Cosa fa |
+|---|---|
+| `~/energia/fase4-server/aggiorna_da_github.sh --prova` | dice cosa farebbe con l'ultima release (file, convenzioni cambiate, procedure con passi a mano), senza toccare nulla |
+| `~/energia/fase4-server/aggiorna_da_github.sh` | installa l'ultima release, se è più nuova di quella in `~/.eugenio_versione` |
+| `~/energia/fase4-server/aggiorna_da_github.sh v2026.11.13` | installa quella release (anche per tornare indietro: `--forza v…`) |
+| `~/energia/fase4-server/aggiorna_da_github.sh --notte` | dal crontab: solo se c'è una release nuova; email all'amministratore con l'esito |
+
+Passi: copia di sicurezza di `~/energia` (`~/energia_prima_<release>`, si tengono le ultime 3) e delle convenzioni (`~/convenzioni_prima_<release>`); codice delle fasi 3, 4,
+6, 7, 8, 9, 10 in `~/energia` con rsync **senza cancellare** (restano `.env`, fase 2, `uni_privato`,
+`mercati_energia/dati/` e tutto ciò che non è nel repository); convenzioni `*.toml` e `fonti/*.toml` in
+`/srv/energia/dati/mercati/convenzioni`; `docker compose build api` e `up -d --force-recreate api worker` con attesa di
+`/api/salute` (3 minuti: se l'api non risponde si torna **da soli** alla copia e si esce con errore, email
+all'amministratore); sito in `/srv/energia/sito` (senza cancellare; `dati/indicatori/` e `dati/prezzi/` non si toccano) con
+il controllo della versione `?v=`; `worker prezzi`; **Purge Everything** su Cloudflare se nel `.env` ci sono `CF_ZONE_ID` e
+`CF_PURGE_TOKEN` (token con il **solo** permesso «Zone › Cache Purge» sulla zona; lo script non li stampa mai). Registro in
+`~/aggiorna_da_github.log`; un solo aggiornamento alla volta (`flock`). Lo script si riavvia da una copia temporanea, così
+può aggiornare anche se stesso.
+
+**Cosa non fa**: i «passi a mano» delle procedure `AGGIORNAMENTO_*.md` cambiate tra le due release (righe nuove del
+`.env`, archivi grandi, crontab, servizi nuovi come `edifici`) li **elenca** alla fine e nell'email, non li esegue; i
+dati di terzi fuori da git (`mercati_energia/dati/`, `uni_privato`, fase 2) arrivano ancora dal PC. Le procedure nuove
+avranno quindi un passo unico «`aggiorna_da_github.sh`» più gli eventuali passi a mano.
+
+Tutte le cartelle si possono cambiare con le variabili `EUGENIO_REPO`, `EUGENIO_CLONE` (`~/eugenio-git`),
+`EUGENIO_ENERGIA`, `EUGENIO_SITO`, `EUGENIO_CONVENZIONI`, `EUGENIO_STATO`, `EUGENIO_REGISTRO` (le usa la prova a vuoto).
+Installazione e prima prova: procedura X di `AGGIORNAMENTO_2026-11-12.md`.
 
 ## «Aggiungi DBTR»: proposte di DB topografici e approvazione interna (07/11/2026)
 

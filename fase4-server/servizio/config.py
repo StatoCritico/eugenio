@@ -83,6 +83,37 @@ NOTIZIARIO_INVIO_AUTOMATICO = os.environ.get("NOTIZIARIO_INVIO_AUTOMATICO", "tru
 NOTIZIARIO_GIORNO = int(os.environ.get("NOTIZIARIO_GIORNO", "12"))     # giorno del mese del numero mensile
 # mese d'invio (AAAA-MM) del primo numero: benvenuto e tutte le novità dall'inizio (11/11/2026)
 NOTIZIARIO_PRIMO_NUMERO = os.environ.get("NOTIZIARIO_PRIMO_NUMERO", "2026-11")
+# (14/11/2026, decisione di Paolo) tre servizi separati, ognuno con la sua lista in listmonk e la scelta dell'area nella
+# pagina del sito «Dati per email» (servizio/preferenze_email.py): mensile (fino a EMAIL_MAX_REGIONI regioni, indicatori
+# regionali e prezzi nazionali), settimanale (previsioni della settimana dopo per fino a EMAIL_MAX_COMUNI comuni) e avvisi
+# meteo (domani: pioggia forte, neve, vento molto forte; non sono allerte). Liste: 0 = cercata per nome, creata se manca.
+LISTA_SETTIMANALE = int(os.environ.get("LISTA_SETTIMANALE", "0") or 0)
+LISTA_AVVISI = int(os.environ.get("LISTA_AVVISI", "0") or 0)
+NOME_LISTA_SETTIMANALE = "EuGEnio settimanale"
+NOME_LISTA_AVVISI = "EuGEnio avvisi meteo"
+# messaggi personali (API transazionale di listmonk, un messaggio per iscritto con i dati delle sue aree); false = il
+# mensile torna alla campagna unica di prima, uguale per tutti (settimanale e avvisi non partono)
+NOTIZIE_PERSONALI = os.environ.get("NOTIZIE_PERSONALI", "true").lower() not in ("false", "0", "no", "spento")
+NOTIZIE_PAUSA_S = float(os.environ.get("NOTIZIE_PAUSA_S", "0.3"))       # pausa tra un messaggio e l'altro
+EMAIL_MAX_REGIONI = int(os.environ.get("EMAIL_MAX_REGIONI", "3"))
+EMAIL_MAX_COMUNI = int(os.environ.get("EMAIL_MAX_COMUNI", "5"))
+SETTIMANALE_GIORNO = int(os.environ.get("SETTIMANALE_GIORNO", "6"))     # 0 = lunedì … 6 = domenica
+SETTIMANALE_ORA = int(os.environ.get("SETTIMANALE_ORA", "17"))         # ora italiana; previsioni da lunedì a domenica
+AVVISI_ORA = int(os.environ.get("AVVISI_ORA", "15"))                   # ora italiana del controllo delle previsioni di domani
+# soglie degli avvisi meteo (14/11/2026): pioggia forte, neve, vento molto forte, sulle previsioni del giorno dopo
+AVVISO_PIOGGIA_24H_MM = float(os.environ.get("AVVISO_PIOGGIA_24H_MM", "40"))
+AVVISO_PIOGGIA_1H_MM = float(os.environ.get("AVVISO_PIOGGIA_1H_MM", "15"))
+AVVISO_NEVE_CM = float(os.environ.get("AVVISO_NEVE_CM", "2"))
+AVVISO_VENTO_KMH = float(os.environ.get("AVVISO_VENTO_KMH", "75"))
+# firma dei collegamenti personali delle email (pagina delle preferenze, cancellazione): vuota = SESSIONE_CHIAVE; tutte e
+# due vuote = pagina spenta (con una chiave casuale i collegamenti già spediti smetterebbero di funzionare a ogni riavvio)
+NOTIZIE_CHIAVE = os.environ.get("NOTIZIE_CHIAVE", "")
+EMAIL_LINK_ORA = int(os.environ.get("EMAIL_LINK_ORA", "10"))            # collegamenti chiesti per IP all'ora
+EMAIL_LINK_GIORNO = int(os.environ.get("EMAIL_LINK_GIORNO", "3"))       # collegamenti spediti allo stesso indirizzo in 24 ore
+EMAIL_LINK_GIORNI = int(os.environ.get("EMAIL_LINK_GIORNI", "7"))       # validità del collegamento chiesto dalla pagina
+# il worker aggiorna ogni giorno lo storico anche dei capoluoghi di tutte le regioni (circa 110 punti), per gli
+# indicatori regionali del mensile, anche se REGIONI_AGGIORNATE ne contiene solo alcune
+STORICO_CAPOLUOGHI_ITALIA = os.environ.get("STORICO_CAPOLUOGHI_ITALIA", "true").lower() not in ("false", "0", "no")
 SMTP_SERVER = os.environ.get("SMTP_SERVER", "")
 SMTP_PORTA = int(os.environ.get("SMTP_PORTA", "587"))
 SMTP_UTENTE = os.environ.get("SMTP_UTENTE", "")

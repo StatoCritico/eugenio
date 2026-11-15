@@ -21,6 +21,17 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
+data = "2026-11-14"
+versione = "20261114a"
+titolo = "Newsletter e avvisi: scegli servizi e zona"
+nuovo = [
+  "Clima e meteo › Newsletter e avvisi: tre servizi gratuiti separati, scelti con un collegamento personale senza password. Newsletter mensile con i prezzi dell'energia, il freddo regione per regione e i capoluoghi di fino a 3 regioni; previsioni settimanali da lunedì a domenica per fino a 5 comuni in tutta Italia; avvisi meteo del giorno dopo per pioggia forte, neve e vento molto forte, che non sono allerte e non sostituiscono quelle della Protezione Civile e degli enti pubblici.",
+]
+migliorato = [
+  "Newsletter mensile: con Consip i lotti delle tue regioni; in fondo a ogni email il collegamento per cambiare le scelte e quello per cancellarti con un clic.",
+]
+
+[[voce]]
 data = "2026-11-11"
 versione = "20261111b"
 titolo = "Indici dei prezzi dell'energia"

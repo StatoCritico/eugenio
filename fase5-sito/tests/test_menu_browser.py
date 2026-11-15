@@ -236,7 +236,9 @@ def test_menu_08_11_sei_gruppi_tendine_e_tastiera(base, browser):
             assert d["left"] >= 0 and d["right"] <= larghezza and set(d["righe"]) == {1}, (larghezza, g, d)
             pg.mouse.move(5, 700)
             pg.wait_for_timeout(250)
-        assert pg.locator(G.format("clima") + " .tendina > li").last.text_content().strip().startswith("Cambiamento climatico")
+        # (15/11/2026) «Newsletter e avvisi» ultima voce di Clima e meteo, dopo Cambiamento climatico
+        assert pg.locator(G.format("clima") + " .tendina > li").nth(-2).text_content().strip().startswith("Cambiamento climatico")
+        assert pg.locator(G.format("clima") + " .tendina > li").last.text_content().strip() == "Newsletter e avvisi"
         assert pg.locator(G.format("edificio") + " .tendina > li").first.text_content().strip().startswith("Obblighi di legge")
         # (09/11/2026 f) Obblighi di legge, Geometria e luce naturale, Consumi di nuovo cliccabili (sperimentali)
         assert pg.locator(G.format("edificio") + " .tendina a").count() == 3

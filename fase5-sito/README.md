@@ -1044,3 +1044,20 @@ notte; `.gitignore`); senza il file la pagina dice che i valori tornano dopo l'a
   grafico con 6 barre e una tabella (€ e €/MWh, sottolineato il più basso). Esempio inventato:
   `sito/esempi/consumi_fasce_esempio.csv`.
 - Prova nel browser: `tests/test_indici_prezzi_browser.py` (file dei prezzi servito dalla prova).
+
+## Newsletter e avvisi (14/11/2026, `?v=20261114a`)
+
+Pagina **`dati-per-email.html`** (`dati_per_email.js`), voce **«Newsletter e avvisi»** del gruppo Clima e meteo (decisione di Paolo del 15/11/2026: il pulsante
+«Iscriviti» della testata e del menu del telefono è tolto; prima portava al modulo di listmonk). Tre servizi separati (decisione di Paolo del 14/11/2026): newsletter mensile con le regioni (fino a 3),
+previsioni settimanali e avvisi meteo con i comuni (fino a 5, tutta Italia), gli avvisi per pioggia forte, neve e vento
+molto forte con l'avvertenza «Il servizio di avvisi meteo è gratuito, non fornisce garanzie e non sostituisce le allerte
+della Protezione Civile e degli enti pubblici».
+
+Stati della pagina: senza nulla dopo `#` il modulo dell'email (`POST /api/email/link`, verifica anti-robot in
+`protezione.js`); con `#t=<gettone>` le scelte (`/api/email/leggi` e `/salva`); con `#via=<gettone>` la cancellazione da un
+servizio (`/api/email/via`). Il gettone si toglie dalla barra appena letto. Se l'API risponde `"attivo": false` la pagina
+rimanda al modulo di listmonk. Server: sezione «Newsletter e avvisi» del README della fase 4.
+
+Aggiornati anche F.A.Q. (`#dati-per-email`, `#avvisi-meteo`), informativa privacy (riga `#newsletter`), Novità, file per
+gli agenti (§ 3 Altre pagine, § 4.9, § 8) e `llms.txt`. Stile: `.dati-email`, `.dpe-*` in `stile.css`. Prova nel
+browser: `tests/test_dati_per_email_browser.py` (API finta).

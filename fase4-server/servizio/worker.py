@@ -5,7 +5,11 @@
   mercati (GME, TTF)     ogni notte alle ORA_MERCATI (ora italiana), con la sorveglianza delle fonti delle
                          convenzioni (email solo quando cambia qualcosa), i listini delle convenzioni e, subito dopo,
                          gli indici dei prezzi pubblicabili per il sito (prezzi: /sito/dati/prezzi/indici.json)
-  newsletter dei dati    mensile, il giorno NOTIZIARIO_GIORNO (listmonk)
+  newsletter dei dati    mensile, il giorno NOTIZIARIO_GIORNO (listmonk; dal 14/11/2026 un messaggio per iscritto con
+                         le sue regioni)
+  previsioni per email   ogni settimana, giorno SETTIMANALE_GIORNO dalle SETTIMANALE_ORA: la settimana dopo per i comuni
+                         di ogni iscritto (14/11/2026)
+  avvisi meteo           ogni giorno dalle AVVISI_ORA: pioggia forte, neve, vento molto forte domani nei comuni scelti
   verifica territorio    il 2 di ogni mese: nuovi comuni ISTAT o nuova versione dei confini Gramscii
   indirizzario ANNCSU    il giorno ANNCSU_GIORNO di ogni mese (o subito, se manca): civici georeferenziati
   indicatori sanità      il giorno INDICATORI_GIORNO di ogni mese, dalle 6 (fase 8: OpenBDAP, ReportER, ISTAT)
@@ -15,7 +19,7 @@ lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
 
   python -m servizio.worker                 ciclo continuo
-  python -m servizio.worker previsioni|storico|mercati|prezzi|mensile|territorio|anncsu|indicatori|clima
+  python -m servizio.worker previsioni|storico|mercati|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
                                             una sola esecuzione (anche con docker compose run --rm worker …)
 """
 from __future__ import annotations
@@ -82,6 +86,20 @@ def prezzi() -> None:
 def mensile() -> None:
     from . import notiziario as n
     n.mensile()
+
+
+def settimanale() -> None:
+    """Previsioni della settimana dopo per i comuni di ogni iscritto (14/11/2026)."""
+    from . import notiziario as n
+    if C.NOTIZIE_PERSONALI and n.L.attivo():
+        n.settimanale()
+
+
+def avvisi_meteo() -> None:
+    """Avvisi meteo per domani: pioggia forte, neve, vento molto forte (14/11/2026; non sono allerte)."""
+    from . import notiziario as n
+    if C.NOTIZIE_PERSONALI and n.L.attivo():
+        n.avvisi_meteo()
 
 
 def territorio() -> None:
@@ -200,6 +218,12 @@ def ciclo() -> None:
         if loc.day == C.NOTIZIARIO_GIORNO and loc.hour >= 9 and fatti.get("mensile") != oggi:
             _sicuro(mensile, "newsletter mensile")
             fatti["mensile"] = oggi
+        if loc.weekday() == C.SETTIMANALE_GIORNO and loc.hour >= C.SETTIMANALE_ORA and fatti.get("settimanale") != oggi:
+            _sicuro(settimanale, "previsioni settimanali per email")
+            fatti["settimanale"] = oggi
+        if loc.hour >= C.AVVISI_ORA and fatti.get("avvisi_meteo") != oggi:
+            _sicuro(avvisi_meteo, "avvisi meteo per email")
+            fatti["avvisi_meteo"] = oggi
         if loc.day == 2 and loc.hour >= 8 and fatti.get("territorio") != oggi:
             _sicuro(territorio, "verifica territorio")
             fatti["territorio"] = oggi
@@ -220,5 +244,5 @@ def ciclo() -> None:
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "ciclo"
     {"ciclo": ciclo, "previsioni": meteo.aggiorna_previsioni, "storico": meteo.aggiorna_storico,
-     "mercati": mercati, "prezzi": prezzi, "mensile": mensile, "territorio": territorio, "anncsu": anncsu,
+     "mercati": mercati, "prezzi": prezzi, "mensile": mensile, "settimanale": settimanale, "avvisi": avvisi_meteo, "territorio": territorio, "anncsu": anncsu,
      "indicatori": indicatori, "clima": clima}[cmd]()

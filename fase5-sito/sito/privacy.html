@@ -11,11 +11,11 @@ try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
 var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261111b";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261111b"></script>
-<link rel="stylesheet" href="stile.css?v=20261111b">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261111b">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261111b">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261114a";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261114a"></script>
+<link rel="stylesheet" href="stile.css?v=20261114a">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261114a">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261114a">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
 </head>
@@ -23,7 +23,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261111b" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261114a" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -31,7 +31,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261111b">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261114a">Novità</a>
       <a href="contatti.html">Contattaci</a>
     </nav>
     <details class="menu-tutto">
@@ -39,7 +39,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <nav class="menu-pannello" aria-label="Menu completo">
         <h2>Servizi</h2>
         <details class="pannello-gruppo" data-gruppo="clima"><summary>Clima e meteo</summary>
-          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li></ul>
+          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
         </details>
         <details class="pannello-gruppo" data-gruppo="patrimonio"><summary>Patrimonio</summary>
           <ul><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="ortofoto.html">Ortofoto <span class="cantiere prova">sperimentale</span></a></li><li><a href="lidar.html">LiDAR <span class="cantiere">in sviluppo</span></a></li><li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova">sperimentale</span></a></li><li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova">sperimentale</span></a></li><li><a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico) <span class="cantiere prova">sperimentale</span></a></li><li><a href="dbtr-istruzioni.html">Scaricare i DB topografici</a></li><li><a href="visure.html">Visure <span class="cantiere">in sviluppo</span></a></li></ul>
@@ -57,7 +57,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261111b">Novità</a></li><li><a href="contatti.html">Contattaci</a></li><li><a href="https://notizie.statocritico.it/subscription/form">Iscriviti</a></li></ul>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261114a">Novità</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -81,6 +81,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
             <li><a href="legge10.html">Legge 10</a></li>
             <li><a href="./">Previsioni</a></li>
             <li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="dati-per-email.html">Newsletter e avvisi</a></li>
           </ul></details></li>
         <li><details class="voce-gruppo" data-gruppo="patrimonio"><summary>Patrimonio</summary>
           <ul class="tendina">
@@ -131,7 +132,6 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           </ul></details></li>
       </ul>
     </nav>
-    <a class="iscriviti" href="https://notizie.statocritico.it/subscription/form">Iscriviti</a>
     <div class="vestito">
       <button type="button" class="vestito-pulsante" aria-haspopup="listbox" aria-expanded="false" aria-controls="vestiti-elenco"
         aria-label="Vestito del sito: Corallo" title="Vestito del sito: Corallo"><svg class="asterisco" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6v18.8M3.86 7.3l16.28 9.4M3.86 16.7l16.28-9.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
@@ -152,10 +152,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <h1>Informativa privacy</h1>
   <p>Informativa ai sensi degli articoli 13 e 14 del Regolamento (UE) 2016/679 (GDPR) per chi usa il sito
     <strong>eugenio.statocritico.it</strong> e la newsletter dei dati <strong>notizie.statocritico.it</strong>.
-    Ultimo aggiornamento: 7 novembre 2026.</p>
+    Ultimo aggiornamento: 14 novembre 2026.</p>
   <p>In breve: EuGEnio non vuole i tuoi dati. I file che carichi sono elaborati in memoria e scartati, non ci sono
     cookie di profilazione né strumenti di statistica, e l'unico dato che conserviamo di proposito è l'indirizzo email
-    di chi si iscrive alla newsletter. L'unico file che teniamo è il database topografico che scegli tu, con una casella
+    di chi si iscrive a newsletter e avvisi, con le zone che sceglie. L'unico file che teniamo è il database topografico che scegli tu, con una casella
     apposta, di proporre per l'archivio comune degli edifici (e lì non ci sono dati personali).</p>
 
   <h2>Titolare del trattamento</h2>
@@ -215,13 +215,19 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           subito; un caricamento lasciato a metà si cancella dopo 6 ore. Resta solo una riga di registro senza dati
           personali (comune, regione, data, esito) e, per 30 giorni, l'esito della proposta per la pagina.</td>
       </tr>
-      <tr>
-        <td><strong>Newsletter dei dati</strong>: email e, se lo indichi, nome</td>
-        <td>Inviarti una volta al mese il riepilogo dei dati climatici ed energetici. Consenso (art. 6.1.a),
-          confermato con il collegamento che ricevi dopo l'iscrizione. Non misuriamo aperture e clic dei singoli
-          iscritti.</td>
-        <td>Finché resti iscritto. Il collegamento in fondo a ogni email cancella l'iscrizione; dalla pagina di
-          gestione dell'iscrizione puoi anche scaricare o eliminare del tutto i tuoi dati, oppure chiedercelo per email.</td>
+      <tr id="newsletter">
+        <td><strong>Newsletter e avvisi</strong> (newsletter mensile, previsioni settimanali, avvisi meteo): email, se lo
+          indichi il nome, i servizi scelti e le regioni (fino a 3) e i comuni (fino a 5) di cui vuoi i dati</td>
+        <td>Mandarti i servizi che scegli nella pagina <a href="dati-per-email.html">Newsletter e avvisi</a> con i dati delle
+          zone che indichi. Consenso (art. 6.1.a), confermato con il collegamento personale che ricevi per email (o, per la
+          sola newsletter mensile, con il collegamento di conferma del modulo di iscrizione). Non misuriamo aperture e clic
+          dei singoli iscritti. Per spedire il collegamento personale l'indirizzo si usa una volta, senza salvarlo: entra
+          nell'elenco solo quando salvi le scelte; per evitare abusi il server conta, solo in memoria e per 24 ore, quanti
+          collegamenti chiede ogni indirizzo IP e quanti ne riceve ogni email (come impronta, non in chiaro).</td>
+        <td>Finché resti iscritto ad almeno un servizio. Il collegamento in fondo a ogni email cancella da quel servizio e
+          quello per le scelte li cambia tutti; dalla pagina di gestione dell'iscrizione di listmonk puoi anche scaricare o
+          eliminare del tutto i tuoi dati, oppure chiedercelo per email. Il registro tecnico degli invii (numero
+          dell'iscritto e data, per non spedire due volte lo stesso messaggio) si cancella dopo 4 mesi.</td>
       </tr>
       <tr>
         <td><strong>Messaggi</strong> che ci scrivi via email, anche dalla pagina <a href="contatti.html">Contattaci</a>
@@ -296,10 +302,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </main>
 <footer class="piede">
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261111b" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261114a" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
   <!-- /piede -->
 </footer>
-<script src="aspetto.js?v=20261111b"></script>
+<script src="aspetto.js?v=20261114a"></script>
 </body>
 </html>

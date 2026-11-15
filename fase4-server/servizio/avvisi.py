@@ -12,11 +12,20 @@ log = logging.getLogger(__name__)
 
 
 def invia(oggetto: str, testo: str, html_alternativo: str | None = None) -> bool:
-    if not (C.SMTP_SERVER and C.EMAIL_AMMINISTRATORE and C.SMTP_MITTENTE):
+    if not C.EMAIL_AMMINISTRATORE:
+        log.warning("Email non inviata (SMTP non configurato): %s", oggetto)
+        return False
+    return invia_a(C.EMAIL_AMMINISTRATORE, f"[EuGEnio] {oggetto}", testo, html_alternativo)
+
+
+def invia_a(destinatario: str, oggetto: str, testo: str, html_alternativo: str | None = None) -> bool:
+    """Email a un indirizzo qualsiasi (14/11/2026: collegamento personale della pagina «Dati per email», spedito prima che
+    l'indirizzo sia in listmonk). Stesso SMTP degli avvisi."""
+    if not (C.SMTP_SERVER and C.SMTP_MITTENTE and destinatario):
         log.warning("Email non inviata (SMTP non configurato): %s", oggetto)
         return False
     m = EmailMessage()
-    m["Subject"], m["From"], m["To"] = f"[EuGEnio] {oggetto}", C.SMTP_MITTENTE, C.EMAIL_AMMINISTRATORE
+    m["Subject"], m["From"], m["To"] = oggetto, C.SMTP_MITTENTE, destinatario
     m.set_content(testo)
     if html_alternativo:
         m.add_alternative(html_alternativo, subtype="html")

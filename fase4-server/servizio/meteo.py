@@ -51,6 +51,20 @@ def comuni(aggiornati: bool = False) -> pd.DataFrame:
     return df
 
 
+def comuni_storico() -> pd.DataFrame:
+    """Comuni dello storico di ogni giorno: quelli aggiornati più (14/11/2026, STORICO_CAPOLUOGHI_ITALIA) i capoluoghi di
+    provincia di tutte le regioni, circa 110 punti in più, per gli indicatori regionali della newsletter mensile."""
+    cm = comuni(aggiornati=True)
+    if not C.STORICO_CAPOLUOGHI_ITALIA or C.SOLO_COMUNI:
+        return cm
+    tutti = pd.read_parquet(C.DATI / "comuni.parquet")
+    if "capoluogo" not in tutti:
+        return cm
+    from .notiziario import CO_CAPOLUOGHI
+    cap = tutti[tutti.capoluogo.fillna(False).astype(bool) | tutti.istat.astype(str).isin(CO_CAPOLUOGHI)]
+    return pd.concat([cm, cap[~cap.istat.isin(cm.istat)]], ignore_index=True)
+
+
 @lru_cache(maxsize=1)
 def _parametri(mtime: float) -> pd.DataFrame:
     p = C.DATI / "parametri_correzione.parquet"
@@ -154,7 +168,7 @@ def previsioni(istat: str) -> pd.DataFrame:
 # ---------------------------------------------------------------------------------------------- storico
 def aggiorna_storico(giorni: int = 15) -> None:
     """Aggiunge gli ultimi giorni: ICON storico (orario) ed ERA5 corretto (giornaliero)."""
-    cm = comuni(aggiornati=True)
+    cm = comuni_storico()
     http, lim = client(), _lim()
     oggi = dt.datetime.now(dt.timezone.utc).date()
     # ICON seamless storico → orario/<istat>.parquet

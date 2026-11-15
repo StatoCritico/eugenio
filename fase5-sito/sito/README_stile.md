@@ -31,7 +31,7 @@ Nota tecnica sullo stile grafico di EuGEnio (27/10/2026, aggiornata il 29/10/202
   informative (Come funziona … Contattaci) a destra sulla stessa riga; riga 2 = voci dei servizi (Dati climatici,
   Legge 10, Previsioni, Patrimonio, Indicatori) alte `--alto-comando` (36 px) come il pulsante Iscriviti, poi Iscriviti,
   ✱ e ◐ con i cerchi della stessa altezza e sulla stessa linea. Tra 861 e 1060 px frase e voci informative sono più
-  piccole; sotto gli 861 px resta il menu del telefono (Iscriviti è nel menu). L'altezza resta in `--alto-testata`.
+  piccole; sotto gli 861 px resta il menu del telefono (dal 15/11/2026 niente Iscriviti: «Newsletter e avvisi» è in Clima e meteo). L'altezza resta in `--alto-testata`.
 - **Colonne con scorrimento indipendente** (solo Patrimonio, `main.pagina-patrimonio`, da 861 px; quarta versione):
   `main` è alto quanto la finestra meno la testata e le due colonne scorrono ciascuna per conto suo, **senza barre di
   scorrimento visibili** (`scrollbar-width: none` e `::-webkit-scrollbar`; rotella, tastiera e dito funzionano); la

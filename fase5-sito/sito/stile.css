@@ -1507,3 +1507,19 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .indici-prezzi td small, .indici-prezzi th small { display: block; font: 400 var(--c-xs) var(--testo); color: var(--tenue); }
 .indici-prezzi .ip-attesa { color: var(--tenue); }
 .indici-prezzi .ip-note ul { max-width: 80ch; }
+
+/* ------------------------------------------------------------------------------------------- Dati per email (14/11/2026) */
+.dati-email { max-width: 48rem; }
+.dpe-servizi { padding-left: 1.2rem; }
+.dpe-servizi li { margin: var(--s2) 0; }
+.dpe-blocco { margin-top: var(--s6); }
+.dpe-gruppo { border: 1px solid var(--linea); border-radius: var(--r); padding: var(--s3) var(--s4) var(--s4); margin: 0 0 var(--s4); min-width: 0; }
+.dpe-gruppo legend { font: 700 var(--c-l)/1.3 var(--titoli); padding: 0 .4rem; }
+.dpe-spunta { font-weight: 400; font-size: var(--c-m); display: flex; gap: .6rem; align-items: flex-start; margin: var(--s2) 0; cursor: pointer; }
+.dpe-spunta small { color: var(--tenue); }
+.dpe-spunta input { margin-top: .2rem; }
+.dpe-regioni { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: var(--s1) var(--s3); }
+.dpe-regioni label:has(input:disabled) { color: var(--tenue); cursor: not-allowed; }
+.dati-email .dpe-comuni { list-style: none; padding: 0; margin: var(--s3) 0 0; display: flex; flex-wrap: wrap; gap: var(--s2); }
+.dati-email .dpe-comuni li { display: flex; align-items: center; gap: .5rem; padding: .25rem .25rem .25rem .7rem; border: 1px solid var(--bordo); border-radius: var(--r); background: var(--rialzo); }
+.dpe-avvertenza { font-size: var(--c-s); }

@@ -9,7 +9,7 @@
 > per IP solo sulle tessere chieste alla fonte e 429 con Retry-After; Previsioni non più sperimentale; tetti tutti piani
 > in partenza e tetti a falde scelti dall'utente nella sezione «Coperture», anche con il cortile; fonte dell'ortofoto
 > scelta da sola nel punto; alberi indicativi da OpenStreetMap dove manca il LiDAR; verifica anti-robot valida
-> un'ora per browser); dal 09/11 f Obblighi di legge, Geometria e luce naturale e Consumi di Edifici sono di nuovo accessibili, sperimentali; 11/11/2026: pagina Statistiche › Indici dei prezzi (listini delle convenzioni Intercent-ER e Consip, PSV day-ahead ARERA, PFOR,t ricostruito, confronto delle convenzioni sui consumi per fascia), versione del sito ?v=20261111b.
+> un'ora per browser); dal 09/11 f Obblighi di legge, Geometria e luce naturale e Consumi di Edifici sono di nuovo accessibili, sperimentali; 11/11/2026: pagina Statistiche › Indici dei prezzi (listini delle convenzioni Intercent-ER e Consip, PSV day-ahead ARERA, PFOR,t ricostruito, confronto delle convenzioni sui consumi per fascia); 14/11/2026: pagina Clima e meteo › Newsletter e avvisi (newsletter mensile per regione, previsioni settimanali per fino a 5 comuni, avvisi meteo del giorno dopo, che non sono allerte), versione del sito ?v=20261114a.
 
 Le istruzioni complete per gli agenti AI (pagine, parametri dell'indirizzo, formati dei file, API libere e protette,
 limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un solo file: leggilo prima di usare il servizio.
@@ -52,6 +52,9 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
   voce del menu con il triangolo giallo e non cliccabile, nessun collegamento nel sito, avviso «Pagina in lavorazione, non
   ancora verificata»; non proporle come servizi disponibili. Accessibili: Clima e meteo (con Cambiamento climatico),
   Patrimonio, Statistiche.
+- Newsletter e avvisi (Clima e meteo, dati-per-email.html, rotte /api/email/…): l'iscrizione la fa solo la persona, con il collegamento
+  personale che riceve nella sua casella. Gli avvisi meteo non sono allerte: il servizio è gratuito, non fornisce garanzie
+  e non sostituisce le allerte della Protezione Civile e degli enti pubblici.
 - I dati di mercato GME ed EEX non sono mai esposti: non cercarli.
 - Vietato usare i dati catastali per re-identificare persone.
 - User-Agent identificabile, richieste in serie, rispetto dei 429; per uso intensivo un mirror proprio.

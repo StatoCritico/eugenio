@@ -24,13 +24,14 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
+import time
 import tomllib
 from pathlib import Path
 
 import httpx
 import pandas as pd
 
-from . import avvisi, config as C, meteo
+from . import avvisi, config as C, listmonk as L, meteo
 
 log = logging.getLogger(__name__)
 MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre",
@@ -162,16 +163,12 @@ def _scarto_storico(istat: str, regione: str | None, mese: int, da: int, a: int)
     return sum(valori) / len(valori) - normale
 
 
-def _tabella_freddo(anno: int, mese: int) -> list[str]:
-    """Sezione dei gradi giorno e della temperatura del mese nei capoluoghi (11/11/2026): frase di sintesi, scarti in °C
-    dalla media dell'archivio (periodo dichiarato: anni precedenti con almeno 25 giorni del mese) e dalla normale
-    1991–2020. Senza capoluoghi nessuna lettura del giornaliero (con l'archivio nazionale sarebbero milioni di righe)."""
-    cap = _capoluoghi()
+def _voci_freddo(cap: pd.DataFrame, anno: int, mese: int) -> list[dict]:
+    """Temperatura e gradi giorno del mese per ogni comune di `cap` (istat, nome, facoltativi regione_cod), confrontati
+    con lo stesso mese degli anni precedenti dell'archivio (con almeno 25 giorni) e con la normale 1991–2020. Si legge
+    il giornaliero dei soli comuni di `cap` (filtro sul parquet: il file nazionale non si carica mai tutto)."""
     if cap.empty:
-        log.warning("Newsletter: nessun capoluogo in comuni.parquet (colonna «capoluogo» mancante o vuota): "
-                    "sezione dei gradi giorno saltata")
         return []
-    # solo i capoluoghi (filtro sul parquet): il giornaliero nazionale non si carica mai tutto
     g = pd.read_parquet(C.DATI / "giornaliero.parquet", columns=["istat", "data", "gg20", "t_media"],
                         filters=[("istat", "in", [str(i) for i in cap.istat])])
     g["data"] = pd.to_datetime(g.data)
@@ -190,10 +187,16 @@ def _tabella_freddo(anno: int, mese: int) -> list[str]:
         gg, t = ora.gg20.sum(), ora.t_media.mean()
         media_gg, media_t = a.gg.mean(), a.t.mean()
         da, fino = int(a.index.min()), int(a.index.max())
-        storico = _scarto_storico(str(r.istat), getattr(r, "regione_cod", None), mese, da, fino)
-        voci.append({"nome": r.nome, "gg": gg, "media_gg": media_gg, "t": t, "dt": t - media_t,
+        reg = getattr(r, "regione_cod", None)
+        storico = _scarto_storico(str(r.istat), reg, mese, da, fino)
+        voci.append({"nome": r.nome, "regione_cod": reg, "gg": gg, "media_gg": media_gg, "t": t, "dt": t - media_t,
                      "dn": None if storico is None else t - media_t + storico,
                      "dgg": 100 * (gg / media_gg - 1) if media_gg > 1 else None, "da": da, "a": fino})
+    return voci
+
+
+def _righe_freddo(voci: list[dict], anno: int, mese: int, note: bool = True) -> list[str]:
+    """Frase di sintesi e tabella dei capoluoghi; con `note` anche «Il tuo comune non c'è?», la fonte e il metodo."""
     if not voci:
         return []
     per = _periodo(min(v["da"] for v in voci), max(v["a"] for v in voci))
@@ -235,14 +238,32 @@ def _tabella_freddo(anno: int, mese: int) -> list[str]:
         s_n = (f" {_segno(v['dn'], 1)} °C |" if v["dn"] is not None else " — |") if con_normale else ""
         righe.append(f"| {v['nome']} | {_num(v['t'], 1)} °C | {_segno(v['dt'], 1)} °C |{s_n} {_num(v['gg'])} | "
                      f"{_num(v['media_gg'])} | {s_gg} |")
+    if note:
+        righe += _note_freddo(per, con_normale)
+    return righe + [""]
+
+
+def _note_freddo(per: str, con_normale: bool) -> list[str]:
     # (11/11/2026, Paolo) sotto la tabella: dove cercare gli altri comuni
-    righe += ["", f"**Il tuo comune non c'è?** Cercalo in Clima e meteo › Dati climatici e scarica temperatura e gradi "
-                  f"giorno giorno per giorno: {C.SITO_URL}/dati.html", "", FONTE_METEO]
+    righe = ["", f"**Il tuo comune non c'è?** Cercalo in Clima e meteo › Dati climatici e scarica temperatura e gradi "
+                 f"giorno giorno per giorno: {C.SITO_URL}/dati.html", "", FONTE_METEO]
     if con_normale:
         righe += ["", f"Lo scarto dal 1991–2020 somma lo scarto dalla media {per} e quanto lo stesso mese del {per} era "
                       "già diverso dal 1991–2020 nella serie del clima dal 1940 di EuGEnio (ERA5-Land), così non si "
                       f"confrontano fonti diverse. Il clima dal 1940 per ogni comune: {C.SITO_URL}/legge10.html"]
-    return righe + [""]
+    return righe
+
+
+def _tabella_freddo(anno: int, mese: int) -> list[str]:
+    """Sezione dei gradi giorno e della temperatura del mese nei capoluoghi (11/11/2026): frase di sintesi, scarti in °C
+    dalla media dell'archivio (periodo dichiarato: anni precedenti con almeno 25 giorni del mese) e dalla normale
+    1991–2020. Senza capoluoghi nessuna lettura del giornaliero (con l'archivio nazionale sarebbero milioni di righe)."""
+    cap = _capoluoghi()
+    if cap.empty:
+        log.warning("Newsletter: nessun capoluogo in comuni.parquet (colonna «capoluogo» mancante o vuota): "
+                    "sezione dei gradi giorno saltata")
+        return []
+    return _righe_freddo(_voci_freddo(cap, anno, mese), anno, mese)
 
 
 # ---------------------------------------------------------------------------------------------- prezzi
@@ -264,7 +285,24 @@ def _cella(ind: dict, lotto: str, variante: str, anno: int, mese: int, dec: int)
     return testo
 
 
-def _tabella_prezzi(anno: int, mese: int, file: Path | None = None) -> list[str]:
+def _normale(s: str) -> str:
+    return "".join(ch for ch in s.split("/")[0].lower() if ch.isalpha())
+
+
+def _lotti_regioni(ind: dict, regioni_nomi: list[str] | None) -> list[str]:
+    """(14/11/2026) Lotti Consip delle regioni scelte dall'iscritto, riconosciuti dal nome del lotto («Lotto 6: Emilia
+    Romagna»); il lotto predefinito se nessuna regione corrisponde."""
+    scelti = []
+    for nome in regioni_nomi or []:
+        n = _normale(nome)
+        for k, lo in ind.get("lotti", {}).items():
+            if n and n in _normale(lo.get("nome", "").replace("/", " ")) and k not in scelti:
+                scelti.append(k)
+    return scelti or [ind.get("lotto_predefinito", "")]
+
+
+def _tabella_prezzi(anno: int, mese: int, file: Path | None = None,
+                    regioni_nomi: list[str] | None = None) -> list[str]:
     """Sezione «Indici dei prezzi» (11/11/2026, Paolo): dal file del sito scritto ogni notte dal worker
     (/sito/dati/prezzi/indici.json: listini Intercent-ER e Consip, PSV ARERA, PFOR; mai PUN né TTF). Energia elettrica:
     Intercent-ER lotti 1 e 2 e Consip con il lotto predefinito (Emilia-Romagna), una riga per offerta e le fasce F1, F2,
@@ -282,7 +320,7 @@ def _tabella_prezzi(anno: int, mese: int, file: Path | None = None) -> list[str]
              f"{MESI[mese - 1]} {anno - 1}.", ""]
     el = []
     for ind in sezioni.get("elettricita", []):
-        lotti = ["1", "2"] if ind.get("centrale") == "Intercent-ER" else [ind.get("lotto_predefinito", "")]
+        lotti = ["1", "2"] if ind.get("centrale") == "Intercent-ER" else _lotti_regioni(ind, regioni_nomi)
         for lo in lotti:
             if lo not in ind.get("lotti", {}):
                 continue
@@ -350,9 +388,370 @@ def _campagna(lista: int, nome: str, oggetto: str, corpo: str) -> int | None:
     return cid
 
 
-def mensile(anno: int | None = None, mese: int | None = None, invio: dt.date | None = None) -> int | None:
+def _mese_scorso(invio: dt.date) -> tuple[int, int]:
+    ieri = invio.replace(day=1) - dt.timedelta(days=1)
+    return ieri.year, ieri.month
+
+
+def mensile(anno: int | None = None, mese: int | None = None, invio: dt.date | None = None):
+    """Numero mensile. Con i messaggi personali (NOTIZIE_PERSONALI, predefinito) uno per iscritto con le sue regioni;
+    altrimenti la campagna unica di prima."""
     invio = invio or dt.date.today()
     if anno is None:
-        ieri = invio.replace(day=1) - dt.timedelta(days=1)
-        anno, mese = ieri.year, ieri.month
+        anno, mese = _mese_scorso(invio)
+    if C.NOTIZIE_PERSONALI and L.attivo():
+        return mensile_personale(anno, mese, invio)
     return _campagna(C.LISTA_MENSILE, f"Mensile {anno}-{mese:02d}", *testo_mensile(anno, mese, invio))
+
+
+# ============================================================================================== servizi personali
+# (14/11/2026, decisione di Paolo) tre servizi separati: mensile per regione, settimanale con le previsioni di fino a 5
+# comuni, avvisi meteo del giorno dopo. Un messaggio per iscritto (API transazionale di listmonk), con i collegamenti per
+# cambiare le scelte e per cancellarsi da quel servizio (anche con un clic dal programma di posta).
+GIORNI = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
+GIORNI_BREVI = ["lun", "mar", "mer", "gio", "ven", "sab", "dom"]
+NOMI_SERVIZIO = {"mensile": "la newsletter mensile", "settimanale": "le previsioni settimanali",
+                 "avvisi": "gli avvisi meteo"}
+BOLLETTINO_PC = "https://mappe.protezionecivile.gov.it/it/mappe-rischi/bollettino-di-criticita/"
+CSS = ("body{margin:0;padding:0;background:#ffffff;color:#111111;font-family:Helvetica,Arial,sans-serif;font-size:15px;"
+       "line-height:1.5}.eugenio{max-width:680px;margin:0 auto;padding:16px}h1{font-size:22px;margin:0 0 12px}"
+       "h2{font-size:18px;margin:24px 0 8px}a{color:#1A3F8F}table{border-collapse:collapse;margin:8px 0 12px;"
+       "font-size:13px}th,td{border:1px solid #111111;padding:4px 6px}th{font-weight:bold;text-align:left}"
+       "td{text-align:right}td:first-child{text-align:left}.piede{font-size:12px;color:#444444;margin-top:24px}")
+
+
+def html(md_testo: str, titolo: str) -> str:
+    """Markdown → HTML dell'email (tabelle comprese), sobrio e leggibile anche in stampa."""
+    import markdown
+    corpo = markdown.markdown(md_testo, extensions=["tables", "sane_lists"])
+    t = titolo.replace("&", "&amp;").replace("<", "&lt;")
+    return (f"<!doctype html><html lang=\"it\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
+            f"content=\"width=device-width\"><title>{t}</title><style>{CSS}</style></head><body><div class=\"eugenio\">"
+            f"{corpo}</div></body></html>")
+
+
+def _piede_personale(sid: int, lista: int, servizio: str) -> list[str]:
+    from . import preferenze_email as PE
+    return ["", "---", "",
+            f"Cambia servizi, regioni e comuni: {PE.url_preferenze(sid)}", "",
+            f"Non vuoi più ricevere {NOMI_SERVIZIO[servizio]}? Cancellati con un clic: {PE.url_cancella(sid, lista)}", "",
+            "EuGEnio è un servizio gratuito di Stato Critico (statocritico.it), con codice aperto."]
+
+
+# ---------------------------------------------------------------------------------------------- registro degli invii
+def _registro(chiave: str) -> Path:
+    d = C.DATI / "invii_email"
+    d.mkdir(parents=True, exist_ok=True)
+    return d / f"{chiave}.txt"
+
+
+def _gia_inviati(chiave: str) -> set[int]:
+    p = _registro(chiave)
+    return {int(x) for x in p.read_text().split()} if p.exists() else set()
+
+
+def _segna(chiave: str, sid: int) -> None:
+    with _registro(chiave).open("a") as f:
+        f.write(f"{sid}\n")
+
+
+def _pulisci_registro(giorni: int = 120) -> None:
+    d = C.DATI / "invii_email"
+    if not d.exists():
+        return
+    limite = dt.datetime.now().timestamp() - giorni * 86400
+    for f in d.glob("*.txt"):
+        if f.stat().st_mtime < limite:
+            f.unlink(missing_ok=True)
+
+
+def invia_personali(chiave: str, servizio: str, lista: int, costruisci) -> dict:
+    """Un messaggio per ogni iscritto attivo della lista. `costruisci(iscritto)` → (oggetto, testo Markdown) o None
+    (niente da mandare). Il registro `chiave` evita i doppioni se il worker riparte a metà."""
+    from . import preferenze_email as PE
+    modello = L.modello_tx()
+    fatti = _gia_inviati(chiave)
+    esito = {"inviati": 0, "saltati": 0, "errori": []}
+    for s in L.destinatari(lista):
+        sid = int(s["id"])
+        if sid in fatti:
+            continue
+        try:
+            r = costruisci(s)
+            if r is None:
+                esito["saltati"] += 1
+                continue
+            oggetto, md_testo = r
+            md_testo += "\n" + "\n".join(_piede_personale(sid, lista, servizio))
+            L.messaggio(sid, modello, oggetto, html(md_testo, oggetto), via=PE.url_cancella_un_clic(sid, lista))
+            _segna(chiave, sid)
+            esito["inviati"] += 1
+        except Exception as e:      # un iscritto che non va non ferma gli altri
+            log.exception("Email %s: iscritto %s non servito", chiave, sid)
+            esito["errori"].append(f"{sid}: {type(e).__name__}: {e}")
+        time.sleep(C.NOTIZIE_PAUSA_S)
+    log.info("Email %s: %s", chiave, {k: (len(v) if isinstance(v, list) else v) for k, v in esito.items()})
+    if esito["errori"]:
+        avvisi.invia(f"email {chiave}: {len(esito['errori'])} non spedite",
+                     "\n".join(esito["errori"][:50]))
+    _pulisci_registro()
+    return esito
+
+
+# ---------------------------------------------------------------------------------------------- mensile per regione
+def _capoluoghi_italia() -> pd.DataFrame:
+    """Capoluoghi di tutte le regioni (comuni.parquet intero, non solo le REGIONI servite), con i secondi capoluoghi."""
+    cm = pd.read_parquet(C.DATI / "comuni.parquet")
+    cm["istat"] = cm.istat.astype(str)
+    if "capoluogo" not in cm:
+        return cm.head(0)
+    return cm[cm.capoluogo.fillna(False).astype(bool) | cm.istat.isin(CO_CAPOLUOGHI)].sort_values("nome")
+
+
+def _nomi_regioni(cap: pd.DataFrame) -> dict[str, str]:
+    if "regione_cod" not in cap or "regione" not in cap:
+        return {}
+    return {str(k): str(v).split("/")[0] for k, v in cap.groupby("regione_cod").regione.first().items()}
+
+
+def _tabella_regioni(voci: list[dict], nomi: dict[str, str], anno: int, mese: int) -> list[str]:
+    """Indicatori del mese regione per regione: media dei capoluoghi di provincia di ogni regione."""
+    per_reg: dict[str, list[dict]] = {}
+    for v in voci:
+        if v.get("regione_cod"):
+            per_reg.setdefault(str(v["regione_cod"]), []).append(v)
+    if not per_reg:
+        return []
+    per = _periodo(min(v["da"] for v in voci), max(v["a"] for v in voci))
+    con_normale = any(v["dn"] is not None for v in voci)
+    righe = [f"Media dei capoluoghi di provincia di ogni regione, {MESI[mese - 1]} {anno} confrontato con lo stesso "
+             f"mese del {per}{' e con il 1991–2020' if con_normale else ''}. Gradi giorno base 20 °C di tutti i giorni "
+             "del mese.", ""]
+    if con_normale:
+        righe += [f"| Regione | Temperatura media | Scarto dal {per} | Scarto dal 1991–2020 | GG del mese | Scarto GG |",
+                  "|---|---:|---:|---:|---:|---:|"]
+    else:
+        righe += [f"| Regione | Temperatura media | Scarto dal {per} | GG del mese | Scarto GG |",
+                  "|---|---:|---:|---:|---:|"]
+    for cod in sorted(per_reg, key=lambda c: nomi.get(c, c)):
+        vv = per_reg[cod]
+        n = len(vv)
+        t, d = sum(v["t"] for v in vv) / n, sum(v["dt"] for v in vv) / n
+        gg = sum(v["gg"] for v in vv) / n
+        dgg = [v["dgg"] for v in vv if v["dgg"] is not None]
+        s_gg = f"{_segno(sum(dgg) / len(dgg))} %" if dgg else "—"
+        s_n = ""
+        if con_normale:
+            dn = [v["dn"] for v in vv if v["dn"] is not None]
+            s_n = f" {_segno(sum(dn) / len(dn), 1)} °C |" if len(dn) == n else " — |"
+        righe.append(f"| {nomi.get(cod, cod)} | {_num(t, 1)} °C | {_segno(d, 1)} °C |{s_n} {_num(gg)} | {s_gg} |")
+    return righe + [""]
+
+
+def testo_mensile_regioni(anno: int, mese: int, invio: dt.date, regioni: list[str], voci: list[dict],
+                          nomi: dict[str, str], file_prezzi: Path | None = None) -> tuple[str, str]:
+    """Numero mensile personale: prezzi nazionali (Consip con i lotti delle regioni scelte), indicatori regione per
+    regione, i capoluoghi delle regioni scelte, novità."""
+    nome_mese = f"{MESI[mese - 1]} {anno}"
+    scelte = [r for r in regioni if r in nomi]
+    righe = [f"# EuGEnio, {nome_mese}", ""]
+    if _primo_numero(invio):
+        righe += _benvenuto()
+    righe += _tabella_prezzi(anno, mese, file_prezzi, [nomi[r] for r in scelte])
+    reg = _tabella_regioni(voci, nomi, anno, mese)
+    if reg:
+        righe += [f"## Il freddo di {nome_mese}, regione per regione", ""] + reg
+    for r in scelte:
+        vv = [v for v in voci if str(v.get("regione_cod")) == r]
+        if vv:
+            righe += [f"## {nomi[r]}: i capoluoghi", ""] + _righe_freddo(vv, anno, mese, note=False)
+    if not scelte:
+        righe += [f"Scegli fino a {C.EMAIL_MAX_REGIONI} regioni per avere anche i loro capoluoghi uno per uno: trovi il "
+                  "collegamento in fondo all'email.", ""]
+    if voci:
+        per = _periodo(min(v["da"] for v in voci), max(v["a"] for v in voci))
+        righe += _note_freddo(per, any(v["dn"] is not None for v in voci)) + [""]
+    righe += novita_tra(_numero_precedente(invio), invio)
+    titolo = " e ".join(nomi[r] for r in scelte[:2]) + (" e altre" if len(scelte) > 2 else "")
+    oggetto = f"EuGEnio – prezzi e freddo di {nome_mese}" + (f" ({titolo})" if titolo else "")
+    return oggetto, "\n".join(righe)
+
+
+def mensile_personale(anno: int, mese: int, invio: dt.date | None = None) -> dict:
+    invio = invio or dt.date.today()
+    cap = _capoluoghi_italia()
+    voci = _voci_freddo(cap, anno, mese) if not cap.empty else []
+    nomi = _nomi_regioni(cap)
+
+    def costruisci(s):
+        return testo_mensile_regioni(anno, mese, invio, L.scelte(s)["regioni"], voci, nomi)
+    return invia_personali(f"mensile-{anno}-{mese:02d}", "mensile", C.LISTA_MENSILE, costruisci)
+
+
+# ---------------------------------------------------------------------------------------------- settimanale
+def _fmt(x, dec=0, unita=""):
+    if x is None or (isinstance(x, float) and x != x):
+        return "—"
+    return f"{_num(x, dec)}{(' ' + unita) if unita else ''}"
+
+
+def _gg_stessi_giorni(istat: str, giorni: list[dt.date]) -> tuple[float, int, int] | None:
+    """Media dei gradi giorno degli stessi giorni dell'anno negli anni dell'archivio (anni completi), o None."""
+    try:
+        g = meteo.storico_giornaliero(istat)
+    except (FileNotFoundError, OSError, ValueError, KeyError):
+        return None
+    if g.empty or "gg20" not in g:
+        return None
+    d = pd.to_datetime(g.data)
+    md = {(x.month, x.day) for x in giorni}
+    sel = g[[(m, dd) in md for m, dd in zip(d.dt.month, d.dt.day)]].assign(anno=d.dt.year)
+    sel = sel[sel.anno < giorni[0].year]
+    per = sel.groupby("anno").gg20.agg(["sum", "size"])
+    per = per[per["size"] == len(md)]
+    if per.empty:
+        return None
+    return float(per["sum"].mean()), int(per.index.min()), int(per.index.max())
+
+
+def testo_settimanale(lunedi: dt.date, comuni: list[dict], prev: dict[str, pd.DataFrame]) -> tuple[str, str] | None:
+    """Previsioni da lunedì a domenica per i comuni dell'iscritto: [{"istat", "nome", "provincia"}]."""
+    from . import meteo_email as ME
+    giorni = [lunedi + dt.timedelta(days=i) for i in range(7)]
+    domenica = giorni[-1]
+    righe = [f"# EuGEnio, previsioni dal {lunedi.day} {MESI[lunedi.month - 1]} al {domenica.day} "
+             f"{MESI[domenica.month - 1]}", "",
+             "Temperature minime e massime, pioggia (neve fusa compresa), neve fresca, raffica più forte e gradi giorno "
+             "(base 20 °C) previsti giorno per giorno. Sono previsioni: più i giorni sono lontani, più possono cambiare.",
+             ""]
+    trovati = 0
+    for c in comuni:
+        p = prev.get(c["istat"])
+        if p is None or p.empty:
+            continue
+        sett = p[p.data.isin(giorni)]
+        if sett.empty:
+            continue
+        trovati += 1
+        nome = f"{c['nome']} ({c['provincia']})" if c.get("provincia") else c["nome"]
+        righe += [f"## {nome}", "", "| Giorno | Min | Max | Pioggia | Neve | Raffica | GG | Attenzione |",
+                  "|---|---:|---:|---:|---:|---:|---:|---|"]
+        for r in sett.itertuples():
+            nota = ", ".join({"pioggia": "pioggia forte", "neve": "neve", "vento": "vento molto forte"}[x]
+                             for x in ME.superamenti(r._asdict()))
+            righe.append(f"| {GIORNI_BREVI[r.data.weekday()]} {r.data.day} | {_fmt(r.tmin, 0, '°C')} | "
+                         f"{_fmt(r.tmax, 0, '°C')} | {_fmt(r.pioggia, 0, 'mm')} | {_fmt(r.neve, 0, 'cm')} | "
+                         f"{_fmt(r.raffica, 0, 'km/h')} | {_fmt(r.gg20, 1)} | {nota} |")
+        gg = float(sett.gg20.sum())
+        frase = f"Gradi giorno previsti nella settimana: **{_num(gg)}**"
+        if len(sett) == 7:
+            n = _gg_stessi_giorni(c["istat"], giorni)
+            if n and n[0] > 1:
+                frase += (f"; negli stessi giorni del {_periodo(n[1], n[2])} in media {_num(n[0])} "
+                          f"({_segno(100 * (gg / n[0] - 1))} %)")
+        righe += ["", frase + ".", ""]
+    if not trovati:
+        return None
+    righe += ["La colonna «Attenzione» segna i giorni che superano le soglie degli avvisi meteo di EuGEnio (pioggia "
+              f"forte, neve, vento molto forte); per riceverli il giorno prima iscriviti agli avvisi meteo.",
+              "", f"Le previsioni non sostituiscono le allerte della Protezione Civile e degli enti pubblici.",
+              "", ME.FONTE, ""]
+    oggetto = (f"EuGEnio – previsioni dal {lunedi.day} al {domenica.day} {MESI[domenica.month - 1]}: "
+               + ", ".join(c["nome"] for c in comuni[:3]) + (" e altri" if len(comuni) > 3 else ""))
+    return oggetto, "\n".join(righe)
+
+
+def _comuni_di(s: dict, cm: pd.DataFrame) -> list[dict]:
+    out = []
+    for i in L.scelte(s)["comuni"]:
+        if i in cm.index:
+            out.append({"istat": i, "nome": str(cm.nome[i]), "provincia": str(cm.provincia[i] or "")})
+    return out
+
+
+def _comuni_nomi() -> pd.DataFrame:
+    cm = pd.read_parquet(C.DATI / "comuni.parquet", columns=["istat", "nome", "provincia"])
+    cm["istat"] = cm.istat.astype(str)
+    return cm.set_index("istat")
+
+
+def settimanale(oggi: dt.date | None = None) -> dict | None:
+    from . import meteo_email as ME
+    oggi = oggi or dt.date.today()
+    lunedi = oggi + dt.timedelta(days=(7 - oggi.weekday()) % 7 or 7)
+    lista = L.lista(C.NOME_LISTA_SETTIMANALE, C.LISTA_SETTIMANALE)
+    iscritti = L.destinatari(lista)
+    if not iscritti:
+        log.info("Previsioni settimanali: nessun iscritto")
+        return None
+    cm = _comuni_nomi()
+    tutti = sorted({c for s in iscritti for c in L.scelte(s)["comuni"]})
+    prev = ME.previsioni(tutti, (lunedi - oggi).days + 8)
+    return invia_personali(f"settimanale-{lunedi}", "settimanale", lista,
+                           lambda s: testo_settimanale(lunedi, _comuni_di(s, cm), prev))
+
+
+# ---------------------------------------------------------------------------------------------- avvisi meteo
+def _descrivi_avviso(tipo: str, g: dict) -> str:
+    if tipo == "pioggia":
+        return (f"pioggia forte, {_num(g['pioggia'])} mm nelle 24 ore (al massimo {_num(g['pioggia_1h'])} mm in "
+                "un'ora)")
+    if tipo == "neve":
+        return f"neve, {_num(g['neve'])} cm di neve fresca"
+    return f"vento molto forte, raffiche fino a {_num(g['raffica'])} km/h"
+
+
+def testo_avviso(domani: dt.date, voci: list[tuple[dict, list[str], dict]]) -> tuple[str, str] | None:
+    """Avviso per domani: voci = [(comune, tipi superati tra quelli scelti, giorno di previsione)]."""
+    from . import meteo_email as ME
+    from . import preferenze_email as PE
+    voci = [v for v in voci if v[1]]
+    if not voci:
+        return None
+    quando = f"{GIORNI[domani.weekday()]} {domani.day} {MESI[domani.month - 1]}"
+    righe = [f"# Avviso meteo EuGEnio per domani, {quando}", "",
+             f"**Non è un'allerta.** {PE.AVVERTENZA_AVVISI}", "",
+             f"Le previsioni di oggi per domani superano le soglie che hai scelto:", ""]
+    for c, tipi, g in voci:
+        nome = f"{c['nome']} ({c['provincia']})" if c.get("provincia") else c["nome"]
+        righe.append(f"- **{nome}**: " + "; ".join(_descrivi_avviso(t, g) for t in tipi) + ".")
+    s = PE.soglie()
+    righe += ["", "Soglie degli avvisi: pioggia forte, " + s["pioggia"] + "; neve, " + s["neve"] + "; vento molto forte, "
+              + s["vento"] + ". Sono previsioni del modello per il punto del comune: in altre zone dello stesso comune "
+              "e nelle ore successive i valori possono essere diversi.", "",
+              f"Le allerte ufficiali le emettono la Protezione Civile e le Regioni: bollettino nazionale di criticità "
+              f"{BOLLETTINO_PC}; segui anche il sito di allerta della tua Regione, il tuo Comune e IT-alert.", "",
+              ME.FONTE, ""]
+    tipi_tutti = []
+    for _, tipi, _ in voci:
+        tipi_tutti += [t for t in tipi if t not in tipi_tutti]
+    nomi_t = {"pioggia": "pioggia forte", "neve": "neve", "vento": "vento molto forte"}
+    oggetto = (f"EuGEnio – avviso meteo per domani: {', '.join(nomi_t[t] for t in tipi_tutti)} a "
+               + ", ".join(c["nome"] for c, _, _ in voci[:3]) + (" e altri" if len(voci) > 3 else ""))
+    return oggetto, "\n".join(righe)
+
+
+def avvisi_meteo(oggi: dt.date | None = None) -> dict | None:
+    from . import meteo_email as ME
+    oggi = oggi or dt.date.today()
+    domani = oggi + dt.timedelta(days=1)
+    lista = L.lista(C.NOME_LISTA_AVVISI, C.LISTA_AVVISI)
+    iscritti = [s for s in L.destinatari(lista) if L.scelte(s)["avvisi"] and L.scelte(s)["comuni"]]
+    if not iscritti:
+        log.info("Avvisi meteo: nessun iscritto")
+        return None
+    cm = _comuni_nomi()
+    tutti = sorted({c for s in iscritti for c in L.scelte(s)["comuni"]})
+    prev = ME.previsioni(tutti, 3)
+    giorni = {i: ME.giorno(p, domani) for i, p in prev.items()}
+
+    def costruisci(s):
+        scelti = set(L.scelte(s)["avvisi"])
+        voci = []
+        for c in _comuni_di(s, cm):
+            g = giorni.get(c["istat"])
+            if g:
+                voci.append((c, [t for t in ME.superamenti(g) if t in scelti], g))
+        return testo_avviso(domani, voci)
+    # gli iscritti senza superamenti non vengono segnati nel registro: se il worker riparte, si ricontrollano
+    return invia_personali(f"avvisi-{domani}", "avvisi", lista, costruisci)
