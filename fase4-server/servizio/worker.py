@@ -2,6 +2,8 @@
 
   previsioni meteo       ogni ORE_PREVISIONI ore      } solo i comuni delle REGIONI_AGGIORNATE (vuoto = tutte le
   storico meteo          ogni giorno dopo ORA_STORICO_UTC } REGIONI servite); giornaliero aggiornato a blocchi di comuni
+  archivio psicrometrico ogni giorno subito dopo lo storico: ore nuove di temperatura e umidità in CARTELLA_PSICRO
+                         (ICON del server, poi ERA5 da S3 per gli altri comuni); niente se la cartella non c'è
   mercati (GME, TTF)     ogni notte alle ORA_MERCATI (ora italiana), con la sorveglianza delle fonti delle
                          convenzioni (email solo quando cambia qualcosa), i listini delle convenzioni e, subito dopo,
                          gli indici dei prezzi pubblicabili per il sito (prezzi: /sito/dati/prezzi/indici.json)
@@ -19,7 +21,7 @@ lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
 
   python -m servizio.worker                 ciclo continuo
-  python -m servizio.worker previsioni|storico|mercati|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
+  python -m servizio.worker previsioni|storico|psicro|mercati|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
                                             una sola esecuzione (anche con docker compose run --rm worker …)
 """
 from __future__ import annotations
@@ -50,6 +52,20 @@ def _sicuro(f, nome) -> bool:
         log.exception("Errore in %s", nome)
         avvisi.invia(f"errore in {nome}", f"{type(e).__name__}: {e}")
         return False
+
+
+def psicro() -> dict:
+    """Archivio psicrometrico (14/11/2026, menu «Trattamento aria»): aggiunge le ore nuove ai file di CARTELLA_PSICRO.
+    Prima le ore ICON appena aggiunte dallo storico in DATI/orario (comuni di REGIONI_AGGIORNATE), poi, per i comuni
+    rimasti indietro, ERA5/ERA5-Land dai file .om su S3 (~5 giorni di ritardo; PSICRO_S3=false lo spegne). Senza la
+    cartella (archivio non ancora copiato) o mentre `scarica-psicro` ci sta scrivendo non fa nulla."""
+    if not C.CARTELLA_PSICRO.is_dir():
+        log.info("Archivio psicrometrico: cartella %s assente, niente da aggiornare", C.CARTELLA_PSICRO)
+        return {"saltato": "cartella assente"}
+    from meteo_storico import psicro as ps
+    esito = ps.aggiorna(C.CARTELLA_PSICRO, C.DATI / "orario", usa_s3=C.PSICRO_S3, giorni_max=C.PSICRO_GIORNI_MAX)
+    log.info("Archivio psicrometrico: %s", esito)
+    return esito
 
 
 def mercati() -> None:
@@ -212,6 +228,10 @@ def ciclo() -> None:
         if utc.hour >= C.ORA_STORICO_UTC and fatti.get("storico") != utc.date():
             if _sicuro(meteo.aggiorna_storico, "storico"):
                 fatti["storico"] = utc.date()
+        # (14/11/2026) subito dopo lo storico (che porta le ore ICON nuove); una volta al giorno anche se fallisce
+        if utc.hour >= C.ORA_STORICO_UTC and fatti.get("psicro") != utc.date():
+            _sicuro(psicro, "archivio psicrometrico")
+            fatti["psicro"] = utc.date()
         if (loc.hour, loc.minute) >= (hm, mm) and fatti.get("mercati") != oggi:
             _sicuro(mercati, "mercati")
             fatti["mercati"] = oggi
@@ -243,6 +263,6 @@ def ciclo() -> None:
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "ciclo"
-    {"ciclo": ciclo, "previsioni": meteo.aggiorna_previsioni, "storico": meteo.aggiorna_storico,
+    {"ciclo": ciclo, "previsioni": meteo.aggiorna_previsioni, "storico": meteo.aggiorna_storico, "psicro": psicro,
      "mercati": mercati, "prezzi": prezzi, "mensile": mensile, "settimanale": settimanale, "avvisi": avvisi_meteo, "territorio": territorio, "anncsu": anncsu,
      "indicatori": indicatori, "clima": clima}[cmd]()

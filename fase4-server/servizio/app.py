@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
-from . import alberi_osm, analisi, config as C, dbtr_coda, edifici, edifici_osm, interno, meteo, modello, orizzonte, ortofoto, preferenze_email, protezione as P, pvgis, report, storici, strati, tabelle, terreno
+from . import alberi_osm, analisi, config as C, dbtr_coda, edifici, edifici_osm, interno, meteo, modello, orizzonte, ortofoto, preferenze_email, protezione as P, psicro, pvgis, report, storici, strati, tabelle, terreno
 from .report_servizi import CON_FORMATO as REPORT_CON_FORMATO, TIPI as TIPI_REPORT
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -29,6 +29,7 @@ if C.ORIGINI_CORS:
                        allow_headers=[P.INTESTAZIONE_SESSIONE, "Content-Type"])
 
 app.include_router(storici.router)   # pagina "Dati climatici": /api/storici/...
+app.include_router(psicro.router)    # serie orarie di temperatura e umidità per «Trattamento aria» (14/11/2026)
 app.include_router(edifici.router)   # edifici 3D (fase 10): gradi giorno mensili e clima orario per firma e FV
 app.include_router(alberi_osm.router)   # alberi indicativi da OpenStreetMap dove manca il LiDAR (09/11/2026 d)
 app.include_router(edifici_osm.router)   # ripiego OpenStreetMap di Modelli 3D fuori dal DBTR (07/11/2026)
@@ -188,13 +189,16 @@ async def previsione(request: Request, file: UploadFile = File(...), istat: str 
 # ---------------------------------------------------------------------------------------------- Legge 10
 @app.get("/api/clima-legge10/{istat}")
 def clima_legge10(request: Request, istat: str, anni: int = 10):
-    """Dati climatici aggiornati dal clima reale del comune (non sostituiscono UNI 10349 / DPR 412)."""
+    """Dati climatici aggiornati dal clima reale del comune (non sostituiscono UNI 10349 / DPR 412).
+    anni = ultime stagioni complete da usare, da 1 a 30; 0 = tutte quelle dell'archivio (14/11/2026: prima 3–30)."""
     from meteo_storico import legge10
+    if anni < 0:
+        raise HTTPException(422, "anni deve essere 0 (tutte le stagioni) oppure da 1 a 30")
     _limita(request, "dati")
     _istat_valido(istat)
     try:
         from servizio.storici import zona_dpr
-        ris = legge10.calcola(meteo.storico_giornaliero(istat), max(3, min(anni, 30)), zona_dpr=zona_dpr(istat))
+        ris = legge10.calcola(meteo.storico_giornaliero(istat), min(anni, 30), zona_dpr=zona_dpr(istat))
     except FileNotFoundError:                      # archivio meteo della fase 3 non ancora copiato sul server
         raise HTTPException(503, "i dati meteo delle ultime stagioni non sono ancora sul server: "
                                  "arriveranno nei prossimi giorni")

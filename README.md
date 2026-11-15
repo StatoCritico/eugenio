@@ -20,7 +20,7 @@ numerazione ha un buco (la 2) perché quella fase non fa parte del servizio pubb
 | 1 | `fase1-oracle/` | account Oracle, Always Free o PAYG (analisi), quote, budget, istanza ARM, preparazione, backup | console Oracle + server |
 | 3 | `fase3-storico/` | storico meteo Open-Meteo per comune, correzione ERA5, **dati climatici per la Legge 10**, verifica comuni/confini | PC o server |
 | 4 | `fase4-server/` | docker compose: API + TiRex-2, worker (meteo, mercati, newsletter, ANNCSU, avvisi), **Cloudflare Tunnel**, **newsletter automatica** (listmonk) | server |
-| 5 | `fase5-sito/` | sito statico: previsione dei consumi (mappa, CSV, grafico), patrimonio edilizio sul catasto, dati climatici per la Legge 10, metodo, FAQ, informativa privacy | server |
+| 5 | `fase5-sito/` | sito statico: previsione dei consumi (mappa, CSV, grafico), patrimonio edilizio sul catasto, dati climatici per la Legge 10, **Trattamento aria › Psicrometria** (4 pagine sperimentali dal 14/11/2026), metodo, FAQ, informativa privacy | server |
 | 6 | `fase6-mercati/` | **MGP/PUN quartorario, PSV (MGP-GAS), IGI, TTF** ogni notte, solo uso interno; **PSV day-ahead ARERA** dal 10/2022; **PFOR,t** ricostruito; **ISTAT (FOI…) ed Eurostat PMI** su richiesta; **convenzioni regionali** (Intercent-ER, CET, …) con **sorveglianza notturna** delle fonti (Intercent-ER, Consip, CET) | server (anche PC) |
 | 8 | `fase8-indicatori/` | **indicatori di spesa energetica degli enti SSN** (OpenBDAP, ReportER, ISTAT) per la pagina «Costi energetici Sanità» (menu Statistiche; fino al 05/11/2026 «Indicatori») | server (mensile) |
 | 9 | `fase9-clima-storico/` | **clima dal 1940** per tutti i comuni (ERA5/ERA5-Land), indicatori alla UNI 10349 e al DPR 412/93 | cloud o PC, una volta l'anno |
@@ -29,6 +29,7 @@ numerazione ha un buco (la 2) perché quella fase non fa parte del servizio pubb
 | 11 | `fase11-visure/` | **EuGEnio Visure**: programma a parte (.exe personale e Docker per enti) per le visure catastali e il CSV arricchito; **Fase D in codice dal 04/11/2026**: lettore locale delle visure in PDF (nessuna credenziale, nessun accesso a SISTER, dati personali esclusi), importazione nella pagina Patrimonio solo nel browser, avviatore `EuGEnioVisure.exe` con versioni approvate (impronte SHA-256) e workflow `.github/workflows/visure-windows.yml` con firma SignPath predisposta, immagine Docker; dal 04/11/2026 notte anche la **conversione dei modelli DXF/IFC** pesanti (`EuGEnioVisure.exe modello`, scheda «Modelli DXF/IFC»); scaricamento con `visura-api` non attivo finché l'Agenzia non chiarisce i termini | PC dell'utente o server dell'ente |
 | 12 | `fase12-gme-fotovoltaico/` | analisi sui **dati GME quartorari** (FV, BESS, CER, offerte, flessibilità, zone, rischio, costo per POD): **uso interno finché non c'è la licenza GME**; registro della call `DOMANDE_CALL_GME.md` | server |
 | 13 | `fase13-cogenerazione/` | **cogenerazione** in autoconsumo, report 13–20 con il budget di dissipazione CAR: **uso interno finché non c'è la licenza GME**; regole CAR dagli atti normativi, niente contenuti GSE; **report 18 Emissioni nel sito dal 05/11/2026** con i fattori ISPRA (`dati_terzi/`), senza dati GME | server + sito |
+| 14 | `fase14-trattamento-aria/` | **psicrometria** per il menu «Trattamento aria» (14/11/2026): gemello Python di `psicro.js` (stati, trasformazioni UTA, condizioni di progetto da serie orarie, gruppi di ore), test contro psychrolib e di parità con il sito, generatore del foglio `psicro_UTA.xlsx` scaricabile | sito |
 | — | `documenti/` | documenti di progetto: proposta 3D e visure, riepilogo GME, scaletta della call GME, bozza dell'articolo per Stato Critico sugli edifici 3D (Fase E), valutazione dei dati di Zornade (05/11/2026, per il § 14.2) | — |
 
 ## Per gli agenti AI
@@ -83,6 +84,7 @@ Stime per l'Emilia-Romagna (330 comuni); misurate dove indicato.
 | **Totale** | **~12–16 GB** | **< 0,5 GB** |
 | Istanza Open-Meteo propria (facoltativa, cache) | +20 GB (configurabile) | — |
 | Tutta Italia invece della sola ER (meteo sul server) | +4 GB | +1 GB |
+| Archivio psicrometrico dal 1940, tutta Italia (T e UR orarie, 14/11/2026, `/srv/energia/dati/psicro`) | +~9 GB | ~+0,1 GB |
 
 Il disco gratuito è 200 GB in tutto: un volume di avvio da **100 GB** basta con ampio margine e lascia
 spazio ai backup. Sul PC, l'archivio meteo completo dell'ER occupa ~2 GB (Italia ~50 GB).

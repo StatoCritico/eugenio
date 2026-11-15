@@ -275,6 +275,40 @@ def test_legge10(cliente):
     assert "UNI 10349" in testo and "Open-Meteo" in testo
 
 
+def test_legge10_ultima_stagione_venti_e_tutte(cliente):
+    """(14/11/2026) scelte della pagina: ultima stagione, 5, 10, 20 o tutte (0); l'archivio sintetico ha 5 stagioni
+    complete (Agazzano 4: gennaio 2021 con 10 giorni mancanti)."""
+    base = {"dataset": "legge10", "area": {"tipo": "provincia", "provincia": "PC"}, "tipologia": "riepilogo"}
+    uno = _leggi_csv(_estrai(cliente, {**base, "stagioni": 1}).content)
+    assert (uno["n_stagioni (n)"] == 1).all() and set(uno.stagioni) == {"2023/24"}
+    tend = next(c for c in uno.columns if c.startswith("tendenza_gg_decennio"))
+    assert uno[tend].isna().all()
+    tutte = _leggi_csv(_estrai(cliente, {**base, "stagioni": 0}).content).set_index("istat")
+    assert tutte["n_stagioni (n)"].to_dict() == {"033001": 4, "033032": 5}
+    venti = _leggi_csv(_estrai(cliente, {**base, "stagioni": 20}).content).set_index("istat")
+    assert venti["n_stagioni (n)"].to_dict() == tutte["n_stagioni (n)"].to_dict()
+    st = cliente.post("/api/storici/stima", json={**base, "stagioni": 20, "tipologia": "stagioni"}).json()
+    assert st["consentito"] and any("al più 5 stagioni complete" in a and "chieste 20" in a for a in st["avvisi"])
+    assert st["righe"] == 2 * 5
+    st1 = cliente.post("/api/storici/stima", json={**base, "stagioni": 1}).json()
+    assert any("indicativi" in a for a in st1["avvisi"])
+    assert any("tutte le stagioni" in a or "si usano quelle." in a
+               for a in cliente.post("/api/storici/stima", json={**base, "stagioni": 0}).json()["avvisi"])
+    for errato in (-1, 31):
+        assert cliente.post("/api/storici/stima", json={**base, "stagioni": errato}).status_code == 422
+    voce = next(x for x in cliente.get("/api/storici/catalogo").json()["dataset"] if x["id"] == "legge10")
+    assert voce["stagioni"]["scelte"] == [1, 5, 10, 20, 0] and voce["stagioni"]["min"] == 1
+    info = _estrai(cliente, {**base, "stagioni": 0}, formato="xlsx")
+    assert info.status_code == 200
+
+
+def test_stagioni_complete():
+    assert storici.stagioni_complete(dt.date(2015, 1, 1), dt.date(2026, 11, 10)) == 11
+    assert storici.stagioni_complete(dt.date(2015, 7, 2), dt.date(2026, 6, 30)) == 10
+    assert storici.stagioni_complete(dt.date(2019, 7, 1), dt.date(2024, 6, 30)) == 5
+    assert storici.stagioni_complete(dt.date(2024, 1, 1), dt.date(2024, 12, 31)) == 0
+
+
 def test_legge10_troppi_comuni(cliente, monkeypatch):
     monkeypatch.setattr(C, "STORICI_MAX_COMUNI_LEGGE10", 2)
     r = cliente.post("/api/storici/stima", json={"dataset": "legge10", "area": {"tipo": "tutti"}})

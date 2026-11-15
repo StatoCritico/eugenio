@@ -3,6 +3,10 @@
   comuni     costruisce l'elenco NAZIONALE dei comuni e i punti meteo (una volta; ~730 MB di sezioni ISTAT)
   scarica    scarica ERA5 e/o ICON storico dall'API (riprende da dove si era interrotto)
   scarica-s3 come `scarica`, ma leggendo direttamente i file di Open-Meteo su AWS: tutta Italia in poche ore
+  scarica-psicro  archivio orario leggero (solo temperatura e umidità) dal 1940 per il menu «Trattamento aria»:
+             <archivio>/psicro/<istat>.parquet (o --cartella-psicro), da S3 come scarica-s3, unito alla serie corretta;
+             riprendibile (--dal 1940-01-01 predefinito, --al, --comuni/--regioni, --blocco N comuni per gruppo)
+  aggiorna-psicro aggiunge le ore nuove ai file di --cartella-psicro (ICON da --orario, poi ERA5 da S3), come il worker
   correggi   stima e applica la correzione ERA5 → ICON, con validazione
   esporta    prepara la cartella da copiare sul server
   stato      quanto è stato scaricato e consumo dell'API
@@ -58,17 +62,24 @@ def main(argv=None):
     p = argparse.ArgumentParser(prog="meteo_storico", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("comando", choices=["comuni", "scarica", "scarica-s3", "correggi", "esporta", "stato", "tutto", "legge10",
-                                          "territorio-verifica", "territorio-blocca", "giornaliero-blocchi"])
+                                          "territorio-verifica", "territorio-blocca", "giornaliero-blocchi",
+                                          "scarica-psicro", "aggiorna-psicro"])
     p.add_argument("--archivio", default="archivio", help="cartella dell'archivio (anche su disco esterno)")
-    p.add_argument("--regioni", default="08", help='codici ISTAT separati da virgola, o "tutte" (predefinito 08 = ER)')
+    p.add_argument("--regioni", "--regione", default="08", help='codici ISTAT separati da virgola, o "tutte" (predefinito 08 = ER)')
     p.add_argument("--comuni", help="solo questi codici ISTAT (es. 037006,039014) – utile per provare")
     p.add_argument("--fonte", default="entrambe", choices=["era5", "icon", "entrambe", "icon2i", "ifs", "previsioni"],
                    help="entrambe = era5+icon (storico); previsioni = icon2i+ifs (per calibrare le previsioni)")
-    p.add_argument("--dal", default="2015-01-01", help="inizio serie ERA5 (ICON parte comunque dal 14/11/2022)")
+    p.add_argument("--dal", help="inizio serie ERA5 (predefinito 2015-01-01; ICON parte comunque dal 14/11/2022; "
+                                  "scarica-psicro: predefinito 1940-01-01)")
     p.add_argument("--al", help="fine (predefinito: ultimo giorno disponibile)")
     p.add_argument("--locale", help="URL di un'istanza Open-Meteo propria, es. http://127.0.0.1:8080 (niente limiti)")
     p.add_argument("--punti-per-richiesta", type=int, default=5)
-    p.add_argument("--per-gruppo", type=int, default=400, help="scarica-s3: comuni letti insieme (memoria ~ gruppo)")
+    p.add_argument("--per-gruppo", "--blocco", type=int, default=400,
+                   help="scarica-s3, scarica-psicro: comuni letti insieme (memoria ~ gruppo)")
+    p.add_argument("--cartella-psicro", help="scarica-psicro, aggiorna-psicro: cartella dei file (predefinita <archivio>/psicro)")
+    p.add_argument("--orario", help="aggiorna-psicro: cartella delle serie orarie ICON (sul server /dati/orario)")
+    p.add_argument("--senza-s3", action="store_true", help="aggiorna-psicro: solo le ore ICON di --orario")
+    p.add_argument("--tieni-lavoro", action="store_true", help="scarica-psicro: non cancellare i pezzi annuali")
     p.add_argument("--senza-sezioni", action="store_true", help="non scaricare le sezioni di censimento")
     p.add_argument("--dest", default="pacchetto_server", help="cartella di destinazione di `esporta`")
     p.add_argument("--anni", type=int, default=10, help="legge10: stagioni da usare")
@@ -86,6 +97,7 @@ def main(argv=None):
     # zfill: PowerShell senza virgolette passa 037006,039014 come numeri e toglie gli zeri iniziali
     sel = [x.strip().zfill(6) for x in a.comuni.split(",") if x.strip()] if a.comuni else None
     cmd = a.comando
+    dal_era5 = a.dal or "2015-01-01"
     if a.comuni_per_blocco:
         aggrega.COMUNI_PER_BLOCCO = a.comuni_per_blocco
 
@@ -112,7 +124,7 @@ def main(argv=None):
         fonti = {"entrambe": ["era5", "icon"], "previsioni": ["icon2i", "ifs"]}.get(a.fonte, [a.fonte])
         for f in fonti:
             s = Scaricatore(arch, f, a.locale, a.punti_per_richiesta)
-            dal = dt.date.fromisoformat(a.dal) if f == "era5" else FONTI[f]["inizio"]
+            dal = dt.date.fromisoformat(dal_era5) if f == "era5" else FONTI[f]["inizio"]
             s.scarica(cm, dal, dt.date.fromisoformat(a.al) if a.al else None)
             s.unisci(cm)
     if cmd == "scarica-s3":
@@ -122,9 +134,21 @@ def main(argv=None):
         for f in fonti:
             if f not in ("era5", "icon"):
                 raise SystemExit("scarica-s3: --fonte era5, icon o entrambe")
-            dal = dt.date.fromisoformat(a.dal) if f == "era5" else s3.INIZIO_ICON
+            dal = dt.date.fromisoformat(dal_era5) if f == "era5" else s3.INIZIO_ICON
             s3.scarica(arch, cm, f, dal, dt.date.fromisoformat(a.al) if a.al else None, a.per_gruppo)
             Scaricatore(arch, f, "http://locale-non-usato", a.punti_per_richiesta).unisci(cm)
+    if cmd == "scarica-psicro":
+        from . import psicro
+        cm = comuni.carica(arch, reg, sel)
+        ris = psicro.scarica(arch, cm, Path(a.cartella_psicro) if a.cartella_psicro else None,
+                             dt.date.fromisoformat(a.dal) if a.dal else psicro.INIZIO,
+                             dt.date.fromisoformat(a.al) if a.al else None, a.per_gruppo, a.tieni_lavoro)
+        print(json.dumps(ris, indent=1, ensure_ascii=False))
+    if cmd == "aggiorna-psicro":
+        from . import psicro
+        ris = psicro.aggiorna(Path(a.cartella_psicro) if a.cartella_psicro else arch / "psicro",
+                              Path(a.orario) if a.orario else None, usa_s3=not a.senza_s3, comuni=sel)
+        print(json.dumps(ris, indent=1, ensure_ascii=False))
     if cmd in ("correggi", "tutto"):
         cm = comuni.carica(arch, reg, sel)
         for sorgente, mesi in (("era5", 12), ("icon2i", 6), ("ifs", 6)):
@@ -170,6 +194,8 @@ def main(argv=None):
         for f in ("era5", "icon", "era5_corretto", "icon2i", "ifs"):
             n = sum((arch / "orario" / f / f"{i}.parquet").exists() for i in cm.istat)
             print(f"{f:14s} {n}/{len(cm)} comuni")
+        n = sum((arch / "psicro" / f"{i}.parquet").exists() for i in cm.istat)
+        print(f"{'psicro':14s} {n}/{len(cm)} comuni")
         print("API:", Limitatore(arch / "stato_api.json").riepilogo())
 
 

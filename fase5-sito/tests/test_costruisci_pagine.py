@@ -14,7 +14,8 @@ import costruisci_pagine as C  # noqa: E402
 VOCI = {"index.html": "./", "patrimonio.html": "patrimonio.html", "legge10.html": "legge10.html",
         "dati.html": "dati.html", "indicatori.html": "indicatori.html", "metodo.html": "metodo.html",
         "faq.html": "faq.html", "sitografia.html": "sitografia.html", "mirror.html": "mirror.html",
-        "contatti.html": "contatti.html", "licenza.html": None, "privacy.html": None}
+        "contatti.html": "contatti.html", "licenza.html": None, "privacy.html": None,
+        "contributi.html": "contributi.html", "esempi.html": "esempi.html"}   # (15/11/2026)
 
 
 @pytest.fixture()
@@ -74,7 +75,8 @@ def test_modifica_del_modello_arriva_in_tutte_le_pagine(sito, monkeypatch, tmp_p
 GRUPPI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "dati-per-email.html"],   # (08/11/2026) Cambiamento climatico, ultima
           "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
                          "dbtr-istruzioni.html", "visure.html"],
-          "statistiche": ["indici-prezzi.html", "indicatori.html"]}   # (11/11/2026) Indici dei prezzi prima
+          "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
+               "statistiche": ["indici-prezzi.html", "indicatori.html"]}   # (11/11/2026) Indici dei prezzi prima
 VIETATI = ("PUN Index GME =", "€/MWh", "Prezzo medio")   # nessun valore nelle pagine in attesa della licenza GME
 
 
@@ -84,7 +86,7 @@ def test_menu_sei_gruppi_e_voci_raggiungibili(sito):
     titoli = re.findall(r'<details class="voce-gruppo"[^>]*><summary>([^<]+)</summary>', t)
     # dal 05/11/2026 (seconda pubblicazione) il sesto gruppo Statistiche, con «Costi energetici Sanità» (indicatori.html)
     # (08/11/2026) «Edificio» → «Edifici» (data-gruppo resta «edificio»: la scelta fissata nei browser non si perde)
-    assert titoli == ["Clima e meteo", "Patrimonio", "Edifici", "Cogenerazione", "Fotovoltaico", "Statistiche"]
+    assert titoli == ["Clima e meteo", "Patrimonio", "Edifici", "Trattamento aria", "Cogenerazione", "Fotovoltaico", "Statistiche"]
     for gruppo, voci in GRUPPI.items():
         blocco = re.search(rf'data-gruppo="{gruppo}"><summary>.*?</details>', t, re.S).group(0)
         assert re.findall(r'href="([^"]+)"', blocco) == voci
@@ -345,7 +347,7 @@ def test_riga_fissata_nella_testata_e_nel_head():
     assert t.index('class="testata-menu"') < t.index('class="riga-fissata"') < t.index("</header>")
     h = (C.PARTI / "testa.html").read_text(encoding="utf-8")
     assert 'localStorage.getItem("menu-fissato")' in h and "d.dataset.menuFissato" in h
-    assert "clima|patrimonio|edificio|cogenerazione|fotovoltaico|statistiche" in h
+    assert "clima|patrimonio|edificio|aria|cogenerazione|fotovoltaico|statistiche" in h   # (14/11/2026) Trattamento aria
     js = (QUI / "sito" / "aspetto.js").read_text(encoding="utf-8")
     for testo in ("Clicca qui per fissare il menu ${nome} sotto la barra",
                   "Clicca qui per richiudere la barra di ${nome} e tornare al menu a tendina", "aria-pressed", '"menu-fissato"'):
@@ -595,7 +597,8 @@ def test_etichette_brevi_nelle_tendine():
     # (08/11/2026) 5 «S» (Cambiamento climatico; Ortofoto, Modelli 3D, Importa DXF/IFC, Aggiungi edifici), 2 triangoli
     # «in sviluppo» cliccabili (LiDAR, Visure), 16 voci in lavorazione con il triangolo e non cliccabili, 6 GME;
     # (09/11/2026 f) + 3 «S» (Edifici: Obblighi di legge, Geometria e luce naturale, Consumi): 8 «S», 13 in lavorazione
-    assert len(s) == pannello.count(">sperimentale<") == 8 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    # (14/11/2026) + 4 «S» del Trattamento aria: 12
+    assert len(s) == pannello.count(">sperimentale<") == 12 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
     assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
@@ -720,7 +723,7 @@ def test_novita_versione_feed_e_menu():
     for nome in ("index.html", "faq.html", "modelli3d.html", "novita.html"):
         s = (QUI / "sito" / nome).read_text(encoding="utf-8")
         info = re.search(r'<nav class="menu-info"[^>]*>(.*?)</nav>', s, re.S).group(1)
-        assert re.findall(r">([^<]+)</a>", info) == ["Come funziona", "F.A.Q.", "Sitografia", "Mirror", "Novità", "Contattaci"], nome
+        assert re.findall(r">([^<]+)</a>", info) == ["Come funziona", "F.A.Q.", "Sitografia", "Mirror", "Novità", "Esempi", "Contributi", "Contattaci"], nome   # (15/11/2026) Esempi e Contributi
         assert s.count(f'class="voce-novita" data-ultima="{voci[0]["versione"]}"') >= 2, nome
         assert '<link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">' in s, nome
     assert "application/atom+xml" in (QUI.parent / "fase4-server" / "Caddyfile").read_text(encoding="utf-8")
@@ -736,13 +739,14 @@ PAGINE_IN_CORSO = ["edificio-fabbisogno.html",
 ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "dati-per-email.html"],
                "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
+               "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
                "statistiche": ["indici-prezzi.html", "indicatori.html"]}   # (11/11/2026) Indici dei prezzi prima
 
 
 def test_menu_08_11_gruppi_e_voci_in_lavorazione(sito):
     t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
     gruppi = {g["id"]: g for g in C.gruppi_menu(t)}
-    assert [g["titolo"] for g in gruppi.values()] == ["Clima e meteo", "Patrimonio", "Edifici", "Cogenerazione", "Fotovoltaico", "Statistiche"]
+    assert [g["titolo"] for g in gruppi.values()] == ["Clima e meteo", "Patrimonio", "Edifici", "Trattamento aria", "Cogenerazione", "Fotovoltaico", "Statistiche"]
     for gid, voci in ACCESSIBILI.items():
         assert [v["pagina"] for v in gruppi[gid]["voci"]] == voci and all(v["tipo"] == "" for v in gruppi[gid]["voci"]), gid
     assert gruppi["clima"]["voci"][-2]["nome"] == "Cambiamento climatico"   # (15/11/2026) poi «Newsletter e avvisi»

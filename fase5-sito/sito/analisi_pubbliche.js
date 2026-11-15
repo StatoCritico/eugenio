@@ -149,7 +149,10 @@
     function calcola() {
       const d = st.dati; if (!d) return;
       const S = d.stagioni, x = S.gg_zona.map((_, i) => S.da + i), y = S.gg_zona;
-      const dal = +$("clima-dal").value || x[0];
+      // (14/11/2026) «ultime N stagioni» (valore nN) oppure «dalla stagione» (anno); 1940 = tutta la serie
+      const scelta = String($("clima-dal").value || "");
+      const valide = x.filter((v, i) => Number.isFinite(y[i]));
+      const dal = scelta.startsWith("n") ? valide[Math.max(0, valide.length - +scelta.slice(1))] ?? x[0] : (+scelta || x[0]);
       const xs = [], ys = [];
       x.forEach((v, i) => { if (v >= dal && Number.isFinite(y[i])) { xs.push(v); ys.push(y[i]); } });
       const t = tendenza(xs, ys);

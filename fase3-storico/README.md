@@ -145,6 +145,80 @@ Bari e Palermo contro l'API:
 - File di lavoro: `celle_s3.parquet` (quota e celle di ogni comune). Dipendenze in più: `omfiles`, `fsspec`, `s3fs`
   (già nell'immagine del server per la fase 9).
 
+### Archivio psicrometrico dal 1940 (`scarica-psicro`, 14/11/2026)
+
+Per il menu **«Trattamento aria»** del sito (diagramma psicrometrico, ore di funzionamento, carichi latenti, free
+cooling) serve, per ogni comune, la serie **oraria** di temperatura e umidità relativa il più lunga possibile. Decisione di
+Paolo: un archivio leggero con **solo temperatura e punto di rugiada → T e UR, ora per ora, per tutti i comuni, dal
+1940**. Modulo `meteo_storico/psicro.py`; il server lo legge con le rotte `/api/psicro/…` (README della fase 4).
+
+```bash
+python -m meteo_storico scarica-psicro --archivio /srv/lavoro/archivio --regioni tutte --dal 1940-01-01 --blocco 400 \
+  --cartella-psicro /dati/psicro
+python -m meteo_storico aggiorna-psicro --cartella-psicro /dati/psicro --orario /dati/orario   # come il worker ogni notte
+python -m meteo_storico stato --archivio /srv/lavoro/archivio --regioni tutte                  # riga «psicro»
+```
+Opzioni: `--dal` (predefinito 1940-01-01), `--al` (predefinito l'ultima ora di ERA5 su S3, ~5 giorni fa), `--comuni` o
+`--regioni`/`--regione`, `--blocco N` (= `--per-gruppo`, comuni letti insieme), `--cartella-psicro` (predefinita
+`<archivio>/psicro`), `--tieni-lavoro` (non cancella i pezzi annuali).
+
+**Formato** (`<cartella>/<istat>.parquet`, una riga per ora con dati; le ore senza dati non ci sono e nell'API diventano
+`null`):
+
+| Colonna | Tipo | Contenuto |
+|---|---|---|
+| `ora` | int32 | ore dal 1970-01-01T00:00Z (UTC; prima del 1970 negative) |
+| `t` | int16 | temperatura a 2 m in **decimi di °C**, riportata alla quota del comune |
+| `ur` | uint8 | umidità relativa in % (vuota se manca il punto di rugiada) |
+| `fonte` | uint8 | 1 = ERA5/ERA5-Land grezzo riportato in quota come `s3.py`; 2 = serie oraria ERA5 corretta verso ICON (`orario/era5_corretto`, dal 2015); 3 = ICON storico (`orario/icon` dell'archivio o `/dati/orario` del server) |
+
+Metadati del file: `eugenio_formato` (`psicro_v1`), `istat`, `quota_m` (quota del punto meteo dal Copernicus DEM 90 m),
+`dal`, `al`. Ora per ora vince la fonte 2, poi la 3, poi la 1. Codifica delta su tutte le colonne e zstd 6 (row group di
+~10 anni, statistiche su `ora`: le finestre brevi leggono solo l'ultimo pezzo). Nella stessa cartella `celle.parquet`:
+quota e celle ERA5/ERA5-Land di ogni comune (pressione nell'API, aggiornamento notturno da S3 senza l'archivio intero).
+
+**Da dove arrivano i dati.** Stessi file e stesse regole di `scarica-s3`, ma solo `temperature_2m` e `dew_point_2m`:
+ERA5-Land (0,1°) **dal 1950** dove ha la cella di terra, ERA5 (0,25°) per il **1940–1949** e, ora per ora, dove ERA5-Land
+manca (mare, isole piccole; ERA5 si legge solo per i comuni che ne hanno bisogno); temperatura e punto di rugiada
+riportati alla quota del comune con 6,5 °C/km (quota e celle da `celle_s3.parquet`, già pronto se `scarica-s3` è stato
+fatto); UR = `s3.umidita(t, td)`. Disponibilità sul bucket verificata il 14/11/2026: `copernicus_era5/*/year_1940.om`
+c'è (`year_1939` no), `copernicus_era5_land/*/year_1950.om` c'è (`year_1949` no); file annuali fino al 2021, poi
+`chunk_*.om` di 21 giorni. Poi, per le ore dal 2015, la serie corretta dell'archivio (`orario/era5_corretto/<istat>.parquet`)
+e, dopo la sua fine, ICON (`orario/icon/<istat>.parquet`).
+
+**Come lavora (riprendibile, memoria limitata).** Comuni in ordine di latitudine e longitudine, a gruppi di `--blocco`;
+per ogni gruppo un anno alla volta in `<cartella>/.lavoro/<gruppo>/<anno>.parquet` (un row group per comune: un anno già
+scritto non si rifà). Finiti gli anni del gruppo, ogni comune diventa un file solo (pezzi annuali + file già presente +
+serie corretta + ICON) con scrittura atomica, e il lavoro del gruppo si cancella: i file finali compaiono un gruppo alla
+volta e il server li usa subito. Un comune con il file già completo per il periodo chiesto si salta. Memoria: un gruppo ×
+un anno (400 comuni ≈ 150 MB, 800 ≈ 300 MB) più un comune alla volta nell'unione. Mentre lavora c'è il file
+`<cartella>/.scarica_in_corso` (aggiornato a ogni anno): l'aggiornamento notturno del worker in quel tempo non tocca la
+cartella.
+
+**Spazio e tempo per tutta Italia (misure del 14/11/2026 in questo ambiente, dati veri da S3).**
+- Spazio: **1,5 byte per ora** (Bologna 1949–1950 e 400 punti a caso nel Nord, dati veri; 2,1 senza la codifica delta).
+  Dal 1/1/1940 a novembre 2026 sono ~762.600 ore → **~1,15 MB per comune**, **~9 GB per 7.896 comuni** (8,5–10 GB secondo
+  i comuni; la stima di Paolo di ~8 GB era giusta come ordine di grandezza). Durante lo scarico in più i pezzi annuali di
+  un gruppo (~0,5 GB con 400 comuni).
+- Tempo: un gruppo di 400 comuni legge un anno dei file annuali in **~5 s** (~0,02 GB da S3) e un anno dei file a chunk
+  (2022 →) in **~30 s** (~0,06 GB); l'unione costa ~0,15 s per comune. Per 7.896 comuni (20 gruppi): 82 anni × 20 × 5 s
+  + 5 anni × 20 × 30 s + 20 minuti di unione ≈ **3,5 ore**, ~40 GB letti da S3 (nessun costo, nessuna quota). Sul server
+  ARM con la rete di Oracle contare **4–8 ore**: si può lasciare in `tmux` e riprendere.
+- Prova reale fatta qui: 5 capoluoghi 1949–1950 e 400 punti nel Nord per il 1945, il 1950 e il 2024; confronto dei valori
+  con l'API non ripetuto (limite giornaliero dell'API pubblica esaurito dall'ambiente di prova): `t_td` replica riga per
+  riga `s3.era5`, già verificato contro l'API il 28–29/10/2026.
+
+**Aggiornamento ogni notte** (worker della fase 4, `psicro.aggiorna`): aggiunge solo ore nuove, prima da ICON del server
+(fonte 3), poi da ERA5 su S3 per i comuni rimasti indietro (fonte 1). Un buco lasciato da una notte saltata non si riempie
+da solo: per riempirlo rilanciare `scarica-psicro` sui comuni interessati (rifà il file intero con tutte le fonti).
+
+**Legge 10 e archivio psicrometrico.** La pagina Legge 10 offre ora ultima stagione · 5 · 10 · 20 · tutte, ma le stagioni
+oltre l'archivio giornaliero (dal 2015) **non** si prendono da qui: `legge10.calcola` usa anche irradiazione globale e
+diffusa e vento (tabella mensile UNI 10349-1), che questo archivio non ha, e mescolare ERA5 corretto e non corretto nella
+stessa media darebbe valori non confrontabili. Per i gradi giorno stagione per stagione dal 1940 c'è già la sezione
+«Clima dal 1940» (fase 9). `legge10.calcola` accetta `anni=0` (tutte) e `anni=1` (con la nota «valori indicativi») e
+restituisce `stagioni_richieste`, `stagioni_disponibili`, `prima_stagione_disponibile` e `note`.
+
 ### Istanza Open-Meteo propria (superata da `scarica-s3`)
 
 
@@ -198,6 +272,7 @@ archivio/
   sorgenti/                          file scaricati da ISTAT e Gramscii
   grezzi/<fonte>/<istat>/<anno>.parquet
   orario/era5|icon|era5_corretto/<istat>.parquet
+  psicro/<istat>.parquet, celle.parquet   archivio psicrometrico dal 1940 (scarica-psicro; sul server /srv/energia/dati/psicro)
   correzione/parametri/<istat>.parquet, metriche.json, metriche_comuni.json
   stato_api.json                     consumo dell'API gratuita
 pacchetto_server/                    da copiare sul server (fase 4)

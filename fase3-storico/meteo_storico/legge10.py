@@ -90,7 +90,8 @@ def gradi_giorno(g: pd.DataFrame, zona: str) -> pd.Series:
 def calcola(giornaliero: pd.DataFrame, anni: int = 10, orario: pd.DataFrame | None = None,
             ufficiali: dict | None = None, fino_a: str | None = None, zona_dpr: str | None = None) -> dict:
     """giornaliero: colonne data, t_media, t_min, t_max, ur_media, rad_globale_kwh_m2, rad_diffusa_kwh_m2,
-    vento_medio_kmh (formato di meteo_storico.aggrega.giornaliero). Usa le ultime `anni` stagioni complete.
+    vento_medio_kmh (formato di meteo_storico.aggrega.giornaliero). Usa le ultime `anni` stagioni complete
+    (0 = tutte quelle dell'archivio; 14/11/2026: anche 1 sola, con la nota che i valori sono indicativi).
     zona_dpr: zona del comune nell'Allegato A del DPR 412/93, se c'è: decide la zona risultante quando più zone
     sono coerenti (vedi zona_risultante)."""
     g = giornaliero.copy()
@@ -101,7 +102,9 @@ def calcola(giornaliero: pd.DataFrame, anni: int = 10, orario: pd.DataFrame | No
     g["stagione"] = _stagione(d)
     conteggio = g.groupby("stagione").size()
     complete = [s for s, n in conteggio.items() if n >= 360]
-    stagioni = complete[-anni:]
+    if anni < 0:
+        raise ValueError("Numero di stagioni non valido")
+    stagioni = complete[-anni:] if anni > 0 else complete
     if not stagioni:
         raise ValueError("Serie troppo corta: serve almeno una stagione completa (1 luglio – 30 giugno)")
     g = g[g.stagione.isin(stagioni)]
@@ -141,8 +144,19 @@ def calcola(giornaliero: pd.DataFrame, anni: int = 10, orario: pd.DataFrame | No
                     "estiva": round(float(g.t_max.quantile(0.99)), 1),
                     "metodo": "1° percentile dei minimi e 99° dei massimi giornalieri (manca la serie oraria)"}
 
+    note = []
+    if anni and len(stagioni) < anni:
+        note.append(f"Chieste {anni} stagioni: l'archivio ne ha {len(stagioni)} complete, dalla "
+                    f"{stagioni[0]}/{str(stagioni[0] + 1)[2:]}; si usano tutte.")
+    if len(stagioni) < 5:
+        note.append("Con meno di 5 stagioni i valori sono indicativi: un inverno può essere molto più mite o più freddo "
+                    "del solito, e la tendenza non si calcola.")
     out = {
         "stagioni": [f"{s}/{str(s + 1)[2:]}" for s in stagioni],
+        "stagioni_richieste": int(anni),
+        "stagioni_disponibili": len(complete),
+        "prima_stagione_disponibile": f"{complete[0]}/{str(complete[0] + 1)[2:]}",
+        "note": note,
         "giorni": int(len(g)),
         "mensili": mensili,
         "gradi_giorno": {

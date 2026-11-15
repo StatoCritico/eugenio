@@ -106,7 +106,7 @@ $("anni").addEventListener("change", () => stato.istat && calcola());
 // funziona lo stesso senza il confronto.
 let tabellaDPR = null;
 function caricaDPR() {
-  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261114a")
+  if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261114b")
     .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   return tabellaDPR;
 }
@@ -174,7 +174,11 @@ function mostra(d) {
   $("passo-risultato").hidden = false;
   $("titolo-comune").textContent = d.comune;
   const s = d.stagioni;
-  $("periodo").textContent = `${s.length} stagioni di riscaldamento, dalla ${s[0]} alla ${s[s.length - 1]} (${num(d.giorni)} giorni).`;
+  // (14/11/2026) scelte ultima · 5 · 10 · 20 · tutta la serie: il server dice quante stagioni ha usato davvero e perché
+  const quante = s.length === 1 ? `Una stagione di riscaldamento, la ${s[0]}`
+    : `${s.length} stagioni di riscaldamento, dalla ${s[0]} alla ${s[s.length - 1]}`;
+  const tutte = d.stagioni_richieste === 0 ? " (tutte quelle complete dell'archivio)" : "";
+  $("periodo").textContent = `${quante}${tutte} (${num(d.giorni)} giorni).${(d.note || []).map((x) => ` ${x}`).join("")}`;
   const gg = d.gradi_giorno, tp = d.temperatura_progetto;
   const tend = gg.tendenza_gg_per_decennio;
   const box = $("cifre"); box.innerHTML = "";

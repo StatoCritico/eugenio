@@ -5,9 +5,20 @@
   <id>tag:eugenio.statocritico.it,2026:novita</id>
   <link rel="self" type="application/atom+xml" href="https://eugenio.statocritico.it/novita.xml"/>
   <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html"/>
-  <updated>2026-11-14T12:00:00Z</updated>
+  <updated>2026-11-15T12:00:00Z</updated>
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
+  <entry>
+    <title>15 novembre 2026 – Trattamento aria: psicrometria con il clima vero del tuo comune</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261115</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261115"/>
+    <updated>2026-11-15T12:00:00Z</updated>
+    <summary>Trattamento aria: psicrometria con il clima vero del tuo comune</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Trattamento aria › Trasformazioni (UTA): scegli il comune e calcola la sequenza dell&amp;#x27;unità di trattamento aria d&amp;#x27;estate e d&amp;#x27;inverno (miscela, recuperatore, batterie, umidificazione, ventilatore), con le potenze, l&amp;#x27;acqua e il diagramma psicrometrico o di Mollier; le condizioni esterne di progetto vengono dal clima orario del comune e si possono correggere a mano.&lt;/li&gt;&lt;li&gt;Trattamento aria › Trasformazioni (UTA): si scarica il foglio Excel psicro_UTA.xlsx, vuoto o già compilato con i dati della pagina.&lt;/li&gt;&lt;li&gt;Trattamento aria › Ore di funzionamento: tutte le ore del clima del comune sul diagramma, in quattro gruppi (stagioni, anni, ore d&amp;#x27;ufficio), con le ore per classe di temperatura e umidità e le ore dentro e fuori da una zona di comfort.&lt;/li&gt;&lt;li&gt;Trattamento aria › Carichi latenti: ore, energia e potenza per deumidificare l&amp;#x27;aria esterna d&amp;#x27;estate e umidificarla d&amp;#x27;inverno, anche per 1.000 m³/h, con la curva di durata.&lt;/li&gt;&lt;li&gt;Trattamento aria › Free cooling e recupero: ore ed energia di free cooling (economizzatore a temperatura o entalpico) e di recupero di calore, con le ore a rischio di brina, per un anno medio e mese per mese.&lt;/li&gt;&lt;li&gt;Esempi: cosa si può fare con EuGEnio, con casi concreti per ogni pagina disponibile, gruppo per gruppo.&lt;/li&gt;&lt;li&gt;Contributi: come aiutare EuGEnio sul forum o confrontando i dati climatici del tuo comune; chi contribuisce sarà ringraziato in questa pagina.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Clima e meteo › Legge 10, Dati climatici e Cambiamento climatico: si sceglie quanti anni usare (ultimo anno, 5, 10, 20 o tutta la serie); con pochi anni la pagina avvisa che i valori sono indicativi.&lt;/li&gt;&lt;li&gt;Trattamento aria: per ora le pagine usano la serie oraria dal 14/11/2022; la serie oraria di temperatura e umidità dal 1940 arriva nei prossimi giorni, comune per comune, e la pagina dice quale serie sta usando.&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
   <entry>
     <title>14 novembre 2026 – Newsletter e avvisi: scegli servizi e zona</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261114</id>

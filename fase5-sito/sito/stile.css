@@ -1104,7 +1104,7 @@ table.totali td.sedi { color: var(--tenue); font-size: var(--c-xs); width: 1%; }
   position: absolute; left: 0; top: calc(100% + 4px); z-index: 35; min-width: 17rem; max-width: min(26rem, 90vw); list-style: none; margin: 0;
   padding: var(--s1); background: var(--foglio); border: 1px solid var(--linea); border-radius: var(--r-l); box-shadow: var(--ombra-2);
 }
-.menu-gruppi > li:nth-last-child(-n+2) .tendina { left: auto; right: 0; }   /* gli ultimi gruppi si aprono verso sinistra */
+.menu-gruppi > li:nth-last-child(-n+3) .tendina { left: auto; right: 0; }   /* gli ultimi tre gruppi (dal 14/11/2026, sette gruppi) si aprono verso sinistra */
 .menu-strumenti .tendina a, .tendina a {
   display: flex; border-bottom: 0; white-space: normal; letter-spacing: 0; align-items: center; justify-content: space-between; gap: var(--s3); min-height: 2.6rem; padding: .35rem .75rem;
   border-radius: var(--r); color: var(--inchiostro); text-decoration: none; font: 600 var(--c-m)/1.25 var(--titoli);
@@ -1523,3 +1523,111 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .dati-email .dpe-comuni { list-style: none; padding: 0; margin: var(--s3) 0 0; display: flex; flex-wrap: wrap; gap: var(--s2); }
 .dati-email .dpe-comuni li { display: flex; align-items: center; gap: .5rem; padding: .25rem .25rem .25rem .7rem; border: 1px solid var(--bordo); border-radius: var(--r); background: var(--rialzo); }
 .dpe-avvertenza { font-size: var(--c-s); }
+
+/* ===================================================================================== Trattamento aria (14/11/2026)
+   Menu «Trattamento aria» con il sottotitolo «Psicrometria» e le quattro pagine aria-*.html: mappa in alto e diagramma
+   dell'aria sotto nella colonna sinistra (che qui scorre con la pagina), passi a destra. Moduli: psicro.js,
+   diagramma_aria.js, scelta_aria.js, gruppi_ore.js (README della fase 5, «Trattamento aria»). Classi con il prefisso .aria-. */
+.tendina .voce-sottotitolo { padding: .5rem .75rem .2rem; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; cursor: default; }
+.menu-pannello .voce-sottotitolo { padding: .6rem var(--s2) .1rem; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
+.riga-voci > .voce-sottotitolo { align-self: center; padding: 0 .35rem 0 .7rem; color: var(--tenue-riga); font: 600 .68rem/1 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
+.pagina-aria .mappa-area { position: static; height: auto; }
+.pagina-aria .gruppo-servizio { margin: 0; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
+.pagina-aria .mappa.aria-mappa { flex: none; height: clamp(240px, 38vh, 440px); min-height: 0; }
+.pagina-aria .mappa.aria-mappa svg { height: 100%; }
+.aria-diagramma { display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s2); }
+.aria-diagramma-comandi { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); min-height: 32px; }
+.aria-vista { display: inline-flex; }
+.aria-vista .bottone { border-radius: 0; margin: 0; }
+.aria-vista .bottone:first-child { border-radius: var(--r-tondo) 0 0 var(--r-tondo); }
+.aria-vista .bottone:last-child { border-radius: 0 var(--r-tondo) var(--r-tondo) 0; margin-left: -1px; }
+.aria-vista .bottone[aria-pressed="true"] { background: var(--primario); border-color: var(--primario); color: var(--su-primario); }
+.aria-diagramma-area { position: relative; }
+.aria-diagramma-canvas { display: block; max-width: 100%; cursor: crosshair; touch-action: pan-y; }
+/* il pulsante ↗ di grafici.js: un segnaposto nei comandi (in pagina l'SVG non si vede, nel riquadro c'è il diagramma intero) */
+.aria-diagramma-comandi > .aria-diagramma-apri.grafico { position: relative; flex: none; width: 30px; height: 30px; margin: 0; padding: 0; }
+.aria-diagramma-apri > svg.aria-segnaposto { display: none; }
+.riquadro-corpo .aria-legenda { margin-top: var(--s2); }
+.aria-legenda { display: flex; flex-wrap: wrap; gap: .2rem var(--s4); font-size: var(--c-s); }
+.aria-voce-legenda { display: inline-flex; align-items: center; gap: .4rem; margin: 0; font-weight: 500; }
+.aria-segno { display: inline-block; flex: none; width: 22px; height: 0; border-top: 3px solid var(--colore-strato); }
+.aria-segno-nuvola { width: 12px; height: 12px; border: 0; border-radius: 50%; background: var(--colore-strato); opacity: .75; }
+.aria-segno-zona { width: 16px; height: 12px; border: 1.5px solid var(--colore-strato); border-radius: 2px; background: color-mix(in srgb, var(--colore-strato) 22%, transparent); }
+.aria-segno-punto { width: 10px; height: 10px; border: 0; transform: rotate(45deg); background: var(--colore-strato); }
+.aria-segno-retta { border-top-style: dashed; border-top-width: 2px; }
+.aria-nota-legenda { color: var(--tenue); font-weight: 400; }
+.aria-legenda-curve { margin: 0; }
+.aria-scarica { margin-top: 0; }
+.aria-cursore { margin-top: var(--s3); }
+.aria-cursore label { margin-top: 0; }
+.aria-cursore input[type="range"] { display: block; width: 100%; margin: .35rem 0 0; accent-color: var(--primario); }
+.aria-cursore-scala { display: flex; justify-content: space-between; gap: .3rem; color: var(--tenue); font-size: var(--c-xs); line-height: 1.2; }
+.aria-cursore-scala span:last-child { text-align: right; }
+.aria-disponibilita:empty { display: none; }
+.aria-note-serie { margin: .35rem 0 0; padding: .45rem .7rem .45rem 1.6rem; border-left: 3px solid var(--linea); border-radius: var(--r); background: var(--rialzo); font-size: var(--c-s); color: var(--inchiostro); }
+.aria-note-serie li { margin: .1rem 0; }
+.aria-note-serie li.importante { font-weight: 600; }
+.aria-note-serie[hidden] { display: none; }
+.aria-prova { margin: 0 0 var(--s3); }
+.aria-gruppi-elenco { display: flex; flex-direction: column; gap: var(--s3); }
+.aria-gruppo { margin: 0; padding: .55rem .8rem .7rem; border: 1px solid var(--linea); border-left: 5px solid var(--colore-gruppo, var(--primario)); border-radius: var(--r); min-width: 0; }
+.aria-gruppo.spento { opacity: .62; }
+.aria-gruppo-testa { display: flex; align-items: center; gap: .55rem; width: 100%; padding: 0; float: left; margin-bottom: .3rem; }
+.aria-gruppo-testa + * { clear: both; }
+.aria-campione { width: 14px; height: 14px; flex: none; border-radius: 3px; }
+.aria-gruppo-nome { flex: 1 1 8rem; min-width: 0; font-weight: 700; }
+.aria-mostra { display: inline-flex; align-items: center; gap: .3rem; margin: 0; font-weight: 500; white-space: nowrap; }
+.aria-preset { display: flex; flex-wrap: wrap; gap: .35rem; margin: .2rem 0 .1rem; }
+.aria-preset .bottone.piccolo { min-height: 2rem; padding: .2rem .65rem; margin: 0; }
+.aria-campi { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem .9rem; margin-top: var(--s2); }
+.aria-campo { margin: 0; font-weight: 600; }
+.aria-campo > span { display: block; margin-bottom: .2rem; color: var(--tenue); font-size: var(--c-xs); font-weight: 600; }
+.aria-campo input[type="text"] { width: 5.6em; }
+.aria-campo input[type="number"] { width: 4.6em; }
+.aria-campo select { width: auto; }
+.aria-gruppo-conteggio { margin: .5rem 0 0; }
+.aria-ore-spiega { margin: .35rem 0 0; }
+.aria-gruppi-piede { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); margin-top: var(--s3); }
+.aria-zona { display: inline-flex; align-items: center; gap: .4rem; margin: 0; font-weight: 500; font-size: var(--c-s); }
+.aria-gruppi-nota:empty, .aria-zona[hidden] { display: none; }
+/* hidden vince sempre nelle pagine aria: .bottone imposta display e il «Togli» del gruppo unico restava visibile */
+.aria-gruppi [hidden], .pagina-aria .bottone[hidden] { display: none !important; }
+.pagina-aria .stesso-gruppo { display: flex; flex-wrap: wrap; gap: var(--s2); padding: 0; list-style: none; }
+.pagina-aria .stesso-gruppo li { margin: 0; }
+.pagina-aria .stesso-gruppo a { display: inline-flex; min-height: 2.25rem; align-items: center; padding: 0 .9rem; border: 1px solid var(--linea); border-radius: var(--r-tondo); color: var(--inchiostro); text-decoration: none; }
+.pagina-aria .stesso-gruppo a:hover { border-color: var(--primario); color: var(--primario); }
+.pagina-aria .stesso-gruppo a[aria-current="page"] { border-color: var(--primario); color: var(--primario); font-weight: 700; }
+.pagina-aria .aria-stesso-titolo { font: 700 var(--c-l)/1.3 var(--titoli); margin: var(--s5) 0 var(--s2); color: var(--profondo); }
+.aria-livello-campi { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; margin: var(--s3) 0 0; padding: .55rem .8rem .7rem; border: 1px solid var(--linea); border-radius: var(--r); }
+.aria-livello-campi legend { padding: 0 .3rem; font-weight: 700; font-size: var(--c-s); }
+.aria-livello-riga { display: inline-flex; align-items: center; gap: .35rem; }
+.aria-livello-riga select { width: auto; }
+.aria-livello-libero { width: 4.5em; }
+.aria-livello-riga [hidden] { display: none; }
+.aria-livello-nota { margin: .4rem 0 0; }
+
+/* ===================================================================================== Esempi e Contributi (15/11/2026)
+   «Esempi» e «Contributi» stanno tra le «Altre pagine» (riga in alto e menu del telefono), prima di Contattaci; dal
+   15/11 sera «Esempi» non è più nella riga dei servizi. Pagine di testo esempi.html e contributi.html. */
+/* con sette gruppi la riga dei servizi non sta più in una riga sotto i 1.170 px circa (la pagina scorreva in
+   orizzontale): tra 1.061 e 1.340 px titoli un po' più stretti (come già tra 861 e 1.060), così resta su una riga fino a
+   ~1.005 px; sotto i gruppi vanno a capo su due righe (approvato da Paolo il 15/11); ✱ e ◐ restano a destra
+   (--alto-testata si misura da sé) */
+@media (min-width: 861px) {
+  .menu-strumenti { min-width: 0; flex: 1 1 auto; }
+  .menu-gruppi { flex-wrap: wrap; }
+}
+@media (min-width: 1061px) and (max-width: 1340px) {
+  .voce-gruppo > summary { padding: 0 .6rem; font-size: 1rem; }
+}
+.menu-gruppi > li:nth-child(n) .tendina.a-sinistra { left: 0; right: auto; }   /* li mette aspetto.js se la tendina uscirebbe */
+.menu-gruppi > li:nth-child(n) .tendina.a-destra { left: auto; right: 0; }
+.esempi .esempi-gruppo { color: var(--tenue); margin-top: 0; }
+.esempi h3 { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; }
+.esempi .cantiere, .contributi .cantiere { display: inline-block; font: 500 .72rem/1 var(--testo); color: var(--tenue); border: 1px solid var(--linea);
+  border-radius: var(--r-tondo); padding: .2rem .45rem; vertical-align: .1em; white-space: nowrap; }
+.esempi .cantiere.prova { color: var(--primario); border-color: var(--primario); }
+.esempi .esempi-casi li { margin: .55rem 0; }
+.esempi .esempi-arrivo { max-width: 72ch; margin: var(--s4) 0 0; padding: var(--s2) var(--s3); border-left: 3px solid var(--linea); color: var(--tenue); }
+.esempi .esempi-arrivo strong { color: var(--inchiostro); }
+.esempi .esempi-chiusura { margin-top: var(--s7); }

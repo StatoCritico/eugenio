@@ -221,12 +221,13 @@ def test_menu_08_11_sei_gruppi_tendine_e_tastiera(base, browser):
     """(08/11/2026) Sei gruppi nell'ordine; Edifici con «Obblighi di legge» in cima e solo voci in lavorazione; Cambiamento
     climatico ultima voce di Clima e meteo; ogni voce di ogni tendina su una riga, tendina dentro la finestra (1366, 1000 e
     900 px); frecce della tastiera su un gruppo senza collegamenti: nessun errore."""
-    for larghezza in (1366, 1000, 900):
+    for larghezza in (1366, 1100, 1000, 900):   # (15/11/2026) anche 1100 px; sotto ~1.000 px la barra va su due righe (approvato da Paolo)
         ctx, pg = pagina(browser, larghezza)
         pg.goto(base + "faq.html")
         titoli = pg.locator("details.voce-gruppo > summary").all_inner_texts()
-        assert [t.strip() for t in titoli] == ["Clima e meteo", "Patrimonio", "Edifici", "Cogenerazione", "Fotovoltaico", "Statistiche"]
-        for g in ("clima", "patrimonio", "edificio", "cogenerazione", "fotovoltaico", "statistiche"):
+        # (14/11/2026) settimo gruppo «Trattamento aria» tra Edifici e Cogenerazione
+        assert [t.strip() for t in titoli] == ["Clima e meteo", "Patrimonio", "Edifici", "Trattamento aria", "Cogenerazione", "Fotovoltaico", "Statistiche"]
+        for g in ("clima", "patrimonio", "edificio", "aria", "cogenerazione", "fotovoltaico", "statistiche"):
             pg.hover(G.format(g) + " > summary")
             assert aperto(pg, g)
             d = pg.evaluate(f"""() => {{ const t = document.querySelector('{G.format(g)} .tendina'), b = t.getBoundingClientRect();

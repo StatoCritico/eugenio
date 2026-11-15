@@ -9,6 +9,8 @@ pacchetto_server/
 fase2-gradi-giorno/
 iscrizioni/
 *.xlsx
+# (14/11/2026) eccezione: il foglio psicrometrico scaricabile dal sito (Trattamento aria), generato da fase14-trattamento-aria/foglio
+!fase5-sito/sito/strumenti/psicro_UTA.xlsx
 *.zip
 .smtp_password
 

@@ -14,12 +14,21 @@ Container:
 | Container | Cosa fa |
 |---|---|
 | `api` | FastAPI: riceve il CSV dei consumi, costruisce le covariate meteo e di calendario, chiama **TiRex-2** e restituisce la previsione probabilistica (quantili 10–90 %). Fa anche da proxy verso **Zornade** (la chiave resta sul server) e geolocalizza i patrimoni edilizi (ANNCSU + Zornade) |
-| `worker` | (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
+| `worker` | (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
 | `caddy` | sito statico della fase 5 e instradamento verso l'API, solo dentro la rete Docker |
 | `cloudflared` | **Cloudflare Tunnel**: collega il server a Cloudflare senza aprire porte; l'HTTPS lo fa Cloudflare |
 | `listmonk` + `postgres` | newsletter automatica dei dati: liste, doppia conferma, cancellazione, invii |
 
 Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, vedi fase 3).
+
+## Aggiunte del 14/11/2026 (archivio psicrometrico e scelte di serie)
+
+- Rotte `/api/psicro/disponibilita/{istat}` e `/api/psicro/serie/{istat}?anni=1|2|5|10|20|0` per il menu «Trattamento
+  aria» (`servizio/psicro.py`), limite proprio `PSICRO_ORA`, ripiego sulla serie oraria ICON finché l'archivio dal 1940
+  non è sul server; lavoro notturno `psicro` nel worker dopo lo storico. Dettagli: § «Archivio psicrometrico».
+- `/api/clima-legge10` accetta `anni` da 1 a 30 e 0 (tutte le stagioni); i Dati storici «Legge 10» `stagioni` da 0 a 30.
+- Variabili nuove nel `.env`: `CARTELLA_PSICRO`, `PSICRO_ORA`, `PSICRO_S3`, `PSICRO_GIORNI_MAX`. Caddy comprime già le
+  risposte JSON di `/api/*` (`encode zstd gzip`): nessuna modifica al Caddyfile.
 
 ## Correzioni del 09/11/2026 e (`?v=20261109e`, procedura T di `AGGIORNAMENTO_2026-11-09e.md`)
 
@@ -371,7 +380,9 @@ Il Caddyfile serve dal 06/11/2026 i file `.md` del sito come `text/markdown; cha
 | GET | `/api/geocodifica?q=indirizzo` | ricerca indirizzi (Zornade) |
 | GET | `/api/particella?lat=&lon=` | particella catastale e comune nel punto (Zornade) |
 | GET | `/api/metodologia` | metriche della correzione ERA5 per la pagina del sito |
-| GET | `/api/clima-legge10/{istat}?anni=10` | dati climatici aggiornati per la Legge 10 dal clima reale del comune |
+| GET | `/api/clima-legge10/{istat}?anni=10` | dati climatici aggiornati per la Legge 10 dal clima reale del comune. `anni` = ultime stagioni complete, da 1 a 30 (predefinito 10), **0 = tutte** quelle dell'archivio giornaliero (14/11/2026; prima 3–30). La risposta dice `stagioni_richieste`, `stagioni_disponibili`, `prima_stagione_disponibile` e in `note` se le stagioni usate sono meno di quelle chieste o meno di 5 (valori indicativi, tendenza vuota) |
+| GET | `/api/psicro/disponibilita/{istat}` | (14/11/2026, menu «Trattamento aria») periodo coperto (`dal`, `al` in UTC), `anni_completi`, `anni_scelte`, quota del punto meteo e `pressione_pa` (atmosfera standard), `archivio` (`psicro` o `orario_icon`), fonte, licenza, note; limite «dati» |
+| GET | `/api/psicro/serie/{istat}?anni=1\|2\|5\|10\|20\|0` | (14/11/2026) serie oraria **continua in UTC** degli ultimi anni×12 mesi fino all'ultima ora (0 = tutta la serie dal 1940): `inizio`, `passo_h`: 1, `n`, `t` (decimi di °C interi o `null`), `ur` (% interi o `null`), `dal`, `al`, `anni_richiesti`, `anni_dati`, `fonte`, `licenza`, `note`. Archivio `CARTELLA_PSICRO/<istat>.parquet` (fase 3, `scarica-psicro`); finché manca, la serie oraria ICON del server (`/dati/orario`, dal 14/11/2022) con la nota; senza nessuna delle due 503; 422 per altri `anni`. Limiti «dati» e `psicro` (`PSICRO_ORA`, 120 serie per IP all'ora); copia in memoria delle ultime 16 risposte (rinnovata quando il file cambia). Una serie dal 1940 è ~5,5 MB di JSON, ~1,2–1,5 MB compressa da Caddy (`encode zstd gzip`, già attivo su `/api/*`) |
 | POST | `/api/patrimonio` | CSV di edifici → particella catastale, comune, punto (max 500 righe per richiesta, 2.000 edifici l'ora per IP; il sito manda blocchi di 40); indirizzi prima con ANNCSU, poi con Zornade; CSV in UTF-8 o nella codifica di Windows; la risposta porta `fonti` da citare |
 | POST | `/api/report?formato=pdf\|xlsx\|ods` | documento generico in JSON (schema in `/api/report/schema`) → file PDF, Excel o ODS; `docx` e `odt` rispondono 410 (spenti dal 28/10/2026); vedi "Report" |
 | POST | `/api/report/{tipo}?formato=pdf\|xlsx\|ods` | `tipo` = `previsione`, `legge10`, `patrimonio`, `indicatori`, `valori_sedi`, `edificio` (dal 04/11/2026: pagina 3D, vedi `report_servizi.report_edificio`): il corpo è la risposta già ricevuta dal servizio → file del report |
@@ -395,6 +406,40 @@ Il Caddyfile serve dal 06/11/2026 i file `.md` del sito come `text/markdown; cha
 | GET | `/api/storici/catalogo` | dataset scaricabili presenti sul server (grandezze, frequenze, periodo, fonte, licenza, limiti) |
 | POST | `/api/storici/stima?formato=csv\|xlsx\|ods` | JSON con i filtri → righe, colonne e dimensione stimate; se la richiesta è troppo grande, motivo e suggerimenti |
 | POST | `/api/storici/estrai?formato=csv\|xlsx\|ods` | stesso JSON → file CSV (in streaming), Excel o OpenDocument (.ods) con foglio "Info" |
+
+## Archivio psicrometrico per «Trattamento aria» (14/11/2026)
+
+Temperatura e umidità relativa **orarie dal 1940** per ogni comune (`servizio/psicro.py`; formato e scarico nella fase 3,
+`meteo_storico/psicro.py`, README della fase 3 § «Archivio psicrometrico»). Un file per comune in `CARTELLA_PSICRO`
+(nel container `/dati/psicro`, sul server `/srv/energia/dati/psicro`; ~9 GB per tutta Italia) più `celle.parquet`
+(quota del punto meteo e celle ERA5 di ogni comune: serve alla pressione e all'aggiornamento notturno).
+
+- **Rotte**: `/api/psicro/disponibilita/{istat}` e `/api/psicro/serie/{istat}?anni=` (tabella delle API). Ore in UTC; la
+  pagina converte in ora italiana. Pressione = 101325·(1 − 2,25577·10⁻⁵·z)^5,2559 con z la quota del punto meteo (la
+  stessa a cui è riportata la temperatura); se `celle.parquet` non c'è, l'altitudine della casa comunale del DPR 412/93.
+- **Ripiego**: senza il file di un comune si serve la serie oraria ICON del server (`/dati/orario/<istat>.parquet`, dal
+  14/11/2022, aggiornata ogni giorno per le `REGIONI_AGGIORNATE`), con `archivio: "orario_icon"` e la nota: le pagine
+  funzionano già prima che lo scarico dal 1940 sia finito, con al più 4 anni.
+- **Aggiornamento notturno** (worker, comando `psicro`, subito dopo lo storico, una volta al giorno): aggiunge le ore nuove,
+  mai quelle vecchie: prima le ore ICON appena scritte in `/dati/orario` (fonte 3), poi, per i comuni rimasti indietro
+  (fuori dalle `REGIONI_AGGIORNATE`), ERA5/ERA5-Land dai file `.om` su S3 (fonte 1, ~5 giorni di ritardo, al più
+  `PSICRO_GIORNI_MAX` giorni; `PSICRO_S3=false` lo spegne). Senza la cartella non fa nulla; mentre `scarica-psicro` ci
+  scrive (file `.scarica_in_corso` aggiornato da meno di 6 ore) aspetta. Riscrive solo i file con ore nuove (~0,1 s per
+  comune: ~15–30 minuti per tutta Italia sul server ARM). A mano: `docker compose run --rm worker python -m servizio.worker psicro`.
+- **Variabili** (`.env`): `CARTELLA_PSICRO` (predefinita `/dati/psicro`), `PSICRO_ORA` (120), `PSICRO_S3` (true),
+  `PSICRO_GIORNI_MAX` (45).
+- **Prove**: `tests/test_psicro.py` (archivio sintetico: forme, null e buchi, finestre 1/2/5/10/20/0, limiti, 503,
+  ripiego ICON, quota dalle celle, copia in memoria; fase 3 con S3 finto: unione delle fonti, riprendibilità, notte).
+
+**Scelte di serie nelle altre pagine (14/11/2026).** Legge 10 (`select#anni`) e Dati climatici (stagioni della Legge 10 e
+periodi rapidi delle serie a date) offrono **ultimo anno · 5 · 10 · 20 · tutta la serie**; Cambiamento climatico la
+tendenza sulle ultime 5, 10, 20 stagioni o dal 1991, 1981, 1961, 1940. Lato server `/api/clima-legge10` accetta 1–30 e
+0 (tutte) e i Dati storici «Legge 10» `stagioni` 0–30 (catalogo: `scelte` [1, 5, 10, 20, 0]); quando l'archivio
+giornaliero (dal 2015) è più corto la risposta, la stima e la pagina dicono quante stagioni si usano e da quale.
+Le stagioni più vecchie della Legge 10 **non** si prendono dall'archivio psicrometrico: `legge10.calcola` usa anche
+irradiazione globale e diffusa e vento (tabella mensile UNI 10349-1), che quell'archivio non ha; mescolare nella stessa
+tabella mesi con e senza queste grandezze, o ERA5 corretto e non corretto, darebbe medie non confrontabili. I gradi giorno
+stagione per stagione dal 1940 ci sono già nella sezione «Clima dal 1940» della stessa pagina (fase 9).
 
 ## Dati storici scaricabili (pagina "Dati storici")
 
@@ -671,7 +716,8 @@ bloccherebbe anche chi usa le API dei dati aperti con uno script.
 | `patrimonio` | `/api/patrimonio` | 2.000 edifici |
 | `report` | `/api/report`, `/api/report/{tipo}` | 60 |
 | `converti` | `/api/converti` | 200 |
-| `dati` | `/api/meteo`, `/api/clima-legge10`, `/api/mappa`, `/api/comuni`, `/api/metodologia` | `LIMITE_DATI_ORA` (600) |
+| `dati` | `/api/meteo`, `/api/clima-legge10`, `/api/mappa`, `/api/comuni`, `/api/metodologia`, `/api/psicro/…` | `LIMITE_DATI_ORA` (600) |
+| `psicro` | `/api/psicro/serie/{istat}` (14/11/2026, oltre a «dati») | `PSICRO_ORA` (120) |
 | `stima`, `estrazione` | `/api/storici/stima`, `/api/storici/estrai` | `STORICI_STIME_ORA` (600), `STORICI_ESTRAZIONI_ORA` (30) |
 | `sessione` | `/api/sessione` | `SESSIONI_ORA` (60) |
 | `edifici_osm` | `/api/edifici/osm` e tessere OSM dei «Contorni degli edifici» che chiamano davvero Overpass o il WFS regionale (09/11/2026: prima anche la copia) | `EDIFICI_OSM_ORA` (300) |

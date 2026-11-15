@@ -489,7 +489,7 @@ class Richiesta(BaseModel):
     frequenza: str | None = Field(default=None, max_length=20)
     copertura: int = Field(default=C.STORICI_COPERTURA, ge=50, le=100)
     area: Area = Field(default_factory=Area)
-    stagioni: int = Field(default=10, ge=3, le=30)       # Legge 10: ultime N stagioni complete
+    stagioni: int = Field(default=10, ge=0, le=30)       # Legge 10: ultime N stagioni complete (0 = tutte; 14/11/2026: anche 1)
     tipologia: str | None = Field(default=None, max_length=20)   # Legge 10
     tassazione: list[str] = Field(default_factory=list, max_length=5)   # Eurostat
 
@@ -672,8 +672,14 @@ def pianifica(req: Richiesta) -> Piano:
         p.al = min(req.al or fine, fine)
         p.dal = inizio
         p.frequenza = None
-        stagioni_disp = max(0, (p.al - inizio).days // 365)
-        k = min(req.stagioni, stagioni_disp) or 1
+        stagioni_disp = stagioni_complete(inizio, p.al)
+        k = (min(req.stagioni, stagioni_disp) if req.stagioni else stagioni_disp) or 1
+        if req.stagioni == 0 or req.stagioni > stagioni_disp:
+            p.avvisi.append(f"L'archivio giornaliero parte dal {inizio:%d/%m/%Y}: fino al {p.al:%d/%m/%Y} ci sono al più "
+                            f"{stagioni_disp} stagioni complete e si usano quelle"
+                            + ("." if req.stagioni == 0 else f" (chieste {req.stagioni})."))
+        if 0 < req.stagioni < 5:
+            p.avvisi.append("Con meno di 5 stagioni i valori sono indicativi e la tendenza dei gradi giorno resta vuota.")
         p.colonne = list(_COL_LEGGE10[tip])
         p.righe = n * {"mensili": 12, "riepilogo": 1, "stagioni": k}[tip]
     elif ds == "comuni":
@@ -892,6 +898,13 @@ def _gen_giornaliero(p: Piano) -> Iterator[pd.DataFrame]:
         yield _arrotonda(_luogo(out, p.comuni), p.colonne)
 
 
+def stagioni_complete(inizio: dt.date, fine: dt.date) -> int:
+    """Stagioni di riscaldamento (1 luglio – 30 giugno) tutte comprese tra inizio e fine."""
+    primo = inizio.year if (inizio.month, inizio.day) <= (7, 1) else inizio.year + 1
+    ultimo = fine.year - 1 if (fine.month, fine.day) >= (6, 30) else fine.year - 2
+    return max(0, ultimo - primo + 1)
+
+
 def zona_dpr(istat: str) -> str | None:
     """Zona del comune nell'Allegato A del DPR 412/93 (anche fusioni se la zona è uguale per tutti i comuni
     d'origine); None se manca. Serve a legge10.zona_risultante quando più zone sono coerenti."""
@@ -922,7 +935,7 @@ def _gen_legge10(p: Piano) -> Iterator[pd.DataFrame]:
                 scartati.append(istat)
                 continue
             st = r["stagioni"]
-            periodo = f"{st[0]} – {st[-1]}"
+            periodo = st[0] if len(st) == 1 else f"{st[0]} – {st[-1]}"
             gg = r["gradi_giorno"]
             if tip == "mensili":
                 for m in r["mensili"]:
@@ -1114,7 +1127,10 @@ def _filtri(p: Piano) -> list[tuple[str, str]]:
                                         "precipitazione, neve e gradi giorno; minimo e massimo per t_min e t_max"))
     elif p.ds == "legge10":
         out += [("Tipologia", LEGGE10_TIPOLOGIE[r.tipologia or "mensili"]),
-                ("Stagioni", f"ultime {r.stagioni} stagioni complete fino al {p.al:%d/%m/%Y}")]
+                ("Stagioni", (f"tutte le stagioni complete dell'archivio fino al {p.al:%d/%m/%Y}" if r.stagioni == 0
+                              else f"ultima stagione completa fino al {p.al:%d/%m/%Y}" if r.stagioni == 1
+                              else f"ultime {r.stagioni} stagioni complete fino al {p.al:%d/%m/%Y}")
+                 + " (le stagioni usate davvero, comune per comune, sono nella colonna «stagioni»)")]
     elif p.ds == "eurostat_pmi":
         out = [("Serie", "; ".join(SERIE_EUROSTAT.get(s, s) for s in p.serie)),
                ("Tassazione", "; ".join(f"{t} {TASSAZIONE[t]}" for t in r.tassazione)),
@@ -1436,7 +1452,8 @@ def catalogo():
             voce["avvertenza"] = info["avvertenza"]
         if ds == "legge10":
             voce["tipologie"] = [{"id": k, "nome": v} for k, v in LEGGE10_TIPOLOGIE.items()]
-            voce["stagioni"] = {"min": 3, "max": 30, "predefinite": 10}
+            voce["stagioni"] = {"min": 1, "max": 30, "predefinite": 10, "scelte": [1, 5, 10, 20, 0],
+                                "tutte": 0}
         if ds == "eurostat_pmi":
             voce["variabili"] = [{"id": f.stem, "nome": SERIE_EUROSTAT.get(f.stem, f.stem.replace("_", " ")),
                                   "gruppo": "Serie", "predefinita": True} for f in _file_eurostat()]

@@ -80,6 +80,10 @@ sito/
   valori_sedi.js    scheda «Valori per sede» di Patrimonio: unità, scale, mattoncini, controlli per colonna, tabella
   esempi/valori_sedi_esempio.csv  13 sedi con valori SINTETICI (riga delle unità: MWh, MWh, litri)
   README_stile.md   vestiti, variabili CSS, colori delle regioni e delle serie
+  aria-*.html       Trattamento aria › Psicrometria (14/11/2026, sperimentali): aria-trasformazioni, aria-ore, aria-latenti,
+                    aria-freecooling, con aria_*.js (logica della pagina) e i moduli comuni psicro.js, diagramma_aria.js,
+                    scelta_aria.js, gruppi_ore.js (sezione «Trattamento aria» qui sotto)
+  strumenti/psicro_UTA.xlsx  foglio psicrometrico UTA scaricabile (generato da fase14-trattamento-aria/foglio)
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
 costruisci_dpr412.py  rigenera dati/dpr412.* (Normattiva + elenchi ISTAT di comuni, soppressi e variazioni)
 abbinamento_dpr412.md scelte e casi dell'abbinamento al codice ISTAT attuale (refusi, fusioni, cambi di nome)
@@ -95,6 +99,107 @@ Menu di tutte le pagine: Previsioni, Patrimonio, Legge 10, Dati storici, Come fu
 di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occupano tutta la larghezza dello schermo
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
+
+## Esempi e Contributi (15/11/2026, richiesta di Paolo; versione da fissare alla pubblicazione)
+
+- **Contributi** (`sito/contributi.html`, pagina di testo `main.articolo.contributi`): nella riga «Altre pagine» in alto e
+  nel menu del telefono, **prima di Contattaci**. Dice che chi contribuisce sul forum e sui dati climatici sarà
+  ringraziato qui; invita alla discussione generale sul forum di Edilclima («meet EuGEnio (ovvero a cosa serve l'AI per i
+  tecnici? Parte #1)», `https://forum.edilclima.it/viewtopic.php?t=38424`) e a Contattaci. Sezione `#ringraziamenti` con
+  la frase «In questa pagina verranno ringraziati coloro che hanno contribuito allo sviluppo del sito.» (15/11 sera),
+  **nessun nome** finché Paolo non li dà.
+- **Esempi** (`sito/esempi.html`, `main.articolo.esempi`): tra le **«Altre pagine»** (riga in alto e menu del
+  telefono), **dopo Novità e prima di Contributi**: Come funziona · F.A.Q. · Sitografia · Mirror · Novità · Esempi ·
+  Contributi · Contattaci (15/11 sera; prima era l'ultima voce del menu dei servizi, `a.voce-diretta`, tolta con il suo
+  CSS). Contenuto: indice in cima (`nav.indice`) e
+  un `h2` per gruppo del menu nello stesso ordine (`#clima`, `#patrimonio`, `#edifici`, `#aria`, `#cogenerazione`,
+  `#fotovoltaico`, `#statistiche`), una riga d'introduzione (`.esempi-gruppo`), un `h3` per pagina accessibile con 1–3
+  casi raccontati (`ul.esempi-casi`) e il collegamento alla pagina; le pagine in lavorazione e GME solo per nome in
+  `p.esempi-arrivo` («In arrivo: …», senza collegamento); LiDAR e Visure (voci «in sviluppo» ma collegate) in una riga
+  «In sviluppo». Quando una pagina passa da «in lavorazione» a disponibile, va tolta da «In arrivo» e le va scritto un
+  esempio (il test lo pretende). Dal 15/11 in Clima e meteo c'è anche «Newsletter e avvisi» (`dati-per-email.html`).
+- **Barra dei servizi su due righe** (`stile.css`, approvata da Paolo il 15/11): con sette gruppi la riga non stava più
+  sotto ~1.170 px (la pagina scorreva in orizzontale). Da 861 px `.menu-gruppi` va a capo (`flex-wrap: wrap`) e tra
+  1.061 e 1.340 px i titoli sono un po' più stretti (come già tra 861 e 1.060): senza «Iscriviti» ed «Esempi» la riga
+  resta una fino a ~1.005 px (prova del 15/11 sera), sotto va su due; ✱ e ◐ restano a destra, `--alto-testata` si misura
+  da sé. Le tendine si aprono verso sinistra per gli ultimi tre gruppi (`li:nth-last-child(-n+3)`), ma `aspetto.js` (al
+  `toggle`) le gira dall'altra parte se uscirebbero dalla finestra (`.tendina.a-sinistra` / `.a-destra`): a 1.000 px
+  Statistiche va sulla seconda riga, a sinistra. La riga «Altre pagine» in alto, con otto voci, sta su una riga da 861 px
+  in su (prova a 1366, 1100, 1000, 900 e 861 px); sotto gli 861 px le voci sono nel pulsante Menu.
+- Test: `tests/test_esempi_contributi.py` (ordine delle «Altre pagine» nella riga in alto e nel telefono, Esempi non più
+  nel menu dei servizi né nel CSS, forum, Contattaci e frase dei ringraziamenti, gruppi e indice di Esempi nell'ordine
+  del menu, ogni collegamento interno a un file che esiste e mai a una pagina in lavorazione o GME, ogni pagina
+  accessibile con un esempio e ogni pagina non accessibile «in arrivo», nessun dato di mercato; in Chromium nessuno
+  scorrimento orizzontale a 1366, 1100, 1000, 900 e 375 px, riga in alto su una riga e dentro la finestra, voce Esempi
+  che porta alla pagina senza fissare la riga, a 375 px Esempi e Contributi tra le «Altre pagine» del pulsante Menu);
+  `test_costruisci_pagine.py` (Altre pagine con Esempi e Contributi, voce attiva delle due pagine);
+  `test_menu_browser.py` (tendine dentro la finestra anche a 1100 px).
+
+## Trattamento aria: moduli comuni e pagine (14/11/2026, `?v=20261114b`, pubblicato il 15/11 con la seconda pubblicazione del giorno)
+
+Nuovo gruppo di menu **«Trattamento aria»** (`data-gruppo="aria"`) tra Edifici e Cogenerazione, con il sottotitolo non
+cliccabile **«Psicrometria»** (`<li class="voce-sottotitolo">`, anche nella riga fissata e nel telefono) e 4 voci
+sperimentali («S»): Trasformazioni (UTA), Ore di funzionamento, Carichi latenti, Free cooling e recupero. Con sette gruppi
+gli **ultimi tre** si aprono verso sinistra (a 900 px Cogenerazione usciva dalla finestra). `costruisci_pagine.py` non è
+cambiato: gruppo, «Nello stesso gruppo» ed etichetta del gruppo vengono già dal menu della testata; `parti/testa.html`
+accetta `aria` nel menu fissato.
+
+**Pagine** (`main.strumento.pagina-aria`): a sinistra titolo e piccola mappa, mappa della regione (`#mappa`, altezza
+`clamp(240px, 38vh, 440px)`, colonna non fissa) e sotto il diagramma (`#diagramma-aria`); a destra i passi: 1 «Comune e
+serie meteo» (`#scelta-aria`), 2 dati della pagina (`#aria-gruppi` nelle tre pagine con i gruppi, `#aria-livello` in
+Trasformazioni, `#aria-pagina`), 3 «Risultati» (`#passo-risultati`, nascosto), poi «Nello stesso gruppo». Le pagine possono aggiungere
+passi (`.passo` con `h2 > span.n`). Ogni pagina ha il suo `aria_<pagina>.js` (calcolo nel browser, CSV dei risultati) e un
+gemello Python del calcolo in `fase14-trattamento-aria/aria/` con prove di parità:
+
+| Pagina | Script | Cosa fa | Predefiniti |
+|---|---|---|---|
+| `aria-trasformazioni.html` | `aria_trasformazioni.js` | sequenza UTA del foglio `psicro_UTA.xlsx` (estate e inverno, fino a 10 righe), condizioni esterne dalla serie modificabili («ripristina dal clima»), stima stagionale, foglio Excel compilato nel browser (prime 6 righe), CSV e JSON | dati del foglio (5000 m³/h, 120 m…; ambiente invernale 20 °C/40 %, dal 15/11/2026 anche nel foglio) |
+| `aria-ore.html` | `aria_ore.js` | nuvola di tutte le ore per 4 gruppi, statistiche, condizioni di progetto, classi di T e x, zona di comfort; Punti/Densità | G1 estate 5 anni, G2 inverno 5 anni, G3 estate 20 anni, G4 inverno 20 anni |
+| `aria-latenti.html` | `aria_latenti.js` | deumidificazione estiva e umidificazione invernale a vapore dell'aria esterna: ore, energia, potenze anche per 1.000 m³/h, curva di durata | 26 °C/50 % (UR massima), 20 °C/40 % (UR minima), 10 anni |
+| `aria-freecooling.html` | `aria_freecooling.js` | regimi ora per ora, free cooling (economizzatore a temperatura o entalpico), recupero, brina, mese per mese | G1 ore d'ufficio tutto l'anno, G2 tutte le ore |
+
+Colori delle stagioni: ESTATE blu, INVERNO rosso, linee spesse (come il foglio). Le API complete dei moduli comuni sono in
+`API_MODULI_ARIA.md` (documento di lavoro fuori dal repository) e in breve qui:
+
+- **`psicro.js`** (`window.EUGENIO_PSICRO`, anche `require` in node): formule del foglio `psicro_UTA.xlsx` e di psychrolib
+  SI, gemello Python in `fase14-trattamento-aria/aria/psicro.py` con test di parità. `stato(t, dato, p)` (dato: UR % o
+  `{ur}|{x}|{xg}|{twb}|{tdew}|{h}`), `statoTX`, `statoHX`, inverse (`tRugiada`, `tBulboUmido`, `tSatDaH`,
+  `tIsoentalpicaUR`, `adpRetta`, `adpDaBF`), `mollierY`/`tDaMollier`, `trasforma(tipo, ingresso, [P1,P2,P3], ctx)` con i
+  tipi e gli avvisi del foglio, `sequenza(opz)` (una stagione del foglio UTA), `portataMassica`, `puntoImmissione`,
+  `vettori(t, ur, p)` (x, h, bulbo umido di una serie oraria, una volta per serie: ~0,4 s per 750.000 ore) e
+  `condizioniProgetto(t, ur, p, { inverno: 99, estate: 1, indici })` (percentili della serie, predefiniti 99 % / 1 %).
+- **`diagramma_aria.js`** (`EUGENIO_DIAGRAMMA_ARIA.crea(box, opz)`): diagramma su canvas con «Psicrometrico» /
+  «Mollier», stesse curve e scale del foglio, strati `nuvola` (100.000 punti in ~0,1 s), `spezzata`, `punto`, `zona`,
+  `retta`, legenda con «mostra», suggerimento T/UR/x/h, ↗ col riquadro di `grafici.js` (sotto il diagramma la legenda
+  della pagina), PNG e SVG con i colori di stampa e la fascia con la **legenda degli strati visibili** (nome, colore,
+  nota, per esempio le ore l'anno), le fonti della pagina e «Fonte: EuGEnio».
+- **`scelta_aria.js`** (`EUGENIO_SCELTA_ARIA.crea(opz)`): passo 1 con mappa ed elenco dei comuni, cursore «ultimo anno · 2
+  · 5 · 10 · 20 · tutta la serie», `GET /api/psicro/serie/{istat}?anni=` con copia in memoria, disponibilità, errori
+  503/429 in italiano, evento `eugenio:aria-serie`; scelta in `localStorage` `eugenio-aria-v1` comune alle 4 pagine.
+  **Modo di prova** `?prova=1`: serie oraria sintetica generata nel browser, scritta come «dati sintetici di prova».
+  Sotto la riga della disponibilità e della fonte, le **note del server** (`note` della risposta: archivio dal 1940 non
+  ancora sul server, anni chiesti e disponibili, fonti periodo per periodo, ore senza dati; la prima in grassetto) in
+  `ul.aria-note-serie`. I testi delle pagine non danno per certa la fonte: rimandano al passo 1.
+  `EUGENIO_SCELTA_ARIA.livelloProgetto(box)`: livello delle condizioni di progetto (99,6 · 99 · 95 % in inverno, 0,4 · 1 ·
+  5 % in estate, più «altro»; predefiniti 99 % / 1 %), ricordato in `eugenio-aria-v1`, evento `eugenio:aria-livello`.
+- **`gruppi_ore.js`** (`EUGENIO_GRUPPI_ORE.crea(box, opz)`, parte pura anche in node): fino a 4 gruppi di ore con nome,
+  «Mostra», anni, date, ore locali (ora legale italiana: storica fino al 1995, europea dal 1996), feriali e i preset Estate · Inverno · Tutto l'anno · Ore d'ufficio ·
+  Tutto il giorno; Inverno secondo la zona climatica del DPR 412 se nota; evento `eugenio:aria-gruppi`. Ore: «dalle»
+  compresa, «alle» esclusa; sotto i campi la pagina scrive l'intervallo in chiaro («dalle 8 alle 18, cioè ore
+  8:00–17:59», 10 ore). Nelle pagine aria `[hidden]` vince su `.bottone` (regola in `stile.css`: prima il «Togli» del
+  gruppo unico restava visibile).
+
+Prove: `tests/test_aria.py` (menu, pagine, node) e `tests/test_aria_browser.py` (Chromium: 4 pagine × 2 temi con
+`?prova=1`, viste, nuvola di 100.000 punti sotto 1 s, esportazioni, ↗, gruppi, livello, scelta condivisa, menu a 1366,
+1000 e 900 px); per pagina `test_aria_trasformazioni_browser.py`, `test_aria_ore_browser.py`, `test_aria_latenti.py`
+(Python e node) e `test_aria_latenti_browser.py`, `test_aria_freecooling_browser.py` (temi, 1366 e 375 px, nessun errore
+JS, controlli che cambiano i risultati). `test_scelte_serie_browser.py`: le scelte degli anni nelle pagine del clima.
+
+**Scelta degli anni nelle pagine del clima** (stessa decisione): Legge 10 «ultima stagione · 5 · 10 · 20 · tutta la serie»
+(`anni=1|5|10|20|0` di `/api/clima-legge10/{istat}`; le stagioni vengono dall'archivio giornaliero dal 2015, la risposta
+dice quante ce ne sono; con meno di 5 i valori sono indicativi), Dati climatici (periodo «ultimo anno · 5 · 10 · 20 anni ·
+tutta la serie»; per `legge10` le stesse stagioni), Cambiamento climatico (tendenza sulle ultime 5, 10 o 20 stagioni,
+dal 1991/92, 1981/82, 1961/62 o su tutta la serie dal 1940/41). Foglio Excel scaricabile in `strumenti/psicro_UTA.xlsx` (eccezione nel `.gitignore`, che esclude gli xlsx).
 
 ## Tre pagine di Edifici sperimentali (09/11/2026 f, `?v=20261109f`)
 

@@ -164,14 +164,17 @@ _DINAMICI = {"dati": lambda: C.LIMITE_DATI_ORA, "sessione": lambda: C.SESSIONI_O
              "strati": lambda: C.STRATI_ORA, "tessere_copia": lambda: C.TESSERE_COPIA_ORA,
              "edifici_osm_copia": lambda: C.EDIFICI_OSM_COPIA_ORA,
              # (14/11/2026) collegamenti personali della pagina «Dati per email»
-             "email_link": lambda: C.EMAIL_LINK_ORA, "email_pref": lambda: C.LIMITE_DATI_ORA}
+             "email_link": lambda: C.EMAIL_LINK_ORA, "email_pref": lambda: C.LIMITE_DATI_ORA,
+             # (14/11/2026) serie orarie di temperatura e umidità del menu «Trattamento aria» (servizio/psicro.py)
+             "psicro": lambda: C.PSICRO_ORA}
 # limiti giornalieri (finestra mobile di 24 ore): file proposti all'archivio comune («Aggiungi DBTR», 07/11/2026)
 _GIORNALIERI = {"dbtr": lambda: C.DBTR_CARICAMENTI_GIORNO}
 _UNITA = {"patrimonio": "edifici", "estrazione": "download", "stima": "stime", "sessione": "verifiche",
           "ortofoto": "tessere di ortofoto", "pvgis": "confronti PVGIS", "orizzonte": "profili d'orizzonte", "terreno": "tessere del terreno",
           "edifici_osm": "richieste di edifici OpenStreetMap", "dbtr": "file proposti", "dbtr_pezzi": "pezzi di file",
           "strati": "tessere di particelle e contorni", "tessere_copia": "tessere dalla copia del server",
-          "edifici_osm_copia": "richieste di edifici OpenStreetMap dalla copia"}
+          "edifici_osm_copia": "richieste di edifici OpenStreetMap dalla copia",
+          "psicro": "serie orarie di temperatura e umidità"}
 # 429 con Retry-After (09/11/2026): la pagina ferma per quel tempo le richieste della fonte e lo dice sotto la mappa. Si
 # indica quando si libera almeno il 10 % del limite (con un solo posto libero la pagina ripartirebbe e riprenderebbe 429).
 QUOTA_RIPRESA = 0.10

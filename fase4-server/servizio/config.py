@@ -57,6 +57,16 @@ CLIMA_DATE = [tuple(int(x) for x in d.split("/")) for d in os.environ.get("CLIMA
 CLIMA_LAVORO = Path(os.environ.get("CLIMA_LAVORO", str(DATI / "clima_lavoro")))   # comuni.parquet, cache, registri
 CLIMA_CODICE = Path(os.environ.get("CLIMA_CODICE", "/app/clima_storico"))           # script della fase 9
 
+# archivio psicrometrico (menu «Trattamento aria», 14/11/2026; servizio/psicro.py, fase 3 meteo_storico/psicro.py):
+# temperatura e umidità orarie dal 1940 per comune, un file per comune (cartella nel container; sul server
+# /srv/energia/dati/psicro). Serie per IP all'ora (oltre ai limiti delle rotte dei dati: una serie lunga pesa ~1,5 MB
+# compressa). Aggiornamento notturno dal worker dopo lo storico: ore ICON del server e, per gli altri comuni, ERA5 da S3
+# (PSICRO_S3=false: solo ICON); al più PSICRO_GIORNI_MAX giorni indietro.
+CARTELLA_PSICRO = Path(os.environ.get("CARTELLA_PSICRO") or str(DATI / "psicro"))
+PSICRO_ORA = int(os.environ.get("PSICRO_ORA", "120"))
+PSICRO_S3 = os.environ.get("PSICRO_S3", "true").lower() not in ("false", "0", "no", "spento")
+PSICRO_GIORNI_MAX = int(os.environ.get("PSICRO_GIORNI_MAX", "45"))
+
 # report scaricabili (pdf, xlsx, ods; docx e odt spenti dal 28/10/2026): limiti del documento ricevuto e font per il PDF
 REPORT_MAX_MB = float(os.environ.get("REPORT_MAX_MB", "5"))                    # corpo JSON della richiesta
 REPORT_MAX_SEZIONI = int(os.environ.get("REPORT_MAX_SEZIONI", "50"))

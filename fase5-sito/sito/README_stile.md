@@ -359,11 +359,11 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
 
 ## Menu a gruppi (dal 03/11/2026)
 
-- Seconda riga della testata: sei gruppi di servizi (Clima e meteo, Patrimonio, Edificio, Cogenerazione,
+- Seconda riga della testata: sette gruppi di servizi dal 14/11/2026 (Clima e meteo, Patrimonio, Edificio, Trattamento aria, Cogenerazione,
   Fotovoltaico e, dal 05/11/2026, **Statistiche** con «Costi energetici Sanità»), ognuno un `<details class="voce-gruppo">` con `<summary>` (titolo con la freccina) e
   `<ul class="tendina">`. Il gruppo della pagina aperta ha `data-attivo` (sottolineato nel colore `--primario`), la voce
   `aria-current="page"`: li mette `costruisci_pagine.py`.
-- La tendina è un riquadro `--foglio` con `--ombra-2`, voci alte almeno 2,6rem; gli ultimi due gruppi si aprono verso
+- La tendina è un riquadro `--foglio` con `--ombra-2`, voci alte almeno 2,6rem; gli ultimi tre gruppi (dal 14/11/2026) si aprono verso
   sinistra per non uscire dalla finestra. Le voci non ancora pronte hanno l'etichetta `.cantiere` («in sviluppo» o
   «licenza GME»).
 - **Comportamento dal 04/11/2026** (`aspetto.js`; senza JavaScript il clic apre e chiude la tendina come prima):
@@ -398,6 +398,10 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
   Le pagine restano; sulla loro pagina la voce ha `aria-current` e il gruppo `data-attivo`.
 - Sotto gli 861 px la seconda riga sparisce: i gruppi sono `<details class="pannello-gruppo">` richiudibili dentro il
   pulsante Menu, con quello della pagina già aperto; poi «Altre pagine» e «Aspetto».
+- **Esempi** e **Contributi** (15/11/2026) tra le voci informative della prima riga (e tra le «Altre pagine» del
+  telefono): … Novità · Esempi · Contributi · Contattaci. Esempi era all'inizio l'ultima voce della seconda riga
+  (`a.voce-diretta`), spostato la sera del 15/11. Da 861 px la riga dei gruppi va a capo quando non ci sta (sotto
+  ~1.000 px due righe, approvato da Paolo) e `aspetto.js` gira le tendine che uscirebbero dalla finestra.
 - Voci informative (Come funziona, F.A.Q., Sitografia, Mirror, Contattaci) nella prima riga a destra; «Indicatori» è
   diventato «Costi energetici Sanità» nel gruppo Statistiche (05/11/2026, stesso indirizzo `indicatori.html`).
 - **Etichette brevi** (05/11/2026, seconda pubblicazione) nella tendina e quindi nella riga fissata, che la copia:
@@ -494,3 +498,34 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
   { width: 100% }` vale per ogni SVG: un'icona va sempre dimensionata con un selettore più forte.
 - **Alberi indicativi da OpenStreetMap** (09/11/2026 d): verde chiaro `#a9c98a`, distinto dalle chiome LiDAR (dal `#3f6f2f`
   al `#86b860` secondo l'altezza).
+
+## Trattamento aria: diagramma dell'aria, passo 1 e gruppi di ore (14/11/2026)
+
+- **Menu**: gruppo «Trattamento aria» con il sottotitolo non cliccabile «Psicrometria» (`li.voce-sottotitolo`: maiuscoletto
+  `--c-xs` in `--tenue`, nella riga nera `--tenue-riga`); le voci hanno la «S» come le altre sperimentali.
+- **Layout** (`main.strumento.pagina-aria`): la colonna sinistra non è fissa (mappa alta `clamp(240px, 38vh, 440px)` e sotto
+  il diagramma), la pagina scorre; il divisore funziona come nelle altre pagine.
+- **Diagramma** (`diagramma_aria.js`): canvas nitido con `devicePixelRatio`, ridisegnato a `eugenio:aspetto`,
+  `eugenio:ridimensiona` e al cambio di larghezza. Pulsanti a pillola «Psicrometrico» / «Mollier» (`.aria-vista`, scelto =
+  fondo `--primario`), a destra il pulsante ↗ di `grafici.js` (il riquadro mostra lo stesso disegno in SVG, con zoom e
+  suggerimenti). Scale fisse del foglio Excel: T −10…50 °C e x 0…30 g/kg (x a destra); Mollier x 0…30 g/kg e Y −10…50.
+  Colori: nel tema chiaro e nelle immagini quelli del foglio (saturazione nera 2,25 px, UR grigie `#7F7F7F`, entalpia
+  `#2E75B6`, volume `#548235` tratteggiato `5 3`, isoterme `#C9C9C9` e ogni 5 °C `#7F7F7F`, griglia `#BFBFBF`/`#E7E6E6`);
+  nel tema scuro inchiostro, `--tenue` e `--linea` del tema, entalpia `#6EA8DE`, volume `#8CC46A`. ESTATE blu `#0070C0`
+  (scuro `#4DA3FF`), INVERNO rosso `#C00000` (scuro `#FF6B6B`): colori `"estate"` e `"inverno"` degli strati. Scritte
+  12 px (tacche e titoli degli assi) e 10,5 px (curve); le etichette delle curve che si sovrapporrebbero si saltano, quelle
+  dei punti hanno la precedenza e un fondo.
+- **Nuvole di punti**: accumulo per pixel su un canvas a parte (o celle di densità, `modo: "densita"`), trasparenza che
+  scende con il numero di punti (25/√n, tra 0,03 e 0,9) così le zone fitte sono più piene; colori delle serie `--serie-1…6`
+  (i gruppi di ore usano `--serie-1…4`).
+- **Immagini** «Scarica l'immagine: PNG SVG» (1200 × 840 px, PNG al doppio): fondo bianco e colori del foglio, fascia sotto
+  con titolo, avviso dei dati sintetici in rosso scuro, fonti, pressione e «Fonte: EuGEnio – eugenio.statocritico.it (CC BY
+  4.0) · vista del …», come le immagini delle mappe (`esporta_mappa.js`); stesso messaggio «Download avviato…» con il
+  collegamento «Salva …».
+- **Passo 1** (`scelta_aria.js`): «Comune» (elenco dei comuni della regione, o tocco sulla mappa), cursore a scatti
+  `input[type=range]` con le etichette sotto (`.aria-cursore-scala`), riga della disponibilità in `.aiuto`, messaggi in
+  `.messaggio`; in prova il riquadro giallo «Dati sintetici di prova». Livello di progetto: `fieldset.aria-livello-campi`
+  con due `select` (e il campo libero per «altro…»).
+- **Gruppi di ore** (`gruppi_ore.js`): un `fieldset.aria-gruppo` per gruppo con il bordo sinistro nel colore del gruppo,
+  campione, nome (va in legenda), «Mostra», «Togli»; pulsanti dei preset piccoli; campi data «gg/mm», ore 0–24, giorni;
+  conteggio delle ore sotto; «Aggiungi un gruppo» fino a 4.

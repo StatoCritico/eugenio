@@ -9,13 +9,13 @@
 <script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
 try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
-var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
+var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|aria|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261114a";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261114a"></script>
-<link rel="stylesheet" href="stile.css?v=20261114a">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261114a">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261114a">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261114b";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261114b"></script>
+<link rel="stylesheet" href="stile.css?v=20261114b">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261114b">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261114b">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
 </head>
@@ -23,7 +23,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261114a" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261114b" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -31,7 +31,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261114a">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261114b">Novità</a>
+      <a href="esempi.html">Esempi</a>
+      <a href="contributi.html">Contributi</a>
       <a href="contatti.html">Contattaci</a>
     </nav>
     <details class="menu-tutto">
@@ -47,6 +49,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <details class="pannello-gruppo" data-gruppo="edificio"><summary>Edifici</summary>
           <ul><li><a href="edificio-obblighi.html">Obblighi di legge <span class="cantiere prova">sperimentale</span></a></li><li><a href="edificio-geometria.html">Geometria e luce naturale <span class="cantiere prova">sperimentale</span></a></li><li><a href="edificio-consumi.html">Consumi, firma energetica e priorità <span class="cantiere prova">sperimentale</span></a></li><li><span class="voce-gme voce-corso" data-pagina="edificio-fabbisogno.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Fabbisogno con le metodiche UNI</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-involucro.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Facciate e tetti: sole, tetti freddi e verdi</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-impianti.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Pompe di calore e solare termico</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-ecobonus.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Ecobonus</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-conto-termico.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Conto Termico</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li></ul>
         </details>
+        <details class="pannello-gruppo" data-gruppo="aria"><summary>Trattamento aria</summary>
+          <ul><li class="voce-sottotitolo">Psicrometria</li><li><a href="aria-trasformazioni.html">Trasformazioni (UTA) <span class="cantiere prova">sperimentale</span></a></li><li><a href="aria-ore.html">Ore di funzionamento <span class="cantiere prova">sperimentale</span></a></li><li><a href="aria-latenti.html">Carichi latenti <span class="cantiere prova">sperimentale</span></a></li><li><a href="aria-freecooling.html">Free cooling e recupero <span class="cantiere prova">sperimentale</span></a></li></ul>
+        </details>
         <details class="pannello-gruppo" data-gruppo="cogenerazione"><summary>Cogenerazione</summary>
           <ul><li><span class="voce-gme" data-pagina="cog-spark-spread.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Spark spread di autoconsumo</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme" data-pagina="cog-simulazione.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Cogeneratore sull'edificio, con FV e accumulo</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme" data-pagina="cog-confronto.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Confronto tra alternative e trigenerazione</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme voce-corso" data-pagina="cog-emissioni.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Emissioni</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme" data-pagina="cog-rischio.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Rischio prezzo elettricità e gas</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li><li><span class="voce-gme" data-pagina="cog-car.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Budget di dissipazione CAR</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li></ul>
         </details>
@@ -57,7 +62,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html" aria-current="page">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261114a">Novità</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
+        <ul><li><a href="metodo.html" aria-current="page">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261114b">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -104,6 +109,14 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
             <li><span class="voce-gme voce-corso" data-pagina="edificio-impianti.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Pompe di calore e solare termico</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
             <li><span class="voce-gme voce-corso" data-pagina="edificio-ecobonus.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Ecobonus</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
             <li><span class="voce-gme voce-corso" data-pagina="edificio-conto-termico.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Conto Termico</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li>
+          </ul></details></li>
+        <li><details class="voce-gruppo" data-gruppo="aria"><summary>Trattamento aria</summary>
+          <ul class="tendina">
+            <li class="voce-sottotitolo">Psicrometria</li>
+            <li><a href="aria-trasformazioni.html">Trasformazioni (UTA) <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="aria-ore.html">Ore di funzionamento <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="aria-latenti.html">Carichi latenti <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="aria-freecooling.html">Free cooling e recupero <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
           </ul></details></li>
         <li><details class="voce-gruppo" data-gruppo="cogenerazione"><summary>Cogenerazione</summary>
           <ul class="tendina">
@@ -370,6 +383,104 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     2:1. Il report (PDF, Excel o ODS) contiene, nell'ordine, i totali e i costi unitari medi, le mappe, i diagrammi di
     Pareto dei consumi e poi dei costi, le tabelle dei consumi e poi dei costi; in Excel e ODS solo totali e tabelle.</p>
 
+  <h2 id="trattamento-aria">Trattamento aria</h2>
+  <p>Le quattro pagine del menu Trattamento aria (sperimentali) fanno i calcoli di psicrometria, cioè dell'aria umida,
+    con il clima vero del comune scelto invece che con pochi valori di tabella. Tutti i calcoli si fanno nel browser: al
+    server va solo la richiesta della serie meteo del comune.</p>
+  <h3 id="aria-dati">Da dove vengono i dati</h3>
+  <p>Per ogni comune c'è una serie <strong>oraria</strong> di temperatura e umidità relativa. Dal 1940 viene dalla rianalisi
+    <a href="https://cds.climate.copernicus.eu">ERA5</a> e, dal 1950, da ERA5-Land dove c'è (celle più piccole): temperatura e
+    punto di rugiada, riportati alla quota del comune con 6,5 °C ogni 1000 m, da cui si ricava l'umidità relativa. Per gli
+    anni recenti, dove il server ha anche la serie oraria ERA5 corretta verso ICON (la stessa della
+    <a href="#previsione">previsione dei consumi</a>, dal 2015) o l'archivio ICON (dal 14/11/2022), ora per ora si usa
+    quella. Le fonti usate davvero per il comune scelto, periodo per periodo, sono scritte al passo 1 sotto la scelta della
+    serie e nelle immagini scaricate. Le ore sono salvate in tempo universale (UTC) e le pagine le portano all'ora italiana,
+    con l'ora legale: dal 1996 la regola europea (ultima domenica di marzo – ultima domenica di ottobre), prima le date
+    storiche italiane (1940–1948 periodi di guerra e dopoguerra, nessuna ora legale dal 1949 al 1965, dal 1966 al 1979 da
+    fine maggio a fine settembre, dal 1980 al 1995 da fine marzo a fine settembre). La pressione atmosferica viene dalla quota
+    del comune (atmosfera standard). Finché l'archivio dal 1940 di un comune non è sul server, le pagine usano la serie
+    oraria ICON dal 14/11/2022 (circa quattro anni) e lo scrivono al passo 1.</p>
+  <p>Al passo 1 si sceglie il comune sulla mappa e quanti anni usare: ultimo anno, 2, 5, 10, 20 o tutta la serie. La scelta
+    vale per tutte e quattro le pagine.</p>
+  <h3 id="aria-progetto">Condizioni di progetto</h3>
+  <p>Le condizioni esterne di progetto sono <strong>statistiche della serie scelta</strong>, non i valori delle norme. In
+    inverno si prende la temperatura superata nel 99 % delle ore, con l'umidità media delle ore vicine a quella
+    temperatura; in estate la temperatura superata solo nell'1 % delle ore, con il bulbo umido medio (oppure l'entalpia o
+    l'umidità specifica dell'1 %). Il livello si cambia (99,6 · 99 · 95 % in inverno, 0,4 · 1 · 5 % in estate, o un valore
+    scritto a mano) e i valori che ne escono si possono correggere a mano nelle tabelle delle pagine.</p>
+  <h3 id="aria-formule">Formule</h3>
+  <p>Le proprietà dell'aria umida (pressione di saturazione di Hyland e Wexler, umidità specifica, entalpia, volume
+    specifico, punto di rugiada, bulbo umido) sono quelle dell'ASHRAE Handbook – Fundamentals 2017, capitolo 1, le stesse
+    della libreria <a href="https://github.com/psychrometrics/psychrolib">psychrolib</a>, che usiamo solo per verificare
+    i nostri calcoli. Vicino a 0 °C l'equazione del bulbo umido cambia tra acqua e ghiaccio e può avere due soluzioni:
+    scegliamo la stessa di psychrolib. Le stesse formule sono nel foglio psicro_UTA.xlsx e in un gemello in Python, controllato con prove
+    di parità. Il diagramma si mostra come psicrometrico (temperatura in ascissa, umidità specifica in ordinata) o di
+    Mollier, sulla stessa scala del foglio: da −10 a 50 °C e da 0 a 30 g/kg.</p>
+  <h3 id="aria-trasformazioni">Trasformazioni (UTA)</h3>
+  <p>La pagina <a href="aria-trasformazioni.html">Trasformazioni (UTA)</a> rifà nel browser il foglio di calcolo
+    psicro_UTA.xlsx, che si può anche scaricare: stessi dati, stesse formule e stessi risultati. Si scelgono la portata
+    d'aria, la quota di aria esterna, le condizioni dell'ambiente e i carichi (in inverno le dispersioni da coprire con
+    l'aria). Da questi dati la pagina ricava il punto di immissione I (T<sub>imm</sub> = T<sub>amb</sub> ∓
+    Q<sub>s</sub>/(ṁ·c<sub>p</sub>), x<sub>imm</sub> = x<sub>amb</sub> − Q<sub>l</sub>/(ṁ·2501)) e il fattore termico R.
+    Poi calcola una sequenza di trasformazioni, una riga dopo l'altra: miscela con il ricircolo, recuperatore, batterie
+    calde e fredde (modello con fattore di bypass e ADP), umidificazione adiabatica o a vapore, post-riscaldamento e
+    ventilatore. Per ogni riga dà lo stato in uscita, le potenze sensibile, latente e totale (Q = ṁ·Δh sulla portata di
+    aria secca) e l'acqua condensata o aggiunta. Il parametro AUTO collega le batterie al punto di immissione, come nel
+    foglio. La stima stagionale del foglio è solo indicativa: considera il calore sensibile dell'aria di rinnovo, con i
+    gradi giorno del DPR 412/93 del comune. Si scaricano il foglio compilato con i propri dati (preparato nel browser) e
+    un CSV o un JSON della configurazione e dei risultati.</p>
+  <h3 id="aria-ore">Ore di funzionamento</h3>
+  <p>Invece dei soli punti di progetto, la pagina <a href="aria-ore.html">Ore di funzionamento</a> disegna sul diagramma
+    tutte le ore della serie: ogni ora è un punto con la sua temperatura e la sua umidità. Le ore si dividono in quattro
+    gruppi, ognuno con il suo colore: per ogni gruppo si scelgono gli ultimi anni (1, 2, 5, 10, 20 o tutta la serie), le
+    date (ripetute ogni anno, anche a cavallo d'anno) e le ore del giorno in ora locale, con «dalle» compresa e «alle»
+    esclusa: le ore d'ufficio 8–18 sono dalle 8:00 alle 17:59, nei giorni feriali. Di ogni gruppo la pagina dà le ore
+    totali e le ore l'anno (anno medio di 8.766 ore), temperatura minima, media e massima, umidità media, percentili 1, 50
+    e 99 % di umidità specifica ed entalpia, bulbo umido massimo e le condizioni di progetto al livello scelto. Conta poi
+    le ore per classe di temperatura (2 K) e di umidità specifica (1 g/kg) con i valori medi coincidenti (il «metodo dei
+    bin»). Con una zona di comfort (per esempio 20–26 °C e UR 30–60 %) conta le ore dentro e fuori: sotto il minimo
+    riscaldamento, sopra il massimo raffreddamento sensibile fino al limite più vicino; poi, se l'umidità relativa resta
+    sotto il minimo, umidificazione, se resta sopra il massimo, deumidificazione.</p>
+  <h3 id="aria-latenti">Carichi latenti</h3>
+  <p>La pagina <a href="aria-latenti.html">Carichi latenti</a> confronta, ora per ora, l'umidità specifica dell'aria
+    esterna con quella della condizione interna scelta (predefinite 26 °C e 50 % d'estate, 20 °C e 40 % d'inverno, ultimi
+    10 anni). D'estate l'umidità relativa interna è un <strong>massimo</strong>: un'ora richiede deumidificazione quando
+    x esterna supera x interna, e l'energia latente per trattare l'aria esterna è ṁ·(x<sub>e</sub> − x<sub>t</sub>)·2501
+    kJ/kg, con la condensa ṁ·(x<sub>e</sub> − x<sub>t</sub>). D'inverno è un <strong>minimo</strong>: un'ora richiede
+    umidificazione a vapore quando x esterna è sotto x interna, e l'energia è ṁ·(x<sub>t</sub> − x<sub>e</sub>)·2676
+    kJ/kg (entalpia del vapore, come nel foglio), con l'acqua ṁ·(x<sub>t</sub> − x<sub>e</sub>). La portata di aria
+    secca ṁ viene dalla portata in volume (predefinita 1.000 m³/h) divisa per il volume specifico dell'aria esterna di
+    ogni ora (o dell'aria interna, dell'aria standard a 20 °C, o con una densità fissa di 1,2 kg/m³). I valori all'anno
+    sono le somme sulle ore del gruppo divise per gli anni; la potenza di progetto è quella superata solo nella
+    percentuale di ore scelta (predefinito 1 %); la curva di durata mette in fila le potenze dalla più alta alla più
+    bassa. Per contesto la pagina dà anche la parte sensibile, il totale in entalpia e il fattore SHR. È il carico della
+    sola aria esterna, senza carichi interni né recuperatori.</p>
+  <h3 id="aria-freecooling">Free cooling e recupero</h3>
+  <p>La pagina <a href="aria-freecooling.html">Free cooling e recupero</a> guarda ora per ora un'UTA a tutt'aria con le
+    scelte dell'utente: portata, aria esterna minima, condizioni dell'ambiente d'estate e d'inverno, temperatura di
+    mandata, efficienze del recuperatore. Un'ora è «di raffrescamento» se la temperatura esterna supera la temperatura di
+    bilancio (predefinita 12 °C), altrimenti è «di riscaldamento». Nelle ore di raffrescamento il <strong>free
+    cooling</strong> confronta la batteria fredda che tratta la miscela con l'aria esterna minima con quella che tratta
+    l'aria scelta dall'economizzatore: se l'aria esterna è più fredda della mandata la batteria si spegne (free cooling
+    totale); se è più fresca della ripresa (economizzatore a temperatura) o ha meno entalpia della ripresa e non è troppo
+    umida (economizzatore entalpico) si prende solo aria esterna (parziale). Il <strong>recuperatore</strong> scalda
+    l'aria esterna in inverno e la raffredda in estate quando l'economizzatore è spento, con la formula del foglio
+    (T = T<sub>e</sub> + ε<sub>s</sub>·(T<sub>amb</sub> − T<sub>e</sub>), x = x<sub>e</sub> + ε<sub>l</sub>·(x<sub>amb</sub>
+    − x<sub>e</sub>)). Si contano anche le ore a rischio di brina (aria espulsa che esce sotto 0 °C e sotto la sua rugiada,
+    oppure aria esterna sotto una soglia, predefinita −5 °C), l'energia persa se lo sbrinamento apre il by-pass e
+    l'elettricità in più dei ventilatori per la perdita di carico del recuperatore. I risultati sono per anno medio, per
+    gruppo di ore e mese per mese.</p>
+  <h3 id="aria-limiti">Limiti</h3>
+  <ul>
+    <li>Le pagine sono sperimentali: i calcoli sono verificati con il foglio e con psychrolib, ma vanno ancora provati su
+      casi reali.</li>
+    <li>Sono statistiche del clima del comune, non valori di norma: per la relazione tecnica restano i valori ufficiali.</li>
+    <li>Free cooling e carichi latenti stimano il potenziale del clima: niente sole, inerzia dell'edificio o regolazioni
+      reali.</li>
+    <li>La rianalisi ha celle di qualche chilometro: in valli strette, sulla costa o in città il clima del punto può
+      essere diverso.</li>
+  </ul>
+
   <h2 id="indicatori">Costi energetici Sanità</h2>
   <p>La pagina <a href="indicatori.html">Costi energetici Sanità</a> (menu Statistiche; fino al 05/11/2026 si chiamava
     «Indicatori») mostra quanto spendono per l'energia gli enti del Servizio
@@ -445,8 +556,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <li><a href="https://www.dwd.de">DWD</a>, il servizio meteorologico tedesco: modello ICON e archivio delle sue previsioni dal
       novembre 2022, il riferimento della correzione.</li>
     <li><a href="https://www.ecmwf.int">ECMWF</a>, il centro meteorologico europeo: modello IFS, fino a 15 giorni.</li>
-    <li><a href="https://cds.climate.copernicus.eu">Copernicus Climate Change Service</a>: rianalisi ERA5 ed ERA5-Land dal 2015
-      (licenza Copernicus, uso libero con citazione).</li>
+    <li><a href="https://cds.climate.copernicus.eu">Copernicus Climate Change Service</a>: rianalisi ERA5 (dal 1940) ed ERA5-Land
+      (dal 1950): dal 2015 per la serie corretta, dal 1940 per il clima storico e per la serie oraria di temperatura e
+      umidità del Trattamento aria (licenza Copernicus, uso libero con citazione).</li>
     <li><a href="https://try.cti2000.it/">CTI – Comitato Termotecnico Italiano</a>: anni tipo climatici di 110 località
       (versione 3, 2015-2016), usati sul nostro computer per calcolare gli indicatori della
       <a href="#anno-tipo-cti">sezione «L'anno tipo del CTI»</a>; i dati non si ripubblicano, gli indicatori si
@@ -498,6 +610,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 
   <h3>Norme</h3>
   <ul>
+    <li>ASHRAE Handbook – Fundamentals 2017, capitolo 1 «Psychrometrics»: le formule dell'aria umida delle pagine
+      Trattamento aria (solo le formule, nessun testo riprodotto); verifiche con la libreria
+      <a href="https://github.com/psychrometrics/psychrolib">psychrolib</a> (licenza MIT).</li>
     <li><a href="https://www.normattiva.it/">Normattiva</a>, il portale della legge vigente (Istituto Poligrafico e
       Zecca dello Stato): <a href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.del.presidente.della.repubblica:1993-08-26;412!vig=">DPR 26 agosto 1993, n. 412</a>, Allegato A (gradi giorno, zone climatiche e
       altitudini dei comuni), nel testo vigente. Gli atti normativi non sono coperti da diritto d'autore
@@ -528,11 +643,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 
 <footer class="piede">
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261114a" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261114b" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
   <!-- /piede -->
 </footer>
-<script src="aspetto.js?v=20261114a"></script>
+<script src="aspetto.js?v=20261114b"></script>
 <script>
 "use strict";
 const NOMI = {
@@ -562,6 +677,6 @@ fetch("/api/metodologia").then((r) => r.json()).then((d) => {
   document.getElementById("metriche").innerHTML = "<p class='aiuto'>Risultati non disponibili in questo momento.</p>";
 });
 </script>
-<script src="indice.js?v=20261114a"></script>
+<script src="indice.js?v=20261114b"></script>
 </body>
 </html>

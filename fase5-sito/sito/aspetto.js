@@ -298,7 +298,17 @@
     titolo.setAttribute("aria-describedby", desc.id);
     suggerimento(d);
 
-    d.addEventListener("toggle", () => { if (d.open) chiudiGruppi(d); });
+    // (15/11/2026) con la barra su due righe (sotto i 1.200 px circa) un gruppo può stare a sinistra pur essendo tra gli
+    // ultimi: la tendina che uscirebbe dalla finestra si gira dall'altra parte
+    const allinea = () => {
+      const t = d.querySelector(".tendina");
+      if (!t) return;
+      t.classList.remove("a-destra", "a-sinistra");
+      const b = t.getBoundingClientRect();
+      if (b.left < 0) t.classList.add("a-sinistra");
+      else if (b.right > document.documentElement.clientWidth) t.classList.add("a-destra");
+    };
+    d.addEventListener("toggle", () => { if (d.open) { chiudiGruppi(d); allinea(); } });
 
     // passaggio del mouse: apre la tendina (non quella del gruppo fissato), la chiude poco dopo l'uscita
     let timer = 0;

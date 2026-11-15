@@ -1,0 +1,1343 @@
+{
+ "default_sheet": "UTA",
+ "cases": [
+  {
+   "name": "a_5000",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": "ref:inputs.V_m3h",
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D18": "ref:inputs.T_oa_C",
+    "UTA!D19": "ref:inputs.RH_oa_pct",
+    "UTA!D20": "ref:inputs.T_room_C",
+    "UTA!D21": "ref:inputs.RH_room_pct",
+    "UTA!D22": {
+     "ref": "inputs.Qs_kW",
+     "scale": 1000
+    },
+    "UTA!D23": {
+     "ref": "inputs.Ql_kW",
+     "scale": 1000
+    },
+    "UTA!C28": {
+     "value": "Miscela con ricircolo"
+    },
+    "UTA!D28": {
+     "value": "AUTO"
+    },
+    "UTA!E28": {
+     "value": null
+    },
+    "UTA!F28": {
+     "value": null
+    },
+    "UTA!C29": {
+     "value": "Raffreddamento con deumidificazione"
+    },
+    "UTA!D29": {
+     "value": "AUTO"
+    },
+    "UTA!E29": {
+     "value": 0.1
+    },
+    "UTA!F29": {
+     "value": null
+    },
+    "UTA!C30": {
+     "value": "Post-riscaldamento"
+    },
+    "UTA!D30": {
+     "value": "AUTO"
+    },
+    "UTA!E30": {
+     "value": null
+    },
+    "UTA!F30": {
+     "value": null
+    },
+    "UTA!C31": {
+     "value": "Ventilatore"
+    },
+    "UTA!D31": {
+     "value": 0.7
+    },
+    "UTA!E31": {
+     "value": null
+    },
+    "UTA!F31": {
+     "value": null
+    },
+    "UTA!C32": {
+     "value": "Nessuna"
+    },
+    "UTA!D32": {
+     "value": null
+    },
+    "UTA!E32": {
+     "value": null
+    },
+    "UTA!F32": {
+     "value": null
+    },
+    "UTA!C33": {
+     "value": "Nessuna"
+    },
+    "UTA!D33": {
+     "value": null
+    },
+    "UTA!E33": {
+     "value": null
+    },
+    "UTA!F33": {
+     "value": null
+    }
+   },
+   "outputs": {
+    "UTA!H9": "m_da_kgs",
+    "UTA!H20": "supply_T_imm_C",
+    "UTA!J20": "supply_x_imm_gkg",
+    "UTA!H18": "states.OA.T_C",
+    "UTA!J18": "states.OA.x_gkg",
+    "UTA!K18": "states.OA.h_kJkg",
+    "UTA!I18": "states.OA.RH_pct",
+    "UTA!N18": "states.OA.v_m3kg",
+    "UTA!L18": "states.OA.Tdew_C",
+    "UTA!M18": "states.OA.Twb_C",
+    "UTA!H19": "states.ROOM.T_C",
+    "UTA!J19": "states.ROOM.x_gkg",
+    "UTA!K19": "states.ROOM.h_kJkg",
+    "UTA!I19": "states.ROOM.RH_pct",
+    "UTA!N19": "states.ROOM.v_m3kg",
+    "UTA!L19": "states.ROOM.Tdew_C",
+    "UTA!M19": "states.ROOM.Twb_C",
+    "UTA!H29": "states.COIL_OUT.T_C",
+    "UTA!J29": "states.COIL_OUT.x_gkg",
+    "UTA!K29": "states.COIL_OUT.h_kJkg",
+    "UTA!I29": "states.COIL_OUT.RH_pct",
+    "UTA!N29": "states.COIL_OUT.v_m3kg",
+    "UTA!L29": "states.COIL_OUT.Tdew_C",
+    "UTA!M29": "states.COIL_OUT.Twb_C",
+    "Calcoli!AH58": "states.ADP.T_C",
+    "UTA!H30": "variant_postheat_to_Timm_minus_fan.postheat_out_T_C",
+    "UTA!H31": "variant_postheat_to_Timm_minus_fan.supply_T_C",
+    "UTA!D36": "powers.cooling_total_kW",
+    "UTA!D37": "powers.cooling_sensible_kW",
+    "UTA!D38": "powers.cooling_latent_kW",
+    "UTA!D40": "variant_postheat_to_Timm_minus_fan.postheat_kW",
+    "UTA!D41": "powers.condensate_kgh",
+    "UTA!D44": "powers.fan_heat_kW",
+    "UTA!H40": {
+     "expect": "SÌ",
+     "label": "punto di immissione raggiungibile"
+    }
+   }
+  },
+  {
+   "name": "b_5000",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": "ref:inputs.V_m3h",
+    "UTA!D11": 70,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D18": "ref:inputs.T_oa_C",
+    "UTA!D19": "ref:inputs.RH_oa_pct",
+    "UTA!D20": "ref:inputs.T_room_C",
+    "UTA!D21": "ref:inputs.RH_room_pct",
+    "UTA!D22": {
+     "ref": "inputs.Qs_kW",
+     "scale": 1000
+    },
+    "UTA!D23": {
+     "ref": "inputs.Ql_kW",
+     "scale": 1000
+    },
+    "UTA!C28": {
+     "value": "Miscela con ricircolo"
+    },
+    "UTA!D28": {
+     "value": "AUTO"
+    },
+    "UTA!E28": {
+     "value": null
+    },
+    "UTA!F28": {
+     "value": null
+    },
+    "UTA!C29": {
+     "value": "Raffreddamento con deumidificazione"
+    },
+    "UTA!D29": {
+     "value": "AUTO"
+    },
+    "UTA!E29": {
+     "value": 0.1
+    },
+    "UTA!F29": {
+     "value": null
+    },
+    "UTA!C30": {
+     "value": "Post-riscaldamento"
+    },
+    "UTA!D30": {
+     "value": "AUTO"
+    },
+    "UTA!E30": {
+     "value": null
+    },
+    "UTA!F30": {
+     "value": null
+    },
+    "UTA!C31": {
+     "value": "Ventilatore"
+    },
+    "UTA!D31": {
+     "value": 0.7
+    },
+    "UTA!E31": {
+     "value": null
+    },
+    "UTA!F31": {
+     "value": null
+    },
+    "UTA!C32": {
+     "value": "Nessuna"
+    },
+    "UTA!D32": {
+     "value": null
+    },
+    "UTA!E32": {
+     "value": null
+    },
+    "UTA!F32": {
+     "value": null
+    },
+    "UTA!C33": {
+     "value": "Nessuna"
+    },
+    "UTA!D33": {
+     "value": null
+    },
+    "UTA!E33": {
+     "value": null
+    },
+    "UTA!F33": {
+     "value": null
+    }
+   },
+   "outputs": {
+    "UTA!H9": "m_da_kgs",
+    "UTA!H20": "supply_T_imm_C",
+    "UTA!J20": "supply_x_imm_gkg",
+    "UTA!H18": "states.OA.T_C",
+    "UTA!J18": "states.OA.x_gkg",
+    "UTA!K18": "states.OA.h_kJkg",
+    "UTA!I18": "states.OA.RH_pct",
+    "UTA!N18": "states.OA.v_m3kg",
+    "UTA!L18": "states.OA.Tdew_C",
+    "UTA!M18": "states.OA.Twb_C",
+    "UTA!H19": "states.ROOM.T_C",
+    "UTA!J19": "states.ROOM.x_gkg",
+    "UTA!K19": "states.ROOM.h_kJkg",
+    "UTA!I19": "states.ROOM.RH_pct",
+    "UTA!N19": "states.ROOM.v_m3kg",
+    "UTA!L19": "states.ROOM.Tdew_C",
+    "UTA!M19": "states.ROOM.Twb_C",
+    "UTA!H28": "states.MIX.T_C",
+    "UTA!J28": "states.MIX.x_gkg",
+    "UTA!K28": "states.MIX.h_kJkg",
+    "UTA!I28": "states.MIX.RH_pct",
+    "UTA!N28": "states.MIX.v_m3kg",
+    "UTA!L28": "states.MIX.Tdew_C",
+    "UTA!M28": "states.MIX.Twb_C",
+    "UTA!H29": "states.COIL_OUT.T_C",
+    "UTA!J29": "states.COIL_OUT.x_gkg",
+    "UTA!K29": "states.COIL_OUT.h_kJkg",
+    "UTA!I29": "states.COIL_OUT.RH_pct",
+    "UTA!N29": "states.COIL_OUT.v_m3kg",
+    "UTA!L29": "states.COIL_OUT.Tdew_C",
+    "UTA!M29": "states.COIL_OUT.Twb_C",
+    "Calcoli!AH58": "states.ADP.T_C",
+    "UTA!H30": "variant_postheat_to_Timm_minus_fan.postheat_out_T_C",
+    "UTA!H31": "variant_postheat_to_Timm_minus_fan.supply_T_C",
+    "UTA!D36": "powers.cooling_total_kW",
+    "UTA!D37": "powers.cooling_sensible_kW",
+    "UTA!D38": "powers.cooling_latent_kW",
+    "UTA!D40": "variant_postheat_to_Timm_minus_fan.postheat_kW",
+    "UTA!D41": "powers.condensate_kgh",
+    "UTA!D44": "powers.fan_heat_kW",
+    "UTA!H40": {
+     "expect": "SÌ",
+     "label": "punto di immissione raggiungibile"
+    }
+   }
+  },
+  {
+   "name": "a_1000",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": "ref:inputs.V_m3h",
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D18": "ref:inputs.T_oa_C",
+    "UTA!D19": "ref:inputs.RH_oa_pct",
+    "UTA!D20": "ref:inputs.T_room_C",
+    "UTA!D21": "ref:inputs.RH_room_pct",
+    "UTA!D22": {
+     "ref": "inputs.Qs_kW",
+     "scale": 1000
+    },
+    "UTA!D23": {
+     "ref": "inputs.Ql_kW",
+     "scale": 1000
+    },
+    "UTA!C28": {
+     "value": "Miscela con ricircolo"
+    },
+    "UTA!D28": {
+     "value": "AUTO"
+    },
+    "UTA!E28": {
+     "value": null
+    },
+    "UTA!F28": {
+     "value": null
+    },
+    "UTA!C29": {
+     "value": "Raffreddamento con deumidificazione"
+    },
+    "UTA!D29": {
+     "value": "AUTO"
+    },
+    "UTA!E29": {
+     "value": 0.1
+    },
+    "UTA!F29": {
+     "value": null
+    },
+    "UTA!C30": {
+     "value": "Post-riscaldamento"
+    },
+    "UTA!D30": {
+     "value": "AUTO"
+    },
+    "UTA!E30": {
+     "value": null
+    },
+    "UTA!F30": {
+     "value": null
+    },
+    "UTA!C31": {
+     "value": "Ventilatore"
+    },
+    "UTA!D31": {
+     "value": 0.7
+    },
+    "UTA!E31": {
+     "value": null
+    },
+    "UTA!F31": {
+     "value": null
+    },
+    "UTA!C32": {
+     "value": "Nessuna"
+    },
+    "UTA!D32": {
+     "value": null
+    },
+    "UTA!E32": {
+     "value": null
+    },
+    "UTA!F32": {
+     "value": null
+    },
+    "UTA!C33": {
+     "value": "Nessuna"
+    },
+    "UTA!D33": {
+     "value": null
+    },
+    "UTA!E33": {
+     "value": null
+    },
+    "UTA!F33": {
+     "value": null
+    }
+   },
+   "outputs": {
+    "UTA!H9": "m_da_kgs",
+    "UTA!H20": "supply_T_imm_C",
+    "UTA!J20": "supply_x_imm_gkg",
+    "UTA!H18": "states.OA.T_C",
+    "UTA!J18": "states.OA.x_gkg",
+    "UTA!K18": "states.OA.h_kJkg",
+    "UTA!I18": "states.OA.RH_pct",
+    "UTA!N18": "states.OA.v_m3kg",
+    "UTA!L18": "states.OA.Tdew_C",
+    "UTA!M18": "states.OA.Twb_C",
+    "UTA!H19": "states.ROOM.T_C",
+    "UTA!J19": "states.ROOM.x_gkg",
+    "UTA!K19": "states.ROOM.h_kJkg",
+    "UTA!I19": "states.ROOM.RH_pct",
+    "UTA!N19": "states.ROOM.v_m3kg",
+    "UTA!L19": "states.ROOM.Tdew_C",
+    "UTA!M19": "states.ROOM.Twb_C",
+    "UTA!H29": "states.COIL_OUT.T_C",
+    "UTA!J29": "states.COIL_OUT.x_gkg",
+    "UTA!K29": "states.COIL_OUT.h_kJkg",
+    "UTA!I29": "states.COIL_OUT.RH_pct",
+    "UTA!N29": "states.COIL_OUT.v_m3kg",
+    "UTA!L29": "states.COIL_OUT.Tdew_C",
+    "UTA!M29": "states.COIL_OUT.Twb_C",
+    "Calcoli!AH58": "states.ADP.T_C",
+    "UTA!H30": "variant_postheat_to_Timm_minus_fan.postheat_out_T_C",
+    "UTA!H31": "variant_postheat_to_Timm_minus_fan.supply_T_C",
+    "UTA!D36": "powers.cooling_total_kW",
+    "UTA!D37": "powers.cooling_sensible_kW",
+    "UTA!D38": "powers.cooling_latent_kW",
+    "UTA!D40": "variant_postheat_to_Timm_minus_fan.postheat_kW",
+    "UTA!D41": "powers.condensate_kgh",
+    "UTA!D44": "powers.fan_heat_kW",
+    "UTA!H40": {
+     "expect": "NO",
+     "label": "punto di immissione raggiungibile"
+    }
+   }
+  },
+  {
+   "name": "c_5000",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": "ref:inputs.V_m3h",
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D48": "ref:inputs.T_oa_C",
+    "UTA!D49": "ref:inputs.RH_oa_pct",
+    "UTA!D50": "ref:inputs.T_room_C",
+    "UTA!D51": "ref:inputs.RH_room_pct",
+    "UTA!D52": {
+     "ref": "inputs.Q_heat_loss_kW",
+     "scale": 1000
+    },
+    "UTA!D53": {
+     "ref": "inputs.Ql_gain_kW",
+     "scale": 1000
+    },
+    "UTA!C58": {
+     "value": "Recuperatore di calore"
+    },
+    "UTA!D58": "ref:inputs.eps_HR",
+    "UTA!E58": {
+     "value": null
+    },
+    "UTA!F58": {
+     "value": null
+    },
+    "UTA!C59": {
+     "value": "Miscela con ricircolo"
+    },
+    "UTA!D59": {
+     "value": "AUTO"
+    },
+    "UTA!E59": {
+     "value": null
+    },
+    "UTA!F59": {
+     "value": null
+    },
+    "UTA!C60": {
+     "value": "Preriscaldamento"
+    },
+    "UTA!D60": {
+     "value": "AUTO"
+    },
+    "UTA!E60": {
+     "value": null
+    },
+    "UTA!F60": {
+     "value": 90
+    },
+    "UTA!C61": {
+     "value": "Umidificazione adiabatica"
+    },
+    "UTA!D61": {
+     "value": "AUTO"
+    },
+    "UTA!E61": {
+     "value": null
+    },
+    "UTA!F61": {
+     "value": null
+    },
+    "UTA!C62": {
+     "value": "Post-riscaldamento"
+    },
+    "UTA!D62": {
+     "value": "AUTO"
+    },
+    "UTA!E62": {
+     "value": null
+    },
+    "UTA!F62": {
+     "value": null
+    },
+    "UTA!C63": {
+     "value": "Nessuna"
+    },
+    "UTA!D63": {
+     "value": null
+    },
+    "UTA!E63": {
+     "value": null
+    },
+    "UTA!F63": {
+     "value": null
+    }
+   },
+   "outputs": {
+    "UTA!I9": "m_da_kgs",
+    "UTA!H50": "supply_T_imm_C",
+    "UTA!J50": "supply_x_imm_gkg",
+    "UTA!H48": "states.OA.T_C",
+    "UTA!J48": "states.OA.x_gkg",
+    "UTA!K48": "states.OA.h_kJkg",
+    "UTA!I48": "states.OA.RH_pct",
+    "UTA!N48": "states.OA.v_m3kg",
+    "UTA!L48": "states.OA.Tdew_C",
+    "UTA!M48": "states.OA.Twb_C",
+    "UTA!H49": "states.ROOM.T_C",
+    "UTA!J49": "states.ROOM.x_gkg",
+    "UTA!K49": "states.ROOM.h_kJkg",
+    "UTA!I49": "states.ROOM.RH_pct",
+    "UTA!N49": "states.ROOM.v_m3kg",
+    "UTA!L49": "states.ROOM.Tdew_C",
+    "UTA!M49": "states.ROOM.Twb_C",
+    "UTA!H58": "states.HR_OUT.T_C",
+    "UTA!J58": "states.HR_OUT.x_gkg",
+    "UTA!K58": "states.HR_OUT.h_kJkg",
+    "UTA!I58": "states.HR_OUT.RH_pct",
+    "UTA!N58": "states.HR_OUT.v_m3kg",
+    "UTA!L58": "states.HR_OUT.Tdew_C",
+    "UTA!M58": "states.HR_OUT.Twb_C",
+    "UTA!H60": "states.PREHEAT_OUT.T_C",
+    "UTA!J60": "states.PREHEAT_OUT.x_gkg",
+    "UTA!K60": "states.PREHEAT_OUT.h_kJkg",
+    "UTA!I60": "states.PREHEAT_OUT.RH_pct",
+    "UTA!N60": "states.PREHEAT_OUT.v_m3kg",
+    "UTA!L60": "states.PREHEAT_OUT.Tdew_C",
+    "UTA!M60": "states.PREHEAT_OUT.Twb_C",
+    "UTA!H61": "states.HUM_OUT.T_C",
+    "UTA!J61": "states.HUM_OUT.x_gkg",
+    "UTA!K61": "states.HUM_OUT.h_kJkg",
+    "UTA!I61": "states.HUM_OUT.RH_pct",
+    "UTA!N61": "states.HUM_OUT.v_m3kg",
+    "UTA!L61": "states.HUM_OUT.Tdew_C",
+    "UTA!M61": "states.HUM_OUT.Twb_C",
+    "UTA!H62": "states.SUPPLY.T_C",
+    "UTA!J62": "states.SUPPLY.x_gkg",
+    "UTA!K62": "states.SUPPLY.h_kJkg",
+    "UTA!I62": "states.SUPPLY.RH_pct",
+    "UTA!N62": "states.SUPPLY.v_m3kg",
+    "UTA!L62": "states.SUPPLY.Tdew_C",
+    "UTA!M62": "states.SUPPLY.Twb_C",
+    "UTA!D73": "powers.heat_recovery_kW",
+    "UTA!D69": "powers.preheat_kW",
+    "UTA!D70": "powers.postheat_kW",
+    "UTA!D72": "powers.humidifier_water_kgh",
+    "UTA!H70": {
+     "expect": "SÌ",
+     "label": "punto di immissione raggiungibile"
+    }
+   }
+  },
+  {
+   "name": "c_1000",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": "ref:inputs.V_m3h",
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D48": "ref:inputs.T_oa_C",
+    "UTA!D49": "ref:inputs.RH_oa_pct",
+    "UTA!D50": "ref:inputs.T_room_C",
+    "UTA!D51": "ref:inputs.RH_room_pct",
+    "UTA!D52": {
+     "ref": "inputs.Q_heat_loss_kW",
+     "scale": 1000
+    },
+    "UTA!D53": {
+     "ref": "inputs.Ql_gain_kW",
+     "scale": 1000
+    },
+    "UTA!C58": {
+     "value": "Recuperatore di calore"
+    },
+    "UTA!D58": "ref:inputs.eps_HR",
+    "UTA!E58": {
+     "value": null
+    },
+    "UTA!F58": {
+     "value": null
+    },
+    "UTA!C59": {
+     "value": "Miscela con ricircolo"
+    },
+    "UTA!D59": {
+     "value": "AUTO"
+    },
+    "UTA!E59": {
+     "value": null
+    },
+    "UTA!F59": {
+     "value": null
+    },
+    "UTA!C60": {
+     "value": "Preriscaldamento"
+    },
+    "UTA!D60": {
+     "value": "AUTO"
+    },
+    "UTA!E60": {
+     "value": null
+    },
+    "UTA!F60": {
+     "value": 90
+    },
+    "UTA!C61": {
+     "value": "Umidificazione adiabatica"
+    },
+    "UTA!D61": {
+     "value": "AUTO"
+    },
+    "UTA!E61": {
+     "value": null
+    },
+    "UTA!F61": {
+     "value": null
+    },
+    "UTA!C62": {
+     "value": "Post-riscaldamento"
+    },
+    "UTA!D62": {
+     "value": "AUTO"
+    },
+    "UTA!E62": {
+     "value": null
+    },
+    "UTA!F62": {
+     "value": null
+    },
+    "UTA!C63": {
+     "value": "Nessuna"
+    },
+    "UTA!D63": {
+     "value": null
+    },
+    "UTA!E63": {
+     "value": null
+    },
+    "UTA!F63": {
+     "value": null
+    }
+   },
+   "outputs": {
+    "UTA!I9": "m_da_kgs",
+    "UTA!H50": "supply_T_imm_C",
+    "UTA!J50": "supply_x_imm_gkg",
+    "UTA!H48": "states.OA.T_C",
+    "UTA!J48": "states.OA.x_gkg",
+    "UTA!K48": "states.OA.h_kJkg",
+    "UTA!I48": "states.OA.RH_pct",
+    "UTA!N48": "states.OA.v_m3kg",
+    "UTA!L48": "states.OA.Tdew_C",
+    "UTA!M48": "states.OA.Twb_C",
+    "UTA!H49": "states.ROOM.T_C",
+    "UTA!J49": "states.ROOM.x_gkg",
+    "UTA!K49": "states.ROOM.h_kJkg",
+    "UTA!I49": "states.ROOM.RH_pct",
+    "UTA!N49": "states.ROOM.v_m3kg",
+    "UTA!L49": "states.ROOM.Tdew_C",
+    "UTA!M49": "states.ROOM.Twb_C",
+    "UTA!H58": "states.HR_OUT.T_C",
+    "UTA!J58": "states.HR_OUT.x_gkg",
+    "UTA!K58": "states.HR_OUT.h_kJkg",
+    "UTA!I58": "states.HR_OUT.RH_pct",
+    "UTA!N58": "states.HR_OUT.v_m3kg",
+    "UTA!L58": "states.HR_OUT.Tdew_C",
+    "UTA!M58": "states.HR_OUT.Twb_C",
+    "UTA!H60": "states.PREHEAT_OUT.T_C",
+    "UTA!J60": "states.PREHEAT_OUT.x_gkg",
+    "UTA!K60": "states.PREHEAT_OUT.h_kJkg",
+    "UTA!I60": "states.PREHEAT_OUT.RH_pct",
+    "UTA!N60": "states.PREHEAT_OUT.v_m3kg",
+    "UTA!L60": "states.PREHEAT_OUT.Tdew_C",
+    "UTA!M60": "states.PREHEAT_OUT.Twb_C",
+    "UTA!H61": "states.HUM_OUT.T_C",
+    "UTA!J61": "states.HUM_OUT.x_gkg",
+    "UTA!K61": "states.HUM_OUT.h_kJkg",
+    "UTA!I61": "states.HUM_OUT.RH_pct",
+    "UTA!N61": "states.HUM_OUT.v_m3kg",
+    "UTA!L61": "states.HUM_OUT.Tdew_C",
+    "UTA!M61": "states.HUM_OUT.Twb_C",
+    "UTA!H62": "states.SUPPLY.T_C",
+    "UTA!J62": "states.SUPPLY.x_gkg",
+    "UTA!K62": "states.SUPPLY.h_kJkg",
+    "UTA!I62": "states.SUPPLY.RH_pct",
+    "UTA!N62": "states.SUPPLY.v_m3kg",
+    "UTA!L62": "states.SUPPLY.Tdew_C",
+    "UTA!M62": "states.SUPPLY.Twb_C",
+    "UTA!D73": "powers.heat_recovery_kW",
+    "UTA!D69": "powers.preheat_kW",
+    "UTA!D70": "powers.postheat_kW",
+    "UTA!D72": "powers.humidifier_water_kgh",
+    "UTA!H70": {
+     "expect": "SÌ",
+     "label": "punto di immissione raggiungibile"
+    }
+   }
+  },
+  {
+   "name": "d_5000",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": "ref:inputs.V_m3h",
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D48": "ref:inputs.T_oa_C",
+    "UTA!D49": "ref:inputs.RH_oa_pct",
+    "UTA!D50": "ref:inputs.T_room_C",
+    "UTA!D51": "ref:inputs.RH_room_pct",
+    "UTA!D52": {
+     "ref": "inputs.Q_heat_loss_kW",
+     "scale": 1000
+    },
+    "UTA!D53": {
+     "ref": "inputs.Ql_gain_kW",
+     "scale": 1000
+    },
+    "UTA!C58": {
+     "value": "Recuperatore di calore"
+    },
+    "UTA!D58": {
+     "value": 0.6
+    },
+    "UTA!E58": {
+     "value": null
+    },
+    "UTA!F58": {
+     "value": null
+    },
+    "UTA!C59": {
+     "value": "Nessuna"
+    },
+    "UTA!D59": {
+     "value": null
+    },
+    "UTA!E59": {
+     "value": null
+    },
+    "UTA!F59": {
+     "value": null
+    },
+    "UTA!C60": {
+     "value": "Post-riscaldamento"
+    },
+    "UTA!D60": {
+     "value": "AUTO"
+    },
+    "UTA!E60": {
+     "value": null
+    },
+    "UTA!F60": {
+     "value": null
+    },
+    "UTA!C61": {
+     "value": "Umidificazione a vapore"
+    },
+    "UTA!D61": {
+     "value": "AUTO"
+    },
+    "UTA!E61": {
+     "value": null
+    },
+    "UTA!F61": {
+     "value": null
+    },
+    "UTA!C62": {
+     "value": "Nessuna"
+    },
+    "UTA!D62": {
+     "value": null
+    },
+    "UTA!E62": {
+     "value": null
+    },
+    "UTA!F62": {
+     "value": null
+    },
+    "UTA!C63": {
+     "value": "Nessuna"
+    },
+    "UTA!D63": {
+     "value": null
+    },
+    "UTA!E63": {
+     "value": null
+    },
+    "UTA!F63": {
+     "value": null
+    }
+   },
+   "outputs": {
+    "UTA!I9": "m_da_kgs",
+    "UTA!H58": "states.HR_OUT.T_C",
+    "UTA!J58": "states.HR_OUT.x_gkg",
+    "UTA!K58": "states.HR_OUT.h_kJkg",
+    "UTA!I58": "states.HR_OUT.RH_pct",
+    "UTA!N58": "states.HR_OUT.v_m3kg",
+    "UTA!L58": "states.HR_OUT.Tdew_C",
+    "UTA!M58": "states.HR_OUT.Twb_C",
+    "UTA!H61": "variant_heat_to_Timm_then_steam.supply_T_C",
+    "UTA!J61": "states.SUPPLY.x_gkg",
+    "UTA!D70": "variant_heat_to_Timm_then_steam.heater_kW",
+    "UTA!D72": "powers.steam_kgh",
+    "UTA!D73": "powers.heat_recovery_kW"
+   }
+  },
+  {
+   "name": "e1_1000",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": "ref:inputs.V_m3h",
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D48": "ref:inputs.T_in_C",
+    "UTA!D49": "ref:inputs.RH_in_pct",
+    "UTA!D50": 20,
+    "UTA!D51": 50,
+    "UTA!D52": 0,
+    "UTA!D53": 0,
+    "UTA!C58": {
+     "value": "Riscaldamento sensibile"
+    },
+    "UTA!D58": {
+     "value": 22
+    },
+    "UTA!E58": {
+     "value": null
+    },
+    "UTA!F58": {
+     "value": null
+    },
+    "UTA!C59": {
+     "value": "Nessuna"
+    },
+    "UTA!D59": {
+     "value": null
+    },
+    "UTA!E59": {
+     "value": null
+    },
+    "UTA!F59": {
+     "value": null
+    },
+    "UTA!C60": {
+     "value": "Nessuna"
+    },
+    "UTA!D60": {
+     "value": null
+    },
+    "UTA!E60": {
+     "value": null
+    },
+    "UTA!F60": {
+     "value": null
+    },
+    "UTA!C61": {
+     "value": "Nessuna"
+    },
+    "UTA!D61": {
+     "value": null
+    },
+    "UTA!E61": {
+     "value": null
+    },
+    "UTA!F61": {
+     "value": null
+    },
+    "UTA!C62": {
+     "value": "Nessuna"
+    },
+    "UTA!D62": {
+     "value": null
+    },
+    "UTA!E62": {
+     "value": null
+    },
+    "UTA!F62": {
+     "value": null
+    },
+    "UTA!C63": {
+     "value": "Nessuna"
+    },
+    "UTA!D63": {
+     "value": null
+    },
+    "UTA!E63": {
+     "value": null
+    },
+    "UTA!F63": {
+     "value": null
+    }
+   },
+   "outputs": {
+    "UTA!I9": "m_da_kgs",
+    "UTA!R58": "powers.heating_kW",
+    "UTA!H57": "states.IN.T_C",
+    "UTA!J57": "states.IN.x_gkg",
+    "UTA!K57": "states.IN.h_kJkg",
+    "UTA!I57": "states.IN.RH_pct",
+    "UTA!N57": "states.IN.v_m3kg",
+    "UTA!L57": "states.IN.Tdew_C",
+    "UTA!M57": "states.IN.Twb_C",
+    "UTA!H58": "states.OUT.T_C",
+    "UTA!J58": "states.OUT.x_gkg",
+    "UTA!K58": "states.OUT.h_kJkg",
+    "UTA!I58": "states.OUT.RH_pct",
+    "UTA!N58": "states.OUT.v_m3kg",
+    "UTA!L58": "states.OUT.Tdew_C",
+    "UTA!M58": "states.OUT.Twb_C"
+   }
+  },
+  {
+   "name": "e2_1000",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": "ref:inputs.V_m3h",
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D18": "ref:inputs.T_in_C",
+    "UTA!D19": "ref:states.IN.RH_pct",
+    "UTA!D20": 26,
+    "UTA!D21": 50,
+    "UTA!D22": 0,
+    "UTA!D23": 0,
+    "UTA!C28": {
+     "value": "Umidificazione adiabatica"
+    },
+    "UTA!D28": {
+     "value": null
+    },
+    "UTA!E28": {
+     "value": 100
+    },
+    "UTA!F28": {
+     "value": null
+    },
+    "UTA!C29": {
+     "value": "Nessuna"
+    },
+    "UTA!D29": {
+     "value": null
+    },
+    "UTA!E29": {
+     "value": null
+    },
+    "UTA!F29": {
+     "value": null
+    },
+    "UTA!C30": {
+     "value": "Nessuna"
+    },
+    "UTA!D30": {
+     "value": null
+    },
+    "UTA!E30": {
+     "value": null
+    },
+    "UTA!F30": {
+     "value": null
+    },
+    "UTA!C31": {
+     "value": "Nessuna"
+    },
+    "UTA!D31": {
+     "value": null
+    },
+    "UTA!E31": {
+     "value": null
+    },
+    "UTA!F31": {
+     "value": null
+    },
+    "UTA!C32": {
+     "value": "Nessuna"
+    },
+    "UTA!D32": {
+     "value": null
+    },
+    "UTA!E32": {
+     "value": null
+    },
+    "UTA!F32": {
+     "value": null
+    },
+    "UTA!C33": {
+     "value": "Nessuna"
+    },
+    "UTA!D33": {
+     "value": null
+    },
+    "UTA!E33": {
+     "value": null
+    },
+    "UTA!F33": {
+     "value": null
+    }
+   },
+   "outputs": {
+    "UTA!H9": "m_da_kgs",
+    "UTA!S28": "powers.water_kgh",
+    "UTA!H27": "states.IN.T_C",
+    "UTA!J27": "states.IN.x_gkg",
+    "UTA!K27": "states.IN.h_kJkg",
+    "UTA!L27": "states.IN.Tdew_C",
+    "UTA!M27": "states.IN.Twb_C",
+    "UTA!H28": "states.OUT.T_C",
+    "UTA!J28": "states.OUT.x_gkg",
+    "UTA!K28": "states.OUT.h_kJkg",
+    "UTA!I28": "states.OUT.RH_pct"
+   }
+  },
+  {
+   "name": "griglia_z0_1",
+   "ref_case": "",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": 5000,
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D18": "ref:/states.z0_t-10_rh30.T_C",
+    "UTA!D19": "ref:/states.z0_t-10_rh30.RH_pct",
+    "UTA!D20": "ref:/states.z0_t-5_rh80.T_C",
+    "UTA!D21": "ref:/states.z0_t-5_rh80.RH_pct",
+    "UTA!D48": "ref:/states.z0_t0_rh50.T_C",
+    "UTA!D49": "ref:/states.z0_t0_rh50.RH_pct",
+    "UTA!D50": "ref:/states.z0_t5_rh30.T_C",
+    "UTA!D51": "ref:/states.z0_t5_rh30.RH_pct"
+   },
+   "outputs": {
+    "UTA!H18": "/states.z0_t-10_rh30.T_C",
+    "UTA!J18": "/states.z0_t-10_rh30.x_gkg",
+    "UTA!K18": "/states.z0_t-10_rh30.h_kJkg",
+    "UTA!I18": "/states.z0_t-10_rh30.RH_pct",
+    "UTA!N18": "/states.z0_t-10_rh30.v_m3kg",
+    "UTA!L18": "/states.z0_t-10_rh30.Tdew_C",
+    "UTA!M18": "/states.z0_t-10_rh30.Twb_C",
+    "Calcoli!F17": "/states.z0_t-10_rh30.psat_Pa",
+    "UTA!H19": "/states.z0_t-5_rh80.T_C",
+    "UTA!J19": "/states.z0_t-5_rh80.x_gkg",
+    "UTA!K19": "/states.z0_t-5_rh80.h_kJkg",
+    "UTA!I19": "/states.z0_t-5_rh80.RH_pct",
+    "UTA!N19": "/states.z0_t-5_rh80.v_m3kg",
+    "UTA!L19": "/states.z0_t-5_rh80.Tdew_C",
+    "UTA!M19": "/states.z0_t-5_rh80.Twb_C",
+    "Calcoli!F18": "/states.z0_t-5_rh80.psat_Pa",
+    "UTA!H48": "/states.z0_t0_rh50.T_C",
+    "UTA!J48": "/states.z0_t0_rh50.x_gkg",
+    "UTA!K48": "/states.z0_t0_rh50.h_kJkg",
+    "UTA!I48": "/states.z0_t0_rh50.RH_pct",
+    "UTA!N48": "/states.z0_t0_rh50.v_m3kg",
+    "UTA!L48": "/states.z0_t0_rh50.Tdew_C",
+    "UTA!M48": "/states.z0_t0_rh50.Twb_C",
+    "Calcoli!F28": "/states.z0_t0_rh50.psat_Pa",
+    "UTA!H49": "/states.z0_t5_rh30.T_C",
+    "UTA!J49": "/states.z0_t5_rh30.x_gkg",
+    "UTA!K49": "/states.z0_t5_rh30.h_kJkg",
+    "UTA!I49": "/states.z0_t5_rh30.RH_pct",
+    "UTA!N49": "/states.z0_t5_rh30.v_m3kg",
+    "UTA!L49": "/states.z0_t5_rh30.Tdew_C",
+    "UTA!M49": "/states.z0_t5_rh30.Twb_C",
+    "Calcoli!F29": "/states.z0_t5_rh30.psat_Pa",
+    "UTA!D9": "/states.z0_t-10_rh30.p_Pa"
+   }
+  },
+  {
+   "name": "griglia_z0_2",
+   "ref_case": "",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": 5000,
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D18": "ref:/states.z0_t10_rh50.T_C",
+    "UTA!D19": "ref:/states.z0_t10_rh50.RH_pct",
+    "UTA!D20": "ref:/states.z0_t20_rh50.T_C",
+    "UTA!D21": "ref:/states.z0_t20_rh50.RH_pct",
+    "UTA!D48": "ref:/states.z0_t26_rh50.T_C",
+    "UTA!D49": "ref:/states.z0_t26_rh50.RH_pct",
+    "UTA!D50": "ref:/states.z0_t32_rh50.T_C",
+    "UTA!D51": "ref:/states.z0_t32_rh50.RH_pct"
+   },
+   "outputs": {
+    "UTA!H18": "/states.z0_t10_rh50.T_C",
+    "UTA!J18": "/states.z0_t10_rh50.x_gkg",
+    "UTA!K18": "/states.z0_t10_rh50.h_kJkg",
+    "UTA!I18": "/states.z0_t10_rh50.RH_pct",
+    "UTA!N18": "/states.z0_t10_rh50.v_m3kg",
+    "UTA!L18": "/states.z0_t10_rh50.Tdew_C",
+    "UTA!M18": "/states.z0_t10_rh50.Twb_C",
+    "Calcoli!F17": "/states.z0_t10_rh50.psat_Pa",
+    "UTA!H19": "/states.z0_t20_rh50.T_C",
+    "UTA!J19": "/states.z0_t20_rh50.x_gkg",
+    "UTA!K19": "/states.z0_t20_rh50.h_kJkg",
+    "UTA!I19": "/states.z0_t20_rh50.RH_pct",
+    "UTA!N19": "/states.z0_t20_rh50.v_m3kg",
+    "UTA!L19": "/states.z0_t20_rh50.Tdew_C",
+    "UTA!M19": "/states.z0_t20_rh50.Twb_C",
+    "Calcoli!F18": "/states.z0_t20_rh50.psat_Pa",
+    "UTA!H48": "/states.z0_t26_rh50.T_C",
+    "UTA!J48": "/states.z0_t26_rh50.x_gkg",
+    "UTA!K48": "/states.z0_t26_rh50.h_kJkg",
+    "UTA!I48": "/states.z0_t26_rh50.RH_pct",
+    "UTA!N48": "/states.z0_t26_rh50.v_m3kg",
+    "UTA!L48": "/states.z0_t26_rh50.Tdew_C",
+    "UTA!M48": "/states.z0_t26_rh50.Twb_C",
+    "Calcoli!F28": "/states.z0_t26_rh50.psat_Pa",
+    "UTA!H49": "/states.z0_t32_rh50.T_C",
+    "UTA!J49": "/states.z0_t32_rh50.x_gkg",
+    "UTA!K49": "/states.z0_t32_rh50.h_kJkg",
+    "UTA!I49": "/states.z0_t32_rh50.RH_pct",
+    "UTA!N49": "/states.z0_t32_rh50.v_m3kg",
+    "UTA!L49": "/states.z0_t32_rh50.Tdew_C",
+    "UTA!M49": "/states.z0_t32_rh50.Twb_C",
+    "Calcoli!F29": "/states.z0_t32_rh50.psat_Pa",
+    "UTA!D9": "/states.z0_t10_rh50.p_Pa"
+   }
+  },
+  {
+   "name": "griglia_z0_3",
+   "ref_case": "",
+   "inputs": {
+    "UTA!D6": 0,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": 5000,
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D18": "ref:/states.z0_t40_rh80.T_C",
+    "UTA!D19": "ref:/states.z0_t40_rh80.RH_pct",
+    "UTA!D20": "ref:/states.z0_t35_rh30.T_C",
+    "UTA!D21": "ref:/states.z0_t35_rh30.RH_pct",
+    "UTA!D48": "ref:/states.z0_t15_rh100.T_C",
+    "UTA!D49": "ref:/states.z0_t15_rh100.RH_pct",
+    "UTA!D50": "ref:/states.z0_t-5_rh30.T_C",
+    "UTA!D51": "ref:/states.z0_t-5_rh30.RH_pct"
+   },
+   "outputs": {
+    "UTA!H18": "/states.z0_t40_rh80.T_C",
+    "UTA!J18": "/states.z0_t40_rh80.x_gkg",
+    "UTA!K18": "/states.z0_t40_rh80.h_kJkg",
+    "UTA!I18": "/states.z0_t40_rh80.RH_pct",
+    "UTA!N18": "/states.z0_t40_rh80.v_m3kg",
+    "UTA!L18": "/states.z0_t40_rh80.Tdew_C",
+    "UTA!M18": "/states.z0_t40_rh80.Twb_C",
+    "Calcoli!F17": "/states.z0_t40_rh80.psat_Pa",
+    "UTA!H19": "/states.z0_t35_rh30.T_C",
+    "UTA!J19": "/states.z0_t35_rh30.x_gkg",
+    "UTA!K19": "/states.z0_t35_rh30.h_kJkg",
+    "UTA!I19": "/states.z0_t35_rh30.RH_pct",
+    "UTA!N19": "/states.z0_t35_rh30.v_m3kg",
+    "UTA!L19": "/states.z0_t35_rh30.Tdew_C",
+    "UTA!M19": "/states.z0_t35_rh30.Twb_C",
+    "Calcoli!F18": "/states.z0_t35_rh30.psat_Pa",
+    "UTA!H48": "/states.z0_t15_rh100.T_C",
+    "UTA!J48": "/states.z0_t15_rh100.x_gkg",
+    "UTA!K48": "/states.z0_t15_rh100.h_kJkg",
+    "UTA!I48": "/states.z0_t15_rh100.RH_pct",
+    "UTA!N48": "/states.z0_t15_rh100.v_m3kg",
+    "UTA!L48": "/states.z0_t15_rh100.Tdew_C",
+    "UTA!M48": "/states.z0_t15_rh100.Twb_C",
+    "Calcoli!F28": "/states.z0_t15_rh100.psat_Pa",
+    "UTA!H49": "/states.z0_t-5_rh30.T_C",
+    "UTA!J49": "/states.z0_t-5_rh30.x_gkg",
+    "UTA!K49": "/states.z0_t-5_rh30.h_kJkg",
+    "UTA!I49": "/states.z0_t-5_rh30.RH_pct",
+    "UTA!N49": "/states.z0_t-5_rh30.v_m3kg",
+    "UTA!L49": "/states.z0_t-5_rh30.Tdew_C",
+    "UTA!M49": "/states.z0_t-5_rh30.Twb_C",
+    "Calcoli!F29": "/states.z0_t-5_rh30.psat_Pa",
+    "UTA!D9": "/states.z0_t40_rh80.p_Pa"
+   }
+  },
+  {
+   "name": "griglia_z500_1",
+   "ref_case": "",
+   "inputs": {
+    "UTA!D6": 500,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": 5000,
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D18": "ref:/states.z500_t20_rh50.T_C",
+    "UTA!D19": "ref:/states.z500_t20_rh50.RH_pct",
+    "UTA!D20": "ref:/states.z500_t-10_rh80.T_C",
+    "UTA!D21": "ref:/states.z500_t-10_rh80.RH_pct",
+    "UTA!D48": "ref:/states.z500_t32_rh50.T_C",
+    "UTA!D49": "ref:/states.z500_t32_rh50.RH_pct",
+    "UTA!D50": "ref:/states.z500_t5_rh50.T_C",
+    "UTA!D51": "ref:/states.z500_t5_rh50.RH_pct"
+   },
+   "outputs": {
+    "UTA!H18": "/states.z500_t20_rh50.T_C",
+    "UTA!J18": "/states.z500_t20_rh50.x_gkg",
+    "UTA!K18": "/states.z500_t20_rh50.h_kJkg",
+    "UTA!I18": "/states.z500_t20_rh50.RH_pct",
+    "UTA!N18": "/states.z500_t20_rh50.v_m3kg",
+    "UTA!L18": "/states.z500_t20_rh50.Tdew_C",
+    "UTA!M18": "/states.z500_t20_rh50.Twb_C",
+    "Calcoli!F17": "/states.z500_t20_rh50.psat_Pa",
+    "UTA!H19": "/states.z500_t-10_rh80.T_C",
+    "UTA!J19": "/states.z500_t-10_rh80.x_gkg",
+    "UTA!K19": "/states.z500_t-10_rh80.h_kJkg",
+    "UTA!I19": "/states.z500_t-10_rh80.RH_pct",
+    "UTA!N19": "/states.z500_t-10_rh80.v_m3kg",
+    "UTA!L19": "/states.z500_t-10_rh80.Tdew_C",
+    "UTA!M19": "/states.z500_t-10_rh80.Twb_C",
+    "Calcoli!F18": "/states.z500_t-10_rh80.psat_Pa",
+    "UTA!H48": "/states.z500_t32_rh50.T_C",
+    "UTA!J48": "/states.z500_t32_rh50.x_gkg",
+    "UTA!K48": "/states.z500_t32_rh50.h_kJkg",
+    "UTA!I48": "/states.z500_t32_rh50.RH_pct",
+    "UTA!N48": "/states.z500_t32_rh50.v_m3kg",
+    "UTA!L48": "/states.z500_t32_rh50.Tdew_C",
+    "UTA!M48": "/states.z500_t32_rh50.Twb_C",
+    "Calcoli!F28": "/states.z500_t32_rh50.psat_Pa",
+    "UTA!H49": "/states.z500_t5_rh50.T_C",
+    "UTA!J49": "/states.z500_t5_rh50.x_gkg",
+    "UTA!K49": "/states.z500_t5_rh50.h_kJkg",
+    "UTA!I49": "/states.z500_t5_rh50.RH_pct",
+    "UTA!N49": "/states.z500_t5_rh50.v_m3kg",
+    "UTA!L49": "/states.z500_t5_rh50.Tdew_C",
+    "UTA!M49": "/states.z500_t5_rh50.Twb_C",
+    "Calcoli!F29": "/states.z500_t5_rh50.psat_Pa",
+    "UTA!D9": "/states.z500_t20_rh50.p_Pa"
+   }
+  },
+  {
+   "name": "griglia_z1000_1",
+   "ref_case": "",
+   "inputs": {
+    "UTA!D6": 1000,
+    "UTA!D8": {
+     "value": null
+    },
+    "UTA!D10": 5000,
+    "UTA!D11": 100,
+    "UTA!D14": {
+     "value": "Aria esterna (condizioni di progetto)"
+    },
+    "UTA!D18": "ref:/states.z1000_t-5_rh50.T_C",
+    "UTA!D19": "ref:/states.z1000_t-5_rh50.RH_pct",
+    "UTA!D20": "ref:/states.z1000_t35_rh50.T_C",
+    "UTA!D21": "ref:/states.z1000_t35_rh50.RH_pct",
+    "UTA!D48": "ref:/states.z1000_t26_rh30.T_C",
+    "UTA!D49": "ref:/states.z1000_t26_rh30.RH_pct",
+    "UTA!D50": "ref:/states.z1000_t10_rh80.T_C",
+    "UTA!D51": "ref:/states.z1000_t10_rh80.RH_pct"
+   },
+   "outputs": {
+    "UTA!H18": "/states.z1000_t-5_rh50.T_C",
+    "UTA!J18": "/states.z1000_t-5_rh50.x_gkg",
+    "UTA!K18": "/states.z1000_t-5_rh50.h_kJkg",
+    "UTA!I18": "/states.z1000_t-5_rh50.RH_pct",
+    "UTA!N18": "/states.z1000_t-5_rh50.v_m3kg",
+    "UTA!L18": "/states.z1000_t-5_rh50.Tdew_C",
+    "UTA!M18": "/states.z1000_t-5_rh50.Twb_C",
+    "Calcoli!F17": "/states.z1000_t-5_rh50.psat_Pa",
+    "UTA!H19": "/states.z1000_t35_rh50.T_C",
+    "UTA!J19": "/states.z1000_t35_rh50.x_gkg",
+    "UTA!K19": "/states.z1000_t35_rh50.h_kJkg",
+    "UTA!I19": "/states.z1000_t35_rh50.RH_pct",
+    "UTA!N19": "/states.z1000_t35_rh50.v_m3kg",
+    "UTA!L19": "/states.z1000_t35_rh50.Tdew_C",
+    "UTA!M19": "/states.z1000_t35_rh50.Twb_C",
+    "Calcoli!F18": "/states.z1000_t35_rh50.psat_Pa",
+    "UTA!H48": "/states.z1000_t26_rh30.T_C",
+    "UTA!J48": "/states.z1000_t26_rh30.x_gkg",
+    "UTA!K48": "/states.z1000_t26_rh30.h_kJkg",
+    "UTA!I48": "/states.z1000_t26_rh30.RH_pct",
+    "UTA!N48": "/states.z1000_t26_rh30.v_m3kg",
+    "UTA!L48": "/states.z1000_t26_rh30.Tdew_C",
+    "UTA!M48": "/states.z1000_t26_rh30.Twb_C",
+    "Calcoli!F28": "/states.z1000_t26_rh30.psat_Pa",
+    "UTA!H49": "/states.z1000_t10_rh80.T_C",
+    "UTA!J49": "/states.z1000_t10_rh80.x_gkg",
+    "UTA!K49": "/states.z1000_t10_rh80.h_kJkg",
+    "UTA!I49": "/states.z1000_t10_rh80.RH_pct",
+    "UTA!N49": "/states.z1000_t10_rh80.v_m3kg",
+    "UTA!L49": "/states.z1000_t10_rh80.Tdew_C",
+    "UTA!M49": "/states.z1000_t10_rh80.Twb_C",
+    "Calcoli!F29": "/states.z1000_t10_rh80.psat_Pa",
+    "UTA!D9": "/states.z1000_t-5_rh50.p_Pa"
+   }
+  }
+ ]
+}

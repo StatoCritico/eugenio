@@ -185,7 +185,8 @@ function periodo(ds) {
   date.hidden = !(ds.periodo === "date" || ds.periodo === "semestri");
   stag.hidden = ds.periodo !== "stagioni";
   for (const id of ["dal", "al", "fino-al"]) { $(id).min = ds.inizio || ""; $(id).max = ds.fine || ""; }
-  if (ds.periodo === "stagioni") { $("fino-al").value = ds.fine; return; }
+  $("nota-periodo").hidden = true;
+  if (ds.periodo === "stagioni") { $("fino-al").value = ds.fine; notaStagioni(); return; }
   if (!ds.inizio) return;
   $("periodi-rapidi").hidden = ds.periodo === "semestri";
   const mesi = ds.id === "meteo_orario" ? 1 : ds.periodo === "semestri" ? 0 : 12;
@@ -198,15 +199,44 @@ function periodo(ds) {
 function impostaPeriodo(mesi) {
   const ds = stato.ds;
   $("al").value = ds.fine;
-  $("dal").value = mesi ? [sposta(ds.fine, mesi), ds.inizio].sort().pop() : ds.inizio;
+  const voluto = mesi ? sposta(ds.fine, mesi) : ds.inizio;
+  $("dal").value = [voluto, ds.inizio].sort().pop();
   document.querySelectorAll("#periodi-rapidi .filtro").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.mesi === mesi)));
+  // (14/11/2026) 5, 10 o 20 anni chiesti ma la serie è più corta: si dice quanto è lungo davvero il periodo
+  const nota = $("nota-periodo");
+  nota.hidden = !(mesi >= 12 && voluto < ds.inizio);
+  if (!nota.hidden) {
+    const anni = (new Date(`${ds.fine}T12:00:00Z`) - new Date(`${ds.inizio}T12:00:00Z`)) / (365.25 * 864e5);
+    nota.textContent = `Chiesti ${mesi / 12 === 1 ? "un anno" : `${mesi / 12} anni`}: questi dati partono dal ${dataIt(ds.inizio)}, `
+      + `quindi il periodo è di circa ${num(Math.round(anni * 10) / 10, 1)} anni (tutta la serie).`;
+  }
+}
+
+// stagioni complete (1 luglio – 30 giugno) tra l'inizio dell'archivio e la data «Fino al»: come il server
+function stagioniComplete(inizio, fine) {
+  const [a1, m1, g1] = inizio.split("-").map(Number), [a2, m2, g2] = fine.split("-").map(Number);
+  const primo = m1 * 100 + g1 <= 701 ? a1 : a1 + 1;
+  const ultimo = m2 * 100 + g2 >= 630 ? a2 - 1 : a2 - 2;
+  return { n: Math.max(0, ultimo - primo + 1), primo, ultimo };
+}
+function notaStagioni() {
+  const ds = stato.ds;
+  if (!ds || ds.periodo !== "stagioni" || !ds.inizio) { $("nota-stagioni").textContent = ""; return; }
+  const s = stagioniComplete(ds.inizio, $("fino-al").value || ds.fine), scelte = +$("stagioni").value;
+  const nome = (a) => `${a}/${String(a + 1).slice(2)}`;
+  let t = s.n ? `L'archivio giornaliero ha ${s.n} stagioni complete fino alla data indicata, dalla ${nome(s.primo)} alla ${nome(s.ultimo)}.`
+    : "Nessuna stagione completa fino alla data indicata.";
+  if (s.n && (scelte === 0 || scelte > s.n)) t += ` Si usano tutte (${s.n}).`;
+  if (scelte > 0 && scelte < 5) t += " Con meno di 5 stagioni i valori sono indicativi e la tendenza dei gradi giorno resta vuota.";
+  $("nota-stagioni").textContent = t;
 }
 document.querySelectorAll("#periodi-rapidi .filtro").forEach((b) => b.addEventListener("click", () => { impostaPeriodo(+b.dataset.mesi); aggiornaStima(); }));
 for (const id of ["dal", "al"]) $(id).addEventListener("change", () => {
   document.querySelectorAll("#periodi-rapidi .filtro").forEach((b) => b.setAttribute("aria-pressed", "false"));
+  $("nota-periodo").hidden = true;
   aggiornaStima();
 });
-for (const id of ["fino-al", "stagioni", "copertura", "provincia"]) $(id).addEventListener("change", () => { colora(); aggiornaStima(); });
+for (const id of ["fino-al", "stagioni", "copertura", "provincia"]) $(id).addEventListener("change", () => { colora(); notaStagioni(); aggiornaStima(); });
 
 // ------------------------------------------------------------------ frequenza
 const AIUTO_FREQUENZA = "Medie per temperatura, umidità, vento e nuvolosità; somme per radiazione, pioggia, neve e gradi " +
