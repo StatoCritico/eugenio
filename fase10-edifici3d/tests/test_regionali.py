@@ -305,7 +305,7 @@ def test_archivi_licenze_aperte(tmp_path):
     basi = [v["base"] for v in scrivi_archivi_json(tmp_path)["archivi"]]
     assert basi[-1] == "/edifici3d/odbl/er/prova/prodotti/" and len(basi) == 4
     assert basi[:3] == sorted(basi[:3])
-    assert set(TESTI_LICENZA) == {"CC BY 4.0", "CC BY 2.5", "IODL 2.0", "CC0 1.0"}
+    assert set(TESTI_LICENZA) == {"CC BY 4.0", "CC BY 2.5", "IODL 2.0", "CC0 1.0", "ODbL 1.0"}   # ODbL: archivi OSM veri (Perugia, 16/11/2026)
     for rel in list(voci)[1:]:
         assert controlla_archivio(tmp_path / rel)["problemi"] == []
     assert controlla_archivio(tmp_path / "odbl/er/prova/prodotti")["problemi"]

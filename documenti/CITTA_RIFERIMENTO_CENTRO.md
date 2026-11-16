@@ -211,6 +211,12 @@ potrà fare solo con il PST.
 
 ## 5. Perugia
 
+> **Aggiornamento del 16/11/2026: fatto.** Archivio `odbl/umb/perugia` con le sagome OpenStreetMap (ODbL 1.0) e le
+> altezze da DSM First − DTM 1 m del **LiDAR PST 2014 del MASE** (CC BY 4.0, 20 tavole 1 km scaricate dall'app
+> https://sim.mase.gov.it/pst/): centro, Fontivegge, Sant'Andrea delle Fratte, 5.834 corpi. Il PST copre Perugia (511
+> tavole nel comune), al contrario di quanto temuto qui sotto. Le CTR 1:2.000 dell'Umbria restano non verificate.
+> Dettagli: `PERUGIA_PST_2026-11-16.md` e `AGGIORNAMENTO_2026-11-16g.md`.
+
 ### 5.1 Fonti
 
 | Tema | Fonte e prodotto | Anno | Risoluzione / scala | Formato e sistema | Licenza (citazione) | Accesso | Dimensione | Verifica 08/11/2026 |
