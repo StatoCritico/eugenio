@@ -75,7 +75,9 @@ Il codice è nella **pull request** `claude/2026-11-16g-perugia` su GitHub: nien
 ### AG1. [Browser] Merge della pull request, poi release
 1. Apri la pull request (il collegamento te lo manda Claude; l'elenco è su https://github.com/StatoCritico/eugenio/pulls).
 2. Scheda **Files changed** per guardare le modifiche, poi **Merge pull request** → **Confirm merge**.
-3. Scrivi a Claude «merge fatto»: crea lui la release `v2026.11.16g` con le note della voce delle Novità.
+3. Scrivi a Claude «merge fatto»: ti manda il collegamento `https://github.com/StatoCritico/eugenio/releases/new?…` già
+   compilato (tag `v2026.11.16g`, destinazione `main`, titolo e note dalla voce delle Novità). Aprilo e premi **Publish
+   release**. (Da questa sessione Claude non può creare release né tag: GitHub li rifiuta.)
 
 Cosa aspettarsi: la pull request risulta «Merged»; poi la release compare su https://github.com/StatoCritico/eugenio/releases.
 

@@ -820,6 +820,10 @@ Decisione di Paolo del 07/11/2026. Due pagine nuove nel gruppo **Patrimonio** (m
   archivi di un comune intero (`istat` in `archivi.json`; `C.comuneNelPunto` di `confini_gl.js`, confini di tutta Italia)
   e il riquadro dei corpi per gli altri (il riquadro di Rimini sborda su Riccione, Coriano, Santarcangelo); i corpi OSM che
   cadono in un comune coperto si scartano. Zone coperte tratteggiate: il confine del comune (`C.geometriaComune`, nuova).
+- **Vicini fuori da un archivio parziale (16/11/2026)**: il ripiego OSM si chiede quando il contesto di ~250 m attorno
+  al punto non è tutto coperto (`contestoCoperto` in `edificio3d.js`: il punto e otto punti attorno), non solo quando il punto
+  è fuori; i corpi OSM che cadono nelle zone coperte li scarta `fuoriDalDbtr`. Caso: Perugia (archivio parziale), CREO
+  dentro il riquadro e polo ospedaliero fuori.
 - **Licenze e messaggi**: ogni corpo OSM porta «ODbL 1.0»; messaggi «Qui non c'è ancora il DBTR: si usa OpenStreetMap come
   ripiego (© OpenStreetMap contributors, ODbL 1.0), con qualità inferiore e altezze in parte stimate…»; riga `#fonti-osm`
   nel piè; immagine con «Edifici fuori dal DBTR: © OpenStreetMap contributors, ODbL 1.0…» (righe degli archivi senza

@@ -40,7 +40,7 @@
 // affidabilità) se c'è, altrimenti il DBTR dell'Emilia-Romagna; i corpi di un archivio meno affidabile che cadono dentro
 // quelli di uno più affidabile non si usano.
 //
-// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261116g):
+// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261116h):
 //  - il punto trovato con la ricerca (cerca_luogo.js, modulo comune con Ortofoto) si **trascina** per correggerlo (l'ANNCSU
 //    è a volte impreciso) e, da zoom 15, un clic sulla mappa lo sposta lì; la scelta dell'edificio usa sempre il punto
 //    corretto (l'edificio che lo contiene, o il più vicino entro 30 m) e «Genera il 3D» parte da lì;
@@ -165,7 +165,7 @@
     let elenco = null;
     const valida = (b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes("..");
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261116g", { cache: "no-cache" });   // mai l'elenco vecchio
+      const r = await fetch("/edifici3d/archivi.json?v=20261116h", { cache: "no-cache" });   // mai l'elenco vecchio
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const d = await r.json();
         elenco = d.archivi;
@@ -297,8 +297,10 @@
     const pr = E.proiezione(lon, lat), visti = new Map(), sagome = [];
     const vicino = (a) => { const r = a.indice && a.indice.riquadro, m = 0.004;          // ~300 m: i 250 m del contesto
       return !Array.isArray(r) || r.length !== 4 || (lon >= r[0] - m && lon <= r[2] + m && lat >= r[1] - m && lat <= r[3] + m); };
-    // ripiego OSM solo se il punto è fuori da ogni archivio DBTR (07/11/2026)
-    const usaOsm = stato.osmAttivo && archivi.some((a) => a.osm) && !(await coperto(lon, lat));
+    // ripiego OSM se il contesto (~250 m) non è tutto dentro gli archivi (07/11/2026; dal 16/11/2026 non solo il punto:
+    // a Perugia, archivio parziale, il CREO è dentro il riquadro e l'ospedale accanto no, e restava senza edifici). I corpi
+    // OSM che cadono nelle zone coperte li scarta fuoriDalDbtr: dove c'è il DB topografico OSM non si mescola.
+    const usaOsm = stato.osmAttivo && archivi.some((a) => a.osm) && !(await contestoCoperto(lon, lat));
     // il DB topografico letto nel browser per primo: dove si sovrappone a un archivio del server vince il file dell'utente
     const ordine = archivi.map((_, k) => k).sort((x, y) => (archivi[y].locale ? 1 : 0) - (archivi[x].locale ? 1 : 0));
     for (const k of ordine) {
@@ -331,7 +333,7 @@
     const k = `${Math.round(lat / CELLA_OSM)}_${Math.round(lon / CELLA_OSM)}`;
     if (!stato.osm.celle.has(k)) {
       stato.osm.celle.set(k, (async () => {
-        messaggio("messaggio", "Qui non c'è ancora il DBTR: chiedo gli edifici al server (sagome della Regione dove ci sono, altrimenti OpenStreetMap; può volerci qualche secondo)…");
+        messaggio("messaggio", "Attorno a questo punto manca il DB topografico: chiedo gli edifici al server (sagome della Regione dove ci sono, altrimenti OpenStreetMap; può volerci qualche secondo)…");
         const r = await fetch(`/api/edifici/osm?lon=${lon.toFixed(6)}&lat=${lat.toFixed(6)}`);
         let d = null;
         try { d = await r.json(); } catch { d = null; }
@@ -1173,6 +1175,22 @@
     for (const a of conIstat.filter(dentro)) if (await vicinoAlDbtr(a, lon, lat)) return true;
     return false;
   }
+  // contesto coperto (16/11/2026): se il punto è in un comune intero coperto (archivio con `istat`) vale il punto, come
+  // prima (niente richieste a Overpass vicino ai confini dei 19 comuni e degli altri comuni interi); se è coperto solo dal
+  // riquadro di un archivio parziale (Perugia, Ravenna città…) anche otto punti attorno a ~250 m devono esserlo
+  async function contestoCoperto(lon, lat, metri = 250) {
+    if (!(await coperto(lon, lat))) return false;
+    const archivi = veri().length ? veri() : stato.indice && !stato.archivi.length ? [{ indice: stato.indice }] : [];
+    // dentro il riquadro di un comune intero: il punto è coperto da quel comune (anche vicino al confine generalizzato)
+    const dentro = (a) => { const r = a.indice && a.indice.riquadro;
+      return Array.isArray(r) && r.length === 4 && lon >= r[0] && lon <= r[2] && lat >= r[1] && lat <= r[3]; };
+    if (archivi.some((a) => a.istat && dentro(a))) return true;
+    const dlat = metri / 110574, dlon = metri / (111320 * Math.cos(lat * Math.PI / 180));
+    for (const [i, j] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]) {
+      if (!(await coperto(lon + i * dlon, lat + j * dlat))) return false;
+    }
+    return true;
+  }
   async function vicinoAlDbtr(a, lon, lat, metri = MARGINE_CONFINE) {
     if (!a.base) return false;
     const dlat = metri / 110574, dlon = metri / (111320 * Math.cos(lat * Math.PI / 180)), c = (a.indice && a.indice.cella) || 0.01;
@@ -1763,7 +1781,7 @@
   // comune che contiene il punto (confini ISTAT del sito, dati/mappa/08.json, stesse coordinate di patrimonio.js)
   async function comuneDi(lon, lat) {
     try {
-      const m = await json("dati/mappa/08.json?v=20261116g");
+      const m = await json("dati/mappa/08.json?v=20261116h");
       const p = lonlatSvg(lon, lat);
       for (const c of m.comuni) {
         for (const parte of c.d.split("M").filter(Boolean)) {
@@ -2091,7 +2109,7 @@
   let lavoratore = null;
   function orizzonti(punti, ostacoli, lontano = null) {
     return new Promise((ok, ko) => {
-      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261116g"); } catch (e) { ko(e); return; }
+      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261116h"); } catch (e) { ko(e); return; }
       const id = Math.random();
       const f = (e) => { if (e.data.id === id) { lavoratore.removeEventListener("message", f); ok(e.data.orizzonti); } };
       lavoratore.addEventListener("message", f);
@@ -2695,7 +2713,7 @@
   async function datiDpr() {
     if (stato.dpr === null) {
       stato.dpr = false;
-      try { stato.dpr = await json("dati/dpr412.json?v=20261116g"); } catch { /* senza file: niente zona */ }
+      try { stato.dpr = await json("dati/dpr412.json?v=20261116h"); } catch { /* senza file: niente zona */ }
     }
     return stato.dpr || null;
   }

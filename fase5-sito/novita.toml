@@ -22,6 +22,14 @@
 
 [[voce]]
 data = "2026-11-16"
+versione = "20261116h"
+titolo = "Modelli 3D: gli edifici attorno alle zone coperte"
+migliorato = [
+  "Patrimonio › Modelli 3D: quando l'edificio scelto è dentro un archivio che copre solo una parte del comune (per esempio Perugia), gli edifici vicini fuori da quella parte arrivano da OpenStreetMap, in marrone. Prima mancavano: all'ospedale di Perugia, scelto il CREO, il resto del polo restava vuoto.",
+]
+
+[[voce]]
+data = "2026-11-16"
 versione = "20261116g"
 titolo = "Perugia in Modelli 3D, con le altezze dal rilievo laser"
 nuovo = [
