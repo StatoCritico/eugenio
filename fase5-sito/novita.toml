@@ -22,10 +22,10 @@
 
 [[voce]]
 data = "2026-11-16"
-versione = "20261116a"
-titolo = "Trattamento aria: colonna sinistra con la sua barra di scorrimento"
+versione = "20261116b"
+titolo = "Trattamento aria: due metà, ognuna con la sua barra di scorrimento"
 migliorato = [
-  "Trattamento aria (le quattro pagine): la colonna con la mappa e il diagramma resta ferma mentre scorri la pagina e ha la sua barra per scorrere, come nelle altre pagine.",
+  "Trattamento aria (le quattro pagine): la pagina è divisa in due metà, ognuna con la sua barra di scorrimento: a sinistra mappa e diagramma (barra sul lato sinistro, lontana dal divisore), a destra i passi, come in Patrimonio.",
 ]
 
 [[voce]]
