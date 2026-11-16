@@ -593,6 +593,65 @@ def test_modelli3d_ripiego_osm_fuori_dal_dbtr(browser, base, tmp_path):
     ctx.close()
 
 
+
+def test_vicini_fuori_da_un_archivio_parziale_dal_ripiego_osm(browser, base, tmp_path):
+    """16/11/2026, Perugia: edificio scelto dentro il riquadro di un archivio parziale (senza `istat`) vicino al bordo →
+    il ripiego OSM si chiede lo stesso per i vicini fuori; il corpo OSM dentro il riquadro si scarta, quello fuori resta.
+    Con lo stesso archivio come comune intero (`istat`) nessuna richiesta a OpenStreetMap, come prima."""
+    _archivio_con_cortile(tmp_path)
+    from pyproj import Transformer
+    muro = Transformer.from_crs("EPSG:7791", "EPSG:4326", always_xy=True).transform(785545.0, 4884810.0)
+    ind_p = tmp_path / "cc-by" / "er" / "prodotti" / "indice.json"
+    ind = json.loads(ind_p.read_text(encoding="utf-8"))
+    r = ind["riquadro"]
+    ind["riquadro"] = [r[0], r[1], max(r[2], muro[0] + 0.0005), r[3]]          # bordo est a ~40 m dal punto
+    ind.pop("istat", None)
+    ind_p.write_text(json.dumps(ind), encoding="utf-8")
+    est = ind["riquadro"][2]
+    risposta = {"type": "FeatureCollection", "licenza": "ODbL 1.0",
+                "features": [_quadrato("w-dentro", est - 0.0004, muro[1]), _quadrato("w-fuori", est + 0.0015, muro[1])]}
+    chiamate = []
+
+    def edifici3d(rq):
+        f = tmp_path / re.sub(r"^.*?/edifici3d/", "", rq.request.url.split("?")[0])
+        if not f.is_file():
+            return rq.fulfill(status=404, body="{}")
+        dati = f.read_bytes()
+        rng = rq.request.headers.get("range")
+        tipo = "application/json" if f.suffix == ".json" else "application/octet-stream"
+        if rng:
+            a, b = rng.replace("bytes=", "").split("-")
+            a = int(a); b = int(b) if b else len(dati) - 1
+            return rq.fulfill(status=206, body=dati[a:b + 1], headers={"Content-Type": tipo, "Content-Range": f"bytes {a}-{min(b, len(dati) - 1)}/{len(dati)}"})
+        return rq.fulfill(status=200, body=dati, headers={"Content-Type": tipo})
+
+    for istat, attese in ((None, True), ("099014", False)):
+        voce = {"base": "/edifici3d/cc-by/er/prodotti/", "nome": "archivio parziale" if not istat else "comune intero"}
+        if istat:
+            voce["istat"] = istat
+        (tmp_path / "archivi.json").write_text(json.dumps({"archivi": [voce]}), encoding="utf-8")
+        chiamate.clear()
+        ctx, pg = pagina(browser)
+        _con_strati(pg)
+        pg.route(re.compile(r"^http://127\.0\.0\.1:\d+/edifici3d/"), edifici3d)
+        pg.route("**/api/edifici/osm?*", lambda rq: (chiamate.append(rq.request.url),
+                 rq.fulfill(status=200, content_type="application/json", body=json.dumps(risposta)))[1])
+        pg.goto(base + "modelli3d.html")
+        webgl(pg)
+        s, E = "window.EUGENIO_EDIFICIO3D.stato", "window.EUGENIO_EDIFICIO3D"
+        attendi(pg, f"window.EUGENIO_EDIFICIO3D && {s}.mappa && {s}.archivi.length === 2 && {s}.osmAttivo")
+        assert pg.evaluate(f"{E}.coperto({muro[0]}, {muro[1]})") is True
+        pg.evaluate(f"(() => {{ {s}.mappa.jumpTo({{ center: [{muro[0]}, {muro[1]}], zoom: 18 }}); {E}.impostaPunto({muro[0]}, {muro[1]}, 'clic'); return {E}.puntoCambiato(); }})()")
+        attendi(pg, f"{s}.daGenerare && {s}.daGenerare.edificio === 'E-CORTE'")
+        if attese:
+            attendi(pg, f"{s}.mappa.getSource('corpi_1').serialize().data.features.length > 0")
+            ids = pg.evaluate(f"{s}.mappa.getSource('corpi_1').serialize().data.features.map((f) => f.properties.id)")
+            assert chiamate and ids == ["w-fuori"], (chiamate, ids)
+        else:
+            assert chiamate == [], chiamate
+        assert not pg.errori, pg.errori
+        ctx.close()
+
 # ----------------------------------------------------------------------------------- 07/11/2026: terreno dal server
 def test_modelli3d_terreno_dal_server_e_altezza_stimata(browser, base, tmp_path):
     """Il terreno 3D viene da /api/terreno/{z}/{x}/{y}.png (l'archivio non ha più terreno.pmtiles): qui il server simulato
