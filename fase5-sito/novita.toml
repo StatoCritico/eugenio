@@ -22,6 +22,15 @@
 
 [[voce]]
 data = "2026-11-16"
+versione = "20261116g"
+titolo = "Perugia in Modelli 3D, con le altezze dal rilievo laser"
+nuovo = [
+  "Patrimonio › Modelli 3D: a Perugia (centro storico, Fontivegge e Sant'Andrea delle Fratte) gli edifici hanno le altezze misurate dal rilievo laser del Ministero dell'Ambiente (2014), non più stimate; le sagome vengono da OpenStreetMap. Con Perugia ci sono tutti i capoluoghi di regione.",
+  "Patrimonio › Modelli 3D: a Perugia il terreno della vista 3D viene dal rilievo laser a 1 m.",
+]
+
+[[voce]]
+data = "2026-11-16"
 versione = "20261116d"
 titolo = "Trattamento aria in due metà; citazione di EuGEnio in tutti i file Excel"
 migliorato = [

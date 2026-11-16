@@ -173,6 +173,9 @@ TESTI_LICENZA = {
     "IODL 2.0": "Italian Open Data License 2.0 (https://www.dati.gov.it/content/italian-open-data-license-v20)",
     "CC0 1.0": ("Creative Commons CC0 1.0 Universale (https://creativecommons.org/publicdomain/zero/1.0/deed.it): "
                 "nessun obbligo, attribuzione di cortesia"),
+    # archivi ODbL «veri» dei comuni (16/11/2026, Perugia): sagome OSM, cartella odbl/, mai insieme agli archivi CC BY
+    "ODbL 1.0": ("Open Database License 1.0 (https://opendatacommons.org/licenses/odbl/1-0/): database derivato da "
+                 "OpenStreetMap, si ridistribuisce con la stessa licenza e l'attribuzione «© OpenStreetMap contributors»"),
 }
 
 
@@ -282,7 +285,7 @@ def main(argv=None) -> int:
                         "rotta /api/terreno del server")
     ds.add_argument("--file", type=Path, nargs="+", required=True, help="file o cartelle (le tavole si mosaicano)")
     ds.add_argument("--uscita", type=Path, required=True)
-    ds.add_argument("--regione", default="er", choices=("er", "veneto"), help="scheda: licenza, attribuzione e nome in legenda")
+    ds.add_argument("--regione", default="er", choices=("er", "veneto", "pst_umbria"), help="scheda: licenza, attribuzione e nome in legenda")
     ds.add_argument("--crs", help="sistema dei file che non lo dicono (es. EPSG:6876 per le tavole ASCII Grid del Veneto)")
     ds.add_argument("--attribuzione"); ds.add_argument("--licenza"); ds.add_argument("--nome")
     rt = sub.add_parser("dtm-ritaglia", help="finestra di un quadrante del DTM 5 m (zip o TIFF) in un GeoTIFF piccolo")

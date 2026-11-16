@@ -141,6 +141,11 @@ SCHEDE_DTM = {
                "nome": "DTM 5 m da voli LiDAR Regione del Veneto (IODL 2.0)",
                "scheda": "https://idt2.regione.veneto.it/idt/downloader/download (modelli digitali, DTM 5 m da voli LiDAR)",
                "crs": "EPSG:6876"},
+    # 16/11/2026: DTM 1 m del LiDAR PST del MASE (Perugia, contratto 204, 2014), riproiettato in EPSG:7792
+    "pst_umbria": {"attribuzione": "Ministero dell'Ambiente e della Sicurezza Energetica – Geoportale Nazionale, Banca dati "
+                                   "PST, DTM 1 m (CC BY 4.0)", "licenza": "CC BY 4.0",
+                   "nome": "DTM 1 m LiDAR PST del MASE (CC BY 4.0)",
+                   "scheda": "https://gn.mase.gov.it/portale/distribuzione-dati-pst", "crs": None},
 }
 
 

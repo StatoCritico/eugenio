@@ -1,5 +1,33 @@
 # Fase 10 – Edifici 3D, ortofoto, LiDAR e analisi energetiche
 
+Stato al 16/11/2026 g (sito `?v=20261116g`, procedura AG di `AGGIORNAMENTO_2026-11-16g.md`):
+- **Perugia**, ultimo capoluogo di regione: archivio `odbl/umb/perugia` (zona `umbria_perugia`, codice `umb`,
+  EPSG:7792) con le **sagome OpenStreetMap** (ODbL 1.0, Overpass del 15/11/2026) e le **altezze da DSM First − DTM 1 m
+  del LiDAR PST 2014 del MASE** (CC BY 4.0, 20 tavole 1 km × 1 km scaricate dall'app https://sim.mase.gov.it/pst/ il
+  16/11). Copertura: centro storico, Fontivegge e Sant'Andrea delle Fratte (43,080–43,120 N, 12,349–12,401 E), 5.834
+  corpi, 38 celle. Ordine delle altezze per sagoma: DSM − DTM (`ok` o `pochi_pixel`), poi tag OSM `height`/
+  `building:levels` (edifici dopo il 2014, «non presente nel rilievo PST 2014»), poi vicini e uso. Prove: Palazzo dei
+  Priori 29,06 m, Cattedrale 28,61 m, Fontivegge 16,79 m. Il rilievo è segnato «collaudato NO» nel quadro di unione.
+  **Manca** il polo ospedaliero S. Maria della Misericordia a sud di 43,080 N (tavola D43071235: app MASE bloccata il
+  16/11; il CREO è dentro). Fuori dal riquadro dei corpi resta il ripiego OSM al volo.
+- **Codice nuovo**: `edifici3d/adattatori/umbria.py` (`umbria_osm_pst`, comando `osm-geojson`), `fonti/umbria_perugia.toml`,
+  scheda `pst_umbria` per `dtm-server --regione` (`dtm_locale.SCHEDE_DTM`), «ODbL 1.0» tra i `TESTI_LICENZA` accettati da
+  `controlla-archivio`, PST nazionale «attiva» in `fonti/regioni.toml`; test `tests/test_umbria.py`.
+- **Terreno**: COG `dtm1_pst_perugia.tif` (1 m, 49 MB) con la sua scheda `.json` per `/api/terreno`: quote 474 m in centro,
+  303 m a Fontivegge.
+- **Comandi** (dalla cartella della fase 10; `ARCH` = cartella degli archivi; tavole DTM e DSM First del PST scompattate):
+  ```
+  python -m edifici3d.adattatori.umbria osm-geojson --osm perugia.osm --crs EPSG:7792 --uscita perugia_osm.geojson
+  python -m edifici3d dtm-server --regione pst_umbria --file dtm/ --uscita dtm1_pst_perugia.tif   # COG + scheda .json
+  # altezze_dsm.annota (DSM First, DTM) → perugia_pst.geojson; si tengono le sagome con dsm_esito (dentro le tavole)
+  python -m edifici3d --zona umbria_perugia prepara-regione --file perugia_pst_area.geojson --dtm dtm_perugia_7792.tif \
+      --archivio ARCH --comune perugia --parziale \
+      --nome "Perugia – OpenStreetMap con altezze LiDAR PST 2014 (centro, Fontivegge, S. Andrea delle Fratte)"
+  python -m edifici3d controlla-archivio ARCH/odbl/umb/perugia/prodotti     # problemi: [], avvisi: []
+  ```
+  Per allargare (ospedale, resto del comune: 511 tavole) si scaricano altre tavole dall'app (procedura in
+  `documenti/PERUGIA_PST_2026-11-16.md`), si riscarica OSM sul riquadro nuovo e si rifanno i tre passi.
+
 Stato al 09/11/2026 d (sito `?v=20261109d`, procedura S di `AGGIORNAMENTO_2026-11-09d.md`, dopo le prove Q8):
 - **Particelle catastali** (`ortofoto/strati/catasto.toml`): zoom massimo 19 (prima 20); le quattro tessere del blocco 2×2
   chiesto all'Agenzia delle Entrate vanno tutte in copia (fase 4, `strati.py`).
@@ -89,7 +117,7 @@ Stato all'08/11/2026 (stessa versione `?v=20261107b`, decisioni di Paolo):
   mediana dei vicini OSM), Conegliano centro 1.153 (1).
 - **`dtm-server` con più file** (`dtm_locale.cog_server`): uno o più zip, TIFF o **ESRI ASCII Grid** (anche una cartella),
   mosaicati in un COG unico per zona; `--crs` per i file senza sistema (le tavole del Veneto non hanno il `.prj`:
-  **EPSG:6876**, verificato con le quote di Susegana), `--regione er|veneto` per la scheda (licenza, attribuzione, nome in
+  **EPSG:6876**, verificato con le quote di Susegana), `--regione er|veneto|pst_umbria` per la scheda (licenza, attribuzione, nome in
   legenda), data dei dati dallo zip. Prova con le **40 tavole** 2 km × 2 km del DTM 5 m da voli LiDAR (Susegana e
   Conegliano, 2024-06-03): COG di 12,5 MB in 2,5 s; castello di San Salvatore 157 m, via San Salvatore 78 m, Conegliano
   73 m (Copernicus sulla stessa tessera: 72–127 m). La rotta `/api/terreno` usa più DTM insieme (README della fase 4).
@@ -1289,6 +1317,7 @@ dell'08/11; le voci di `archivi.json` restano 43.
 | Napoli | `campania_napoli` (zona cam) / `campania_dbt` | comune intero 063049 (DBT 2020) | 29.698 | altezze: classe Copernicus UA Building Height 2012 in circa 25.600 corpi (86 %), mediana dei vicini in circa 3.540, stima dall'uso in circa 560; Ospedale Cardarelli (DEA) classe 20–30 m → 25 m; torri del Centro Direzionale classe 100–368 m → 100 m (20 corpi oltre 60 m); DTM 2020 5 m | CC BY 4.0 (+ Copernicus) | `cc-by/cam/napoli` |
 | Palermo | `sicilia` / `palermo_uv` | comune intero 082053 (unità volumetriche del Comune) | 99.023 | Teatro Massimo 39,3 m; massimo 204,1 m nell'area del porto (da controllare: probabile errore di quota) | CC BY 4.0 | `cc-by/sic/palermo` |
 | Cagliari | `sardegna` / `sardegna_dbgt_lidar` | 6 tessere LiDAR (Castello e Brotzu), parziale | 3.034 | Ospedale Brotzu 26,4 m; Cattedrale 17,9 m; DSM buildings − DTM LiDAR 2008 1 m | CC BY 4.0 | `cc-by/sar/cagliari` |
+| Perugia (16/11/2026) | `umbria_perugia` (zona umb) / `umbria_osm_pst` | 20 tavole PST 1 km (centro, Fontivegge, S. Andrea delle Fratte), parziale; manca il polo ospedaliero a sud di 43,080 N | 5.834 (5.833 edifici) | Palazzo dei Priori 29,1 m; Cattedrale 28,6 m; Fontivegge 16,8 m; gronda mediana 11,1 m, massimo 52,4 m; DSM First − DTM 1 m del LiDAR PST 2014 su 6.106 celle-corpo, vicini 57, uso 7 | ODbL 1.0 (sagome OSM) + CC BY 4.0 (altezze) | `odbl/umb/perugia` |
 
 Comandi di Venezia e Napoli (08/11/2026, dalla cartella della fase 10; `ARCH` = cartella degli archivi; gli altri 13 nei
 `MODIFICHE_CONDIVISE.md` dei gruppi e in `COMANDI.md` del gruppo C):
@@ -1339,7 +1368,7 @@ volumi con `COD_ISTAT` 058091 cadono fuori dal confine generalizzato +150 m (bor
 Altre fonti provate ma senza archivio: CTR 2012-13 della Sicilia (`sicilia_ctr`: serve un DTM con licenza aperta),
 sagome al volo di **Sardegna** (WFS) e **Campania** (ArcGIS REST) in `fonti/sagome_regionali.d/`; Bolzano e Trento non
 sono nelle sagome al volo (il riquadro del Veneto li contiene: `fonte_nel_punto` prende la prima fonte; vale l'archivio
-del comune). **Perugia** chiusa senza dati (portali dell'Umbria non raggiungibili; PST da riverificare dopo il 10/11).
+del comune). **Perugia**: chiusa senza dati l'08/11 (portali dell'Umbria non raggiungibili); **dal 16/11/2026** archivio ODbL con le sagome OSM e le altezze del LiDAR PST 2014 (riga della tabella).
 **Catanzaro**: il DTM 5 m della Regione Calabria **non è aperto** («la cessione diretta ad Enti terzi dei dati non è
 consentita salvo concessioni/autorizzazioni specifiche»): decisione di Paolo dell'08/11, da usare **solo per le quote a
 terra degli edifici** (mai come terreno 3D né in `/api/terreno`) quando il ripiego OSM avrà le quote dal DTM; nessun
@@ -1353,6 +1382,7 @@ archivio per ora (nessun DB con gli edifici).
 | `edifici3d/adattatori/lazio.py`, `basilicata.py`, `piemonte.py` | `lazio_dbgt`, `basilicata_dbgt` (WFS e WCS RSDI), `piemonte_bdtre` (gruppo A) |
 | `edifici3d/adattatori/toscana.py`, `puglia.py`, `marche.py`, `sicilia.py`, `friuli_venezia_giulia.py` | `toscana_uv`, `puglia_ctr`, `marche_dbgt`, `palermo_uv`, `sicilia_ctr`, `fvg_ctrn_ed2` (gruppo B) |
 | `edifici3d/adattatori/trento.py`, `bolzano.py`, `sardegna.py`, `campania.py` | `trento_pat3d`, `bolzano_inspire`, `sardegna_dbgt_lidar`, `campania_dbt` (gruppo C) |
+| `edifici3d/adattatori/umbria.py` | `umbria_osm_pst` (16/11/2026): sagome OSM con le altezze `dsm_*` di `altezze_dsm.annota` sul LiDAR PST; `python -m edifici3d.adattatori.umbria osm-geojson --osm <file.osm> --crs EPSG:7792 --uscita <geojson>` |
 | `edifici3d/adattatori/venezia.py` | `venezia_dbgt`: DBGT del Comune di Venezia (EPSG:3004 senza `.prj`, gronda `UN_VOL_AV` = `UN_VOL_QG − UN_VOL_QB`, quota `UN_VOL_QB`, colmo `UN_VOL_QE − UN_VOL_QB`, sotto 0,5 m scartati); passo `unisci` con lo strato `EDIFC` (edificio di appartenenza e destinazione) |
 | `edifici3d/a_comuni.py`, `edifici3d/b_regioni.py` | comune intero dai servizi o dai file, ritaglio sul confine ISTAT, DTM a blocchi (A); passi `toscana-wfs`, `puglia-ctr`, `marche-dbgt`, `palermo-uv`, `fvg-wfs`… (B); `dbgt-fogli` (09/11/2026: UN_VOL di più fogli DBGT del Lazio per un comune, senza doppioni) |
 | `edifici3d/altezze_dsm.py` | altezze da DSM − DTM per sagoma (`annota`, `confronta`, `mosaico`); comando `confronta-dsm` (C) |

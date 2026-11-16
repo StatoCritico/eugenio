@@ -570,7 +570,7 @@ usata_in = "ortofoto/toscana.toml (toscana2023)"
 [[regione]]
 codice = "10"
 nome = "Umbria"
-nota = "umbriageo.regione.umbria.it e dati.umbria.it non raggiungibili dal container (connessione chiusa, 502)."
+nota = "umbriageo.regione.umbria.it e dati.umbria.it non raggiungibili dal container (connessione chiusa, 502). 16/11/2026: Perugia (centro, Fontivegge, S. Andrea delle Fratte) con sagome OpenStreetMap (ODbL, odbl/umb/perugia) e altezze dal LiDAR PST 2014 del MASE (fonti/umbria_perugia.toml)."
 
 [[regione.fonte]]
 tema = "edifici"
@@ -1076,19 +1076,21 @@ motivo = "le recenti sono AGEA con autorizzazione dell'ente proprietario; in CC 
 tema = "lidar"
 nome = "PST MASE – DTM e DSM LiDAR 1 m (2008-2013, coste e fiumi)"
 licenza = "CC BY 4.0"
-stato = "in attesa"
-verifica = "2026-11-04"
-scheda = "https://sim.mase.gov.it/portalediaccesso/mappe/#/viewer/new"
-motivo = "download dal visualizzatore, non automatizzabile; portale offline fino al 7/11/2026 (§ 3)"
+stato = "attiva"
+verifica = "2026-11-16"
+scheda = "https://gn.mase.gov.it/portale/distribuzione-dati-pst"
+prova = "16/11/2026: 20 tavole DTM e 20 DSM First 1×1 di Perugia (contratto 204, 2014) scaricate dall'app, 80 MB per prodotto, valide al 100 %, quote ortometriche"
+usata_in = "odbl/umb/perugia"
+motivo = "16/11/2026: app di nuovo online (https://sim.mase.gov.it/pst/), licenza CC BY 4.0 scritta nella pagina «Distribuzione dati PST»; download a mano (Cerca prodotti → poligono → carrello, al più 20 tavole e 6 GB per richiesta, GeoTIFF EPSG:4326); usato per Perugia (20 tavole del 2014, documenti/PERUGIA_PST_2026-11-16.md); il rettangolo di selezione dà spesso 0 elementi (errore 500 del server)"
 
 [[nazionale]]
 tema = "lidar"
 nome = "LiDAR nazionale PNRR (DTM e DSM 25 cm)"
 licenza = "da verificare"
 stato = "in attesa"
-verifica = "2026-11-04"
+verifica = "2026-11-16"
 scheda = "https://www.gisinfrastrutture.it/2026/04/ottime-notizie-per-il-dtm-ad-alta-precisione-di-tutta-litalia/"
-motivo = "pubblicazione a blocchi nell'app PST; licenza e interfaccia da verificare dopo il 7/11/2026"
+motivo = "16/11/2026: non ancora pubblicato (nell'app PST solo i livelli PST 2008-2015 e PS; nessuna scheda PNRR nel RNDT); licenza non scritta (documenti/LIDAR_MASE_VERIFICA_2026-11-16.md)"
 
 [[nazionale]]
 tema = "edifici"

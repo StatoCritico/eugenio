@@ -1,0 +1,47 @@
+# Zona «umb» per l'archivio di Perugia (16/11/2026, ultimo capoluogo di regione senza archivio): sagome OpenStreetMap
+# (ODbL 1.0, archivio odbl/umb/perugia, mai insieme agli archivi CC BY) con le altezze del LiDAR PST del MASE
+# (DSM First − DTM 1 m, CC BY 4.0), adattatore umbria_osm_pst (edifici3d/adattatori/umbria.py).
+# Verifiche dal vivo (16/11/2026, documenti/PERUGIA_PST_2026-11-16.md):
+# - PST: app https://sim.mase.gov.it/pst/ («Cerca prodotti», poligono, «Quadro di unione LiDAR DTM/DSM First Griglia 1x1»,
+#   carrello, download), 20 tavole D4308..D4311 × 1235..1239 (43,08–43,12 N, 12,35–12,40 E), contratto 204, voli del
+#   13–14/03/2014, «collaudato NO»; GeoTIFF float32 EPSG:4326, celle di 0,00001°, nodata −9999, quote ortometriche
+#   (DTM 241–495 m); licenza CC BY 4.0 dalla pagina «Distribuzione dati PST» (nei metadati dello ZIP non c'è).
+# - OSM: una richiesta Overpass (istanza europea ovp.dresel.systems) sul riquadro 43,079–43,121 N, 12,349–12,401 E,
+#   dati del 15/11/2026.
+# - Regione Umbria: Fabbricati 2005-2010 senza altezze; DBGT 10k Tevere-Trasimeno «non commerciale»; portali non
+#   raggiungibili dal container (08/11/2026): lettera n. 10 di documenti/LETTERE_DA_INVIARE_2026-11-08.md.
+
+[zona]
+nome = "Umbria"
+codice = "umb"
+crs = "EPSG:7792"
+riquadro = [12.08, 42.36, 13.27, 43.62]
+
+[archivi]
+"CC BY 4.0" = "cc-by"
+"ODbL 1.0" = "odbl"
+
+[fonti.edifici]
+descrizione = "OpenStreetMap – edifici (sagome), con le altezze del LiDAR PST 2014 del MASE"
+licenza = "ODbL 1.0"
+attribuzione = "© OpenStreetMap contributors (ODbL 1.0); altezze da DSM − DTM 1 m: Ministero dell'Ambiente e della Sicurezza Energetica – Geoportale Nazionale, Banca dati PST (CC BY 4.0)"
+scheda = "https://www.openstreetmap.org/copyright"
+adattatore = "umbria_osm_pst"
+servizio_tipo = "file"
+crs_servizio = "EPSG:7792"
+url = ""                                  # una richiesta Overpass sul riquadro (comando in AGGIORNAMENTO_2026-11-16g.md)
+
+[fonti.lidar]
+descrizione = "MASE – Piano Straordinario di Telerilevamento, LiDAR Umbria 2014 (contratto 204): DTM e DSM First 1 m"
+licenza = "CC BY 4.0"
+attribuzione = "Ministero dell'Ambiente e della Sicurezza Energetica – Geoportale Nazionale, Banca dati PST (CC BY 4.0)"
+scheda = "https://gn.mase.gov.it/portale/distribuzione-dati-pst"
+crs = "EPSG:4326"
+url = ""                                  # solo a mano dall'app https://sim.mase.gov.it/pst/ (nessuna API di download)
+
+[fonti.dtm]
+descrizione = "MASE – PST, DTM 1 m (2014), riproiettato in EPSG:7792 per le quote dei corpi e il terreno 3D"
+licenza = "CC BY 4.0"
+attribuzione = "Ministero dell'Ambiente e della Sicurezza Energetica – Geoportale Nazionale, Banca dati PST, DTM 1 m (CC BY 4.0)"
+scheda = "https://gn.mase.gov.it/portale/distribuzione-dati-pst"
+url = ""
