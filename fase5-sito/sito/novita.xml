@@ -5,9 +5,18 @@
   <id>tag:eugenio.statocritico.it,2026:novita</id>
   <link rel="self" type="application/atom+xml" href="https://eugenio.statocritico.it/novita.xml"/>
   <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html"/>
-  <updated>2026-11-15T12:00:00Z</updated>
+  <updated>2026-11-16T12:00:00Z</updated>
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
+  <entry>
+    <title>16 novembre 2026 – Trattamento aria: colonna sinistra con la sua barra di scorrimento</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261116</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261116"/>
+    <updated>2026-11-16T12:00:00Z</updated>
+    <summary>Trattamento aria: colonna sinistra con la sua barra di scorrimento</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Trattamento aria (le quattro pagine): la colonna con la mappa e il diagramma resta ferma mentre scorri la pagina e ha la sua barra per scorrere, come nelle altre pagine.&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
   <entry>
     <title>15 novembre 2026 – Trattamento aria: psicrometria con il clima vero del tuo comune</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261115</id>

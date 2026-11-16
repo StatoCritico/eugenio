@@ -310,11 +310,12 @@ docker compose run --rm --no-deps -T -v /srv/lavoro/archivio:/archivio worker \
   python -m meteo_storico scarica-psicro --archivio /archivio --comuni 037006,099014 --dal 1949-01-01 --al 1950-12-31 \
   --cartella-psicro /archivio/psicro_prova
 ls -la /srv/lavoro/archivio/psicro_prova
-rm -rf /srv/lavoro/archivio/psicro_prova
+sudo rm -rf /srv/lavoro/archivio/psicro_prova
 ```
 Cosa aspettarsi: righe `psicro gruppo 1/1 (2 comuni) anno 1949: … s` e `anno 1950`, poi un JSON con `"scritti": 2`,
 `"dal": "1949-01-01T00:00Z"`, `"al": "1950-12-31T23:00Z"`; nella cartella `037006.parquet` e `099014.parquet` di circa
-25–40 KB e `celle.parquet`. In questo ramo dal 2015 si usa la serie corretta verso ICON (fonte 2), come scritto in «Come
+150–200 KB (contengono anche la serie corretta dal 2015 e ICON) e `celle.parquet`. La cartella è dell'utente 1000
+(`opc`), per questo la pulizia vuole `sudo`. In questo ramo dal 2015 si usa la serie corretta verso ICON (fonte 2), come scritto in «Come
 funziona». → vai a **Z9** e usa in Z10 la riga **A**.
 
 Cosa fare se va male: errori di rete o `Permission denied` → mandami le ultime 20 righe.

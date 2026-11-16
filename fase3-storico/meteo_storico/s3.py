@@ -68,6 +68,13 @@ class FSBlocchi:
             self.dim[path] = self.fs.size(path)
         return self.dim[path]
 
+    def dimentica(self, path) -> None:
+        """Toglie dalla cache dimensione e blocchi di un file (riscritto sul bucket mentre lo si leggeva)."""
+        with self.lock:
+            self.dim.pop(path, None)
+            for k in [k for k in self.cache if k[0] == path]:
+                del self.cache[k]
+
     def esiste(self, path) -> bool:
         try:
             self.size(path)
@@ -146,6 +153,19 @@ def leggi(fs: FSBlocchi, dominio: str, var: str, celle: np.ndarray, h0: int, h1:
 
     def una(arg):
         path, a, b, i, lst = arg
+        for t in range(4):
+            try:
+                return _una(path, a, b, i, lst)
+            except Exception as e:
+                # (16/11) file .om riscritto da Open-Meteo durante la lettura (di notte, l'anno in corso): dimensione e
+                # blocchi in cache sono della versione vecchia → «Not an OM file». Si dimenticano e si riprova.
+                if t == 3:
+                    raise
+                log.warning("s3: %s illeggibile (%s), nuovo tentativo tra %d s", path, e, 30 * (t + 1))
+                fs.dimentica(path)
+                time.sleep(30 * (t + 1))
+
+    def _una(path, a, b, i, lst):
         r = OmFileReader.from_fsspec(fs, path)
         bb = min(b, r.shape[-1])
         if a >= bb:

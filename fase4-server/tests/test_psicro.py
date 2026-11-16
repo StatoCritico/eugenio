@@ -142,6 +142,61 @@ def test_scarica_riprendibile_e_unione(tmp_path, s3_finto):
     assert len(s3_finto) == n
 
 
+def test_scarica_fine_che_avanza_non_rifà_tutto(tmp_path, s3_finto, monkeypatch):
+    """(16/11) Il giorno dopo ERA5 ha un giorno in più: i comuni già scaricati restano fatti (li allunga la notte)."""
+    arch = tmp_path / "archivio"
+    monkeypatch.setattr(s3, "fine_dati", lambda fs, dom: H("1950-03-31T23:00Z"))
+    assert A.scarica(arch, COMUNI, dal=dt.date(1949, 1, 1), per_gruppo=3)["scritti"] == 3
+    monkeypatch.setattr(s3, "fine_dati", lambda fs, dom: H("1950-04-01T23:00Z"))
+    n = len(s3_finto)
+    assert A.scarica(arch, COMUNI, dal=dt.date(1949, 1, 1), per_gruppo=3)["scritti"] == 0
+    assert len(s3_finto) == n
+    # oltre il margine (30 giorni) si rifà
+    monkeypatch.setattr(s3, "fine_dati", lambda fs, dom: H("1950-06-01T23:00Z"))
+    assert A.scarica(arch, COMUNI, dal=dt.date(1949, 1, 1), per_gruppo=3)["scritti"] == 3
+
+
+def test_fsblocchi_dimentica_un_file():
+    fs = s3.FSBlocchi.__new__(s3.FSBlocchi)
+    import threading
+    from collections import OrderedDict
+    fs.lock, fs.cache, fs.dim = threading.Lock(), OrderedDict(), {"a": 10, "b": 20}
+    fs.cache[("a", 0)] = b"x"; fs.cache[("a", 1)] = b"y"; fs.cache[("b", 0)] = b"z"
+    fs.dimentica("a")
+    assert fs.dim == {"b": 20} and list(fs.cache) == [("b", 0)]
+
+
+def test_leggi_riprova_se_il_file_om_cambia(monkeypatch):
+    """(16/11) «Not an OM file» alla prima lettura (file riscritto sul bucket): si dimentica la cache e si riprova."""
+    import sys, types
+    tentativi = []
+
+    class Lettore:
+        def __init__(self):
+            self.shape = (s3.GRIGLIE["era5"]["ny"], s3.GRIGLIE["era5"]["nx"], 48)
+
+        def __getitem__(self, k):
+            return np.ones((1, k[1].stop - k[1].start, k[2].stop - k[2].start), dtype=np.float32)
+
+        @staticmethod
+        def from_fsspec(fs, path):
+            tentativi.append(path)
+            if len(tentativi) == 1:
+                raise RuntimeError("Not an OM file")
+            return Lettore()
+    monkeypatch.setitem(sys.modules, "omfiles", types.SimpleNamespace(OmFileReader=Lettore))
+    monkeypatch.setattr(s3.time, "sleep", lambda s: None)
+
+    class FSF:
+        dimenticati = []
+        def esiste(self, p): return True
+        def dimentica(self, p): self.dimenticati.append(p)
+    fs = FSF()
+    h0 = H("1950-01-01T00:00Z")
+    out = s3.leggi(fs, "era5", "temperature_2m", np.array([[10, 20]]), h0, h0 + 24)
+    assert np.all(out == 1) and len(tentativi) >= 2 and fs.dimenticati == [tentativi[0]]
+
+
 def test_scarica_riprende_dagli_anni_fatti(tmp_path, s3_finto, monkeypatch):
     arch = tmp_path / "archivio"
     vero = A._unisci_gruppo

@@ -145,7 +145,8 @@ cambiato: gruppo, «Nello stesso gruppo» ed etichetta del gruppo vengono già d
 accetta `aria` nel menu fissato.
 
 **Pagine** (`main.strumento.pagina-aria`): a sinistra titolo e piccola mappa, mappa della regione (`#mappa`, altezza
-`clamp(240px, 38vh, 440px)`, colonna non fissa) e sotto il diagramma (`#diagramma-aria`); a destra i passi: 1 «Comune e
+`clamp(240px, 38vh, 440px)`; dal 16/11 la colonna è ferma sotto la testata e scorre da sola con la sua barra, come nelle
+altre pagine a due colonne) e sotto il diagramma (`#diagramma-aria`); a destra i passi: 1 «Comune e
 serie meteo» (`#scelta-aria`), 2 dati della pagina (`#aria-gruppi` nelle tre pagine con i gruppi, `#aria-livello` in
 Trasformazioni, `#aria-pagina`), 3 «Risultati» (`#passo-risultati`, nascosto), poi «Nello stesso gruppo». Le pagine possono aggiungere
 passi (`.passo` con `h2 > span.n`). Ogni pagina ha il suo `aria_<pagina>.js` (calcolo nel browser, CSV dei risultati) e un

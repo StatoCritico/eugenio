@@ -21,6 +21,14 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
+data = "2026-11-16"
+versione = "20261116a"
+titolo = "Trattamento aria: colonna sinistra con la sua barra di scorrimento"
+migliorato = [
+  "Trattamento aria (le quattro pagine): la colonna con la mappa e il diagramma resta ferma mentre scorri la pagina e ha la sua barra per scorrere, come nelle altre pagine.",
+]
+
+[[voce]]
 data = "2026-11-15"
 versione = "20261114b"
 titolo = "Trattamento aria: psicrometria con il clima vero del tuo comune"

@@ -190,7 +190,11 @@ e, dopo la sua fine, ICON (`orario/icon/<istat>.parquet`).
 per ogni gruppo un anno alla volta in `<cartella>/.lavoro/<gruppo>/<anno>.parquet` (un row group per comune: un anno già
 scritto non si rifà). Finiti gli anni del gruppo, ogni comune diventa un file solo (pezzi annuali + file già presente +
 serie corretta + ICON) con scrittura atomica, e il lavoro del gruppo si cancella: i file finali compaiono un gruppo alla
-volta e il server li usa subito. Un comune con il file già completo per il periodo chiesto si salta. Memoria: un gruppo ×
+volta e il server li usa subito. Un comune con il file già completo per il periodo chiesto si salta; dal 16/11 conta
+come completo anche se gli mancano al più **30 giorni** in fondo (`MARGINE_FINE`): la fine di ERA5 avanza ogni notte e prima
+un rilancio il giorno dopo rifaceva tutti i comuni (le ore mancanti le aggiunge l'aggiornamento notturno, fino a 45 giorni).
+**Letture riprovate** (16/11): se un file `.om` risulta illeggibile («Not an OM file», Open-Meteo lo sta riscrivendo di notte)
+`s3.leggi` dimentica dimensione e blocchi in cache di quel file e riprova fino a 3 volte (dopo 30, 60, 90 s). Memoria: un gruppo ×
 un anno (400 comuni ≈ 150 MB, 800 ≈ 300 MB) più un comune alla volta nell'unione. Mentre lavora c'è il file
 `<cartella>/.scarica_in_corso` (aggiornato a ogni anno): l'aggiornamento notturno del worker in quel tempo non tocca la
 cartella.
@@ -200,6 +204,9 @@ cartella.
   Dal 1/1/1940 a novembre 2026 sono ~762.600 ore → **~1,15 MB per comune**, **~9 GB per 7.896 comuni** (8,5–10 GB secondo
   i comuni; la stima di Paolo di ~8 GB era giusta come ordine di grandezza). Durante lo scarico in più i pezzi annuali di
   un gruppo (~0,5 GB con 400 comuni).
+- Sul server (15–16/11/2026): il gruppo 1 ha fatto gli anni in 14 minuti, ~1,4 byte per ora come qui; lo scarico si è
+  fermato una volta alle 00:10 con «Not an OM file» (anno 2026 del gruppo 9, file riscritto da Open-Meteo) e il rilancio
+  del mattino ripartiva da capo per la fine avanzata di un giorno (rimedio: `--al` fisso; ora corretto, vedi sopra).
 - Tempo: un gruppo di 400 comuni legge un anno dei file annuali in **~5 s** (~0,02 GB da S3) e un anno dei file a chunk
   (2022 →) in **~30 s** (~0,06 GB); l'unione costa ~0,15 s per comune. Per 7.896 comuni (20 gruppi): 82 anni × 20 × 5 s
   + 5 anni × 20 × 30 s + 20 minuti di unione ≈ **3,5 ore**, ~40 GB letti da S3 (nessun costo, nessuna quota). Sul server

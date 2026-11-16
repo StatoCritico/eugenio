@@ -299,6 +299,9 @@ def _indice_pezzo(f: pq.ParquetFile) -> dict:
     return out
 
 
+MARGINE_FINE = 30 * 24   # ore: vedi scarica()
+
+
 def completo(p: Path, h0: int, h1: int) -> bool:
     """Il file finale copre già [h0, h1)?"""
     if not p.exists():
@@ -345,7 +348,11 @@ def scarica(archivio: Path, comuni: pd.DataFrame, cartella: Path | None = None, 
         h_fin = fine + 1
         if h_ini >= h_fin:
             raise ValueError("periodo vuoto: --dal dopo l'ultima ora disponibile")
-        da_fare = c[[not completo(cartella / f"{r.istat}.parquet", h_ini, h_fin) for r in c.itertuples()]]
+        # (16/11) un file che arriva fino a MARGINE_FINE ore prima della fine conta come fatto: la fine di ERA5 avanza ogni
+        # notte e senza margine un rilancio il giorno dopo rifaceva tutti i comuni; le ore mancanti le aggiunge il lavoro
+        # notturno (aggiorna, fino a 45 giorni indietro)
+        da_fare = c[[not completo(cartella / f"{r.istat}.parquet", h_ini, max(h_ini + 1, h_fin - MARGINE_FINE))
+                     for r in c.itertuples()]]
         log.info("psicro: %d comuni, %d già completi; periodo %s → %s", len(c), len(c) - len(da_fare), iso(h_ini),
                  iso(h_fin - 1))
         da_fare = da_fare.sort_values(["lat", "lon"]).reset_index(drop=True)

@@ -1526,12 +1526,14 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 
 /* ===================================================================================== Trattamento aria (14/11/2026)
    Menu «Trattamento aria» con il sottotitolo «Psicrometria» e le quattro pagine aria-*.html: mappa in alto e diagramma
-   dell'aria sotto nella colonna sinistra (che qui scorre con la pagina), passi a destra. Moduli: psicro.js,
+   dell'aria sotto nella colonna sinistra (con la sua barra di scorrimento, come le altre pagine), passi a destra. Moduli: psicro.js,
    diagramma_aria.js, scelta_aria.js, gruppi_ore.js (README della fase 5, «Trattamento aria»). Classi con il prefisso .aria-. */
 .tendina .voce-sottotitolo { padding: .5rem .75rem .2rem; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; cursor: default; }
 .menu-pannello .voce-sottotitolo { padding: .6rem var(--s2) .1rem; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
 .riga-voci > .voce-sottotitolo { align-self: center; padding: 0 .35rem 0 .7rem; color: var(--tenue-riga); font: 600 .68rem/1 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
-.pagina-aria .mappa-area { position: static; height: auto; }
+/* (16/11) colonna sinistra come nelle altre pagine a due colonne: ferma sotto la testata, alta quanto la finestra, con la
+   sua barra di scorrimento (prima scorreva con la pagina); mappa e diagramma non si schiacciano */
+.pagina-aria .mappa-area > * { flex-shrink: 0; }
 .pagina-aria .gruppo-servizio { margin: 0; color: var(--tenue); font: 600 var(--c-xs)/1.2 var(--titoli); letter-spacing: .08em; text-transform: uppercase; }
 .pagina-aria .mappa.aria-mappa { flex: none; height: clamp(240px, 38vh, 440px); min-height: 0; }
 .pagina-aria .mappa.aria-mappa svg { height: 100%; }
