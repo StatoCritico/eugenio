@@ -40,9 +40,10 @@ protette da Turnstile, limiti, flussi passo passo, cosa non fare, privacy, attri
 (`https://eugenio.statocritico.it/EUGENIO_PER_AGENTI.md`, collegata dalla F.A.Q. `#agenti-ai` e dalla Sitografia `#claude`),
 con il rimando breve `https://eugenio.statocritico.it/llms.txt`.
 
-**Da aggiornare dopo ogni modifica** (oltre ai README delle fasi, `DA_FARE.md` e `RIEPILOGO.md`): se cambiano funzioni,
-pagine o API, anche `EUGENIO_PER_AGENTI.md` (radice e `fase5-sito/sito/`, identici) e `fase5-sito/sito/llms.txt`, con data e
-versione del sito in testa. Il test `fase4-server/tests/test_agenti.py` fallisce se le due copie differiscono, se la versione
+**Da aggiornare dopo ogni modifica e comunque a ogni push** (regola di Paolo del 16/11/2026; oltre ai README delle fasi,
+`DA_FARE.md` e `RIEPILOGO.md`): sempre data e versione del sito in testa; se cambiano funzioni, pagine o API, anche il
+testo di `EUGENIO_PER_AGENTI.md` (radice e `fase5-sito/sito/`, identici) e `fase5-sito/sito/llms.txt`, con data e
+versione del sito. Il test `fase4-server/tests/test_agenti.py` fallisce se le due copie differiscono, se la versione
 non è quella del sito o se le rotte `/api/…` dell'app e quelle citate nel file non coincidono.
 
 ## Novità e release
@@ -100,6 +101,9 @@ da `.gitignore`.
 
 - Codice: AGPL-3.0 (file `LICENSE`). Dati elaborati e report di EuGEnio: CC BY 4.0, riuso citando
   «Fonte: EuGEnio – eugenio.statocritico.it»; i valori ricavati dagli anni tipo CTI si possono solo citare.
+- **Regola dei file Excel** (Paolo, 16/11/2026; fa parte degli obblighi di licenza): in ogni file Excel prodotto da EuGEnio
+  la citazione «Fonte: EuGEnio – eugenio.statocritico.it» sta **in cima a ogni foglio**, **sotto ogni grafico** e nel
+  **piè di pagina della stampa di ogni pagina**. Primo file allineato: `psicro_UTA.xlsx` v2.2 (fase 14).
 - **Nome e logo** non sono concessi in licenza: i nomi «EuGEnio» e «Stato Critico», il logo, il simbolo e la
   scritta (file in `fase5-sito/sito/logo/` e `fase4-server/servizio/logo_eugenio.png`) restano esclusi dall'AGPL
   e dalla CC BY e servono solo al funzionamento di questo sito. Si possono citare per indicare la provenienza

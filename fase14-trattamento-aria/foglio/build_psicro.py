@@ -29,8 +29,8 @@ from openpyxl.drawing.text import Paragraph, ParagraphProperties, CharacterPrope
 QUI = os.path.dirname(os.path.abspath(__file__))
 # (14/11/2026) percorsi relativi: di predefinito il file scaricabile del sito; un altro percorso come primo argomento
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(QUI, "..", "..", "fase5-sito", "sito", "strumenti", "psicro_UTA.xlsx")
-VERSIONE = "2.1"
-DATA = "14/11/2026"
+VERSIONE = "2.2"
+DATA = "16/11/2026"
 UTA_SCALE = 55   # scala di stampa del foglio UTA (A4 orizzontale, 2 pagine)
 
 # ----------------------------------------------------------------------------- stili
@@ -228,6 +228,34 @@ wc = wb.create_sheet("Calcoli")
 wl = wb.create_sheet("Liste")
 
 
+# (16/11/2026) obbligo di licenza (CC BY 4.0, regola dei file Excel di EuGEnio): la citazione sta in cima a ogni foglio,
+# sotto ogni grafico e nel piè di pagina di ogni pagina stampata
+FONTE = "Fonte: EuGEnio – eugenio.statocritico.it"
+FONTE_LUNGA = FONTE + " (foglio psicro_UTA.xlsx, licenza CC BY 4.0: chi lo usa o ne riporta grafici e valori deve citarlo)"
+F_FONTE = Font(name=ARIAL, size=9, italic=True, color="404040")
+
+
+def fonte_in_cima(w, rng):
+    """Citazione nella riga 1, a destra del titolo (non sposta nessuna cella del foglio)."""
+    a = rng.split(":")[0]
+    w[a] = FONTE + " (CC BY 4.0)"
+    w[a].font = F_FONTE
+    w[a].alignment = Alignment(horizontal="right", vertical="top", wrap_text=False)
+    if ":" in rng:
+        w.merge_cells(rng)
+
+
+def fonte_sotto(w, col, r0, h_cm):
+    """Citazione nella prima riga libera sotto un grafico ancorato alla riga r0 e alto h_cm."""
+    pt, r = 0.0, r0
+    while pt < h_cm / 2.54 * 72:
+        pt += w.row_dimensions[r].height or 15
+        r += 1
+    w[f"{col}{r}"] = FONTE + " – diagramma calcolato con il foglio psicro_UTA.xlsx (CC BY 4.0)"
+    w[f"{col}{r}"].font = F_FONTE
+    return r
+
+
 def put(w, ref, val, font=F_N, fill=None, fmt=None, align=None, border=True):
     c = w[ref]
     c.value = val
@@ -284,6 +312,7 @@ def label(w, row, text, c1="B", c2="C", font=F_N, fill=None):
 # =============================================================================== LISTE
 wl["A1"] = "Liste per i menu a tendina (foglio di servizio, può restare nascosto)"
 wl["A1"].font = F_B
+fonte_in_cima(wl, "F1:I1")
 for j, h in enumerate(["N", "Tipo trasformazione", "P1", "P2", "P3", "Descrizione", "Significato parametri (testo mostrato in UTA)"]):
     put(wl, f"{L(1 + j)}2", h, F_B, FILL_SUB)
 for i, (n, p1, p2, p3, d) in enumerate(TIPI):
@@ -322,6 +351,7 @@ for k, v in widths.items():
 
 ws["B1"] = "UTA – Trasformazioni psicrometriche e diagramma dell'aria umida"
 ws["B1"].font = F_T
+fonte_in_cima(ws, "N1:T1")
 ws["B2"] = (f"Versione {VERSIONE} del {DATA} – proprietà dell'aria umida secondo ASHRAE Fundamentals 2017 "
             "(Hyland–Wexler). Istruzioni complete nel foglio «Guida».")
 ws["B2"].font = F_SM
@@ -558,6 +588,7 @@ for s in ("E", "I"):
 wc.sheet_properties.tabColor = "808080"
 wc["A1"] = "CALCOLI – foglio di servizio (non modificare). Proprietà dell'aria umida e iterazioni."
 wc["A1"].font = Font(name=ARIAL, size=12, bold=True)
+fonte_in_cima(wc, "K1:P1")
 wc["A2"] = ("Le iterazioni sono srotolate in colonne: T rugiada = Newton su ln psat (3 passi da Magnus); "
             "bulbo umido = Newton con derivata numerica (6 passi) sull'equazione ASHRAE del bulbo umido.")
 wc["A2"].font = F_SM
@@ -1728,6 +1759,8 @@ def print_setup(w, area, orientation, fit=None, scale=None, row_breaks=(), title
         hf.left.size = 8
         hf.right.text = "&A"
         hf.right.size = 8
+    w.oddFooter.left.text = FONTE
+    w.oddFooter.left.size = 8
     w.oddFooter.center.text = "Pagina &P di &N"
     w.oddFooter.center.size = 8
     w.oddFooter.right.text = f"v{VERSIONE}"
@@ -1749,6 +1782,8 @@ def chart_sheet(w, title, subtitle, chart, legend, tab):
     w["B2"] = subtitle
     w["B2"].font = F_N
     w.add_chart(chart, "B4")
+    assert fonte_sotto(w, "B", 4, CH_H) < LG, "la citazione sotto il grafico finisce sulla legenda"
+    fonte_in_cima(w, "N1:U1")
     for i, (a, bb) in enumerate(legend):
         put(w, f"B{LG + i}", a, F_B if i == 0 else Font(name=ARIAL, size=9), FILL_SUB if i == 0 else None)
         w.merge_cells(f"B{LG + i}:E{LG + i}")
@@ -1796,6 +1831,7 @@ chart_sheet(wm, "Diagramma di Mollier (h – x) con le trasformazioni dell'UTA",
 
 # copia ridotta del diagramma nel foglio UTA (fuori dall'area di stampa)
 ws.add_chart(build_chart(26, 16, labels=False), "V5")
+fonte_sotto(ws, "V", 5, 16)
 ws["V4"] = "Diagramma T–x (copia ridotta, non stampata – versione completa nei fogli «psicro» e «Mollier»)"
 ws["V4"].font = F_B
 
@@ -1805,7 +1841,10 @@ wg.sheet_properties.tabColor = "548235"
 wg.column_dimensions["A"].width = 2
 GW = 95
 wg.column_dimensions["B"].width = GW
-r = 1
+wg["B1"] = FONTE_LUNGA
+wg["B1"].font = F_FONTE
+wg["B1"].alignment = Alignment(horizontal="right")
+r = 2
 G_ROWS = []          # (riga, tipo, altezza)
 for kind, text in GUIDA:
     parts = [text] if kind in ("F", "T", "H", "S") else [t for t in str(text).split("\n") if t.strip()]

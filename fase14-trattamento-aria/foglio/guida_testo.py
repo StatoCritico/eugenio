@@ -178,6 +178,7 @@ GUIDA = [
       "• «Guida»: A4 verticale, larghezza adattata alla pagina.\n"
       "• «Calcoli»: una pagina A4 orizzontale con costanti, prime colonne del motore degli stati e grandezze di stagione (le colonne di iterazione non si stampano). «Liste» è nascosto."),
 ("H", "14. Registro delle modifiche"),
+("P", "v2.2 (16/11/2026) – Citazione obbligatoria della licenza CC BY 4.0 «Fonte: EuGEnio – eugenio.statocritico.it» in cima a ogni foglio, sotto ogni grafico e nel piè di pagina di ogni pagina stampata: chi usa il foglio o ne riporta grafici e valori deve mantenerla."),
 ("P", "v2.1 (14/11/2026) – Nuovo foglio «Mollier» (diagramma h–x con isoterme, UR, entalpia, volume specifico, scala di bordo Δh/Δx con R, stesse trasformazioni del diagramma T–x); "
       "foglio «Diagramma» rinominato «psicro»; colori delle stagioni invertiti (ESTATE azzurro/blu, INVERNO rosso) in tabelle e grafici, spezzate più spesse; "
       "impostazioni di stampa A4 per tutti i fogli; testi dei parametri abbreviati; guida aggiornata (§9 Mollier, §13 Stampa)."),

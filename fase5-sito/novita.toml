@@ -22,10 +22,11 @@
 
 [[voce]]
 data = "2026-11-16"
-versione = "20261116b"
-titolo = "Trattamento aria: due metà, ognuna con la sua barra di scorrimento"
+versione = "20261116c"
+titolo = "Trattamento aria: due metà con la loro barra di scorrimento e foglio Excel con la citazione"
 migliorato = [
   "Trattamento aria (le quattro pagine): la pagina è divisa in due metà, ognuna con la sua barra di scorrimento: a sinistra mappa e diagramma (barra sul lato sinistro, lontana dal divisore), a destra i passi, come in Patrimonio.",
+  "Foglio Excel psicro_UTA.xlsx (versione 2.2): la citazione «Fonte: EuGEnio – eugenio.statocritico.it» è in cima a ogni foglio, sotto ogni grafico e nel piè di pagina di ogni pagina stampata, come chiede la licenza CC BY 4.0.",
 ]
 
 [[voce]]

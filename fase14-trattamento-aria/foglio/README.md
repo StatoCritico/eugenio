@@ -24,6 +24,12 @@ La verifica vuole LibreOffice (`soffice`) e dura qualche minuto; il 14/11/2026: 
 15/11/2026, dopo il cambio dell'ambiente invernale predefinito, di nuovo **414/414** (i casi scrivono i loro ingressi) e
 **0 errori** di formula su 6.011 formule.
 
+**v2.2 (16/11/2026)** – regola dei file Excel di EuGEnio (obbligo di licenza CC BY 4.0): «Fonte: EuGEnio –
+eugenio.statocritico.it» in cima a ogni foglio (riga 1 a destra del titolo, celle unite; nella Guida in B1, il testo parte
+da B2), sotto ogni grafico (prima riga libera sotto il grafico, calcolata con `fonte_sotto`) e a sinistra nel piè di
+pagina di ogni pagina stampata. Nessun indirizzo di UTA, Calcoli o Liste cambia. Verifica: **414/414** controlli; PDF di
+LibreOffice di 12 pagine con la citazione in ogni piè.
+
 Valori di partenza delle celle gialle (`DEF_IN`): estate esterno 32 °C/50 %, ambiente 26 °C/50 %; inverno esterno
 −5 °C/80 %, **ambiente 20 °C/40 %** (decisione di Paolo del 15/11/2026, come le pagine «Trattamento aria»; prima 50 %).
 Sono anche `DATI_PREDEFINITI` di `psicro.js` e di `aria/psicro.py`: se cambiano qui, cambiano là.
