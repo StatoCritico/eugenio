@@ -1003,7 +1003,7 @@ Niente pacchetti `codice.tar.gz`/`sito.tar.gz` da copiare con scp.
 | `~/energia/fase4-server/aggiorna_da_github.sh --prova` | dice cosa farebbe con l'ultima release (file, convenzioni cambiate, procedure con passi a mano), senza toccare nulla |
 | `~/energia/fase4-server/aggiorna_da_github.sh` | installa l'ultima release, se è più nuova di quella in `~/.eugenio_versione` |
 | `~/energia/fase4-server/aggiorna_da_github.sh v2026.11.13` | installa quella release (anche per tornare indietro: `--forza v…`) |
-| `~/energia/fase4-server/aggiorna_da_github.sh --notte` | dal crontab: solo se c'è una release nuova; email all'amministratore con l'esito |
+| `~/energia/fase4-server/aggiorna_da_github.sh --notte` | dal crontab alle 4:40: solo se c'è una release nuova; **email solo se qualcosa va storto** (16/11/2026) |
 
 Passi: copia di sicurezza di `~/energia` (`~/energia_prima_<release>`, si tengono le ultime 3) e delle convenzioni (`~/convenzioni_prima_<release>`); codice delle fasi 3, 4,
 6, 7, 8, 9, 10 in `~/energia` con rsync **senza cancellare** (restano `.env`, fase 2, `uni_privato`,
@@ -1017,13 +1017,24 @@ il controllo della versione `?v=`; `worker prezzi`; **Purge Everything** su Clou
 può aggiornare anche se stesso.
 
 **Cosa non fa**: i «passi a mano» delle procedure `AGGIORNAMENTO_*.md` cambiate tra le due release (righe nuove del
-`.env`, archivi grandi, crontab, servizi nuovi come `edifici`) li **elenca** alla fine e nell'email, non li esegue; i
+`.env`, archivi grandi, crontab, servizi nuovi come `edifici`) li **elenca** alla fine e nel registro, non li esegue; i
 dati di terzi fuori da git (`mercati_energia/dati/`, `uni_privato`, fase 2) arrivano ancora dal PC. Le procedure nuove
 avranno quindi un passo unico «`aggiorna_da_github.sh`» più gli eventuali passi a mano.
 
 Tutte le cartelle si possono cambiare con le variabili `EUGENIO_REPO`, `EUGENIO_CLONE` (`~/eugenio-git`),
 `EUGENIO_ENERGIA`, `EUGENIO_SITO`, `EUGENIO_CONVENZIONI`, `EUGENIO_STATO`, `EUGENIO_REGISTRO` (le usa la prova a vuoto).
 Installazione e prima prova: procedura X di `AGGIORNAMENTO_2026-11-12.md`.
+
+**Email (decisione di Paolo del 16/11/2026)**: l'email all'amministratore parte **solo se qualcosa va storto**, mai per
+dire che è andato tutto bene:
+- aggiornamento fallito, con il ritorno da solo alla versione di prima (anche a mano);
+- con `--notte`, errore imprevisto (GitHub irraggiungibile, rsync, disco pieno…): oggetto «aggiornamento notturno
+  interrotto»;
+- con `--notte`, release installata ma Purge di Cloudflare o indici dei prezzi non riusciti: oggetto «server aggiornato a
+  …, ma con problemi».
+
+Se va tutto bene, l'esito resta solo in `~/aggiorna_da_github.log`, insieme all'elenco delle procedure con i passi a mano.
+Riga del crontab (procedura X9): `40 4 * * * $HOME/energia/fase4-server/aggiorna_da_github.sh --notte >/dev/null 2>&1`.
 
 ## «Aggiungi DBTR»: proposte di DB topografici e approvazione interna (07/11/2026)
 

@@ -8,7 +8,7 @@
 #   ~/energia/fase4-server/aggiorna_da_github.sh                    aggiorna all'ultima release (se è più nuova di quella installata)
 #   ~/energia/fase4-server/aggiorna_da_github.sh v2026.11.13        aggiorna a quella release
 #   ~/energia/fase4-server/aggiorna_da_github.sh --forza v2026.11.13   anche se è già installata
-#   ~/energia/fase4-server/aggiorna_da_github.sh --notte            dal crontab: solo se c'è una release nuova, email con l'esito
+#   ~/energia/fase4-server/aggiorna_da_github.sh --notte            dal crontab: solo se c'è una release nuova, email solo se qualcosa va storto
 #
 # Passi (gli stessi delle procedure AGGIORNAMENTO_*.md):
 #   1. copia di sicurezza di ~/energia (si tengono le ultime 3) e delle convenzioni del server;
@@ -23,7 +23,9 @@
 #   7. Purge Everything su Cloudflare, se nel .env ci sono CF_ZONE_ID e CF_PURGE_TOKEN (token con il solo permesso
 #      «Zone › Cache Purge»);
 #   8. versione installata in ~/.eugenio_versione; elenco dei file AGGIORNAMENTO_*.md cambiati: i loro «passi a mano»
-#      (archivi, righe nuove del .env, crontab…) lo script NON li fa, li scrive alla fine e nell'email.
+#      (archivi, righe nuove del .env, crontab…) lo script NON li fa, li scrive alla fine e nel registro.
+# Email all'amministratore (decisione di Paolo del 16/11/2026): solo se qualcosa va storto (aggiornamento fallito e ritorno
+# alla versione di prima, errore imprevisto con --notte, Purge o indici dei prezzi non riusciti); se va tutto bene, niente.
 # I segreti restano nel .env del server: lo script li legge solo per il Purge e non li stampa mai.
 set -euo pipefail
 
@@ -53,7 +55,7 @@ for a in "$@"; do
     --prova) PROVA=1 ;;
     --forza) FORZA=1 ;;
     --notte) NOTTE=1 ;;
-    -h|--help) sed -n 2,31p "$0"; exit 0 ;;
+    -h|--help) sed -n 2,29p "$0"; exit 0 ;;
     v*) TAG="$a" ;;
     *) echo "Argomento sconosciuto: $a" >&2; exit 2 ;;
   esac
@@ -68,6 +70,12 @@ avviso() {                       # email all'amministratore con l'avviso del ser
   (cd "$ENERGIA/fase4-server" && docker compose run --rm --no-deps -T api python -c \
     "import sys; from servizio import avvisi; avvisi.invia(sys.argv[1], sys.argv[2])" "$1" "$2") >/dev/null 2>&1 || true
 }
+
+PROBLEMI=""                      # cose andate storte ma non gravi: finiscono nell'email di fine (solo con --notte)
+problema() { PROBLEMI="${PROBLEMI:+$PROBLEMI }$*"; }
+if [ "$NOTTE" = 1 ]; then         # errore imprevisto di notte (rete, git, rsync…): email, poi set -e chiude lo script
+  trap 'avviso "aggiornamento notturno interrotto" "Errore imprevisto alla riga $LINENO di aggiorna_da_github.sh (release ${TAG:-?}). Registro: $REGISTRO"' ERR
+fi
 
 for c in git rsync flock curl docker; do
   command -v "$c" >/dev/null || { echo "Manca il comando $c (sudo apt-get install -y $c)." >&2; [ "$c" = docker ] && [ "$PROVA" = 1 ] || exit 1; }
@@ -137,6 +145,7 @@ torna_indietro() {
   rm -rf "$ENERGIA" && cp -a "$COPIA" "$ENERGIA"
   cp "$HOME/convenzioni_prima_$TAG"/*.toml "$CONV/" 2>/dev/null || true
   (cd "$ENERGIA/fase4-server" && docker compose build api && docker compose up -d --force-recreate api worker) || true
+  trap - ERR
   avviso "aggiornamento a $TAG fallito" "$1. Il server è tornato alla versione ${PRIMA:-precedente}. Registro: $REGISTRO"
   exit 1
 }
@@ -169,12 +178,13 @@ fi
 if [ "$PROVA" = 0 ]; then
   (cd "$ENERGIA/fase4-server" && docker compose run --rm -T worker python -m servizio.worker prezzi >>"$REGISTRO" 2>&1) \
     && registra "Indici dei prezzi rifatti" \
-    || registra "Avviso: file degli indici dei prezzi non rifatto (si rifà stanotte con i mercati)"
+    || { registra "Avviso: file degli indici dei prezzi non rifatto (si rifà stanotte con i mercati)"
+         problema "File degli indici dei prezzi non rifatto (si rifà la notte dopo con i mercati)."; }
 fi
 
 # ------------------------------------------------------------------ 7. Purge di Cloudflare
-ZONA=$(sed -n 's/^CF_ZONE_ID=//p' "$ENERGIA/fase4-server/.env" 2>/dev/null | head -1)
-TOKEN=$(sed -n 's/^CF_PURGE_TOKEN=//p' "$ENERGIA/fase4-server/.env" 2>/dev/null | head -1)
+ZONA=$(sed -n 's/^CF_ZONE_ID=//p' "$ENERGIA/fase4-server/.env" 2>/dev/null | head -1 || true)
+TOKEN=$(sed -n 's/^CF_PURGE_TOKEN=//p' "$ENERGIA/fase4-server/.env" 2>/dev/null | head -1 || true)
 PURGE="non fatto (CF_ZONE_ID o CF_PURGE_TOKEN mancanti nel .env): fallo a mano"
 if [ -n "$ZONA" ] && [ -n "$TOKEN" ]; then
   if [ "$PROVA" = 1 ]; then
@@ -185,6 +195,7 @@ if [ -n "$ZONA" ] && [ -n "$TOKEN" ]; then
     PURGE="fatto"
   else
     PURGE="NON riuscito: fallo a mano"
+    problema "Purge di Cloudflare non riuscito: fallo a mano da https://dash.cloudflare.com/ (statocritico.it › Caching › Configuration › Purge Everything)."
   fi
 fi
 registra "Purge di Cloudflare: $PURGE"
@@ -196,5 +207,8 @@ FINE="Release $TAG $( [ "$PROVA" = 1 ] && echo 'da installare' || echo installat
 registra "$FINE"
 rm -f "$ELENCO"
 [ "$PROVA" = 1 ] && echo "Prova finita: niente è stato cambiato."
-[ "$NOTTE" = 1 ] && avviso "server aggiornato a $TAG" "$FINE"
-echo "Controlla: docker compose ps (in $ENERGIA/fase4-server), crontab -l (1 riga, edifici-lidar)."
+if [ "$NOTTE" = 1 ] && [ -n "$PROBLEMI" ]; then   # di notte, email solo se qualcosa non è andato
+  avviso "server aggiornato a $TAG, ma con problemi" "$PROBLEMI $FINE"
+fi
+[ "$NOTTE" = 1 ] || echo "Controlla: docker compose ps (in $ENERGIA/fase4-server) e crontab -l (edifici-lidar alle 3:30, aggiorna_da_github.sh --notte alle 4:40)."
+exit 0
