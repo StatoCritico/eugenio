@@ -21,6 +21,18 @@ Container:
 
 Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, vedi fase 3).
 
+## Regola dei file Excel (16/11/2026)
+
+Excel e ODS dei report (`servizio/report.py`) e di Dati climatici (`servizio/storici.py`) rispettano la regola di Paolo
+(obbligo della licenza CC BY 4.0): la citazione «Fonte: EuGEnio – eugenio.statocritico.it» (nei report con «, report
+del gg/mm/aaaa») sta **in riga 1 di ogni foglio**, **sotto ogni grafico** (oggi nessun grafico negli Excel: i grafici
+sono solo nel PDF, un test lo controlla) e **nel piè di pagina di stampa** di ogni pagina (`oddFooter.left` in openpyxl,
+piè dello stile di pagina «Default» negli ODS). Nei fogli di dati le intestazioni stanno in **riga 2**, righe 1–2 ripetute
+in stampa, riquadro bloccato in A3 (solo Excel). `tabelle.in_csv` (`/api/converti`, Previsioni, Patrimonio) salta una
+prima riga che contiene solo «Fonte: EuGEnio…», così un file di EuGEnio ricaricato funziona come prima. Prove:
+`test_report.py` (`test_regola_file_excel_xlsx/ods`), `test_storici.py` (`test_regola_excel_xlsx/ods`),
+`test_tabelle.py`. La fixture di `test_protezione.py` ha anche il segnaposto `meteo_storico.psicro`.
+
 ## Aggiunte del 14/11/2026 (archivio psicrometrico e scelte di serie)
 
 - Rotte `/api/psicro/disponibilita/{istat}` e `/api/psicro/serie/{istat}?anni=1|2|5|10|20|0` per il menu «Trattamento
@@ -405,7 +417,7 @@ Il Caddyfile serve dal 06/11/2026 i file `.md` del sito come `text/markdown; cha
 | GET | `/api/report/schema` | schema JSON del documento accettato da `/api/report` |
 | GET | `/api/storici/catalogo` | dataset scaricabili presenti sul server (grandezze, frequenze, periodo, fonte, licenza, limiti) |
 | POST | `/api/storici/stima?formato=csv\|xlsx\|ods` | JSON con i filtri → righe, colonne e dimensione stimate; se la richiesta è troppo grande, motivo e suggerimenti |
-| POST | `/api/storici/estrai?formato=csv\|xlsx\|ods` | stesso JSON → file CSV (in streaming), Excel o OpenDocument (.ods) con foglio "Info" |
+| POST | `/api/storici/estrai?formato=csv\|xlsx\|ods` | stesso JSON → file CSV (in streaming), Excel o OpenDocument (.ods) con foglio "Info" (dal 16/11/2026 citazione in riga 1 di ogni foglio, intestazioni in riga 2) |
 
 ## Archivio psicrometrico per «Trattamento aria» (14/11/2026)
 

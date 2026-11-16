@@ -109,10 +109,10 @@ def test_report_previsione_colonne_affiancate():
     doc = RS.report_previsione(_con_clima(), formato="xlsx")
     assert "Grafici" not in [s.titolo for s in doc.sezioni]          # i grafici solo nel PDF
     ws = libro_xlsx(R.genera(doc, "xlsx"))["Previsione (kWh)"]
-    testa = [c.value for c in ws[1]]
+    testa = [c.value for c in ws[2]]                                  # riga 1: citazione (regola dei file Excel)
     assert testa[:5] == ["Data e ora", "P10", "P50 (mediana)", "P90", "Valore reale"]
     assert testa[5:8] == ["Temperatura (°C)", "Radiazione solare (W/m²)", "Meteo usato"]
-    assert ws["F2"].value == pytest.approx(11.5) and ws["G4"].value == pytest.approx(30.0)
+    assert ws["F3"].value == pytest.approx(11.5) and ws["G5"].value == pytest.approx(30.0)
 
 
 def test_report_previsione_pdf_grafici_in_sequenza():
@@ -139,5 +139,5 @@ def test_report_solo_clima(monkeypatch):
     assert not any("TiRex" in f.testo for f in doc.fonti)          # nessun modello dei consumi tra le fonti
     wb = libro_xlsx(R.genera(RS.report_previsione(r, formato="xlsx"), "xlsx"))
     ws = next(w for w in wb.worksheets if w.title.startswith("Clima previsto"))
-    assert [c.value for c in ws[1]] == ["Data e ora", "Temperatura (°C)", "Umidità (%)", "Meteo usato"]
-    assert ws.max_row == 25
+    assert [c.value for c in ws[2]] == ["Data e ora", "Temperatura (°C)", "Umidità (%)", "Meteo usato"]
+    assert ws.max_row == 26

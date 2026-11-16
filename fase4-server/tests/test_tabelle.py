@@ -82,3 +82,18 @@ def test_mappa_gradi_giorno_estivi(tmp_path, monkeypatch):
     monkeypatch.setattr(A.meteo, "_previsioni", lambda mtime: d)
     j = TestClient(A.app).get("/api/mappa?giorni=7").json()["comuni"]["037006"]
     assert j["gg"] == 0 and j["gc"] == 12.0 and j["t"] == 30.0
+
+
+@pytest.mark.parametrize("engine", ["openpyxl", "odf"])
+def test_salta_riga_citazione_eugenio(engine):
+    """I fogli di EuGEnio hanno la citazione in riga 1: si salta; una riga «Fonte» qualunque invece resta."""
+    b = io.BytesIO()
+    with pd.ExcelWriter(b, engine=engine) as w:
+        pd.DataFrame([["Fonte: EuGEnio – eugenio.statocritico.it – licenza CC BY 4.0", None],
+                      ["data", "kWh"], ["2026-09-01", 1.5]]).to_excel(w, index=False, header=False)
+    righe = tabelle.in_csv(b.getvalue()).decode("utf-8").splitlines()
+    assert righe == ["data;kWh", "2026-09-01;1.5"]
+    b = io.BytesIO()
+    with pd.ExcelWriter(b, engine=engine) as w:
+        pd.DataFrame([["Fonte: altro", None], ["data", "kWh"]]).to_excel(w, index=False, header=False)
+    assert tabelle.in_csv(b.getvalue()).decode("utf-8").splitlines()[0] == "Fonte: altro;"

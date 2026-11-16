@@ -402,9 +402,10 @@ def test_xlsx(cliente):
     wb = load_workbook(io.BytesIO(r.content))
     assert wb.sheetnames == ["Dati", "Info"]
     righe = list(wb["Dati"].iter_rows(values_only=True))
-    assert righe[0] == ("istat", "comune", "provincia", "ora_utc (UTC)", "ora_locale (ora italiana)", "temperatura (°C)")
-    assert len(righe) == 25
-    assert righe[1][4] == dt.datetime(2023, 1, 2, 0, 0) and righe[1][5] == pytest.approx(23 + 3)   # Firenze: k = 3
+    assert righe[1] == ("istat", "comune", "provincia", "ora_utc (UTC)", "ora_locale (ora italiana)", "temperatura (°C)")
+    assert len(righe) == 26
+    assert righe[2][4] == dt.datetime(2023, 1, 2, 0, 0) and righe[2][5] == pytest.approx(23 + 3)   # Firenze: k = 3
+    assert wb["Dati"].freeze_panes == "A3" and wb["Dati"].print_title_rows == "$1:$2"
     info = {a: b for a, b, *_ in wb["Info"].iter_rows(values_only=True) if a}
     assert info["Dataset"].startswith("Meteo orario") and "Open-Meteo" in info["Fonte"]
     assert "CC BY 4.0" in info["Licenza"] and "Estratto il" in info and "Area" in info
@@ -413,7 +414,7 @@ def test_xlsx(cliente):
     gio = load_workbook(io.BytesIO(_estrai(cliente, {"dataset": "gradi_giorno", "frequenza": "giornaliera",
                                                      "dal": "2022-01-01", "al": "2022-01-03",
                                                      "area": {"tipo": "comuni", "comuni": ["033001"]}}, "xlsx").content))
-    r1 = list(gio["Dati"].iter_rows(min_row=2, max_row=2, values_only=True))[0]
+    r1 = list(gio["Dati"].iter_rows(min_row=3, max_row=3, values_only=True))[0]
     assert r1[3] == dt.datetime(2022, 1, 1)   # data vera, non testo
 
 
@@ -431,7 +432,7 @@ def test_ods(cliente):
     assert "META-INF/manifest.xml" in z.namelist()
     x = z.read("content.xml").decode("utf-8")
     assert "table:formula" not in x
-    fogli = pd.read_excel(io.BytesIO(r.content), engine="odf", sheet_name=None)
+    fogli = pd.read_excel(io.BytesIO(r.content), engine="odf", sheet_name=None, header=1)   # riga 1: citazione
     assert list(fogli) == ["Dati", "Info"]
     dati = fogli["Dati"]
     assert list(dati.columns) == ["istat", "comune", "provincia", "ora_utc (UTC)", "ora_locale (ora italiana)",
@@ -441,11 +442,64 @@ def test_ods(cliente):
     assert pd.Timestamp(dati["ora_locale (ora italiana)"].iloc[0]) == pd.Timestamp(2023, 1, 2, 0, 0)  # data vera
     assert 'office:value-type="date" office:date-value="2023-01-02T00:00:00"' in x
     info = {a: b for a, b in fogli["Info"].iloc[:, :2].itertuples(index=False) if isinstance(a, str)}
+    assert "Dataset" in info
     assert info["Dataset"].startswith("Meteo orario") and "Open-Meteo" in info["Fonte"]
     assert "CC BY 4.0" in info["Licenza EuGEnio"] and "citando EuGEnio come fonte" in info["Licenza EuGEnio"]
     assert info["Come citare"].startswith("Fonte: EuGEnio – eugenio.statocritico.it (dati estratti il ")
     stili = z.read("styles.xml").decode("utf-8")
     assert "Fonte: EuGEnio – eugenio.statocritico.it" in stili and "<text:page-number" in stili
+
+
+CIT = "Fonte: EuGEnio – eugenio.statocritico.it"
+
+
+def test_regola_excel_xlsx(cliente):
+    """Regola dei file Excel (CC BY 4.0): citazione in riga 1 di ogni foglio e nel piè di stampa di ogni foglio."""
+    from openpyxl import load_workbook
+    from servizio import tabelle
+    corpo = {"dataset": "meteo_orario", "frequenza": "oraria", "dal": "2023-01-02", "al": "2023-01-02",
+             "variabili": ["temperature_2m"], "area": {"tipo": "comuni", "comuni": ["048017"]}}
+    dati = _estrai(cliente, corpo, "xlsx").content
+    wb = load_workbook(io.BytesIO(dati))
+    for ws in wb.worksheets:
+        assert str(ws["A1"].value).startswith(CIT), ws.title
+        assert ws.oddFooter.left.text == CIT, ws.title
+        assert "&P" in ws.oddFooter.right.text
+    # ricaricato in EuGEnio (/api/converti, previsione, patrimonio): la citazione si salta, l'intestazione è la riga 1
+    righe = tabelle.in_csv(dati).decode("utf-8").splitlines()
+    assert righe[0].startswith("istat;comune;provincia;") and len(righe) == 25
+
+
+def test_regola_excel_ods(cliente):
+    import xml.etree.ElementTree as ET
+    import zipfile
+    from servizio import tabelle
+    corpo = {"dataset": "meteo_orario", "frequenza": "oraria", "dal": "2023-01-02", "al": "2023-01-02",
+             "variabili": ["temperature_2m"], "area": {"tipo": "comuni", "comuni": ["048017"]}}
+    dati = _estrai(cliente, corpo, "ods").content
+    fogli = pd.read_excel(io.BytesIO(dati), engine="odf", sheet_name=None, header=None)
+    for nome, df in fogli.items():
+        assert str(df.iloc[0, 0]).startswith(CIT), nome
+    z = zipfile.ZipFile(io.BytesIO(dati))
+    ns = {"office": "urn:oasis:names:tc:opendocument:xmlns:office:1.0",
+          "style": "urn:oasis:names:tc:opendocument:xmlns:style:1.0",
+          "table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0"}
+    contenuto = ET.fromstring(z.read("content.xml"))
+    stili = ET.fromstring(z.read("styles.xml"))
+    pagine = {m.get(f"{{{ns['style']}}}name"): "".join(m.find("style:footer", ns).itertext())
+              for m in stili.iter(f"{{{ns['style']}}}master-page")}
+    stile_tabella = {s.get(f"{{{ns['style']}}}name"): s.get(f"{{{ns['style']}}}master-page-name")
+                     for s in contenuto.iter(f"{{{ns['style']}}}style")}
+    tabelle_ods = list(contenuto.iter(f"{{{ns['table']}}}table"))
+    assert [t.get(f"{{{ns['table']}}}name") for t in tabelle_ods] == ["Dati", "Info"]
+    for t in tabelle_ods:                                  # ogni foglio stampa con un piè che contiene la citazione
+        pagina = stile_tabella[t.get(f"{{{ns['table']}}}style-name")]
+        assert pagina and CIT in pagine[pagina]
+    # citazione e intestazioni sono righe d'intestazione (ripetute su ogni pagina stampata)
+    righe_testata = contenuto.find("office:body/office:spreadsheet/table:table/table:table-header-rows", ns)
+    assert len(righe_testata) == 2 and CIT in "".join(righe_testata[0].itertext())
+    righe = tabelle.in_csv(dati).decode("utf-8").splitlines()
+    assert righe[0].startswith("istat;comune;provincia;") and len(righe) == 25
 
 
 def test_ods_testo_sicuro():

@@ -103,7 +103,10 @@ da `.gitignore`.
   «Fonte: EuGEnio – eugenio.statocritico.it»; i valori ricavati dagli anni tipo CTI si possono solo citare.
 - **Regola dei file Excel** (Paolo, 16/11/2026; fa parte degli obblighi di licenza): in ogni file Excel prodotto da EuGEnio
   la citazione «Fonte: EuGEnio – eugenio.statocritico.it» sta **in cima a ogni foglio**, **sotto ogni grafico** e nel
-  **piè di pagina della stampa di ogni pagina**. Primo file allineato: `psicro_UTA.xlsx` v2.2 (fase 14).
+  **piè di pagina della stampa di ogni pagina**. File allineati il 16/11/2026: `psicro_UTA.xlsx` v2.2 (fase 14), Excel e ODS dei report
+  (`fase4-server/servizio/report.py`) e di Dati climatici (`storici.py`): citazione in riga 1 di ogni foglio (intestazioni dei
+  fogli di dati in riga 2), nel piè di stampa; nessun grafico negli Excel dei report (i grafici sono solo nel PDF).
+  `tabelle.in_csv` (`/api/converti`) salta una prima riga con la sola citazione.
 - **Nome e logo** non sono concessi in licenza: i nomi «EuGEnio» e «Stato Critico», il logo, il simbolo e la
   scritta (file in `fase5-sito/sito/logo/` e `fase4-server/servizio/logo_eugenio.png`) restano esclusi dall'AGPL
   e dalla CC BY e servono solo al funzionamento di questo sito. Si possono citare per indicare la provenienza

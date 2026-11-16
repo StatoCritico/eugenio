@@ -106,6 +106,9 @@ ESEMPIO = {
 }
 
 
+CITAZIONE_ESEMPIO = "Fonte: EuGEnio – eugenio.statocritico.it, report del 27/10/2026"   # data di ESEMPIO
+
+
 @pytest.fixture
 def doc():
     return R.Documento.model_validate(ESEMPIO)
@@ -149,14 +152,16 @@ def test_xlsx(doc):
     wb = libro_xlsx(R.genera(doc, "xlsx"))
     assert wb.sheetnames == ["Info", "Consumi mensili"]
     ws = wb["Consumi mensili"]
-    assert [c.value for c in ws[1]] == ["Giorno", "Energia (kWh)", "Nota"]
-    assert ws["B2"].value == 1234.5 and ws["B2"].number_format == "#,##0.0"     # numero, non testo
-    assert ws["A2"].value == dt.datetime(2026, 1, 1) and ws["A2"].number_format == "dd/mm/yyyy"
-    assert ws["A3"].value == dt.datetime(2026, 1, 2, 8, 0)
-    assert ws["C4"].value == "=1+1" and ws["C4"].data_type == "s"               # mai formule dai dati
+    assert ws["A1"].value == CITAZIONE_ESEMPIO                                  # riga 1: citazione
+    assert [c.value for c in ws[2]] == ["Giorno", "Energia (kWh)", "Nota"]      # riga 2: intestazioni
+    assert ws.freeze_panes == "A3" and ws.auto_filter.ref == "A2:C5"
+    assert ws["B3"].value == 1234.5 and ws["B3"].number_format == "#,##0.0"     # numero, non testo
+    assert ws["A3"].value == dt.datetime(2026, 1, 1) and ws["A3"].number_format == "dd/mm/yyyy"
+    assert ws["A4"].value == dt.datetime(2026, 1, 2, 8, 0)
+    assert ws["C5"].value == "=1+1" and ws["C5"].data_type == "s"               # mai formule dai dati
     t = tutto_xlsx(wb)
     for atteso in ("Relazione di prova – Forlì", "Weather data by Open-Meteo.com (CC BY 4.0)", "UNI 10349",
-                   "Prodotto da EuGEnio – eugenio.statocritico.it", "Zona climatica"):
+                   CITAZIONE_ESEMPIO, "Zona climatica"):
         assert atteso in t, atteso
 
 
@@ -191,14 +196,14 @@ def test_ods(doc):
     assert "table:formula" not in x and "=1+1" in x                            # mai formule dai dati
     t = " ".join(solo_testo_odf(x).split())
     for atteso in ("Relazione di prova – Forlì", "Weather data by Open-Meteo.com (CC BY 4.0)", "UNI 10349",
-                   R.INTESTAZIONE, "Zona climatica", R.TITOLO_AVVERTENZE, R.CITAZIONE):
+                   CITAZIONE_ESEMPIO, "Zona climatica", R.TITOLO_AVVERTENZE, R.CITAZIONE):
         assert atteso in t, atteso
     stili = " ".join(solo_testo_odf(p["styles.xml"]).split())
     assert "EuGEnio" in stili and doc.titolo in stili and R.PIE_AVVERTENZA_XLSX in stili
     assert "<text:page-number" in p["styles.xml"]
     import pandas as pd                         # rilettura con il lettore ODF di pandas (odfpy)
-    fogli = pd.read_excel(io.BytesIO(R.genera(doc, "ods")), engine="odf", sheet_name=None)
-    assert list(fogli) == ["Info", "Consumi mensili"]
+    fogli = pd.read_excel(io.BytesIO(R.genera(doc, "ods")), engine="odf", sheet_name=None, header=1)
+    assert list(fogli) == ["Info", "Consumi mensili"]                          # riga 1 citazione, riga 2 intestazioni
     assert fogli["Consumi mensili"]["Energia (kWh)"].tolist()[:2] == [1234.5, 987]
 
 
@@ -263,11 +268,11 @@ def test_intestazione_e_avvertenze_pdf(doc):
 def test_intestazione_e_avvertenze_xlsx(doc, monkeypatch):
     monkeypatch.setattr(R, "LOGO_PNG", None)   # con il logo l'intestazione scende alla riga 2
     wb = libro_xlsx(R.genera(doc, "xlsx"))
-    assert wb["Info"]["A1"].value == R.INTESTAZIONE and wb["Info"]["A1"].hyperlink.target == R.SITO
+    assert wb["Info"]["A1"].value == CITAZIONE_ESEMPIO and wb["Info"]["A1"].hyperlink.target == R.LICENZA_PAGINA
     for ws in wb.worksheets:
         assert ws.oddHeader.left.text == "EuGEnio" and ws.oddHeader.center.text == doc.titolo
-        assert ws.oddFooter.left.text.startswith("Prodotto da EuGEnio")
-        assert ws.oddFooter.left.text == R.PIE_AVVERTENZA_XLSX
+        assert ws.oddFooter.left.text.startswith(CITAZIONE_ESEMPIO)
+        assert ws.oddFooter.left.text == R.PIE_LICENZA_XLSX.format(citazione=CITAZIONE_ESEMPIO)
         assert ws.oddFooter.right.text == "Pagina &P di &N"
         assert len(str(ws.oddFooter)) <= 255 and len(str(ws.oddHeader)) <= 255    # limite di Excel
     info = [c.value for r in wb["Info"].iter_rows() for c in r if c.value is not None]
@@ -282,7 +287,9 @@ def test_logo_facoltativo(doc, monkeypatch):
     d = Document(io.BytesIO(R.genera(doc, "docx")))
     assert "graphic" in d.sections[0].header._element.xml                # immagine nell'intestazione
     assert R.genera(doc, "pdf").startswith(b"%PDF")
-    assert libro_xlsx(R.genera(doc, "xlsx"))["Info"].cell(row=2, column=1).value == R.INTESTAZIONE
+    info = libro_xlsx(R.genera(doc, "xlsx"))["Info"]
+    assert info["A1"].value == CITAZIONE_ESEMPIO                          # la citazione resta sopra il logo
+    assert [i.anchor._from.row for i in info._images] == [1]              # logo nella riga 2 (indice 1)
 
 
 def test_nome_file(doc):
@@ -394,8 +401,8 @@ def test_report_previsione():
         assert atteso in t, atteso
     wb = libro_xlsx(R.genera(doc, "xlsx"))
     ws = wb["Previsione (kWh)"]
-    assert ws["C2"].value == pytest.approx(9.4)                 # mediana numerica
-    assert "Valore reale" in [c.value for c in ws[1]]
+    assert ws["C3"].value == pytest.approx(9.4)                 # mediana numerica (riga 1 citazione, 2 intestazioni)
+    assert "Valore reale" in [c.value for c in ws[2]]
     assert "Bologna" in leggi_docx(R.genera(doc, "docx"))
 
 
@@ -416,7 +423,7 @@ def test_report_legge10():
         assert atteso in t, atteso
     wb = libro_xlsx(R.genera(doc, "xlsx"))
     assert "Valori medi mensili" not in wb.sheetnames            # tabella senza titolo: nome generico
-    assert any(ws["A2"].value == "gen" for ws in wb.worksheets)
+    assert any(ws["A3"].value == "gen" for ws in wb.worksheets)
     assert "non sostituiscono i valori normativi" in leggi_docx(R.genera(doc, "docx"))
     assert not any(x.titolo == "Confronto con il DPR 412/93" for x in doc.sezioni)   # senza dpr412 nel corpo
 
@@ -461,9 +468,9 @@ def test_report_patrimonio_senza_dati_di_mercato():
         assert "prezzo_pun" not in t and "0,12" not in t
     wb = libro_xlsx(R.genera(doc, "xlsx"))
     ws = wb[wb.sheetnames[1]]
-    intest = [c.value for c in ws[1]]
+    intest = [c.value for c in ws[2]]
     assert "Latitudine" in intest and "prezzo_pun" not in intest
-    assert ws.cell(row=2, column=intest.index("Latitudine") + 1).value == 44.4985
+    assert ws.cell(row=3, column=intest.index("Latitudine") + 1).value == 44.4985
 
 
 def test_report_patrimonio_colonne_sconosciute():
@@ -481,7 +488,8 @@ def client():
     from fastapi.testclient import TestClient
     finti = {"meteo_storico": {"VARIABILI": []}, "meteo_storico.aggrega": {"giornaliero": None},
              "meteo_storico.correzione": {"applica": None}, "meteo_storico.limiti": {"Limitatore": object},
-             "meteo_storico.scarica": {"FONTI": {}, "client": None, "richiesta": None}}
+             "meteo_storico.scarica": {"FONTI": {}, "client": None, "richiesta": None},
+             "meteo_storico.psicro": {}}   # servizio/psicro.py (fase 14) lo importa all'avvio
     salvati = {k: sys.modules.get(k) for k in finti}
     for nome, attr in finti.items():
         if nome not in sys.modules:
@@ -662,7 +670,7 @@ def test_report_valori_sedi_fogli_senza_immagini():
     assert "Consumi per sede" in nomi and "Costi per sede" in nomi and "Costi unitari medi" in nomi
     testo = "\n".join(str(c.value) for ws in wb.worksheets for r in ws.iter_rows() for c in r if c.value is not None)
     assert "Immagine non inclusa" not in testo and "PUN" not in testo and "PSV" not in testo
-    assert wb["Consumi per sede"]["C2"].value == 1000.5           # i numeri restano numeri
+    assert wb["Consumi per sede"]["C3"].value == 1000.5           # i numeri restano numeri
     assert R.genera(RS.report_valori_sedi(corpo_valori(), formato="ods"), "ods")[:2] == b"PK"
 
 
@@ -704,3 +712,50 @@ def test_report_valori_sedi_decimali_dei_prezzi():
                    {"consumo": "Gas 2025", "costo": "Costo gas 2025", "valore": 1.03149, "unita": "€/Smc", "sedi": 13}]
     t = leggi_pdf(R.genera(RS.report_valori_sedi(c, formato="pdf"), "pdf"))
     assert "302,38" in t and "302,384" not in t and "1,031" in t
+
+
+# ---------------------------------------------------------------------------------- regola dei file Excel
+# (licenza CC BY 4.0, 16/11/2026): citazione in cima a ogni foglio, sotto ogni grafico e nel piè di stampa.
+def _documenti_fogli():
+    """Il documento d'esempio e i report reali che escono anche in xlsx/ods."""
+    yield R.Documento.model_validate(ESEMPIO)
+    yield RS.report_previsione(PREVISIONE)
+    yield RS.report_legge10(LEGGE10)
+    yield RS.report_patrimonio(PATRIMONIO)
+    yield RS.report_valori_sedi(corpo_valori(), formato="xlsx")
+
+
+def test_regola_file_excel_xlsx():
+    for d in _documenti_fogli():
+        cit = R.citazione_report(d)
+        assert cit.startswith(R.CITAZIONE + ", report del ")
+        wb = libro_xlsx(R.genera(d, "xlsx"))
+        for ws in wb.worksheets:
+            assert ws["A1"].value == cit, (d.titolo, ws.title)                 # 1. in cima a ogni foglio
+            assert ws.oddFooter.left.text.startswith(cit), ws.title          # 3. piè di stampa di ogni pagina
+            assert len(str(ws.oddFooter)) <= 255
+            assert not ws._charts, ws.title                                  # 2. nessun grafico nei fogli:
+            assert all(ws.title == "Info" for _ in ws._images)               # solo il logo nel foglio Info
+            if ws.title != "Info":
+                assert ws.freeze_panes == "A3" and ws.print_title_rows == "$1:$2"
+
+
+def test_regola_file_excel_ods():
+    import re
+    import zipfile
+    for d in _documenti_fogli():
+        cit = R.citazione_report(d)
+        b = R.genera(d, "ods")
+        p = odf_parti(b)
+        x = p["content.xml"]
+        tabelle = re.findall(r"<table:table [^>]*>.*?</table:table>", x, re.S)
+        assert tabelle
+        for t in tabelle:
+            prima = re.search(r"<table:table-row[^>]*>.*?</table:table-row>", t, re.S).group(0)
+            assert cit in " ".join(solo_testo_odf(prima).split()), t[:80]     # 1. riga 1 di ogni foglio
+            assert "<draw:object" not in t and "<chart:" not in t             # 2. nessun grafico nei fogli
+            assert 'table:style-name="Foglio"' in t[:200]                     # stile con la pagina «Default»
+        piede = re.search(r"<style:footer>.*?</style:footer>", p["styles.xml"], re.S).group(0)
+        assert cit in " ".join(solo_testo_odf(piede).split())                # 3. piè di stampa di ogni pagina
+        assert 'style:master-page-name="Default"' in x
+        assert not any(n.startswith("Object") for n in zipfile.ZipFile(io.BytesIO(b)).namelist())

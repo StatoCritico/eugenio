@@ -2,6 +2,7 @@
 
 Così chi ha i dati in un foglio di calcolo non deve convertirli a mano. Si usa il **primo foglio**; date e ore
 diventano AAAA-MM-GG [hh:mm:ss], i numeri hanno il punto decimale, il separatore è il punto e virgola.
+Una prima riga con la sola citazione «Fonte: EuGEnio…» (quella dei file scaricati da EuGEnio) viene saltata.
 Tutto in memoria: il file non viene salvato. Il vecchio formato .xls (Excel 97–2003) non è letto: va salvato in .xlsx.
 """
 from __future__ import annotations
@@ -59,6 +60,11 @@ def fogli(dati: bytes) -> list[str]:
     return list(pd.ExcelFile(io.BytesIO(dati), engine="openpyxl" if t == "xlsx" else "odf").sheet_names)
 
 
+def _riga_fonte(r: list) -> bool:
+    """Vero per la riga di citazione dei file di EuGEnio: prima cella «Fonte: EuGEnio…», le altre vuote."""
+    return bool(r) and str(r[0]).strip().startswith("Fonte: EuGEnio") and not any(r[1:])
+
+
 def in_csv(dati: bytes, max_righe: int | None = None) -> bytes:
     """Restituisce i byte di un CSV: invariati se il file è già testo, convertiti se è .xlsx o .ods."""
     t = tipo(dati)
@@ -69,6 +75,10 @@ def in_csv(dati: bytes, max_righe: int | None = None) -> bytes:
     df = pd.read_excel(io.BytesIO(dati), sheet_name=0, header=None, dtype=object,
                        engine="openpyxl" if t == "xlsx" else "odf")
     righe = [[_cella(v) for v in r] for r in df.itertuples(index=False, name=None)]
+    # i fogli scaricati da EuGEnio hanno in riga 1 la citazione obbligatoria (licenza CC BY 4.0) e le intestazioni
+    # in riga 2: una prima riga con la sola citazione si salta, così l'intestazione torna la prima riga del CSV
+    if righe and _riga_fonte(righe[0]):
+        righe.pop(0)
     # via righe e colonne vuote in fondo (i fogli spesso hanno celle formattate ma vuote)
     while righe and not any(righe[-1]):
         righe.pop()

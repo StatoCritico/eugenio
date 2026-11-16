@@ -1187,6 +1187,24 @@ def _valori_xlsx(df: pd.DataFrame) -> Iterator[list]:
     yield from (list(r) for r in zip(*cols))
 
 
+# Regola dei file Excel (licenza CC BY 4.0, decisa il 16/11/2026): in ogni foglio la citazione sta nella prima riga e
+# nel piè di pagina della stampa (qui non ci sono grafici). Nel foglio "Dati" le intestazioni passano alla riga 2;
+# `tabelle.in_csv` salta da sé questa prima riga quando un file di EuGEnio viene ricaricato.
+RIGA_FONTE = f"{CITAZIONE} – licenza {LICENZA_DATI[0]}: chi usa questi dati deve citare la fonte (vedi il foglio Info)"
+
+
+def _stampa_xlsx(ws, titoli: str | None = None) -> None:
+    """Impostazioni di stampa di un foglio write-only: A4 orizzontale, citazione nel piè di ogni pagina."""
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.paperSize = 9                                   # A4
+    if titoli:
+        ws.print_title_rows = titoli                              # citazione e intestazioni ripetute su ogni pagina
+    ws.oddFooter.left.text = CITAZIONE                            # senza "&": nessun codice di Excel da proteggere
+    ws.oddFooter.left.size = 8
+    ws.oddFooter.right.text = "Pagina &P di &N"
+    ws.oddFooter.right.size = 8
+
+
 def xlsx_file(p: Piano) -> str:
     """Scrive il file Excel (write-only, poca memoria) in un file temporaneo e ne restituisce il percorso."""
     from openpyxl import Workbook
@@ -1195,8 +1213,9 @@ def xlsx_file(p: Piano) -> str:
 
     wb = Workbook(write_only=True)
     ws = wb.create_sheet("Dati")
-    ws.freeze_panes = "A2"
+    ws.freeze_panes = "A3"                      # riga 1 citazione, riga 2 intestazioni: restano ferme scorrendo
     grassetto = Font(bold=True)
+    corsivo = Font(italic=True, size=9)
 
     def cella(foglio, v, bold=False, fmt=None):
         c = WriteOnlyCell(foglio, value=v)
@@ -1206,6 +1225,10 @@ def xlsx_file(p: Piano) -> str:
             c.number_format = fmt
         return c
 
+    _stampa_xlsx(ws, titoli="1:2")
+    c1 = cella(ws, RIGA_FONTE)
+    c1.font = corsivo
+    ws.append([c1])
     ws.append([cella(ws, _intestazione(c), True) for c in p.colonne])
     formati = {"data": "dd/mm/yyyy", "ora_utc": "dd/mm/yyyy hh:mm", "ora_locale": "dd/mm/yyyy hh:mm"}
     for df in blocchi(p):
@@ -1220,6 +1243,10 @@ def xlsx_file(p: Piano) -> str:
     info = wb.create_sheet("Info")
     info.column_dimensions["A"].width = 22
     info.column_dimensions["B"].width = 110
+    _stampa_xlsx(info)
+    c1 = cella(info, RIGA_FONTE)
+    c1.font = corsivo
+    info.append([c1])
     info.append([cella(info, "EuGEnio – dati storici", True)])
     info.append([])
     a_capo = Alignment(wrap_text=True, vertical="top")
@@ -1248,7 +1275,9 @@ def xlsx_file(p: Piano) -> str:
 # ---------------------------------------------------------------------------------------------- OpenDocument (ods)
 # Il foglio di calcolo OpenDocument si scrive a flusso, riga per riga, dentro lo zip (content.xml compresso mentre
 # si scrive): niente albero XML in memoria, così anche centinaia di migliaia di righe restano leggere. Struttura:
-# foglio "Dati" (prima riga con le intestazioni, ripetuta in stampa) e foglio "Info" con fonte, licenza e citazione.
+# foglio "Dati" (riga 1 la citazione, riga 2 le intestazioni, tutte e due ripetute in stampa) e foglio "Info" con
+# fonte, licenza e citazione (anche lui con la citazione in riga 1). Il piè di pagina di stampa, uguale per i due fogli,
+# sta nello stile di pagina "Default" di styles.xml (scritto prima del contenuto, quindi compatibile col flusso).
 _ODS_NS = ('xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" '
            'xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" '
            'xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" '
@@ -1310,7 +1339,7 @@ def _stili_ods(titolo: str, piede: str) -> str:
             '<style:header-style><style:header-footer-properties fo:min-height="0.5cm" fo:margin-bottom="0.25cm"/>'
             '</style:header-style><style:footer-style><style:header-footer-properties fo:min-height="0.5cm" '
             'fo:margin-top="0.25cm"/></style:footer-style></style:page-layout>'
-            '<style:style style:name="piccolo" style:family="text"><style:text-properties fo:font-size="6pt"/></style:style>'
+            '<style:style style:name="piccolo" style:family="text"><style:text-properties fo:font-size="8pt"/></style:style>'
             '</office:automatic-styles><office:master-styles>'
             '<style:master-page style:name="Default" style:page-layout-name="pl"><style:header>'
             f'<style:region-left><text:p>EuGEnio</text:p></style:region-left><style:region-center><text:p>{_x(titolo)}'
@@ -1361,6 +1390,8 @@ def _scrivi_ods(percorso: str, titolo: str, intestazioni: list[str], righe: Iter
                    'fo:border-bottom="1.5pt solid #000000" fo:wrap-option="wrap" style:vertical-align="top"/>'
                    '<style:text-properties fo:font-weight="bold"/></style:style>'
                    '<style:style style:name="b" style:family="table-cell"><style:text-properties fo:font-weight="bold"/></style:style>'
+                   '<style:style style:name="f" style:family="table-cell"><style:text-properties fo:font-style="italic" '
+                   'fo:font-size="9pt"/></style:style>'
                    '<style:style style:name="w" style:family="table-cell"><style:table-cell-properties '
                    'fo:wrap-option="wrap" style:vertical-align="top"/></style:style>'
                    '<style:style style:name="t" style:family="table" style:master-page-name="Default">'
@@ -1373,7 +1404,7 @@ def _scrivi_ods(percorso: str, titolo: str, intestazioni: list[str], righe: Iter
             # foglio Dati
             scrivi(f'<table:table table:name="Dati" table:style-name="t">'
                    f'<table:table-column table:style-name="kd" table:number-columns-repeated="{len(intestazioni)}"/>'
-                   '<table:table-header-rows><table:table-row>'
+                   f'<table:table-header-rows><table:table-row>{_testo_ods(RIGA_FONTE, "f")}</table:table-row><table:table-row>'
                    + "".join(_testo_ods(h, "g") for h in intestazioni) + '</table:table-row></table:table-header-rows>')
             buf = []
             for r in righe:
@@ -1384,7 +1415,8 @@ def _scrivi_ods(percorso: str, titolo: str, intestazioni: list[str], righe: Iter
                     buf.clear()
             scrivi("".join(buf) + "</table:table>")
             # foglio Info
-            righe_info = [f'<table:table-row>{_testo_ods("EuGEnio – dati storici", "b")}</table:table-row>',
+            righe_info = [f'<table:table-row>{_testo_ods(RIGA_FONTE, "f")}</table:table-row>',
+                          f'<table:table-row>{_testo_ods("EuGEnio – dati storici", "b")}</table:table-row>',
                           "<table:table-row><table:table-cell/></table:table-row>"]
             for k, v in info:
                 url = v if isinstance(v, str) and re.fullmatch(r"https?://\S+", v) else None

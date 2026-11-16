@@ -242,7 +242,8 @@ def client():
     """app.py senza TiRex-2 né fase 3 (come in test_report.py)."""
     finti = {"meteo_storico": {"VARIABILI": []}, "meteo_storico.aggrega": {"giornaliero": None},
              "meteo_storico.correzione": {"applica": None}, "meteo_storico.limiti": {"Limitatore": object},
-             "meteo_storico.scarica": {"FONTI": {}, "client": None, "richiesta": None}}
+             "meteo_storico.scarica": {"FONTI": {}, "client": None, "richiesta": None},
+             "meteo_storico.psicro": {}}   # servizio/psicro.py (fase 14) lo importa all'avvio
     salvati = {k: sys.modules.get(k) for k in finti}
     for nome, attr in finti.items():
         if nome not in sys.modules:

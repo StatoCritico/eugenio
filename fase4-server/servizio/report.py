@@ -62,6 +62,12 @@ PIE_AVVERTENZA = ("Servizio gratuito e senza garanzia: dati calcolati o reperiti
 PIE_AVVERTENZA_XLSX = ("Prodotto da EuGEnio. Servizio gratuito e senza garanzia: dati automatici verificati a campione. "
                        f"Riuso CC BY 4.0 citando «{CITAZIONE}». "
                        "Vedi foglio Info. Errori: eugenio.statocritico.it/contatti.html")
+# Regola dei file Excel (obbligo della licenza CC BY 4.0, decisa il 16/11/2026): nei fogli di calcolo (xlsx, ods) la
+# citazione, seguita dalla data del report, sta in cima a ogni foglio (riga 1), sotto ogni grafico (oggi i fogli non
+# ne contengono: le immagini restano solo nel PDF) e nel piè di stampa di ogni pagina. In Excel il piè di stampa ha
+# il limite di 255 caratteri: la citazione apre il piè e l'avvertenza si accorcia ({citazione} = citazione_report).
+PIE_LICENZA_XLSX = ("{citazione} (CC BY 4.0). Servizio gratuito e senza garanzia: dati automatici verificati a "
+                    "campione. Vedi foglio Info. Errori: eugenio.statocritico.it/contatti.html")
 TITOLO_AVVERTENZE = "Avvertenze e limiti di responsabilità"
 TESTO_LICENZA = (
     "Licenza: questo report e i dati elaborati che contiene sono distribuiti con licenza Creative Commons "
@@ -317,6 +323,11 @@ def data_it(d: dt.date | dt.datetime, estesa: bool = False) -> str:
     if isinstance(d, dt.datetime):
         return d.strftime("%d/%m/%Y %H:%M")
     return d.strftime("%d/%m/%Y")
+
+
+def citazione_report(doc: "Documento") -> str:
+    """«Fonte: EuGEnio – eugenio.statocritico.it, report del gg/mm/aaaa»: la citazione chiesta dalla licenza."""
+    return f"{CITAZIONE}, report del {data_it(doc.giorno())}"
 
 
 def testo_cella(v, decimali: int | None = None) -> str:
@@ -925,22 +936,28 @@ def _xlsx(doc: Documento) -> bytes:
                     cella.data_type = "s"
         return cella
 
-    r = 1
+    citazione = citazione_report(doc)
+    f_cit = Font(italic=True, color=COLORE_LINK, size=9)
+
+    def fonte_in_cima(ws):
+        """Regola dei file Excel: citazione nella riga 1 di ogni foglio, visibile senza scorrere."""
+        c = ws.cell(row=1, column=1, value=citazione)
+        c.hyperlink = LICENZA_PAGINA
+        c.font = f_cit
+
+    fonte_in_cima(info)                        # riga 1: citazione (al posto di «Prodotto da EuGEnio»)
+    r = 2
     if LOGO_PNG:
         try:
             from openpyxl.drawing.image import Image as XImg     # richiede Pillow
             img = XImg(io.BytesIO(LOGO_PNG))
             alto = round(LOGO_ALTEZZA_CM / 2.54 * 96)            # pixel a 96 punti per pollice
             img.height, img.width = alto, round(alto * img.width / img.height)
-            info.add_image(img, "A1")
-            info.row_dimensions[1].height = alto * 0.75 + 4      # punti
+            info.add_image(img, "A2")
+            info.row_dimensions[2].height = alto * 0.75 + 4      # punti
             r += 1
         except Exception:                      # senza Pillow il logo si omette
             log.info("Logo non inserito nel foglio Excel (manca Pillow?)")
-    c = info.cell(row=r, column=1, value=INTESTAZIONE)
-    c.hyperlink = SITO
-    c.font = Font(italic=True, color=COLORE_LINK, size=9)
-    r += 1
     info.cell(row=r, column=1, value=doc.titolo).font = Font(bold=True, size=14)
     r += 1
     if doc.sottotitolo:
@@ -991,21 +1008,23 @@ def _xlsx(doc: Documento) -> bytes:
                 n_tab += 1
                 nome = nome_foglio(b.titolo, n_tab)
                 ws = wb.create_sheet(nome)
+                fonte_in_cima(ws)              # riga 1 citazione, riga 2 intestazioni, dati dalla riga 3
                 for j, h in enumerate(b.intestazioni, 1):
-                    c = ws.cell(row=1, column=j, value=h)
+                    c = ws.cell(row=2, column=j, value=h)
                     c.font, c.border = grass, sotto
                     c.alignment = Alignment(wrap_text=True, vertical="top")
                 larg = [len(h) for h in b.intestazioni]
-                for i, riga in enumerate(b.righe, 2):
+                for i, riga in enumerate(b.righe, 3):
                     for j, v in enumerate(riga):
                         scrivi(ws, i, j + 1, v, _dec(b, j))
                         if i < 300:
                             larg[j] = max(larg[j], len(testo_cella(v, _dec(b, j))))
                 for j, w in enumerate(larg, 1):
                     ws.column_dimensions[get_column_letter(j)].width = min(max(w + 2, 8), 50)
-                ws.freeze_panes = "A2"
+                ws.freeze_panes = "A3"         # citazione e intestazioni restano visibili scorrendo
+                ws.print_title_rows = "1:2"    # e si ripetono in cima a ogni pagina stampata
                 if b.righe:
-                    ws.auto_filter.ref = f"A1:{get_column_letter(len(b.intestazioni))}{len(b.righe) + 1}"
+                    ws.auto_filter.ref = f"A2:{get_column_letter(len(b.intestazioni))}{len(b.righe) + 2}"
                 c = info.cell(row=r, column=1, value=f"Tabella «{b.titolo or nome}»: foglio «{nome}»")
                 c.hyperlink = f"#'{nome}'!A1"
                 c.font = Font(color=COLORE_LINK, underline="single")
@@ -1049,7 +1068,7 @@ def _xlsx(doc: Documento) -> bytes:
         ws.oddHeader.left.size = 9
         ws.oddHeader.center.text = doc.titolo[:120]
         ws.oddHeader.center.size = 9
-        ws.oddFooter.left.text = PIE_AVVERTENZA_XLSX
+        ws.oddFooter.left.text = PIE_LICENZA_XLSX.format(citazione=citazione)   # citazione in apertura
         ws.oddFooter.left.size = 6
         ws.oddFooter.right.text = "Pagina &P di &N"
         ws.oddFooter.right.size = 7
@@ -1402,7 +1421,14 @@ def _ods(doc: Documento) -> bytes:
     hd.addElement(rl)
     hd.addElement(rc)
     mp.addElement(hd)
+    citazione = citazione_report(doc)
+    cit = Style(name="CitazioneStampa", family="text")
+    cit.addElement(TextProperties(fontsize="7pt"))
+    od.automaticstyles.addElement(cit)
     ft = Footer()                      # piè senza riquadri: l'avvertenza occupa tutta la larghezza
+    pc = P()                           # regola dei file Excel: la citazione apre il piè di ogni pagina
+    pc.addElement(Span(stylename=cit, text=citazione))
+    ft.addElement(pc)
     pf = P()
     pf.addElement(Span(stylename=pic, text=PIE_AVVERTENZA_XLSX))
     ft.addElement(pf)
@@ -1484,6 +1510,7 @@ def _ods(doc: Documento) -> bytes:
     s_avv = cella_stile("Avvertenza", a_capo=True, bordi={"border": "0.5pt solid #000000"})
     s_piccolo = cella_stile("Piccolo", dim=9, a_capo=True)
     s_testa = cella_stile("Intestazione", grass=True, a_capo=True, bordi={"borderbottom": "1.5pt solid #000000"})
+    s_cit = cella_stile("Citazione", corsivo=True, dim=9)
 
     def colonna(t, larg_cm: float, n: int = 1):
         cs = Style(name=f"col{len(od.automaticstyles.childNodes)}", family="table-column")
@@ -1540,6 +1567,8 @@ def _ods(doc: Documento) -> bytes:
     colonna(info, 2, 2)
     fogli = [info]
     nomi_usati = {"info"}
+    # regola dei file Excel: citazione nella riga 1 di ogni foglio (nel foglio Info sopra il logo)
+    riga(info, cella(citazione, stile=s_cit, url=LICENZA_PAGINA))
 
     def nome_foglio(t: str | None, n: int) -> str:
         base = re.sub(r"[\[\]:*?/\\']", " ", t or f"Tabella {n}").strip()[:28] or f"Tabella {n}"
@@ -1559,7 +1588,6 @@ def _ods(doc: Documento) -> bytes:
         fr.addElement(DImage(href=href))
         c.addElement(fr)
         riga(info, [c], alto_cm=alto + 0.3)
-    riga(info, cella(INTESTAZIONE, url=SITO))
     riga(info, cella(doc.titolo, stile=s_titolo))
     if doc.sottotitolo:
         riga(info, cella(doc.sottotitolo, stile=s_sotto))
@@ -1598,7 +1626,8 @@ def _ods(doc: Documento) -> bytes:
                 for wch in larg:
                     colonna(ws, min(max(wch + 2, 8), 50) * 0.19)
                 thr = TableHeaderRows()          # ripetute in cima a ogni pagina stampata
-                riga(thr, *[cella(x, stile=s_testa) for x in b.intestazioni])
+                riga(thr, cella(citazione, stile=s_cit, url=LICENZA_PAGINA))   # riga 1: citazione
+                riga(thr, *[cella(x, stile=s_testa) for x in b.intestazioni])     # riga 2: intestazioni
                 ws.addElement(thr)
                 for r in b.righe:
                     riga(ws, *[cella(r[j] if j < len(r) else None, _dec(b, j)) for j in range(len(b.intestazioni))])
