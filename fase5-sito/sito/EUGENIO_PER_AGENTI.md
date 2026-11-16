@@ -40,7 +40,9 @@ protezioni · 6. Flussi tipici · 7. Cosa EuGEnio non fa · 8. Privacy, funzione
 
 ## 2. Licenze e come citare
 
-- **Codice**: AGPL-3.0. Chi offre online una versione modificata deve pubblicarne il codice.
+- **Codice**: AGPL-3.0 con i termini aggiuntivi della sezione 7 (`TERMINI_AGGIUNTIVI.md`). Chi offre online una versione
+  modificata deve pubblicarne il codice; chi distribuisce EuGEnio o lo fa usare in rete conserva l'attribuzione
+  «EuGEnio © 2026 Paolo Bianco – Stato Critico – https://eugenio.statocritico.it» (piede o pagina Licenza).
 - **Dati elaborati e report di EuGEnio**: CC BY 4.0. Formula obbligatoria nel documento che li usa:
   **«Fonte: EuGEnio – eugenio.statocritico.it»**, più le fonti originali indicate nel file o nella risposta (campi `fonte`,
   `licenza`, `citazione`, foglio «Info» degli Excel/ODS, riga 1 di ogni foglio e piè di pagina di stampa degli Excel/ODS (dal 16/11/2026), ultime righe dei CSV, «Fonti e attribuzioni» dei PDF).

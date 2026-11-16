@@ -20,7 +20,7 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
 - [EuGEnio per agenti AI](https://eugenio.statocritico.it/EUGENIO_PER_AGENTI.md): tutte le funzioni e come usarle
 - [Schema OpenAPI](https://eugenio.statocritico.it/api/openapi.json): rotte, parametri e risposte dell'API
 - [F.A.Q.](https://eugenio.statocritico.it/faq.html#agenti-ai): domande frequenti, compresa quella su questo file
-- [Licenza](https://eugenio.statocritico.it/licenza.html): codice AGPL-3.0, dati CC BY 4.0 («Fonte: EuGEnio – eugenio.statocritico.it»)
+- [Licenza](https://eugenio.statocritico.it/licenza.html): codice AGPL-3.0 con termini aggiuntivi (attribuzione «EuGEnio © 2026 Paolo Bianco – Stato Critico – https://eugenio.statocritico.it» da conservare), dati CC BY 4.0 («Fonte: EuGEnio – eugenio.statocritico.it»)
 - [Esempi](https://eugenio.statocritico.it/esempi.html): casi d'uso concreti, pagina per pagina, nell'ordine del menu (dal 15/11/2026, tra le «Altre pagine», prima di Contributi)
 - [Contributi](https://eugenio.statocritico.it/contributi.html): come contribuire (discussione sul forum di Edilclima, Contattaci) e ringraziamenti
 - [Novità](https://eugenio.statocritico.it/novita.html): cosa cambia a ogni versione del sito, anche come [feed Atom](https://eugenio.statocritico.it/novita.xml)

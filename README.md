@@ -99,7 +99,12 @@ da `.gitignore`.
 
 ## Licenze e condizioni dei dati
 
-- Codice: AGPL-3.0 (file `LICENSE`). Dati elaborati e report di EuGEnio: CC BY 4.0, riuso citando
+- Codice: AGPL-3.0 (file `LICENSE`) con i **termini aggiuntivi della sezione 7** (file `TERMINI_AGGIUNTIVI.md`, dal
+  16/11/2026): chi distribuisce EuGEnio o lo fa usare in rete, anche modificato, conserva l'attribuzione «EuGEnio © 2026
+  Paolo Bianco – Stato Critico – https://eugenio.statocritico.it» nel piede o in una pagina raggiungibile da ogni pagina
+  (lettera b); le versioni modificate si distinguono dall'originale (lettera c); nessun diritto su nomi e logo (lettera e).
+  Nessun obbligo per l'uso interno né sugli output di un'installazione propria. Il testo di `LICENSE` non si tocca.
+- Dati elaborati e report di EuGEnio: CC BY 4.0, riuso citando
   «Fonte: EuGEnio – eugenio.statocritico.it»; i valori ricavati dagli anni tipo CTI si possono solo citare.
 - **Regola dei file Excel** (Paolo, 16/11/2026; fa parte degli obblighi di licenza): in ogni file Excel prodotto da EuGEnio
   la citazione «Fonte: EuGEnio – eugenio.statocritico.it» sta **in cima a ogni foglio**, **sotto ogni grafico** e nel

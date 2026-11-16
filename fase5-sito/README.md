@@ -1167,3 +1167,20 @@ rimanda al modulo di listmonk. Server: sezione «Newsletter e avvisi» del READM
 Aggiornati anche F.A.Q. (`#dati-per-email`, `#avvisi-meteo`), informativa privacy (riga `#newsletter`), Novità, file per
 gli agenti (§ 3 Altre pagine, § 4.9, § 8) e `llms.txt`. Stile: `.dati-email`, `.dpe-*` in `stile.css`. Prova nel
 browser: `tests/test_dati_per_email_browser.py` (API finta).
+
+## Attribuzione obbligatoria, termini aggiuntivi della AGPL (16/11/2026)
+
+Decisione di Paolo del 16/11/2026. Il codice resta AGPL-3.0, con tre termini aggiuntivi della sezione 7 scritti in
+`TERMINI_AGGIUNTIVI.md` nella radice del repository:
+
+- (b) chi distribuisce EuGEnio o lo fa usare in rete, anche modificato, conserva la riga «EuGEnio © 2026 Paolo Bianco –
+  Stato Critico – https://eugenio.statocritico.it» nel piè o in una pagina raggiungibile da ogni pagina;
+- (c) le versioni modificate si distinguono dall'originale;
+- (e) nessun diritto su nomi e logo.
+
+Nel sito la riga sta nel piè di tutte le pagine (`parti/piede.html`, `<span class="piede-attribuzione">`), insieme al
+collegamento `licenza.html#attribuzione`. La sezione nuova «Attribuzione obbligatoria» della pagina Licenza spiega i
+termini e dice che l'uso interno non ha obblighi. Anche la pagina Mirror, nelle «Regole da rispettare», ha una riga
+nuova. Il test `test_attribuzione_agpl_in_tutte_le_pagine` controlla il piè di ogni pagina, la sezione della Licenza e
+il file dei termini. Nessuna voce di Novità, perché non cambia nessuna funzione per gli utenti. La versione del sito
+non cambia.

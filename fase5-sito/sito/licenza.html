@@ -279,8 +279,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <p>È proprio quello per cui il codice è aperto (vedi <a href="faq.html#mirror">perché volerne un mirror</a> e <a href="mirror.html">come farlo</a>). Puoi farlo
     gratis, per te, per il tuo ente o per i tuoi clienti. Le regole sono poche:</p>
   <ul>
-    <li><strong>Se lo usi così com'è</strong>, basta lasciare gli avvisi di copyright e di licenza e il collegamento al
-      codice nel piede delle pagine.</li>
+    <li><strong>Se lo usi così com'è</strong>, basta lasciare gli avvisi di copyright e di licenza, l'attribuzione
+      (vedi <a href="#attribuzione">Attribuzione obbligatoria</a>) e il collegamento al codice nel piede delle pagine.</li>
     <li><strong>Se lo modifichi e lo fai usare ad altri in rete</strong> (anche solo ai colleghi sulla rete interna), devi
       offrire a quegli utenti il codice sorgente della tua versione, con la stessa licenza: in pratica un collegamento a
       un repository pubblico, nel piede del sito. Le modifiche che tieni solo per te, senza farle usare ad altri, non
@@ -290,6 +290,27 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <li><strong>Distingui la tua copia da questa.</strong> La licenza non dà diritti sui nomi EuGEnio e Stato Critico né
       sul logo: la tua istanza deve avere nome e logo propri (vedi <a href="#marchio">Nome e logo</a>).</li>
   </ul>
+
+  <h2 id="attribuzione">Attribuzione obbligatoria: i termini aggiuntivi</h2>
+  <p>La AGPL-3.0 permette a chi ha scritto il codice di aggiungere alcuni termini, elencati nella sua sezione 7. Dal
+    16/11/2026 EuGEnio ne usa tre, scritti per intero nel file
+    <a href="https://github.com/statocritico/eugenio/blob/main/TERMINI_AGGIUNTIVI.md">TERMINI_AGGIUNTIVI.md</a> del
+    repository:</p>
+  <ul>
+    <li><strong>Attribuzione da conservare</strong> (lettera b). Se metti a disposizione di altri EuGEnio o una sua
+      versione modificata, distribuendolo o facendolo usare in rete, devi lasciare visibile questa riga, senza cambiarla:
+      <br><strong>EuGEnio © 2026 Paolo Bianco – Stato Critico – https://eugenio.statocritico.it</strong><br>
+      Puoi metterla nel piede delle pagine, come facciamo noi, oppure in una pagina raggiungibile da ogni pagina con un
+      collegamento visibile, per esempio «Licenza». Davanti puoi scrivere «Basato su». Non serve nessun logo.</li>
+    <li><strong>Origine riconoscibile</strong> (lettera c). Una versione modificata deve essere riconoscibile come diversa
+      da questa. Non deve presentarsi come il sito ufficiale né come approvata da Stato Critico.</li>
+    <li><strong>Nomi e logo</strong> (lettera e). Sono le regole della sezione <a href="#marchio">Nome e logo</a>, qui
+      sotto, scritte come termine della licenza.</li>
+  </ul>
+  <p>I termini <strong>non riguardano l'uso interno</strong>. Se fai girare EuGEnio o una tua versione solo per te, senza
+    distribuirlo e senza farlo usare ad altri, la AGPL non ti chiede niente (sezione 2), nemmeno l'attribuzione. Non
+    riguardano neanche i report e i dati prodotti dalla tua installazione. I report e i dati scaricati da questo sito
+    restano invece in <a href="#dati">CC BY 4.0</a>, con l'obbligo di citare EuGEnio.</p>
   <h2 id="marchio">Nome e logo</h2>
   <p>La AGPL-3.0 e la CC BY 4.0 riguardano il codice e i dati, <strong>non i segni distintivi</strong>: i nomi
     «EuGEnio» e «Stato Critico», il logo, il simbolo e la scritta non sono concessi in licenza, nemmeno se i loro file
@@ -328,7 +349,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 <footer class="piede">
   <!-- piede -->
   <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261116d" alt="" width="44" height="44">
-  <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL, dati <a href="licenza.html#dati">CC BY 4.0</a>)</p>
+  <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL con <a href="licenza.html#attribuzione">termini aggiuntivi</a>, dati <a href="licenza.html#dati">CC BY 4.0</a>). <span class="piede-attribuzione">EuGEnio © 2026 Paolo Bianco – Stato Critico – <a href="https://eugenio.statocritico.it">https://eugenio.statocritico.it</a></span></p>
   <!-- /piede -->
 </footer>
 <script src="aspetto.js?v=20261116d"></script>

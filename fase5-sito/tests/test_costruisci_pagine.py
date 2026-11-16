@@ -855,3 +855,18 @@ def test_confini_json_validi_per_il_browser():
     d = {c["istat"]: c for c in json.loads((cartella / "01.json").read_text(encoding="utf-8"))["comuni"]}
     assert d["001272"]["nome"] == "Torino" and d["001168"]["nome"] == "None"
     assert all(c["prov"] == "NA" for c in json.loads((cartella / "15.json").read_text(encoding="utf-8"))["comuni"] if c["istat"].startswith("063"))
+
+
+# ---------------------------------------------------------------- termini aggiuntivi della AGPL (16/11/2026)
+ATTRIBUZIONE = "EuGEnio © 2026 Paolo Bianco – Stato Critico – "
+
+
+def test_attribuzione_agpl_in_tutte_le_pagine():
+    """Sezione 7(b): l'attribuzione da conservare sta nel piè di ogni pagina generata e nei termini aggiuntivi."""
+    pagine = [f for f in (QUI / "sito").glob("*.html") if '<p class="piede-testi">' in f.read_text(encoding="utf-8")]
+    assert len(pagine) > 40
+    for f in pagine:
+        t = f.read_text(encoding="utf-8")
+        assert ATTRIBUZIONE in t and 'href="licenza.html#attribuzione"' in t, f.name
+    assert 'id="attribuzione"' in (QUI / "sito" / "licenza.html").read_text(encoding="utf-8")
+    assert ATTRIBUZIONE in (QUI.parent / "TERMINI_AGGIUNTIVI.md").read_text(encoding="utf-8")
