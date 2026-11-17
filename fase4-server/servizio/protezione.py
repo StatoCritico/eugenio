@@ -153,7 +153,9 @@ limiti = Limitatore()
 
 # (massimo, finestra in secondi) dei limiti fissi; i tipi in _DINAMICI leggono il valore da config a ogni richiesta
 LIMITI: dict[str, tuple[int, int]] = {"converti": (200, 3600), "previsione": (20, 3600), "zornade": (120, 3600),
-                                      "patrimonio": (2000, 3600), "report": (60, 3600)}
+                                      "patrimonio": (2000, 3600), "report": (60, 3600),
+                                      # (17/11/2026) ricerche e schede degli immobili delle PA (Territorio › Edifici pubblici)
+                                      "immobili_pa": (1200, 3600)}
 _DINAMICI = {"dati": lambda: C.LIMITE_DATI_ORA, "sessione": lambda: C.SESSIONI_ORA,
              "stima": lambda: C.STORICI_STIME_ORA, "estrazione": lambda: C.STORICI_ESTRAZIONI_ORA,
              "ortofoto": lambda: C.ORTOFOTO_ORA, "pvgis": lambda: C.PVGIS_ORA, "orizzonte": lambda: C.ORIZZONTE_ORA, "terreno": lambda: C.TERRENO_ORA,
@@ -178,7 +180,7 @@ _UNITA = {"patrimonio": "edifici", "estrazione": "download", "stima": "stime", "
           "edifici_osm": "richieste di edifici OpenStreetMap", "dbtr": "file proposti", "dbtr_pezzi": "pezzi di file",
           "strati": "tessere di particelle e contorni", "tessere_copia": "tessere dalla copia del server",
           "edifici_osm_copia": "richieste di edifici OpenStreetMap dalla copia",
-          "psicro": "serie orarie di temperatura e umidità", "rete": "richieste sullo stato della rete elettrica", "luogo": "ricerche di indirizzi sulla mappa"}
+          "psicro": "serie orarie di temperatura e umidità", "rete": "richieste sullo stato della rete elettrica", "luogo": "ricerche di indirizzi sulla mappa", "immobili_pa": "ricerche e schede di immobili pubblici"}
 # 429 con Retry-After (09/11/2026): la pagina ferma per quel tempo le richieste della fonte e lo dice sotto la mappa. Si
 # indica quando si libera almeno il 10 % del limite (con un solo posto libero la pagina ripartirebbe e riprenderebbe 429).
 QUOTA_RIPRESA = 0.10

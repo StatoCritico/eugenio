@@ -1645,6 +1645,30 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .esempi .esempi-arrivo strong { color: var(--inchiostro); }
 .esempi .esempi-chiusura { margin-top: var(--s7); }
 
+/* ===== Territorio › Edifici pubblici (17/11/2026) e retino degli immobili pubblici (anche in Modelli 3D) ===== */
+.legenda .pallino.pa-edifici, .legenda .pallino.pubblico { background: repeating-linear-gradient(135deg, #c2185b 0 2px, rgba(255,255,255,.7) 2px 5px); border-radius: 2px; }
+.legenda .pallino.pa-terreni { background: #2e7d32; opacity: .7; border-radius: 2px; }
+.legenda .pallino.pa-misti { background: #6a1b9a; opacity: .7; border-radius: 2px; }
+.legenda .pallino.pa-punti { background: #ef6c00; }
+.legenda canvas.campione-retino { width: 14px; height: 14px; border-radius: 2px; }
+.cerca-pubblici { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: end; }
+.cerca-pubblici input[type="search"] { flex: 1 1 16rem; min-width: 0; }
+.risultati-pubblici { list-style: none; padding: 0; margin: var(--s2) 0 0; max-height: 22rem; overflow-y: auto; }
+.risultati-pubblici li + li { border-top: 1px solid var(--linea); }
+.risultati-pubblici .risultato-pubblico { display: block; width: 100%; text-align: left; background: none; border: 0; padding: var(--s2) var(--s1);
+  color: inherit; font: inherit; cursor: pointer; }
+.risultati-pubblici .risultato-pubblico:hover, .risultati-pubblici .risultato-pubblico:focus-visible { background: var(--rialzo); }
+.caselle-pubblici { border: 0; padding: 0; margin: 0 0 var(--s2); display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); }
+.caselle-pubblici legend { font-weight: 600; margin-bottom: var(--s1); }
+.cerca-luogo-pubblici { margin-top: var(--s3); }
+.testa-scheda p { margin: 0 0 var(--s1); }
+.collegamenti-scheda { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.bene-pubblico { border-top: 1px solid var(--linea); padding-top: var(--s2); margin-top: var(--s3); }
+.bene-pubblico h3 { margin: 0 0 var(--s1); font-size: var(--c-m, 1rem); }
+.scheda-bene { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: .2rem var(--s3); margin: 0; font-size: var(--c-s); }
+.scheda-bene dt { color: var(--tenue); }
+.scheda-bene dd { margin: 0; }
+
 /* ===================================================================================== Rete elettrica (17/11/2026)
    Statistiche › «Stato della rete elettrica» (rete-elettrica.html) e Fotovoltaico › «Cabine primarie» (fv-cabine.html),
    parte comune in rete.js. Campioni della legenda con lo stesso disegno della mappa: pieno, strisce (bianco = verde),

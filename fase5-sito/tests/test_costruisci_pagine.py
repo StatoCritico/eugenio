@@ -73,7 +73,7 @@ def test_modifica_del_modello_arriva_in_tutte_le_pagine(sito, monkeypatch, tmp_p
 
 # ---------------------------------------------------------------- menu a gruppi e pagine segnaposto (03/11/2026)
 GRUPPI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "dati-per-email.html"],   # (08/11/2026) Cambiamento climatico, ultima
-          "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
+          "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
                          "dbtr-istruzioni.html", "visure.html"],
           "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
                "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html"]}   # (11/11/2026) Indici dei prezzi prima;
@@ -87,7 +87,7 @@ def test_menu_sei_gruppi_e_voci_raggiungibili(sito):
     titoli = re.findall(r'<details class="voce-gruppo"[^>]*><summary>([^<]+)</summary>', t)
     # dal 05/11/2026 (seconda pubblicazione) il sesto gruppo Statistiche, con «Costi energetici Sanità» (indicatori.html)
     # (08/11/2026) «Edificio» → «Edifici» (data-gruppo resta «edificio»: la scelta fissata nei browser non si perde)
-    assert titoli == ["Clima e meteo", "Patrimonio", "Edifici", "Trattamento aria", "Cogenerazione", "Fotovoltaico", "Statistiche"]
+    assert titoli == ["Clima e meteo", "Territorio", "Edifici", "Trattamento aria", "Cogenerazione", "Fotovoltaico", "Statistiche"]
     for gruppo, voci in GRUPPI.items():
         blocco = re.search(rf'data-gruppo="{gruppo}"><summary>.*?</details>', t, re.S).group(0)
         assert re.findall(r'href="([^"]+)"', blocco) == voci
@@ -598,8 +598,9 @@ def test_etichette_brevi_nelle_tendine():
     # (08/11/2026) 5 «S» (Cambiamento climatico; Ortofoto, Modelli 3D, Importa DXF/IFC, Aggiungi edifici), 2 triangoli
     # «in sviluppo» cliccabili (LiDAR, Visure), 16 voci in lavorazione con il triangolo e non cliccabili, 6 GME;
     # (09/11/2026 f) + 3 «S» (Edifici: Obblighi di legge, Geometria e luce naturale, Consumi): 8 «S», 13 in lavorazione
-    # (14/11/2026) + 4 «S» del Trattamento aria: 12; (17/11/2026) + Cabine primarie e Stato della rete elettrica: 14
-    assert len(s) == pannello.count(">sperimentale<") == 14 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    # (14/11/2026) + 4 «S» del Trattamento aria: 12; (17/11/2026) + «S» di Territorio › Edifici pubblici: 13;
+    # (17/11/2026) + Cabine primarie e Stato della rete elettrica: 15
+    assert len(s) == pannello.count(">sperimentale<") == 15 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
     assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
@@ -738,7 +739,7 @@ PAGINE_IN_CORSO = ["edificio-fabbisogno.html",
                    "cog-emissioni.html", "fv-ombre.html", "fv-irradiazione.html", "fv-producibilita.html", "fv-pvgis.html",
                    "fv-dlgs199.html", "fv-leed.html", "edificio-cer.html"]
 ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "dati-per-email.html"],
-               "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
+               "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
                "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
                "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html"]}   # (11/11/2026) Indici dei prezzi prima;
@@ -748,7 +749,7 @@ ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html
 def test_menu_08_11_gruppi_e_voci_in_lavorazione(sito):
     t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
     gruppi = {g["id"]: g for g in C.gruppi_menu(t)}
-    assert [g["titolo"] for g in gruppi.values()] == ["Clima e meteo", "Patrimonio", "Edifici", "Trattamento aria", "Cogenerazione", "Fotovoltaico", "Statistiche"]
+    assert [g["titolo"] for g in gruppi.values()] == ["Clima e meteo", "Territorio", "Edifici", "Trattamento aria", "Cogenerazione", "Fotovoltaico", "Statistiche"]
     for gid, voci in ACCESSIBILI.items():
         assert [v["pagina"] for v in gruppi[gid]["voci"]] == voci and all(v["tipo"] == "" for v in gruppi[gid]["voci"]), gid
     assert gruppi["clima"]["voci"][-2]["nome"] == "Cambiamento climatico"   # (15/11/2026) poi «Newsletter e avvisi»

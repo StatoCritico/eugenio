@@ -71,7 +71,7 @@ def test_menu_computer(base, browser):
     ctx, pg = pagina(browser, 1366)
     pg.goto(base + "lidar.html")
     titolo = G.format("patrimonio") + " > summary"
-    assert pg.get_attribute(titolo, "title") == "Clicca qui per fissare il menu Patrimonio sotto la barra"
+    assert pg.get_attribute(titolo, "title") == "Clicca qui per fissare il menu Territorio sotto la barra"
     assert pg.get_attribute(titolo, "aria-pressed") == "false"
     # passaggio del mouse
     pg.hover(G.format("edificio") + " > summary")
@@ -83,10 +83,10 @@ def test_menu_computer(base, browser):
     pg.click(titolo)
     assert fissato(pg) == "patrimonio" and not aperto(pg, "patrimonio")
     assert pg.get_attribute(titolo, "aria-pressed") == "true"
-    assert "richiudere la barra di Patrimonio" in pg.get_attribute(titolo, "title")
+    assert "richiudere la barra di Territorio" in pg.get_attribute(titolo, "title")
     riga = pg.locator("nav.riga-fissata")
     assert riga.evaluate("r => getComputedStyle(r).backgroundColor") == "rgb(0, 0, 0)"
-    assert riga.locator(".riga-voci > li").count() == 8          # dal 07/11/2026 anche Aggiungi edifici e Scaricare i DB topografici
+    assert riga.locator(".riga-voci > li").count() == 9          # dal 07/11/2026 anche Aggiungi edifici e Scaricare i DB topografici; dal 17/11 Edifici pubblici
     assert riga.locator("a[aria-current=page]").inner_text().startswith("LiDAR")
     pg.mouse.move(700, 650)
     pg.hover(titolo)
@@ -228,7 +228,7 @@ def test_menu_08_11_sei_gruppi_tendine_e_tastiera(base, browser):
         pg.goto(base + "faq.html")
         titoli = pg.locator("details.voce-gruppo > summary").all_inner_texts()
         # (14/11/2026) settimo gruppo «Trattamento aria» tra Edifici e Cogenerazione
-        assert [t.strip() for t in titoli] == ["Clima e meteo", "Patrimonio", "Edifici", "Trattamento aria", "Cogenerazione", "Fotovoltaico", "Statistiche"]
+        assert [t.strip() for t in titoli] == ["Clima e meteo", "Territorio", "Edifici", "Trattamento aria", "Cogenerazione", "Fotovoltaico", "Statistiche"]
         for g in ("clima", "patrimonio", "edificio", "aria", "cogenerazione", "fotovoltaico", "statistiche"):
             pg.hover(G.format(g) + " > summary")
             assert aperto(pg, g)
