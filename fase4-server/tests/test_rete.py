@@ -169,8 +169,8 @@ PROVINCE = [{"cod_pro": 1, "f1": 1, "f2": "Piemonte", "f4": "Torino"},
             {"cod_pro": 37, "f1": 8, "f2": "Emilia-Romagna", "f4": "Bologna"},
             {"cod_pro": 99, "f1": 8, "f2": "Emilia-Romagna", "f4": "Rimini"}]
 COMUNI_ED = [{"pro_com_t": "099014", "pro_com": 99014, "comune": "Rimini", "cod_prov": 99, "cod_reg": 8, "servitoed": 1},
-             {"pro_com_t": "099013", "pro_com": 99013, "comune": "Riccione", "cod_prov": 99, "cod_reg": 8, "servitoed": 1},
              {"pro_com_t": "037006", "pro_com": 37006, "comune": "Bologna", "cod_prov": 37, "cod_reg": 8, "servitoed": 1},
+             {"pro_com_t": "099013", "pro_com": 99013, "comune": "Riccione", "cod_prov": 99, "cod_reg": 8, "servitoed": 0},
              {"pro_com_t": "021008", "pro_com": 21008, "comune": "Bolzano", "cod_prov": 21, "cod_reg": 4, "servitoed": 0},
              {"pro_com_t": "037099", "pro_com": 37099, "comune": "Vecchio Fuso", "cod_prov": 37, "cod_reg": 8,
               "servitoed": 0},
@@ -340,9 +340,13 @@ def test_rotta_comuni(api):
     assert rim["cabine"] == ["DV001", "DV002"] and rim["concessionario"] and rim["dato_disponibile"]
     assert c["037006"]["pieno"] == "ARANCIONE" and c["099013"]["livello"] == "VERDE"
     assert c["099013"]["pieno"] is None and c["099013"]["strisce"] is None
+    # servitoed = 0 ma con trasformatori e-distribuzione: concessionario, colore della criticità, servito in parte
+    assert c["099013"]["concessionario"] and c["099013"]["servito_in_parte"] and c["099013"]["dato_disponibile"]
+    assert not rim["servito_in_parte"] and not c["037007"]["servito_in_parte"]
     assert c["037007"]["livello"] is None and c["037007"]["concessionario"]
     bz = {x["istat"]: x for x in api.get("/api/rete/comuni?regione=4").json()}
     assert bz["021008"]["concessionario"] is False and bz["021008"]["dato_disponibile"] is False
+    assert bz["021008"]["servito_in_parte"] is False
     to = {x["istat"]: x for x in api.get("/api/rete/comuni?regione=01").json()}
     assert to["001272"]["concessionario"] and not to["001272"]["dato_disponibile"]    # Torino: dato non disponibile
 
@@ -356,6 +360,9 @@ def test_rotta_cabine_comune(api):
     assert cab["DV002"]["lat"] is None and cab["DV002"]["livello"] == "VERDE"
     t = {x["cod_trasf"]: x for x in cab["DV001"]["trasformatori_del_comune"]}
     assert t["01"]["livello"] == "ROSSO" and len(t["01"]["montanti"]) == 2
+    ric = api.get("/api/rete/cabine/comune/099013").json()
+    assert ric["concessionario"] and ric["servito_in_parte"] and ric["criticita"]["livello"] == "VERDE"
+    assert not j["servito_in_parte"]
     bz = api.get("/api/rete/cabine/comune/021008").json()
     assert not bz["concessionario"] and [c["cod_ac"] for c in bz["cabine"]] == ["AC002A00001"]
     assert api.get("/api/rete/cabine/comune/99014").status_code == 422

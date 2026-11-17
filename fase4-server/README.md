@@ -406,7 +406,7 @@ Il Caddyfile serve dal 06/11/2026 i file `.md` del sito come `text/markdown; cha
 | GET | `/api/psicro/serie/{istat}?anni=1\|2\|5\|10\|20\|0` | (14/11/2026) serie oraria **continua in UTC** degli ultimi anni×12 mesi fino all'ultima ora (0 = tutta la serie dal 1940): `inizio`, `passo_h`: 1, `n`, `t` (decimi di °C interi o `null`), `ur` (% interi o `null`), `dal`, `al`, `anni_richiesti`, `anni_dati`, `fonte`, `licenza`, `note`. Archivio `CARTELLA_PSICRO/<istat>.parquet` (fase 3, `scarica-psicro`); finché manca, la serie oraria ICON del server (`/dati/orario`, dal 14/11/2022) con la nota; senza nessuna delle due 503; 422 per altri `anni`. Limiti «dati» e `psicro` (`PSICRO_ORA`, 120 serie per IP all'ora); copia in memoria delle ultime 16 risposte (rinnovata quando il file cambia). Una serie dal 1940 è ~5,5 MB di JSON, ~1,2–1,5 MB compressa da Caddy (`encode zstd gzip`, già attivo su `/api/*`) |
 | GET | `/api/rete/stato` | (17/11/2026) ultimi aggiornamenti di saturazione e interruzioni, interruzioni attive, province senza dato (`province_mancanti`, es. Torino) o non aggiornate, inizio della raccolta, tabella di raccordo, regola della criticità, fonti e licenze; `Cache-Control` 60 s |
 | GET | `/api/rete/cabine?regione=RR` | (17/11/2026) GeoJSON di punti delle cabine primarie con posizione (tabella di raccordo, ODbL): campi del raccordo più `livello` (peggiore tra i trasformatori, `null` = altro gestore o senza dato), `trasf`, `data_saturazione`; `senza_posizione`, `attribuzione`, `licenza`, `licenze`; 30 minuti |
-| GET | `/api/rete/comuni?regione=RR` | (17/11/2026) elenco dei comuni (tutta Italia senza `regione`) con `concessionario`, `pieno`, `strisce`, `livello`, `quota`, `trasf`, `cabine`, `data`, `dato_disponibile` (regola del contratto, `rete.classe_comune`); 30 minuti |
+| GET | `/api/rete/comuni?regione=RR` | (17/11/2026) elenco dei comuni (tutta Italia senza `regione`) con `concessionario`, `servito_in_parte`, `pieno`, `strisce`, `livello`, `quota`, `trasf`, `cabine`, `data`, `dato_disponibile` (regola del contratto, `rete.classe_comune`); 30 minuti |
 | GET | `/api/rete/cabine/comune/{istat}` | (17/11/2026) cabine che servono il comune (anche quelle di altri gestori dal raccordo), trasformatori del comune con livello, montanti e sezioni, criticità; 30 minuti |
 | GET | `/api/rete/interruzioni/attive?regione=RR\|bbox=…` | (17/11/2026) GeoJSON di punti delle interruzioni in corso (punto della cabina secondaria con più clienti), `durata_finora_min`; 2 minuti |
 | GET | `/api/rete/interruzioni/comune/{istat}?da=aaaa-mm&a=aaaa-mm` | (17/11/2026) statistiche del comune: `dal`, `totale`, `per_mese`, `per_causa`, `per_codice_causa`, `attive`, `ultime` (50); 5 minuti |
@@ -485,6 +485,12 @@ data_raccordo, versione_ac`): dà posizione (OSM, **ODbL**), `COD_AC` e gestore.
 restano senza posizione (contate in `senza_posizione`, presenti in `/cabine/comune/…` con `lat` nullo); le righe senza
 codice e-distribuzione (`solo_gse`, altri gestori) compaiono grigie. Riletta da sola quando il file cambia. Regione di un
 comune: `DATI/comuni.parquet` (fase 3), altrimenti la provincia da `ProvinceCritiche`.
+
+**Comuni serviti in parte** (decisione di Paolo del 17/11/2026): un comune con trasformatori e-distribuzione nel dato
+mensile non è mai «non concessionario». I 35 comuni (soprattutto milanesi) che `View_ComuniGestitiED2021Is` segna
+`servitoed = 0` ma che compaiono in `comuniServiti` hanno `concessionario: true` e `servito_in_parte: true`: la pagina li
+colora con la loro criticità (niente retino) e scrive «servito in parte da un altro distributore» (`nota` in
+`/cabine/comune/…`, `nota_servito_in_parte` in `/stato`). Non concessionari (retino) = `servitoed = 0` senza trasformatori.
 
 **Licenze nelle risposte**: «Fonte: e-distribuzione S.p.A., mappa delle Aree critiche e mappa delle interruzioni» (uso non
 commerciale, rimozione su richiesta); posizioni «© contributori OpenStreetMap», ODbL 1.0; codici `COD_AC` del GSE senza

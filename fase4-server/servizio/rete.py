@@ -78,6 +78,7 @@ LICENZE = {
         "attribuzione": "Criticità dei comuni: classificazione di EuGEnio sui livelli dei trasformatori di "
                         "e-distribuzione"},
 }
+NOTA_IN_PARTE = "servito in parte da un altro distributore"
 REGOLA = ("Classificazione di EuGEnio: L = livello più alto tra i trasformatori che servono il comune (VERDE < GIALLO < "
           "ARANCIONE < ROSSO), q = quota dei trasformatori con livello L. L = VERDE: nessun riempimento; q > 0,5: colore "
           "pieno di L; altrimenti strisce tra il livello precedente e L (VERDE si disegna bianco).")
@@ -801,10 +802,15 @@ def _calcola_saturazione(db) -> dict:
             cont[liv] += 1
         cab["trasf"] = cont
         cab["livello"] = livello_cabina(cont)
-    non_conc = {r["istat"] for r in db.execute("SELECT istat FROM comuni_ed WHERE servitoed=0 AND istat IS NOT NULL")}
+    servito0 = {r["istat"] for r in db.execute("SELECT istat FROM comuni_ed WHERE servitoed=0 AND istat IS NOT NULL")}
+    # (17/11/2026, decisione di Paolo) un comune con trasformatori e-distribuzione nel dato mensile non è mai «non
+    # concessionario»: se View_ComuniGestitiED2021Is lo segna servitoed = 0 (35 comuni, soprattutto milanesi) è
+    # «servito in parte da un altro distributore» e si colora con la sua criticità
+    in_parte = servito0 & set(trasf_com)
+    non_conc = servito0 - in_parte
     ed_nomi = {r["istat"]: (r["nome"], r["regione_cod"]) for r in db.execute(
         "SELECT istat, nome, regione_cod FROM comuni_ed WHERE istat IS NOT NULL")}
-    return {"cabine": cabine, "comuni": per_comune, "nomi": nomi_comuni, "non_concessionari": non_conc,
+    return {"cabine": cabine, "comuni": per_comune, "nomi": nomi_comuni, "non_concessionari": non_conc, "in_parte": in_parte,
             "ed": ed_nomi, "ana": ana, "prov_reg": prov_reg, "data_prov": data_prov,
             "data": max(data_prov.values()) if data_prov else None}
 
@@ -891,7 +897,8 @@ def comuni_regione(regione: str | None) -> list[dict]:
     for k in sorted(elenco):
         c = s["comuni"].get(k) or vuoto
         conc = k not in s["non_concessionari"]
-        out.append({"istat": k, "nome": elenco[k], "concessionario": conc, "pieno": c["pieno"],
+        out.append({"istat": k, "nome": elenco[k], "concessionario": conc, "servito_in_parte": k in s["in_parte"],
+                    "pieno": c["pieno"],
                     "strisce": c["strisce"], "livello": c["livello"], "quota": c["quota"], "trasf": c["trasf"],
                     "cabine": c["cabine"], "data": c["data"] or s["data_prov"].get(k[:3]),
                     "dato_disponibile": conc and k[:3] in s["data_prov"]})
@@ -932,6 +939,8 @@ def cabine_comune(istat: str) -> dict:
     crit = s["comuni"].get(istat)
     nome = (s["ana"].get(istat) or {}).get("nome") or s["nomi"].get(istat) or (s["ed"].get(istat) or (None,))[0]
     return {"istat": istat, "nome": nome, "concessionario": istat not in s["non_concessionari"],
+            "servito_in_parte": istat in s["in_parte"],
+            "nota": NOTA_IN_PARTE if istat in s["in_parte"] else None,
             "criticita": ({k: crit[k] for k in ("trasf", "livello", "quota", "pieno", "strisce")} if crit
                           else {"trasf": {l: 0 for l in LIVELLI}, **classe_comune({})}),
             "data_saturazione": (crit or {}).get("data") or s["data_prov"].get(istat[:3]),
@@ -1073,7 +1082,7 @@ def stato() -> dict:
     out["raccordo"] = {"righe": len(tutte), "con_posizione": sum(1 for r in tutte if r.get("lat") is not None),
                          "data_raccordo": max((r["data_raccordo"] for r in tutte if r.get("data_raccordo")), default=None),
                          "versione_ac": max((r["versione_ac"] for r in tutte if r.get("versione_ac")), default=None)}
-    out.update(intervallo_interruzioni_min=C.RETE_INTERRUZIONI_MIN, regola=REGOLA, nota_durata=NOTA_DURATA,
+    out.update(intervallo_interruzioni_min=C.RETE_INTERRUZIONI_MIN, regola=REGOLA, nota_servito_in_parte=NOTA_IN_PARTE, nota_durata=NOTA_DURATA,
                  fonti={"interruzioni": URL_INTERRUZIONI.rsplit("/query", 1)[0],
                         "saturazione": "e-distribuzione, mappa delle Aree critiche (servizio comuniServiti)",
                         "comuni_gestiti": URL_COMUNI_ED.rsplit("/query", 1)[0],
