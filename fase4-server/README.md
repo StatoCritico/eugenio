@@ -14,12 +14,21 @@ Container:
 | Container | Cosa fa |
 |---|---|
 | `api` | FastAPI: riceve il CSV dei consumi, costruisce le covariate meteo e di calendario, chiama **TiRex-2** e restituisce la previsione probabilistica (quantili 10–90 %). Fa anche da proxy verso **Zornade** (la chiave resta sul server) e geolocalizza i patrimoni edilizi (ANNCSU + Zornade) |
-| `worker` | (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
+| `worker` | (17/11/2026) **interruzioni della rete elettrica ogni 15 minuti** (thread a parte) e **saturazione dei trasformatori ogni notte alle 01:15** (`rete-interruzioni`, `rete-saturazione`, database `/dati/rete/rete.sqlite`); (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
 | `caddy` | sito statico della fase 5 e instradamento verso l'API, solo dentro la rete Docker |
 | `cloudflared` | **Cloudflare Tunnel**: collega il server a Cloudflare senza aprire porte; l'HTTPS lo fa Cloudflare |
 | `listmonk` + `postgres` | newsletter automatica dei dati: liste, doppia conferma, cancellazione, invii |
 
 Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, vedi fase 3).
+
+## Aggiunte del 17/11/2026 (stato della rete elettrica e cabine primarie)
+
+- Modulo `servizio/rete.py`: database SQLite `/srv/energia/dati/rete/rete.sqlite` (nel container `/dati/rete/`), raccolta
+  delle **interruzioni ogni 15 minuti** e **saturazione dei trasformatori ogni notte alle 01:15** nel worker, sei rotte
+  `/api/rete/…` per le pagine «Statistiche › Stato della rete elettrica» e «Fotovoltaico › Cabine primarie». Dettagli:
+  § «Stato della rete elettrica». Messa in servizio: `../AGGIORNAMENTO_2026-11-18_rete.md`.
+- Nessuna variabile obbligatoria nel `.env` (valori predefiniti in `.env.example`), nessuna modifica al Caddyfile né al
+  compose: il database sta nella cartella dei dati già montata.
 
 ## Regola dei file Excel (16/11/2026)
 
@@ -395,6 +404,12 @@ Il Caddyfile serve dal 06/11/2026 i file `.md` del sito come `text/markdown; cha
 | GET | `/api/clima-legge10/{istat}?anni=10` | dati climatici aggiornati per la Legge 10 dal clima reale del comune. `anni` = ultime stagioni complete, da 1 a 30 (predefinito 10), **0 = tutte** quelle dell'archivio giornaliero (14/11/2026; prima 3–30). La risposta dice `stagioni_richieste`, `stagioni_disponibili`, `prima_stagione_disponibile` e in `note` se le stagioni usate sono meno di quelle chieste o meno di 5 (valori indicativi, tendenza vuota) |
 | GET | `/api/psicro/disponibilita/{istat}` | (14/11/2026, menu «Trattamento aria») periodo coperto (`dal`, `al` in UTC), `anni_completi`, `anni_scelte`, quota del punto meteo e `pressione_pa` (atmosfera standard), `archivio` (`psicro` o `orario_icon`), fonte, licenza, note; limite «dati» |
 | GET | `/api/psicro/serie/{istat}?anni=1\|2\|5\|10\|20\|0` | (14/11/2026) serie oraria **continua in UTC** degli ultimi anni×12 mesi fino all'ultima ora (0 = tutta la serie dal 1940): `inizio`, `passo_h`: 1, `n`, `t` (decimi di °C interi o `null`), `ur` (% interi o `null`), `dal`, `al`, `anni_richiesti`, `anni_dati`, `fonte`, `licenza`, `note`. Archivio `CARTELLA_PSICRO/<istat>.parquet` (fase 3, `scarica-psicro`); finché manca, la serie oraria ICON del server (`/dati/orario`, dal 14/11/2022) con la nota; senza nessuna delle due 503; 422 per altri `anni`. Limiti «dati» e `psicro` (`PSICRO_ORA`, 120 serie per IP all'ora); copia in memoria delle ultime 16 risposte (rinnovata quando il file cambia). Una serie dal 1940 è ~5,5 MB di JSON, ~1,2–1,5 MB compressa da Caddy (`encode zstd gzip`, già attivo su `/api/*`) |
+| GET | `/api/rete/stato` | (17/11/2026) ultimi aggiornamenti di saturazione e interruzioni, interruzioni attive, province senza dato (`province_mancanti`, es. Torino) o non aggiornate, inizio della raccolta, tabella di raccordo, regola della criticità, fonti e licenze; `Cache-Control` 60 s |
+| GET | `/api/rete/cabine?regione=RR` | (17/11/2026) GeoJSON di punti delle cabine primarie con posizione (tabella di raccordo, ODbL): campi del raccordo più `livello` (peggiore tra i trasformatori, `null` = altro gestore o senza dato), `trasf`, `data_saturazione`; `senza_posizione`, `attribuzione`, `licenza`, `licenze`; 30 minuti |
+| GET | `/api/rete/comuni?regione=RR` | (17/11/2026) elenco dei comuni (tutta Italia senza `regione`) con `concessionario`, `servito_in_parte`, `pieno`, `strisce`, `livello`, `quota`, `trasf`, `cabine`, `data`, `dato_disponibile` (regola del contratto, `rete.classe_comune`); 30 minuti |
+| GET | `/api/rete/cabine/comune/{istat}` | (17/11/2026) cabine che servono il comune (anche quelle di altri gestori dal raccordo), trasformatori del comune con livello, montanti e sezioni, criticità; 30 minuti |
+| GET | `/api/rete/interruzioni/attive?regione=RR\|bbox=…` | (17/11/2026) GeoJSON di punti delle interruzioni in corso (punto della cabina secondaria con più clienti), `durata_finora_min`; 2 minuti |
+| GET | `/api/rete/interruzioni/comune/{istat}?da=aaaa-mm&a=aaaa-mm` | (17/11/2026) statistiche del comune: `dal`, `totale`, `per_mese`, `per_causa`, `per_codice_causa`, `attive`, `ultime` (50); 5 minuti |
 | POST | `/api/patrimonio` | CSV di edifici → particella catastale, comune, punto (max 500 righe per richiesta, 2.000 edifici l'ora per IP; il sito manda blocchi di 40); indirizzi prima con ANNCSU, poi con Zornade; CSV in UTF-8 o nella codifica di Windows; la risposta porta `fonti` da citare |
 | POST | `/api/report?formato=pdf\|xlsx\|ods` | documento generico in JSON (schema in `/api/report/schema`) → file PDF, Excel o ODS; `docx` e `odt` rispondono 410 (spenti dal 28/10/2026); vedi "Report" |
 | POST | `/api/report/{tipo}?formato=pdf\|xlsx\|ods` | `tipo` = `previsione`, `legge10`, `patrimonio`, `indicatori`, `valori_sedi`, `edificio` (dal 04/11/2026: pagina 3D, vedi `report_servizi.report_edificio`): il corpo è la risposta già ricevuta dal servizio → file del report |
@@ -418,6 +433,88 @@ Il Caddyfile serve dal 06/11/2026 i file `.md` del sito come `text/markdown; cha
 | GET | `/api/storici/catalogo` | dataset scaricabili presenti sul server (grandezze, frequenze, periodo, fonte, licenza, limiti) |
 | POST | `/api/storici/stima?formato=csv\|xlsx\|ods` | JSON con i filtri → righe, colonne e dimensione stimate; se la richiesta è troppo grande, motivo e suggerimenti |
 | POST | `/api/storici/estrai?formato=csv\|xlsx\|ods` | stesso JSON → file CSV (in streaming), Excel o OpenDocument (.ods) con foglio "Info" (dal 16/11/2026 citazione in riga 1 di ogni foglio, intestazioni in riga 2) |
+
+## Stato della rete elettrica (17/11/2026)
+
+Modulo `servizio/rete.py` (contratto comune dei tre agenti, decisioni di Paolo del 17/11/2026). Il **worker** scrive, le
+**rotte** leggono; le pagine sono «Statistiche › Stato della rete elettrica» e «Fotovoltaico › Cabine primarie».
+
+**Database** `RETE_DB` (predefinito `/dati/rete/rete.sqlite` = `/srv/energia/dati/rete/rete.sqlite` sul server; cartella
+dell'utente 1000). Schema versionato con `PRAGMA user_version` (oggi 1), creato dal worker al primo lavoro; giornale WAL
+(il worker scrive mentre l'api legge); le rotte aprono in sola lettura (`query_only`) e rispondono 503 finché il file non
+c'è (non lo creano mai).
+
+| tabella | contenuto |
+|---|---|
+| `meta` | `saturazione_aggiornata`, `interruzioni_aggiornate`, `raccolta_dal`, `comuni_ed_aggiornati`, `saturazione_ultimo_giro` (esito della notte), `avviso_province` |
+| `province` | `ProvinceCritiche_View`: codice ISTAT a 3 cifre, nome, regione (codice ISTAT a 2 cifre da `f1`), livelli di criticità della provincia |
+| `comuni_ed` | `View_ComuniGestitiED2021Is`: ISTAT 2021, ISTAT attuale (uguale se esiste ancora, altrimenti per nome nella stessa regione, `NULL` se non si trova), nome, `servitoed` (0 = il distributore è un altro) |
+| `saturazione` | `comuniServiti`: una riga per mese, comune, cabina primaria, trasformatore, montante e sezione, con il livello. **Una fotografia per mese e provincia**: l'ultima lettura riuscita del mese sostituisce quella di prima, i mesi passati restano (storico mensile) |
+| `saturazione_province` | mese, provincia, ora della lettura, comuni e righe lette |
+| `tentativi_province` | ultimo tentativo per provincia, esito, errore (mai il gettone), ultima lettura riuscita, `in_errore_dal` (primo errore dopo l'ultima lettura riuscita) |
+| `interruzioni` | una riga per `id_interruzione`: cause (`causa_disalimentazione`, codice `causa_interruzione`), inizio e ripristino previsto in ISO (ora italiana) o il testo («In corso di definizione»), comune principale (cabina secondaria con più clienti) e tutti i comuni, punto, **clienti = massimo visto** della somma sulle cabine secondarie, `prima_lettura`, `ultima_lettura`, `chiusa_il` (prima lettura completa in cui non compare più; si riapre se ricompare) |
+| `interruzioni_cs` | una riga per interruzione e cabina secondaria (`cod_cs`): comune, punto, clienti massimi |
+| `letture` | una riga per lettura delle interruzioni: esito (`ok`, `sospetta`, `errore`), righe, nuove, chiuse, durata (tenute 400 giorni) |
+
+**Interruzioni** (`rete-interruzioni`, thread a parte nel worker, così i lavori lunghi della notte non le fermano): ai
+minuti 3, 18, 33, 48 di ogni ora (la mappa di e-distribuzione si aggiorna al minuto 1) tutte le righe dello strato
+`ITA_power_cut_map_layer_View/FeatureServer/0` a pagine di 1.000. Un `id_interruzione` può avere più righe (una per
+cabina secondaria, anche in comuni diversi). Una lettura senza righe mentre ne erano aperte almeno 10 è «sospetta» e
+non chiude nulla. **Durata stimata** = ultima lettura in cui compare − `data_interruzione` (dichiarata nelle risposte,
+errore fino a una lettura).
+
+**Saturazione** (`rete-saturazione`, ogni notte alle `RETE_SATURAZIONE_ORA` = 01:15, prima dei mercati delle 2:30, del
+LiDAR delle 3:30 e dell'aggiornamento da GitHub delle 4:40; subito alla prima accensione se il database non ne ha):
+pagina delle Aree critiche (biscotti), elenco delle province, comuni gestiti, poi per ogni provincia gettone nuovo
+(`tokenservice`) e `comuniServiti`, con le intestazioni `Origin` e `Referer` della pagina e una pausa di `RETE_PAUSA_S`
+(mai meno di 4 s); le province fallite si ritentano alla fine due volte (pausa 15 s) e di nuovo la notte dopo (Torino
+oggi risponde 500: `province_mancanti`, la pagina dice «dato non disponibile»). **Il gettone non viene mai scritto**:
+né nei log (httpx registra solo l'indirizzo), né negli errori (solo codici e stati HTTP), né nel database. ~110 province
+in ~10 minuti. Se il giro si ferma prima delle province (elenco non letto), tutte le province note contano come fallite.
+
+**Criticità** (`rete.classe_comune`, copia identica di `fase7-territorio/territorio/cabine.py` del ramo dei dati, **da
+unificare**): trasformatori distinti (cabina, trasformatore) che servono il comune, L = livello più alto, q = quota con L;
+L = VERDE nessun riempimento, q > 0,5 colore pieno, altrimenti strisce `[livello precedente, L]` (dettagli nel contratto).
+Livello della cabina = peggiore tra i suoi trasformatori (VERDE si disegna bianco; `null` = grigio). Fotografia attuale =
+ultimo mese riuscito di ogni provincia; calcolo tenuto in memoria finché database, raccordo o elenco dei comuni non
+cambiano.
+
+**Tabella di raccordo** `RETE_RACCORDO` (predefinita accanto al database, `raccordo_cp.csv` dell'agente dati: `cod_ac,
+gestore, cod_cp_ed, nome_cp_ed, comuni_serviti, osm_id, osm_nome, lat, lon, punteggio_nome, distanza_m, esito,
+data_raccordo, versione_ac`): dà posizione (OSM, **ODbL**), `COD_AC` e gestore. Le cabine e-distribuzione senza riga
+restano senza posizione (contate in `senza_posizione`, presenti in `/cabine/comune/…` con `lat` nullo); le righe senza
+codice e-distribuzione (`solo_gse`, altri gestori) compaiono grigie. Riletta da sola quando il file cambia. Regione di un
+comune: `DATI/comuni.parquet` (fase 3), altrimenti la provincia da `ProvinceCritiche`.
+
+**Comuni serviti in parte** (decisione di Paolo del 17/11/2026): un comune con trasformatori e-distribuzione nel dato
+mensile non è mai «non concessionario». I 35 comuni (soprattutto milanesi) che `View_ComuniGestitiED2021Is` segna
+`servitoed = 0` ma che compaiono in `comuniServiti` hanno `concessionario: true` e `servito_in_parte: true`: la pagina li
+colora con la loro criticità (niente retino) e scrive «servito in parte da un altro distributore» (`nota` in
+`/cabine/comune/…`, `nota_servito_in_parte` in `/stato`). Non concessionari (retino) = `servitoed = 0` senza trasformatori.
+
+**Licenze nelle risposte**: «Fonte: e-distribuzione S.p.A., mappa delle Aree critiche e mappa delle interruzioni» (uso non
+commerciale, rimozione su richiesta); posizioni «© contributori OpenStreetMap», ODbL 1.0; codici `COD_AC` del GSE senza
+geometrie (i perimetri si leggono solo dal browser); criticità «classificazione di EuGEnio». `/api/rete/comuni` è un
+elenco (forma del contratto): fonti e licenze stanno in `/api/rete/stato`.
+
+**Email all'amministratore** (decisione di Paolo del 17/11/2026) **solo** in due casi, una volta per episodio (si
+riarmano quando la condizione cessa): (a) le interruzioni **non si leggono da più di 72 ore consecutive** (dall'ultima
+lettura riuscita, `meta.interruzioni_aggiornate`); (b) **più di 5 province** non sono aggiornate con successo da più di
+72 ore consecutive (`tentativi_province.in_errore_dal`, primo errore dopo l'ultima lettura riuscita; controllo dopo ogni
+giro notturno, stato dell'avviso in `meta.avviso_province`). Nessun'altra email: né per letture fallite più brevi, né
+quando riparte, né per Torino da sola, né per un giro notturno fallito (solo nel registro; la saturazione non passa da
+`_sicuro`). Soglie: `RETE_AVVISO_ORE` (72) e `RETE_AVVISO_PROVINCE` (5).
+
+**Protezione**: letture leggere, senza Turnstile; limite proprio `rete` (`RETE_ORA`, 1.200 richieste per IP all'ora);
+`Cache-Control: public` da 1 minuto (stato) a 30 minuti (cabine, comuni).
+
+**Variabili** (tutte facoltative): `RETE_DB`, `RETE_RACCORDO`, `RETE_ATTIVA` (false spegne i due lavori), `RETE_INTERRUZIONI_MIN`
+(15, minimo 5), `RETE_SATURAZIONE_ORA` (01:15), `RETE_PAUSA_S` (4, minimo 4), `RETE_ORA` (1200), `RETE_AVVISO_ORE` (72), `RETE_AVVISO_PROVINCE` (5).
+
+**A mano**: `docker compose run --rm worker python -m servizio.worker rete-interruzioni` (o `rete-saturazione`, ~10
+minuti). **Prove**: `tests/test_rete.py` (regola, interruzioni a pagine con chiusura, riapertura e lettura sospetta,
+saturazione con Torino in errore, ritentativi, pause, gettone mai registrato, fotografia mensile, rotte e 503/422/429) e
+`tests/test_worker.py` (orari delle letture, email solo oltre le 72 ore, più di 5 province ferme, una per episodio).
 
 ## Archivio psicrometrico per «Trattamento aria» (14/11/2026)
 
@@ -1117,6 +1214,9 @@ parte dell'archivio comune dopo l'approvazione nella pagina interna.
 - Meteo: "Weather data by Open-Meteo.com" (CC BY 4.0) – modelli Arpae ICON-2I, DWD ICON, ECMWF IFS, ERA5 Copernicus.
 - "Dati elaborati da Zornade" (link a https://zornade.com) – catasto Agenzia delle Entrate, ISTAT, OpenStreetMap (ODbL).
 - Civici: ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0).
+- Rete elettrica (17/11/2026): «Fonte: e-distribuzione S.p.A., mappa delle Aree critiche e mappa delle interruzioni» (uso
+  non commerciale, rimozione su richiesta); posizioni delle cabine primarie «© contributori OpenStreetMap», ODbL 1.0; codici
+  delle aree convenzionali GSE S.p.A. (solo i codici).
 - Confini comunali: ISTAT (CC BY 4.0) via Gramscii.
 - Ortofoto (Fase B): la citazione e la licenza di ogni fonte stanno nel suo TOML e sotto la mappa; PVGIS © Unione europea
   (riuso con citazione); Copernicus DEM GLO-90 © DLR e Airbus (licenza Copernicus DEM) dai file di Open-Meteo (CC BY 4.0).

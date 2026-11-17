@@ -163,3 +163,88 @@ def test_mercati_senza_credenziali_gme_non_manda_email(monkeypatch):
     assert inviati == []
     W.mercati()
     assert inviati == ["dati di mercato: aggiornamento incompleto"]
+
+
+# ---------------------------------------------------------------------------------------------- rete elettrica (17/11/2026)
+def test_rete_prossima_lettura_ogni_15_minuti():
+    base = 1_700_000_000 // 900 * 900          # un quarto d'ora esatto
+    assert W.prossima_lettura(base, 15) == base + 180                 # minuto 3 del quarto d'ora
+    assert W.prossima_lettura(base + 180, 15) == base + 900 + 180
+    assert W.prossima_lettura(base + 500, 15) == base + 900 + 180
+    assert W.prossima_lettura(base + 100, 15) == base + 180
+
+
+def test_rete_interruzioni_email_solo_dopo_72_ore(monkeypatch):
+    inviati = []
+    monkeypatch.setattr(W.avvisi, "invia", lambda oggetto, testo: inviati.append(oggetto))
+    t0 = 1_700_000_000.0
+    e = W._Errori(ultimo_ok=t0, ore=72)
+
+    def guasto():
+        raise RuntimeError("HTTP 500")
+    for k in range(1, 72 * 4 + 1):                        # 72 ore di letture fallite ogni 15 minuti: nessuna email
+        assert not e.esegui(guasto, t0 + k * 900)
+    assert inviati == []
+    for k in range(72 * 4 + 1, 80 * 4):                   # oltre le 72 ore: una sola email
+        e.esegui(guasto, t0 + k * 900)
+    assert inviati == ["rete elettrica: interruzioni non lette da più di 72 ore"]
+    assert e.esegui(lambda: None, t0 + 81 * 3600) and e.n == 0
+    assert len(inviati) == 1                              # nessuna email quando ripartono
+    for k in range(1, 10):
+        e.esegui(guasto, t0 + 81 * 3600 + k * 900)
+    assert len(inviati) == 1
+
+
+def test_rete_saturazione_email_solo_province_ferme_da_72_ore(tmp_path, monkeypatch):
+    import datetime as dt
+    from servizio import rete as R
+    inviati = []
+    monkeypatch.setattr(W.avvisi, "invia", lambda oggetto, testo: inviati.append(oggetto))
+    monkeypatch.setattr(C, "RETE_DB", tmp_path / "rete" / "rete.sqlite")
+    t0 = dt.datetime(2026, 11, 18, 1, 15, tzinfo=R.ROMA)
+    db = R.connetti()
+    with R.transazione(db):
+        db.executemany("INSERT INTO province (cod) VALUES (?)", [(f"{k:03d}",) for k in range(1, 11)])
+    db.close()
+    giro = {"ora": t0, "ok": True}
+
+    def finto():
+        if not giro["ok"]:
+            raise RuntimeError("elenco delle province non letto")
+        db = R.connetti()
+        with R.transazione(db):
+            for k in range(1, 8):                           # 7 province falliscono ogni notte
+                R._segna_errore(db, f"{k:03d}", R.iso(giro["ora"]), "HTTP 500")
+        db.close()
+        return {"ok": 3, "falliti": {}}
+    monkeypatch.setattr(R, "aggiorna_saturazione", finto)
+    monkeypatch.setattr(R, "adesso", lambda: giro["ora"])
+    for notte in range(3):                                  # 0, 24, 48 ore: niente
+        giro["ora"] = t0 + dt.timedelta(days=notte)
+        W.rete_saturazione()
+    giro["ora"] = t0 + dt.timedelta(days=3)                 # 72 ore esatte: non ancora «più di 72»
+    assert W.rete_saturazione()["ferme_72h"] == [] and inviati == []
+    giro["ora"] = t0 + dt.timedelta(days=3, hours=1)
+    assert len(W.rete_saturazione()["ferme_72h"]) == 7
+    assert inviati == ["rete elettrica: 7 province non aggiornate da più di 72 ore"]
+    giro["ora"], giro["ok"] = t0 + dt.timedelta(days=4), False    # giro fallito: nessuna email in più, nessuna eccezione
+    W.rete_saturazione()
+    assert len(inviati) == 1
+    assert len(R.province_ferme(ora=t0 + dt.timedelta(days=7, hours=2))) == 10   # anche 8-10, ferme dal giorno 4
+
+
+def test_rete_saturazione_cinque_province_ferme_nessuna_email(tmp_path, monkeypatch):
+    import datetime as dt
+    from servizio import rete as R
+    inviati = []
+    monkeypatch.setattr(W.avvisi, "invia", lambda oggetto, testo: inviati.append(oggetto))
+    monkeypatch.setattr(C, "RETE_DB", tmp_path / "rete" / "rete.sqlite")
+    t0 = dt.datetime(2026, 11, 18, 1, 15, tzinfo=R.ROMA)
+    db = R.connetti()
+    with R.transazione(db):
+        for k in range(1, 6):
+            R._segna_errore(db, f"{k:03d}", R.iso(t0), "HTTP 500")
+    db.close()
+    monkeypatch.setattr(R, "aggiorna_saturazione", lambda: {"ok": 100, "falliti": {}})
+    monkeypatch.setattr(R, "adesso", lambda: t0 + dt.timedelta(days=10))
+    assert len(W.rete_saturazione()["ferme_72h"]) == 5 and inviati == []
