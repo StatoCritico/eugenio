@@ -51,6 +51,11 @@ def main(argv=None):
     p.add_argument("--istat", help="cabine-raccordo: cartella con i CSV ISTAT (elenco, soppressi, variazioni)")
     p.add_argument("--mappa", default=str(Path(__file__).resolve().parents[2] / "fase5-sito" / "sito" / "dati" / "mappa"),
                    help="cabine-raccordo: file di mappa dei comuni del sito")
+    p.add_argument("--linee-luoghi", help="cabine-raccordo: JSON {linee, luoghi} già estratti (altrimenti, con "
+                                          "--verifica e il PBF, si estraggono)")
+    p.add_argument("--documenti", nargs="*", default=[], help="cabine-raccordo: testi (pdftotext -layout) delle "
+                                                             "appendici dei Piani di Sviluppo e-distribuzione")
+    p.add_argument("--verifica", action="store_true", help="cabine-raccordo: secondo passaggio di verifica")
     p.add_argument("--comuni-ed", help="cabine-raccordo: JSON degli attributi di View_ComuniGestitiED2021Is "
                                        "(se manca si scarica)")
     a = p.parse_args(argv)
@@ -79,8 +84,21 @@ def main(argv=None):
         if a.scarica_gse:
             cabine.scarica_aree_gse(Path(a.aree_gse))
         cg = json.loads(Path(a.comuni_ed).read_text(encoding="utf-8")) if a.comuni_ed else cabine.scarica_comuni_gestiti()
+        linee = luoghi = docs = None
+        if a.verifica:
+            if a.linee_luoghi:
+                ll = json.loads(Path(a.linee_luoghi).read_text(encoding="utf-8"))
+                linee, luoghi = ll["linee"], ll["luoghi"]
+            elif a.osm.endswith(".pbf"):
+                linee, luoghi = cabine.estrai_linee_luoghi(Path(a.osm))
+            else:
+                p.error("--verifica richiede --linee-luoghi oppure il PBF in --osm")
+            docs = [d for f in a.documenti for d in cabine.schede_piano_sviluppo(
+                Path(f).read_text(encoding="utf-8"), Path(f).stem)]
         r = cabine.costruisci(Path(a.dati_cp), Path(a.osm), Path(a.aree_gse), Path(a.mappa), Path(a.istat),
-                              Path(a.dest), comuni_gestiti=cg)
+                              Path(a.dest), comuni_gestiti=cg, linee=linee, luoghi=luoghi, documenti=docs)
+        if r["verifica"]:
+            print(f"Secondo passaggio: prima {r['verifica']['prima']}, dopo {r['verifica']['dopo']}")
         print(f"Cabine e-distribuzione: {r['cabine']}; esiti: {dict(r['esiti'])}; aree GSE {r['versione_ac']}")
         print(f"Creati in {a.dest}: raccordo_cp.csv, cabine_primarie.geojson, comuni_criticita.json, "
               "comuni_non_concessionari.json, osm_sottostazioni.geojson")

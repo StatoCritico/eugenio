@@ -457,6 +457,29 @@ def estrai_sottostazioni(pbf: Path) -> list[dict]:
     return out
 
 
+def estrai_linee_luoghi(pbf: Path) -> tuple[list[dict], list[dict]]:
+    """Linee AT OSM (`power=line|cable`, nome ed estremi) e località (`place=*` con nome, solo nodi) dal PBF."""
+    import osmium
+    linee = {}
+    for o in osmium.FileProcessor(str(pbf), osmium.osm.WAY).with_filter(
+            osmium.filter.TagFilter(("power", "line"), ("power", "cable"))):
+        refs = [n.ref for n in o.nodes]
+        if len(refs) >= 2:
+            linee[o.id] = ({k: o.tags[k] for k in ("name", "ref", "voltage", "operator") if k in o.tags},
+                           refs[0], refs[-1])
+    serve = {r for _, a, b in linee.values() for r in (a, b)}
+    loc, luoghi = {}, []
+    tipi = {"city", "town", "village", "hamlet", "suburb", "neighbourhood", "quarter", "locality",
+            "isolated_dwelling", "farm", "borough"}
+    for o in osmium.FileProcessor(str(pbf), osmium.osm.NODE):
+        if o.id in serve:
+            loc[o.id] = (round(o.location.lon, 6), round(o.location.lat, 6))
+        if "place" in o.tags and "name" in o.tags and o.tags["place"] in tipi:
+            luoghi.append({"name": o.tags["name"], "place": o.tags["place"], "lon": round(o.location.lon, 6),
+                           "lat": round(o.location.lat, 6)})
+    return ([{"id": i, **t, "a": loc.get(a), "b": loc.get(b)} for i, (t, a, b) in linee.items()], luoghi)
+
+
 def geojson_osm(sottostazioni: list[dict], data_pbf: str = "") -> dict:
     """Estratto delle sottostazioni come GeoJSON (ODbL)."""
     return {"type": "FeatureCollection", "attribuzione": ATTRIBUZIONE_OSM, "licenza": LICENZA_OSM,
@@ -965,7 +988,9 @@ def non_concessionari(righe: list[dict], attuali: dict, successivi: dict | None,
 # ------------------------------------------------------------------------------------------- tutto insieme
 
 def costruisci(dati_cp: Path, osm: Path, aree_gse: Path, mappa: Path, istat: Path, dest: Path,
-               comuni_gestiti: list[dict] | None = None, data: str | None = None) -> dict:
+               comuni_gestiti: list[dict] | None = None, data: str | None = None,
+               linee: list[dict] | None = None, luoghi: list[dict] | None = None,
+               documenti: list[dict] | None = None) -> dict:
     """Produce in `dest` i file del raccordo (vedi README della fase 7) e restituisce un riepilogo numerico.
 
     - dati_cp: cartella di cabine_edistribuzione.py (con `grezzi/PPP.json`)
@@ -974,6 +999,7 @@ def costruisci(dati_cp: Path, osm: Path, aree_gse: Path, mappa: Path, istat: Pat
     - mappa: `fase5-sito/sito/dati/mappa` (confini dei comuni ISTAT 2026 generalizzati)
     - istat: cartella con Elenco-comuni-italiani.csv e i CSV dei soppressi e delle variazioni
     - comuni_gestiti: attributi di View_ComuniGestitiED2021Is (se None non si scrive il file dei non concessionari)
+    - linee, luoghi, documenti: se dati, secondo passaggio di verifica (`secondo_passaggio`) prima di scrivere
     """
     dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
@@ -996,6 +1022,15 @@ def costruisci(dati_cp: Path, osm: Path, aree_gse: Path, mappa: Path, istat: Pat
     righe, diag = raccorda(cab, comuni, cand, aree, province=province)
     usate = {r["cod_ac"] for r in righe if r["cod_ac"]}
     righe += righe_solo_gse(aree, usate, cand)
+    verifica = None
+    if linee is not None or luoghi is not None or documenti is not None:
+        senza_dati = None
+        if comuni_gestiti is not None:  # serviti da e-distribuzione ma assenti da comuniServiti (Torino…)
+            serviti = {codice_attuale(x.get("pro_com_t"), x.get("comune") or "", attuali, succ)[0]
+                       for x in comuni_gestiti if int(x.get("servitoed") or 0) == 1 and str(x.get("pro_com_t") or "").strip()}
+            senza_dati = serviti - {t[0] for t in tr} - {None}
+        verifica = secondo_passaggio(righe, cab, comuni, aree, cand, linee or [], luoghi or [], province,
+                                     documenti or [], data, senza_dati)
     righe.sort(key=lambda r: (r["cod_ac"] or "~", r["cod_cp_ed"]))
     scrivi_raccordo(righe, dest / "raccordo_cp.csv", data, versione)
     cont = conteggi_cabina(tr)
@@ -1016,6 +1051,350 @@ def costruisci(dati_cp: Path, osm: Path, aree_gse: Path, mappa: Path, istat: Pat
     return {"cabine": len(cab), "trasformatori": len(tr), "esiti": Counter(r["esito"] for r in righe),
             "diagnostica": diag, "versione_ac": versione, "data_saturazione": data_sat,
             "comuni_criticita": len(crit), "non_concessionari": len(nc) if nc is not None else None,
-            "codici_istat": Counter(m for _, m in mappa_cod.values()), "osm_candidate": len(cand),
+            "codici_istat": Counter(m for _, m in mappa_cod.values()), "osm_candidate": len(cand), "verifica": verifica,
             "osm_tutte": len(sott), "righe": righe, "aree": aree, "cabine_ed": cab, "trasf": tr,
             "mappa_codici": mappa_cod, "comuni": comuni, "attuali": attuali, "regioni": regioni}
+
+
+# ------------------------------------------------------------------------- secondo passaggio (prove indipendenti)
+
+def parti_linea(nome: str) -> list[str]:
+    """Nomi delle stazioni nel nome di una linea AT OSM: «Calvizzano-CP Patria» → ["Calvizzano", "CP Patria"],
+    «Linea 132 kV Camin – Padova Fiera» → ["Camin", "Padova Fiera"]. Le derivazioni «All.»/«Der.» restano nel nome."""
+    s = re.sub(r"^\s*(linea|elettrodotto|el\.)\s*", "", str(nome or ""), flags=re.I)
+    s = re.sub(r"\b\d+\s*kV\b", "", s, flags=re.I)
+    parti = [p.strip(" .,;()") for p in re.split(r"\s*[-–—/]\s*", s)]
+    return [p for p in parti if p and not re.fullmatch(r"[\d.\s]*", p)]
+
+
+def prova_linee(nome_cabina: str, linee: list[dict], altrove=lambda p: False, concorrenti=(),
+                soglia: float = 0.8) -> dict:
+    """Prova dai nomi delle linee AT che arrivano a una sottostazione.
+
+    Una linea «A - B» tocca due stazioni, quindi il nome della cabina nella linea non basta: la linea conferma se una
+    parte è la cabina cercata (punteggio ≥ `soglia`, e nessuna delle `concorrenti`, le altre cabine e-distribuzione,
+    le somiglia di più) e **tutte le altre parti sono stazioni già collocate altrove** (`altrove(parte)` vero: una
+    sottostazione OSM con quel nome a più di 1 km, o una cabina già sicura). È contraria se una parte non collocata
+    altrove somiglia (≥ 0,9) a un'altra cabina e nessuna parte somiglia alla cabina cercata.
+    Restituisce {"conferma": [nomi linea], "contro": [nomi linea]}.
+    """
+    out = {"conferma": set(), "contro": set()}
+    for l in linee:
+        parti = parti_linea(l.get("name") or "")
+        if len(parti) < 2:
+            continue
+        punt = [punteggio_nome(nome_cabina, [q]) for q in parti]
+        mie = [k for k, x in enumerate(punt) if x >= soglia
+               and not any(punteggio_nome(c, [parti[k]]) > x for c in concorrenti)]
+        if mie:
+            k = mie[0]
+            if all(altrove(q) for j, q in enumerate(parti) if j != k):
+                out["conferma"].add(l["name"])
+        elif any(not altrove(q) and any(punteggio_nome(c, [q]) >= 0.9 for c in concorrenti) for q in parti):
+            out["contro"].add(l["name"])
+    return {k: sorted(v) for k, v in out.items()}
+
+
+def prova_luoghi(nome_cabina: str, luoghi_vicini: list[dict], escludi=()) -> list[str]:
+    """Località OSM (place=*) vicine alla sottostazione con il nome della cabina (es. VACCARO, RUGGIANELLO).
+    `escludi`: nomi da non contare (il comune che contiene la sottostazione, che non distingue due CP dello stesso
+    comune)."""
+    esc = {" ".join(gettoni(e)) for e in escludi}
+    return sorted({p["name"] for p in luoghi_vicini
+                   if " ".join(gettoni(p["name"])) not in esc and punteggio_nome(nome_cabina, [p["name"]]) >= 0.9})
+
+
+def misura_comuni(area_geom, unione_comuni, fascia: float = 500.0) -> tuple[float, float]:
+    """(quota dell'area GSE dentro i comuni serviti, quota dei comuni serviti dentro l'area), con una fascia per i
+    confini generalizzati."""
+    if area_geom is None or unione_comuni is None or area_geom.area == 0:
+        return 0.0, 0.0
+    inter = area_geom.intersection(unione_comuni.buffer(fascia)).area
+    return round(inter / area_geom.area, 4), round(min(1.0, inter / max(unione_comuni.area, 1)), 4)
+
+
+def decidi_verifica(prove: dict) -> tuple[str, str]:
+    """Esito del secondo passaggio per una cabina abbinata, dalle prove indipendenti dal nome.
+
+    prove: {"quota_area": float, "migliore_per_area": bool, "linee": {"conferma": [...], "contro": [...]},
+            "luoghi": [...], "nome": float, "esclusiva": bool, "documenti": [...], "area_ed": bool,
+            "quota_senza_dati": float}
+    Regole: area di un altro gestore → resta da verificare; nome uguale (o ≥ 0,8 e unica candidata nell'area) e area
+    dentro comuni serviti da e-distribuzione ma senza dati (Torino) → sicuro; area che non tocca i comuni serviti (quota < 0,05) → errore; una linea AT col nome della cabina, una
+    località omonima vicina o un documento → sicuro se l'area tocca i comuni serviti (≥ 0,2) e nessuna linea è
+    contraria; altrimenti la sovrapposizione dei comuni basta se la cabina è la migliore per quell'area (quota ≥ 0,6)
+    e il nome è almeno in parte simile o la sottostazione è l'unica candidata nell'area.
+    Restituisce (esito, motivo) con esito in {"sicuro", "errore", "da_verificare"}.
+    """
+    qa = prove.get("quota_area", 0)
+    lin = prove.get("linee") or {}
+    if prove.get("area_ed") is False:
+        return "da_verificare", "area GSE di un altro gestore: " + decidi_verifica({**prove, "area_ed": True})[1]
+    nome = prove.get("nome", 0)
+    if qa < 0.2 and prove.get("quota_senza_dati", 0) >= 0.8 and not lin.get("contro") \
+            and (nome >= 0.95 or (nome >= 0.8 and prove.get("esclusiva"))):
+        return "sicuro", (f"nome uguale; area GSE per {prove['quota_senza_dati']:.0%} in comuni serviti da "
+                          "e-distribuzione ma senza dati comuniServiti (Torino), nessun'altra cabina nell'area")
+    if qa < 0.05:
+        return "errore", f"l'area GSE non tocca i comuni serviti (quota {qa:.2f})"
+    forti = []
+    if lin.get("conferma"):
+        forti.append("linea AT «" + lin["conferma"][0] + "»")
+    if prove.get("luoghi"):
+        forti.append("località vicina «" + prove["luoghi"][0] + "»")
+    if prove.get("documenti"):
+        forti.append(prove["documenti"][0])
+    if forti and qa >= 0.2 and not lin.get("contro"):
+        return "sicuro", "; ".join(forti) + f"; area GSE nei comuni serviti {qa:.2f}"
+    if lin.get("contro") and not lin.get("conferma"):
+        return "da_verificare", "linea AT verso stazioni già collocate altrove: «" + lin["contro"][0] + "»"
+    if prove.get("migliore_per_area") and qa >= 0.6 and (prove.get("nome", 0) >= 0.45 or prove.get("esclusiva")):
+        perche = "nome in parte simile" if prove.get("nome", 0) >= 0.45 else "unica sottostazione candidata nell'area"
+        return "sicuro", (f"comuni: area GSE per {qa:.0%} nei comuni serviti e cabina più coerente con l'area; "
+                          + perche)
+    return "da_verificare", (f"prove deboli (area nei comuni serviti {qa:.2f}"
+                             + (", altra cabina più coerente con l'area" if not prove.get("migliore_per_area") else "")
+                             + ")")
+
+
+def schede_piano_sviluppo(testo: str, fonte: str) -> list[dict]:
+    """Dal testo (pdftotext -layout) dell'appendice del Piano di Sviluppo e-distribuzione: per ogni scheda il nome
+    delle CP citate («CP Gallo», «Cabina Primaria di Basciano») e i comuni nominati («nel Comune di Alfonsine»)."""
+    out = []
+    for blocco in re.split(r"SCHEDA INTERVENTO", testo)[1:]:
+        cp = set(re.findall(r"\bC\.?P\.?\s+[«“\"]?\s*([A-ZÀ-Ú][\w'À-ú.]*(?:\s+(?:[A-ZÀ-Ú][\w'À-ú.]*|di|del|della|d'))*)",
+                            blocco))
+        cp |= set(re.findall(r"Cabina Primaria (?:di |della |del )?([A-ZÀ-Ú][\w'À-ú]*(?:\s+[A-ZÀ-Ú][\w'À-ú]*)*)",
+                             blocco))
+        com = set(re.findall(r"[Cc]omun[ei] di ([A-ZÀ-Ú][\w'À-ú]*(?:[\s-]+(?:[A-ZÀ-Ú][\w'À-ú]*|di|del|sul|in))*)",
+                             blocco))
+        if cp:
+            titolo = re.search(r"[“\"]\s*(.+?)\s*[”\"]", blocco)
+            out.append({"cp": sorted(cp), "comuni": sorted(com), "fonte": f"{fonte}, scheda «{titolo.group(1) if titolo else '?'}»"})
+    return out
+
+
+def secondo_passaggio(righe: list[dict], cabine: dict, comuni: dict, aree: list[dict], sottostazioni: list[dict],
+                      linee: list[dict], luoghi: list[dict], province: dict | None = None,
+                      documenti: list[dict] | None = None, data: str = "",
+                      comuni_senza_dati: set | None = None) -> dict:
+    """Verifica delle righe `da_verificare` e `senza_posizione` con prove indipendenti dall'abbinamento per nome:
+    comuni serviti ↔ area GSE, esclusività dell'area, nomi delle linee AT OSM che entrano nella sottostazione,
+    località OSM vicine, documenti e-distribuzione. Modifica `righe` sul posto (esito `sicuro`, `corretto` o
+    `da_verificare`, prova in `nota`) e restituisce i conteggi prima/dopo e il dettaglio per riga.
+
+    `sottostazioni` sono le candidate passate a `raccorda` (con lon, lat, osm_id, area_m2); `linee`: linee AT OSM con
+    `name` e gli estremi `a`, `b` in [lon, lat]; `luoghi`: place=* OSM con name, lon, lat."""
+    from shapely import STRtree
+    from shapely.geometry import Point
+    from shapely.ops import unary_union
+
+    prima = Counter(r["esito"] for r in righe)
+    idx_osm = {f["osm_id"]: k for k, f in enumerate(sottostazioni)}
+    xs, ys = utm([f["lon"] for f in sottostazioni], [f["lat"] for f in sottostazioni])
+    punti = [Point(x, y) for x, y in zip(list(xs), list(ys))]
+    alb_p = STRtree(punti)
+    geo_a = [a["geom"] for a in aree]
+    alb_a = STRtree(geo_a)
+    cod_com = list(comuni)
+    alb_c = STRtree([comuni[c]["geom"] for c in cod_com])
+
+    def area_di(k):
+        for j in alb_a.query(punti[k], predicate="within"):
+            return aree[int(j)]
+        return None
+
+    def comune_di(k):
+        for j in alb_c.query(punti[k], predicate="within"):
+            return cod_com[int(j)]
+        return None
+
+    senza = [comuni[c]["geom"] for c in (comuni_senza_dati or ()) if c in comuni and comuni[c]["geom"] is not None]
+    unione_senza = unary_union(senza) if senza else None
+    usate_da = Counter(r["cod_ac"] for r in righe if r.get("cod_cp_ed") and r.get("cod_ac"))
+    senza = [comuni[c]["geom"] for c in (comuni_senza_dati or ()) if c in comuni and comuni[c]["geom"] is not None]
+    unione_senza = unary_union(senza) if senza else None
+    usate_da = Counter(r["cod_ac"] for r in righe if r.get("cod_cp_ed") and r.get("cod_ac"))
+    unioni = {}
+    for cp, v in cabine.items():
+        g = [comuni[c]["geom"] for c in v["comuni"] if c in comuni and comuni[c]["geom"] is not None]
+        unioni[cp] = unary_union(g) if g else None
+    alb_u_cod = [cp for cp in unioni if unioni[cp] is not None]
+    alb_u = STRtree([unioni[cp] for cp in alb_u_cod])
+
+    # per ogni area di e-distribuzione le cabine ordinate per coerenza con i comuni (F = media armonica fra quota
+    # dell'area nei comuni serviti e quota dei comuni serviti nell'area); la «migliore» si sceglie escludendo le
+    # cabine già collocate con sicurezza in un'altra area
+    coerenza = {}
+    for a in aree:
+        if not gestore_ed(a.get("RAG_SOC")):
+            continue
+        lst = []
+        for j in alb_u.query(a["geom"], predicate="intersects"):
+            cp = alb_u_cod[int(j)]
+            qa, qc = misura_comuni(a["geom"], unioni[cp])
+            lst.append((2 * qa * qc / (qa + qc) if qa + qc else 0, cp))
+        coerenza[a["COD_AC"]] = sorted(lst, reverse=True)
+    posto_sicuro = {r["cod_cp_ed"]: r["cod_ac"] for r in righe if r.get("cod_cp_ed") and r["esito"] == "sicuro"}
+
+    def migliore(cod_ac):
+        for f, cp in coerenza.get(cod_ac, []):
+            if posto_sicuro.get(cp, cod_ac) == cod_ac:
+                return cp
+        return None
+
+    estremi, rif = [], []
+    for l in linee:
+        if not l.get("name"):
+            continue
+        for e in (l.get("a"), l.get("b")):
+            if e:
+                x, y = utm(e[0], e[1])
+                estremi.append(Point(float(x), float(y)))
+                rif.append(l)
+    alb_l = STRtree(estremi) if estremi else None
+    lx, ly = utm([p["lon"] for p in luoghi], [p["lat"] for p in luoghi]) if luoghi else ([], [])
+    pl = [Point(x, y) for x, y in zip(list(lx), list(ly))]
+    alb_luoghi = STRtree(pl) if pl else None
+
+    def linee_di(k):
+        if alb_l is None:
+            return []
+        r = 150 + math.sqrt(sottostazioni[k].get("area_m2") or 0)
+        return list({id(rif[int(j)]): rif[int(j)] for j in alb_l.query(punti[k].buffer(r))}.values())
+
+    def luoghi_di(k, raggio=1500):
+        if alb_luoghi is None:
+            return []
+        return [luoghi[int(j)] for j in alb_luoghi.query(punti[k].buffer(raggio))]
+
+    # stazioni con nome collocate: sottostazioni OSM candidate con nome e posizioni delle cabine già abbinate
+    collocate = [(punti[k], " ".join(gettoni(n))) for k, f in enumerate(sottostazioni) for n in nomi_di(f)]
+    for r in righe:
+        if r.get("cod_cp_ed") and r.get("osm_id") in idx_osm and r["esito"] == "sicuro":
+            collocate.append((punti[idx_osm[r["osm_id"]]], " ".join(gettoni(cabine[r["cod_cp_ed"]]["nome"]))))
+    per_gettone = defaultdict(list)
+    for pt, n in collocate:
+        if n:
+            per_gettone[n.split()[0]].append((pt, n))
+
+    def altrove_da(k):
+        def altrove(parte):
+            g = gettoni(parte)
+            if not g:
+                return True
+            for pt, n in per_gettone.get(g[0], []) + per_gettone.get(g[-1], []):
+                if pt.distance(punti[k]) > 1000 and punteggio_nome(parte, [n]) >= 0.9:
+                    return True
+            return False
+        return altrove
+
+    tutti_nomi = {cp: cabine[cp]["nome"] for cp in cabine}
+
+    def nome_esteso(cp):
+        sig = {province[c][0]: province[c][1] for c in cabine[cp]["comuni"] if province and c in province}
+        return espandi_sigla(cabine[cp]["nome"], sig)
+
+    def prove(cp, k):
+        a = area_di(k)
+        qa = misura_comuni(a["geom"], unioni.get(cp))[0] if a is not None else 0.0
+        ne = nome_esteso(cp)
+        concorrenti = [n for c, n in tutti_nomi.items() if c != cp and gettoni(n) != gettoni(cabine[cp]["nome"])]
+        cl = comune_di(k)
+        ccand = [int(j) for j in alb_p.query(a["geom"], predicate="contains")] if a is not None else []
+        docs = []
+        for d in documenti or []:
+            if any(punteggio_nome(ne, [x]) >= 0.9 for x in d["cp"]) and cl and \
+                    any(chiave_comune(x) == chiave_comune(comuni[cl]["nome"]) for x in d["comuni"]):
+                docs.append(f"documento: {d['fonte']} (comune {comuni[cl]['nome']})")
+        qs = misura_comuni(a["geom"], unione_senza)[0] if a is not None and unione_senza is not None else 0.0
+        if a is not None and usate_da.get(a["COD_AC"], 0) > 1:
+            qs = 0.0  # area con più cabine: il nome da solo non basta
+        return {"area": a, "quota_area": qa, "quota_senza_dati": qs,
+                "area_ed": a is None or gestore_ed(a.get("RAG_SOC")), "migliore_per_area": a is not None and migliore(a["COD_AC"]) == cp,
+                "linee": prova_linee(ne, linee_di(k), altrove_da(k), concorrenti),
+                "luoghi": prova_luoghi(ne, luoghi_di(k), [comuni[cl]["nome"]] if cl else []),
+                "nome": punteggio_nome(ne, nomi_di(sottostazioni[k])), "esclusiva": len(ccand) <= 1,
+                "documenti": docs}
+
+    occupate = {r["osm_id"] for r in righe if r.get("cod_cp_ed") and r.get("osm_id")}
+    aree_ed_usate = {r["cod_ac"] for r in righe if r.get("cod_cp_ed") and r.get("cod_ac")}
+    solo_gse = {r["cod_ac"]: r for r in righe if r["esito"] == "solo_gse"}
+    dettaglio = []
+
+    def alternative(cp, escludi, largo=False):
+        u = unioni.get(cp)
+        if u is None:
+            return []
+        out = []
+        vicini = {int(j) for j in alb_p.query(u.buffer(3000), predicate="intersects")}
+        lontani = set()
+        if largo and unione_senza is not None:  # cabine «torinesi»: comuni serviti noti incompleti o sbagliati
+            ne = nome_esteso(cp)
+            lontani = {int(j) for j in alb_p.query(u.buffer(100000), predicate="intersects")} - vicini
+            lontani = {k for k in lontani if punteggio_nome(ne, nomi_di(sottostazioni[k])) >= 0.8}
+            if not lontani:  # ovunque, ma solo se il nome è uguale e unico in Italia (AIRASCA ha un comune siciliano)
+                uguali = [k for k, f in enumerate(sottostazioni) if punteggio_nome(ne, nomi_di(f)) >= 0.95]
+                lontani = set(uguali) if len(uguali) == 1 else set()
+        for k in sorted(vicini | lontani):
+            f = sottostazioni[k]
+            if f["osm_id"] in occupate or f["osm_id"] in escludi:
+                continue
+            a = area_di(k)
+            if a is None or not gestore_ed(a.get("RAG_SOC")) or a["COD_AC"] in aree_ed_usate:
+                continue
+            pv = prove(cp, k)
+            esito, motivo = decidi_verifica(pv)
+            if esito == "sicuro" and (pv["linee"]["conferma"] or pv["luoghi"] or pv["documenti"] or pv["nome"] >= 0.75):
+                out.append((len(pv["linee"]["conferma"]) + len(pv["luoghi"]) + pv["nome"], k, pv, motivo))
+        return sorted(out, key=lambda x: -x[0])
+
+    for r in righe:
+        cp = r.get("cod_cp_ed")
+        if not cp or r["esito"] not in ("da_verificare", "senza_posizione"):
+            continue
+        prima_esito = r["esito"]
+        attuale = None
+        if r.get("osm_id") and r["osm_id"] in idx_osm:
+            k = idx_osm[r["osm_id"]]
+            pv = prove(cp, k)
+            esito, motivo = decidi_verifica(pv)
+            attuale = (esito, motivo, pv)
+            if esito == "sicuro":
+                r["esito"] = "sicuro"
+                posto_sicuro[cp] = r["cod_ac"]
+                r["nota"] = f"2° passaggio: {motivo}" + (f" [1° passaggio: {r['nota']}]" if r.get("nota") else "")
+                dettaglio.append((cp, prima_esito, "sicuro", motivo))
+                continue
+        alt = alternative(cp, {r.get("osm_id")}, largo=prima_esito == "senza_posizione")
+        if alt:
+            _, k, pv, motivo = alt[0]
+            f = sottostazioni[k]
+            vecchio = f"{r.get('osm_id') or 'nessuna sottostazione'} {r.get('cod_ac') or ''}".strip()
+            occupate.add(f["osm_id"])
+            occupate.discard(r.get("osm_id"))
+            aree_ed_usate.discard(r.get("cod_ac"))
+            aree_ed_usate.add(pv["area"]["COD_AC"])
+            solo_gse.pop(pv["area"]["COD_AC"], {}).update(esito="_tolta")
+            u = unioni.get(cp)
+            r.update(osm_id=f["osm_id"], osm_nome=f.get("name") or "", lon=round(f["lon"], 6), lat=round(f["lat"], 6),
+                     cod_ac=pv["area"]["COD_AC"], gestore=pv["area"].get("RAG_SOC", ""), punteggio_nome=pv["nome"],
+                     distanza_m=round(u.distance(punti[k])) if u is not None else None, esito="corretto",
+                     nota=f"2° passaggio: abbinamento cambiato (prima {vecchio}): {motivo}")
+            posto_sicuro[cp] = r["cod_ac"]
+            dettaglio.append((cp, prima_esito, "corretto", motivo))
+            continue
+        motivo = attuale[1] if attuale else "nessuna sottostazione OSM con prove sufficienti"
+        if not attuale and r.get("cod_ac") and r["cod_ac"] in coerenza:
+            a = next(x for x in aree if x["COD_AC"] == r["cod_ac"])
+            qa = misura_comuni(a["geom"], unioni.get(cp))[0]
+            if migliore(r["cod_ac"]) == cp and qa >= 0.8:
+                motivo += (f"; COD_AC confermato dai comuni (area per {qa:.0%} nei comuni serviti, "
+                           "cabina più coerente con l'area)")
+        if attuale and attuale[0] == "errore":
+            motivo = "da rivedere: " + motivo
+        r["nota"] = f"2° passaggio: {motivo}" + (f" [1° passaggio: {r['nota']}]" if r.get("nota") else "")
+        dettaglio.append((cp, prima_esito, r["esito"], motivo))
+    righe[:] = [r for r in righe if r["esito"] != "_tolta"]
+    # le aree tolte dai solo_gse restano coperte dalla riga corretta
+    return {"prima": dict(prima), "dopo": dict(Counter(r["esito"] for r in righe)), "dettaglio": dettaglio}

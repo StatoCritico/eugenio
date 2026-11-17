@@ -296,6 +296,25 @@ geometrie: non serve. Due codici (`AC001E00366`, `AC001E00891`) hanno due poligo
    (i codici sardi 118xxx non esistono nelle tabelle ISTAT: si riconoscono per nome); tra omonimi decide la provincia
    degli altri comuni della stessa richiesta (SAN TEODORO in Gallura e non in provincia di Messina).
 
+### Secondo passaggio di verifica (`--verifica`, 17/11/2026 sera)
+
+Le righe `da_verificare` e `senza_posizione` si riesaminano con prove indipendenti dal nome (`secondo_passaggio`,
+regole in `decidi_verifica`, tutte con test):
+- **comuni ↔ area GSE**: quota dell'area dentro i comuni serviti e coerenza F (media armonica con la quota dei comuni
+  serviti dentro l'area); per ogni area la cabina più coerente, escluse quelle già collocate con sicurezza altrove;
+  area che non tocca i comuni serviti = errore;
+- **linee AT OSM** (`power=line/cable` con nome): «A – B» conferma la cabina A se B è una stazione collocata altrove e
+  nessun'altra cabina somiglia ad A di più (`parti_linea`, `prova_linee`);
+- **località OSM** (`place=*`) omonime entro 1,5 km, escluso il comune che contiene la sottostazione (`prova_luoghi`);
+- **documenti**: schede dell'appendice del Piano di Sviluppo e-distribuzione con CP e comune (`schede_piano_sviluppo`,
+  testo da `pdftotext -layout`);
+- **esclusività e scambi**: per le cabine non confermate, sottostazioni libere in aree e-distribuzione libere con prove
+  forti → esito `corretto` (abbinamento cambiato, con la prova nella nota);
+- cabine «torinesi»: nome uguale in un'area fatta di comuni serviti da e-distribuzione ma senza dati `comuniServiti`.
+Una cabina in un'area GSE di un altro gestore resta `da_verificare` anche con la posizione confermata. Risultato del
+17/11: da 1.574 / 114 / 29 (sicuro / da_verificare / senza_posizione) a 1.647 sicuro, 4 corretto, 41 da_verificare, 25
+senza_posizione; nessuna riga già sicura cambiata.
+
 ### Uso
 
 ```bash
@@ -305,6 +324,9 @@ python -m territorio cabine-raccordo --dati-cp <dati_cp> --osm <italy.osm.pbf> -
 # le volte successive, con l'estratto OSM già fatto e i comuni e-distribuzione salvati:
 python -m territorio cabine-raccordo --dati-cp <dati_cp> --osm <lavoro>/osm_substation_tutte.json \
     --aree-gse <lavoro>/tmp_gse --istat <lavoro>/istat --comuni-ed <lavoro>/comuni_gestiti.json --dest <uscite>
+# con il secondo passaggio: linee e località OSM (dal PBF, oppure JSON {linee, luoghi} già estratto) e appendice PdS
+python -m territorio cabine-raccordo … --verifica --linee-luoghi <lavoro>/osm_linee_luoghi.json \
+    --documenti <lavoro>/doc/PdS2025_appendice.txt
 ```
 `<dati_cp>` è la cartella prodotta dallo script di raccolta delle Aree critiche (`grezzi/PPP.json` per provincia).
 Le tabelle ISTAT si scaricano da https://www.istat.it/classificazione/codici-dei-comuni-delle-province-e-delle-regioni/
@@ -314,13 +336,13 @@ scompattati). Servono `shapely`, `scipy` e, per leggere il PBF, `osmium` (pyosmi
 Escono in `<uscite>`: `raccordo_cp.csv` (colonne del contratto più `nota` in fondo), `cabine_primarie.geojson` (punti
 con livello peggiore e trasformatori per livello), `comuni_criticita.json`, `comuni_non_concessionari.json`,
 `osm_sottostazioni.geojson` (le candidate, ODbL). Risultati del 17/11/2026: 1.717 cabine e-distribuzione (manca
-Torino, il servizio risponde 500), 1.574 `sicuro`, 114 `da_verificare`, 29 `senza_posizione`, 450 aree `solo_gse`;
+Torino, il servizio risponde 500), 1.574 `sicuro`, 114 `da_verificare`, 29 `senza_posizione`, 450 aree `solo_gse` (dopo il secondo passaggio 1.647 / 4 `corretto` / 41 / 25, 446 `solo_gse`);
 prove note confermate (PADOVA FIERA `DV001382982` ↔ OSM way/97839983 «Padova San Lazzaro SC» ↔ `AC001E00909`; Padova
 Centro → `AC001E00906`, Bassanello → `AC001E00886`, Camin → `AC001E00887`).
 
 ## Test
 
 ```powershell
-python -m pytest tests -q      # 40 test, nessuna chiamata di rete (Zornade simulato, ZIP ANNCSU costruito nel test,
+python -m pytest tests -q      # 49 test, nessuna chiamata di rete (Zornade simulato, ZIP ANNCSU costruito nel test,
                                # cabine primarie su una «Padova» finta)
 ```

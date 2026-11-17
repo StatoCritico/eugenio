@@ -253,3 +253,73 @@ def test_leggi_edistribuzione_e_non_concessionari(tmp_path):
     nc = cb.non_concessionari(righe, ATTUALI, {}, {"090064": "20"}, con_trasformatori={"090064"})
     assert nc == [{"istat": "090064", "istat_2021": "090064", "nome": "San Teodoro", "nome_2021": "San Teodoro",
                    "regione": "20", "modo": "uguale", "con_trasformatori_ed": True}]
+
+
+# --------------------------------------------------------------------------------------- secondo passaggio
+
+def test_parti_linea():
+    assert cb.parti_linea("Calvizzano-CP Patria") == ["Calvizzano", "CP Patria"]
+    assert cb.parti_linea("Linea 132 kV Camin – Padova Fiera") == ["Camin", "Padova Fiera"]
+    assert cb.parti_linea("semisbarra A") == ["semisbarra A"]
+
+
+def test_prova_linee():
+    altrove = {"Camin", "Cosenza 2"}.__contains__
+    # la linea nomina la cabina e l'altra stazione è collocata altrove: conferma
+    assert cb.prova_linee("PADOVA FIERA", [{"name": "Padova Fiera - Camin"}], altrove)["conferma"]
+    # l'altra stazione NON è collocata altrove: la sottostazione potrebbe essere quella, nessuna conferma
+    assert not cb.prova_linee("PADOVA FIERA", [{"name": "Padova Fiera - Brentelle"}], altrove)["conferma"]
+    # un'altra cabina e-distribuzione somiglia di più alla parte della linea: nessuna conferma
+    assert not cb.prova_linee("AVELLINO", [{"name": "Avellino Nord - Camin"}], altrove,
+                              concorrenti=["AVELLINO NORD"])["conferma"]
+    # la linea porta a un'altra cabina non collocata: prova contraria
+    r = cb.prova_linee("VIAREGGIO NORD", [{"name": "Filettole - Viareggio"}], {"Filettole"}.__contains__,
+                       concorrenti=["VIAREGGIO"])
+    assert r == {"conferma": [], "contro": ["Filettole - Viareggio"]}
+
+
+def test_prova_luoghi_e_misura_comuni():
+    vicini = [{"name": "Vaccaro"}, {"name": "Brindisi"}]
+    assert cb.prova_luoghi("VACCARO CP", vicini, escludi=["Brindisi"]) == ["Vaccaro"]
+    assert cb.prova_luoghi("BRINDISI CITTA", vicini, escludi=["Brindisi"]) == []
+    qa, qc = cb.misura_comuni(_quadrato(0, 0, 10000, 10000), _quadrato(5000, 0, 20000, 10000), fascia=0)
+    assert qa == 0.5 and qc == pytest.approx(1 / 3, abs=1e-3)
+
+
+def test_decidi_verifica():
+    base = {"quota_area": 0.9, "migliore_per_area": False, "linee": {}, "luoghi": [], "nome": 0.3,
+            "esclusiva": False, "documenti": [], "area_ed": True}
+    assert cb.decidi_verifica({**base, "quota_area": 0.0})[0] == "errore"
+    assert cb.decidi_verifica(base)[0] == "da_verificare"
+    assert cb.decidi_verifica({**base, "linee": {"conferma": ["A - B"], "contro": []}})[0] == "sicuro"
+    assert cb.decidi_verifica({**base, "luoghi": ["Vaccaro"]})[0] == "sicuro"
+    assert cb.decidi_verifica({**base, "migliore_per_area": True, "esclusiva": True})[0] == "sicuro"
+    # posizione confermata ma area di un altro gestore: resta da verificare
+    e, m = cb.decidi_verifica({**base, "area_ed": False, "luoghi": ["Gorizia"]})
+    assert e == "da_verificare" and "altro gestore" in m
+    # Torino: comuniServiti mancante, nome uguale, area in comuni serviti senza dati
+    assert cb.decidi_verifica({**base, "quota_area": 0.0, "quota_senza_dati": 0.95, "nome": 1.0})[0] == "sicuro"
+
+
+def test_schede_piano_sviluppo():
+    testo = ("SCHEDA INTERVENTO “ Nuova CP Livigno ”\nLa nuova Cabina Primaria è prevista nel Comune di Livigno.\n"
+             "SCHEDA INTERVENTO “ Rifacimento rete ”\nnessuna cabina\n")
+    d = cb.schede_piano_sviluppo(testo, "PdS 2025")
+    assert d == [{"cp": ["Livigno"], "comuni": ["Livigno"], "fonte": "PdS 2025, scheda «Nuova CP Livigno»"}]
+
+
+def test_secondo_passaggio(scena):
+    cabine, comuni, sott, aree = scena
+    righe, _ = cb.raccorda(cabine, comuni, sott, aree)
+    righe += cb.righe_solo_gse(aree, {x["cod_ac"] for x in righe}, sott)
+    fiera = next(r for r in righe if r["cod_cp_ed"] == "DV001382982")
+    assert fiera["esito"] == "da_verificare"
+    # una linea AT «Padova Fiera - Padova Centro» arriva alla sottostazione way/2; «Padova Centro» sta a 5 km
+    e = sott[1]
+    linee = [{"name": "Padova Fiera - Padova Centro", "a": [e["lon"], e["lat"]], "b": [sott[0]["lon"], sott[0]["lat"]]}]
+    v = cb.secondo_passaggio(righe, cabine, comuni, aree, sott, linee, [])
+    assert fiera["esito"] == "sicuro" and "linea AT «Padova Fiera - Padova Centro»" in fiera["nota"]
+    assert fiera["cod_ac"] == "AC001E00909"
+    assert v["prima"]["da_verificare"] == 1 and v["dopo"].get("da_verificare", 0) == 0
+    abano = next(r for r in righe if r["cod_cp_ed"] == "DV001380000")
+    assert abano["esito"] == "senza_posizione" and "COD_AC confermato dai comuni" in abano["nota"]
