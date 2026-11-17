@@ -95,10 +95,37 @@ costruisci_pagine.py rimette in tutte le pagine testata, piè e parte comune del
 parti/               testa.html, testata.html, piede.html: le parti comuni delle pagine, da modificare solo qui
 ```
 
-Menu di tutte le pagine: Previsioni, Patrimonio, Legge 10, Dati storici, Come funziona, F.A.Q., Sitografia, Mirror, Contattaci, Iscriviti (modulo
+Menu di tutte le pagine (il gruppo Patrimonio si chiama Territorio dal 17/11/2026): Previsioni, Patrimonio, Legge 10, Dati storici, Come funziona, F.A.Q., Sitografia, Mirror, Contattaci, Iscriviti (modulo
 di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occupano tutta la larghezza dello schermo
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
+
+## Territorio › Edifici pubblici e retino in Modelli 3D (17/11/2026, `?v=20261117a`, richiesta di Paolo)
+
+- **Menu**: il gruppo «Patrimonio» si chiama **«Territorio»** (solo l'etichetta: `data-gruppo="patrimonio"`, gli id e i
+  file restano gli stessi; `costruisci_pagine.py` rimette l'etichetta sopra il titolo delle pagine). Nuova voce
+  **«Edifici pubblici»** (sperimentale, «S») dopo Patrimonio.
+- **`edifici-pubblici.html`** (`edifici_pubblici.js`, `main.strumento.pagina-ortofoto.pagina-pubblici`): mappa MapLibre con
+  le tessere `/edifici3d/immobili_pa/immobili_pa_<anno>.pmtiles` (descritte da `indice.json`, fase 7
+  `immobili-pa-sito`): particelle con edifici retinate a righe oblique, terreni in verde, edifici e terreni insieme in viola,
+  beni senza particella come punti arancio; da lontano un punto per particella, dallo zoom 13 i confini. Livelli: Edifici,
+  Terreni, Beni senza particella, gruppi di enti (caselle, «Tutti», «Nessuno»), ortofoto con la fonte migliore della zona
+  scelta da sola (`EUGENIO_CONFINI.fontiNelPunto`) o a mano, contesto Sentinel-2 sotto, strati comuni (`strati_gl.js`).
+  Ricerca a parole nell'indice (`/api/immobili-pa/cerca`, filtro per gruppo) e per indirizzo o foglio e particella
+  (`cerca_luogo.js`); clic su punto o particella → scheda (`/api/immobili-pa/particella/{ref}` o `/bene/{id}`) con
+  «Apri in Modelli 3D» e «Apri in Ortofoto». Indirizzo: `?lat=&lon=&z=`, `?ref=`, `?bene=`. Immagine scaricabile con le
+  attribuzioni (`esporta_mappa.js`).
+- **`retino.js`**: il motivo a righe oblique (magenta `#c2185b`) registrato come immagine MapLibre, uguale in tutte e due
+  le pagine; `campione()` per le legende.
+- **`pubblici_mappa.js`** (Modelli 3D): un edificio è pubblico se il punto interno di uno dei suoi corpi cade in una
+  particella con edifici (t = E o M) delle tessere già caricate (`querySourceFeatures`, nessuna richiesta in più); gli
+  edifici pubblici vanno nella sorgente `corpi-pubblici` e si disegnano con `fill-pattern` (2D, `pubblici-2d` e bordo) e
+  `fill-extrusion-pattern` (3D, `pubblici-3d`), togliendoli con un filtro dalle estrusioni normali. Casella «Edifici
+  pubblici (retinati…)» tra i livelli, accesa in partenza; voce di legenda col retino. Scelto un edificio pubblico, sotto il
+  messaggio (`#nota-pubblico`) l'ente, le tipologie e il collegamento alla scheda. `?lat=&lon=` senza `edificio` apre la
+  mappa 2D sul punto (collegamento da Edifici pubblici).
+- Test: `test_costruisci_pagine.py` (gruppo «Territorio», voce nuova, 13 «S»), `test_esempi_contributi.py` (esempio
+  della pagina), `test_mappe_browser.py` (pagina a due colonne).
 
 ## Esempi e Contributi (15/11/2026, richiesta di Paolo; versione da fissare alla pubblicazione)
 

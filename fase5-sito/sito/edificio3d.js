@@ -40,7 +40,7 @@
 // affidabilità) se c'è, altrimenti il DBTR dell'Emilia-Romagna; i corpi di un archivio meno affidabile che cadono dentro
 // quelli di uno più affidabile non si usano.
 //
-// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261116h):
+// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261117a):
 //  - il punto trovato con la ricerca (cerca_luogo.js, modulo comune con Ortofoto) si **trascina** per correggerlo (l'ANNCSU
 //    è a volte impreciso) e, da zoom 15, un clic sulla mappa lo sposta lì; la scelta dell'edificio usa sempre il punto
 //    corretto (l'edificio che lo contiene, o il più vicino entro 30 m) e «Genera il 3D» parte da lì;
@@ -165,7 +165,7 @@
     let elenco = null;
     const valida = (b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes("..");
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261116h", { cache: "no-cache" });   // mai l'elenco vecchio
+      const r = await fetch("/edifici3d/archivi.json?v=20261117a", { cache: "no-cache" });   // mai l'elenco vecchio
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const d = await r.json();
         elenco = d.archivi;
@@ -1125,8 +1125,11 @@
 
   // ------------------------------------------------------------------ Modelli 3D in due tempi (05/11/2026)
   function vedi(m, ids, si) { ids.forEach((id) => { if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", si ? "visible" : "none"); }); }
-  const strati3d = () => [...(stato.sorgentiCorpi || []), "rilievo", "ombre", "scelto", "tetti-vicini", "falde", "fv", "facciate", "alberi", "linea"];
-  const strati2dTutti = () => (stato.sorgentiCorpi || []).flatMap((id) => [`${id}-2d`, `${id}-2d-linea`, `${id}-2d-scelto`, `${id}-2d-bordo`, `${id}-2d-tetto`]).concat(["zone-coperte", "cercato"]);
+  // (17/11/2026) edifici pubblici retinati: nelle liste solo se la casella è accesa (pubblici_mappa.js)
+  const pubbliciAccesi = () => !!(stato.pubblici && stato.pubblici.acceso && stato.pubblici.acceso());
+  const strati3d = () => [...(stato.sorgentiCorpi || []), "rilievo", "ombre", ...(pubbliciAccesi() ? stato.pubblici.strati3d : []), "scelto", "tetti-vicini", "falde", "fv", "facciate", "alberi", "linea"];
+  const strati2dTutti = () => (stato.sorgentiCorpi || []).flatMap((id) => [`${id}-2d`, `${id}-2d-linea`, `${id}-2d-scelto`, `${id}-2d-bordo`, `${id}-2d-tetto`])
+    .concat(pubbliciAccesi() ? stato.pubblici.strati2d : []).concat(["zone-coperte", "cercato"]);
   function evidenzia2d(edificio) {
     const m = stato.mappa;
     (stato.sorgentiCorpi || []).forEach((id) => ["2d-scelto", "2d-bordo"].forEach((suf) => {
@@ -1281,10 +1284,33 @@
     const fonte = att ? ` (sagome: ${att})` : "";
     messaggio("messaggio", `Edificio ${edificio} scelto${fonte}. Premi «Genera il 3D» sotto la mappa; un altro clic cambia la scelta, `
       + "un clic sullo stesso edificio la toglie." + avvisoOsm(Math.max(0, k)));
+    notaPubblico(lon, lat);
+  }
+  // filtro delle estrusioni dei corpi in tessera: corpi modificati, divisi o con le falde (disegnati altrove) e, dal 17/11/2026,
+  // edifici pubblici vicini (disegnati retinati da «pubblici-3d», pubblici_mappa.js); i due elenchi si compongono qui
+  function filtriCorpi(m = stato.mappa) {
+    if (!m) return;
+    const n = stato.nascostiTessere || [], p = stato.pubbliciNascosti || [], parti = [];
+    if (n.length) parti.push(["!", ["in", ["get", "id"], ["literal", n]]]);
+    if (p.length) parti.push(["!", ["in", ["to-string", ["coalesce", ["get", "edificio"], ["get", "id"]]], ["literal", p]]]);
+    (stato.sorgentiCorpi || ["corpi"]).forEach((id) => { if (m.getLayer(id)) m.setFilter(id, parti.length > 1 ? ["all", ...parti] : parti[0] || null); });
+  }
+  // (17/11/2026) se l'edificio scelto sta in una particella con edifici pubblici: ente, tipologie e scheda in Edifici pubblici
+  function notaPubblico(lon, lat) {
+    const el = $("nota-pubblico");
+    if (!el) return;
+    const p = stato.pubblici && stato.pubblici.edificioPubblico ? stato.pubblici.edificioPubblico(lon, lat) : null;
+    el.innerHTML = ""; el.hidden = !p;
+    if (!p) return;
+    el.append(`Edificio pubblico (censimento MEF «Patrimonio della PA», dati al 31/12/2023): ${p.ente || "ente non indicato"}`
+      + `${p.n > 1 ? ` e altri, ${p.n} beni nella particella` : ""}${p.tipologie ? ` – ${p.tipologie}` : ""}. `);
+    const a = h("a", null, "Scheda in Edifici pubblici"); a.href = `edifici-pubblici.html?ref=${encodeURIComponent(p.ref)}`;
+    el.append(a, ".");
   }
   function togliScelta2d() {
     stato.daGenerare = null; evidenzia2d(""); $("genera-3d").disabled = true;
     messaggio("messaggio", "Nessun edificio scelto: fai clic su un edificio della mappa.");
+    if ($("nota-pubblico")) $("nota-pubblico").hidden = true;
   }
   async function genera() {
     const d = stato.daGenerare;
@@ -1309,6 +1335,7 @@
     m.getCanvas().setAttribute("tabindex", "0");
     vistaNominata("3d");
     fontiCorpi();
+    if (stato.pubblici) stato.pubblici.aggiorna();      // retino del 3D con le sagome intere dei vicini (17/11/2026)
   }
   // azzera (07/11/2026 sera, prove di Paolo): nuova ricerca o mappa portata lontano dall'edificio durante il 3D; si torna
   // alla mappa 2D dritta (subito, senza animazione: un volo partito subito dopo la interromperebbe e la mappa restava
@@ -1336,6 +1363,7 @@
     messaggio("messaggio", azzera ? "Mappa 2D: il 3D dell'edificio di prima è stato tolto. Scegli l'edificio con un clic, poi «Genera il 3D»."
       : "Mappa 2D: scegli un altro edificio con un clic (o cercalo), poi «Genera il 3D». A destra restano i dati dell'ultimo edificio generato.");
     fontiCorpi();
+    if (stato.pubblici) stato.pubblici.aggiorna();
     stato.alberi2d = null; if (stato.alberiVisibili) applicaAlberi();
   }
   // nella vista 3D la mappa portata a più di 2 km dall'edificio: si torna al 2D (stesso comportamento della ricerca)
@@ -1639,8 +1667,8 @@
       properties: { h: a.h, stima: a.stima }, geometry: { type: "Polygon", coordinates: [ottagono(a).map(stato.proj.indietro)] } })) });
     stato.alberi2d = null;
     // corpi modificati o divisi: si nasconde la loro versione nelle tessere
-    const nascosti = [...new Set(stato.originali.map((c) => c.id).concat(stato.nascostiExtra, viciniFalde.map((c) => c.id)))];
-    (stato.sorgentiCorpi || ["corpi"]).forEach((id) => { if (m.getLayer(id)) m.setFilter(id, nascosti.length ? ["!", ["in", ["get", "id"], ["literal", nascosti]]] : null); });
+    stato.nascostiTessere = [...new Set(stato.originali.map((c) => c.id).concat(stato.nascostiExtra, viciniFalde.map((c) => c.id)))];
+    filtriCorpi(m);
     m.getSource("fv").setData({ type: "FeatureCollection", features: stato.aree.map((a) => ({ type: "Feature",
       properties: { quota: a.quota }, geometry: { type: "Polygon", coordinates: [E.chiudi(a.ring).map(stato.proj.indietro)] } })) });
     ombre();
@@ -1781,7 +1809,7 @@
   // comune che contiene il punto (confini ISTAT del sito, dati/mappa/08.json, stesse coordinate di patrimonio.js)
   async function comuneDi(lon, lat) {
     try {
-      const m = await json("dati/mappa/08.json?v=20261116h");
+      const m = await json("dati/mappa/08.json?v=20261117a");
       const p = lonlatSvg(lon, lat);
       for (const c of m.comuni) {
         for (const parte of c.d.split("M").filter(Boolean)) {
@@ -2109,7 +2137,7 @@
   let lavoratore = null;
   function orizzonti(punti, ostacoli, lontano = null) {
     return new Promise((ok, ko) => {
-      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261116h"); } catch (e) { ko(e); return; }
+      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261117a"); } catch (e) { ko(e); return; }
       const id = Math.random();
       const f = (e) => { if (e.data.id === id) { lavoratore.removeEventListener("message", f); ok(e.data.orizzonti); } };
       lavoratore.addEventListener("message", f);
@@ -2713,7 +2741,7 @@
   async function datiDpr() {
     if (stato.dpr === null) {
       stato.dpr = false;
-      try { stato.dpr = await json("dati/dpr412.json?v=20261116h"); } catch { /* senza file: niente zona */ }
+      try { stato.dpr = await json("dati/dpr412.json?v=20261117a"); } catch { /* senza file: niente zona */ }
     }
     return stato.dpr || null;
   }
@@ -3084,6 +3112,20 @@
           } catch { /* strati non disponibili */ }
         }
       }
+      // (17/11/2026) edifici pubblici retinati in 2D e in 3D (pubblici_mappa.js; censimento MEF + particelle AdE)
+      if (window.EUGENIO_PUBBLICI_MAPPA && !(indice && indice.sintetico)) {
+        try {
+          const m = stato.mappa;
+          stato.pubblici = await window.EUGENIO_PUBBLICI_MAPPA.collega(m, {
+            sorgenti: () => (stato.sorgentiCorpi || []).map((id, k) => ({ id, strato: stato.archivi[k] && (stato.archivi[k].osm || stato.archivi[k].locale) ? null : "corpi" })),
+            prima: "scelto", in3d: () => !DUE_TEMPI || !!stato.in3d, casella: $("caselle-strati"), legenda: $("legenda-3d"),
+            // sagome intere dei vicini caricate per il 3D (l'edificio scelto lo disegna «scelto»)
+            interi: () => (stato.vicini || []).map((c) => ({ id: c.id, edificio: c.edificio, geometry: c.lonlat, altezza: c.colmo || c.gronda })),
+            scelto: () => stato.edificio,
+            filtra: (ids) => { stato.pubbliciNascosti = ids; filtriCorpi(m); } });
+          if (DUE_TEMPI) vedi(m, stato.pubblici.strati3d, false);
+        } catch (e) { console.warn("edifici pubblici", e); }
+      }
       if (DUE_TEMPI && !(indice && indice.sintetico)) controlliAspetto3d();
       caricaOrtofoto();
       if (DUE_TEMPI && window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-3d"), stato.mappa, opzioniImmagine, $("messaggio-immagine"));
@@ -3146,6 +3188,16 @@
           messaggio("messaggio", await nessunEdificio(+sd.lon, +sd.lat, `Sede «${sd.nome}» (punto dalla geolocalizzazione del Patrimonio): `), true);
           return;
         }
+      }
+      // (17/11/2026) ?lat=&lon= senza edificio (collegamento «Apri in Modelli 3D» di Edifici pubblici): mappa 2D sul punto,
+      // con il segnaposto; l'edificio si sceglie con un clic
+      if (DUE_TEMPI && !q.get("edificio") && !q.get("sede") && q.get("lat") && q.get("lon")
+          && Number.isFinite(+q.get("lat")) && Number.isFinite(+q.get("lon"))) {
+        const lo = +q.get("lon"), la = +q.get("lat");
+        impostaPunto(lo, la, "indirizzo");
+        stato.mappa.jumpTo({ center: [lo, la], zoom: ZOOM_CERCA });
+        messaggio("messaggio", "Punto aperto da un'altra pagina: fai clic sull'edificio, poi «Genera il 3D».");
+        return;
       }
       if (!indice) return;
       const scelto = q.get("edificio") || (indice.sintetico && VISTA !== "modelli" && !DUE_TEMPI ? "E-DEMO" : null);

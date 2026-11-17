@@ -1507,7 +1507,7 @@ def test_previsioni_ricerca_col_solo_comune(browser, base):
     ctx.close()
 
 
-DUE_COLONNE = ["index.html", "legge10.html", "dati.html", "patrimonio.html", "ortofoto.html", "modelli3d.html", "fv-ombre.html",
+DUE_COLONNE = ["index.html", "legge10.html", "dati.html", "patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "modelli3d.html", "fv-ombre.html",
                "importa-dxf-ifc.html", "aggiungi-dbtr.html", "indicatori.html"]
 
 
