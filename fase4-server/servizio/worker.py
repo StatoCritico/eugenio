@@ -20,6 +20,7 @@
                          fermano (17/11/2026, servizio/rete.py, database RETE_DB)
   rete: saturazione      ogni notte alle RETE_SATURAZIONE_ORA (01:15, ora italiana): comuniServiti per tutte le province,
                          comuni gestiti da e-distribuzione, elenco delle province; subito se il database non ne ha ancora
+                         (email solo se interruzioni non lette, o più di 5 province ferme, da più di 72 ore)
 I file del sito (indicatori, clima) si scrivono in una cartella nuova e si scambiano con quella pubblicata solo a
 lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
@@ -211,35 +212,53 @@ def rete_interruzioni() -> dict:
 
 def rete_saturazione() -> dict:
     """Saturazione dei trasformatori per tutte le province, comuni gestiti, province (17/11/2026). Le province che non
-    rispondono (Torino: 500 dal 17/11/2026) si ritentano alla fine e ogni notte; email solo se ne mancano più di 5 o se
-    non ne risponde nessuna (Torino da sola non manda email: la pagina dice «dato non disponibile»)."""
+    rispondono (Torino: 500 dal 17/11/2026) si ritentano alla fine e ogni notte. Email (decisione di Paolo del 17/11)
+    SOLO se più di RETE_AVVISO_PROVINCE province non sono aggiornate con successo da più di RETE_AVVISO_ORE ore
+    consecutive, una volta per episodio; gli altri errori vanno solo nel registro (mai in _sicuro, che manda email)."""
     from . import rete
-    esito = rete.aggiorna_saturazione()
-    if not esito["ok"]:
-        raise RuntimeError(f"saturazione: nessuna provincia letta ({json.dumps(esito['falliti'])[:500]})")
-    if len(esito["falliti"]) > 5:
-        avvisi.invia("rete elettrica: saturazione incompleta", json.dumps(esito, indent=1, ensure_ascii=False))
+    try:
+        esito = rete.aggiorna_saturazione()
+    except Exception as e:
+        log.exception("Saturazione: giro notturno non riuscito")
+        try:
+            rete.segna_giro_fallito(f"{type(e).__name__}: {e}")
+        except Exception:
+            log.exception("Saturazione: errore non registrato nel database")
+        esito = {"errore": f"{type(e).__name__}: {e}"}
+    try:
+        ferme = rete.province_ferme()
+        if rete.avviso_una_volta("province", len(ferme) > C.RETE_AVVISO_PROVINCE):
+            avvisi.invia(f"rete elettrica: {len(ferme)} province non aggiornate da più di {C.RETE_AVVISO_ORE:g} ore",
+                         "Province (ISTAT) senza saturazione aggiornata: " + ", ".join(ferme)
+                         + "\n\nUltimo giro: " + json.dumps(esito, indent=1, ensure_ascii=False, default=str))
+        esito["ferme_72h"] = ferme
+    except Exception:
+        log.exception("Saturazione: controllo delle province ferme non riuscito")
     return esito
 
 
 class _Errori:
-    """Errori consecutivi della raccolta delle interruzioni: un'email dopo un'ora di letture fallite, poi più nulla
-    finché una lettura non riesce (ogni 15 minuti sarebbero 96 email al giorno)."""
-    def __init__(self, soglia: int = 4):
-        self.soglia, self.n = soglia, 0
+    """Letture delle interruzioni fallite (decisione di Paolo del 17/11/2026): un'email SOLO quando non si leggono da più
+    di RETE_AVVISO_ORE ore consecutive (dall'ultima lettura riuscita, presa dal database all'avvio), una per episodio;
+    nessuna email quando ripartono né per errori più brevi."""
+    def __init__(self, ultimo_ok: float | None = None, ore: float | None = None):
+        self.ore = C.RETE_AVVISO_ORE if ore is None else ore
+        self.ultimo_ok = time.time() if ultimo_ok is None else ultimo_ok
+        self.n, self.avvisato = 0, False
 
-    def esegui(self, f) -> bool:
+    def esegui(self, f, adesso: float | None = None) -> bool:
+        adesso = time.time() if adesso is None else adesso
         try:
             f()
         except Exception as e:
             self.n += 1
             log.warning("Interruzioni: lettura fallita (%d di fila): %s: %s", self.n, type(e).__name__, e)
-            if self.n == self.soglia:
-                avvisi.invia("rete elettrica: interruzioni non lette da un'ora", f"{type(e).__name__}: {e}")
+            if not self.avvisato and adesso - self.ultimo_ok > self.ore * 3600:
+                self.avvisato = True
+                avvisi.invia(f"rete elettrica: interruzioni non lette da più di {self.ore:g} ore",
+                             f"{self.n} letture fallite di fila; ultimo errore: {type(e).__name__}: {e}")
             return False
-        if self.n >= self.soglia:
-            avvisi.invia("rete elettrica: interruzioni di nuovo lette", f"dopo {self.n} letture fallite")
-        self.n = 0
+        self.n, self.avvisato, self.ultimo_ok = 0, False, adesso
         return True
 
 
@@ -251,7 +270,14 @@ def prossima_lettura(adesso: float, minuti: int, scarto_s: int = 180) -> float:
 
 
 def ciclo_interruzioni(fermo: threading.Event | None = None) -> None:
-    errori = _Errori()
+    ultimo = None
+    try:
+        from . import rete
+        u = rete.ultima_lettura_ok()
+        ultimo = u.timestamp() if u else None
+    except Exception:
+        pass
+    errori = _Errori(ultimo_ok=ultimo)
     fermo = fermo or threading.Event()
     while not fermo.is_set():
         errori.esegui(rete_interruzioni)
@@ -331,7 +357,10 @@ def ciclo() -> None:
             fatti["clima"] = oggi
         if C.RETE_ATTIVA and fatti.get("rete_saturazione") != oggi and ((loc.hour, loc.minute) >= (hr, mr) or (
                 "rete_saturazione" not in fatti and not _rete_ha_saturazione())):
-            _sicuro(rete_saturazione, "saturazione della rete elettrica")
+            try:                        # niente _sicuro: email solo con la soglia delle 72 ore (decisione del 17/11)
+                rete_saturazione()
+            except Exception:
+                log.exception("Errore in saturazione della rete elettrica")
             fatti["rete_saturazione"] = oggi
         _stato_scrivi(fatti)
         time.sleep(300)

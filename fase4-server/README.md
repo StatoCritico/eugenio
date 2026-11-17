@@ -446,12 +446,12 @@ c'è (non lo creano mai).
 
 | tabella | contenuto |
 |---|---|
-| `meta` | `saturazione_aggiornata`, `interruzioni_aggiornate`, `raccolta_dal`, `comuni_ed_aggiornati`, `saturazione_ultimo_giro` (esito della notte) |
+| `meta` | `saturazione_aggiornata`, `interruzioni_aggiornate`, `raccolta_dal`, `comuni_ed_aggiornati`, `saturazione_ultimo_giro` (esito della notte), `avviso_province` |
 | `province` | `ProvinceCritiche_View`: codice ISTAT a 3 cifre, nome, regione (codice ISTAT a 2 cifre da `f1`), livelli di criticità della provincia |
 | `comuni_ed` | `View_ComuniGestitiED2021Is`: ISTAT 2021, ISTAT attuale (uguale se esiste ancora, altrimenti per nome nella stessa regione, `NULL` se non si trova), nome, `servitoed` (0 = il distributore è un altro) |
 | `saturazione` | `comuniServiti`: una riga per mese, comune, cabina primaria, trasformatore, montante e sezione, con il livello. **Una fotografia per mese e provincia**: l'ultima lettura riuscita del mese sostituisce quella di prima, i mesi passati restano (storico mensile) |
 | `saturazione_province` | mese, provincia, ora della lettura, comuni e righe lette |
-| `tentativi_province` | ultimo tentativo per provincia, esito, errore (mai il gettone), ultima lettura riuscita |
+| `tentativi_province` | ultimo tentativo per provincia, esito, errore (mai il gettone), ultima lettura riuscita, `in_errore_dal` (primo errore dopo l'ultima lettura riuscita) |
 | `interruzioni` | una riga per `id_interruzione`: cause (`causa_disalimentazione`, codice `causa_interruzione`), inizio e ripristino previsto in ISO (ora italiana) o il testo («In corso di definizione»), comune principale (cabina secondaria con più clienti) e tutti i comuni, punto, **clienti = massimo visto** della somma sulle cabine secondarie, `prima_lettura`, `ultima_lettura`, `chiusa_il` (prima lettura completa in cui non compare più; si riapre se ricompare) |
 | `interruzioni_cs` | una riga per interruzione e cabina secondaria (`cod_cs`): comune, punto, clienti massimi |
 | `letture` | una riga per lettura delle interruzioni: esito (`ok`, `sospetta`, `errore`), righe, nuove, chiuse, durata (tenute 400 giorni) |
@@ -461,7 +461,7 @@ minuti 3, 18, 33, 48 di ogni ora (la mappa di e-distribuzione si aggiorna al min
 `ITA_power_cut_map_layer_View/FeatureServer/0` a pagine di 1.000. Un `id_interruzione` può avere più righe (una per
 cabina secondaria, anche in comuni diversi). Una lettura senza righe mentre ne erano aperte almeno 10 è «sospetta» e
 non chiude nulla. **Durata stimata** = ultima lettura in cui compare − `data_interruzione` (dichiarata nelle risposte,
-errore fino a una lettura). Email all'amministratore solo dopo 4 letture fallite di fila (un'ora), e una quando riparte.
+errore fino a una lettura).
 
 **Saturazione** (`rete-saturazione`, ogni notte alle `RETE_SATURAZIONE_ORA` = 01:15, prima dei mercati delle 2:30, del
 LiDAR delle 3:30 e dell'aggiornamento da GitHub delle 4:40; subito alla prima accensione se il database non ne ha):
@@ -470,7 +470,7 @@ pagina delle Aree critiche (biscotti), elenco delle province, comuni gestiti, po
 (mai meno di 4 s); le province fallite si ritentano alla fine due volte (pausa 15 s) e di nuovo la notte dopo (Torino
 oggi risponde 500: `province_mancanti`, la pagina dice «dato non disponibile»). **Il gettone non viene mai scritto**:
 né nei log (httpx registra solo l'indirizzo), né negli errori (solo codici e stati HTTP), né nel database. ~110 province
-in ~10 minuti. Email solo se mancano più di 5 province o se non ne risponde nessuna.
+in ~10 minuti. Se il giro si ferma prima delle province (elenco non letto), tutte le province note contano come fallite.
 
 **Criticità** (`rete.classe_comune`, copia identica di `fase7-territorio/territorio/cabine.py` del ramo dei dati, **da
 unificare**): trasformatori distinti (cabina, trasformatore) che servono il comune, L = livello più alto, q = quota con L;
@@ -491,16 +491,24 @@ commerciale, rimozione su richiesta); posizioni «© contributori OpenStreetMap�
 geometrie (i perimetri si leggono solo dal browser); criticità «classificazione di EuGEnio». `/api/rete/comuni` è un
 elenco (forma del contratto): fonti e licenze stanno in `/api/rete/stato`.
 
+**Email all'amministratore** (decisione di Paolo del 17/11/2026) **solo** in due casi, una volta per episodio (si
+riarmano quando la condizione cessa): (a) le interruzioni **non si leggono da più di 72 ore consecutive** (dall'ultima
+lettura riuscita, `meta.interruzioni_aggiornate`); (b) **più di 5 province** non sono aggiornate con successo da più di
+72 ore consecutive (`tentativi_province.in_errore_dal`, primo errore dopo l'ultima lettura riuscita; controllo dopo ogni
+giro notturno, stato dell'avviso in `meta.avviso_province`). Nessun'altra email: né per letture fallite più brevi, né
+quando riparte, né per Torino da sola, né per un giro notturno fallito (solo nel registro; la saturazione non passa da
+`_sicuro`). Soglie: `RETE_AVVISO_ORE` (72) e `RETE_AVVISO_PROVINCE` (5).
+
 **Protezione**: letture leggere, senza Turnstile; limite proprio `rete` (`RETE_ORA`, 1.200 richieste per IP all'ora);
 `Cache-Control: public` da 1 minuto (stato) a 30 minuti (cabine, comuni).
 
 **Variabili** (tutte facoltative): `RETE_DB`, `RETE_RACCORDO`, `RETE_ATTIVA` (false spegne i due lavori), `RETE_INTERRUZIONI_MIN`
-(15, minimo 5), `RETE_SATURAZIONE_ORA` (01:15), `RETE_PAUSA_S` (4, minimo 4), `RETE_ORA` (1200).
+(15, minimo 5), `RETE_SATURAZIONE_ORA` (01:15), `RETE_PAUSA_S` (4, minimo 4), `RETE_ORA` (1200), `RETE_AVVISO_ORE` (72), `RETE_AVVISO_PROVINCE` (5).
 
 **A mano**: `docker compose run --rm worker python -m servizio.worker rete-interruzioni` (o `rete-saturazione`, ~10
 minuti). **Prove**: `tests/test_rete.py` (regola, interruzioni a pagine con chiusura, riapertura e lettura sospetta,
 saturazione con Torino in errore, ritentativi, pause, gettone mai registrato, fotografia mensile, rotte e 503/422/429) e
-`tests/test_worker.py` (orari delle letture, email).
+`tests/test_worker.py` (orari delle letture, email solo oltre le 72 ore, più di 5 province ferme, una per episodio).
 
 ## Archivio psicrometrico per «Trattamento aria» (14/11/2026)
 

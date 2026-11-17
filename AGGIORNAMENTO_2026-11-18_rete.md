@@ -11,6 +11,7 @@ pagine e la tabella di raccordo arrivano con le altre due parti dello stesso agg
     (gettone nuovo a ogni chiamata, mai registrato; pausa di 4 s; ~10 minuti), comuni gestiti da e-distribuzione,
     elenco delle province. Torino oggi risponde 500: si ritenta ogni notte, la pagina dice «dato non disponibile».
     Alla prima accensione la saturazione parte **subito** (il database non ne ha ancora).
+  - email all'amministratore solo oltre le 72 ore (interruzioni non lette, o più di 5 province ferme).
 - **Database** SQLite `/srv/energia/dati/rete/rete.sqlite` (nel container `/dati/rete/rete.sqlite`), creato dal worker.
   Una fotografia della saturazione per mese (storico mensile per trasformatore), tutte le interruzioni viste.
 - **API**: sei rotte `GET /api/rete/stato`, `/api/rete/cabine`, `/api/rete/comuni`, `/api/rete/cabine/comune/{istat}`,
@@ -32,7 +33,7 @@ pagine e la tabella di raccordo arrivano con le altre due parti dello stesso agg
 ## Test (17/11/2026)
 
 `cd fase4-server && PYTHONPATH=../fase3-storico:../fase10-edifici3d:../fase7-territorio python -m pytest tests -q`:
-**322 passate** (nuove: `tests/test_rete.py` 22, `tests/test_worker.py` 3; `test_agenti.py` con le sei rotte nuove).
+**323 passate** (nuove: `tests/test_rete.py` 22, `tests/test_worker.py` 4; `test_agenti.py` con le sei rotte nuove).
 
 ## Procedura R1–R6
 
@@ -106,5 +107,7 @@ Cosa aspettarsi:
 - `cabine?regione=08`: qualche centinaio di cabine, il numero di quelle senza posizione e `ODbL 1.0 – https://…`;
 - `interruzioni/attive`: il numero delle interruzioni in corso in Italia (di sera ~200).
 
-Da quel momento: interruzioni ogni 15 minuti, saturazione ogni notte alle 01:15. Errori: email all'amministratore solo
-dopo un'ora di letture fallite delle interruzioni, o se nella notte mancano più di 5 province.
+Da quel momento: interruzioni ogni 15 minuti, saturazione ogni notte alle 01:15. Email all'amministratore (decisione
+di Paolo del 17/11) **solo** se le interruzioni non si leggono da più di 72 ore consecutive, oppure se più di 5 province
+non sono aggiornate con successo da più di 72 ore consecutive; una sola email per episodio, nessun'altra (Torino da sola
+non ne manda mai). Gli altri errori restano nel registro del worker (`docker compose logs worker`).

@@ -284,3 +284,8 @@ RETE_INTERRUZIONI_MIN = max(5, int(os.environ.get("RETE_INTERRUZIONI_MIN", "15")
 RETE_SATURAZIONE_ORA = os.environ.get("RETE_SATURAZIONE_ORA", "01:15")
 RETE_PAUSA_S = max(4.0, float(os.environ.get("RETE_PAUSA_S", "4")))     # mai sotto i 4 s (contratto del 17/11/2026)
 RETE_ORA = int(os.environ.get("RETE_ORA", "1200"))                      # richieste /api/rete/… per IP all'ora
+# (17/11/2026, decisione di Paolo) email all'amministratore SOLO se le interruzioni non si leggono da più di RETE_AVVISO_ORE
+# ore consecutive, oppure se più di RETE_AVVISO_PROVINCE province non sono aggiornate con successo da più di RETE_AVVISO_ORE
+# ore consecutive; una sola email per episodio, nessun'altra
+RETE_AVVISO_ORE = float(os.environ.get("RETE_AVVISO_ORE", "72"))
+RETE_AVVISO_PROVINCE = int(os.environ.get("RETE_AVVISO_PROVINCE", "5"))

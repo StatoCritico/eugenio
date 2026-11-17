@@ -142,7 +142,7 @@ CREATE INDEX IF NOT EXISTS saturazione_cp ON saturazione (cod_cp);
 CREATE TABLE IF NOT EXISTS saturazione_province (
     mese TEXT, provincia TEXT, letto_il TEXT, n_comuni INTEGER, n_righe INTEGER, PRIMARY KEY (mese, provincia));
 CREATE TABLE IF NOT EXISTS tentativi_province (
-    provincia TEXT PRIMARY KEY, ultimo_tentativo TEXT, esito TEXT, errore TEXT, ultimo_ok TEXT);
+    provincia TEXT PRIMARY KEY, ultimo_tentativo TEXT, esito TEXT, errore TEXT, ultimo_ok TEXT, in_errore_dal TEXT);
 CREATE TABLE IF NOT EXISTS interruzioni (
     id_interruzione INTEGER PRIMARY KEY, causa_disalimentazione TEXT, causa_interruzione TEXT,
     data_interruzione TEXT, data_prev_ripristino TEXT, prev_ripristino_testo TEXT, descrizione_territoriale TEXT,
@@ -569,9 +569,7 @@ def aggiorna_saturazione(cl: httpx.Client | None = None, percorso: Path | None =
                     falliti[prov] = f"{type(e).__name__}: {e}"[:300]
                     rimasti.append(prov)
                     with transazione(db):
-                        db.execute("""INSERT INTO tentativi_province VALUES (?, ?, 'errore', ?, NULL)
-                            ON CONFLICT (provincia) DO UPDATE SET ultimo_tentativo=excluded.ultimo_tentativo,
-                              esito='errore', errore=excluded.errore""", (prov, quando, falliti[prov]))
+                        _segna_errore(db, prov, quando, falliti[prov])
             da_fare = rimasti
         with transazione(db):
             if ok:
@@ -606,9 +604,72 @@ def _salva_provincia(db, prov: str, j: dict, mese: str, quando: str) -> None:
         db.executemany("INSERT OR REPLACE INTO saturazione VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", righe)
         db.execute("INSERT OR REPLACE INTO saturazione_province VALUES (?, ?, ?, ?, ?)",
                    (mese, prov, quando, len(comuni), len(righe)))
-        db.execute("""INSERT INTO tentativi_province VALUES (?, ?, 'ok', NULL, ?)
+        db.execute("""INSERT INTO tentativi_province VALUES (?, ?, 'ok', NULL, ?, NULL)
             ON CONFLICT (provincia) DO UPDATE SET ultimo_tentativo=excluded.ultimo_tentativo, esito='ok',
-              errore=NULL, ultimo_ok=excluded.ultimo_ok""", (prov, quando, quando))
+              errore=NULL, ultimo_ok=excluded.ultimo_ok, in_errore_dal=NULL""", (prov, quando, quando))
+
+
+def _segna_errore(db, prov: str, quando: str, errore: str) -> None:
+    """Tentativo fallito: `in_errore_dal` resta quello del primo errore dopo l'ultima lettura riuscita."""
+    db.execute("""INSERT INTO tentativi_province VALUES (?, ?, 'errore', ?, NULL, ?)
+        ON CONFLICT (provincia) DO UPDATE SET ultimo_tentativo=excluded.ultimo_tentativo, esito='errore',
+          errore=excluded.errore, in_errore_dal=COALESCE(in_errore_dal, excluded.in_errore_dal)""",
+               (prov, quando, errore, quando))
+
+
+def segna_giro_fallito(errore: str, ora: dt.datetime | None = None, percorso: Path | None = None) -> int:
+    """Giro notturno interrotto prima delle province (elenco non letto, rete giù): tutte le province note contano come
+    fallite, così l'avviso delle 72 ore vale anche in questo caso."""
+    quando = iso(ora or adesso())
+    db = connetti(percorso)
+    try:
+        prov = [r[0] for r in db.execute("SELECT cod FROM province")]
+        with transazione(db):
+            for p in prov:
+                _segna_errore(db, p, quando, errore[:300])
+        return len(prov)
+    finally:
+        db.close()
+
+
+def province_ferme(ore: float | None = None, ora: dt.datetime | None = None, percorso: Path | None = None) -> list[str]:
+    """Province non aggiornate con successo da più di `ore` ore consecutive (predefinito C.RETE_AVVISO_ORE)."""
+    ore = C.RETE_AVVISO_ORE if ore is None else ore
+    limite = (ora or adesso()) - dt.timedelta(hours=ore)
+    db = connetti(percorso)
+    try:
+        righe = db.execute("SELECT provincia, in_errore_dal FROM tentativi_province WHERE esito='errore'").fetchall()
+    finally:
+        db.close()
+    return sorted(r[0] for r in righe if r[1] and dt.datetime.fromisoformat(r[1]) < limite)
+
+
+def avviso_una_volta(chiave: str, attivo: bool, percorso: Path | None = None) -> bool:
+    """True solo la prima volta che la condizione `chiave` diventa vera (stato nel database, sopravvive ai riavvii);
+    quando torna falsa si riarma."""
+    db = connetti(percorso)
+    try:
+        with transazione(db):
+            gia = _meta(db, f"avviso_{chiave}") == "1"
+            _meta(db, f"avviso_{chiave}", "1" if attivo else "0")
+        return attivo and not gia
+    finally:
+        db.close()
+
+
+def ultima_lettura_ok(percorso: Path | None = None) -> dt.datetime | None:
+    """Ora dell'ultima lettura riuscita delle interruzioni, None se non ce n'è (o il database non c'è)."""
+    p = Path(percorso or C.RETE_DB)
+    if not p.exists():
+        return None
+    db = connetti(p, scrittura=False)
+    try:
+        v = _meta(db, "interruzioni_aggiornate")
+        return dt.datetime.fromisoformat(v) if v else None
+    except sqlite3.Error:
+        return None
+    finally:
+        db.close()
 
 
 def ha_saturazione(percorso: Path | None = None) -> bool:
