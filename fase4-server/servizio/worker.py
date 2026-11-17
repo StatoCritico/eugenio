@@ -16,12 +16,17 @@
   indirizzario ANNCSU    il giorno ANNCSU_GIORNO di ogni mese (o subito, se manca): civici georeferenziati
   indicatori sanità      il giorno INDICATORI_GIORNO di ogni mese, dalle 6 (fase 8: OpenBDAP, ReportER, ISTAT)
   clima dal 1940         nei giorni CLIMA_DATE (10/1 e 10/7), dalle 3 (fase 9: ERA5 dai file .om su AWS)
+  rete: interruzioni     ogni RETE_INTERRUZIONI_MIN minuti (15), in un thread a parte, così i lavori lunghi non le
+                         fermano (17/11/2026, servizio/rete.py, database RETE_DB)
+  rete: saturazione      ogni notte alle RETE_SATURAZIONE_ORA (01:15, ora italiana): comuniServiti per tutte le province,
+                         comuni gestiti da e-distribuzione, elenco delle province; subito se il database non ne ha ancora
 I file del sito (indicatori, clima) si scrivono in una cartella nuova e si scambiano con quella pubblicata solo a
 lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
 
   python -m servizio.worker                 ciclo continuo
   python -m servizio.worker previsioni|storico|psicro|mercati|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
+                            |rete-interruzioni|rete-saturazione
                                             una sola esecuzione (anche con docker compose run --rm worker …)
 """
 from __future__ import annotations
@@ -32,6 +37,7 @@ import logging
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -197,6 +203,61 @@ def clima() -> None:
     log.info("Clima dal 1940: %d file pubblicati", n_nuovi)
 
 
+def rete_interruzioni() -> dict:
+    """Una lettura delle interruzioni in corso di e-distribuzione (17/11/2026, servizio/rete.py)."""
+    from . import rete
+    return rete.raccogli_interruzioni()
+
+
+def rete_saturazione() -> dict:
+    """Saturazione dei trasformatori per tutte le province, comuni gestiti, province (17/11/2026). Le province che non
+    rispondono (Torino: 500 dal 17/11/2026) si ritentano alla fine e ogni notte; email solo se ne mancano più di 5 o se
+    non ne risponde nessuna (Torino da sola non manda email: la pagina dice «dato non disponibile»)."""
+    from . import rete
+    esito = rete.aggiorna_saturazione()
+    if not esito["ok"]:
+        raise RuntimeError(f"saturazione: nessuna provincia letta ({json.dumps(esito['falliti'])[:500]})")
+    if len(esito["falliti"]) > 5:
+        avvisi.invia("rete elettrica: saturazione incompleta", json.dumps(esito, indent=1, ensure_ascii=False))
+    return esito
+
+
+class _Errori:
+    """Errori consecutivi della raccolta delle interruzioni: un'email dopo un'ora di letture fallite, poi più nulla
+    finché una lettura non riesce (ogni 15 minuti sarebbero 96 email al giorno)."""
+    def __init__(self, soglia: int = 4):
+        self.soglia, self.n = soglia, 0
+
+    def esegui(self, f) -> bool:
+        try:
+            f()
+        except Exception as e:
+            self.n += 1
+            log.warning("Interruzioni: lettura fallita (%d di fila): %s: %s", self.n, type(e).__name__, e)
+            if self.n == self.soglia:
+                avvisi.invia("rete elettrica: interruzioni non lette da un'ora", f"{type(e).__name__}: {e}")
+            return False
+        if self.n >= self.soglia:
+            avvisi.invia("rete elettrica: interruzioni di nuovo lette", f"dopo {self.n} letture fallite")
+        self.n = 0
+        return True
+
+
+def prossima_lettura(adesso: float, minuti: int, scarto_s: int = 180) -> float:
+    """Prossimo istante multiplo di `minuti` più `scarto_s` (la mappa di e-distribuzione si aggiorna al minuto 1)."""
+    passo = minuti * 60
+    t = (adesso - scarto_s) // passo * passo + passo + scarto_s
+    return t if t > adesso else t + passo
+
+
+def ciclo_interruzioni(fermo: threading.Event | None = None) -> None:
+    errori = _Errori()
+    fermo = fermo or threading.Event()
+    while not fermo.is_set():
+        errori.esegui(rete_interruzioni)
+        fermo.wait(max(5.0, prossima_lettura(time.time(), C.RETE_INTERRUZIONI_MIN) - time.time()))
+
+
 def _stato_leggi() -> dict:
     p = C.DATI / "worker_stato.json"
     try:
@@ -209,6 +270,14 @@ def _stato_scrivi(fatti: dict) -> None:
     (C.DATI / "worker_stato.json").write_text(json.dumps({k: str(v) for k, v in fatti.items()}))
 
 
+def _rete_ha_saturazione() -> bool:
+    try:
+        from . import rete
+        return rete.ha_saturazione()
+    except Exception:
+        return False
+
+
 def ciclo() -> None:
     log.info("Meteo: regioni servite %s, aggiornate ogni giorno %s", ",".join(C.REGIONI) or "tutte",
              ",".join(C.REGIONI_AGGIORNATE) or "tutte quelle servite")
@@ -218,6 +287,9 @@ def ciclo() -> None:
         _sicuro(meteo.aggiorna_previsioni, "previsioni")
         ultimo_prev = time.time()
     hm, mm = map(int, C.ORA_MERCATI_LOCALE.split(":"))
+    hr, mr = map(int, C.RETE_SATURAZIONE_ORA.split(":"))
+    if C.RETE_ATTIVA:
+        threading.Thread(target=ciclo_interruzioni, daemon=True, name="interruzioni").start()
     while True:
         utc = dt.datetime.now(dt.timezone.utc)
         loc = utc.astimezone(ROMA)
@@ -257,6 +329,10 @@ def ciclo() -> None:
         if (loc.day, loc.month) in C.CLIMA_DATE and loc.hour >= 3 and fatti.get("clima") != oggi:
             _sicuro(clima, "clima dal 1940")
             fatti["clima"] = oggi
+        if C.RETE_ATTIVA and fatti.get("rete_saturazione") != oggi and ((loc.hour, loc.minute) >= (hr, mr) or (
+                "rete_saturazione" not in fatti and not _rete_ha_saturazione())):
+            _sicuro(rete_saturazione, "saturazione della rete elettrica")
+            fatti["rete_saturazione"] = oggi
         _stato_scrivi(fatti)
         time.sleep(300)
 
@@ -265,4 +341,5 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "ciclo"
     {"ciclo": ciclo, "previsioni": meteo.aggiorna_previsioni, "storico": meteo.aggiorna_storico, "psicro": psicro,
      "mercati": mercati, "prezzi": prezzi, "mensile": mensile, "settimanale": settimanale, "avvisi": avvisi_meteo, "territorio": territorio, "anncsu": anncsu,
-     "indicatori": indicatori, "clima": clima}[cmd]()
+     "indicatori": indicatori, "clima": clima, "rete-interruzioni": rete_interruzioni,
+     "rete-saturazione": rete_saturazione}[cmd]()

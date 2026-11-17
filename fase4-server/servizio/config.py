@@ -270,3 +270,17 @@ DBTR_PEZZI_ORA = int(os.environ.get("DBTR_PEZZI_ORA", "60"))              # pezz
 DBTR_CODA_MAX = int(os.environ.get("DBTR_CODA_MAX", "20"))                # richieste aperte (non ancora approvate o rifiutate)
 DBTR_CODA_MAX_GB = float(os.environ.get("DBTR_CODA_MAX_GB", "4"))         # spazio occupato dalla coda
 DBTR_LIBERO_MIN_GB = float(os.environ.get("DBTR_LIBERO_MIN_GB", "10"))    # spazio libero che deve restare sul disco
+
+# «Stato della rete elettrica» e «Cabine primarie» (17/11/2026; servizio/rete.py). Database SQLite scritto solo dal worker
+# (nel container /dati/rete/rete.sqlite, sul server /srv/energia/dati/rete/rete.sqlite) e letto dalle rotte /api/rete/…:
+# interruzioni e-distribuzione ogni RETE_INTERRUZIONI_MIN minuti, saturazione dei trasformatori (comuniServiti) ogni notte
+# alle RETE_SATURAZIONE_ORA (ora italiana; 1:15, prima dei mercati delle 2:30, del LiDAR delle 3:30 e dell'aggiornamento
+# da GitHub delle 4:40), pausa di almeno 4 s tra le province. Tabella di raccordo (posizioni OSM, ODbL; codici GSE) in
+# RETE_RACCORDO. RETE_ATTIVA=false spegne i due lavori del worker (le rotte restano e leggono il database com'è).
+RETE_DB = Path(os.environ.get("RETE_DB") or str(DATI / "rete" / "rete.sqlite"))
+RETE_RACCORDO = Path(os.environ.get("RETE_RACCORDO") or str(RETE_DB.parent / "raccordo_cp.csv"))
+RETE_ATTIVA = os.environ.get("RETE_ATTIVA", "true").lower() not in ("false", "0", "no", "spento")
+RETE_INTERRUZIONI_MIN = max(5, int(os.environ.get("RETE_INTERRUZIONI_MIN", "15")))
+RETE_SATURAZIONE_ORA = os.environ.get("RETE_SATURAZIONE_ORA", "01:15")
+RETE_PAUSA_S = max(4.0, float(os.environ.get("RETE_PAUSA_S", "4")))     # mai sotto i 4 s (contratto del 17/11/2026)
+RETE_ORA = int(os.environ.get("RETE_ORA", "1200"))                      # richieste /api/rete/… per IP all'ora

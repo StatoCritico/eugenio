@@ -412,6 +412,24 @@ Le scelte della pagina `dati-per-email.html`. Solo la persona può iscriversi: i
 | `POST /api/email/salva` | gettone | corpo `{"t", "mensile": bool, "regioni": [...], "settimanale": bool, "comuni": ["040007", …], "avvisi": ["pioggia", …]}` (422 oltre i limiti o senza comuni per settimanale e avvisi) |
 | `POST /api/email/via` | gettone | `?t=<gettone>` (cancellazione con un clic dei programmi di posta, RFC 8058) o corpo `{"t"}`: cancella da quel servizio → `{"cancellato": "mensile"\|"settimanale"\|"avvisi", "preferenze"}` |
 
+### 4.10 Stato della rete elettrica e cabine primarie (17/11/2026)
+
+Dati di e-distribuzione S.p.A. (mappa delle Aree critiche e mappa delle interruzioni) raccolti dal server in un database:
+**interruzioni ogni 15 minuti**, **saturazione dei trasformatori ogni notte** (dato mensile del distributore). Posizioni
+delle cabine primarie dalle sottostazioni OpenStreetMap (**ODbL**, «© contributori OpenStreetMap»), con il codice
+dell'area convenzionale del GSE (`COD_AC`, solo il codice: i perimetri del GSE non passano dal server). Uso non
+commerciale, fonte citata: «Fonte: e-distribuzione S.p.A., mappa delle Aree critiche e mappa delle interruzioni».
+Regioni: codice ISTAT a 2 cifre (`08`); comuni: ISTAT a 6 cifre.
+
+| Metodo e percorso | Accesso | Cosa restituisce |
+|---|---|---|
+| `GET /api/rete/stato` | libera | `{"saturazione_aggiornata", "interruzioni_aggiornate", "attive", "province_mancanti": ["001"], "province_non_aggiornate", "raccolta_dal", "raccordo", "regola", "nota_durata", "fonti", "licenze"}` (cache 1 minuto) |
+| `GET /api/rete/cabine?regione=08` | libera | GeoJSON di punti delle cabine primarie con posizione: `cod_ac`, `gestore`, `cod_cp_ed`, `nome_cp_ed`, `comuni_serviti`, `esito` del raccordo, `livello` (peggiore tra i trasformatori: VERDE, GIALLO, ARANCIONE, ROSSO; `null` = altro gestore o senza dato), `trasf` (trasformatori per livello), `data_saturazione`; `senza_posizione` = cabine non ancora collocate; licenza ODbL nella collezione (cache 30 minuti) |
+| `GET /api/rete/comuni?regione=08` | libera | `[{"istat", "nome", "concessionario", "pieno", "strisce", "livello", "quota", "trasf", "cabine", "data", "dato_disponibile"}]`: criticità del comune (classificazione di EuGEnio: L = livello più alto tra i trasformatori, q = quota con livello L; q > 0,5 colore pieno, altrimenti strisce tra il livello precedente e L; VERDE nessun riempimento); `concessionario: false` = il distributore è un altro (cache 30 minuti) |
+| `GET /api/rete/cabine/comune/{istat}` | libera | cabine che servono il comune con i loro trasformatori e livelli, criticità del comune, data del dato |
+| `GET /api/rete/interruzioni/attive?regione=08` (oppure `bbox=lon_min,lat_min,lon_max,lat_max`) | libera | GeoJSON di punti delle interruzioni in corso: `id`, `comune`, `comuni`, `causa` (Guasto, Lavoro Programmato), `codice_causa`, `clienti`, `inizio`, `ripristino_previsto`, `durata_finora_min` (cache 2 minuti) |
+| `GET /api/rete/interruzioni/comune/{istat}?da=aaaa-mm&a=aaaa-mm` | libera | statistiche delle interruzioni del comune da quando il server le raccoglie (`dal`): `totale`, `per_mese` (`n`, `guasti`, `programmati`, `clienti`, `durata_media_min`, `durata_max_min`), `per_causa`, `attive`, `ultime` (al più 50). Durata stimata = ultima lettura in cui l'interruzione compare − inizio dichiarato (errore fino a 15 minuti); medie e massimi solo sulle interruzioni chiuse (cache 5 minuti) |
+
 ### 4.8 Codici di risposta
 
 | Codice | Significato |
@@ -452,7 +470,8 @@ nel browser (senza server) resta sempre possibile.
   **12.000** e di particelle e contorni **12.000** chieste alla fonte, tessere del terreno da generare **6.000**, tessere già
   in copia sul server **60.000** (tetto comune); confronti PVGIS **60**; profili d'orizzonte **120**; edifici OpenStreetMap al
   volo **300** richieste che chiamano Overpass (comprese le tessere OSM dei contorni) e **3.000** dalla copia; verifiche anti-robot **60**;
-  proposte di DB topografici **3 al giorno** (finestra di 24 ore) e **60 pezzi all'ora**.
+  proposte di DB topografici **3 al giorno** (finestra di 24 ore) e **60 pezzi all'ora**; stato della rete elettrica
+  (rotte del § 4.10, dal 17/11/2026) **1.200** richieste.
   Oltre: **429** con `Retry-After` (secondi finché si libera il 10 % del limite) e `X-EuGEnio-Limite` (il tipo).
 - **Cloudflare** ferma le raffiche su `/api/` (circa 60 richieste in 10 secondi per IP, blocco breve; le ortofoto escluse).
 - **Tetti per tutto il sito**: due previsioni alla volta (le altre aspettano fino a 30 s, poi 503); due report e due file di

@@ -163,3 +163,44 @@ def test_mercati_senza_credenziali_gme_non_manda_email(monkeypatch):
     assert inviati == []
     W.mercati()
     assert inviati == ["dati di mercato: aggiornamento incompleto"]
+
+
+# ---------------------------------------------------------------------------------------------- rete elettrica (17/11/2026)
+def test_rete_prossima_lettura_ogni_15_minuti():
+    base = 1_700_000_000 // 900 * 900          # un quarto d'ora esatto
+    assert W.prossima_lettura(base, 15) == base + 180                 # minuto 3 del quarto d'ora
+    assert W.prossima_lettura(base + 180, 15) == base + 900 + 180
+    assert W.prossima_lettura(base + 500, 15) == base + 900 + 180
+    assert W.prossima_lettura(base + 100, 15) == base + 180
+
+
+def test_rete_interruzioni_email_solo_dopo_un_ora_di_errori(monkeypatch):
+    inviati = []
+    monkeypatch.setattr(W.avvisi, "invia", lambda oggetto, testo: inviati.append(oggetto))
+    e = W._Errori(soglia=4)
+
+    def guasto():
+        raise RuntimeError("HTTP 500")
+    for _ in range(10):
+        assert not e.esegui(guasto)
+    assert inviati == ["rete elettrica: interruzioni non lette da un'ora"]
+    assert e.esegui(lambda: None) and e.n == 0
+    assert inviati[-1] == "rete elettrica: interruzioni di nuovo lette"
+    e.esegui(guasto)
+    assert len(inviati) == 2                   # un errore isolato non manda email
+
+
+def test_rete_saturazione_email(monkeypatch):
+    inviati = []
+    monkeypatch.setattr(W.avvisi, "invia", lambda oggetto, testo: inviati.append(oggetto))
+    from servizio import rete
+    monkeypatch.setattr(rete, "aggiorna_saturazione", lambda: {"ok": 109, "falliti": {"001": "HTTP 500"}})
+    W.rete_saturazione()
+    assert inviati == []                       # Torino da sola: niente email
+    monkeypatch.setattr(rete, "aggiorna_saturazione", lambda: {"ok": 0, "falliti": {"001": "x", "002": "y"}})
+    with pytest.raises(RuntimeError):
+        W.rete_saturazione()
+    monkeypatch.setattr(rete, "aggiorna_saturazione",
+                        lambda: {"ok": 100, "falliti": {f"{k:03d}": "x" for k in range(1, 8)}})
+    W.rete_saturazione()
+    assert inviati == ["rete elettrica: saturazione incompleta"]
