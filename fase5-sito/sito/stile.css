@@ -1639,3 +1639,40 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .esempi .esempi-arrivo { max-width: 72ch; margin: var(--s4) 0 0; padding: var(--s2) var(--s3); border-left: 3px solid var(--linea); color: var(--tenue); }
 .esempi .esempi-arrivo strong { color: var(--inchiostro); }
 .esempi .esempi-chiusura { margin-top: var(--s7); }
+
+/* ===================================================================================== Rete elettrica (17/11/2026)
+   Statistiche › «Stato della rete elettrica» (rete-elettrica.html) e Fotovoltaico › «Cabine primarie» (fv-cabine.html),
+   parte comune in rete.js. Campioni della legenda con lo stesso disegno della mappa: pieno, strisce (bianco = verde),
+   retino dei comuni con un altro distributore, cabine (punti grandi con il bordo scuro), punti dell'utente. */
+.campione-rete { display: inline-block; flex: none; width: 16px; height: 12px; border-radius: 2px; border: 1px solid var(--bordo); }
+.campione-rete.cabina { width: 13px; height: 13px; border-radius: 50%; border: 2px solid #1a1a1a; }
+.campione-rete.punto { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #1a1a1a; }
+.campione-rete.area { background: color-mix(in srgb, var(--primario) 15%, transparent); border: 2px solid var(--primario); }
+.legenda-rete .legenda-nota { flex-basis: 100%; font-size: var(--c-xs); }
+.strati-rete { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin-top: var(--s2); }
+.scheda-rete { display: grid; grid-template-columns: auto 1fr; gap: .25rem var(--s3); margin: var(--s3) 0 0; }
+.scheda-rete dt { color: var(--tenue); } .scheda-rete dd { margin: 0; font-weight: 600; }
+#scheda-comune h3 { font: 700 var(--c-l)/1.25 var(--titoli); margin: var(--s4) 0 var(--s2); }
+#scheda-comune h4 { font: 600 var(--c-m)/1.25 var(--titoli); margin: var(--s4) 0 var(--s1); }
+.criticita-comune { display: flex; align-items: center; gap: .5rem; font-weight: 600; margin: 0; }
+.grafico-rete { margin-top: var(--s3); position: relative; }
+.ultime-interruzioni { margin-top: var(--s3); }
+.mappa-gl.mappa-cabine { height: min(48vh, 460px); min-height: 280px; }
+.mappa-gl.mappa-dettaglio { height: min(58vh, 560px); min-height: 300px; }
+.titolo-dettaglio { font: 700 var(--c-l)/1.25 var(--titoli); margin: var(--s5) 0 var(--s2); }
+.comandi-dettaglio { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); margin-top: var(--s2); }
+.comandi-dettaglio select { width: auto; max-width: 22rem; }
+.comandi-dettaglio > .caselle-strati { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); }
+.comandi-punti, .comandi-cabine { align-items: center; }
+.elenco-punti, .elenco-cabine { list-style: none; margin: var(--s3) 0 0; padding: 0; border-top: 1px solid var(--linea); }
+.punto-rete, .cabina-rete { padding: var(--s2) var(--s1) var(--s2) var(--s3); border-bottom: 1px solid var(--linea); border-left: 3px solid transparent; }
+.punto-rete { cursor: pointer; }
+.punto-rete.scelto { border-left-color: var(--primario); background: var(--tinta); }
+.punto-rete .testa, .cabina-rete .testa { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin: 0; }
+.punto-rete .testa strong { flex: 1 1 auto; }
+.punto-rete p, .cabina-rete p { margin: .15rem 0 0; font-size: var(--c-s); color: var(--tenue); }
+.cabina-rete p.sedi { color: var(--inchiostro); }
+.elenco-punti .vuoto { padding: var(--s2) 0; border: 0; }
+.attribuzione-gse { font-size: var(--c-s); }
+.pagina-cabine .carica-file input[type="file"] { display: none; }
+.campione-rete.in-parte { background: transparent; border: 2px dashed var(--inchiostro); }

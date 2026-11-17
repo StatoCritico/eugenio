@@ -76,7 +76,8 @@ GRUPPI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "d
           "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
                          "dbtr-istruzioni.html", "visure.html"],
           "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
-               "statistiche": ["indici-prezzi.html", "indicatori.html"]}   # (11/11/2026) Indici dei prezzi prima
+               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html"]}   # (11/11/2026) Indici dei prezzi prima;
+#                                                    (17/11/2026) Stato della rete elettrica in fondo
 VIETATI = ("PUN Index GME =", "€/MWh", "Prezzo medio")   # nessun valore nelle pagine in attesa della licenza GME
 
 
@@ -597,8 +598,8 @@ def test_etichette_brevi_nelle_tendine():
     # (08/11/2026) 5 «S» (Cambiamento climatico; Ortofoto, Modelli 3D, Importa DXF/IFC, Aggiungi edifici), 2 triangoli
     # «in sviluppo» cliccabili (LiDAR, Visure), 16 voci in lavorazione con il triangolo e non cliccabili, 6 GME;
     # (09/11/2026 f) + 3 «S» (Edifici: Obblighi di legge, Geometria e luce naturale, Consumi): 8 «S», 13 in lavorazione
-    # (14/11/2026) + 4 «S» del Trattamento aria: 12
-    assert len(s) == pannello.count(">sperimentale<") == 12 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    # (14/11/2026) + 4 «S» del Trattamento aria: 12; (17/11/2026) + Cabine primarie e Stato della rete elettrica: 14
+    assert len(s) == pannello.count(">sperimentale<") == 14 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
     assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
@@ -740,7 +741,8 @@ ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html
                "patrimonio": ["patrimonio.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
                "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
-               "statistiche": ["indici-prezzi.html", "indicatori.html"]}   # (11/11/2026) Indici dei prezzi prima
+               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html"]}   # (11/11/2026) Indici dei prezzi prima;
+#                                                    (17/11/2026) Stato della rete elettrica in fondo
 
 
 def test_menu_08_11_gruppi_e_voci_in_lavorazione(sito):
@@ -814,7 +816,7 @@ def test_stesso_gruppo_ed_etichetta_dal_menu(sito):
     assert '<p class="gruppo-servizio">Fotovoltaico</p>' in s
     blocco = re.search(r'<ul class="stesso-gruppo">(.*?)</ul>', s, re.S).group(1)
     assert blocco.count('class="voce-gme voce-corso"') == 6 and blocco.count('title="In attesa di autorizzazione dal GME"') == 1
-    assert re.findall(r'href="([^"]+)"', blocco) == ["edificio-cer.html"]
+    assert re.findall(r'href="([^"]+)"', blocco) == ["fv-cabine.html", "edificio-cer.html"]   # (17/11/2026) Cabine primarie
     for p in ("edificio-geometria.html", "edificio-ecobonus.html", "edificio-conto-termico.html", "edificio-fabbisogno.html"):
         assert '<p class="gruppo-servizio">Edifici</p>' in (sito / p).read_text(encoding="utf-8"), p
     s = (sito / "lidar.html").read_text(encoding="utf-8")
