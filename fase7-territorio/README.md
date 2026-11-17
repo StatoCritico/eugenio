@@ -1,12 +1,13 @@
 # Fase 7 – Territorio: comuni, confini, catasto e patrimonio edilizio diffuso
 
-## Quattro fonti, quattro ruoli
+## Fonti e ruoli
 
 | Fonte | Cosa dà | Come la usiamo |
 |---|---|---|
 | **ISTAT** – elenco dei comuni | codici ISTAT e catastali (Belfiore), province, capoluoghi, variazioni | scaricato al bisogno (aggiornato ogni 30 giorni) |
 | **Gramscii** – confini comunali (ISTAT 1/1/2026, CC BY 4.0) e sezioni di censimento 2021 | mappa SVG dei comuni, baricentro degli edifici | **versione bloccata** e verificata (vedi sotto) |
 | **ANNCSU** – Archivio Nazionale dei Numeri Civici delle Strade Urbane (Agenzia delle Entrate e ISTAT, CC BY 4.0, mensile) | civici ufficiali con coordinate dell'accesso | **prima fonte per gli indirizzi**: file nazionale scaricato una volta al mese e interrogato in locale (nessuna chiave, nessuna quota) |
+| **MEF** – censimento «Patrimonio della PA» (dati al 31/12/2023, CC BY 4.0) e **Agenzia delle Entrate** – download massivo della cartografia catastale (CC BY 4.0) | immobili delle Pubbliche Amministrazioni con la particella catastale disegnata | `immobili-pa`: file nazionali in cache, una volta l'anno (vedi «Immobili delle PA») |
 | **Zornade** – API catastale gratuita (10.000 richieste/ora, confermato sull'account il 25/10/2026) | particella, foglio, mappale, superficie, comune catastale, edifici, terreno; geocodifica di riserva | chiamata dal server con la chiave tenuta lì; cache locale |
 
 ## Confini: cosa teniamo, dove, e perché
@@ -215,6 +216,66 @@ Attribuzioni obbligatorie dove si mostrano i risultati:
 
 Il GeoJSON porta `attribution_html` e l'elenco `sources`; le risposte dell'API `fonte_url` e `fonti`.
 
+## Immobili delle Pubbliche Amministrazioni (MEF + catasto AdE)
+
+Dal 17/11/2026. Il MEF (Dipartimento dell'Economia, progetto «Patrimonio della PA», art. 2 c. 222 L. 191/2009)
+pubblica ogni anno l'elenco dei beni immobili dichiarati dalle Amministrazioni; l'**ultimo anno pubblicato è il 2023**
+(dati al 31/12/2023, rilevazione aprile-dicembre 2024), licenza **CC BY 4.0**:
+https://www.de.mef.gov.it/it/attivita_istituzionali/patrimonio_pubblico/censimento_immobili_pubblici/open_data_immobili/dati_immobili_2023.html
+
+Il MEF **non pubblica poligoni**: dà un punto (per il 94 % dei beni accatastati è il centroide della particella fornito
+dall'Agenzia delle Entrate) e l'identificativo catastale. I confini si ottengono agganciando l'identificativo alle
+particelle del **download massivo della cartografia catastale** dell'Agenzia delle Entrate (CC BY 4.0, 19 ZIP regionali,
+14,7 GB, versione del 22-23/09/2026): https://wfs-download.cartografia.agenziaentrate.eu/wfsdownload/UMBRIA.zip (e così
+per le altre regioni; Valle d'Aosta = `VALLE-AOSTA`).
+
+```bash
+cd fase7-territorio
+python -m territorio immobili-pa --dest /srv/energia/dati/immobili_pa            # tutto: ~40 minuti; su disco al massimo uno ZIP regionale (Lombardia ~2,5 GB)
+python -m territorio immobili-pa --dest $D --regioni-ade UMBRIA                     # una sola regione, per provare
+```
+
+Ogni ZIP regionale si scarica, si legge e si cancella; restano in `--dest`:
+
+| File | Contenuto | Peso (2023) |
+|---|---|---|
+| `mef_immobili_pa_2023.parquet` | le 3.257.044 righe MEF con i nomi brevi delle colonne (`natura`, `amministrazione`, `tipologia`, `id_catastale`, `lat`, `lon`…) | 77 MB |
+| `poligoni/<REGIONE>.parquet` | particelle AdE agganciate (`chiave`, `ref_ade`, `aggancio`, WKB) | 430 MB |
+| `immobili_pa_2023_beni.parquet` | GeoParquet di punti: tutte le colonne MEF + `particella_chiave` e `con_poligono` | 113 MB |
+| `immobili_pa_2023_particelle.parquet` | GeoParquet di poligoni: una riga per particella con `n_beni`, `n_fabbricati`, `n_terreni`, amministrazioni, tipologie, `area_m2`, `aggancio` | 440 MB |
+
+**Aggancio**: chiave (comune catastale, sezione, foglio, particella). Il riferimento AdE è posizionale: `A045_000100.1`
+= comune `A045`, sezione assente (`_`), foglio `0001`, allegato `0`, sviluppo `0`, particella `1`; con la sezione il
+trattino non c'è (`F363A001300.100`). Nel MEF i terreni sono `comune:sezione:foglio:particella:…`, i fabbricati
+`comune:sezione:sez.urbana:foglio:particella:…`; le unità graffate hanno più identificativi separati da `;`.
+Quando il MEF non scrive la sezione che l'AdE indica (Roma, Milano) si aggancia lo stesso, ma solo se la particella
+è unica nel comune con quel foglio e numero (`aggancio = "senza_sezione"`).
+
+**Attenzione nell'uso**:
+- il poligono è la **particella**: per un fabbricato è il lotto dell'edificio, non la sagoma; più unità immobiliari
+  (appartamenti, box…) della stessa particella condividono lo stesso poligono;
+- il **Trentino-Alto Adige** non c'è (catasto tavolare delle Province autonome, fuori dal download AdE); in Friuli
+  Venezia Giulia e in alcuni comuni del Veneto e della Lombardia il tavolare abbassa la copertura;
+- le superfici del MEF sono dichiarate dalle Amministrazioni; l'`area_m2` è calcolata sul poligono AdE;
+- i dati non sostituiscono visure ed estratti ufficiali.
+
+**Attribuzione** (scritta anche nei metadati dei file): «Fonti: MEF – Dipartimento dell'Economia, «Patrimonio della
+PA», dati beni immobili al 31/12/2023 (CC BY 4.0); Agenzia delle Entrate, cartografia catastale (CC BY 4.0).
+Elaborazione: EuGEnio – eugenio.statocritico.it».
+
+**Prima elaborazione (17/11/2026)**: 3.257.044 beni (1.515.583 fabbricati, 1.741.461 terreni),
+3.141.599 con identificativo catastale, **2.639.609 agganciati a 1.687.129 particelle** (84 %; 15.000 con l'aggancio
+«senza_sezione»). Su 20.000 beni presi a caso, il punto MEF cade dentro la sua particella o entro 20 m nel 98 % dei
+casi. Copertura per regione (beni agganciati / beni con identificativo): Molise, Umbria, Marche, Roma 96-97 %;
+Toscana, Basilicata, Valle d'Aosta, Abruzzo, Piemonte, Emilia-Romagna 90-95 %; Sicilia, Sardegna, Puglia, Calabria,
+Veneto 82-88 %; Campania 79 %, Liguria 77 %, Friuli Venezia Giulia 72 % (tavolare), **Lombardia 64 %** (molti comuni
+con più sezioni censuarie e gli stessi numeri di foglio: senza la sezione l'aggancio sarebbe ambiguo e si lascia fuori);
+Trentino-Alto Adige 0 %. Durata: ~40 minuti in due code parallele su 2 vCPU.
+
+La lettura dei GML è fatta «a flusso» sui byte e costruisce il poligono solo per le particelle del censimento
+(~0,06 s per comune contro ~1,2 s con GDAL); servono solo pandas, pyarrow e shapely. Composizione in due passate
+con le colonne di testo a dizionario: sul file nazionale sta in ~4 GB di memoria.
+
 ## Dati climatici per la Legge 10
 
 Il modulo `meteo_storico/legge10.py` (fase 3) calcola dal clima reale del comune, sugli ultimi N anni
@@ -237,5 +298,5 @@ di norma, che risalgono a serie storiche molto più vecchie) è attesa.
 ## Test
 
 ```powershell
-python -m pytest tests -q      # 12 test, nessuna chiamata di rete (Zornade simulato, ZIP ANNCSU costruito nel test)
+python -m pytest tests -q      # 20 test, nessuna chiamata di rete (Zornade simulato, ZIP ANNCSU costruito nel test)
 ```

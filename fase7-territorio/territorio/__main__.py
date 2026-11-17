@@ -4,6 +4,8 @@
       geolocalizza un patrimonio edilizio (coordinate → catasto → indirizzo)
   anncsu-scarica --dest CARTELLA [--comuni comuni.parquet --regioni 08] [--zip file.zip]
       scarica l'indirizzario ANNCSU (mensile, CC BY 4.0) e lo salva come anncsu_civici.parquet
+  immobili-pa --dest CARTELLA [--anno 2023] [--regioni-ade LOMBARDIA,UMBRIA]
+      immobili delle PA (censimento MEF, CC BY 4.0) con i confini della particella (cartografia AdE, CC BY 4.0)
 
 La chiave Zornade si legge da ZORNADE_API_KEY (variabile d'ambiente) o da --chiave-file.
 """
@@ -18,7 +20,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import anncsu, patrimonio
+from . import anncsu, immobili_pa, patrimonio
 from .zornade import Zornade
 
 
@@ -29,7 +31,7 @@ def _comuni(percorso: str) -> pd.DataFrame:
 def main(argv=None):
     p = argparse.ArgumentParser(prog="territorio", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("comando", choices=["patrimonio", "anncsu-scarica"])
+    p.add_argument("comando", choices=["patrimonio", "anncsu-scarica", "immobili-pa"])
     p.add_argument("file", nargs="?", help="patrimonio: CSV degli edifici")
     p.add_argument("--comuni", help="comuni.parquet o comuni.json della fase 3")
     p.add_argument("--anncsu", help="patrimonio: anncsu_civici.parquet (prima fonte per gli indirizzi)")
@@ -40,9 +42,24 @@ def main(argv=None):
     p.add_argument("--dest", help="anncsu-scarica: cartella di destinazione (fuori dal repository)")
     p.add_argument("--regioni", help='anncsu-scarica: solo queste regioni ISTAT (es. "08"), serve --comuni')
     p.add_argument("--zip", help="anncsu-scarica: usa uno ZIP già scaricato invece di scaricarlo")
+    p.add_argument("--anno", type=int, default=2023, help="immobili-pa: anno dei dati MEF (ultimo pubblicato: 2023)")
+    p.add_argument("--regioni-ade", help="immobili-pa: solo questi ZIP regionali AdE (es. UMBRIA,VALLE-AOSTA)")
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
+
+    if a.comando == "immobili-pa":
+        if not a.dest:
+            p.error("immobili-pa richiede --dest")
+        dest = Path(a.dest)
+        f = dest / f"mef_immobili_pa_{a.anno}.parquet"
+        if not f.exists():
+            f = immobili_pa.scarica_mef(dest, a.anno)
+        beni = pd.read_parquet(f, dtype_backend="pyarrow")
+        reg = [x.strip().upper() for x in a.regioni_ade.split(",")] if a.regioni_ade else None
+        pol = immobili_pa.scarica_poligoni(dest, beni, reg)
+        print(immobili_pa.componi(beni, pol, dest, a.anno))
+        return 0
 
     if a.comando == "anncsu-scarica":
         if not a.dest:
