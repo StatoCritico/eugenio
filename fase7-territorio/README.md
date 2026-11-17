@@ -228,8 +228,10 @@ inquadrare (campi nel README della fase 4). Nessuna rete nel modulo: riceve le f
   (`https://wfs.cartografia.agenziaentrate.gov.it/inspire/wfs/owfs01.php`, CC BY 4.0, nessuna chiave; GML 3.2 in EPSG:6706
   con coppie «lat lon»; il riferimento è lo stesso di Zornade, `H294_009900.2330`). GetFeature su un quadrato di 30 m:
   particella che contiene il punto (strade e acque escluse), altrimenti quella di Zornade o la più vicina entro 15 m. Punto
-  interno garantito (baricentro se dentro, altrimenti il centro del tratto interno più largo), superficie, riquadro; con gli
-  altri accessi dello stesso civico entro 600 m (`Indirizzario.accessi`). Geometria in Python puro (niente shapely).
+  interno garantito (baricentro se dentro, altrimenti il centro del tratto interno più largo), superficie, riquadro. Civico
+  con più accessi ANNCSU entro 600 m (`Indirizzario.accessi`: 2, 2/B … 2/O) e cercato senza esponente: **la particella più
+  grande** fra quelle che contengono gli accessi (decisione di Paolo del 17/11/2026, «scelta B»); un solo accesso o
+  esponente scritto: la particella di quell'accesso. Regola in `luogo_regola`. Geometria in Python puro (niente shapely).
 - **Metà della via**: strade OSM con il nome (query Overpass su `ref:ISTAT` e sulle parole del nome, con accenti; solo strade,
   non sentieri né ciclabili; più le località `place`), confrontate con lo stesso punteggio dell'ANNCSU; tratti uniti in catene,
   metà della catena se è quasi tutta la via, altrimenti il punto che lascia metà della lunghezza da ciascuna parte lungo
@@ -244,13 +246,14 @@ Prove dal vivo del 17/11/2026 (ANNCSU del 02/11/2026, WFS dell'Agenzia e Overpas
 
 | Ricerca | Prima | Dopo |
 |---|---|---|
-| Rimini, via Settembrini 2 | 44,042903 N 12,589748 E (accesso «2» ANNCSU, all'angolo sud) a zoom 17: l'ospedale (44,0459 N 12,5879 E per OSM, 330 m più a nord; particella foglio 99 n. 1 fino a 44,0489 N) resta fuori da una mappa alta ~500 px | segnaposto nella particella foglio 99 n. 2330 (3.447 m²) a 44,042652 N 12,589741 E; riquadro 44,04224–44,04748 N × 12,58901–12,59009 E (particella e accessi 2, 2/B … 2/O), ospedale nella vista |
+| Rimini, via Settembrini 2 | 44,042903 N 12,589748 E (accesso «2» ANNCSU, all'angolo sud) a zoom 17: l'ospedale (44,0459 N 12,5879 E per OSM, 330 m più a nord; particella foglio 99 n. 1 fino a 44,0489 N) resta fuori da una mappa alta ~500 px | regola `particella_piu_grande_del_civico`: particella **foglio 99 n. 1** (ospedale, 105.819 m²), segnaposto a 44,046563 N 12,587992 E; riquadro 44,044708–44,048895 N × 12,585209–12,590945 E (gli accessi del «2» cadono nelle particelle 2330, 2331, 2545 e, il 2/O, nella n. 1); prima scelta (particella dell'accesso «2») era la 2330, 3.447 m², all'angolo sud |
 | Rimini, via Coriano | 44,015966 N 12,595084 E (civico 210/I, numero mediano) a zoom 17 (~800 m di via visibili) | metà della via (OSM, 8,7 km di tratti) 44,017179 N 12,593942 E; riquadro 43,9906–44,0417 N × 12,5758–12,6041 E; «VIA CORCIANO» fra le altre vie simili |
 | Perugia, via Sant'Andrea delle Fratte | nessun punto ANNCSU; Zornade (sul server) ~2,5 km più a nord, senza avviso | elenco da scegliere: Sant'Andrea delle Fratte (località, 43,0743 N 12,3382 E), Strada delle Fratte, Strada di Sant'Andrea d'Agliano, Via Sant'Andrea… |
 
 Per via Coriano il civico mediano dell'ANNCSU cade già a ~150 m dalla metà: l'errore che si vedeva era lo zoom fisso 17 (si
 vedevano ~800 m di una via di ~6 km in linea d'aria, e gli edifici grandi più a sud-ovest restavano fuori); ora la via si
-vede tutta. Tempi: 2–4 s per ricerca senza copia (WFS ~1 s, Overpass 1–3 s).
+vede tutta. Tempi: 2–4 s per ricerca senza copia (WFS ~1 s, Overpass 1–3 s); un civico con molti accessi come il 2 di
+viale Settembrini ~15 s la prima volta (una chiamata al WFS per accesso), poi dalla copia del server.
 
 ## Dati climatici per la Legge 10
 
@@ -274,5 +277,5 @@ di norma, che risalgono a serie storiche molto più vecchie) è attesa.
 ## Test
 
 ```powershell
-python -m pytest tests -q      # 30 test, nessuna chiamata di rete (Zornade, WFS catastale e Overpass simulati, ZIP ANNCSU costruito nel test)
+python -m pytest tests -q      # 31 test, nessuna chiamata di rete (Zornade, WFS catastale e Overpass simulati, ZIP ANNCSU costruito nel test)
 ```

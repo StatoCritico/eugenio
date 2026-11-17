@@ -14,8 +14,10 @@ Qui, per la **sola ricerca di un luogo** (una riga), si aggiunge alla riga:
     delle ortofoto, che usa il WMS): punto **interno garantito** (baricentro se cade dentro, altrimenti il centro del tratto
     interno più largo: particelle a L o a C) e riquadro; se il punto cade sulla strada (le strade non sono particelle, o sono
     particelle «STRADA…»), la particella edificata più vicina entro RAGGIO_M metri, preferendo quella scelta da Zornade.
-    Il riquadro comprende anche gli altri accessi dello stesso civico (2, 2/B … 2/O) entro COMPLESSO_M metri: un civico con
-    molti esponenti è un complesso (l'ospedale) e la vista deve mostrarlo tutto;
+    Civico ANNCSU con più accessi (2, 2/B … 2/O entro COMPLESSO_M metri) e cercato senza esponente: fra le particelle che
+    contengono gli accessi si prende **la più grande** (decisione di Paolo del 17/11/2026, «scelta B»: un civico con molti
+    esponenti è un complesso, l'ospedale Infermi è la particella n. 1, non quella dell'accesso «2» all'angolo sud); con un
+    solo accesso, o con l'esponente scritto («2/B»), la particella di quell'accesso. La regola applicata è in `luogo_regola`;
   * via senza civico → il **punto a metà della lunghezza** della via (non il baricentro dei vertici) e il riquadro della via,
     dalle strade di OpenStreetMap (ODbL) con quel nome nel comune (`highway`, unite in catene; se non formano una linea sola,
     il punto che lascia metà della lunghezza da ciascuna parte lungo l'asse principale), altrimenti dai civici ANNCSU della
@@ -41,7 +43,8 @@ ATTRIBUZIONE_CATASTO = "Agenzia delle Entrate – Cartografia catastale (CC BY 4
 ATTRIBUZIONE_OSM = "© OpenStreetMap contributors (ODbL 1.0)"
 ATTRIBUZIONE_ANNCSU = "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)"
 RAGGIO_M = 15          # punto sulla strada: particella edificata più vicina entro questa distanza
-COMPLESSO_M = 600      # altri accessi dello stesso civico compresi nel riquadro
+COMPLESSO_M = 600      # altri accessi dello stesso civico considerati (particella più grande del civico)
+MAX_ACCESSI = 16       # al più tante chiamate in più al WFS per un civico con molti accessi
 GRUPPO_M = 1000        # tratti con lo stesso nome più lontani di così: vie diverse (frazioni)
 GRUPPO_CIVICI_M = 1500 # come sopra, per i soli civici ANNCSU (più radi delle linee)
 MAX_SCELTE = 6
@@ -217,21 +220,19 @@ def unisci_riquadri(*r) -> list[float] | None:
     return [min(x[0] for x in r), min(x[1] for x in r), max(x[2] for x in r), max(x[3] for x in r)]
 
 
-def accessi_del_complesso(punti: list[tuple[float, float]], lat: float, lon: float,
-                          massimo_m: float = COMPLESSO_M) -> list[float] | None:
-    """Riquadro [ovest, sud, est, nord] degli accessi (lon, lat) dello stesso civico entro massimo_m dal punto."""
+def vicini_entro(punti: list[tuple[float, float]], lat: float, lon: float,
+                 massimo_m: float = COMPLESSO_M) -> list[tuple[float, float]]:
+    """Accessi (lon, lat) dello stesso civico entro massimo_m dal punto, il più vicino prima, senza doppioni."""
     kx, ky = _scala(lat)
-    vicini = [(x, y) for x, y in punti if math.hypot((x - lon) * kx, (y - lat) * ky) <= massimo_m]
-    if len(vicini) < 2:
-        return None
-    return [min(x for x, _ in vicini), min(y for _, y in vicini), max(x for x, _ in vicini), max(y for _, y in vicini)]
+    d = sorted({(math.hypot((x - lon) * kx, (y - lat) * ky), x, y) for x, y in punti})
+    return [(x, y) for m, x, y in d if m <= massimo_m]
 
 
-def esito_particella(p: Particella, distanza_m: float, riquadro_extra: list[float] | None = None) -> dict:
+def esito_particella(p: Particella, distanza_m: float) -> dict:
     lon, lat = p.punto_interno()
     r = p.parti
     return {"luogo_tipo": "particella", "luogo_lat": round(lat, 7), "luogo_lon": round(lon, 7),
-            "luogo_riquadro": [round(v, 7) for v in unisci_riquadri(p.riquadro(), riquadro_extra)],
+            "luogo_riquadro": [round(v, 7) for v in p.riquadro()],
             "luogo_fonte": ATTRIBUZIONE_CATASTO,
             "particella_ade": {"riferimento": p.riferimento, "foglio": r.get("foglio"), "mappale": p.mappale,
                                "belfiore": r.get("belfiore"), "area_m2": round(p.area_m2()),
@@ -563,9 +564,11 @@ def arricchisci(riga: dict, istat: str | None = None, belfiore: str | None = Non
     overpass(query) → JSON di Overpass. Tutte e due possono mancare, restituire None o sollevare un'eccezione: la riga resta
     com'era, con un avviso. Campi aggiunti (nessuno tolto): luogo_tipo («particella», «via», «località» o None), luogo_lat,
     luogo_lon (dove mettere il segnaposto), luogo_riquadro [ovest, sud, est, nord] (da inquadrare), luogo_fonte, luogo_avviso,
+    luogo_regola («particella_piu_grande_del_civico», «particella_del_civico», «particella_dell_accesso» con l'esponente,
+    «particella_del_punto» per foglio e particella, coordinate o punto di Zornade, «meta_della_via», «località»),
     particella_ade, vie_candidate, scegli_via, via_scelta."""
     from .patrimonio import _via_civico          # qui: patrimonio non importa luogo
-    out: dict = {"luogo_tipo": None, "luogo_lat": None, "luogo_lon": None, "luogo_riquadro": None, "luogo_fonte": None,
+    out: dict = {"luogo_regola": None, "luogo_tipo": None, "luogo_lat": None, "luogo_lon": None, "luogo_riquadro": None, "luogo_fonte": None,
                  "luogo_avviso": "", "particella_ade": None, "vie_candidate": [], "scegli_via": False, "via_scelta": None}
     avvisi = []
     istat = istat or riga.get("istat")
@@ -591,6 +594,8 @@ def arricchisci(riga: dict, istat: str | None = None, belfiore: str | None = Non
     if metodo == "indirizzo" and not civ:
         scelta, elenco, scegli = vie()
         out.update(esito_via(scelta, elenco, scegli))
+        if scelta:
+            out["luogo_regola"] = "meta_della_via" if scelta["tipo"] == "via" else "località"
         if not scelta and not scegli:
             avvisi.append("via non trovata nelle strade di OpenStreetMap né nei civici ANNCSU: punto dell'indirizzo")
         out["luogo_avviso"] = "; ".join(avvisi)
@@ -620,30 +625,56 @@ def arricchisci(riga: dict, istat: str | None = None, belfiore: str | None = Non
     if wfs is None:
         out["luogo_avviso"] = "; ".join(avvisi)
         return out
-    try:
-        xml = wfs(parametri_wfs(lat, lon))
-        particelle = leggi_wfs(xml) if xml else []
+    guasto = []
+
+    def particelle_in(la: float, lo: float) -> list[Particella]:
+        try:
+            xml = wfs(parametri_wfs(la, lo))
+        except Exception:   # noqa: BLE001
+            xml = None
         if xml is None:
-            avvisi.append("cartografia catastale non disponibile ora: mappa sul punto dell'indirizzo")
-    except Exception:   # noqa: BLE001
-        particelle = []
-        avvisi.append("cartografia catastale non disponibile ora: mappa sul punto dell'indirizzo")
+            guasto.append(1)
+            return []
+        return leggi_wfs(xml)
+
+    particelle = particelle_in(lat, lon)
     preferita = {"belfiore": riga.get("belfiore"), "foglio": riga.get("foglio_catasto"), "mappale": riga.get("mappale")}
     p, d = scegli_particella(particelle, lat, lon, preferita)
+    regola = "particella_del_punto"
+    # (17/11/2026, decisione di Paolo, scelta B) civico ANNCSU senza esponente con più accessi (2, 2/B … 2/O entro
+    # COMPLESSO_M): la particella più grande fra quelle che li contengono (l'ospedale Infermi, non l'angolo sud)
+    trovato = str(riga.get("indirizzo_trovato") or "")
+    if metodo == "indirizzo" and riga.get("fonte_punto") == "ANNCSU" and " " in trovato:
+        if re.search(r"[A-Za-z]", civ):
+            regola = "particella_dell_accesso"
+        else:
+            regola = "particella_del_civico"
+            accessi = []
+            if idx is not None and istat:
+                odonimo, civico_trovato = trovato.rsplit(" ", 1)
+                try:
+                    accessi = vicini_entro(idx.accessi(istat, belfiore, odonimo, civico_trovato.split("/")[0]), lat, lon)
+                except Exception:   # noqa: BLE001
+                    accessi = []
+            if len(accessi) >= 2:
+                trovate = {p.riferimento: (p, d)} if p is not None else {}
+                for x, y in accessi[:MAX_ACCESSI]:
+                    if math.hypot(x - lon, y - lat) < 1e-7 or any(q.contiene(x, y) for q, _ in trovate.values()):
+                        continue
+                    q, dq = scegli_particella(particelle_in(y, x), y, x)
+                    if q is not None:
+                        trovate.setdefault(q.riferimento, (q, dq))
+                if trovate:
+                    p, d = max(trovate.values(), key=lambda v: v[0].area_m2())
+                    regola = "particella_piu_grande_del_civico"
+    if guasto and p is None:
+        avvisi.append("cartografia catastale non disponibile ora: mappa sul punto dell'indirizzo")
     if p is None:
-        if particelle or not avvisi:
+        if not guasto:
             avvisi.append(f"nessuna particella catastale entro {RAGGIO_M} m dal punto: mappa sul punto dell'indirizzo")
         out["luogo_avviso"] = "; ".join(avvisi)
         return out
-    extra = None
-    trovato = str(riga.get("indirizzo_trovato") or "")
-    if metodo == "indirizzo" and riga.get("fonte_punto") == "ANNCSU" and idx is not None and istat and " " in trovato \
-            and not re.search(r"[A-Za-z]", civ):
-        odonimo, civico_trovato = trovato.rsplit(" ", 1)
-        try:
-            extra = accessi_del_complesso(idx.accessi(istat, belfiore, odonimo, civico_trovato), lat, lon)
-        except Exception:   # noqa: BLE001
-            extra = None
-    out.update(esito_particella(p, d, extra))
+    out.update(esito_particella(p, d))
+    out["luogo_regola"] = regola
     out["luogo_avviso"] = "; ".join(avvisi)
     return out

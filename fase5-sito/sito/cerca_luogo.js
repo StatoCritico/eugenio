@@ -30,9 +30,10 @@
 //    e zoom = ZOOM_COMUNE.
 //  (17/11/2026, segnalazione di Paolo) La richiesta porta `luogo=1`: il server aggiunge alla riga dove mettere il segnaposto e
 //    cosa inquadrare (fase4-server/servizio/luogo.py, fase7-territorio/territorio/luogo.py). Con il **civico** (o foglio e
-//    particella) il segnaposto va su un punto interno della **particella catastale** che contiene il civico (Agenzia delle
-//    Entrate – Cartografia catastale, CC BY 4.0) e la mappa inquadra la particella (con gli altri accessi dello stesso civico:
-//    l'ospedale Infermi di Rimini, viale Settembrini 2, ha l'accesso «2» all'angolo sud e l'ospedale 300–500 m più a nord).
+//    particella) il segnaposto va su un punto interno della **particella catastale** del civico (Agenzia delle Entrate –
+//    Cartografia catastale, CC BY 4.0) e la mappa inquadra la particella; con più accessi dello stesso civico (2, 2/B … 2/O)
+//    la più grande fra le loro particelle (decisione di Paolo, «scelta B»: l'ospedale Infermi di Rimini, viale Settembrini
+//    2, è la particella n. 1, non quella dell'accesso «2» all'angolo sud); `luogo_regola` dice la regola applicata.
 //    Con la **sola via** il segnaposto va a **metà della via** (strade di OpenStreetMap, ODbL, o civici ANNCSU) e la mappa
 //    è centrata lì con uno zoom che fa vedere la via (via Coriano a Rimini: ~6 km). Più vie compatibili (stesso nome in
 //    frazioni diverse, via non riconosciuta: «via Sant'Andrea delle Fratte» a Perugia è una frazione) → l'elenco da scegliere
@@ -188,6 +189,7 @@
       luogo && x.luogo_fonte ? `${x.luogo_tipo === "particella" ? "particella: " : ""}${x.luogo_fonte}` : ""].filter(Boolean).join("; ");
     const dove = [riga.indirizzo_trovato, x.comune_catasto].filter(Boolean).join(", ");
     const part = luogo && pa ? `particella foglio ${pa.foglio}, ${pa.mappale}${pa.area_m2 ? ` (${Math.round(pa.area_m2).toLocaleString("it-IT")} m²)` : ""}`
+      + (x.luogo_regola === "particella_piu_grande_del_civico" ? ", la più grande fra quelle degli accessi del civico" : "")
       : x.mappale ? `particella ${x.foglio_catasto ? `foglio ${x.foglio_catasto}, ` : ""}${x.mappale}` : "";
     const meta = luogo && via ? `metà della via${via.lunghezza_m ? ` (${via.lunghezza_m >= 1000 ? `${(via.lunghezza_m / 1000).toFixed(1).replace(".", ",")} km` : `${via.lunghezza_m} m`})` : ""}` : "";
     // con la via scelta, la nota «civico non indicato: usato il …» del civico centrale non vale più

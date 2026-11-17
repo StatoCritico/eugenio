@@ -108,8 +108,9 @@ collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre
   Sant'Andrea delle Fratte», frazione).
 - **`cerca_luogo.js`**: la richiesta porta `luogo=1`; il server aggiunge alla riga segnaposto e riquadro (fase 4, § «Ricerca
   di un luogo»). Civico (o foglio e particella) → segnaposto in un punto interno della **particella catastale** (Agenzia delle
-  Entrate – Cartografia catastale, CC BY 4.0) e particella **tutta nella vista** con gli altri accessi dello stesso civico
-  (zoom al più `ZOOM_PARTICELLA` = 19). Sola via → mappa **centrata a metà della via**, zoom che la fa vedere tutta (o, se la
+  Entrate – Cartografia catastale, CC BY 4.0) e particella **tutta nella vista** (zoom al più `ZOOM_PARTICELLA` = 19); con
+  più accessi dello stesso civico, la particella più grande fra le loro (scelta B di Paolo: l'ospedale di viale
+  Settembrini 2), scritto nel messaggio. Sola via → mappa **centrata a metà della via**, zoom che la fa vedere tutta (o, se la
   metà è molto fuori centro, buona parte: non oltre un livello sotto quello del riquadro). Più vie compatibili o via non
   riconosciuta → **elenco di pulsanti** nella riga dei messaggi (vie e località di OpenStreetMap e dell'ANNCSU, più il punto
   trovato da Zornade), la mappa resta ferma finché non si sceglie; con una via riconosciuta le altre simili sono pulsanti

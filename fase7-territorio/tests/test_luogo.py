@@ -86,12 +86,9 @@ def test_scegli_particella():
     assert s < 44.0421 < n and o < 12.5891 < e and (n - s) * 110_574 == pytest.approx(30, rel=0.01)
 
 
-def test_complesso_con_molti_esponenti():
-    """Ospedale Infermi (Rimini, viale Settembrini 2): accessi 2, 2/B … 2/O fino a ~500 m dal «2»; più lontano no."""
-    punti = [(12.589748, 44.042903), (12.589789, 44.042567), (12.589041, 44.047484), (12.62, 44.06)]
-    r = L.accessi_del_complesso(punti, 44.042903, 12.589748)
-    assert r == [12.589041, 44.042567, 12.589789, 44.047484]
-    assert L.accessi_del_complesso(punti[:1], 44.042903, 12.589748) is None
+def test_accessi_vicini():
+    punti = [(12.589748, 44.042903), (12.589789, 44.042567), (12.589041, 44.047484), (12.62, 44.06), (12.589789, 44.042567)]
+    assert L.vicini_entro(punti, 44.042903, 12.589748) == [(12.589748, 44.042903), (12.589789, 44.042567), (12.589041, 44.047484)]
 
 
 # ---------------------------------------------------------------------------------------------- metà della via
@@ -206,22 +203,66 @@ def test_stessa_via_in_due_frazioni():
 RIGA_CIVICO = {"metodo": "indirizzo", "indirizzo": "via Settembrini 2", "civico": "", "fonte_punto": "ANNCSU",
                "indirizzo_trovato": "VIALE LUIGI SETTEMBRINI 2", "lat": 44.0421, "lon": 12.5891, "nota": "",
                "belfiore": "H294", "foglio_catasto": "99", "mappale": "2330", "istat": "099014"}
+# Rimini, ospedale Infermi (forme semplificate dei dati veri del 17/11/2026): l'accesso «2» nella particella 2330 a sud,
+# «2/B» nella piccola 2476, «2/O» nella particella n. 1 dell'ospedale (~10 ettari)
+OSPEDALE = [(12.5852, 44.0447), (12.5909, 44.0447), (12.5909, 44.0489), (12.5852, 44.0489)]
+XML_OSPEDALE = _wfs(_particella("H294_009900.1", OSPEDALE))
 
 
-def test_arricchisci_civico():
+def _wfs_rimini(chiamate):
+    def wfs(par):
+        chiamate.append(par)
+        s, o, n, e = map(float, par["BBOX"].split(","))
+        return XML_OSPEDALE if s > 44.044 else XML
+    return wfs
+
+
+def _idx_rimini(con_o=True):
+    righe = [("099014", "H294", "VIALE LUIGI SETTEMBRINI", 2, "", 44.0421, 12.5891, 4),
+             ("099014", "H294", "VIALE LUIGI SETTEMBRINI", 2, "B", 44.0421, 12.5904, 4),
+             ("099014", "H294", "VIALE LUIGI SETTEMBRINI", 2, "C", 44.0421, 12.5904, 4)]       # stesso punto: una chiamata
+    if con_o:
+        righe.append(("099014", "H294", "VIALE LUIGI SETTEMBRINI", 2, "O", 44.047484, 12.589041, 4))
+    righe.append(("099014", "H294", "VIALE LUIGI SETTEMBRINI", 2, "Z", 44.0600, 12.6200, 4))        # oltre 600 m: no
+    return Indirizzario(pd.DataFrame(righe, columns=["istat", "belfiore", "odonimo", "civico", "esponente", "lat", "lon",
+                                                     "metodo"]))
+
+
+def test_arricchisci_civico_particella_piu_grande():
+    """Scelta B (Paolo, 17/11/2026): fra le particelle degli accessi 2, 2/B, 2/O vince la n. 1 dell'ospedale."""
     chiamate = []
-    e = L.arricchisci(RIGA_CIVICO, "099014", "H294", _idx(), lambda p: chiamate.append(p) or XML, None)
-    assert e["luogo_tipo"] == "particella" and e["particella_ade"]["mappale"] == "2330"
-    assert e["luogo_fonte"] == L.ATTRIBUZIONE_CATASTO and not e["scegli_via"] and e["luogo_avviso"] == ""
-    p = L.leggi_wfs(XML)[0]
-    assert p.contiene(e["luogo_lon"], e["luogo_lat"])
-    # riquadro: la particella più gli altri accessi del civico 2 (2/B, 2/O) entro 600 m
-    assert e["luogo_riquadro"] == pytest.approx([12.5890, 44.0420, 12.5900, 44.043703])
-    assert len(chiamate) == 1
+    e = L.arricchisci(RIGA_CIVICO, "099014", "H294", _idx_rimini(), _wfs_rimini(chiamate), None)
+    assert e["luogo_regola"] == "particella_piu_grande_del_civico"
+    assert e["particella_ade"]["mappale"] == "1" and e["particella_ade"]["area_m2"] > 100_000
+    assert e["luogo_riquadro"] == pytest.approx([12.5852, 44.0447, 12.5909, 44.0489])
+    o = L.leggi_wfs(XML_OSPEDALE)[0]
+    assert o.contiene(e["luogo_lon"], e["luogo_lat"]) and e["luogo_fonte"] == L.ATTRIBUZIONE_CATASTO
+    assert len(chiamate) == 3                     # «2», «2/B» (2/C nello stesso punto), «2/O»; mai quello a 2 km
+
+
+def test_arricchisci_civico_un_accesso_o_con_esponente():
+    chiamate = []
+    e = L.arricchisci(RIGA_CIVICO, "099014", "H294", _idx_rimini(con_o=False), _wfs_rimini(chiamate), None)
+    assert e["luogo_regola"] == "particella_piu_grande_del_civico" and e["particella_ade"]["mappale"] == "2330"
+    idx1 = Indirizzario(pd.DataFrame([("099014", "H294", "VIALE LUIGI SETTEMBRINI", 2, "", 44.0421, 12.5891, 4)],
+                                     columns=["istat", "belfiore", "odonimo", "civico", "esponente", "lat", "lon", "metodo"]))
+    chiamate = []
+    e = L.arricchisci(RIGA_CIVICO, "099014", "H294", idx1, _wfs_rimini(chiamate), None)
+    assert e["luogo_regola"] == "particella_del_civico" and e["particella_ade"]["mappale"] == "2330" and len(chiamate) == 1
+    # «2/B» scritto: la particella di quell'accesso, non la più grande
+    riga = {**RIGA_CIVICO, "indirizzo": "via Settembrini 2/B", "indirizzo_trovato": "VIALE LUIGI SETTEMBRINI 2/B",
+            "lat": 44.0421, "lon": 12.5904}
+    chiamate = []
+    e = L.arricchisci(riga, "099014", "H294", _idx_rimini(), _wfs_rimini(chiamate), None)
+    assert e["luogo_regola"] == "particella_dell_accesso" and e["particella_ade"]["mappale"] == "2476" and len(chiamate) == 1
+    # foglio e particella (o punto di Zornade): la particella del punto
+    e = L.arricchisci({**RIGA_CIVICO, "metodo": "catasto"}, "099014", "H294", _idx_rimini(), _wfs_rimini([]), None)
+    assert e["luogo_regola"] == "particella_del_punto" and e["particella_ade"]["mappale"] == "2330"
 
 
 def test_arricchisci_senza_fonti_o_con_errori():
     e = L.arricchisci(RIGA_CIVICO, "099014", "H294", _idx(), lambda p: (_ for _ in ()).throw(OSError("giù")), None)
+    assert e["luogo_regola"] is None
     assert e["luogo_tipo"] is None and "cartografia catastale non disponibile" in e["luogo_avviso"]
     e = L.arricchisci(RIGA_CIVICO, "099014", "H294", _idx(), lambda p: _wfs(), None)
     assert e["luogo_tipo"] is None and "nessuna particella" in e["luogo_avviso"]
@@ -234,6 +275,7 @@ def test_arricchisci_via_senza_civico():
             "lon": 12.595, "nota": "civico non indicato: usato il 210 di VIA CORIANO"}
     e = L.arricchisci(riga, "099014", "H294", _idx(), lambda p: pytest.fail("niente WFS per una via"), lambda q: OSM_RIMINI)
     assert e["luogo_tipo"] == "via" and e["via_scelta"]["nome"] == "Via Coriano" and not e["scegli_via"]
+    assert e["luogo_regola"] == "meta_della_via"
     assert e["luogo_fonte"] == L.ATTRIBUZIONE_OSM and e["vie_candidate"][0]["etichetta"].startswith("VIA CORCIANO (")
     # Overpass giù: restano i civici ANNCSU (metà della spezzata dei civici), con l'avviso
     e = L.arricchisci(riga, "099014", "H294", _idx(), None, lambda q: None)

@@ -22,10 +22,11 @@ OSPEDALE = (12.5879, 44.0459)                  # ospedale Infermi (OpenStreetMap
 
 SETTEMBRINI = {"id": "1", "metodo": "indirizzo", "lat": 44.042903, "lon": 12.589748, "esito": "ok", "fonte_punto": "ANNCSU",
                "indirizzo_trovato": "VIALE LUIGI SETTEMBRINI 2", "comune_catasto": "RIMINI", "foglio_catasto": "99",
-               "mappale": "2330", "nota": "", "luogo_tipo": "particella", "luogo_lat": 44.0426521, "luogo_lon": 12.5897407,
-               "luogo_riquadro": [12.58901, 44.0422384, 12.5900934, 44.047484], "luogo_fonte": CATASTO, "luogo_avviso": "",
-               "particella_ade": {"riferimento": "H294_009900.2330", "foglio": "99", "mappale": "2330", "belfiore": "H294",
-                                  "area_m2": 3447}, "vie_candidate": [], "scegli_via": False, "via_scelta": None}
+               "mappale": "2330", "nota": "", "luogo_tipo": "particella", "luogo_lat": 44.0465629, "luogo_lon": 12.5879915,
+               "luogo_riquadro": [12.585209, 44.044708, 12.5909451, 44.0488949], "luogo_fonte": CATASTO, "luogo_avviso": "",
+               "luogo_regola": "particella_piu_grande_del_civico",
+               "particella_ade": {"riferimento": "H294_009900.1", "foglio": "99", "mappale": "1", "belfiore": "H294",
+                                  "area_m2": 105819}, "vie_candidate": [], "scegli_via": False, "via_scelta": None}
 CORIANO_SCELTA = {"nome": "Via Coriano", "tipo": "via", "lat": 44.0171787, "lon": 12.5939421,
                   "riquadro": [12.5758227, 43.9905919, 12.6040566, 44.0417247], "lunghezza_m": 8724, "fonte": OSM,
                   "punteggio": 1.05, "civici": 342, "etichetta": "Via Coriano (8,7 km, 342 civici)"}
@@ -72,10 +73,10 @@ def test_ortofoto_civico_particella_e_via(browser, base):
     pg.goto(base + "ortofoto.html?lat=44.0594&lon=12.5683&z=15")
     webgl(pg)
     attendi(pg, f"window.EUGENIO_ORTOFOTO && {ORTO}.mappa && {ORTO}.mappa.loaded() && !!document.getElementById('cerca-comune')", 30000)
-    # civico: segnaposto nella particella, particella e accessi del civico 2 nella vista, ospedale compreso
+    # civico con più accessi: segnaposto nella particella più grande (n. 1, l'ospedale), tutta nella vista (scelta B)
     pg.fill("#cerca-comune", "Rimini"); pg.fill("#cerca-via", "via Settembrini 2")
     pg.click("#cerca-indirizzo")
-    attendi(pg, f"/particella foglio 99, 2330/.test(document.getElementById('messaggio-cerca').textContent) && !{ORTO}.mappa.isMoving()")
+    attendi(pg, f"/particella foglio 99, 1 /.test(document.getElementById('messaggio-cerca').textContent) && !{ORTO}.mappa.isMoving()")
     assert 'name="luogo"' in mandati[0] and "\r\n\r\n1\r\n" in mandati[0]          # campo luogo=1 nella richiesta
     v = _vista(pg, ORTO)
     r = SETTEMBRINI["luogo_riquadro"]
@@ -83,9 +84,9 @@ def test_ortofoto_civico_particella_e_via(browser, base):
     assert _dentro(v["b"], *OSPEDALE), v                                        # prima restava fuori (zoom 17 sul «2»)
     assert v["zoom"] > 15.5, v
     seg = pg.evaluate(f"{ORTO}.mappa.getSource('cercato').serialize().data.features[0].geometry.coordinates")
-    assert seg == pytest.approx([12.5897407, 44.0426521])
+    assert seg == pytest.approx([12.5879915, 44.0465629])
     msg = pg.text_content("#messaggio-cerca")
-    assert CATASTO in msg and "ANNCSU" in msg and "(3447 m²)" in msg, msg
+    assert CATASTO in msg and "ANNCSU" in msg and "(105.819 m²), la più grande fra quelle degli accessi del civico" in msg, msg
     assert "Agenzia delle Entrate – Cartografia catastale" in pg.evaluate(f"{ORTO}.cercato")
     # via senza civico: centrata a metà della via, la via (8,7 km di strade) nella vista; «altre vie simili» da scegliere
     pg.fill("#cerca-via", "via Coriano")

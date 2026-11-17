@@ -76,6 +76,7 @@ def test_civico_particella_e_copia(fonti):
     LG.arricchisci(righe, "Rimini", COMUNI, None)
     r = righe[0]
     assert r["luogo_tipo"] == "particella" and r["particella_ade"]["riferimento"] == "H294_009900.2330"
+    assert r["luogo_regola"] == "particella_del_civico"                 # senza ANNCSU nessun altro accesso
     assert r["lat"] == 44.0425 and r["esito"] == "ok"                    # nessun campo tolto o cambiato
     assert r["luogo_riquadro"] == pytest.approx([12.5890, 44.0420, 12.5900, 44.0430])
     url, par = fonti["wfs"][0]

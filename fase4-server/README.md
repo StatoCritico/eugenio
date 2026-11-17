@@ -32,7 +32,7 @@ via Coriano: 8,7 km di strada, a zoom 17 se ne vedono ~800 m), con una via inesi
 
 **Ora** la pagina manda anche il campo `luogo=1`; con una sola riga e `LUOGO=true` la rotta, dopo la geolocalizzazione di
 sempre, chiama `servizio/luogo.py` (logica in `fase7-territorio/territorio/luogo.py`) e aggiunge alla riga (nessun campo
-tolto o cambiato): `luogo_tipo` (`particella`, `via`, `località` o null), `luogo_lat`, `luogo_lon` (segnaposto),
+tolto o cambiato): `luogo_regola`, `luogo_tipo` (`particella`, `via`, `località` o null), `luogo_lat`, `luogo_lon` (segnaposto),
 `luogo_riquadro` ([ovest, sud, est, nord] da inquadrare), `luogo_fonte`, `luogo_avviso` (testo breve se una fonte non
 risponde), `particella_ade` (riferimento, foglio, mappale, superficie, riquadro, distanza), `vie_candidate` (vie e località
 fra cui scegliere, con `etichetta`), `scegli_via`, `via_scelta`; `fonti` della risposta comprende le fonti nuove.
@@ -40,8 +40,14 @@ fra cui scegliere, con `etichetta`), `scegli_via`, `via_scelta`; `fonti` della r
   servizio WFS INSPIRE** (`CATASTO_WFS_URL`, CC BY 4.0, nessuna chiave: stesso ente e licenza del WMS dello strato
   «Particelle»): una GetFeature su un quadrato di 30 m attorno al punto; particelle «STRADA…» e «ACQUA…» escluse; punto
   sulla strada → la particella più vicina entro 15 m, preferendo quella scelta da Zornade. Segnaposto su un **punto interno
-  garantito** (baricentro, o centro del tratto interno più largo per le particelle a L); riquadro della particella più gli
-  altri accessi dello stesso civico entro 600 m (2, 2/B … 2/O: complessi come l'ospedale).
+  garantito** (baricentro, o centro del tratto interno più largo per le particelle a L); riquadro della particella (la pagina
+  aggiunge il margine). **Civico con più accessi** ANNCSU (2, 2/B … 2/O entro 600 m) cercato senza esponente: fra le
+  particelle che contengono gli accessi **la più grande** (decisione di Paolo del 17/11/2026, «scelta B»: a Rimini, viale
+  Settembrini 2, la particella n. 1 dell'ospedale Infermi, 10,6 ettari, non quella dell'accesso «2» all'angolo sud); una
+  chiamata al WFS per accesso non già coperto (al più 16; la prima volta fino a ~15 s, poi dalla copia). Un solo accesso, o
+  l'esponente scritto («2/B»): la particella di quell'accesso. Campo `luogo_regola`: `particella_piu_grande_del_civico`,
+  `particella_del_civico`, `particella_dell_accesso`, `particella_del_punto` (foglio e particella, coordinate, punto di
+  Zornade), `meta_della_via`, `località`.
 - **Via senza civico**: strade di OpenStreetMap con quel nome nel comune da **Overpass** (filtro su `ref:ISTAT` e sulle
   parole del nome, solo `highway` stradali: niente sentieri e ciclabili; con le località `place`) più i civici ANNCSU della
   via; **metà della lunghezza** lungo la via (catena dei tratti, o il punto che lascia metà della lunghezza da ciascuna parte
