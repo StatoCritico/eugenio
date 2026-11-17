@@ -6,6 +6,8 @@
       scarica l'indirizzario ANNCSU (mensile, CC BY 4.0) e lo salva come anncsu_civici.parquet
   immobili-pa --dest CARTELLA [--anno 2023] [--regioni-ade LOMBARDIA,UMBRIA]
       immobili delle PA (censimento MEF, CC BY 4.0) con i confini della particella (cartografia AdE, CC BY 4.0)
+  immobili-pa-sito --dest CARTELLA --tessere CARTELLA_EDIFICI/immobili_pa --indice DATI/immobili_pa [--anno 2023]
+      tessere (PMTiles, serve tippecanoe) e indice di ricerca (SQLite) per Territorio › Edifici pubblici
 
 La chiave Zornade si legge da ZORNADE_API_KEY (variabile d'ambiente) o da --chiave-file.
 """
@@ -20,7 +22,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import anncsu, immobili_pa, patrimonio
+from . import anncsu, immobili_pa, immobili_pa_sito, patrimonio
 from .zornade import Zornade
 
 
@@ -31,7 +33,7 @@ def _comuni(percorso: str) -> pd.DataFrame:
 def main(argv=None):
     p = argparse.ArgumentParser(prog="territorio", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("comando", choices=["patrimonio", "anncsu-scarica", "immobili-pa"])
+    p.add_argument("comando", choices=["patrimonio", "anncsu-scarica", "immobili-pa", "immobili-pa-sito"])
     p.add_argument("file", nargs="?", help="patrimonio: CSV degli edifici")
     p.add_argument("--comuni", help="comuni.parquet o comuni.json della fase 3")
     p.add_argument("--anncsu", help="patrimonio: anncsu_civici.parquet (prima fonte per gli indirizzi)")
@@ -44,9 +46,18 @@ def main(argv=None):
     p.add_argument("--zip", help="anncsu-scarica: usa uno ZIP già scaricato invece di scaricarlo")
     p.add_argument("--anno", type=int, default=2023, help="immobili-pa: anno dei dati MEF (ultimo pubblicato: 2023)")
     p.add_argument("--regioni-ade", help="immobili-pa: solo questi ZIP regionali AdE (es. UMBRIA,VALLE-AOSTA)")
+    p.add_argument("--tessere", help="immobili-pa-sito: cartella del PMTiles (sul server CARTELLA_EDIFICI/immobili_pa)")
+    p.add_argument("--indice", help="immobili-pa-sito: cartella dell'indice SQLite (sul server /srv/energia/dati/immobili_pa)")
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
+
+    if a.comando == "immobili-pa-sito":
+        if not (a.dest and a.tessere and a.indice):
+            p.error("immobili-pa-sito richiede --dest, --tessere e --indice")
+        print(immobili_pa_sito.prepara(Path(a.dest), a.anno, Path(a.tessere), Path(a.indice),
+                                       immobili_pa.ATTRIBUZIONE.format(anno=a.anno)))
+        return 0
 
     if a.comando == "immobili-pa":
         if not a.dest:

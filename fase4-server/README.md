@@ -788,6 +788,24 @@ consecutivi, una volta per serie di giorni, con i conteggi e la strada per blocc
 Tools → IP Access Rules). I conteggi si cancellano dopo `AVVISO_429_CONSERVA_GIORNI` (7) giorni, come dice
 l'informativa privacy.
 
+## Immobili delle Pubbliche Amministrazioni (17/11/2026, `?v=20261117a`)
+
+Rotte di `servizio/immobili_pa.py` per **Territorio › Edifici pubblici** (fase 5) e per la nota degli edifici pubblici in
+Modelli 3D. Leggono in sola lettura l'indice SQLite `DATI/immobili_pa/immobili_pa_<anno>.sqlite` (il più recente),
+preparato dalla fase 7 (`python -m territorio immobili-pa-sito`): nessun dato in memoria, una connessione per richiesta.
+
+| Rotta | Cosa dà |
+|---|---|
+| `GET /api/immobili-pa/info` | anno, conteggi, attribuzione, PMTiles, gruppi di enti; `{"disponibile": false}` se l'indice manca |
+| `GET /api/immobili-pa/cerca?q=…&gruppo=…&limite=…` | ricerca a parole (FTS5, ogni parola come prefisso, tutte obbligatorie, al massimo 50 risultati) |
+| `GET /api/immobili-pa/particella/{ref}` | particella (centro, riquadro, area) e beni (al massimo 500) |
+| `GET /api/immobili-pa/bene/{id_bene}` | un bene, anche senza particella |
+
+Limite per IP `immobili_pa`: 1.200 richieste all'ora (`protezione.LIMITI`). Le tessere della mappa non passano dall'API:
+sono il PMTiles statico `immobili_pa_<anno>.pmtiles` nella cartella degli archivi edifici (`CARTELLA_EDIFICI/immobili_pa/`,
+servita da Caddy in `/edifici3d/immobili_pa/`, con `indice.json` riconvalidato sempre). L'indice non contiene il soggetto
+cedente né codici fiscali. Test: `tests/test_immobili_pa.py`.
+
 ## Edifici 3D (fase 10, dal 04/11/2026)
 
 - `servizio/edifici.py`: le due rotte `/api/edifici/…` qui sopra (limite delle rotte dei dati, nessun dato di mercato,

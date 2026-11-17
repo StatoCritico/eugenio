@@ -14,11 +14,23 @@
 #   collegamenti { testo, indirizzo } (pagina del sito, articolo, release su GitHub)
 # Decisione di Paolo dell'08/11/2026: solo lo sviluppo delle funzioni per gli utenti. **Niente modifiche interne**
 # (protezione e verifica anti-robot, menu, file per gli agenti AI, copie e versioni, server, test, licenze tecniche).
-# Linguaggio semplice, frasi brevi, il nome della pagina con il gruppo del menu («Patrimonio › Modelli 3D»), niente gergo.
+# Linguaggio semplice, frasi brevi, il nome della pagina con il gruppo del menu («Territorio › Modelli 3D»; fino al 16/11/2026 il gruppo si chiamava Patrimonio), niente gergo.
 # Una pubblicazione senza novità per gli utenti non ha voce (la sua sostanza, se c'è, va nella voce successiva).
 # Regola permanente: a ogni pubblicazione una voce qui, insieme ad AGGIORNAMENTO_<data>.md, EUGENIO_PER_AGENTI.md e
 # llms.txt, e la release su GitHub con lo stesso testo (tag v<aaaa>.<mm>.<gg>).
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
+
+[[voce]]
+data = "2026-11-17"
+versione = "20261117a"
+titolo = "Edifici pubblici: gli immobili delle Pubbliche Amministrazioni sulla mappa"
+nuovo = [
+  "Territorio › Edifici pubblici: gli edifici e i terreni di Comuni, Regioni, ASL, Università, Stato e altri enti (censimento del MEF «Patrimonio della PA», dati al 31/12/2023), disegnati con i confini della loro particella catastale sopra l'ortofoto. Si cercano per ente, comune, indirizzo, tipologia o dati catastali; edifici, terreni e gruppi di enti si accendono e si spengono; un clic apre la scheda con tipologia, superficie, epoca e utilizzo dichiarati.",
+  "Territorio › Modelli 3D: gli edifici pubblici sono retinati a righe oblique, sia nella mappa sia nella vista 3D (casella «Edifici pubblici» tra i livelli). Scelto un edificio pubblico, sotto compaiono l'ente e il collegamento alla sua scheda.",
+]
+collegamenti = [
+  { testo = "Edifici pubblici", indirizzo = "edifici-pubblici.html" },
+]
 
 [[voce]]
 data = "2026-11-16"
