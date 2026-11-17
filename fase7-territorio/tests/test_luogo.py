@@ -209,11 +209,22 @@ OSPEDALE = [(12.5852, 44.0447), (12.5909, 44.0447), (12.5909, 44.0489), (12.5852
 XML_OSPEDALE = _wfs(_particella("H294_009900.1", OSPEDALE))
 
 
-def _wfs_rimini(chiamate):
+PARTICELLE_RIMINI = [("H294_009900.2330", ELLE), ("H294_009900.2476", PICCOLA), ("H294_009900.STRADA002", STRADA),
+                     ("H294_009900.1", OSPEDALE)]
+
+
+def _wfs_rimini(chiamate, rifiuta_riquadro=False):
+    """WFS finto: le particelle il cui riquadro tocca il BBOX chiesto (come il servizio vero); con rifiuta_riquadro le
+    richieste grandi hanno «Richiesta non valida» (ServiceExceptionReport, come capita al servizio dell'Agenzia)."""
     def wfs(par):
         chiamate.append(par)
         s, o, n, e = map(float, par["BBOX"].split(","))
-        return XML_OSPEDALE if s > 44.044 else XML
+        if rifiuta_riquadro and n - s > 0.001:
+            return ('<?xml version="1.0"?><ServiceExceptionReport version="1.1.1"><ServiceException code="InvalidFormat">'
+                    '<![CDATA[Richiesta non valida ]]></ServiceException></ServiceExceptionReport>')
+        dentro = [(r, a) for r, a in PARTICELLE_RIMINI
+                  if min(x for x, _ in a) <= e and max(x for x, _ in a) >= o and min(y for _, y in a) <= n and max(y for _, y in a) >= s]
+        return _wfs(*[_particella(r, a) for r, a in dentro])
     return wfs
 
 
@@ -237,7 +248,42 @@ def test_arricchisci_civico_particella_piu_grande():
     assert e["luogo_riquadro"] == pytest.approx([12.5852, 44.0447, 12.5909, 44.0489])
     o = L.leggi_wfs(XML_OSPEDALE)[0]
     assert o.contiene(e["luogo_lon"], e["luogo_lat"]) and e["luogo_fonte"] == L.ATTRIBUZIONE_CATASTO
-    assert len(chiamate) == 3                     # «2», «2/B» (2/C nello stesso punto), «2/O»; mai quello a 2 km
+    assert len(chiamate) == 1 and e["particella_ade"]["richiesta_wfs"] == "riquadro"   # una sola richiesta per tutti
+    s, o, n, x = map(float, chiamate[0]["BBOX"].split(","))
+    assert n < 44.0480 and x < 12.5910 and s > 44.0418 and o > 12.5885                   # accessi + 20 m, non quello a 2 km
+    assert e["particella_ade"]["accessi"] == 3                                           # 2, 2/B (= 2/C), 2/O
+
+
+def test_particella_piu_grande_ripiego_per_accesso():
+    """Riquadro rifiutato dal WFS (o troppo grande): una richiesta per accesso, al più 4 insieme; stesso risultato."""
+    import threading
+    import time
+    chiamate, insieme, massimo, lock = [], [0], [0], threading.Lock()
+    base = _wfs_rimini(chiamate, rifiuta_riquadro=True)
+
+    def wfs(par):
+        with lock:
+            insieme[0] += 1
+            massimo[0] = max(massimo[0], insieme[0])
+        time.sleep(0.02)
+        try:
+            return base(par)
+        finally:
+            with lock:
+                insieme[0] -= 1
+    e = L.arricchisci(RIGA_CIVICO, "099014", "H294", _idx_rimini(), wfs, None)
+    assert e["particella_ade"]["mappale"] == "1" and e["particella_ade"]["richiesta_wfs"] == "per_accesso"
+    assert len(chiamate) == 2 + 3 and massimo[0] <= L.PARALLELE      # riquadro due volte, poi i 3 accessi
+    # riquadro oltre il lato massimo: niente richiesta unica
+    punti = [(12.5891, 44.0421), (12.5960, 44.0470)]                  # ~560 m × 545 m + margini: ancora uno solo
+    _, modo, _ = L.particelle_degli_accessi(punti, _wfs_rimini([]))
+    assert modo == "riquadro"
+    chiamate = []
+    _, modo, _ = L.particelle_degli_accessi(punti, _wfs_rimini(chiamate), lato_max_m=300)
+    assert modo == "per_accesso" and len(chiamate) == 2
+    # risposta troncata (numberMatched > numberReturned): ripiego
+    tronca = lambda par: '<wfs:FeatureCollection numberMatched="900" numberReturned="500"></wfs:FeatureCollection>'  # noqa: E731
+    assert not L.completo(tronca(None)) and L.completo(XML)
 
 
 def test_arricchisci_civico_un_accesso_o_con_esponente():

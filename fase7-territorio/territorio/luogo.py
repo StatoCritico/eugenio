@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import math
 import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
 from .anncsu import Indirizzario, Via, _punteggio, normalizza, scomponi_via
@@ -44,7 +45,11 @@ ATTRIBUZIONE_OSM = "© OpenStreetMap contributors (ODbL 1.0)"
 ATTRIBUZIONE_ANNCSU = "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)"
 RAGGIO_M = 15          # punto sulla strada: particella edificata più vicina entro questa distanza
 COMPLESSO_M = 600      # altri accessi dello stesso civico considerati (particella più grande del civico)
-MAX_ACCESSI = 16       # al più tante chiamate in più al WFS per un civico con molti accessi
+MAX_ACCESSI = 16       # accessi dello stesso civico considerati al più
+MARGINE_ACCESSI_M = 20 # margine del riquadro unico attorno agli accessi
+LATO_MAX_M = 640       # riquadro unico al più così (600 m + margini); oltre, una richiesta per accesso
+PARALLELE = 4          # richieste per accesso insieme, al più
+COUNT_RIQUADRO = 500   # particelle chieste al WFS nel riquadro unico
 GRUPPO_M = 1000        # tratti con lo stesso nome più lontani di così: vie diverse (frazioni)
 GRUPPO_CIVICI_M = 1500 # come sopra, per i soli civici ANNCSU (più radi delle linee)
 MAX_SCELTE = 6
@@ -185,6 +190,65 @@ def parametri_wfs(lat: float, lon: float, metri: float = RAGGIO_M) -> dict:
     s, o, n, e = riquadro_intorno(lat, lon, metri)
     return {"SERVICE": "WFS", "VERSION": "2.0.0", "REQUEST": "GetFeature", "TYPENAMES": "CP:CadastralParcel",
             "BBOX": f"{s:.6f},{o:.6f},{n:.6f},{e:.6f}", "COUNT": "60"}
+
+
+def parametri_wfs_riquadro(s: float, o: float, n: float, e: float, count: int = COUNT_RIQUADRO) -> dict:
+    return {"SERVICE": "WFS", "VERSION": "2.0.0", "REQUEST": "GetFeature", "TYPENAMES": "CP:CadastralParcel",
+            "BBOX": f"{s:.6f},{o:.6f},{n:.6f},{e:.6f}", "COUNT": str(count)}
+
+
+def completo(xml: str | bytes | None) -> bool:
+    """Risposta GetFeature valida e con tutte le particelle (numberMatched ≤ numberReturned): il WFS dell'Agenzia risponde a
+    volte «Richiesta non valida» (ServiceExceptionReport), e con COUNT tronca."""
+    if not xml:
+        return False
+    t = xml.decode("utf-8", "replace") if isinstance(xml, bytes) else xml
+    if "FeatureCollection" not in t[:2000]:
+        return False
+    m = re.search(r'numberMatched="(\d+)"\s+numberReturned="(\d+)"', t[:3000])
+    return not m or int(m.group(1)) <= int(m.group(2))
+
+
+def particelle_degli_accessi(punti: list[tuple[float, float]], wfs, preferita: dict | None = None,
+                             margine_m: float = MARGINE_ACCESSI_M, lato_max_m: float = LATO_MAX_M,
+                             parallele: int = PARALLELE) -> tuple[dict, str, int]:
+    """Particella di ogni accesso (lon, lat): {(lon, lat): (Particella, distanza) o None}, il modo usato («riquadro» o
+    «per_accesso») e quante richieste sono fallite. Una sola richiesta
+    al WFS con il riquadro degli accessi più margine_m (assegnazione in locale); se il riquadro supera lato_max_m o la
+    risposta non è valida o completa, una richiesta per accesso, al più `parallele` insieme. Il primo punto è l'accesso
+    cercato: per lui vale anche la particella preferita (Zornade)."""
+    punti = list(dict.fromkeys(punti))
+    lat0 = sum(y for _, y in punti) / len(punti)
+    kx, ky = _scala(lat0)
+    o, s = min(x for x, _ in punti) - margine_m / kx, min(y for _, y in punti) - margine_m / ky
+    e, n = max(x for x, _ in punti) + margine_m / kx, max(y for _, y in punti) + margine_m / ky
+
+    def assegna(particelle, x, y, i):
+        q, d = scegli_particella(particelle, y, x, preferita if i == 0 else None)
+        return (q, d) if q is not None else None
+    if (e - o) * kx <= lato_max_m and (n - s) * ky <= lato_max_m:
+        for _ in range(2):          # il WFS dell'Agenzia rifiuta a volte («Richiesta non valida») e poi risponde: un secondo tentativo
+            try:
+                xml = wfs(parametri_wfs_riquadro(s, o, n, e))
+            except Exception:   # noqa: BLE001
+                xml = None
+            if completo(xml):
+                particelle = leggi_wfs(xml)
+                return {pt: assegna(particelle, *pt, i) for i, pt in enumerate(punti)}, "riquadro", 0
+
+    def uno(ip):
+        i, (x, y) = ip
+        try:
+            xml = wfs(parametri_wfs(y, x))
+        except Exception:   # noqa: BLE001
+            xml = None
+        if not completo(xml):
+            return "errore"
+        return assegna(leggi_wfs(xml), x, y, i)
+    with ThreadPoolExecutor(max_workers=max(1, parallele)) as ex:
+        esiti = list(ex.map(uno, enumerate(punti)))
+    errori = sum(v == "errore" for v in esiti)
+    return {pt: (None if v == "errore" else v) for pt, v in zip(punti, esiti)}, "per_accesso", errori
 
 
 def _stessa(p: Particella, belfiore, foglio, mappale) -> bool:
@@ -626,21 +690,8 @@ def arricchisci(riga: dict, istat: str | None = None, belfiore: str | None = Non
         out["luogo_avviso"] = "; ".join(avvisi)
         return out
     guasto = []
-
-    def particelle_in(la: float, lo: float) -> list[Particella]:
-        try:
-            xml = wfs(parametri_wfs(la, lo))
-        except Exception:   # noqa: BLE001
-            xml = None
-        if xml is None:
-            guasto.append(1)
-            return []
-        return leggi_wfs(xml)
-
-    particelle = particelle_in(lat, lon)
     preferita = {"belfiore": riga.get("belfiore"), "foglio": riga.get("foglio_catasto"), "mappale": riga.get("mappale")}
-    p, d = scegli_particella(particelle, lat, lon, preferita)
-    regola = "particella_del_punto"
+    regola, accessi = "particella_del_punto", []
     # (17/11/2026, decisione di Paolo, scelta B) civico ANNCSU senza esponente con più accessi (2, 2/B … 2/O entro
     # COMPLESSO_M): la particella più grande fra quelle che li contengono (l'ospedale Infermi, non l'angolo sud)
     trovato = str(riga.get("indirizzo_trovato") or "")
@@ -649,24 +700,31 @@ def arricchisci(riga: dict, istat: str | None = None, belfiore: str | None = Non
             regola = "particella_dell_accesso"
         else:
             regola = "particella_del_civico"
-            accessi = []
             if idx is not None and istat:
                 odonimo, civico_trovato = trovato.rsplit(" ", 1)
                 try:
                     accessi = vicini_entro(idx.accessi(istat, belfiore, odonimo, civico_trovato.split("/")[0]), lat, lon)
                 except Exception:   # noqa: BLE001
                     accessi = []
-            if len(accessi) >= 2:
-                trovate = {p.riferimento: (p, d)} if p is not None else {}
-                for x, y in accessi[:MAX_ACCESSI]:
-                    if math.hypot(x - lon, y - lat) < 1e-7 or any(q.contiene(x, y) for q, _ in trovate.values()):
-                        continue
-                    q, dq = scegli_particella(particelle_in(y, x), y, x)
-                    if q is not None:
-                        trovate.setdefault(q.riferimento, (q, dq))
-                if trovate:
-                    p, d = max(trovate.values(), key=lambda v: v[0].area_m2())
-                    regola = "particella_piu_grande_del_civico"
+    p, d, modo = None, 0.0, None
+    if len(accessi) >= 2:
+        punti = [(lon, lat)] + [a for a in accessi if a != (lon, lat)][:MAX_ACCESSI - 1]
+        esiti, modo, errori = particelle_degli_accessi(punti, wfs, preferita)
+        trovate = {v[0].riferimento: v for v in esiti.values() if v}
+        if trovate:
+            p, d = max(trovate.values(), key=lambda v: v[0].area_m2())
+            regola = "particella_piu_grande_del_civico"
+        elif errori == len(punti):
+            guasto.append(1)
+    else:
+        try:
+            xml = wfs(parametri_wfs(lat, lon))
+        except Exception:   # noqa: BLE001
+            xml = None
+        if xml is None:
+            guasto.append(1)
+        else:
+            p, d = scegli_particella(leggi_wfs(xml), lat, lon, preferita)
     if guasto and p is None:
         avvisi.append("cartografia catastale non disponibile ora: mappa sul punto dell'indirizzo")
     if p is None:
@@ -676,5 +734,7 @@ def arricchisci(riga: dict, istat: str | None = None, belfiore: str | None = Non
         return out
     out.update(esito_particella(p, d))
     out["luogo_regola"] = regola
+    if modo:
+        out["particella_ade"].update({"accessi": len(punti), "richiesta_wfs": modo})
     out["luogo_avviso"] = "; ".join(avvisi)
     return out

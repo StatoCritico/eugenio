@@ -43,8 +43,12 @@ fra cui scegliere, con `etichetta`), `scegli_via`, `via_scelta`; `fonti` della r
   garantito** (baricentro, o centro del tratto interno più largo per le particelle a L); riquadro della particella (la pagina
   aggiunge il margine). **Civico con più accessi** ANNCSU (2, 2/B … 2/O entro 600 m) cercato senza esponente: fra le
   particelle che contengono gli accessi **la più grande** (decisione di Paolo del 17/11/2026, «scelta B»: a Rimini, viale
-  Settembrini 2, la particella n. 1 dell'ospedale Infermi, 10,6 ettari, non quella dell'accesso «2» all'angolo sud); una
-  chiamata al WFS per accesso non già coperto (al più 16; la prima volta fino a ~15 s, poi dalla copia). Un solo accesso, o
+  Settembrini 2, la particella n. 1 dell'ospedale Infermi, 10,6 ettari, non quella dell'accesso «2» all'angolo sud); **una
+  sola** GetFeature sul riquadro degli accessi più 20 m (COUNT 500), accessi assegnati alle particelle in locale; se il
+  riquadro supera 640 m di lato, o il WFS lo rifiuta due volte («Richiesta non valida», capita a tratti) o lo tronca, una
+  richiesta per accesso, al più 4 insieme (al più 16 accessi). `particella_ade` porta `accessi` e `richiesta_wfs`
+  (`riquadro` o `per_accesso`). Prova dal vivo del 17/11/2026: 0,8–5,4 s (1–2 richieste) contro 11,7–14,5 s (15 richieste in
+  fila) della prima versione; il ripiego per accesso 4,8–7,9 s. Un solo accesso, o
   l'esponente scritto («2/B»): la particella di quell'accesso. Campo `luogo_regola`: `particella_piu_grande_del_civico`,
   `particella_del_civico`, `particella_dell_accesso`, `particella_del_punto` (foglio e particella, coordinate, punto di
   Zornade), `meta_della_via`, `località`.

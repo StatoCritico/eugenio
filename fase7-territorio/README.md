@@ -231,7 +231,9 @@ inquadrare (campi nel README della fase 4). Nessuna rete nel modulo: riceve le f
   interno garantito (baricentro se dentro, altrimenti il centro del tratto interno più largo), superficie, riquadro. Civico
   con più accessi ANNCSU entro 600 m (`Indirizzario.accessi`: 2, 2/B … 2/O) e cercato senza esponente: **la particella più
   grande** fra quelle che contengono gli accessi (decisione di Paolo del 17/11/2026, «scelta B»); un solo accesso o
-  esponente scritto: la particella di quell'accesso. Regola in `luogo_regola`. Geometria in Python puro (niente shapely).
+  esponente scritto: la particella di quell'accesso. Regola in `luogo_regola`. Una sola richiesta al WFS con il riquadro
+  degli accessi più 20 m, assegnazione in locale; ripiego per accesso (al più 4 insieme) se il riquadro supera 640 m o il
+  WFS lo rifiuta o lo tronca (`particelle_degli_accessi`). Geometria in Python puro (niente shapely).
 - **Metà della via**: strade OSM con il nome (query Overpass su `ref:ISTAT` e sulle parole del nome, con accenti; solo strade,
   non sentieri né ciclabili; più le località `place`), confrontate con lo stesso punteggio dell'ANNCSU; tratti uniti in catene,
   metà della catena se è quasi tutta la via, altrimenti il punto che lascia metà della lunghezza da ciascuna parte lungo
@@ -253,7 +255,9 @@ Prove dal vivo del 17/11/2026 (ANNCSU del 02/11/2026, WFS dell'Agenzia e Overpas
 Per via Coriano il civico mediano dell'ANNCSU cade già a ~150 m dalla metà: l'errore che si vedeva era lo zoom fisso 17 (si
 vedevano ~800 m di una via di ~6 km in linea d'aria, e gli edifici grandi più a sud-ovest restavano fuori); ora la via si
 vede tutta. Tempi: 2–4 s per ricerca senza copia (WFS ~1 s, Overpass 1–3 s); un civico con molti accessi come il 2 di
-viale Settembrini ~15 s la prima volta (una chiamata al WFS per accesso), poi dalla copia del server.
+viale Settembrini 0,8–5,4 s con la richiesta unica sul riquadro (prima versione, una richiesta per accesso: 11,7–14,5 s);
+il WFS rifiuta a tratti il riquadro («Richiesta non valida», di solito dopo raffiche di richieste): secondo tentativo,
+poi ripiego per accesso (4,8–7,9 s).
 
 ## Dati climatici per la Legge 10
 
@@ -277,5 +281,5 @@ di norma, che risalgono a serie storiche molto più vecchie) è attesa.
 ## Test
 
 ```powershell
-python -m pytest tests -q      # 31 test, nessuna chiamata di rete (Zornade, WFS catastale e Overpass simulati, ZIP ANNCSU costruito nel test)
+python -m pytest tests -q      # 32 test, nessuna chiamata di rete (Zornade, WFS catastale e Overpass simulati, ZIP ANNCSU costruito nel test)
 ```

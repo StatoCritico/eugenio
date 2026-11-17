@@ -15,7 +15,10 @@ Protezioni (come per le altre fonti esterne):
     limite «luogo» (LUOGO_ORA ricerche per IP all'ora);
   * tetti per tutto il sito: CATASTO_WFS_TETTO_ORA chiamate all'ora al WFS dell'Agenzia, e per Overpass lo stesso tetto del
     ripiego OSM (EDIFICI_OSM_TETTO_ORA, contatore «overpass» comune); oltre il tetto la ricerca resta com'era, con l'avviso;
-  * una chiamata alla volta per fonte, attesa del turno al più LUOGO_ATTESA_S secondi; chiamata al più LUOGO_TIMEOUT_S;
+  * al WFS di norma **una** chiamata per ricerca (per un civico con più accessi una sola GetFeature sul riquadro degli
+    accessi più 20 m, assegnati in locale; per accesso, al più 4 insieme, solo se il riquadro supera 640 m o il WFS lo
+    rifiuta); al più 4 chiamate al WFS insieme e una a Overpass per tutto il sito, attesa del turno al più LUOGO_ATTESA_S
+    secondi; chiamata al più LUOGO_TIMEOUT_S;
   * copia in memoria delle risposte (LUOGO_COPIA_ORE ore; al più COPIA_MAX voci): la stessa via o lo stesso punto non
     richiamano la fonte;
   * a Overpass va solo il codice ISTAT del comune e le parole del nome della via; al WFS un quadrato di 30 m (il punto del
@@ -35,7 +38,8 @@ from . import config as C, protezione as P, strati as S
 log = logging.getLogger(__name__)
 COPIA_MAX = 2000
 _copie: dict[str, OrderedDict] = {"wfs": OrderedDict(), "overpass": OrderedDict()}
-_turni = {"wfs": threading.Lock(), "overpass": threading.Lock()}
+# WFS: al più 4 chiamate insieme (ripiego per accesso di un civico con molti accessi); Overpass: una alla volta
+_turni = {"wfs": threading.BoundedSemaphore(4), "overpass": threading.Lock()}
 
 
 def _dalla_copia(fonte: str, chiave: str):
