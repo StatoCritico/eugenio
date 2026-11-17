@@ -211,3 +211,15 @@ def test_prodotti_del_sito(tmp_path: Path):
         return {k: len(v["features"]) for k, v in mvt.decode(gzip.decompress(d)).items()} if d else {}
     assert strati(16).get("particelle") == 2 and strati(13).get("particelle") == 2       # le due particelle di prova
     assert strati(10).get("punti") == 2 and "particelle" not in strati(10)
+
+
+def test_comando_immobili_pa_passa_il_percorso_a_componi(tmp_path, monkeypatch):
+    """Il comando passava a componi la tabella invece del percorso del parquet (errore sul server il 17/11)."""
+    from territorio import __main__ as cli
+    f = tmp_path / "mef_immobili_pa_2023.parquet"
+    pd.DataFrame({"id_bene": ["1"]}).to_parquet(f)
+    visti = {}
+    monkeypatch.setattr(ip, "scarica_poligoni", lambda dest, beni, reg: [])
+    monkeypatch.setattr(ip, "componi", lambda b, pol, dest, anno: visti.setdefault("b", b) and {})
+    assert cli.main(["immobili-pa", "--dest", str(tmp_path)]) == 0
+    assert visti["b"] == f

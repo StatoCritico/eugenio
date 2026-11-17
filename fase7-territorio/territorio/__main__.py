@@ -69,7 +69,8 @@ def main(argv=None):
         beni = pd.read_parquet(f, dtype_backend="pyarrow")
         reg = [x.strip().upper() for x in a.regioni_ade.split(",")] if a.regioni_ade else None
         pol = immobili_pa.scarica_poligoni(dest, beni, reg)
-        print(immobili_pa.componi(beni, pol, dest, a.anno))
+        del beni  # componi rilegge il parquet a pezzi: la tabella intera non serve più
+        print(immobili_pa.componi(f, pol, dest, a.anno))
         return 0
 
     if a.comando == "anncsu-scarica":
