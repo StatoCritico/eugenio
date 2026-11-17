@@ -1,7 +1,12 @@
-# Aggiornamento del 18/11/2026 – Stato della rete elettrica: servizio, database e rotte
+# Aggiornamento del 18/11/2026 – Rete elettrica, cabine primarie, ricerca degli indirizzi, ortofoto AGEA
 
-Parte **servizio** del lavoro «Stato della rete elettrica» e «Cabine primarie» (contratto comune del 17/11/2026). Le
-pagine e la tabella di raccordo arrivano con le altre due parti dello stesso aggiornamento.
+Release `v2026.11.18`, sito `?v=20261118a`. Contiene: pagine **Statistiche › Stato della rete elettrica** e
+**Fotovoltaico › Cabine primarie** con il servizio della rete (passi R1–R6), la **ricerca degli indirizzi** con particella
+e metà della via (R7), le **ortofoto AGEA 2022–2024** (R8), l'apertura di Costi energetici Sanità sull'Emilia-Romagna e il
+ringraziamento in Contributi (niente da fare sul server).
+
+**Prima**: se la release `v2026.11.17` (immobili delle PA) non è ancora stata installata, i suoi passi AI2–AI6 di
+`AGGIORNAMENTO_2026-11-17.md` valgono anche con questa release (il codice è compreso): R4 sostituisce AI2.
 
 ## Cosa cambia sul server
 
@@ -55,14 +60,14 @@ Cosa aspettarsi: una riga che comincia con `drwxrwxr-x+` e contiene `1000 1000` 
 che ci sono gli ACL). L'utente 1000 è quello dei container `api` e `worker`; `ubuntu` (1001) può copiarci la tabella.
 
 ### R3. [PC] Copia della tabella di raccordo
-Dalla cartella in cui hai estratto lo zip consegnato (file `raccordo_cp.csv` dell'agente dati):
+Dalla cartella in cui hai estratto `rete_elettrica_dati_2026-11-17.zip` (sottocartella `rete_elettrica_dati`):
 ```powershell
-cd C:\Users\ingpa\Documents\claude
+cd C:\Users\ingpa\Documents\claude\rete_elettrica_dati
 scp raccordo_cp.csv eugenio:/srv/energia/dati/rete/raccordo_cp.csv
 ssh eugenio "head -1 /srv/energia/dati/rete/raccordo_cp.csv; wc -l /srv/energia/dati/rete/raccordo_cp.csv"
 ```
 Cosa aspettarsi: `100%`, poi l'intestazione
-`cod_ac,gestore,cod_cp_ed,nome_cp_ed,comuni_serviti,osm_id,osm_nome,lat,lon,punteggio_nome,distanza_m,esito,data_raccordo,versione_ac`
+`cod_ac,gestore,cod_cp_ed,nome_cp_ed,comuni_serviti,osm_id,osm_nome,lat,lon,punteggio_nome,distanza_m,esito,data_raccordo,versione_ac,nota`
 e il numero di righe (circa 2.150 più l'intestazione). Il servizio rilegge il file da solo quando cambia: per una
 versione nuova basta ricopiarlo.
 
@@ -103,7 +108,7 @@ curl -s "https://eugenio.statocritico.it/api/rete/interruzioni/attive" | python3
 Cosa aspettarsi:
 - `stato`: `saturazione_aggiornata` e `interruzioni_aggiornate` con la data di oggi, `"province_mancanti": ["001"]`,
   `raccordo.righe` intorno a 2.150;
-- `comuni?regione=08`: `330 23`;
+- `comuni?regione=08`: circa `330` comuni e una ventina non concessionari;
 - `cabine?regione=08`: qualche centinaio di cabine, il numero di quelle senza posizione e `ODbL 1.0 – https://…`;
 - `interruzioni/attive`: il numero delle interruzioni in corso in Italia (di sera ~200).
 
@@ -111,3 +116,22 @@ Da quel momento: interruzioni ogni 15 minuti, saturazione ogni notte alle 01:15.
 di Paolo del 17/11) **solo** se le interruzioni non si leggono da più di 72 ore consecutive, oppure se più di 5 province
 non sono aggiornate con successo da più di 72 ore consecutive; una sola email per episodio, nessun'altra (Torino da sola
 non ne manda mai). Gli altri errori restano nel registro del worker (`docker compose logs worker`).
+
+### R7. [Server] Ricerca degli indirizzi: fonti raggiungibili
+La ricerca con particella e metà della via usa due servizi pubblici: il **WFS della cartografia catastale dell'Agenzia
+delle Entrate** e **Overpass** (OpenStreetMap). Senza, la ricerca torna come prima, con un avviso.
+```bash
+cd ~/energia/fase4-server
+docker compose exec api python -c "import urllib.request as u; print(u.urlopen('https://wfs.cartografia.agenziaentrate.gov.it/inspire/wfs/owfs01.php?service=WFS&request=GetCapabilities', timeout=20).status)"
+docker compose exec api python -c "import urllib.request as u; print(u.urlopen('https://overpass-api.de/api/status', timeout=20).status)"
+```
+Cosa aspettarsi: `200` e `200`. Se il primo indirizzo non è quello giusto, vale quello di `CATASTO_WFS_URL` nel README della
+fase 4 (§ «Ricerca di un luogo»). Poi, nel browser, Territorio › Ortofoto: cerca «Rimini, viale Settembrini 2» → la mappa
+inquadra l'ospedale Infermi (particella foglio 99 n. 1); cerca «Rimini, via Coriano» → si vede tutta la via.
+
+### R8. [Browser] Ortofoto AGEA
+Territorio › Ortofoto, scegli un comune fuori dall'Emilia-Romagna (es. Milano, Palermo): le tessere arrivano in meno di un
+secondo, sotto la mappa la citazione «AGEA – Agenzia per le Erogazioni in Agricoltura, ortofoto RGB 2024» (o 2022, 2023
+secondo la regione). Nessun passo sul server: la fonte è in `fase10-edifici3d/ortofoto/italia.toml`, già nell'immagine
+dell'api ricostruita in R4. Se compare «non risponde» su molte tessere, guarda `docker compose logs --since 10m api | grep
+-i agea` e dimmelo (ritmo verso AGEA: 10 al secondo, 8.000 all'ora per tutto il sito).

@@ -168,8 +168,10 @@ def test_celle_lidar_solo_quelle_che_esistono(browser, base, tmp_path, con_elenc
     pg.route("**/api/edifici/osm?*", lambda r: r.fulfill(status=200, content_type="application/json",
              body=json.dumps({"type": "FeatureCollection", "features": [], "corpi": 0})))
     pg.on("request", lambda r: lidar.append(r.url.split("/lidar/")[1]) if re.search(r"/lidar/(falde|alberi)/", r.url) else None)
-    # (gli archivi finti non hanno corpi.pmtiles: quelli veri sì)
-    pg.on("response", lambda r: errori_404.append(r.url) if "/edifici3d/" in r.url and r.status >= 400 and not r.url.endswith(".pmtiles") else None)
+    # (gli archivi finti non hanno corpi.pmtiles: quelli veri sì; dal 17/11/2026 Modelli 3D chiede anche l'indice facoltativo
+    # degli edifici pubblici, /edifici3d/immobili_pa/indice.json, che qui non c'è: senza, il retino resta spento, come voluto)
+    pg.on("response", lambda r: errori_404.append(r.url) if "/edifici3d/" in r.url and r.status >= 400 and not r.url.endswith(".pmtiles")
+          and "/edifici3d/immobili_pa/" not in r.url else None)
     pg.goto(base + "modelli3d.html")
     webgl(pg)
     attendi(pg, f"window.EUGENIO_EDIFICIO3D && {M3D}.mappa && {M3D}.lidar && {M3D}.archivi.filter((a) => !a.osm).length === 19", 30000)

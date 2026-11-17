@@ -275,6 +275,12 @@ def test_ortofoto_ricerca_strati_e_immagine(browser, base, tmp_path):
     assert pg.evaluate(f"{st}.mappa.getLayoutProperty('strato-particelle', 'visibility')") == "visible"
     assert pg.evaluate(f"{st}.mappa.getLayoutProperty('strato-dbtr_edifici', 'visibility')") == "visible"
     assert pg.evaluate(f"{st}.mappa.getLayoutProperty('strato-osm', 'visibility')") == "none"
+    # (18/11/2026) accanto alle caselle accese nessun avviso da vicino; da lontano «si vede dallo zoom 16: avvicinati»
+    assert pg.locator(".avviso-zoom-strato").evaluate_all("l => l.filter(e => !e.hidden).length") == 0
+    pg.evaluate(f"{st}.mappa.jumpTo({{zoom: 13}})")
+    attendi(pg, "[...document.querySelectorAll('.avviso-zoom-strato')].filter(e => !e.hidden && /zoom 16: avvicinati/.test(e.textContent)).length === 2")
+    pg.evaluate(f"{st}.mappa.jumpTo({{zoom: 17}})")
+    attendi(pg, "[...document.querySelectorAll('.avviso-zoom-strato')].every(e => e.hidden)")
     with pg.expect_download() as d:
         pg.evaluate("document.querySelector('#scarica-ortofoto button[data-formato=\"pdf\"]').click()")
     dest = tmp_path / "o.pdf"; d.value.save_as(dest)
