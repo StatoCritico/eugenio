@@ -35,6 +35,8 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
 - Le tessere del terreno 3D (/api/terreno/{z}/{x}/{y}.png, Terrarium dal DTM del server) e delle ortofoto servono
   alla mappa del sito: non scaricare intere zone. Le tessere delle ortofoto WMS accettano ?de=<m>&dn=<m> (interi, ±20):
   ortofoto spostata di quei metri a est e a nord rispetto alla cartografia (frecce sotto la mappa), senza copia sul server.
+- Ricerca di un indirizzo nelle mappe (dal 17/11/2026): POST /api/patrimonio con luogo=1 e una riga dà anche la particella
+  catastale del civico (Agenzia delle Entrate, CC BY 4.0), la metà della via (OpenStreetMap, ODbL) o le vie fra cui scegliere.
 - Fuori dal DBTR, /api/edifici/osm (con la verifica anti-robot) dà in Veneto le sagome della Regione (IODL 2.0) con le
   altezze di OpenStreetMap (ODbL) dove ci sono, altrimenti stimate; altrove gli edifici OpenStreetMap. Non per scaricare zone.
 - Edifici 3D dai DB topografici (archivi elencati in /edifici3d/archivi.json, ognuno con licenza e attribuzione): 54

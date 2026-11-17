@@ -21,6 +21,42 @@ Container:
 
 Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, vedi fase 3).
 
+## Ricerca di un luogo: particella del civico e metà della via (17/11/2026)
+
+Segnalazione di Paolo: cercando un indirizzo nelle mappe la posizione era spesso lontana da quella vera. **Prima** la ricerca
+(`cerca_luogo.js` → `POST /api/patrimonio`) andava sul punto della riga a zoom fisso 17: con il civico sull'**accesso**
+ANNCSU (il portone; Rimini, viale Settembrini 2: l'accesso «2» è all'angolo sud dell'ospedale Infermi, l'ospedale 300–500 m
+più a nord, fuori dalla vista), senza civico sul **civico di numero mediano** o sul punto della via dato da Zornade (Rimini,
+via Coriano: 8,7 km di strada, a zoom 17 se ne vedono ~800 m), con una via inesistente sul punto di Zornade anche lontano
+(Perugia, «via Sant'Andrea delle Fratte», che è una frazione: 2,5 km a nord, senza avviso).
+
+**Ora** la pagina manda anche il campo `luogo=1`; con una sola riga e `LUOGO=true` la rotta, dopo la geolocalizzazione di
+sempre, chiama `servizio/luogo.py` (logica in `fase7-territorio/territorio/luogo.py`) e aggiunge alla riga (nessun campo
+tolto o cambiato): `luogo_tipo` (`particella`, `via`, `località` o null), `luogo_lat`, `luogo_lon` (segnaposto),
+`luogo_riquadro` ([ovest, sud, est, nord] da inquadrare), `luogo_fonte`, `luogo_avviso` (testo breve se una fonte non
+risponde), `particella_ade` (riferimento, foglio, mappale, superficie, riquadro, distanza), `vie_candidate` (vie e località
+fra cui scegliere, con `etichetta`), `scegli_via`, `via_scelta`; `fonti` della risposta comprende le fonti nuove.
+- **Civico, foglio e particella**: particella che contiene il punto dalla **cartografia catastale dell'Agenzia delle Entrate,
+  servizio WFS INSPIRE** (`CATASTO_WFS_URL`, CC BY 4.0, nessuna chiave: stesso ente e licenza del WMS dello strato
+  «Particelle»): una GetFeature su un quadrato di 30 m attorno al punto; particelle «STRADA…» e «ACQUA…» escluse; punto
+  sulla strada → la particella più vicina entro 15 m, preferendo quella scelta da Zornade. Segnaposto su un **punto interno
+  garantito** (baricentro, o centro del tratto interno più largo per le particelle a L); riquadro della particella più gli
+  altri accessi dello stesso civico entro 600 m (2, 2/B … 2/O: complessi come l'ospedale).
+- **Via senza civico**: strade di OpenStreetMap con quel nome nel comune da **Overpass** (filtro su `ref:ISTAT` e sulle
+  parole del nome, solo `highway` stradali: niente sentieri e ciclabili; con le località `place`) più i civici ANNCSU della
+  via; **metà della lunghezza** lungo la via (catena dei tratti, o il punto che lascia metà della lunghezza da ciascuna parte
+  lungo l'asse principale se ci sono diramazioni), riquadro della via; tratti a più di 1 km sono vie diverse (frazioni).
+- **Più vie compatibili** (stesso nome in frazioni diverse; via non riconosciuta, anche con il civico, ma vie simili o una
+  località con quel nome): `scegli_via = true` e l'elenco; la pagina non sposta la mappa e fa scegliere.
+- Protezioni: limite per IP `luogo` (`LUOGO_ORA`, 300 ricerche all'ora, controllato prima di geolocalizzare), tetto per tutto
+  il sito `CATASTO_WFS_TETTO_ORA` (3.000 chiamate all'ora al WFS) e, per Overpass, il contatore `overpass` comune al ripiego
+  OSM (`EDIFICI_OSM_TETTO_ORA`); una chiamata alla volta per fonte (attesa al più `LUOGO_ATTESA_S`, 10 s), ciascuna al più
+  `LUOGO_TIMEOUT_S` (20 s); copia in memoria delle risposte per `LUOGO_COPIA_ORE` (24) ore. A Overpass vanno solo il codice
+  ISTAT e le parole del nome della via, al WFS un quadrato di 30 m: mai chi cerca. Fonte giù o tetto pieno: la riga resta
+  com'era, con `luogo_avviso`. `LUOGO=false` nel `.env` spegne tutto (comportamento di prima).
+- Prove: `tests/test_luogo.py` (fonti simulate, rotta con Zornade finto); logica in `fase7-territorio/tests/test_luogo.py`;
+  pagine in `fase5-sito/tests/test_ricerca_luogo_browser.py`. Prove dal vivo del 17/11/2026 nel README della fase 7.
+
 ## Regola dei file Excel (16/11/2026)
 
 Excel e ODS dei report (`servizio/report.py`) e di Dati climatici (`servizio/storici.py`) rispettano la regola di Paolo
@@ -395,7 +431,7 @@ Il Caddyfile serve dal 06/11/2026 i file `.md` del sito come `text/markdown; cha
 | GET | `/api/clima-legge10/{istat}?anni=10` | dati climatici aggiornati per la Legge 10 dal clima reale del comune. `anni` = ultime stagioni complete, da 1 a 30 (predefinito 10), **0 = tutte** quelle dell'archivio giornaliero (14/11/2026; prima 3–30). La risposta dice `stagioni_richieste`, `stagioni_disponibili`, `prima_stagione_disponibile` e in `note` se le stagioni usate sono meno di quelle chieste o meno di 5 (valori indicativi, tendenza vuota) |
 | GET | `/api/psicro/disponibilita/{istat}` | (14/11/2026, menu «Trattamento aria») periodo coperto (`dal`, `al` in UTC), `anni_completi`, `anni_scelte`, quota del punto meteo e `pressione_pa` (atmosfera standard), `archivio` (`psicro` o `orario_icon`), fonte, licenza, note; limite «dati» |
 | GET | `/api/psicro/serie/{istat}?anni=1\|2\|5\|10\|20\|0` | (14/11/2026) serie oraria **continua in UTC** degli ultimi anni×12 mesi fino all'ultima ora (0 = tutta la serie dal 1940): `inizio`, `passo_h`: 1, `n`, `t` (decimi di °C interi o `null`), `ur` (% interi o `null`), `dal`, `al`, `anni_richiesti`, `anni_dati`, `fonte`, `licenza`, `note`. Archivio `CARTELLA_PSICRO/<istat>.parquet` (fase 3, `scarica-psicro`); finché manca, la serie oraria ICON del server (`/dati/orario`, dal 14/11/2022) con la nota; senza nessuna delle due 503; 422 per altri `anni`. Limiti «dati» e `psicro` (`PSICRO_ORA`, 120 serie per IP all'ora); copia in memoria delle ultime 16 risposte (rinnovata quando il file cambia). Una serie dal 1940 è ~5,5 MB di JSON, ~1,2–1,5 MB compressa da Caddy (`encode zstd gzip`, già attivo su `/api/*`) |
-| POST | `/api/patrimonio` | CSV di edifici → particella catastale, comune, punto (max 500 righe per richiesta, 2.000 edifici l'ora per IP; il sito manda blocchi di 40); indirizzi prima con ANNCSU, poi con Zornade; CSV in UTF-8 o nella codifica di Windows; la risposta porta `fonti` da citare |
+| POST | `/api/patrimonio` | CSV di edifici → particella catastale, comune, punto (max 500 righe per richiesta, 2.000 edifici l'ora per IP; il sito manda blocchi di 40); indirizzi prima con ANNCSU, poi con Zornade; CSV in UTF-8 o nella codifica di Windows; la risposta porta `fonti` da citare. Con `luogo=1` e una riga (ricerca delle pagine di mappa, 17/11/2026) campi in più: particella del civico, metà della via, vie fra cui scegliere (§ «Ricerca di un luogo») |
 | POST | `/api/report?formato=pdf\|xlsx\|ods` | documento generico in JSON (schema in `/api/report/schema`) → file PDF, Excel o ODS; `docx` e `odt` rispondono 410 (spenti dal 28/10/2026); vedi "Report" |
 | POST | `/api/report/{tipo}?formato=pdf\|xlsx\|ods` | `tipo` = `previsione`, `legge10`, `patrimonio`, `indicatori`, `valori_sedi`, `edificio` (dal 04/11/2026: pagina 3D, vedi `report_servizi.report_edificio`): il corpo è la risposta già ricevuta dal servizio → file del report |
 | GET | `/api/edifici/gradi-giorno/{istat}?dal=AAAA-MM&al=AAAA-MM` | (04/11/2026, fase 10) gradi giorno mensili reali (base 20 °C e 24 °C) e temperatura media dall'archivio giornaliero, per la firma energetica; 503 finché manca l'archivio |
@@ -726,6 +762,7 @@ bloccherebbe anche chi usa le API dei dati aperti con uno script.
 | `previsione` | `/api/previsione` | 20 |
 | `zornade` | `/api/geocodifica`, `/api/particella` | 120 |
 | `patrimonio` | `/api/patrimonio` | 2.000 edifici |
+| `luogo` | `/api/patrimonio` con `luogo=1` (ricerca di un luogo, 17/11/2026, oltre a «patrimonio») | `LUOGO_ORA` (300) |
 | `report` | `/api/report`, `/api/report/{tipo}` | 60 |
 | `converti` | `/api/converti` | 200 |
 | `dati` | `/api/meteo`, `/api/clima-legge10`, `/api/mappa`, `/api/comuni`, `/api/metodologia`, `/api/psicro/…` | `LIMITE_DATI_ORA` (600) |

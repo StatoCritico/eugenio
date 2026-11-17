@@ -156,6 +156,15 @@ STORICI_PARALLELE = int(os.environ.get("STORICI_PARALLELE", "2"))              #
 LIMITE_DATI_ORA = int(os.environ.get("LIMITE_DATI_ORA", "600"))          # meteo, Legge 10, mappa, comuni per IP all'ora
 ZORNADE_TETTO_ORA = int(os.environ.get("ZORNADE_TETTO_ORA", "6000"))     # chiamate Zornade all'ora per tutto il sito
 ZORNADE_AVVISO_QUOTA = float(os.environ.get("ZORNADE_AVVISO_QUOTA", "0.7"))   # email quando l'ora supera il 70 %
+# ricerca di un luogo nelle pagine di mappa (17/11/2026, servizio/luogo.py): particella del civico dal WFS catastale
+# dell'Agenzia delle Entrate (CC BY 4.0) e metà della via dalle strade di OpenStreetMap (Overpass). LUOGO=false la spegne.
+LUOGO = os.environ.get("LUOGO", "true").lower() not in ("false", "0", "no", "spento")
+LUOGO_ORA = int(os.environ.get("LUOGO_ORA", "300"))                       # ricerche di un luogo per IP all'ora
+CATASTO_WFS_URL = os.environ.get("CATASTO_WFS_URL", "https://wfs.cartografia.agenziaentrate.gov.it/inspire/wfs/owfs01.php")
+CATASTO_WFS_TETTO_ORA = int(os.environ.get("CATASTO_WFS_TETTO_ORA", "3000"))   # chiamate al WFS catastale all'ora, tutto il sito
+LUOGO_TIMEOUT_S = float(os.environ.get("LUOGO_TIMEOUT_S", "20"))          # per chiamata (WFS, ogni istanza di Overpass)
+LUOGO_ATTESA_S = float(os.environ.get("LUOGO_ATTESA_S", "10"))            # attesa massima del turno (una chiamata alla volta)
+LUOGO_COPIA_ORE = float(os.environ.get("LUOGO_COPIA_ORE", "24"))          # copia in memoria delle risposte
 PREVISIONI_PARALLELE = int(os.environ.get("PREVISIONI_PARALLELE", "2"))  # ammesse insieme: modello.py ne calcola una, l'altra in fila
 PREVISIONI_ATTESA_S = float(os.environ.get("PREVISIONI_ATTESA_S", "30"))  # attesa massima in coda, poi 503
 # Turnstile: chiave del sito (pubblica) e chiave segreta (solo nel .env). Senza le due chiavi la verifica è spenta

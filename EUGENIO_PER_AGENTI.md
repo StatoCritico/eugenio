@@ -332,6 +332,7 @@ curl -sS -A "$UA" -H "Content-Type: application/json" -X POST \
 |---|---|---|
 | `POST /api/converti` | libera | `file` (.xlsx o .ods) → `{"formato", "fogli": [...], "foglio_usato", "csv": "…"}` (primo foglio, separatore `;`; una prima riga con la sola citazione «Fonte: EuGEnio…», come nei file scaricati da EuGEnio, viene saltata); i CSV tornano come sono |
 | `POST /api/patrimonio` | **Turnstile** | `file` (formato del § 3, ≤ 500 righe) → `{"riepilogo", "geojson", "righe": [...], "fonte", "fonte_url", "fonti"}` |
+| `POST /api/patrimonio` con `luogo=1` | **Turnstile** | (dal 17/11/2026, ricerca delle pagine di mappa) con **una** riga, campi in più nella riga: `luogo_tipo` (`particella`, `via`, `località` o null), `luogo_lat`, `luogo_lon` (segnaposto: punto interno della particella catastale del civico, Agenzia delle Entrate – Cartografia catastale CC BY 4.0, o metà della via, OpenStreetMap ODbL), `luogo_riquadro` ([ovest, sud, est, nord] da inquadrare), `luogo_fonte`, `luogo_avviso`, `particella_ade`, `vie_candidate` (con `etichetta`), `scegli_via` (true = più vie possibili: far scegliere), `via_scelta`; limite `luogo` (300 all'ora per IP) |
 | `GET /api/geocodifica?q=…&comune=…` | **Turnstile** | `{"risultati": [{"etichetta", "lat", "lon"}], "fonte": "Dati elaborati da Zornade", "fonte_url"}` |
 | `GET /api/particella?lat=…&lon=…` | **Turnstile** | `{"particella": {"id", "etichetta", "area_m2", "lat", "lon"}, "comune": {"belfiore", "nome", "istat", "disponibile"}, "fonte", "fonte_url"}` |
 

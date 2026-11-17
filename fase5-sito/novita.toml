@@ -21,6 +21,15 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
+data = "2026-11-17"
+versione = "20261117"
+titolo = "Ricerca degli indirizzi sulle mappe più precisa"
+migliorato = [
+  "Patrimonio › Ortofoto e Modelli 3D: cercando un indirizzo con il numero civico, la mappa mostra tutta la particella catastale del civico, con il segnaposto dentro. Prima andava sul portone e gli edifici grandi restavano fuori: a Rimini, in viale Settembrini 2, l'ospedale Infermi non si vedeva.",
+  "Patrimonio › Ortofoto e Modelli 3D: cercando solo la via, la mappa si mette a metà della via e la fa vedere tutta (via Coriano a Rimini è lunga alcuni chilometri). Se ci sono più vie possibili, o la via non esiste con quel nome, compare l'elenco da cui scegliere invece di andare lontano.",
+]
+
+[[voce]]
 data = "2026-11-16"
 versione = "20261116h"
 titolo = "Modelli 3D: gli edifici attorno alle zone coperte"

@@ -273,7 +273,13 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       API Europa</a> (ovp.dresel.systems), di Christian Dresel, Germania, che conserva i registri delle richieste per 14 giorni:
       <a href="https://ovp.dresel.systems/impressum.html#datenschutz">informativa</a>): riceve dal server di EuGEnio, non dal tuo browser,
       le coordinate della zona in cui cercare gli edifici – il centro di un riquadro di circa 200 metri in Modelli 3D fuori
-      dal DBTR, e le tessere della mappa per lo strato «Contorni degli edifici» – senza altri dati su di te.</li>
+      dal DBTR, e le tessere della mappa per lo strato «Contorni degli edifici» – e, quando cerchi una via senza numero civico
+      nelle mappe, il codice ISTAT del comune e le parole del nome della via, senza altri dati su di te.</li>
+    <li><strong>Cartografia catastale dell'Agenzia delle Entrate</strong> (servizio WFS INSPIRE,
+      <a href="https://wfs.cartografia.agenziaentrate.gov.it/inspire/wfs/owfs01.php?SERVICE=WFS&amp;REQUEST=GetCapabilities">wfs.cartografia.agenziaentrate.gov.it</a>):
+      quando cerchi un indirizzo con il numero civico (o foglio e particella) nelle mappe, riceve dal server di EuGEnio, non dal
+      tuo browser, un quadrato di circa 30 metri attorno al punto del civico, per restituire la forma della particella catastale,
+      senza altri dati su di te.</li>
     <li><strong>Servizio WFS della Regione del Veneto</strong> (<a href="https://idt2-geoserver.regione.veneto.it/geoserver/wfs">idt2-geoserver.regione.veneto.it</a>,
       Infrastruttura dei dati territoriali della Regione): in Modelli 3D e nelle pagine Edifici e Fotovoltaico, fuori dai
       comuni con il DB topografico completo e dentro il Veneto, riceve dal server di EuGEnio, non dal tuo browser, lo stesso
