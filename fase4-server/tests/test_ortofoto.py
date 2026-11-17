@@ -101,6 +101,7 @@ def client(tmp_path, monkeypatch):
     O.fonti(ricarica=True)
     O.ritmo.svuota()
     O.guasti.svuota()
+    O.svuota_vuote()
     P.limiti.clear()
     chiamate = []
 
@@ -407,3 +408,202 @@ def test_segnaposto_della_toscana_diventa_vuoto(client, tmp_path, monkeypatch):
     monkeypatch.setattr(O, "_scarica", lambda url: httpx.Response(200, content=foto.getvalue(), headers={"content-type": "image/jpeg"}))
     r = c.get("/api/ortofoto/toscana2023/16/34800/23902.jpg")
     assert r.headers["content-type"] == "image/jpeg" and "x-ortofoto-vuota" not in r.headers
+
+
+# ---------------------------------------------------------------------------------------------- AGEA 2022-2024 (17/11/2026)
+def _foto(colore, buco=False, formato="JPEG"):
+    """Tessera finta del Geoportale AGEA: JPEG pieno di un colore, o PNG con la metà sinistra trasparente (confine)."""
+    from PIL import Image
+    im = Image.new("RGBA", (256, 256), colore + (255,))
+    if buco:
+        im.paste((0, 0, 0, 0), (0, 0, 128, 256))
+    b = io.BytesIO()
+    (im if buco or formato == "PNG" else im.convert("RGB")).save(b, "PNG" if buco or formato == "PNG" else "JPEG")
+    return b.getvalue()
+
+
+def _trasparente_agea():
+    """Come le tessere MIXED dove l'anno non ha volato: PNG 256×256 tutto trasparente (876 byte dal vivo)."""
+    from PIL import Image
+    b = io.BytesIO(); Image.new("RGBA", (256, 256), (0, 0, 0, 0)).save(b, "PNG")
+    return b.getvalue()
+
+
+ROSSO, VERDE, BLU = (200, 30, 30), (30, 200, 30), (30, 30, 200)
+
+
+@pytest.fixture()
+def agea(client, monkeypatch):
+    """Geoportale AGEA finto: per ogni anno «piena», «vuota», «buco», «404» o «errore»; registra gli anni chiesti."""
+    c, _ = client
+    esiti, chiesti = {2024: "vuota", 2023: "piena", 2022: "piena"}, []
+    colori = {2024: ROSSO, 2023: VERDE, 2022: BLU}
+
+    def finto(url):
+        m = re.search(r"Ortofoto_AgEA_(\d{4})/ImageServer/(tile|exportImage)", url)
+        assert m, url
+        anno = int(m.group(1)); chiesti.append((anno, m.group(2)))
+        e = esiti[anno]
+        if e == "errore":
+            return httpx.Response(500, content=b"<html>errore</html>", headers={"content-type": "text/html"})
+        if e == "404":
+            return httpx.Response(404, content=b"<html>no</html>", headers={"content-type": "text/html"})
+        if e == "vuota":
+            return httpx.Response(200, content=_trasparente_agea(), headers={"content-type": "image/png"})
+        return httpx.Response(200, content=_foto(colori[anno], buco=e == "buco"),
+                              headers={"content-type": "image/png" if e == "buco" else "image/jpeg"})
+
+    monkeypatch.setattr(O, "_scarica", finto)
+    return c, esiti, chiesti
+
+
+def _vicino(px, colore):
+    return all(abs(a - b) < 12 for a, b in zip(px[:3], colore))
+
+
+def _colore(dati, x, y):
+    from PIL import Image
+    return Image.open(io.BytesIO(dati)).convert("RGBA").getpixel((x, y))
+
+
+def test_agea_toml_url_e_priorita():
+    tutte = {x.id: x for f in sorted(FONTI_REPO.glob("*.toml")) for x in O.leggi_toml(f)}
+    a = tutte["agea"]
+    assert a.tipo == "arcgis" and a.anni == (2024, 2023, 2022) and a.cache and a.nei_report and a.stato == "confermata"
+    assert a.licenza == "CC BY 4.0" and "{anni}" in a.citazione and a.zoom == (10, 19) and a.zoom_tessere == 18
+    assert a.citazione_generica == "AGEA – Agenzia per le Erogazioni in Agricoltura, ortofoto RGB 2022-2024 (CC BY 4.0)"
+    assert not O.ESCLUSI.search(a.url)                                  # l'RGB passa…
+    for u in ("https://geoportale.agea.gov.it/image/rest/services/AgEA/Ortofoto_AgEA_IRG_2023/ImageServer",
+              "https://geoportale.agea.gov.it/image/rest/services/AgEA/Ortofoto_AgEA_2023_NIR/ImageServer",
+              "https://geoportale.agea.gov.it/image/rest/services/AgEA/Infrarosso_AgEA_2023/ImageServer"):
+        assert O.ESCLUSI.search(u), u                                   # …l'infrarosso resta escluso
+    # priorità: regionali più recenti o uguali (RER 2023-24, Toscana 2023, Bolzano 2023) prima, poi AGEA, poi Trento 2015
+    # (più vecchia) e il Geoportale Nazionale 2012 come ripiego, Sentinel-2 per ultima
+    p = {k: v.priorita for k, v in tutte.items()}
+    assert p["rer2023"] < p["agea"] and p["toscana2023"] < p["agea"] and p["bolzano2023"] < p["agea"]
+    assert p["agea"] < p["trento2015"] < p["pcn2012"] < p["s2cloudless2016"]
+    # tessere già pronte fino al 18 (numerazione {z}/{y}/{x} di ArcGIS), al 19 exportImage sul riquadro della tessera
+    assert O.url_tessera(a, 18, 140223, 95260, anno=2022) == ("https://geoportale.agea.gov.it/image/rest/services/AgEA/"
+                                                               "Ortofoto_AgEA_2022/ImageServer/tile/18/95260/140223")
+    u = O.url_tessera(a, 19, 280447, 190521, anno=2023)
+    w, s_, e, n = O.limiti_tessera(19, 280447, 190521)
+    assert "/Ortofoto_AgEA_2023/ImageServer/exportImage?" in u and f"bbox={w:.3f},{s_:.3f},{e:.3f},{n:.3f}" in u
+    assert "size=256,256" in u and "bboxSR=3857" in u and "imageSR=3857" in u and "format=jpgpng" in u
+    assert O.testo_anni([2023]) == "2023" and O.testo_anni([2023, 2022]) == "2022 e 2023"
+
+
+def test_agea_toml_anni_e_url_coerenti(tmp_path):
+    (tmp_path / "a.toml").write_text('[[fonte]]\nid = "a"\ntipo = "arcgis"\nurl = "https://x/{anno}/ImageServer"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="anni"):
+        O.leggi_toml(tmp_path / "a.toml")
+    (tmp_path / "b.toml").write_text('[[fonte]]\nid = "b"\ntipo = "arcgis"\nurl = "https://x/ImageServer"\nanni = [2022]\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="anni"):
+        O.leggi_toml(tmp_path / "b.toml")
+
+
+def test_agea_elenco_fonti(agea):
+    c, _, _ = agea
+    fs = c.get("/api/ortofoto/fonti").json()["fonti"]
+    ids = [f["id"] for f in fs]
+    assert ids.index("rer2023") < ids.index("agea") < ids.index("trento2015") < ids.index("pcn2012")
+    a = fs[ids.index("agea")]
+    assert a["anni"] == [2024, 2023, 2022] and a["citazione_anni"].count("{anni}") == 1 and "2022-2024" in a["citazione"]
+    assert a["copia"] and a["nei_report"] and a["tessere"] == "/api/ortofoto/agea/{z}/{x}/{y}.jpg" and not a["spostabile"]
+
+
+def test_agea_anno_piu_recente_una_sola_chiamata_e_copia(agea, tmp_path):
+    c, esiti, chiesti = agea
+    esiti[2024] = "piena"
+    r = c.get("/api/ortofoto/agea/16/34800/23900.jpg")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg" and r.headers["x-ortofoto-anno"] == "2024"
+    assert chiesti == [(2024, "tile")]                                  # il più recente è pieno: niente altre chiamate
+    assert "X-Ortofoto-Anno" in r.headers["access-control-expose-headers"] and r.headers["x-ortofoto-copia"] == "nuova"
+    p = O.file_copia(O.fonti()["agea"], 16, 34800, 23900)
+    assert p.read_bytes() == r.content and O.file_anno(p).read_text() == "2024"
+    r2 = c.get("/api/ortofoto/agea/16/34800/23900.jpg")
+    assert r2.headers["x-ortofoto-copia"] == "si" and r2.headers["x-ortofoto-anno"] == "2024" and len(chiesti) == 1
+    # copia senza il file degli anni (scritta a metà): non vale, si richiede
+    O.file_anno(p).unlink()
+    assert c.get("/api/ortofoto/agea/16/34800/23900.jpg").headers["x-ortofoto-copia"] == "nuova" and len(chiesti) == 2
+
+
+def test_agea_anno_precedente_e_memoria_delle_zone_vuote(agea):
+    c, esiti, chiesti = agea                                            # 2024 vuota, 2023 e 2022 piene (es. Rimini)
+    r = c.get("/api/ortofoto/agea/12/2190/1478.jpg")
+    assert r.headers["x-ortofoto-anno"] == "2023" and _vicino(_colore(r.content, 10, 10), VERDE)
+    assert sorted(chiesti) == [(2022, "tile"), (2023, "tile"), (2024, "tile")] and chiesti[0] == (2024, "tile")
+    assert "x-ortofoto-vuota" not in r.headers
+    # tessera figlia (zoom 14, dentro la 12/2190/1478): il 2024 non si chiede più
+    chiesti.clear()
+    r = c.get(f"/api/ortofoto/agea/14/{2190 * 4 + 1}/{1478 * 4 + 2}.jpg")
+    assert r.headers["x-ortofoto-anno"] == "2023" and chiesti == [(2023, "tile")]
+    # oltre 4 livelli sotto (zoom 17) la memoria non vale: si richiede il 2024
+    chiesti.clear()
+    c.get(f"/api/ortofoto/agea/17/{2190 * 32}/{1478 * 32}.jpg")
+    assert (2024, "tile") in chiesti
+    # zoom 19: exportImage, stesso esito
+    chiesti.clear()
+    r = c.get("/api/ortofoto/agea/19/280447/190521.jpg")
+    assert r.headers["x-ortofoto-anno"] == "2023" and all(t == "exportImage" for _, t in chiesti)
+    # il 404 della cache (fuori dagli zoom già pronti dell'anno) vale come «non ha volato», non come errore
+    esiti[2024] = "404"
+    chiesti.clear()
+    r = c.get("/api/ortofoto/agea/16/34801/23901.jpg")
+    assert r.status_code == 200, (r.status_code, r.text)
+    assert r.headers["x-ortofoto-anno"] == "2023" and "x-ortofoto-errore" not in r.headers
+
+
+def test_agea_confine_tra_anni_composto(agea):
+    """Confine tra regioni volate in anni diversi (Gabicce, Emilia-Romagna 2023 e Marche 2022): il 2023 copre metà
+    tessera, il 2022 riempie il resto; tessera piena → JPEG, X-Ortofoto-Anno «2023,2022»."""
+    c, esiti, chiesti = agea
+    esiti[2023] = "buco"
+    r = c.get("/api/ortofoto/agea/14/8772/5960.jpg")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg" and r.headers["x-ortofoto-anno"] == "2023,2022"
+    sx, dx = _colore(r.content, 40, 128), _colore(r.content, 220, 128)
+    assert _vicino(sx, BLU) and _vicino(dx, VERDE)
+    p = O.file_copia(O.fonti()["agea"], 14, 8772, 5960)
+    assert O.file_anno(p).read_text() == "2023,2022"
+
+
+def test_agea_nessun_anno_e_tessera_vuota(agea):
+    c, esiti, _ = agea
+    esiti.update({2023: "vuota", 2022: "vuota"})                       # mare aperto
+    r = c.get("/api/ortofoto/agea/12/2200/1500.jpg")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/png" and r.headers.get("x-ortofoto-vuota") == "1"
+    assert "x-ortofoto-anno" not in r.headers and "x-ortofoto-errore" not in r.headers
+    # un solo anno con buco (costa): PNG com'è, con il solo anno
+    esiti[2022] = "buco"
+    r = c.get("/api/ortofoto/agea/12/2201/1500.jpg")
+    assert r.headers["content-type"] == "image/png" and r.headers["x-ortofoto-anno"] == "2022" and "x-ortofoto-vuota" not in r.headers
+
+
+def test_agea_errori(agea, tmp_path):
+    c, esiti, chiesti = agea
+    # errore di un anno che serviva (2024 vuota, 2023 in errore): tessera vuota pulita, niente copia
+    esiti[2023] = "errore"
+    r = c.get("/api/ortofoto/agea/16/34800/23950.jpg")
+    assert r.status_code == 200 and r.headers["x-ortofoto-errore"] == "fonte" and r.headers["cache-control"] == "no-store"
+    assert not O.file_copia(O.fonti()["agea"], 16, 34800, 23950).exists()
+    # errore del primo anno: gli altri non si chiedono
+    esiti.update({2024: "errore", 2023: "piena"})
+    chiesti.clear()
+    r = c.get("/api/ortofoto/agea/16/34800/23951.jpg")
+    assert r.headers["x-ortofoto-errore"] == "fonte" and chiesti == [(2024, "tile")]
+    # spostamento manuale: non per le tessere già pronte
+    assert c.get("/api/ortofoto/agea/16/34800/23952.jpg?de=1").status_code == 400
+    # fuori zoom: 404 senza chiamare
+    chiesti.clear()
+    assert c.get("/api/ortofoto/agea/9/270/180.jpg").status_code == 404 and chiesti == []
+
+
+def test_agea_componi():
+    v = (2024, _foto(ROSSO, buco=True))
+    d, tipo, usati, piena = O.componi([v, (2023, _foto(VERDE))])
+    assert tipo == "image/jpeg" and usati == [2024, 2023] and piena
+    d, tipo, usati, piena = O.componi([(2023, _foto(VERDE)), (2022, _foto(BLU))])
+    assert usati == [2023] and piena and d == _foto(VERDE)                 # JPEG in testa: com'è
+    d, tipo, usati, piena = O.componi([v])
+    assert tipo == "image/png" and usati == [2024] and not piena and d == v[1]
+    d, tipo, usati, piena = O.componi([])
+    assert usati == [] and not piena and O.vuota(d)

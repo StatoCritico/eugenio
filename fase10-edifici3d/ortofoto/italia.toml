@@ -8,6 +8,24 @@
 # WMS del Geoportale Nazionale (MASE, ortofoto AGEA 2012 a colori, 50 cm): risponde dal container (GetMap in EPSG:3857
 # su Rimini, 04/11/2026; AccessConstraints «Nessuno», Fees «Nessuna condizione applicata»). La licenza dell'immagine
 # resta ambigua: **solo dal vivo, senza copia** (cache = false) e senza figure nei report. L'https rimanda all'http.
+# (17/11/2026) Lento e spesso in errore (502, «non risponde o è occupata» nelle prove di Paolo): resta acceso solo come
+# ripiego scelto a mano, dietro le ortofoto AGEA 2022-2024 qui sotto, che coprono tutta Italia a 20 cm.
+#
+# Ortofoto AGEA 2022-2024 RGB del Geoportale AGEA (17/11/2026): servizi ArcGIS ImageServer
+# AgEA/Ortofoto_AgEA_<anno> con le tessere già pronte (singleFusedMapCache, capabilities «Image,Metadata,Catalog,TileMap»,
+# EPSG:3857, origine web mercator standard, righe 256, formato MIXED: JPEG dove l'anno ha volato, PNG trasparente di
+# 876 byte dove no), pixel 0,20 m. Tessere già pronte fino allo zoom 18 (dal 19 il servizio dà 404): allo zoom 19 il
+# proxy chiede exportImage sul riquadro della tessera. Prove dal container il 17/11/2026: ~0,5–0,7 s a tessera.
+# Ogni anno AGEA vola circa un terzo d'Italia, per regioni intere (catalogo dei servizi, campo «regione»):
+#   2024 Piemonte, Valle d'Aosta, Lombardia, Veneto, Molise, Calabria;
+#   2023 Trentino-Alto Adige, Friuli-Venezia Giulia, Emilia-Romagna, Umbria, Lazio, Campania, Basilicata;
+#   2022 Liguria, Toscana, Marche, Abruzzo, Puglia, Sicilia, Sardegna.
+# Una sola fonte con `anni`: il proxy, per ogni tessera, compone l'anno più recente che copre il punto e, nei suoi buchi
+# (confini tra regioni volate in anni diversi), i precedenti; l'anno usato esce in X-Ortofoto-Anno e va nella
+# citazione (`{anni}`). Licenza: note legali del geoportale (https://geoportale.agea.gov.it/legal-notes, testo in
+# /assets/i18n/it.json, chiave legalNotes.copyright, letto il 17/11/2026): «Le ortofoto RGB … sono messe a disposizione
+# per il riutilizzo alle condizioni della licenza Creative Commons BY 4.0», dati di elevato valore (Reg. UE 2023/138).
+# L'infrarosso AGEA resta escluso (ESCLUSI in fase4-server/servizio/ortofoto.py).
 
 regione = "00"
 nome = "Italia"
@@ -28,6 +46,26 @@ zoom = [5, 15]                     # 10 m a terra = zoom 14; EOX dà tessere fin
 riquadro = [6.6, 35.4, 18.6, 47.1]
 ritmo = { al_secondo = 4, all_ora = 3000 }
 priorita = 9
+
+[[fonte]]
+id = "agea"
+nome = "AGEA – ortofoto RGB 2022-2024 (20 cm, anno più recente)"
+tipo = "arcgis"
+url = "https://geoportale.agea.gov.it/image/rest/services/AgEA/Ortofoto_AgEA_{anno}/ImageServer"
+anni = [2024, 2023, 2022]          # dal più recente: per ogni tessera il primo che copre, i precedenti nei buchi
+zoom_tessere = 18                  # tessere già pronte fino al 18; al 19 exportImage
+formato = "image/jpeg"             # JPEG le tessere piene, PNG trasparente dove nessun anno copre (stesso file .jpg)
+licenza = "CC BY 4.0"
+citazione = "AGEA – Agenzia per le Erogazioni in Agricoltura, ortofoto RGB {anni} (CC BY 4.0)"
+scheda = "https://geoportale.agea.gov.it/legal-notes"
+stato = "confermata"               # CC BY 4.0 nelle note legali del geoportale, dati di elevato valore (Reg. UE 2023/138)
+attiva = true
+cache = true
+nei_report = true
+zoom = [10, 19]                    # 20 cm a terra = zoom 19 (0,21 m/pixel a 44° N); oltre la mappa ingrandisce il 19
+riquadro = [6.6, 35.4, 18.6, 47.1]
+ritmo = { al_secondo = 10, all_ora = 8000 }  # cortese: ogni tessera nuova = 1 chiamata (fino a 3 sui confini), poi copia
+priorita = 2                       # dopo le regionali più recenti o uguali (RER 2023-24, Toscana 2023, Bolzano 2023)
 
 [[fonte]]
 id = "pcn2012"

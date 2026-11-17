@@ -88,6 +88,9 @@ def test_contributi_forum_contattaci_ringraziamenti():
     ringr = re.search(r'<h2 id="ringraziamenti">Ringraziamenti</h2>\s*<p>(.*?)</p>', m, re.S).group(1)
     assert re.sub(r"\s+", " ", ringr) == ("In questa pagina verranno ringraziati coloro che hanno contribuito allo "
                                           "sviluppo del sito.")                      # (15/11/2026 sera) frase di Paolo
+    # (17/11/2026) primi utenti del forum ringraziati, con il collegamento al loro profilo
+    assert "ringraziamo per il loro prezioso contributo i seguenti utenti del forum" in re.sub(r"\s+", " ", m)
+    assert '<a href="https://forum.edilclima.it/memberlist.php?mode=viewprofile&amp;u=10826">Esa</a>' in m
 
 
 def test_esempi_gruppi_indice_e_collegamenti():

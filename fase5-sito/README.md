@@ -85,6 +85,11 @@ sito/
                     scelta_aria.js, gruppi_ore.js (sezione «Trattamento aria» qui sotto)
   strumenti/psicro_UTA.xlsx  foglio psicrometrico UTA scaricabile (generato da fase14-trattamento-aria/foglio)
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
+  rete-elettrica.html  Statistiche › Stato della rete elettrica (17/11/2026, sperimentale): rete_elettrica.js
+  fv-cabine.html    Fotovoltaico › Cabine primarie (17/11/2026, sperimentale): fv_cabine.js
+  rete.js           parte comune delle due pagine della rete: API /api/rete/…, dati sintetici con ?prova=1, colori e
+                    regola della criticità, strisce e retino, cabine, riquadretti, GSE dal browser, CSV/PDF/Excel
+                    (sezione «Rete elettrica» qui sotto)
 costruisci_dpr412.py  rigenera dati/dpr412.* (Normattiva + elenchi ISTAT di comuni, soppressi e variazioni)
 abbinamento_dpr412.md scelte e casi dell'abbinamento al codice ISTAT attuale (refusi, fusioni, cambi di nome)
 costruisci_mappa.py  genera dati/mappa/ dai confini Gramscii (versione bloccata) e da comuni.parquet nazionale
@@ -126,6 +131,94 @@ collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre
   mappa 2D sul punto (collegamento da Edifici pubblici).
 - Test: `test_costruisci_pagine.py` (gruppo «Territorio», voce nuova, 13 «S»), `test_esempi_contributi.py` (esempio
   della pagina), `test_mappe_browser.py` (pagina a due colonne).
+
+## Rete elettrica (17/11/2026, richiesta di Paolo; contratto in CONTRATTO_RETE, sintesi qui)
+
+- **Statistiche › Stato della rete elettrica** (`rete-elettrica.html`, `rete_elettrica.js`): mappa MapLibre della regione
+  scelta (piccola mappa, `?regione=RR`; clic su un'altra regione = la sceglie senza spostare la vista), con quattro strati
+  spegnibili e la loro legenda: criticità dei comuni (riempimento pieno o a strisce: regola `classeComune` in `rete.js`,
+  uguale a quella del servizio; legenda «classificazione di EuGEnio dai dati mensili per trasformatore di
+  e-distribuzione»; province senza dato a righe grigie), comuni con un altro distributore (retino), cabine primarie
+  (punti grandi, livello peggiore: bianco = verde, giallo, arancione, rosso; grigio = altri gestori o senza dato; riquadretto
+  con nome, codice e-distribuzione, `COD_AC`, gestore, trasformatori per livello, data) e interruzioni in corso (punti blu,
+  rilette ogni 5 minuti). A destra date di aggiornamento (`/api/rete/stato`), avviso per le province senza dato e, scelto
+  un comune (clic, casella con i nomi o `&comune=ISTAT`): criticità, cabine (`/api/rete/cabine/comune/<istat>`, ripiego sul
+  campo `comuni_serviti`), interruzioni in corso, statistiche dal giorno d'inizio della raccolta con la durata stimata
+  (`/api/rete/interruzioni/comune/<istat>`, grafico mensile con `grafici.js`); per un comune non concessionario il
+  rimando alla mappa del GSE. Download: immagine (`esporta_mappa.js`, fonti nella fascia) e dati CSV (nel browser,
+  citazione in riga 1) ed Excel/PDF (documento generico `POST /api/report`), con l'attribuzione ODbL delle posizioni.
+- **Comuni serviti in parte da un altro distributore** (17/11/2026 sera, decisione di Paolo): i comuni segnati
+  `servitoed = 0` ma con trasformatori e-distribuzione (35, soprattutto milanesi; `servito_in_parte: true` con
+  `concessionario: true` in `/api/rete/comuni`) hanno il colore della criticità, niente retino, bordo tratteggiato (strato
+  della criticità, voce di legenda) e la nota «servito in parte da un altro distributore» (`nota_servito_in_parte` di
+  `/api/rete/stato`) nel riquadretto, nella scheda del comune e nei file (colonna «Servito in parte da un altro
+  distributore»). Nei dati di prova un comune ogni 41 circa.
+- **Fotovoltaico › Cabine primarie** (`fv-cabine.html`, `fv_cabine.js`): mappa di regioni e comuni (clic su un comune =
+  la mappa di dettaglio va lì) e, sotto, mappa di dettaglio con ortofoto (fonte automatica nel punto o scelta dal menu,
+  contesto Sentinel-2), particelle ed edifici (`strati_gl.js`), frecce dell'ortofoto (`sposta_ortofoto.js`) e il punto
+  scelto da trascinare (clic da zoom 13 = lo sposta lì; senza punti lo crea). A destra ricerca (`cerca_luogo.js`), elenco
+  nel formato di Patrimonio (max 200 righe; con `lat`/`lon` restano nel browser, le altre a `POST /api/patrimonio` a
+  blocchi di 40), punti con colore dal menu come quello degli edifici di Modelli 3D (`localStorage`
+  `eugenio-colore-punti-cabine`). Per ogni punto: area GSE (`COD_AC`, richiesta dal browser senza geometria, al massimo 4
+  insieme) → cabina da `/api/rete/cabine?regione=RR` (ripiego su tutte le cabine), più le cabine e-distribuzione del comune.
+  «Aggiorna confini» (cabine spuntate, max 100): poligoni dal GSE con `where=COD_AC IN (…)`, `maxAllowableOffset=0.0002`,
+  solo a video con l'attribuzione del GSE, spenti nelle immagini scaricate (`opz.dopo` di `esporta_mappa.js` li
+  riaccende). «Scarica i confini delle aree (GSE, CC BY-NC-SA)»: GeoJSON del contratto fatto nel browser. Dati CSV,
+  Excel, PDF con i soli codici. `?lat=…&lon=…` aggiunge un punto all'apertura.
+- **Servizio del GSE**: indirizzo solo in `rete.js` (`GSE.SERVIZIO`, test); CORS aperto (`Access-Control-Allow-Origin: *`).
+  Il Caddyfile non ha `connect-src` (CSP solo `frame-ancestors`): nessuna modifica necessaria.
+- **Modo di prova** `?prova=1`: dati sintetici generati in `rete.js` dai confini ISTAT del sito (cabine ogni 7 comuni,
+  Torino senza dato, aree GSE inventate), con l'avviso in pagina e nei file; nessuna richiesta al server né al GSE.
+- Test: `tests/test_rete_browser.py` (menu, file, regola della criticità, le due pagine in Chromium con dati sintetici e
+  con API e GSE simulati, GeoJSON separato, telefono).
+
+## Ortofoto AGEA 2022-2024 con l'anno vero nella citazione (17/11/2026, segnalazione di Paolo)
+
+- Nuova fonte nazionale `agea` (fase 4 e `fase10-edifici3d/ortofoto/italia.toml`): ortofoto AGEA RGB 20 cm, CC BY 4.0,
+  per ogni tessera il volo più recente (2022, 2023 o 2024), con copia sul server; scelta da sola dove non c'è un'ortofoto
+  regionale più recente o dello stesso anno (Emilia-Romagna, Toscana, Bolzano). Prima fuori da queste regioni c'era solo
+  AGEA 2012 del Geoportale Nazionale, lenta e spesso «non risponde o è occupata»; ora resta come ripiego da scegliere a mano.
+- **Anno nella citazione**: `protezione.js` (già in tutte le pagine, avvolge `fetch`) legge `X-Ortofoto-Anno` delle tessere
+  e lo ricorda per fonte e tessera (`window.EUGENIO_ORTOFOTO_ANNI`: `citazione(f, mappa)`, `anniDellaVista`,
+  `anniNelRiquadro`, `testoAnni`, `segui(mappa, sorgente, fn)`). Le fonti con `anni` e `citazione_anni` hanno la citazione
+  con gli anni delle tessere dentro la vista, allo zoom in uso («ortofoto RGB 2023», «2022 e 2023» sul confine); senza
+  tessere note quella generica «2022-2024». Usata sotto la mappa (si aggiorna all'arrivo delle tessere e a ogni
+  spostamento: l'evento «idle» di MapLibre non arriva sempre), nelle immagini scaricate e nella figura dei report di
+  Modelli 3D (`ortofoto.js`, `edificio3d.js`, `fv_cabine.js`, `importa_modello.js`, `aggiungi_dbtr.js`).
+- Testi: `ortofoto.html` (fonti nel piede e «Licenze e regole»), `sitografia.html` (Geoportale AGEA), voce «Migliorato»
+  del 17/11 in `novita.toml`, `EUGENIO_PER_AGENTI.md`, `llms.txt`. Versione del sito invariata.
+- Test: `tests/test_ortofoto_agea_browser.py` (Milano → AGEA con «2024» sotto la mappa e nel PDF; confine con «2022 e
+  2023»; in Emilia-Romagna resta la RER davanti ad AGEA).
+
+## Ricerca di un luogo: particella del civico e metà della via (17/11/2026, segnalazione di Paolo; versione da fissare alla pubblicazione)
+
+- **Problema**: cercando un indirizzo in Ortofoto e Modelli 3D la mappa andava sul punto della riga a zoom 17: con il civico
+  sull'accesso ANNCSU (Rimini, viale Settembrini 2: l'ospedale Infermi restava fuori dalla vista), senza civico su un civico
+  qualsiasi della via (Rimini, via Coriano, 8,7 km), con una via che non esiste lontano senza avviso (Perugia, «via
+  Sant'Andrea delle Fratte», frazione).
+- **`cerca_luogo.js`**: la richiesta porta `luogo=1`; il server aggiunge alla riga segnaposto e riquadro (fase 4, § «Ricerca
+  di un luogo»). Civico (o foglio e particella) → segnaposto in un punto interno della **particella catastale** (Agenzia delle
+  Entrate – Cartografia catastale, CC BY 4.0) e particella **tutta nella vista** (zoom al più `ZOOM_PARTICELLA` = 19); con
+  più accessi dello stesso civico, la particella più grande fra le loro (scelta B di Paolo: l'ospedale di viale
+  Settembrini 2), scritto nel messaggio. Sola via → mappa **centrata a metà della via**, zoom che la fa vedere tutta (o, se la
+  metà è molto fuori centro, buona parte: non oltre un livello sotto quello del riquadro). Più vie compatibili o via non
+  riconosciuta → **elenco di pulsanti** nella riga dei messaggi (vie e località di OpenStreetMap e dell'ANNCSU, più il punto
+  trovato da Zornade), la mappa resta ferma finché non si sceglie; con una via riconosciuta le altre simili sono pulsanti
+  «Altre vie simili». Località scelta: zoom `ZOOM_LOCALITA` (15). Avviso discreto (`.cerca-avviso`) se una fonte non risponde.
+  Il messaggio cita le fonti (ANNCSU o Zornade con il collegamento; particella: Agenzia delle Entrate; via: OpenStreetMap).
+- **Interfaccia compatibile**: `crea`, `cerca`, `ZOOM` come prima; nuovi `inquadra(mappa, lon, lat, riga, extra)` (usata da
+  `ortofoto.js` ed `edificio3d.js` al posto di `flyTo`), `ZOOM_PARTICELLA`, `ZOOM_LOCALITA`; la riga passata a `suTrovato` ha in
+  più `riquadro`, `luogo_tipo` e `fonte_testo` (attribuzione completa, usata per il punto in Modelli 3D e per le immagini e i
+  report di Ortofoto). Risposta senza i campi nuovi (server di prima, `LUOGO=false`): tutto come prima. `cerca(campi,
+  suScelta)`: con l'elenco restituisce `{ scelta, riga }` senza punto.
+- `stile.css`: `.cerca-corpo`, `.cerca-scelte`, `.cerca-avviso` dentro `.cerca-edificio`. `metodo.html` (fonti) e
+  `privacy.html` (fornitori: WFS catastale dell'Agenzia, cosa riceve Overpass) citano le fonti nuove.
+- **Da fare alla pubblicazione**: nuova versione (`python costruisci_pagine.py --versione …`, la voce del 17/11/2026 di
+  `novita.toml` porta `20261117`, da allineare): finché la versione non cambia `test_novita_versione_feed_e_menu` fallisce e
+  i browser tengono il vecchio `cerca_luogo.js`.
+- Test: `tests/test_ricerca_luogo_browser.py` (Ortofoto: ospedale nella vista, via Coriano centrata a metà e tutta visibile,
+  scelta di una via simile senza richiamare il server; Modelli 3D: elenco di Perugia e mappa ferma, località scelta; risposta
+  senza campi nuovi = zoom 17 come prima).
 
 ## Esempi e Contributi (15/11/2026, richiesta di Paolo; versione da fissare alla pubblicazione)
 

@@ -25,4 +25,4 @@ cache = true
 zoom = [12, 19]                    # 09/11/2026 c: 20 cm a terra = zoom 19 (0,21 m/pixel a 44° N); oltre la mappa ingrandisce le tessere del 19
 riquadro = [10.44, 45.67, 11.98, 46.54]
 ritmo = { al_secondo = 4, all_ora = 6000 }
-priorita = 1
+priorita = 3                       # (17/11/2026) dopo AGEA (priorità 2): in Trentino AGEA 2023 a 20 cm è più recente del 2015

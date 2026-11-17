@@ -345,7 +345,9 @@
   function attribuzione(f) {
     const a = $("attribuzione"); a.innerHTML = "";
     if (!f) { a.textContent = stato.fonti.length ? "Nessuna ortofoto copre questa zona." : ""; return; }
-    a.append("Ortofoto: ", f.citazione, " – licenza ");
+    // (17/11/2026) con gli anni di volo della vista per le fonti con più anni (AGEA 2022-2024, protezione.js)
+    stato.citazioneOrto = window.EUGENIO_ORTOFOTO_ANNI && stato.mappa ? window.EUGENIO_ORTOFOTO_ANNI.citazione(f, stato.mappa) : f.citazione;
+    a.append("Ortofoto: ", stato.citazioneOrto, " – licenza ");
     const l = h("a", null, f.licenza); l.href = f.scheda; a.appendChild(l);
     a.append(f.stato === "da confermare" ? ". Uso tramite il server di EuGEnio in attesa di conferma della fonte." : ".");
   }
@@ -383,6 +385,8 @@
       m.addControl(new window.maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
       m.addControl(new window.maplibregl.AttributionControl({ compact: true }), "bottom-right");
       await new Promise((ok) => m.on("load", ok));
+      // (17/11/2026) a tessere arrivate la citazione delle ortofoto AGEA 2022-2024 dice gli anni di volo della vista
+      if (window.EUGENIO_ORTOFOTO_ANNI) window.EUGENIO_ORTOFOTO_ANNI.segui(m, "ortofoto", () => { const f = stato.fonte; if (f && f.anni && window.EUGENIO_ORTOFOTO_ANNI.citazione(f, m) !== stato.citazioneOrto) attribuzione(f); });
       m.addSource("modello", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       m.addLayer({ id: "modello-area", type: "fill", source: "modello", paint: { "fill-color": colore("--primario"), "fill-opacity": 0.35 } });
       m.addLayer({ id: "modello-linea", type: "line", source: "modello", paint: { "line-color": colore("--primario"), "line-width": 2 } });

@@ -5,9 +5,20 @@
   <id>tag:eugenio.statocritico.it,2026:novita</id>
   <link rel="self" type="application/atom+xml" href="https://eugenio.statocritico.it/novita.xml"/>
   <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html"/>
-  <updated>2026-11-17T12:00:00Z</updated>
+  <updated>2026-11-18T12:00:00Z</updated>
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
+  <entry>
+    <title>18 novembre 2026 – Rete elettrica, cabine primarie, ortofoto AGEA e ricerca degli indirizzi più precisa</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261118</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261118"/>
+    <updated>2026-11-18T12:00:00Z</updated>
+    <summary>Rete elettrica, cabine primarie, ortofoto AGEA e ricerca degli indirizzi più precisa</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Statistiche › Stato della rete elettrica: la mappa dei comuni colorati secondo la saturazione delle cabine primarie di e-distribuzione (pieni o a strisce), le cabine come grossi punti colorati, i comuni serviti da altri distributori e le interruzioni in corso. Scelto un comune: criticità, cabine che lo servono, interruzioni in corso e statistiche delle interruzioni mese per mese. Si scaricano l&amp;#x27;immagine e i dati in CSV, Excel e PDF.&lt;/li&gt;&lt;li&gt;Fotovoltaico › Cabine primarie: cerca un indirizzo o una particella, o carica l&amp;#x27;elenco delle tue sedi, e compaiono da sole le cabine primarie interessate, con l&amp;#x27;area convenzionale del GSE e la saturazione. «Aggiorna confini» mostra i perimetri delle aree letti dal GSE, scaricabili a parte con la loro licenza. Sotto, una mappa di dettaglio con ortofoto, particelle ed edifici, dove il punto si sposta a mano.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Territorio › Ortofoto e Modelli 3D: cercando un indirizzo con il numero civico, la mappa mostra tutta la particella catastale del civico, con il segnaposto dentro. Prima andava sul portone e gli edifici grandi restavano fuori: a Rimini, in viale Settembrini 2, l&amp;#x27;ospedale Infermi non si vedeva.&lt;/li&gt;&lt;li&gt;Territorio › Ortofoto e Modelli 3D: cercando solo la via, la mappa si mette a metà della via e la fa vedere tutta (via Coriano a Rimini è lunga alcuni chilometri). Se ci sono più vie possibili, o la via non esiste con quel nome, compare l&amp;#x27;elenco da cui scegliere invece di andare lontano.&lt;/li&gt;&lt;li&gt;Statistiche › Costi energetici Sanità: la pagina si apre sempre sull&amp;#x27;Emilia-Romagna con l&amp;#x27;AUSL della Romagna, anche se nelle altre pagine si era scelta un&amp;#x27;altra regione.&lt;/li&gt;&lt;li&gt;Territorio › Edifici pubblici, Ortofoto e Modelli 3D: con «Confini delle particelle catastali» o «Contorni degli edifici» accesi e la mappa troppo lontana, accanto alla casella compare «si vede dallo zoom 16: avvicinati» (prima l&amp;#x27;avviso era solo nella legenda sotto la mappa).&lt;/li&gt;&lt;li&gt;Territorio › Ortofoto, Modelli 3D e Fotovoltaico › Cabine primarie: in tutta Italia le foto aeree AGEA a colori a 20 cm del 2022, 2023 e 2024 (licenza CC BY 4.0), con il volo più recente di ogni zona; arrivano in mezzo secondo e restano sul nostro server. Prima, fuori da Emilia-Romagna, Toscana e Trentino-Alto Adige, c&amp;#x27;erano solo le AGEA del 2012 a 50 cm, lente e spesso «non risponde o è occupata». Sotto la mappa, nelle immagini scaricate e nei report la citazione dice l&amp;#x27;anno vero della foto (per esempio «ortofoto RGB 2023», o «2022 e 2023» sul confine tra due regioni). In Trentino si usa AGEA 2023 al posto dell&amp;#x27;ortofoto provinciale del 2015.&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
   <entry>
     <title>17 novembre 2026 – Edifici pubblici: gli immobili delle Pubbliche Amministrazioni sulla mappa</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261117</id>

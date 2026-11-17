@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
-from . import alberi_osm, analisi, config as C, dbtr_coda, edifici, edifici_osm, immobili_pa, interno, meteo, modello, orizzonte, ortofoto, preferenze_email, protezione as P, psicro, pvgis, report, storici, strati, tabelle, terreno
+from . import alberi_osm, analisi, config as C, dbtr_coda, edifici, edifici_osm, immobili_pa, interno, meteo, modello, orizzonte, ortofoto, preferenze_email, protezione as P, psicro, pvgis, report, rete, storici, strati, tabelle, terreno
 from .report_servizi import CON_FORMATO as REPORT_CON_FORMATO, TIPI as TIPI_REPORT
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -41,6 +41,7 @@ app.include_router(terreno.router)   # tessere del terreno 3D su richiesta dal D
 app.include_router(interno.router)   # pagina di stato nascosta degli edifici (fase 10, Fase C), con Cloudflare Access
 app.include_router(dbtr_coda.router)   # «Aggiungi DBTR»: proposte all'archivio comune e approvazione interna (07/11/2026)
 app.include_router(preferenze_email.router)   # pagina «Dati per email»: scelte e collegamenti personali (14/11/2026)
+app.include_router(rete.router)      # «Stato della rete elettrica» e «Cabine primarie» (17/11/2026): /api/rete/...
 app.include_router(immobili_pa.router)   # Territorio › Edifici pubblici: ricerca e schede degli immobili delle PA (17/11/2026)
 app.include_router(analisi.router)   # analisi 5 e 7–13 (fase 10, Fase E): modulo privato facoltativo, altrimenti «non disponibile»
 # limiti per indirizzo (IPv6 per rete /64) in finestra mobile di un'ora: previsioni (pesanti), geocodifica (quota
@@ -235,10 +236,12 @@ async def converti(request: Request, file: UploadFile = File(...)):
 
 # ---------------------------------------------------------------------------------------------- patrimonio
 @app.post("/api/patrimonio")
-async def patrimonio_edifici(request: Request, file: UploadFile = File(...)):
+async def patrimonio_edifici(request: Request, file: UploadFile = File(...), luogo: str | None = Form(None)):
     """CSV di edifici (indirizzo, dati catastali o coordinate) → particella, comune, punto.
     Gli indirizzi si cercano prima nell'ANNCSU (file locale aggiornato ogni mese dal worker), poi con Zornade.
-    Il sito invia i file grandi a blocchi di qualche decina di righe e unisce i risultati."""
+    Il sito invia i file grandi a blocchi di qualche decina di righe e unisce i risultati.
+    Con `luogo=1` e una sola riga (ricerca delle pagine di mappa, 17/11/2026) la riga ha in più dove mettere il segnaposto
+    e cosa inquadrare: particella catastale del civico o metà della via, o le vie fra cui scegliere (servizio/luogo.py)."""
     from territorio import patrimonio
     from territorio.anncsu import Indirizzario
     from territorio.zornade import Zornade
@@ -255,6 +258,9 @@ async def patrimonio_edifici(request: Request, file: UploadFile = File(...)):
     if len(df) > C.MAX_EDIFICI:
         raise HTTPException(413, f"Troppi edifici ({len(df)}): massimo {C.MAX_EDIFICI} per caricamento")
     _limita(request, "patrimonio", len(df))
+    luogo = bool(luogo) and len(df) == 1 and C.LUOGO
+    if luogo:
+        P.limita(request, "luogo")
     P.zornade_disponibile(2 * len(df))      # al peggio una geocodifica e una particella per edificio
     z = Zornade(C.ZORNADE_API_KEY, C.DATI / "cache_zornade.sqlite")
     idx = Indirizzario(C.ANNCSU_FILE) if C.ANNCSU_FILE.exists() else None
@@ -262,10 +268,16 @@ async def patrimonio_edifici(request: Request, file: UploadFile = File(...)):
         ris = await run_in_threadpool(patrimonio.geolocalizza, df, z, meteo.comuni(), False, idx)
     finally:
         P.zornade_conta(z.chiamate)          # solo le chiamate vere: la cache non consuma quota
+    righe = json.loads(ris.drop(columns=["dettaglio"], errors="ignore").to_json(orient="records"))
+    fonti = patrimonio.fonti(ris)
+    if luogo and len(righe) == 1:
+        from . import luogo as LG
+        await run_in_threadpool(LG.arricchisci, righe, str(df.iloc[0].get("comune", "")), meteo.comuni(), idx)
+        fonti += [f for f in LG.fonti(righe[0]) if f not in fonti]
     return {"riepilogo": patrimonio.riepilogo(ris), "geojson": patrimonio.geojson(ris),
-            "righe": json.loads(ris.drop(columns=["dettaglio"], errors="ignore").to_json(orient="records")),
+            "righe": righe,
             "fonte": "Dati elaborati da Zornade (catasto Agenzia delle Entrate, ISTAT, OpenStreetMap ODbL)",
-            "fonte_url": "https://zornade.com", "fonti": patrimonio.fonti(ris)}
+            "fonte_url": "https://zornade.com", "fonti": fonti}
 
 
 # ---------------------------------------------------------------------------------------------- report

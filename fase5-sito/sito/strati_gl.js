@@ -43,6 +43,20 @@
     };
     const cP = casella("strato-particelle", "Confini delle particelle catastali", !!particelle);
     const cE = casella("strato-edifici", "Contorni degli edifici", !!(edificiRegionali.length || osm));
+    // (18/11/2026, segnalazione di Paolo su Edifici pubblici) accanto alla casella accesa, se la mappa è troppo lontana:
+    // «si vede dallo zoom 16: avvicinati» (prima l'avviso c'era solo nella legenda sotto la mappa e non si notava)
+    const avviso = (c) => { const s = h("span", "aiuto-breve avviso-zoom-strato"); s.hidden = true; c.parentNode.append(s); return s; };
+    const aP = avviso(cP), aE = avviso(cE);
+    function avvisiZoom() {
+      const z = m.getZoom();
+      const metti = (a, acceso, s) => {
+        const lontano = acceso && s && z < s.zoom[0] - 0.5;
+        a.hidden = !lontano;
+        a.textContent = lontano ? ` – si vede dallo zoom ${s.zoom[0]}: avvicinati` : "";
+      };
+      metti(aP, st.particelle, particelle);
+      metti(aE, st.edifici, st.edificiStrato || edificiRegionali[0] || osm);
+    }
 
     // ---------------------------------------------------------------- particelle (immagini trasparenti)
     if (particelle) {
@@ -107,7 +121,7 @@
       return p;
     }
     function legenda() {
-      if (!leg) return;
+      if (!leg) { avvisiZoom(); return; }
       leg.innerHTML = "";
       if (st.particelle && particelle) leg.appendChild(voce(particelle, "Particelle catastali"));
       if (st.edifici && st.edificiStrato) {
@@ -116,6 +130,7 @@
         leg.appendChild(p);
       }
       leg.hidden = !leg.childNodes.length;
+      avvisiZoom();
     }
 
     cP.addEventListener("change", () => { st.particelle = cP.checked; vedi("strato-particelle", cP.checked); legenda(); });

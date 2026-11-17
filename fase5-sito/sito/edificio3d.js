@@ -40,7 +40,7 @@
 // affidabilità) se c'è, altrimenti il DBTR dell'Emilia-Romagna; i corpi di un archivio meno affidabile che cadono dentro
 // quelli di uno più affidabile non si usano.
 //
-// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261117a):
+// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261118a):
 //  - il punto trovato con la ricerca (cerca_luogo.js, modulo comune con Ortofoto) si **trascina** per correggerlo (l'ANNCSU
 //    è a volte impreciso) e, da zoom 15, un clic sulla mappa lo sposta lì; la scelta dell'edificio usa sempre il punto
 //    corretto (l'edificio che lo contiene, o il più vicino entro 30 m) e «Genera il 3D» parte da lì;
@@ -165,7 +165,7 @@
     let elenco = null;
     const valida = (b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes("..");
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261117a", { cache: "no-cache" });   // mai l'elenco vecchio
+      const r = await fetch("/edifici3d/archivi.json?v=20261118a", { cache: "no-cache" });   // mai l'elenco vecchio
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const d = await r.json();
         elenco = d.archivi;
@@ -1525,7 +1525,7 @@
     if (!m) return "La mappa non è pronta.";
     const f = ortoVisibile() ? stato.ortofoto : null;
     if (f && !f.copia) return `«${f.nome}» è solo in consultazione dal vivo: per scaricare l'immagine scegli un'altra ortofoto o nessuna.`;
-    if (f) righe.push(`Ortofoto: ${f.citazione} – licenza ${f.licenza} (${f.scheda})${f.stato === "da confermare" ? "; uso tramite il server di EuGEnio in attesa di conferma della fonte" : ""}.`);
+    if (f) righe.push(`Ortofoto: ${citOrto(f)} – licenza ${f.licenza} (${f.scheda})${f.stato === "da confermare" ? "; uso tramite il server di EuGEnio in attesa di conferma della fonte" : ""}.`);
     if (f && stato.sposta && stato.sposta.riga()) righe.push(stato.sposta.riga());
     if (stato.contestoOrto && m.getLayer("contesto") && !f && ortoVisibile()) righe.push(`Contesto: ${stato.contestoOrto.citazione} – licenza ${stato.contestoOrto.licenza}.`);
     const archivi = stato.archivi.length ? stato.archivi : stato.indice ? [{ indice: stato.indice }] : [];
@@ -1584,10 +1584,12 @@
     if (stato.tegola) accendiTegola(false);               // (09/11/2026 d) nuova ricerca: la tegola si spegne
     esci3d(true);
     stato.punto = { lon, lat, origine: "ricerca", fonte: x.centro_comune ? "centro del comune (confini ISTAT, CC BY 4.0)"
-      : x.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)" : "dati elaborati da Zornade (zornade.com)",
+      : x.fonte_testo || (x.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)" : "dati elaborati da Zornade (zornade.com)"),
       testo: [x.indirizzo_trovato, x.comune_catasto].filter(Boolean).join(", ") };
     impostaPunto(lon, lat, "ricerca");
-    m.flyTo({ center: [lon, lat], zoom: x.zoom || ZOOM_CERCA, pitch: 0, bearing: 0, duration: 900 });
+    // (17/11/2026) particella del civico o via intera nella vista (cerca_luogo.js); senza riquadro come prima
+    if (window.EUGENIO_CERCA && window.EUGENIO_CERCA.inquadra) window.EUGENIO_CERCA.inquadra(m, lon, lat, x, { pitch: 0, bearing: 0 });
+    else m.flyTo({ center: [lon, lat], zoom: x.zoom || ZOOM_CERCA, pitch: 0, bearing: 0, duration: 900 });
     // solo il comune, o indirizzo senza coordinate (07/11/2026 sera): nessun edificio scelto, si avvicina l'utente
     if (x.centro_comune) {
       stato.daGenerare = null; evidenzia2d(""); $("genera-3d").disabled = true;
@@ -1809,7 +1811,7 @@
   // comune che contiene il punto (confini ISTAT del sito, dati/mappa/08.json, stesse coordinate di patrimonio.js)
   async function comuneDi(lon, lat) {
     try {
-      const m = await json("dati/mappa/08.json?v=20261117a");
+      const m = await json("dati/mappa/08.json?v=20261118a");
       const p = lonlatSvg(lon, lat);
       for (const c of m.comuni) {
         for (const parte of c.d.split("M").filter(Boolean)) {
@@ -2137,7 +2139,7 @@
   let lavoratore = null;
   function orizzonti(punti, ostacoli, lontano = null) {
     return new Promise((ok, ko) => {
-      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261117a"); } catch (e) { ko(e); return; }
+      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261118a"); } catch (e) { ko(e); return; }
       const id = Math.random();
       const f = (e) => { if (e.data.id === id) { lavoratore.removeEventListener("message", f); ok(e.data.orizzonti); } };
       lavoratore.addEventListener("message", f);
@@ -2511,8 +2513,8 @@
       } catch { /* niente: resta la fonte scelta */ }
     }
     // (09/11/2026 c, prove P9 di Paolo) la casella mostra solo le fonti applicabili nel punto (regione e riquadro:
-    // EUGENIO_CONFINI.fontiNelPunto) e propone da sola la migliore: regionale a 20 cm dove c'è e ha immagini, poi AGEA 2012,
-    // poi Sentinel-2. Una scelta a mano resta finché la fonte è applicabile; fuori dalla sua zona si torna all'automatico
+    // EUGENIO_CONFINI.fontiNelPunto) e propone da sola la migliore: regionale a 20 cm dove c'è e ha immagini, poi (dal
+    // 17/11/2026) AGEA 2022-2024 a 20 cm, poi AGEA 2012 del Geoportale Nazionale, poi Sentinel-2. Una scelta a mano resta finché la fonte è applicabile; fuori dalla sua zona si torna all'automatico
     let giro = 0;
     async function opzioni() {
       const mio = ++giro, c = stato.mappa.getCenter();
@@ -2546,6 +2548,8 @@
     opzioni();
     aggiornaSposta();
     stato.mappa.on("moveend", opzioni);
+    // (17/11/2026) AGEA 2022-2024: a tessere arrivate la citazione sotto la mappa dice gli anni di volo della vista
+    if (window.EUGENIO_ORTOFOTO_ANNI) window.EUGENIO_ORTOFOTO_ANNI.segui(stato.mappa, "ortofoto", () => { const f = stato.ortofoto; if (f && f.anni && citOrto(f) !== stato.citazioneOrto) attribuzioneOrto(); });
   }
   // casella «Ortofoto» dei livelli (seconda pubblicazione del 05/11): spenta = niente foto né contesto, la fonte scelta resta
   const ortoVisibile = () => !$("strato-ortofoto") || $("strato-ortofoto").checked;
@@ -2586,12 +2590,23 @@
     m.addLayer({ id: "ortofoto", type: "raster", source: "ortofoto", paint: { "raster-opacity": 1 },
       layout: { visibility: ortoVisibile() ? "visible" : "none" } }, m.getLayer("rilievo") ? "rilievo" : "ombre");
     if (stato.strati) stato.strati.alza();
-    att.hidden = !ortoVisibile(); att.innerHTML = "";
-    att.append("Ortofoto: ", f.citazione, " – licenza ");
+    att.hidden = !ortoVisibile();
+    attribuzioneOrto();
+  }
+  // (17/11/2026) citazione con gli anni di volo della vista per le fonti con più anni (AGEA 2022-2024, protezione.js)
+  function citOrto(f) {
+    return window.EUGENIO_ORTOFOTO_ANNI && stato.mappa ? window.EUGENIO_ORTOFOTO_ANNI.citazione(f, stato.mappa) : f.citazione;
+  }
+  function attribuzioneOrto() {
+    const f = stato.ortofoto, att = $("attribuzione-ortofoto");
+    if (!f || !att) return;
+    att.innerHTML = "";
+    att.append("Ortofoto: ", citOrto(f), " – licenza ");
     const a = h("a", null, f.licenza); a.href = f.scheda; att.appendChild(a);
     if (f.stato === "da confermare") att.append(" (uso tramite il server di EuGEnio in attesa di conferma della fonte)");
     if (!f.copia) att.append(" – solo consultazione dal vivo, non entra nei report");
     att.append(".");
+    stato.citazioneOrto = citOrto(f);
   }
   // vista della mappa per il report: PNG ridotto, solo con un'ortofoto che può entrare nei report
   function immagineMappa() {
@@ -2604,7 +2619,8 @@
       let dati = o.toDataURL("image/png");
       if (dati.length > 1.3e6 * 4 / 3) { o.width = Math.round(w * 0.7); o.height = Math.round(hh * 0.7); o.getContext("2d").drawImage(c, 0, 0, o.width, o.height); dati = o.toDataURL("image/png"); }
       const sp = stato.sposta ? { de: stato.sposta.de, dn: stato.sposta.dn } : {};     // dichiarato nella didascalia del report
-      return { titolo: `Vista 3D dell'edificio con l'ortofoto. ${f.citazione}`, png: dati.split(",")[1], ortofoto: { id: f.id, licenza: f.licenza, citazione: f.citazione, scheda: f.scheda, ...sp } };
+      const cit = citOrto(f);          // (17/11/2026) con l'anno di volo vero (AGEA 2022-2024)
+      return { titolo: `Vista 3D dell'edificio con l'ortofoto. ${cit}`, png: dati.split(",")[1], ortofoto: { id: f.id, licenza: f.licenza, citazione: cit, scheda: f.scheda, ...sp } };
     } catch { return null; }
   }
 
@@ -2741,7 +2757,7 @@
   async function datiDpr() {
     if (stato.dpr === null) {
       stato.dpr = false;
-      try { stato.dpr = await json("dati/dpr412.json?v=20261117a"); } catch { /* senza file: niente zona */ }
+      try { stato.dpr = await json("dati/dpr412.json?v=20261118a"); } catch { /* senza file: niente zona */ }
     }
     return stato.dpr || null;
   }

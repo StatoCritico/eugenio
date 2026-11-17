@@ -168,7 +168,11 @@ _DINAMICI = {"dati": lambda: C.LIMITE_DATI_ORA, "sessione": lambda: C.SESSIONI_O
              # (14/11/2026) collegamenti personali della pagina «Dati per email»
              "email_link": lambda: C.EMAIL_LINK_ORA, "email_pref": lambda: C.LIMITE_DATI_ORA,
              # (14/11/2026) serie orarie di temperatura e umidità del menu «Trattamento aria» (servizio/psicro.py)
-             "psicro": lambda: C.PSICRO_ORA}
+             "psicro": lambda: C.PSICRO_ORA,
+             # (17/11/2026) «Stato della rete elettrica» e «Cabine primarie»: letture leggere dal SQLite (servizio/rete.py)
+             "rete": lambda: C.RETE_ORA,
+             # (17/11/2026) ricerca di un luogo nelle pagine di mappa: particella e metà della via (servizio/luogo.py)
+             "luogo": lambda: C.LUOGO_ORA}
 # limiti giornalieri (finestra mobile di 24 ore): file proposti all'archivio comune («Aggiungi DBTR», 07/11/2026)
 _GIORNALIERI = {"dbtr": lambda: C.DBTR_CARICAMENTI_GIORNO}
 _UNITA = {"patrimonio": "edifici", "estrazione": "download", "stima": "stime", "sessione": "verifiche",
@@ -176,7 +180,7 @@ _UNITA = {"patrimonio": "edifici", "estrazione": "download", "stima": "stime", "
           "edifici_osm": "richieste di edifici OpenStreetMap", "dbtr": "file proposti", "dbtr_pezzi": "pezzi di file",
           "strati": "tessere di particelle e contorni", "tessere_copia": "tessere dalla copia del server",
           "edifici_osm_copia": "richieste di edifici OpenStreetMap dalla copia",
-          "psicro": "serie orarie di temperatura e umidità", "immobili_pa": "ricerche e schede di immobili pubblici"}
+          "psicro": "serie orarie di temperatura e umidità", "rete": "richieste sullo stato della rete elettrica", "luogo": "ricerche di indirizzi sulla mappa", "immobili_pa": "ricerche e schede di immobili pubblici"}
 # 429 con Retry-After (09/11/2026): la pagina ferma per quel tempo le richieste della fonte e lo dice sotto la mappa. Si
 # indica quando si libera almeno il 10 % del limite (con un solo posto libero la pagina ripartirebbe e riprenderebbe 429).
 QUOTA_RIPRESA = 0.10

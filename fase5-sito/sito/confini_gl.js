@@ -15,6 +15,9 @@
 //  await C.riquadroRegione("08")    [ovest, sud, est, nord] in gradi
 //  await C.regioneNelPunto(lon, lat) "08" o null
 //  await C.fontiNelPunto(fonti, lon, lat)   fonti di ortofoto applicabili nel punto (regione e riquadro; 09/11/2026 c)
+//  await C.comuniRegione("08")      FeatureCollection dei comuni della regione (istat, nome, prov, regione), lon/lat;
+//                                   per le pagine che colorano i comuni (Stato della rete elettrica, 17/11/2026)
+//  await C.provinceRegione("08")    FeatureCollection delle province (cod a 3 cifre, sigla, nome)
 //  C.ITALIA                         riquadro dell'Italia
 //  C.ATTRIBUZIONE                   testo per la mappa e per le immagini scaricate
 (function () {
@@ -111,7 +114,7 @@
   // fonti di ortofoto applicabili nel punto (09/11/2026 c, prove P9 di Paolo): le fonti nazionali (regione «00», o senza
   // regione) dentro il loro riquadro; quelle regionali solo dentro la loro regione (confini ISTAT generalizzati: entro
   // ~150 m dal confine valgono anche quelle della regione accanto). Così a Firenze c'è la Toscana e non la RER, a Bologna
-  // la RER e non la Toscana (il riquadro della Toscana arriva fino a Bologna), in Veneto AGEA 2012 e Sentinel-2. Fuori dai
+  // la RER e non la Toscana (il riquadro della Toscana arriva fino a Bologna), in Veneto le nazionali (AGEA 2022-2024, AGEA 2012, Sentinel-2). Fuori dai
   // confini (mare) o senza i dati dei confini vale il solo riquadro. L'ordine resta quello del server (priorità).
   async function fontiNelPunto(fonti, lon, lat) {
     const dlat = 0.00135, dlon = dlat / Math.cos(lat * Math.PI / 180);
@@ -256,6 +259,8 @@
     return stato;
   }
 
-  window.EUGENIO_CONFINI = { aggiungi, alza, riquadroRegione, riquadroComune, geometriaComune, regioneNelPunto, comuneNelPunto, fontiNelPunto, utmLonlat, svgLonlat,
+  const comuniRegione = (cod) => datiRegione(cod).then((r) => r.comuni);
+  const provinceRegione = (cod) => datiRegione(cod).then((r) => r.province);
+  window.EUGENIO_CONFINI = { aggiungi, alza, riquadroRegione, comuniRegione, provinceRegione, riquadroComune, geometriaComune, regioneNelPunto, comuneNelPunto, fontiNelPunto, utmLonlat, svgLonlat,
     ITALIA, ATTRIBUZIONE };
 })();

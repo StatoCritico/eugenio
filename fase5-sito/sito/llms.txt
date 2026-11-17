@@ -10,7 +10,7 @@
 > per IP solo sulle tessere chieste alla fonte e 429 con Retry-After; Previsioni non più sperimentale; tetti tutti piani
 > in partenza e tetti a falde scelti dall'utente nella sezione «Coperture», anche con il cortile; fonte dell'ortofoto
 > scelta da sola nel punto; alberi indicativi da OpenStreetMap dove manca il LiDAR; verifica anti-robot valida
-> un'ora per browser); dal 09/11 f Obblighi di legge, Geometria e luce naturale e Consumi di Edifici sono di nuovo accessibili, sperimentali; 11/11/2026: pagina Statistiche › Indici dei prezzi (listini delle convenzioni Intercent-ER e Consip, PSV day-ahead ARERA, PFOR,t ricostruito, confronto delle convenzioni sui consumi per fascia); 14/11/2026: pagina Clima e meteo › Newsletter e avvisi (newsletter mensile per regione, previsioni settimanali per fino a 5 comuni, avvisi meteo del giorno dopo, che non sono allerte); 15/11/2026: nuovo gruppo Trattamento aria › Psicrometria (Trasformazioni (UTA), Ore di funzionamento, Carichi latenti, Free cooling e recupero, sperimentali), scelta degli anni «ultimo anno · 5 · 10 · 20 · tutta la serie» in Legge 10, Dati climatici e Cambiamento climatico, pagine Esempi e Contributi; 16/11/2026: pagine di Trattamento aria divise in due metà con la loro barra di scorrimento, foglio psicro_UTA.xlsx v2.2 con la citazione di EuGEnio in ogni foglio; citazione di EuGEnio in riga 1 e nel piè di stampa degli Excel e ODS dei report e di Dati climatici; 16/11/2026 g: Perugia in Modelli 3D con altezze dal LiDAR PST 2014 (sagome OpenStreetMap), Perugia in Modelli 3D; 17/11/2026: il gruppo Patrimonio si chiama Territorio, nuova pagina Territorio › Edifici pubblici (immobili delle Pubbliche Amministrazioni del censimento MEF 2023 sulle particelle catastali, ricerca e schede da /api/immobili-pa/…), edifici pubblici retinati in Modelli 3D; versione del sito ?v=20261117a.
+> un'ora per browser); dal 09/11 f Obblighi di legge, Geometria e luce naturale e Consumi di Edifici sono di nuovo accessibili, sperimentali; 11/11/2026: pagina Statistiche › Indici dei prezzi (listini delle convenzioni Intercent-ER e Consip, PSV day-ahead ARERA, PFOR,t ricostruito, confronto delle convenzioni sui consumi per fascia); 14/11/2026: pagina Clima e meteo › Newsletter e avvisi (newsletter mensile per regione, previsioni settimanali per fino a 5 comuni, avvisi meteo del giorno dopo, che non sono allerte); 15/11/2026: nuovo gruppo Trattamento aria › Psicrometria (Trasformazioni (UTA), Ore di funzionamento, Carichi latenti, Free cooling e recupero, sperimentali), scelta degli anni «ultimo anno · 5 · 10 · 20 · tutta la serie» in Legge 10, Dati climatici e Cambiamento climatico, pagine Esempi e Contributi; 16/11/2026: pagine di Trattamento aria divise in due metà con la loro barra di scorrimento, foglio psicro_UTA.xlsx v2.2 con la citazione di EuGEnio in ogni foglio; citazione di EuGEnio in riga 1 e nel piè di stampa degli Excel e ODS dei report e di Dati climatici; 16/11/2026 g: Perugia in Modelli 3D con altezze dal LiDAR PST 2014 (sagome OpenStreetMap), Perugia in Modelli 3D; 17/11/2026: il gruppo Patrimonio si chiama Territorio, nuova pagina Territorio › Edifici pubblici (immobili delle Pubbliche Amministrazioni del censimento MEF 2023 sulle particelle catastali, ricerca e schede da /api/immobili-pa/…), edifici pubblici retinati in Modelli 3D; 18/11/2026: pagine Statistiche › Stato della rete elettrica (rete-elettrica.html: criticità dei comuni dalle cabine primarie di e-distribuzione, cabine, interruzioni in corso e loro statistiche) e Fotovoltaico › Cabine primarie (fv-cabine.html: cabine primarie e aree convenzionali del GSE di indirizzi, particelle o elenchi di sedi), sperimentali, rotte /api/rete/…; versione del sito ?v=20261118a.
 
 Le istruzioni complete per gli agenti AI (pagine, parametri dell'indirizzo, formati dei file, API libere e protette,
 limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un solo file: leggilo prima di usare il servizio.
@@ -35,6 +35,8 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
 - Le tessere del terreno 3D (/api/terreno/{z}/{x}/{y}.png, Terrarium dal DTM del server) e delle ortofoto servono
   alla mappa del sito: non scaricare intere zone. Le tessere delle ortofoto WMS accettano ?de=<m>&dn=<m> (interi, ±20):
   ortofoto spostata di quei metri a est e a nord rispetto alla cartografia (frecce sotto la mappa), senza copia sul server.
+- Ricerca di un indirizzo nelle mappe (dal 17/11/2026): POST /api/patrimonio con luogo=1 e una riga dà anche la particella
+  catastale del civico (Agenzia delle Entrate, CC BY 4.0), la metà della via (OpenStreetMap, ODbL) o le vie fra cui scegliere.
 - Fuori dal DBTR, /api/edifici/osm (con la verifica anti-robot) dà in Veneto le sagome della Regione (IODL 2.0) con le
   altezze di OpenStreetMap (ODbL) dove ci sono, altrimenti stimate; altrove gli edifici OpenStreetMap. Non per scaricare zone.
 - Edifici 3D dai DB topografici (archivi elencati in /edifici3d/archivi.json, ognuno con licenza e attribuzione): 54
@@ -47,7 +49,9 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
 - Tetti nelle pagine 3D (dal 09/11/2026 c): tutti piani in partenza; la persona sceglie i tetti a falde con la tegola della
   sezione «Coperture» (inclinazione 22° all'inizio, scelte nel browser, esporta e importa in JSON); niente ipotesi automatica.
   Nelle pagine Edifici e Fotovoltaico (in lavorazione) «Forma dei tetti»: «Scelti dall'utente» o «Tutti piani».
-- Ortofoto: la pagina sceglie da sola la fonte applicabile nel punto (regionale a 20 cm, poi AGEA 2012, poi Sentinel-2). Una
+- Ortofoto: la pagina sceglie da sola la fonte applicabile nel punto (regionale a 20 cm più recente, poi dal 17/11/2026 AGEA
+  2022-2024 a 20 cm in tutta Italia, CC BY 4.0, con l'anno di volo della tessera in X-Ortofoto-Anno da mettere nella citazione,
+  poi AGEA 2012 solo dal vivo, poi Sentinel-2). Una
   tessera con X-Ortofoto-Errore (200, PNG vuoto, no-store, Retry-After) vuol dire che la fonte non ha risposto: riprova dopo.
   Vale anche per le particelle e i contorni (/api/ortofoto/strati/...).
 - Alberi indicativi: GET /api/alberi/osm/{nome}.json (nome = i_j, cella di 0,01°, OpenStreetMap ODbL 1.0, altezze stimate, "stima": true);
@@ -63,6 +67,10 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
 - Newsletter e avvisi (Clima e meteo, dati-per-email.html, rotte /api/email/…): l'iscrizione la fa solo la persona, con il collegamento
   personale che riceve nella sua casella. Gli avvisi meteo non sono allerte: il servizio è gratuito, non fornisce garanzie
   e non sostituisce le allerte della Protezione Civile e degli enti pubblici.
+- Rete elettrica (dal 17/11/2026): GET /api/rete/stato, /api/rete/cabine?regione=RR, /api/rete/comuni?regione=RR,
+  /api/rete/interruzioni/attive, /api/rete/interruzioni/comune/{istat}, /api/rete/cabine/comune/{istat} (libere). Posizioni
+  delle cabine da OpenStreetMap (ODbL, da citare); i perimetri delle aree convenzionali del GSE (CC BY-NC-SA 3.0 IT) non
+  sono sul server di EuGEnio: la pagina Cabine primarie li legge dal browser, al massimo 100 aree, mai l'intero strato.
 - I dati di mercato GME ed EEX non sono mai esposti: non cercarli.
 - Vietato usare i dati catastali per re-identificare persone.
 - User-Agent identificabile, richieste in serie, rispetto dei 429; per uso intensivo un mirror proprio.

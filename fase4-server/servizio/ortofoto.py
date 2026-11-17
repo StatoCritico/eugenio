@@ -39,6 +39,17 @@ Regole:
     questi errori e, se si ripetono, ferma la fonte e lo scrive sotto la mappa (protezione.js). Dopo GUASTI_SOGLIA errori
     di fila in GUASTI_FINESTRA_S secondi senza una risposta buona la fonte è **ferma** per GUASTI_PAUSA_S secondi: in quel
     tempo le tessere nuove rispondono subito vuote con `X-Ortofoto-Errore: ferma`, senza chiamare la fonte.
+  * **fonti con più anni** (17/11/2026, ortofoto AGEA 2022-2024 del Geoportale AGEA, `tipo = "arcgis"` e `anni`): ogni
+    anno AGEA vola circa un terzo d'Italia e il servizio di quell'anno dà una tessera trasparente (PNG di 876 byte) dove
+    non ha volato. Per ogni tessera il proxy chiede prima l'anno più recente; se non riempie la tessera chiede **insieme**
+    gli altri e compone: sopra l'anno più recente, nei buchi (confini tra regioni volate in anni diversi) l'anno
+    precedente, e così via (un errore di un anno che non serve non conta). La tessera
+    composta va in copia con accanto un file `.anno` con gli anni usati, ed esce con `X-Ortofoto-Anno: 2023` (o
+    `2023,2022` sui confini): la pagina li raccoglie (protezione.js) e la citazione dice l'anno vero della vista. Per non
+    chiedere a vuoto, gli anni che hanno dato una tessera tutta trasparente a uno zoom ≥ 10 non si chiedono più per le
+    tessere figlie fino a 4 livelli sotto (memoria `_vuote_anno`). Fino allo zoom `zoom_tessere` (18) si usano le
+    tessere già pronte del servizio (`/tile/{z}/{y}/{x}`, ~0,5 s); oltre (19, 20 cm) `exportImage` sul riquadro della
+    tessera (anche questo ~0,5 s).
 """
 from __future__ import annotations
 
@@ -69,6 +80,8 @@ STATI = ("confermata", "da confermare", "spenta")
 ESCLUSI = re.compile(r"(?i)(google|gstatic|arcgisonline|esri|virtualearth|bing\.|"
                      r"s2cloudless-20(1[89]|2\d)|agea.*(irg|nir|infra)|wms/agea)")
 ESTENSIONI = {"image/jpeg": "jpg", "image/png": "png"}
+TIPI = ("wms", "xyz", "arcgis")
+ESPONI = "X-Ortofoto-Fonte, X-Ortofoto-Licenza, X-Ortofoto-Vuota, X-Ortofoto-Errore, X-Ortofoto-Anno, Retry-After"
 R_TERRA = 20037508.342789244
 E2_WGS84 = 0.00669437999014          # eccentricità al quadrato dell'ellissoide WGS84 (= GRS80 al decimo di mm)
 SPOSTAMENTO_MAX_M = 20               # spostamento manuale massimo dell'ortofoto per asse (08/11/2026)
@@ -104,6 +117,10 @@ class Fonte:
     # Perugia: dentro il riquadro della fonte). Con `segnaposto = true` queste tessere diventano vuote (PNG trasparente
     # con X-Ortofoto-Vuota: 1), come quelle della RER senza immagini: la pagina passa da sola alla fonte successiva
     segnaposto: bool = False
+    # (17/11/2026) fonti con più anni (AGEA 2022-2024): `{anno}` nell'URL, anni dal più recente; la citazione può
+    # contenere `{anni}` (sostituito con gli anni usati nella vista; nell'elenco «2022-2024»)
+    anni: tuple[int, ...] = ()
+    zoom_tessere: int = 18             # tipo «arcgis»: tessere già pronte fino a questo zoom, oltre exportImage
     _istanti: list = field(default_factory=list, repr=False)
 
     @property
@@ -115,8 +132,22 @@ class Fonte:
             return False
         return not (C.ORTOFOTO_SOLO_CONFERMATE and self.stato != "confermata")
 
+    @property
+    def citazione_generica(self) -> str:
+        """Citazione senza segnaposto: con più anni «2022-2024» (la pagina mette gli anni veri della vista)."""
+        if "{anni}" not in self.citazione:
+            return self.citazione
+        return self.citazione.replace("{anni}", testo_anni(self.anni, intervallo=True))
+
     def pubblica(self) -> dict:
-        return {"id": self.id, "nome": self.nome, "licenza": self.licenza, "citazione": self.citazione,
+        d = self._pubblica()
+        if self.anni:
+            d["anni"] = list(self.anni)
+            d["citazione_anni"] = self.citazione    # con «{anni}»: la pagina lo sostituisce con gli anni della vista
+        return d
+
+    def _pubblica(self) -> dict:
+        return {"id": self.id, "nome": self.nome, "licenza": self.licenza, "citazione": self.citazione_generica,
                 "scheda": self.scheda, "stato": self.stato, "regione": self.regione, "copia": self.cache,
                 "nei_report": self.nei_report, "zoom": list(self.zoom), "riquadro": list(self.riquadro),
                 "priorita": self.priorita, "formato": self.formato,
@@ -126,6 +157,18 @@ class Fonte:
                 # usano le tessere copiate prima (nere, o bianche con la scritta)
                 "tessere": f"/api/ortofoto/{self.id}/{{z}}/{{x}}/{{y}}.{self.estensione}"
                            + ("?t=1" if self.trasparente else "?s=1" if self.segnaposto else "")}
+
+
+def testo_anni(anni, intervallo: bool = False) -> str:
+    """[2023] → «2023»; [2023, 2022] → «2022 e 2023»; con `intervallo` e più di due anni «2022-2024»."""
+    a = sorted({int(x) for x in anni})
+    if not a:
+        return ""
+    if intervallo and len(a) > 2 and a == list(range(a[0], a[-1] + 1)):
+        return f"{a[0]}-{a[-1]}"
+    if len(a) == 1:
+        return str(a[0])
+    return ", ".join(map(str, a[:-1])) + " e " + str(a[-1])
 
 
 def leggi_toml(file: Path) -> list[Fonte]:
@@ -138,8 +181,11 @@ def leggi_toml(file: Path) -> list[Fonte]:
             raise ValueError(f"{file.name}: stato «{stato}» non valido per {f.get('id')} (ammessi: {', '.join(STATI)})")
         if ESCLUSI.search(str(f.get("url", ""))):
             raise ValueError(f"{file.name}: la fonte {f.get('id')} usa un servizio escluso (§ 6 della proposta)")
-        if f.get("tipo") not in ("wms", "xyz"):
-            raise ValueError(f"{file.name}: tipo «{f.get('tipo')}» non valido per {f.get('id')} (wms o xyz)")
+        if f.get("tipo") not in TIPI:
+            raise ValueError(f"{file.name}: tipo «{f.get('tipo')}» non valido per {f.get('id')} (wms, xyz o arcgis)")
+        anni = tuple(sorted({int(a) for a in f.get("anni", [])}, reverse=True))
+        if ("{anno}" in str(f.get("url", ""))) != bool(anni):
+            raise ValueError(f"{file.name}: la fonte {f.get('id')} deve avere sia «{{anno}}» nell'URL sia l'elenco anni")
         if not re.fullmatch(r"[a-z0-9_]{2,40}", str(f.get("id", ""))):
             raise ValueError(f"{file.name}: id «{f.get('id')}» non valido (minuscole, cifre e _)")
         out.append(Fonte(id=f["id"], nome=f.get("nome", f["id"]), tipo=f["tipo"], url=f["url"],
@@ -151,7 +197,8 @@ def leggi_toml(file: Path) -> list[Fonte]:
                          riquadro=tuple(f.get("riquadro", (-180, -85, 180, 85))),
                          al_secondo=float(ritmo.get("al_secondo", 4)), all_ora=int(ritmo.get("all_ora", 6000)),
                          priorita=int(f.get("priorita", 5)), trasparente=bool(f.get("trasparente", False)),
-                         segnaposto=bool(f.get("segnaposto", False))))
+                         segnaposto=bool(f.get("segnaposto", False)), anni=anni,
+                         zoom_tessere=int(f.get("zoom_tessere", 18))))
     return out
 
 
@@ -224,9 +271,17 @@ def bbox_spostato(z: int, x: int, y: int, de: int = 0, dn: int = 0) -> tuple[flo
     return w + dx, s + dy, e + dx, n + dy
 
 
-def url_tessera(f: Fonte, z: int, x: int, y: int, de: int = 0, dn: int = 0) -> str:
+def url_tessera(f: Fonte, z: int, x: int, y: int, de: int = 0, dn: int = 0, anno: int | None = None) -> str:
     if f.tipo == "xyz":
         return f.url.replace("{z}", str(z)).replace("{x}", str(x)).replace("{y}", str(y))
+    if f.tipo == "arcgis":
+        # ImageServer di ArcGIS (Geoportale AGEA): tessere già pronte fino a zoom_tessere, oltre exportImage sul riquadro
+        base = f.url.replace("{anno}", str(anno if anno is not None else (f.anni[0] if f.anni else ""))).rstrip("/")
+        if z <= f.zoom_tessere:
+            return f"{base}/tile/{z}/{y}/{x}"
+        w, s, e, n = limiti_tessera(z, x, y)
+        return (f"{base}/exportImage?bbox={w:.3f},{s:.3f},{e:.3f},{n:.3f}&bboxSR=3857&imageSR=3857&size=256,256"
+                f"&format=jpgpng&compressionQuality=85&f=image")
     w, s, e, n = bbox_spostato(z, x, y, de, dn)
     sep = "&" if "?" in f.url else "?"
     return (f"{f.url}{sep}SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS={f.livello}&STYLES=&CRS=EPSG:3857"
@@ -349,6 +404,11 @@ def file_copia(f: Fonte, z: int, x: int, y: int) -> Path:
     # fonti `trasparente`: cartella nuova `<id>_t`, così le tessere nere copiate prima del 07/11/2026 sera non si usano
     # più (la cartella vecchia si può cancellare: passo J dell'aggiornamento)
     return C.CARTELLA_ORTOFOTO / (f"{f.id}_t" if f.trasparente else f.id) / str(z) / str(x) / f"{y}.{f.estensione}"
+
+
+def file_anno(p: Path) -> Path:
+    """Accanto alla tessera in copia di una fonte con più anni: gli anni usati («2023» o «2023,2022»)."""
+    return p.with_name(p.name + ".anno")
 
 
 def leggi_copia(p: Path) -> bytes | None:
@@ -483,10 +543,10 @@ def tessera_errore(f: Fonte, motivo: str, riprova: float) -> Response:
     return Response(vuota_png(), media_type="image/png", headers={
         "Cache-Control": "no-store", "X-Ortofoto-Fonte": f.id, "X-Ortofoto-Errore": motivo,
         "Retry-After": str(max(1, int(math.ceil(riprova)))),
-        "Access-Control-Expose-Headers": "X-Ortofoto-Fonte, X-Ortofoto-Licenza, X-Ortofoto-Vuota, X-Ortofoto-Errore, Retry-After"})
+        "Access-Control-Expose-Headers": ESPONI})
 
 
-def _intestazioni(f: Fonte, dati: bytes, copia: str) -> dict[str, str]:
+def _intestazioni(f: Fonte, dati: bytes, copia: str, anni: str = "") -> dict[str, str]:
     # fonti senza copia (consultazione dal vivo, AGEA 2012 del Geoportale): nessuna copia sul server né su Cloudflare, ma
     # (09/11/2026) la copia privata del browser per un giorno, come qualsiasi visualizzatore WMS: prima «no-store» faceva
     # richiedere alla fonte ogni tessera a ogni ritorno sulla stessa zona
@@ -494,10 +554,154 @@ def _intestazioni(f: Fonte, dati: bytes, copia: str) -> dict[str, str]:
          "ETag": '"' + hashlib.sha1(dati).hexdigest()[:20] + '"',
          "X-Ortofoto-Fonte": f.id, "X-Ortofoto-Licenza": f.licenza.encode("ascii", "replace").decode(),
          "X-Ortofoto-Copia": copia,
-         "Access-Control-Expose-Headers": "X-Ortofoto-Fonte, X-Ortofoto-Licenza, X-Ortofoto-Vuota, X-Ortofoto-Errore, Retry-After"}
-    if (f.trasparente or f.segnaposto) and vuota(dati):
+         "Access-Control-Expose-Headers": ESPONI}
+    if (f.trasparente or f.segnaposto or f.anni) and vuota(dati):
         h["X-Ortofoto-Vuota"] = "1"          # la pagina passa da sola a un'altra fonte (09/11/2026)
+    if anni:
+        h["X-Ortofoto-Anno"] = anni          # (17/11/2026) anni di volo usati nella tessera, dal più recente
     return h
+
+
+# ---------------------------------------------------------------------------------------------- fonti con più anni
+VUOTE_ZOOM_MIN = 10        # tessere tutte trasparenti ricordate da questo zoom in su…
+VUOTE_LIVELLI = 4          # …e usate per saltare quell'anno nelle tessere figlie fino a 4 livelli sotto
+VUOTE_MAX = 200_000        # tessere ricordate per fonte e anno (oltre si ricomincia)
+_vuote_anno: dict[tuple[str, int], set[tuple[int, int, int]]] = {}
+_vuote_blocco = threading.Lock()
+
+
+def anno_vuoto(fid: str, anno: int, z: int, x: int, y: int) -> bool:
+    """True se l'anno ha dato una tessera tutta trasparente per un antenato vicino (stesso posto, zoom più basso): lì
+    quell'anno non ha volato e non si chiede. Solo antenati entro VUOTE_LIVELLI livelli e da VUOTE_ZOOM_MIN in su: a
+    zoom più bassi una striscia stretta di volo può sparire nel ricampionamento."""
+    with _vuote_blocco:
+        v = _vuote_anno.get((fid, anno))
+        if not v:
+            return False
+        for k in range(1, VUOTE_LIVELLI + 1):
+            if z - k < VUOTE_ZOOM_MIN:
+                break
+            if (z - k, x >> k, y >> k) in v:
+                return True
+    return False
+
+
+def segna_vuoto(fid: str, anno: int, z: int, x: int, y: int) -> None:
+    if z < VUOTE_ZOOM_MIN:
+        return
+    with _vuote_blocco:
+        v = _vuote_anno.setdefault((fid, anno), set())
+        if len(v) >= VUOTE_MAX:
+            v.clear()
+        v.add((z, x, y))
+
+
+def svuota_vuote() -> None:
+    with _vuote_blocco:
+        _vuote_anno.clear()
+
+
+def componi(pezzi: list[tuple[int, bytes]]) -> tuple[bytes, str, list[int], bool]:
+    """Pezzi (anno, immagine) dal più recente, già senza le tessere tutte trasparenti → (dati, tipo, anni usati, piena).
+    Sopra l'anno più recente, nei suoi buchi i precedenti. Un JPEG (o un PNG tutto pieno) in testa esce com'è, senza
+    ricomprimere. Una tessera composta piena diventa JPEG, con buchi PNG trasparente."""
+    import io
+    import numpy as np
+    from PIL import Image
+    if not pezzi:
+        return vuota_png(), "image/png", [], False
+    anno0, d0 = pezzi[0]
+    if d0[:3] == b"\xff\xd8\xff":
+        return d0, "image/jpeg", [anno0], True
+    immagini, coperto, usati = [], None, []
+    for anno, d in pezzi:
+        im = Image.open(io.BytesIO(d)).convert("RGBA")
+        if im.size != (256, 256):
+            im = im.resize((256, 256))
+        a = np.asarray(im)[..., 3]
+        if coperto is None:
+            coperto = np.zeros_like(a)
+        if ((a > 0) & (coperto < 255)).any():
+            usati.append(anno)
+            immagini.append(im)
+            coperto = np.maximum(coperto, a)
+        if int(coperto.min()) == 255:
+            break
+    piena = coperto is not None and int(coperto.min()) == 255
+    if usati == [anno0]:
+        return d0, "image/png", usati, piena      # un solo anno (anche con il mare trasparente): com'è, senza ricomprimere
+    out = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
+    for im in reversed(immagini):                  # dal più vecchio al più recente: il più recente sta sopra
+        out = Image.alpha_composite(out, im)
+    b = io.BytesIO()
+    if piena:
+        out.convert("RGB").save(b, "JPEG", quality=88)
+        return b.getvalue(), "image/jpeg", usati, True
+    out.save(b, "PNG", optimize=True)
+    return b.getvalue(), "image/png", usati, False
+
+
+async def _turno(f: Fonte, fine: float) -> float:
+    """Aspetta il turno verso la fonte fino a `fine` (monotonic): 0 se è arrivato, altrimenti i secondi che mancavano."""
+    while (attesa := ritmo.prova(f)) and time.monotonic() + attesa <= fine:
+        await asyncio.sleep(attesa)
+    return attesa
+
+
+async def _anno(f: Fonte, anno: int, z: int, x: int, y: int, fine: float) -> tuple[int, str, object]:
+    """Un anno di una fonte con più anni → (anno, esito, dati o attesa): esito «ok», «vuota», «occupata» o «fonte»."""
+    if anno_vuoto(f.id, anno, z, x, y):
+        return anno, "vuota", None
+    if attesa := await _turno(f, fine):
+        return anno, "occupata", attesa
+    t0 = time.monotonic()
+    try:
+        async with _semaforo(f):
+            r = await _chiama(url_tessera(f, z, x, y, anno=anno))
+    except (httpx.HTTPError, asyncio.TimeoutError, OSError) as e:
+        log.warning("Ortofoto %s %s: fonte non raggiungibile (%s dopo %.1f s)", f.id, anno, type(e).__name__,
+                    time.monotonic() - t0)
+        return anno, "fonte", None
+    tipo = r.headers.get("content-type", "").split(";")[0].strip()
+    if r.status_code == 404:                # fuori dalla cache dell'anno: lì non ha volato
+        segna_vuoto(f.id, anno, z, x, y)
+        return anno, "vuota", None
+    if r.status_code != 200 or not tipo.startswith("image/"):
+        log.warning("Ortofoto %s %s: risposta %s %s dopo %.1f s", f.id, anno, r.status_code, tipo, time.monotonic() - t0)
+        return anno, "fonte", None
+    if vuota(r.content):
+        segna_vuoto(f.id, anno, z, x, y)
+        return anno, "vuota", None
+    return anno, "ok", r.content
+
+
+async def tessera_anni(f: Fonte, z: int, x: int, y: int) -> tuple[bytes, str, list[int]] | Response:
+    """Tessera di una fonte con più anni: prima l'anno più recente da chiedere; se non riempie la tessera, gli altri
+    insieme, e si compone. Un errore conta solo se serviva (un anno più recente pieno lo rende inutile)."""
+    fine = time.monotonic() + C.ORTOFOTO_ATTESA_S
+    da_chiedere = [a for a in f.anni if not anno_vuoto(f.id, a, z, x, y)]
+    esiti: list[tuple[int, str, object]] = []
+    if da_chiedere:
+        primo = await _anno(f, da_chiedere[0], z, x, y, fine)
+        esiti.append(primo)
+        pieno = primo[1] == "ok" and await asyncio.to_thread(lambda: componi([(primo[0], primo[2])])[3])
+        if not pieno and primo[1] in ("ok", "vuota") and len(da_chiedere) > 1:
+            esiti += await asyncio.gather(*(_anno(f, a, z, x, y, fine) for a in da_chiedere[1:]))
+    pezzi: list[tuple[int, bytes]] = []
+    for anno, esito, val in esiti:             # dal più recente
+        if esito == "ok":
+            pezzi.append((anno, val))
+            dati, tipo, usati, piena = await asyncio.to_thread(componi, pezzi)
+            if piena:
+                guasti.buona(f.id)
+                return dati, tipo, usati
+        elif esito == "occupata":
+            return tessera_errore(f, "occupata", float(val))
+        elif esito == "fonte":
+            return tessera_errore(f, "fonte", guasti.errore(f.id) or 30)
+    guasti.buona(f.id)
+    dati, tipo, usati, _ = await asyncio.to_thread(componi, pezzi)
+    return dati, tipo, usati
 
 
 # ---------------------------------------------------------------------------------------------- rotte
@@ -528,15 +732,21 @@ async def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str
     # toglierebbe per prime le tessere normali più vecchie, che servono a tutti. Restano la copia del browser (un giorno)
     # e il ritmo verso la fonte, come per le altre.
     copia = f.cache and not spostata
+    anni = ""
     if copia:
         dati = leggi_copia(p)
+        if dati is not None and f.anni:
+            try:                                # (17/11/2026) senza il file degli anni la copia non vale
+                anni = file_anno(p).read_text(encoding="ascii").strip()
+            except (OSError, UnicodeDecodeError):
+                dati = None
         if dati is not None and f.segnaposto and segnaposto_bianco(dati):
             dati = vuota_png()                  # segnaposto copiati prima del 09/11 b: vuoti anche dalla copia
             with contextlib.suppress(OSError):
                 scrivi_copia(p, dati)
         if dati is not None:
             P.limita(request, "tessere_copia")
-            h = _intestazioni(f, dati, "si")
+            h = _intestazioni(f, dati, "si", anni)
             if request.headers.get("if-none-match") == h["ETag"]:
                 return Response(status_code=304, headers=h)
             return Response(dati, media_type=tipo_di(dati, f.formato), headers=h)
@@ -544,11 +754,22 @@ async def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str
     if (resta := guasti.ferma_per(f.id)) > 0:
         return tessera_errore(f, "ferma", resta)
     P.limita(request, "ortofoto")                       # tessera da chiedere alla fonte (09/11/2026: solo queste contano)
+    if f.anni:                                          # (17/11/2026) AGEA 2022-2024: anno più recente, composto
+        esito = await tessera_anni(f, z, x, y)
+        if isinstance(esito, Response):
+            return esito
+        dati, tipo, usati = esito
+        anni = ",".join(map(str, usati))
+        if copia:
+            try:
+                scrivi_copia(file_anno(p), anni.encode("ascii"))
+                scrivi_copia(p, dati)
+                pulisci()
+            except OSError as e:
+                log.warning("Ortofoto %s: copia non scritta (%s)", f.id, e)
+        return Response(dati, media_type=tipo, headers=_intestazioni(f, dati, "nuova" if copia else "no", anni))
     # una mappa chiede 15–30 tessere insieme: si aspetta il proprio turno per qualche secondo (senza occupare un thread)
-    fine = time.monotonic() + C.ORTOFOTO_ATTESA_S
-    while (attesa := ritmo.prova(f)) and time.monotonic() + attesa <= fine:
-        await asyncio.sleep(attesa)
-    if attesa:
+    if attesa := await _turno(f, time.monotonic() + C.ORTOFOTO_ATTESA_S):
         return tessera_errore(f, "occupata", attesa)
     t0 = time.monotonic()
     try:

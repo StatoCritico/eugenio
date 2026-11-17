@@ -105,9 +105,15 @@ async function carica() {
   $("componente").addEventListener("change", (e) => { stato.comp = e.target.value; mostra(); });
   $("mostra-componenti").addEventListener("change", (e) => { stato.mostra = e.target.checked; mostra(); });
   $("ente").addEventListener("change", (e) => scegliEnte(e.target.value));
-  const reg = (window.EUGENIO && window.EUGENIO.regione) || "08";
+  // Regione all'apertura (17/11/2026, Paolo): l'Emilia-Romagna con l'AUSL della Romagna, anche se nelle altre pagine
+  // il browser ricorda un'altra regione. Vale un'altra regione solo se è scritta nell'indirizzo (?regione=RR), per
+  // esempio in un collegamento condiviso o dopo una scelta fatta in questa pagina.
+  const dallIndirizzo = new URLSearchParams(location.search).get("regione");
+  const reg = (dallIndirizzo && window.EUGENIO && window.EUGENIO.regione) || "08";
   if (window.EUGENIO) window.EUGENIO.suRegione = (cod) => cambiaRegione(cod, false);
-  await cambiaRegione(stato.regioni.has(reg) ? reg : "08", false, new URLSearchParams(location.search).get("ente"));
+  const iniziale = stato.regioni.has(reg) ? reg : "08";
+  if (window.EUGENIO && window.EUGENIO.regione !== iniziale) aggiornaMinimappa(iniziale);
+  await cambiaRegione(iniziale, false, new URLSearchParams(location.search).get("ente"));
 }
 
 async function cambiaRegione(cod, dallElenco, enteRichiesto) {

@@ -10,6 +10,10 @@
 | **MEF** – censimento «Patrimonio della PA» (dati al 31/12/2023, CC BY 4.0) e **Agenzia delle Entrate** – download massivo della cartografia catastale (CC BY 4.0) | immobili delle Pubbliche Amministrazioni con la particella catastale disegnata | `immobili-pa`: file nazionali in cache, una volta l'anno (vedi «Immobili delle PA») |
 | **Zornade** – API catastale gratuita (10.000 richieste/ora, confermato sull'account il 25/10/2026) | particella, foglio, mappale, superficie, comune catastale, edifici, terreno; geocodifica di riserva | chiamata dal server con la chiave tenuta lì; cache locale |
 
+Dal 17/11/2026 la ricerca di un luogo delle pagine di mappa usa anche la **cartografia catastale dell'Agenzia delle
+Entrate** (WFS INSPIRE, CC BY 4.0, senza chiave) per la forma della particella del civico, e le strade di **OpenStreetMap**
+(Overpass, ODbL) per la metà di una via: § «Ricerca di un luogo» più sotto.
+
 ## Confini: cosa teniamo, dove, e perché
 
 Tre posti diversi, da non confondere:
@@ -307,6 +311,46 @@ La lettura dei GML è fatta «a flusso» sui byte e costruisce il poligono solo 
 (~0,06 s per comune contro ~1,2 s con GDAL); servono solo pandas, pyarrow e shapely. Composizione in due passate
 con le colonne di testo a dizionario: sul file nazionale sta in ~4 GB di memoria.
 
+### Ricerca di un luogo: particella del civico e metà della via (17/11/2026)
+
+`territorio/luogo.py` serve solo alla **ricerca di una riga** delle pagine di mappa (`POST /api/patrimonio` con `luogo=1`,
+fase 4): non cambia la geolocalizzazione dei file del patrimonio. Aggiunge alla riga dove mettere il segnaposto e cosa
+inquadrare (campi nel README della fase 4). Nessuna rete nel modulo: riceve le funzioni che chiamano le fonti.
+- **Particella del civico**: cartografia catastale dell'**Agenzia delle Entrate, WFS INSPIRE**
+  (`https://wfs.cartografia.agenziaentrate.gov.it/inspire/wfs/owfs01.php`, CC BY 4.0, nessuna chiave; GML 3.2 in EPSG:6706
+  con coppie «lat lon»; il riferimento è lo stesso di Zornade, `H294_009900.2330`). GetFeature su un quadrato di 30 m:
+  particella che contiene il punto (strade e acque escluse), altrimenti quella di Zornade o la più vicina entro 15 m. Punto
+  interno garantito (baricentro se dentro, altrimenti il centro del tratto interno più largo), superficie, riquadro. Civico
+  con più accessi ANNCSU entro 600 m (`Indirizzario.accessi`: 2, 2/B … 2/O) e cercato senza esponente: **la particella più
+  grande** fra quelle che contengono gli accessi (decisione di Paolo del 17/11/2026, «scelta B»); un solo accesso o
+  esponente scritto: la particella di quell'accesso. Regola in `luogo_regola`. Una sola richiesta al WFS con il riquadro
+  degli accessi più 20 m, assegnazione in locale; ripiego per accesso (al più 4 insieme) se il riquadro supera 640 m o il
+  WFS lo rifiuta o lo tronca (`particelle_degli_accessi`). Geometria in Python puro (niente shapely).
+- **Metà della via**: strade OSM con il nome (query Overpass su `ref:ISTAT` e sulle parole del nome, con accenti; solo strade,
+  non sentieri né ciclabili; più le località `place`), confrontate con lo stesso punteggio dell'ANNCSU; tratti uniti in catene,
+  metà della catena se è quasi tutta la via, altrimenti il punto che lascia metà della lunghezza da ciascuna parte lungo
+  l'asse principale; gruppi a più di 1 km = vie diverse. Senza OSM, i civici ANNCSU (`Indirizzario.vie_simili`) ordinati
+  lungo l'asse. Una via ANNCSU e una OSM con lo stesso nome nello stesso posto sono una sola scelta (con il numero dei civici).
+- **Scelte**: una via riconosciuta (punteggio ≥ 0,8) o una nettamente migliore → si va lì, le altre simili sono «altre vie»;
+  più vie riconosciute alla pari, o nessuna ma vie simili o una località con quel nome → si fa scegliere. Con il civico
+  l'elenco si prepara solo se la via non è stata riconosciuta dall'ANNCSU (punto di Zornade o via interpretata).
+
+Prove dal vivo del 17/11/2026 (ANNCSU del 02/11/2026, WFS dell'Agenzia e Overpass dal vivo; Zornade non chiamato, la chiave
+è solo sul server):
+
+| Ricerca | Prima | Dopo |
+|---|---|---|
+| Rimini, via Settembrini 2 | 44,042903 N 12,589748 E (accesso «2» ANNCSU, all'angolo sud) a zoom 17: l'ospedale (44,0459 N 12,5879 E per OSM, 330 m più a nord; particella foglio 99 n. 1 fino a 44,0489 N) resta fuori da una mappa alta ~500 px | regola `particella_piu_grande_del_civico`: particella **foglio 99 n. 1** (ospedale, 105.819 m²), segnaposto a 44,046563 N 12,587992 E; riquadro 44,044708–44,048895 N × 12,585209–12,590945 E (gli accessi del «2» cadono nelle particelle 2330, 2331, 2545 e, il 2/O, nella n. 1); prima scelta (particella dell'accesso «2») era la 2330, 3.447 m², all'angolo sud |
+| Rimini, via Coriano | 44,015966 N 12,595084 E (civico 210/I, numero mediano) a zoom 17 (~800 m di via visibili) | metà della via (OSM, 8,7 km di tratti) 44,017179 N 12,593942 E; riquadro 43,9906–44,0417 N × 12,5758–12,6041 E; «VIA CORCIANO» fra le altre vie simili |
+| Perugia, via Sant'Andrea delle Fratte | nessun punto ANNCSU; Zornade (sul server) ~2,5 km più a nord, senza avviso | elenco da scegliere: Sant'Andrea delle Fratte (località, 43,0743 N 12,3382 E), Strada delle Fratte, Strada di Sant'Andrea d'Agliano, Via Sant'Andrea… |
+
+Per via Coriano il civico mediano dell'ANNCSU cade già a ~150 m dalla metà: l'errore che si vedeva era lo zoom fisso 17 (si
+vedevano ~800 m di una via di ~6 km in linea d'aria, e gli edifici grandi più a sud-ovest restavano fuori); ora la via si
+vede tutta. Tempi: 2–4 s per ricerca senza copia (WFS ~1 s, Overpass 1–3 s); un civico con molti accessi come il 2 di
+viale Settembrini 0,8–5,4 s con la richiesta unica sul riquadro (prima versione, una richiesta per accesso: 11,7–14,5 s);
+il WFS rifiuta a tratti il riquadro («Richiesta non valida», di solito dopo raffiche di richieste): secondo tentativo,
+poi ripiego per accesso (4,8–7,9 s).
+
 ## Dati climatici per la Legge 10
 
 Il modulo `meteo_storico/legge10.py` (fase 3) calcola dal clima reale del comune, sugli ultimi N anni
@@ -326,8 +370,147 @@ periodo della zona D (1.898 sul periodo della zona E), contro i 2.259 GG ufficia
 zona E. Con 10 stagioni il confronto sarà più solido, ma la direzione (inverni più miti dei valori
 di norma, che risalgono a serie storiche molto più vecchie) è attesa.
 
+## Cabine primarie: raccordo e-distribuzione ↔ GSE ↔ OpenStreetMap (17/11/2026)
+
+Modulo `territorio/cabine.py`, comando `python -m territorio cabine-raccordo`. Serve alle pagine «Stato della rete
+elettrica» (Statistiche) e «Cabine primarie» (Fotovoltaico) e al servizio notturno della fase 4, che ne riusa le
+regole (`classe_comune`, `livello_peggiore`, normalizzazione dei nomi, codici ISTAT).
+
+### Fonti e licenze
+
+| Fonte | Cosa dà | Licenza / condizioni | Dove finisce |
+|---|---|---|---|
+| e-distribuzione, Aree critiche (`comuniServiti`, una richiesta per provincia) | per ogni comune i trasformatori AT/MT che lo servono: codice e nome della cabina primaria, livello di saturazione mensile | nessuna licenza dichiarata: uso non commerciale, fonte citata, rimozione su richiesta (decisione di Paolo del 17/11/2026) | codici, nomi, livelli nei file pubblici |
+| e-distribuzione, `View_ComuniGestitiED2021Is` | comuni ISTAT 2021 serviti (`servitoed` 1/0) | come sopra | elenco dei comuni non concessionari |
+| GSE, `AC_Comuni_2025` strato 0 (2.145 aree, 2.143 codici) | poligoni delle aree convenzionali, `COD_AC`, gestore | CC BY-NC-SA 3.0 IT | **solo i codici** e il gestore; i poligoni si scaricano una volta in una cartella di lavoro per il calcolo e **non vanno mai nel repository né sul server** |
+| OpenStreetMap (`power=substation`, estratto Italia di openstreetmap.fr) | posizione e nome delle sottostazioni | ODbL 1.0 («© contributori OpenStreetMap, ODbL») | coordinate delle cabine: ogni file che le contiene porta attribuzione e licenza ODbL |
+| ISTAT: elenco dei comuni, soppressi, variazioni dal 1991 | codici attuali dei comuni | CC BY 4.0 | codici ISTAT |
+| Confini dei comuni del sito (`fase5-sito/sito/dati/mappa`, ISTAT 2026 generalizzati) | unione dei comuni serviti da una cabina | CC BY 4.0 | solo calcolo |
+
+Lo strato 5 del GSE («Aree convenzionali modificate», 245 aree) è un sottoinsieme dello strato 0 con le stesse
+geometrie: non serve. Due codici (`AC001E00366`, `AC001E00891`) hanno due poligoni ciascuno: si uniscono.
+
+### Metodo
+
+1. **Sottostazioni OSM**: tutte le `power=substation` (nodi, way, relazioni; centroide delle aree) lette dal PBF in tre
+   passate con pyosmium, senza indice di tutti i nodi (~2 minuti, < 1 GB di memoria). Candidate a cabina primaria
+   (`candidata_osm`): escluse le ferroviarie, gli utenti AT con gestore dichiarato che non è un distributore, Terna o
+   Enel (acciaierie, aziende), `minor_distribution`/`industrial`/`generation` salvo gestore distributore con tensione
+   ≥ 40 kV o nome «cabina primaria»/«CP» (ci sono CP così etichettate e CP dentro le stazioni delle centrali Enel:
+   Cencenighe, Quero, Canterno), le aree piccole senza attributi (cabine secondarie).
+2. **Nomi** (`gettoni`, `punteggio_nome`): maiuscole senza accenti; «S.», «SAN», «SANTA», «SANT'» → S; Z.I./zona
+   industriale → ZI; N.E. → nord-est; articoli elisi tolti (D'ADDA = sull'Adda); parole vuote (CP, SE, SC, cabina,
+   primaria, e-distribuzione, Enel, kV, tensioni, «TR3», «CS» non iniziale); lettere isolate unite (V. T. → VT);
+   troncature (FLUMINIMAGGI = Fluminimaggiore), iniziali (Q.S.ELENA = Quartu Sant'Elena), piccoli errori di battitura;
+   nome OSM accorciato (Canosa = CANOSA DI PUGLIA) 0,8; «EBOLI 1» = «Eboli»; sigla di provincia iniziale sciolta col
+   capoluogo se è la provincia di un comune servito (ME RIVIERA = Messina Riviera, VI MONTEVIALE). Il nome del comune
+   servito vale metà se ci sono altre parole («PADOVA FIERA»). Punteggio = 0,75 × parole e-distribuzione ritrovate +
+   0,25 × parole OSM spiegate.
+3. **Candidati**: per ogni cabina le sottostazioni dentro l'unione dei comuni serviti più 3 km. Punteggio coppia =
+   0,6 nome + 0,15 attributi (gestore e-distribuzione/Enel 1; `distribution` 0,8; Terna o `transmission` 0,15–0,35;
+   altro distributore 0,2) + 0,25 vicinanza (1 dentro i comuni, poi cala fino a 0 a 3 km). Per le cabine senza un nome
+   ben riconosciuto, seconda ricerca entro 20 km con nome quasi uguale (≥ 0,9) e vicinanza 0 (comuni serviti
+   incompleti, come per le cabine torinesi che servono anche comuni di altre province).
+4. **Aree GSE e assegnazione globale**: ogni sottostazione cade in un'area GSE. Punteggio cabina ↔ area = 0,7 ×
+   migliore coppia nell'area + 0,3 × quota dell'area dentro i comuni serviti (fascia 500 m per i confini
+   generalizzati). L'algoritmo ungherese (scipy) dà a ogni area di e-distribuzione al più una cabina. Dopo: le cabine
+   rimaste senza sottostazione prendono la migliore libera con nome ≥ 0,75 anche se sta in un'area già assegnata
+   (PALAU e PALAU 2) o di un altro gestore; due codici con lo stesso nome a meno di 3 km (LUNI: DY… e DX…) condividono
+   la sottostazione. Senza sottostazione, il `COD_AC` è stimato dai comuni serviti e la nota lo dice.
+5. **Esito**: `sicuro` se nome ≥ 0,75, sottostazione entro 1,5 km dai comuni serviti, dentro un'area
+   e-distribuzione, a più di 100 m dal bordo dell'area, area per almeno metà dentro i comuni serviti e nessuna
+   alternativa quasi equivalente (scarto < 0,05) se il nome non è ≥ 0,95. Altrimenti `da_verificare` con la nota.
+   `senza_posizione`: nessuna sottostazione OSM riconosciuta. `solo_gse`: aree GSE senza cabina e-distribuzione
+   abbinata (altri gestori, Torino, cabine e-distribuzione non presenti in `comuniServiti`), con la sottostazione OSM
+   più plausibile che vi ricade (gestore, nome GSE `TXT1/TXT2` quando c'è, superficie).
+6. **Criticità dei comuni** (`classe_comune`, regola del contratto, «classificazione di EuGEnio»): L = livello più alto
+   tra i trasformatori del comune, q = quota con livello L; L = VERDE nessun riempimento; q > 0,5 colore pieno;
+   altrimenti strisce `[precedente, L]` (`["VERDE", "GIALLO"]` si disegna bianco/giallo). Ogni trasformatore conta una
+   volta per comune anche se due vecchi comuni ora fusi lo elencano entrambi.
+7. **Codici ISTAT** (`codice_attuale`): e-distribuzione usa in parte codici vecchi; si riportano ai codici attuali con
+   «(NUOVO=028108)» nella descrizione, poi le tabelle ISTAT (cambi di provincia e comuni confluiti), poi il nome
+   (i codici sardi 118xxx non esistono nelle tabelle ISTAT: si riconoscono per nome); tra omonimi decide la provincia
+   degli altri comuni della stessa richiesta (SAN TEODORO in Gallura e non in provincia di Messina).
+
+### Secondo passaggio di verifica (`--verifica`, 17/11/2026 sera)
+
+Le righe `da_verificare` e `senza_posizione` si riesaminano con prove indipendenti dal nome (`secondo_passaggio`,
+regole in `decidi_verifica`, tutte con test):
+- **comuni ↔ area GSE**: quota dell'area dentro i comuni serviti e coerenza F (media armonica con la quota dei comuni
+  serviti dentro l'area); per ogni area la cabina più coerente, escluse quelle già collocate con sicurezza altrove;
+  area che non tocca i comuni serviti = errore;
+- **linee AT OSM** (`power=line/cable` con nome): «A – B» conferma la cabina A se B è una stazione collocata altrove e
+  nessun'altra cabina somiglia ad A di più (`parti_linea`, `prova_linee`);
+- **località OSM** (`place=*`) omonime entro 1,5 km, escluso il comune che contiene la sottostazione (`prova_luoghi`);
+- **documenti**: schede dell'appendice del Piano di Sviluppo e-distribuzione con CP e comune (`schede_piano_sviluppo`,
+  testo da `pdftotext -layout`);
+- **esclusività e scambi**: per le cabine non confermate, sottostazioni libere in aree e-distribuzione libere con prove
+  forti → esito `corretto` (abbinamento cambiato, con la prova nella nota);
+- cabine «torinesi»: nome uguale in un'area fatta di comuni serviti da e-distribuzione ma senza dati `comuniServiti`.
+Una cabina in un'area GSE di un altro gestore resta `da_verificare` anche con la posizione confermata. Risultato del
+17/11: da 1.574 / 114 / 29 (sicuro / da_verificare / senza_posizione) a 1.647 sicuro, 4 corretto, 41 da_verificare, 25
+senza_posizione (con la scelta A per le aree di altri gestori: 1.654 / 4 / 34 / 25); nessuna riga già sicura cambiata.
+
+Aree GSE di altri gestori (scelta A di Paolo, 17/11/2026): una cabina e-distribuzione che cade nell'area di un altro
+distributore tiene il `COD_AC` di quell'area col suo gestore; è `sicuro` se la posizione è confermata, altrimenti resta
+`da_verificare`; nota «area GSE di un altro gestore».
+
+Comuni serviti in parte (decisione di Paolo, 17/11/2026): un comune con trasformatori e-distribuzione nel dato mensile
+non è mai «non concessionario» anche se lo strato `View_ComuniGestitiED2021Is` dice `servitoed = 0`. Esce
+nell'elenco `serviti_in_parte` di `comuni_non_concessionari.json` (fuori da `comuni`) e in `comuni_criticita.json` con
+`servito_in_parte: true` (`separa_serviti_in_parte`). Il 17/11: 550 non concessionari, 35 serviti in parte.
+
+### Eccezioni verificate a mano (`cabine_eccezioni.csv`)
+
+Le verifiche fatte a mano (cartelli sui cancelli, Street View, dataadl, documenti) si scrivono in
+`fase7-territorio/cabine_eccezioni.csv`; `cabine-raccordo` lo legge da solo (oppure `--eccezioni FILE`) e lo applica
+**per ultimo**, sopra il calcolo e il secondo passaggio. CSV UTF-8, virgola, righe che cominciano con `#` = commenti:
+
+```
+cod_cp_ed,osm_id,lat,lon,cod_ac,esito,nota,fonte,data
+DW001385043,way/146602758,,,,sicuro,cartello «CP Vaccaro» sul cancello,Street View (Paolo),2026-11-18
+DV001381250,,45.4170,11.8890,,corretto,cabina vista su dataadl,dataadl.it (Paolo),2026-11-18
+```
+
+- `cod_cp_ed` (obbligatorio): codice e-distribuzione della cabina; una riga per cabina.
+- `osm_id`: sottostazione OSM da usare (`way/…`, `node/…`, `relation/…`, anche non tra le candidate); oppure `lat` e
+  `lon` (WGS84, gradi decimali) per una posizione non OSM. Vuoti = posizione invariata.
+- `cod_ac`: area GSE da imporre; vuoto = area che contiene la nuova posizione (se la posizione cambia), altrimenti
+  invariata. Una riga `solo_gse` con lo stesso codice si toglie.
+- `esito`: `sicuro`, `corretto`, `da_verificare`, `senza_posizione` (vuoto = invariato).
+- `nota`, `fonte`, `data`: finiscono nella nota come «verifica a mano: <nota> (<fonte>, <data>) [prima: …]».
+Errori bloccanti: riga senza `cod_cp_ed`, esito non ammesso, solo `lat` o solo `lon`. Avvisi (stampati): codice non
+presente nei dati, `osm_id` non trovato, `cod_ac` sconosciuto, sottostazione usata da due cabine. Test in
+`tests/test_cabine.py::test_eccezioni`.
+
+### Uso
+
+```bash
+# una volta: poligoni GSE nella cartella di lavoro (mai nel repository), tabelle ISTAT, PBF dell'Italia
+python -m territorio cabine-raccordo --dati-cp <dati_cp> --osm <italy.osm.pbf> --aree-gse <lavoro>/tmp_gse --scarica-gse \
+    --istat <lavoro>/istat --dest <uscite>
+# le volte successive, con l'estratto OSM già fatto e i comuni e-distribuzione salvati:
+python -m territorio cabine-raccordo --dati-cp <dati_cp> --osm <lavoro>/osm_substation_tutte.json \
+    --aree-gse <lavoro>/tmp_gse --istat <lavoro>/istat --comuni-ed <lavoro>/comuni_gestiti.json --dest <uscite>
+# con il secondo passaggio: linee e località OSM (dal PBF, oppure JSON {linee, luoghi} già estratto) e appendice PdS
+python -m territorio cabine-raccordo … --verifica --linee-luoghi <lavoro>/osm_linee_luoghi.json \
+    --documenti <lavoro>/doc/PdS2025_appendice.txt
+```
+`<dati_cp>` è la cartella prodotta dallo script di raccolta delle Aree critiche (`grezzi/PPP.json` per provincia).
+Le tabelle ISTAT si scaricano da https://www.istat.it/classificazione/codici-dei-comuni-delle-province-e-delle-regioni/
+(`Elenco-comuni-italiani.csv`, `Elenco-comuni-soppressi.zip`, `Variazioni-amministrative-e-territoriali-dal-1991.zip`,
+scompattati). Servono `shapely`, `scipy` e, per leggere il PBF, `osmium` (pyosmium).
+
+Escono in `<uscite>`: `raccordo_cp.csv` (colonne del contratto più `nota` in fondo), `cabine_primarie.geojson` (punti
+con livello peggiore e trasformatori per livello), `comuni_criticita.json`, `comuni_non_concessionari.json`,
+`osm_sottostazioni.geojson` (le candidate, ODbL). Risultati del 17/11/2026: 1.717 cabine e-distribuzione (manca
+Torino, il servizio risponde 500), 1.574 `sicuro`, 114 `da_verificare`, 29 `senza_posizione`, 450 aree `solo_gse` (dopo il secondo passaggio e la scelta A 1.654 / 4 `corretto` / 34 / 25, 446 `solo_gse`);
+prove note confermate (PADOVA FIERA `DV001382982` ↔ OSM way/97839983 «Padova San Lazzaro SC» ↔ `AC001E00909`; Padova
+Centro → `AC001E00906`, Bassanello → `AC001E00886`, Camin → `AC001E00887`).
+
 ## Test
 
 ```powershell
-python -m pytest tests -q      # 20 test, nessuna chiamata di rete (Zornade simulato, ZIP ANNCSU costruito nel test)
+python -m pytest tests -q      # nessuna chiamata di rete (Zornade, WFS catastale e Overpass simulati, ZIP ANNCSU
+                               # costruito nel test, cabine primarie su una «Padova» finta, immobili delle PA su dati finti)
 ```

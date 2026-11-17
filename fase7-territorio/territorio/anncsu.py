@@ -374,6 +374,35 @@ class Indirizzario:
                     if c else f"{o} è in ANNCSU ma senza civici")
         return "via non presente in ANNCSU"
 
+    def accessi(self, istat: str, belfiore: str | None, odonimo: str, civico: str) -> list[tuple[float, float]]:
+        """(lon, lat) di tutti gli accessi georeferenziati con quel numero civico sulla via (2, 2/B, 2/C…): servono a
+        inquadrare un complesso con molti esponenti (17/11/2026, ricerca dei luoghi: territorio/luogo.py)."""
+        num, _ = scomponi_civico(civico)
+        df = self._comune(istat, belfiore)
+        if num is None or df.empty:
+            return []
+        s = df[(df.odonimo == odonimo) & (df.civico == num)]
+        return [(float(x), float(y)) for x, y in zip(s.lon, s.lat)]
+
+    def vie_simili(self, istat: str, belfiore: str | None, via: str, punteggio=None,
+                   minimo: float = 0.3, massimo: int = 8) -> list[tuple[float, str, list[tuple[float, float]]]]:
+        """Vie del comune compatibili con il testo, anche solo in parte (punteggio(cercata, odonimo), di norma quello
+        largo di territorio/luogo.py; senza, quello di `cerca`): [(punteggio, odonimo, [(lon, lat) dei civici])], le migliori prima."""
+        df = self._comune(istat, belfiore)
+        if df.empty:
+            return []
+        cercata = scomponi_via(separa_civico(via)[0] if via else via)
+        k = istat or belfiore or ""
+        punti = sorted(((punteggio(cercata, o) if punteggio else _punteggio(cercata, v), o) for o, v in self._vie[k].items()),
+                       reverse=True)
+        out = []
+        for s, o in punti[:massimo]:
+            if s < minimo:
+                break
+            sv = df[df.odonimo == o]
+            out.append((s, o, [(float(x), float(y)) for x, y in zip(sv.lon, sv.lat)]))
+        return out
+
     def cerca(self, istat: str, belfiore: str | None, via: str, civico: str = "") -> Risultato | None:
         r = self._cerca(istat, belfiore, via, civico)
         if r is None and re.search(r"\s(e|ed|angolo)\s", via or "", re.IGNORECASE):

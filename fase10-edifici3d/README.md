@@ -1,5 +1,16 @@
 # Fase 10 – Edifici 3D, ortofoto, LiDAR e analisi energetiche
 
+Stato al 17/11/2026 (ortofoto AGEA 2022-2024, segnalazione di Paolo):
+- **`ortofoto/italia.toml`**: nuova fonte `agea` (`tipo = "arcgis"`, `anni = [2024, 2023, 2022]`, `zoom_tessere = 18`,
+  zoom 10–19, `cache = true`, `nei_report = true`, priorità 2, citazione con `{anni}`): ortofoto RGB 20 cm del Geoportale
+  AGEA in CC BY 4.0 (note legali, Reg. UE 2023/138) per tutta Italia, con l'anno di volo più recente di ogni tessera
+  (fase 4, `servizio/ortofoto.py`). Ogni anno AGEA vola regioni intere: 2024 Piemonte, Valle d'Aosta, Lombardia, Veneto,
+  Molise, Calabria; 2023 Trentino-Alto Adige, Friuli-Venezia Giulia, Emilia-Romagna, Umbria, Lazio, Campania, Basilicata;
+  2022 Liguria, Toscana, Marche, Abruzzo, Puglia, Sicilia, Sardegna. `pcn2012` (AGEA 2012 del Geoportale Nazionale) resta
+  solo come ripiego; `trento.toml` passa a priorità 3 (AGEA 2023 è più recente del 2015). Campi nuovi dei TOML: `tipo =
+  "arcgis"` (ImageServer di ArcGIS: `/tile/{z}/{y}/{x}` fino a `zoom_tessere`, oltre `exportImage`), `anni` (con
+  `{anno}` nell'URL; il proxy rifiuta l'uno senza l'altro). `fonti/regioni.toml`: voce nazionale AGEA aggiornata.
+
 Stato al 16/11/2026 g (sito `?v=20261116g`, procedura AG di `AGGIORNAMENTO_2026-11-16g.md`):
 - **Perugia**, ultimo capoluogo di regione: archivio `odbl/umb/perugia` (zona `umbria_perugia`, codice `umb`,
   EPSG:7792) con le **sagome OpenStreetMap** (ODbL 1.0, Overpass del 15/11/2026) e le **altezze da DSM First − DTM 1 m
@@ -266,9 +277,9 @@ CC BY-NC (escluso); PVGIS 30 chiamate/s, niente CORS, `userhorizon`.
 |---|---|---|
 | 1 | ER: RER 2023-24, 20 cm, CC BY 4.0, WMS `RER2023_24_RGB` | proxy con cache sul server (**fatto**; stato «da confermare» con la Regione, spegnibile) |
 | 2 | ortofoto regionali in CC BY verificate una per una, un TOML per regione | proxy con cache (**fatto**: Toscana 2023; Fase E: Bolzano 2023, Trento 2015) |
-| 3 | AGEA 2022–2024 RGB (CC BY 4.0, Reg. UE 2023/138) | a mano per siti puntuali, ridotte a 50 cm, fuori pipeline (**comando `ortofoto-sito`**) |
+| 3 | AGEA 2022–2024 RGB, 20 cm (CC BY 4.0, Reg. UE 2023/138) | proxy con cache, tutta Italia, anno più recente per tessera e anno nella citazione (**fatto** il 17/11/2026, fonte `agea`); anche a mano per siti puntuali (comando `ortofoto-sito`) |
 | 4 | Sentinel-2 cloudless 2016 (EOX, CC BY 4.0) | contesto di zona (**fatto**, con copia) |
-| 5 | WMS Geoportale Nazionale (AGEA 2012) | solo dal vivo, senza cache (**fatto**, mai nei report) |
+| 5 | WMS Geoportale Nazionale (AGEA 2012) | solo dal vivo, senza cache, mai nei report; dal 17/11/2026 solo ripiego scelto a mano |
 
 Esclusi: AGEA infrarosso e foto originali; WMS regionali AGEA «Utilizzo ristretto» finché la Regione non conferma;
 Google, Esri, Bing; EOX 2018+ (CC BY-NC-SA). Nei report ogni figura con ortofoto porta licenza e citazione.
