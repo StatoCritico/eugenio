@@ -21,6 +21,15 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
+data = "2026-11-17"
+versione = "20261117a"
+titolo = "Rete elettrica e cabine primarie"
+nuovo = [
+  "Statistiche › Stato della rete elettrica: la mappa dei comuni colorati secondo la saturazione delle cabine primarie di e-distribuzione (pieni o a strisce), le cabine come grossi punti colorati, i comuni serviti da altri distributori e le interruzioni in corso. Scelto un comune: criticità, cabine che lo servono, interruzioni in corso e statistiche delle interruzioni mese per mese. Si scaricano l'immagine e i dati in CSV, Excel e PDF.",
+  "Fotovoltaico › Cabine primarie: cerca un indirizzo o una particella, o carica l'elenco delle tue sedi, e compaiono da sole le cabine primarie interessate, con l'area convenzionale del GSE e la saturazione. «Aggiorna confini» mostra i perimetri delle aree letti dal GSE, scaricabili a parte con la loro licenza. Sotto, una mappa di dettaglio con ortofoto, particelle ed edifici, dove il punto si sposta a mano.",
+]
+
+[[voce]]
 data = "2026-11-16"
 versione = "20261116h"
 titolo = "Modelli 3D: gli edifici attorno alle zone coperte"

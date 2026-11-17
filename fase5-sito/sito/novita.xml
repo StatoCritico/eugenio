@@ -5,9 +5,18 @@
   <id>tag:eugenio.statocritico.it,2026:novita</id>
   <link rel="self" type="application/atom+xml" href="https://eugenio.statocritico.it/novita.xml"/>
   <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html"/>
-  <updated>2026-11-16T12:00:00Z</updated>
+  <updated>2026-11-17T12:00:00Z</updated>
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
+  <entry>
+    <title>17 novembre 2026 – Rete elettrica e cabine primarie</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261117</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261117"/>
+    <updated>2026-11-17T12:00:00Z</updated>
+    <summary>Rete elettrica e cabine primarie</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Statistiche › Stato della rete elettrica: la mappa dei comuni colorati secondo la saturazione delle cabine primarie di e-distribuzione (pieni o a strisce), le cabine come grossi punti colorati, i comuni serviti da altri distributori e le interruzioni in corso. Scelto un comune: criticità, cabine che lo servono, interruzioni in corso e statistiche delle interruzioni mese per mese. Si scaricano l&amp;#x27;immagine e i dati in CSV, Excel e PDF.&lt;/li&gt;&lt;li&gt;Fotovoltaico › Cabine primarie: cerca un indirizzo o una particella, o carica l&amp;#x27;elenco delle tue sedi, e compaiono da sole le cabine primarie interessate, con l&amp;#x27;area convenzionale del GSE e la saturazione. «Aggiorna confini» mostra i perimetri delle aree letti dal GSE, scaricabili a parte con la loro licenza. Sotto, una mappa di dettaglio con ortofoto, particelle ed edifici, dove il punto si sposta a mano.&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
   <entry>
     <title>16 novembre 2026 – Modelli 3D: gli edifici attorno alle zone coperte</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261116-3</id>

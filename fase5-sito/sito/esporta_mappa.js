@@ -203,7 +203,9 @@
   }
 
   // pulsanti «Scarica l'immagine: JPG · PNG · PDF» in un contenitore; opz() restituisce le opzioni al momento del clic
-  // (o un testo: allora il download non si fa e il testo va nel messaggio)
+  // (o un testo: allora il download non si fa e il testo va nel messaggio). (17/11/2026) opz.dopo(), se c'è, si chiama
+  // a immagine fatta (anche con errore): serve a riaccendere gli strati spenti per l'immagine (aree GSE in «Cabine
+  // primarie», che non entrano nelle immagini scaricate)
   function pulsanti(dove, mappa, opz, messaggio, formati = ["jpg", "png", "pdf"]) {
     const box = document.createElement("div"); box.className = "scarica scarica-vista";
     const t = document.createElement("span"); t.className = "scarica-titolo"; t.textContent = "Scarica l'immagine:"; box.appendChild(t);
@@ -250,7 +252,7 @@
           if (r.modo === "salvato") scrivi(`Immagine salvata: ${r.nome} (${mb(r.byte)}), con le attribuzioni sotto la mappa.`);
           else scrivi(`Download avviato dal browser: ${r.nome} (${mb(r.byte)}). Se non compare tra i download, usa il collegamento:`, false, r.url, r.nome);
         } catch (e) { scrivi(`Immagine non scaricata: ${e.message || e}.`, true); }
-        finally { b.disabled = false; }
+        finally { b.disabled = false; if (typeof o.dopo === "function") { try { o.dopo(); } catch { /* niente */ } } }
       });
       box.appendChild(b);
     }

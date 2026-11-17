@@ -108,7 +108,9 @@ def test_menu_computer(base, browser):
     gme = pg.locator(G.format("fotovoltaico") + " .tendina .voce-gme:not(.voce-corso)")
     assert gme.count() == 1 and gme.get_attribute("aria-disabled") == "true"
     corso = pg.locator(G.format("fotovoltaico") + " .tendina .voce-corso")
-    assert corso.count() == 7 and pg.locator(G.format("fotovoltaico") + " .tendina a").count() == 0
+    # (17/11/2026) «Cabine primarie» è la sola voce cliccabile del Fotovoltaico (sperimentale)
+    assert corso.count() == 7 and pg.locator(G.format("fotovoltaico") + " .tendina a").count() == 1
+    assert pg.locator(G.format("fotovoltaico") + " .tendina a").get_attribute("href") == "fv-cabine.html"
     assert corso.first.get_attribute("title") == "In lavorazione: disponibile prossimamente"
     assert corso.first.locator("svg.segnale path[fill='#f5c400']").count() == 1           # triangolo giallo
     assert float(corso.first.evaluate("e => getComputedStyle(e).opacity")) < 1 and corso.first.evaluate("e => getComputedStyle(e).cursor") == "not-allowed"
@@ -246,7 +248,7 @@ def test_menu_08_11_sei_gruppi_tendine_e_tastiera(base, browser):
         assert pg.locator(G.format("edificio") + " .tendina .voce-corso").count() == 5
         # (11/11/2026) Statistiche: Indici dei prezzi prima di Costi energetici Sanità
         assert [x.strip() for x in pg.locator(G.format("statistiche") + " .tendina a").all_text_contents()] == \
-            ["Indici dei prezzi", "Costi energetici Sanità"]
+            ["Indici dei prezzi", "Costi energetici Sanità", "Stato della rete elettrica S (sperimentale)"]
         ctx.close()
     ctx, pg = pagina(browser, 1366)
     pg.goto(base + "faq.html")

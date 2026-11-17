@@ -15,6 +15,9 @@
 //  await C.riquadroRegione("08")    [ovest, sud, est, nord] in gradi
 //  await C.regioneNelPunto(lon, lat) "08" o null
 //  await C.fontiNelPunto(fonti, lon, lat)   fonti di ortofoto applicabili nel punto (regione e riquadro; 09/11/2026 c)
+//  await C.comuniRegione("08")      FeatureCollection dei comuni della regione (istat, nome, prov, regione), lon/lat;
+//                                   per le pagine che colorano i comuni (Stato della rete elettrica, 17/11/2026)
+//  await C.provinceRegione("08")    FeatureCollection delle province (cod a 3 cifre, sigla, nome)
 //  C.ITALIA                         riquadro dell'Italia
 //  C.ATTRIBUZIONE                   testo per la mappa e per le immagini scaricate
 (function () {
@@ -256,6 +259,8 @@
     return stato;
   }
 
-  window.EUGENIO_CONFINI = { aggiungi, alza, riquadroRegione, riquadroComune, geometriaComune, regioneNelPunto, comuneNelPunto, fontiNelPunto, utmLonlat, svgLonlat,
+  const comuniRegione = (cod) => datiRegione(cod).then((r) => r.comuni);
+  const provinceRegione = (cod) => datiRegione(cod).then((r) => r.province);
+  window.EUGENIO_CONFINI = { aggiungi, alza, riquadroRegione, comuniRegione, provinceRegione, riquadroComune, geometriaComune, regioneNelPunto, comuneNelPunto, fontiNelPunto, utmLonlat, svgLonlat,
     ITALIA, ATTRIBUZIONE };
 })();
