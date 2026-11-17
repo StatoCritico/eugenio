@@ -114,7 +114,7 @@
   // fonti di ortofoto applicabili nel punto (09/11/2026 c, prove P9 di Paolo): le fonti nazionali (regione «00», o senza
   // regione) dentro il loro riquadro; quelle regionali solo dentro la loro regione (confini ISTAT generalizzati: entro
   // ~150 m dal confine valgono anche quelle della regione accanto). Così a Firenze c'è la Toscana e non la RER, a Bologna
-  // la RER e non la Toscana (il riquadro della Toscana arriva fino a Bologna), in Veneto AGEA 2012 e Sentinel-2. Fuori dai
+  // la RER e non la Toscana (il riquadro della Toscana arriva fino a Bologna), in Veneto le nazionali (AGEA 2022-2024, AGEA 2012, Sentinel-2). Fuori dai
   // confini (mare) o senza i dati dei confini vale il solo riquadro. L'ordine resta quello del server (priorità).
   async function fontiNelPunto(fonti, lon, lat) {
     const dlat = 0.00135, dlon = dlat / Math.cos(lat * Math.PI / 180);

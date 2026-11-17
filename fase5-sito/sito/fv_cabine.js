@@ -344,6 +344,8 @@
       m.addLayer({ id: "contesto", type: "raster", source: "contesto", paint: { "raster-opacity": 0.95 } }, primoSopra(m));
     }
     $("fonte-dettaglio").addEventListener("change", (e) => { st.manuale = true; scegliFonte(e.target.value); });
+    // (17/11/2026) AGEA 2022-2024: a tessere arrivate la citazione sotto la mappa dice gli anni di volo della vista
+    if (window.EUGENIO_ORTOFOTO_ANNI) window.EUGENIO_ORTOFOTO_ANNI.segui(m, "ortofoto", () => { const f = st.fonte; if (f && f.anni && citOrto(f) !== st.citazioneOrto) attribuzioneOrto(); });
     await elencoFonti();
     m.on("moveend", elencoFonti);
   }
@@ -371,13 +373,21 @@
       m.addLayer({ id: "ortofoto", type: "raster", source: "ortofoto" }, primoSopra(m));
     }
     aggiornaSposta();
-    const a = $("attribuzione-ortofoto"); a.innerHTML = "";
+    attribuzioneOrto();
+  }
+  // (17/11/2026) citazione con gli anni di volo della vista per le fonti con più anni (AGEA 2022-2024, protezione.js)
+  function citOrto(f) {
+    return window.EUGENIO_ORTOFOTO_ANNI && st.det ? window.EUGENIO_ORTOFOTO_ANNI.citazione(f, st.det) : f.citazione;
+  }
+  function attribuzioneOrto() {
+    const f = st.fonte, a = $("attribuzione-ortofoto"); a.innerHTML = "";
     if (!f) a.textContent = st.contesto ? `Nessuna ortofoto: sotto si vede il contesto ${st.contesto.citazione} (${st.contesto.licenza}).` : "Nessuna ortofoto.";
     else {
-      a.append("Ortofoto: ", f.citazione, " – licenza ");
+      a.append("Ortofoto: ", citOrto(f), " – licenza ");
       const l = h("a", null, f.licenza); l.href = f.scheda; a.appendChild(l);
       a.append(f.copia ? "." : ". Solo consultazione dal vivo: non entra nelle immagini scaricate.");
     }
+    st.citazioneOrto = f ? citOrto(f) : "";
   }
   function vettoriAccesi() { const s = st.strati && st.strati.stato; return !!(s && (s.particelle || s.edifici)); }
   function aggiornaSposta() { if (st.sposta) st.sposta.fonte(st.fonte, { vettori: vettoriAccesi() }); }
@@ -392,7 +402,7 @@
     if (quale === "dettaglio") {
       const f = st.fonte;
       if (f && !f.copia) return `«${f.nome}» è solo in consultazione dal vivo: per scaricare l'immagine scegli un'altra ortofoto.`;
-      if (f) righe.push(`Ortofoto: ${f.citazione} – licenza ${f.licenza} (${f.scheda}).`);
+      if (f) righe.push(`Ortofoto: ${citOrto(f)} – licenza ${f.licenza} (${f.scheda}).`);
       else if (st.contesto) righe.push(`Contesto: ${st.contesto.citazione} – licenza ${st.contesto.licenza} (${st.contesto.scheda}).`);
       if (f && st.sposta && st.sposta.riga()) righe.push(st.sposta.riga());
       if (st.strati) righe.push(...st.strati.righe());

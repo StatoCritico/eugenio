@@ -195,7 +195,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         Toscana – Ortofoto 2023</a> (CC BY 4.0); <a href="https://geodati.gov.it/resource/id/p_bz:Orthoimagery:Aerial-2023-RGB">Provincia
         autonoma di Bolzano – Ortofoto 2023</a> (CC BY 4.0); <a href="https://geodati.gov.it/resource/id/p_TN:f2e88f1b-05d9-4942-93ee-857a0a9e1f0b">Provincia
         autonoma di Trento – Ortofoto PAT 2015</a> (CC BY 4.0); <a href="https://cloudless.eox.at/pricing">Sentinel-2 cloudless – s2maps.eu by EOX IT
-        Services GmbH</a> (Contains modified Copernicus Sentinel data 2016, CC BY 4.0); <a href="https://gn.mase.gov.it/portale/servizio-di-consultazione-wms">Geoportale
+        Services GmbH</a> (Contains modified Copernicus Sentinel data 2016, CC BY 4.0); <a href="https://geoportale.agea.gov.it/legal-notes">AGEA –
+        Agenzia per le Erogazioni in Agricoltura, ortofoto RGB 2022, 2023 e 2024</a> (CC BY 4.0; sotto la mappa l'anno della zona); <a href="https://gn.mase.gov.it/portale/servizio-di-consultazione-wms">Geoportale
         Nazionale – MASE</a> (ortofoto AGEA 2012, solo consultazione dal vivo). Edifici: DBTR Emilia-Romagna (CC BY 4.0); fuori dall'Emilia-Romagna © <a href="https://www.openstreetmap.org/copyright">contributori
         OpenStreetMap</a> (ODbL 1.0). Particelle: <a href="https://www.agenziaentrate.gov.it/portale/schede/fabbricatiterreni/consultazione-cartografia-catastale/servizio-consultazione-cartografia">Agenzia
         delle Entrate – Cartografia catastale</a> (CC BY 4.0). Ricerca: ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0) e
@@ -253,8 +254,15 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           nostro server; l'uso tramite copia è <b>in attesa di conferma</b> dalla Regione e si spegne in un attimo se serve.</li>
         <li><b>Altre regioni</b>: ortofoto regionali in CC BY verificate una per una (oggi la Toscana 2023 e, dal 04/11/2026, le Province autonome di Bolzano 2023 e Trento 2015; l'elenco delle verifiche per regione è nel file <code>fase10-edifici3d/fonti/regioni.toml</code> del codice).</li>
         <li><b>Contesto di zona</b>: Sentinel-2 cloudless 2016, 10 m (l'unico anno in CC BY: dal 2018 la licenza è non commerciale).</li>
+        <li><b>Tutta Italia</b> (dal 17/11/2026): ortofoto AGEA a colori a 20 cm del Geoportale AGEA, CC BY 4.0 (dati di
+          elevato valore, Reg. UE 2023/138), con una copia sul nostro server. Ogni anno AGEA fotografa circa un terzo d'Italia:
+          per ogni zona si usa il volo più recente (2024 Piemonte, Valle d'Aosta, Lombardia, Veneto, Molise e Calabria; 2023
+          Trentino-Alto Adige, Friuli-Venezia Giulia, Emilia-Romagna, Umbria, Lazio, Campania e Basilicata; 2022 le altre),
+          e sui confini tra regioni volate in anni diversi i due voli si uniscono. Sotto la mappa, nelle immagini scaricate e
+          nei report la citazione dice l'anno vero della zona. Dove c'è un'ortofoto regionale più recente o dello stesso anno
+          (Emilia-Romagna, Toscana, Bolzano) si usa quella.</li>
         <li><b>Geoportale Nazionale</b> (AGEA 2012, 50 cm): solo consultazione dal vivo, senza copia e senza figure nei report,
-          perché la licenza delle immagini non è chiara.</li>
+          perché la licenza delle immagini non è chiara; resta come ripiego da scegliere a mano.</li>
         <li><b>Escluse</b>: infrarosso e foto originali AGEA, servizi WMS regionali AGEA con «utilizzo ristretto», Google, Esri,
           Bing, EOX 2018 e seguenti.</li>
         <li><b>Particelle catastali</b>: cartografia catastale dell'Agenzia delle Entrate (servizio WMS INSPIRE, CC BY 4.0),

@@ -30,6 +30,35 @@ Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, v
 - Nessuna variabile obbligatoria nel `.env` (valori predefiniti in `.env.example`), nessuna modifica al Caddyfile né al
   compose: il database sta nella cartella dei dati già montata.
 
+## Ortofoto AGEA 2022-2024 per tutta Italia (17/11/2026, segnalazione di Paolo)
+
+- **Causa**: fuori da Emilia-Romagna, Toscana e Trentino-Alto Adige l'unica foto aerea era `pcn2012`, il WMS del
+  Geoportale Nazionale (MASE) con il volo AGEA 2012 a 50 cm: solo dal vivo, lento e spesso in errore (502), da cui «non
+  risponde o è occupata» in Ortofoto, Modelli 3D e Fotovoltaico › Cabine primarie.
+- **Fonte nuova `agea`** (`fase10-edifici3d/ortofoto/italia.toml`, `tipo = "arcgis"`): servizi ImageServer del Geoportale
+  AGEA `AgEA/Ortofoto_AgEA_2024`, `_2023`, `_2022` (RGB, 20 cm, CC BY 4.0 dalle note legali, Reg. UE 2023/138), tessere
+  già pronte `/tile/{z}/{y}/{x}` fino allo zoom 18 (`zoom_tessere`) e `exportImage` sul riquadro della tessera allo zoom
+  19; con copia sul server, nei report, zoom 10–19, ritmo 10/s e 8.000/h, priorità 2 (dopo RER 2023-24, Toscana 2023,
+  Bolzano 2023; Trento 2015 passa a 3, dietro AGEA 2023; `pcn2012` resta a 8 come ripiego da scegliere a mano).
+- **Anno più recente per tessera** (`ortofoto.py`, `tessera_anni`, `componi`): ogni anno AGEA vola circa un terzo d'Italia
+  per regioni intere (2024 Piemonte, Valle d'Aosta, Lombardia, Veneto, Molise, Calabria; 2023 Trentino-Alto Adige,
+  Friuli-Venezia Giulia, Emilia-Romagna, Umbria, Lazio, Campania, Basilicata; 2022 le altre) e dove non ha volato il
+  servizio dà un PNG trasparente. Il proxy chiede prima l'anno più recente; se non riempie la tessera chiede insieme gli
+  altri e compone (il più recente sopra, i precedenti nei buchi: confini tra regioni). Un anno con una tessera tutta
+  trasparente a zoom ≥ 10 non si chiede più per le tessere figlie fino a 4 livelli sotto (`_vuote_anno`, in memoria):
+  dopo i primi zoom ogni tessera nuova costa **una** chiamata. Anni usati in `X-Ortofoto-Anno` (`2023` o `2023,2022`) e
+  nel file `<y>.jpg.anno` accanto alla copia (senza quel file la copia non vale e si richiede). In `/api/ortofoto/fonti`
+  la fonte ha `anni` e `citazione_anni` (con `{anni}`); `citazione` è quella generica «… ortofoto RGB 2022-2024 …». La
+  pagina mette nella citazione gli anni delle tessere della vista (fase 5, `protezione.js`).
+- **Tempi dal container** (17/11/2026, prima volta / dalla copia): Rimini e Roma 2023, Milano 2024, Palermo e Bari 2022,
+  Trento 2023: 0,16–0,35 s a tessera agli zoom 16–19 (0,3–1,6 s allo zoom 12, quando il primo anno chiesto è vuoto);
+  dalla copia 3–6 ms. Confine Gabicce (Emilia-Romagna 2023, Marche 2022) allo zoom 12: «2023,2022».
+- **Sul server**: nessuna variabile nuova, nessuna modifica a Caddy o al compose; i TOML vanno nell'immagine come sempre
+  (`/app/ortofoto_fonti`). La copia di `pcn2012` non esiste (era solo dal vivo); niente da svuotare.
+- Test: `test_ortofoto.py` (TOML e priorità, URL `/tile` e `exportImage`, anno più recente con una sola chiamata e copia
+  con il file degli anni, anno precedente e memoria delle zone vuote, 404 come «non ha volato», confine composto, mare
+  vuoto, errori, componi).
+
 ## Ricerca di un luogo: particella del civico e metà della via (17/11/2026)
 
 Segnalazione di Paolo: cercando un indirizzo nelle mappe la posizione era spesso lontana da quella vera. **Prima** la ricerca

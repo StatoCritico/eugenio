@@ -17,6 +17,9 @@
 // (vedi «fonti che non rispondono»). Turnstile si carica solo alla prima richiesta protetta (ricerca, edifici
 // OpenStreetMap, Patrimonio…): le righe di challenges.cloudflare.com in Console (CSP «connect-src … data:», «OTS parsing
 // error», avvisi WebGPU) vengono dal suo riquadro e dalla sua pagina, non da EuGEnio.
+// Dal 17/11/2026 legge anche X-Ortofoto-Anno delle tessere (ortofoto AGEA 2022-2024, una fonte con più anni): la citazione
+// sotto la mappa, nelle immagini scaricate e nei report dice gli anni di volo veri della vista
+// (window.EUGENIO_ORTOFOTO_ANNI.citazione(fonte, mappa), vedi «anni delle ortofoto»).
 (function () {
   "use strict";
   const PROTETTE = /\/api\/(previsione|patrimonio|geocodifica|particella|storici\/estrai|edifici\/osm|dbtr\/inizia|email\/link)(?:[/?#]|$)/;
@@ -366,7 +369,7 @@
       ferma(FONTI_LIMITE[tipo] ? tipo : fam, parseInt(r.headers.get("Retry-After") || "", 10));
     } else if (errore || (r.status >= 500 && r.status !== 501)) {
       erroreFonte(fam, url, r, errore || String(r.status), parseInt(r.headers.get("Retry-After") || "", 10));
-    } else if (r.ok) { rispostaBuona(fam); fonteBuona(fam, url, r); }
+    } else if (r.ok) { rispostaBuona(fam); fonteBuona(fam, url, r); if (fam === "ortofoto") registraAnno(url, r); }
     return r;
   }
   // ------------------------------------------------------------------ tessere in arrivo (09/11/2026 d, richiesta di Paolo)
@@ -470,6 +473,69 @@
       }
     });
   }
+  // ------------------------------------------------------------------ anni delle ortofoto (17/11/2026)
+  // Le ortofoto AGEA 2022-2024 sono una sola fonte: il server compone per ogni tessera l'anno più recente che copre il
+  // punto (e i precedenti sui confini) e lo dice in X-Ortofoto-Anno. Qui si ricordano gli anni delle tessere arrivate
+  // (anche dalla copia del browser: la risposta conserva le intestazioni), per fonte; citazione(f, m) mette nella
+  // citazione della fonte (`citazione_anni`, con «{anni}») gli anni delle tessere dentro la vista della mappa, allo zoom
+  // in uso. Senza tessere note resta la citazione generica della fonte («2022-2024»).
+  const ANNI_MAX = 4000;        // tessere ricordate per fonte
+  const anniTessere = {};       // id della fonte → Map("z/x/y" → [anni])
+  function registraAnno(url, r) {
+    const a = r && r.headers && r.headers.get("X-Ortofoto-Anno");
+    const m = /\/api\/ortofoto\/([a-z0-9_]+)\/(\d+)\/(\d+)\/(\d+)\./.exec(url || "");
+    if (!a || !m) return;
+    const anni = a.split(",").map(Number).filter((x) => Number.isInteger(x) && x > 1990 && x < 2200);
+    if (!anni.length) return;
+    const t = anniTessere[m[1]] = anniTessere[m[1]] || new Map(), k = `${m[2]}/${m[3]}/${m[4]}`;
+    t.delete(k); t.set(k, anni);
+    if (t.size > ANNI_MAX) t.delete(t.keys().next().value);
+  }
+  function testoAnni(anni) {
+    const a = [...new Set(anni)].sort((x, y) => x - y);
+    return a.length < 2 ? String(a[0] || "") : `${a.slice(0, -1).join(", ")} e ${a[a.length - 1]}`;
+  }
+  // anni delle tessere note della fonte dentro il riquadro [ovest, sud, est, nord] (gradi), agli zoom da z0 a z1
+  function anniNelRiquadro(id, r, z0, z1) {
+    const t = anniTessere[id], out = new Set();
+    if (!t || !r) return [];
+    const lon = (x, n) => x / n * 360 - 180, lat = (y, n) => Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n))) * 180 / Math.PI;
+    for (const [k, anni] of t) {
+      const [z, x, y] = k.split("/").map(Number);
+      if (z < z0 || z > z1) continue;
+      const n = 2 ** z;
+      if (lon(x + 1, n) < r[0] || lon(x, n) > r[2] || lat(y, n) < r[1] || lat(y + 1, n) > r[3]) continue;
+      anni.forEach((a) => out.add(a));
+    }
+    return [...out];
+  }
+  function anniDellaVista(f, m) {
+    if (!f || !f.anni || !m || !m.getBounds) return [];
+    try {
+      const b = m.getBounds(), zm = f.zoom ? f.zoom[1] : 22, z = Math.min(zm, m.getZoom());
+      const r = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+      return anniNelRiquadro(f.id, r, Math.min(zm, Math.floor(z) - 1), Math.min(zm, Math.ceil(z) + 1));
+    } catch (e) { return []; }
+  }
+  // citazione della fonte con gli anni della vista (fonti con più anni), altrimenti quella della fonte com'è
+  function citazioneOrtofoto(f, m) {
+    if (!f) return "";
+    if (!f.anni || !f.citazione_anni || !f.citazione_anni.includes("{anni}")) return f.citazione;
+    const a = anniDellaVista(f, m);
+    return a.length ? f.citazione_anni.replace("{anni}", testoAnni(a)) : f.citazione;
+  }
+  // fn() poco dopo l'arrivo di tessere della sorgente `sorgente` della mappa e dopo ogni spostamento (l'evento «idle» di
+  // MapLibre non arriva sempre dopo le tessere: prove nel browser del 17/11/2026)
+  function segui(m, sorgente, fn) {
+    if (!m || !m.on) return;
+    let t = null;
+    const presto = () => { clearTimeout(t); t = setTimeout(() => { try { fn(); } catch (e) { /* niente */ } }, 250); };
+    m.on("sourcedata", (e) => { if (e && e.sourceId === sorgente && e.tile) presto(); });
+    m.on("moveend", presto);
+  }
+  window.EUGENIO_ORTOFOTO_ANNI = { registra: registraAnno, anniDellaVista, anniNelRiquadro, citazione: citazioneOrtofoto, testoAnni, segui,
+    tessere: anniTessere };
+
   window.EUGENIO_LIMITI = { famigliaDi, inPausa, ferma, riprendi, pause, collega, FONTI: FONTI_LIMITE, guasti, nomiFonti, erroreFonte,
     lavoro, inVolo };
 

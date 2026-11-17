@@ -145,6 +145,24 @@ collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre
 - Test: `tests/test_rete_browser.py` (menu, file, regola della criticità, le due pagine in Chromium con dati sintetici e
   con API e GSE simulati, GeoJSON separato, telefono).
 
+## Ortofoto AGEA 2022-2024 con l'anno vero nella citazione (17/11/2026, segnalazione di Paolo)
+
+- Nuova fonte nazionale `agea` (fase 4 e `fase10-edifici3d/ortofoto/italia.toml`): ortofoto AGEA RGB 20 cm, CC BY 4.0,
+  per ogni tessera il volo più recente (2022, 2023 o 2024), con copia sul server; scelta da sola dove non c'è un'ortofoto
+  regionale più recente o dello stesso anno (Emilia-Romagna, Toscana, Bolzano). Prima fuori da queste regioni c'era solo
+  AGEA 2012 del Geoportale Nazionale, lenta e spesso «non risponde o è occupata»; ora resta come ripiego da scegliere a mano.
+- **Anno nella citazione**: `protezione.js` (già in tutte le pagine, avvolge `fetch`) legge `X-Ortofoto-Anno` delle tessere
+  e lo ricorda per fonte e tessera (`window.EUGENIO_ORTOFOTO_ANNI`: `citazione(f, mappa)`, `anniDellaVista`,
+  `anniNelRiquadro`, `testoAnni`, `segui(mappa, sorgente, fn)`). Le fonti con `anni` e `citazione_anni` hanno la citazione
+  con gli anni delle tessere dentro la vista, allo zoom in uso («ortofoto RGB 2023», «2022 e 2023» sul confine); senza
+  tessere note quella generica «2022-2024». Usata sotto la mappa (si aggiorna all'arrivo delle tessere e a ogni
+  spostamento: l'evento «idle» di MapLibre non arriva sempre), nelle immagini scaricate e nella figura dei report di
+  Modelli 3D (`ortofoto.js`, `edificio3d.js`, `fv_cabine.js`, `importa_modello.js`, `aggiungi_dbtr.js`).
+- Testi: `ortofoto.html` (fonti nel piede e «Licenze e regole»), `sitografia.html` (Geoportale AGEA), voce «Migliorato»
+  del 17/11 in `novita.toml`, `EUGENIO_PER_AGENTI.md`, `llms.txt`. Versione del sito invariata.
+- Test: `tests/test_ortofoto_agea_browser.py` (Milano → AGEA con «2024» sotto la mappa e nel PDF; confine con «2022 e
+  2023»; in Emilia-Romagna resta la RER davanti ad AGEA).
+
 ## Ricerca di un luogo: particella del civico e metà della via (17/11/2026, segnalazione di Paolo; versione da fissare alla pubblicazione)
 
 - **Problema**: cercando un indirizzo in Ortofoto e Modelli 3D la mappa andava sul punto della riga a zoom 17: con il civico

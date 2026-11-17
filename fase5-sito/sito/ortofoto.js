@@ -42,6 +42,8 @@
   const colore = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
   function h(tag, cls, t) { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; }
   function messaggio(t, errore = false) { const m = $("messaggio"); m.textContent = t; m.classList.toggle("errore", errore); }
+  // (17/11/2026) citazione con gli anni di volo della vista per le fonti con più anni (AGEA 2022-2024, protezione.js)
+  const cit = (f) => (window.EUGENIO_ORTOFOTO_ANNI && stato.mappa ? window.EUGENIO_ORTOFOTO_ANNI.citazione(f, stato.mappa) : f.citazione);
   const copre = (f, [lon, lat]) => lon >= f.riquadro[0] && lon <= f.riquadro[2] && lat >= f.riquadro[1] && lat <= f.riquadro[3];
 
   // avviso sulla mappa (in alto a sinistra): fuori riquadro, sotto lo zoom minimo, oltre lo zoom massimo
@@ -63,7 +65,7 @@
   function attribuzione(f) {
     const a = $("attribuzione"); a.innerHTML = "";
     if (!f) { a.textContent = "Nessuna ortofoto: scegli una fonte."; return; }
-    a.append("Ortofoto: ", f.citazione, " – licenza ");
+    a.append("Ortofoto: ", cit(f), " – licenza ");
     const l = h("a", null, f.licenza); l.href = f.scheda; a.appendChild(l);
     if (f.stato === "da confermare") a.append(". Uso tramite il server di EuGEnio in attesa di conferma della fonte");
     a.append(f.copia ? "." : ". Solo consultazione dal vivo: non entra nei report né nelle immagini scaricate.");
@@ -113,8 +115,9 @@
     if (src && f && !f.pmtiles && src.setTiles) src.setTiles([tessere(f, true)]);    // la camera non si muove
   }
   // (09/11/2026 c, prove P9 di Paolo) solo le fonti applicabili nel punto (regione e riquadro: EUGENIO_CONFINI.fontiNelPunto):
-  // a Firenze la Toscana e non la RER, in Veneto AGEA 2012 e Sentinel-2. Finché l'utente non sceglie a mano si usa la
-  // migliore (regionale a 20 cm dove ha immagini, poi AGEA 2012, poi Sentinel-2); una scelta a mano resta finché la fonte
+  // a Firenze la Toscana e non la RER, in Veneto AGEA e Sentinel-2. Finché l'utente non sceglie a mano si usa la
+  // migliore (regionale a 20 cm più recente dove ha immagini, poi AGEA 2022-2024 a 20 cm dal 17/11/2026, poi Trento 2015,
+  // poi AGEA 2012 del Geoportale Nazionale, poi Sentinel-2); una scelta a mano resta finché la fonte
   // è applicabile, poi si torna all'automatico con una nota breve
   let giro = 0;
   async function elenco() {
@@ -249,7 +252,7 @@
     const c = m.getCenter(), p = [c.lng, c.lat], z = m.getZoom(), righe = [];
     const fotoVisibile = f && f.id !== CONTESTO && copre(f, p) && z >= f.zoom[0] - 0.01;
     if (fotoVisibile || (f && f.id === CONTESTO))
-      righe.push(`Ortofoto: ${f.citazione} – licenza ${f.licenza} (${f.scheda})${f.stato === "da confermare" ? "; uso tramite il server di EuGEnio in attesa di conferma della fonte" : ""}.`);
+      righe.push(`Ortofoto: ${cit(f)} – licenza ${f.licenza} (${f.scheda})${f.stato === "da confermare" ? "; uso tramite il server di EuGEnio in attesa di conferma della fonte" : ""}.`);
     if (fotoVisibile && stato.sposta && stato.sposta.riga()) righe.push(stato.sposta.riga());
     if (stato.contesto && copre(stato.contesto, p) && !fotoVisibile && (!f || f.id !== CONTESTO))
       righe.push(`Contesto: ${stato.contesto.citazione} – licenza ${stato.contesto.licenza} (${stato.contesto.scheda}).`);
@@ -322,6 +325,10 @@
     $("edifici").addEventListener("change", aggiornaSposta);
     if ($("caselle-strati")) $("caselle-strati").addEventListener("change", aggiornaSposta);
     // fonte chiesta nell'indirizzo (?fonte=): vale come scelta a mano (resta finché è applicabile); altrimenti la migliore
+    // (17/11/2026) AGEA 2022-2024: a tessere arrivate la citazione sotto la mappa dice gli anni di volo della vista
+    // (prima della scelta della fonte: le tessere possono arrivare prima della fine di elenco())
+    let ultimaCit = "";
+    if (window.EUGENIO_ORTOFOTO_ANNI) window.EUGENIO_ORTOFOTO_ANNI.segui(m, "ortofoto", () => { const f = stato.scelta; if (f && f.anni && cit(f) !== ultimaCit) { ultimaCit = cit(f); attribuzione(f); } });
     const chiesta = stato.fonti.find((f) => f.id === q.get("fonte"));
     if (chiesta) { stato.manuale = true; scegli(chiesta.id); }
     await elenco();

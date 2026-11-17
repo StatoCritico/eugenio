@@ -49,7 +49,9 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
 - Tetti nelle pagine 3D (dal 09/11/2026 c): tutti piani in partenza; la persona sceglie i tetti a falde con la tegola della
   sezione «Coperture» (inclinazione 22° all'inizio, scelte nel browser, esporta e importa in JSON); niente ipotesi automatica.
   Nelle pagine Edifici e Fotovoltaico (in lavorazione) «Forma dei tetti»: «Scelti dall'utente» o «Tutti piani».
-- Ortofoto: la pagina sceglie da sola la fonte applicabile nel punto (regionale a 20 cm, poi AGEA 2012, poi Sentinel-2). Una
+- Ortofoto: la pagina sceglie da sola la fonte applicabile nel punto (regionale a 20 cm più recente, poi dal 17/11/2026 AGEA
+  2022-2024 a 20 cm in tutta Italia, CC BY 4.0, con l'anno di volo della tessera in X-Ortofoto-Anno da mettere nella citazione,
+  poi AGEA 2012 solo dal vivo, poi Sentinel-2). Una
   tessera con X-Ortofoto-Errore (200, PNG vuoto, no-store, Retry-After) vuol dire che la fonte non ha risposto: riprova dopo.
   Vale anche per le particelle e i contorni (/api/ortofoto/strati/...).
 - Alberi indicativi: GET /api/alberi/osm/{nome}.json (nome = i_j, cella di 0,01°, OpenStreetMap ODbL 1.0, altezze stimate, "stima": true);
