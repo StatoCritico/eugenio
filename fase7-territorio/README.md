@@ -234,8 +234,93 @@ periodo della zona D (1.898 sul periodo della zona E), contro i 2.259 GG ufficia
 zona E. Con 10 stagioni il confronto sarà più solido, ma la direzione (inverni più miti dei valori
 di norma, che risalgono a serie storiche molto più vecchie) è attesa.
 
+## Cabine primarie: raccordo e-distribuzione ↔ GSE ↔ OpenStreetMap (17/11/2026)
+
+Modulo `territorio/cabine.py`, comando `python -m territorio cabine-raccordo`. Serve alle pagine «Stato della rete
+elettrica» (Statistiche) e «Cabine primarie» (Fotovoltaico) e al servizio notturno della fase 4, che ne riusa le
+regole (`classe_comune`, `livello_peggiore`, normalizzazione dei nomi, codici ISTAT).
+
+### Fonti e licenze
+
+| Fonte | Cosa dà | Licenza / condizioni | Dove finisce |
+|---|---|---|---|
+| e-distribuzione, Aree critiche (`comuniServiti`, una richiesta per provincia) | per ogni comune i trasformatori AT/MT che lo servono: codice e nome della cabina primaria, livello di saturazione mensile | nessuna licenza dichiarata: uso non commerciale, fonte citata, rimozione su richiesta (decisione di Paolo del 17/11/2026) | codici, nomi, livelli nei file pubblici |
+| e-distribuzione, `View_ComuniGestitiED2021Is` | comuni ISTAT 2021 serviti (`servitoed` 1/0) | come sopra | elenco dei comuni non concessionari |
+| GSE, `AC_Comuni_2025` strato 0 (2.145 aree, 2.143 codici) | poligoni delle aree convenzionali, `COD_AC`, gestore | CC BY-NC-SA 3.0 IT | **solo i codici** e il gestore; i poligoni si scaricano una volta in una cartella di lavoro per il calcolo e **non vanno mai nel repository né sul server** |
+| OpenStreetMap (`power=substation`, estratto Italia di openstreetmap.fr) | posizione e nome delle sottostazioni | ODbL 1.0 («© contributori OpenStreetMap, ODbL») | coordinate delle cabine: ogni file che le contiene porta attribuzione e licenza ODbL |
+| ISTAT: elenco dei comuni, soppressi, variazioni dal 1991 | codici attuali dei comuni | CC BY 4.0 | codici ISTAT |
+| Confini dei comuni del sito (`fase5-sito/sito/dati/mappa`, ISTAT 2026 generalizzati) | unione dei comuni serviti da una cabina | CC BY 4.0 | solo calcolo |
+
+Lo strato 5 del GSE («Aree convenzionali modificate», 245 aree) è un sottoinsieme dello strato 0 con le stesse
+geometrie: non serve. Due codici (`AC001E00366`, `AC001E00891`) hanno due poligoni ciascuno: si uniscono.
+
+### Metodo
+
+1. **Sottostazioni OSM**: tutte le `power=substation` (nodi, way, relazioni; centroide delle aree) lette dal PBF in tre
+   passate con pyosmium, senza indice di tutti i nodi (~2 minuti, < 1 GB di memoria). Candidate a cabina primaria
+   (`candidata_osm`): escluse le ferroviarie, gli utenti AT con gestore dichiarato che non è un distributore, Terna o
+   Enel (acciaierie, aziende), `minor_distribution`/`industrial`/`generation` salvo gestore distributore con tensione
+   ≥ 40 kV o nome «cabina primaria»/«CP» (ci sono CP così etichettate e CP dentro le stazioni delle centrali Enel:
+   Cencenighe, Quero, Canterno), le aree piccole senza attributi (cabine secondarie).
+2. **Nomi** (`gettoni`, `punteggio_nome`): maiuscole senza accenti; «S.», «SAN», «SANTA», «SANT'» → S; Z.I./zona
+   industriale → ZI; N.E. → nord-est; articoli elisi tolti (D'ADDA = sull'Adda); parole vuote (CP, SE, SC, cabina,
+   primaria, e-distribuzione, Enel, kV, tensioni, «TR3», «CS» non iniziale); lettere isolate unite (V. T. → VT);
+   troncature (FLUMINIMAGGI = Fluminimaggiore), iniziali (Q.S.ELENA = Quartu Sant'Elena), piccoli errori di battitura;
+   nome OSM accorciato (Canosa = CANOSA DI PUGLIA) 0,8; «EBOLI 1» = «Eboli»; sigla di provincia iniziale sciolta col
+   capoluogo se è la provincia di un comune servito (ME RIVIERA = Messina Riviera, VI MONTEVIALE). Il nome del comune
+   servito vale metà se ci sono altre parole («PADOVA FIERA»). Punteggio = 0,75 × parole e-distribuzione ritrovate +
+   0,25 × parole OSM spiegate.
+3. **Candidati**: per ogni cabina le sottostazioni dentro l'unione dei comuni serviti più 3 km. Punteggio coppia =
+   0,6 nome + 0,15 attributi (gestore e-distribuzione/Enel 1; `distribution` 0,8; Terna o `transmission` 0,15–0,35;
+   altro distributore 0,2) + 0,25 vicinanza (1 dentro i comuni, poi cala fino a 0 a 3 km). Per le cabine senza un nome
+   ben riconosciuto, seconda ricerca entro 20 km con nome quasi uguale (≥ 0,9) e vicinanza 0 (comuni serviti
+   incompleti, come per le cabine torinesi che servono anche comuni di altre province).
+4. **Aree GSE e assegnazione globale**: ogni sottostazione cade in un'area GSE. Punteggio cabina ↔ area = 0,7 ×
+   migliore coppia nell'area + 0,3 × quota dell'area dentro i comuni serviti (fascia 500 m per i confini
+   generalizzati). L'algoritmo ungherese (scipy) dà a ogni area di e-distribuzione al più una cabina. Dopo: le cabine
+   rimaste senza sottostazione prendono la migliore libera con nome ≥ 0,75 anche se sta in un'area già assegnata
+   (PALAU e PALAU 2) o di un altro gestore; due codici con lo stesso nome a meno di 3 km (LUNI: DY… e DX…) condividono
+   la sottostazione. Senza sottostazione, il `COD_AC` è stimato dai comuni serviti e la nota lo dice.
+5. **Esito**: `sicuro` se nome ≥ 0,75, sottostazione entro 1,5 km dai comuni serviti, dentro un'area
+   e-distribuzione, a più di 100 m dal bordo dell'area, area per almeno metà dentro i comuni serviti e nessuna
+   alternativa quasi equivalente (scarto < 0,05) se il nome non è ≥ 0,95. Altrimenti `da_verificare` con la nota.
+   `senza_posizione`: nessuna sottostazione OSM riconosciuta. `solo_gse`: aree GSE senza cabina e-distribuzione
+   abbinata (altri gestori, Torino, cabine e-distribuzione non presenti in `comuniServiti`), con la sottostazione OSM
+   più plausibile che vi ricade (gestore, nome GSE `TXT1/TXT2` quando c'è, superficie).
+6. **Criticità dei comuni** (`classe_comune`, regola del contratto, «classificazione di EuGEnio»): L = livello più alto
+   tra i trasformatori del comune, q = quota con livello L; L = VERDE nessun riempimento; q > 0,5 colore pieno;
+   altrimenti strisce `[precedente, L]` (`["VERDE", "GIALLO"]` si disegna bianco/giallo). Ogni trasformatore conta una
+   volta per comune anche se due vecchi comuni ora fusi lo elencano entrambi.
+7. **Codici ISTAT** (`codice_attuale`): e-distribuzione usa in parte codici vecchi; si riportano ai codici attuali con
+   «(NUOVO=028108)» nella descrizione, poi le tabelle ISTAT (cambi di provincia e comuni confluiti), poi il nome
+   (i codici sardi 118xxx non esistono nelle tabelle ISTAT: si riconoscono per nome); tra omonimi decide la provincia
+   degli altri comuni della stessa richiesta (SAN TEODORO in Gallura e non in provincia di Messina).
+
+### Uso
+
+```bash
+# una volta: poligoni GSE nella cartella di lavoro (mai nel repository), tabelle ISTAT, PBF dell'Italia
+python -m territorio cabine-raccordo --dati-cp <dati_cp> --osm <italy.osm.pbf> --aree-gse <lavoro>/tmp_gse --scarica-gse \
+    --istat <lavoro>/istat --dest <uscite>
+# le volte successive, con l'estratto OSM già fatto e i comuni e-distribuzione salvati:
+python -m territorio cabine-raccordo --dati-cp <dati_cp> --osm <lavoro>/osm_substation_tutte.json \
+    --aree-gse <lavoro>/tmp_gse --istat <lavoro>/istat --comuni-ed <lavoro>/comuni_gestiti.json --dest <uscite>
+```
+`<dati_cp>` è la cartella prodotta dallo script di raccolta delle Aree critiche (`grezzi/PPP.json` per provincia).
+Le tabelle ISTAT si scaricano da https://www.istat.it/classificazione/codici-dei-comuni-delle-province-e-delle-regioni/
+(`Elenco-comuni-italiani.csv`, `Elenco-comuni-soppressi.zip`, `Variazioni-amministrative-e-territoriali-dal-1991.zip`,
+scompattati). Servono `shapely`, `scipy` e, per leggere il PBF, `osmium` (pyosmium).
+
+Escono in `<uscite>`: `raccordo_cp.csv` (colonne del contratto più `nota` in fondo), `cabine_primarie.geojson` (punti
+con livello peggiore e trasformatori per livello), `comuni_criticita.json`, `comuni_non_concessionari.json`,
+`osm_sottostazioni.geojson` (le candidate, ODbL). Risultati del 17/11/2026: 1.717 cabine e-distribuzione (manca
+Torino, il servizio risponde 500), 1.574 `sicuro`, 114 `da_verificare`, 29 `senza_posizione`, 450 aree `solo_gse`;
+prove note confermate (PADOVA FIERA `DV001382982` ↔ OSM way/97839983 «Padova San Lazzaro SC» ↔ `AC001E00909`; Padova
+Centro → `AC001E00906`, Bassanello → `AC001E00886`, Camin → `AC001E00887`).
+
 ## Test
 
 ```powershell
-python -m pytest tests -q      # 12 test, nessuna chiamata di rete (Zornade simulato, ZIP ANNCSU costruito nel test)
+python -m pytest tests -q      # 40 test, nessuna chiamata di rete (Zornade simulato, ZIP ANNCSU costruito nel test,
+                               # cabine primarie su una «Padova» finta)
 ```
