@@ -19,7 +19,7 @@
   function h(tag, cls, t) { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined && t !== null) e.textContent = t; return e; }
   function messaggio(id, t, errore = false) { const m = $(id); if (!m) return; m.textContent = t; m.classList.toggle("errore", errore); }
   const STRATI = {
-    criticita: ["rete-pieno", "rete-strisce", "rete-senza-dato"],
+    criticita: ["rete-pieno", "rete-strisce", "rete-senza-dato", "rete-in-parte"],
     nonConc: ["rete-non-conc"],
     cabine: ["rete-cabine-punti"],
     interruzioni: ["rete-interruzioni"],
@@ -37,6 +37,10 @@
     durata: (p) => (p.durata_min !== undefined ? p.durata_min : p.durata_finora_min),
     comune: (p) => String(p.comune || "").padStart(6, "0"),
   };
+  // (17/11/2026 sera, decisione di Paolo) comuni segnati «non serviti» da e-distribuzione ma con suoi trasformatori: colore
+  // della criticità come gli altri, bordo tratteggiato e la nota del servizio
+  const inParte = (r) => !!(r && r.concessionario !== false && r.servito_in_parte);
+  const notaInParte = () => (st.stato && st.stato.nota_servito_in_parte) || "servito in parte da un altro distributore";
   const durata = (min) => (min === null || min === undefined || !Number.isFinite(+min) ? "–"
     : +min < 60 ? `${Math.round(+min)} min` : `${Math.floor(+min / 60)} h ${String(Math.round(+min % 60)).padStart(2, "0")} min`);
 
@@ -107,6 +111,8 @@
       paint: { "fill-pattern": "retino", "fill-opacity": 0.9 } }, prima);
     m.addLayer({ id: "rete-comuni-linee", type: "line", source: "rete-comuni",
       paint: { "line-color": colore("--inchiostro"), "line-width": ["interpolate", ["linear"], ["zoom"], 6, 0.3, 12, 1], "line-opacity": 0.45 } }, prima);
+    m.addLayer({ id: "rete-in-parte", type: "line", source: "rete-comuni", filter: ["==", ["get", "in_parte"], true],
+      paint: { "line-color": colore("--inchiostro"), "line-width": 2, "line-dasharray": [2, 1.5] } }, prima);
     m.addLayer({ id: "rete-comuni-clic", type: "fill", source: "rete-comuni", paint: { "fill-color": "#000", "fill-opacity": 0 } }, prima);
     m.addLayer({ id: "rete-comune-scelto", type: "line", source: "rete-comuni", filter: ["==", ["get", "istat"], ""],
       paint: { "line-color": colore("--primario"), "line-width": 3.5 } });
@@ -119,6 +125,7 @@
     document.addEventListener("eugenio:aspetto", () => {
       m.setPaintProperty("sfondo", "background-color", colore("--carta"));
       m.setPaintProperty("rete-comuni-linee", "line-color", colore("--inchiostro"));
+      m.setPaintProperty("rete-in-parte", "line-color", colore("--inchiostro"));
       m.setPaintProperty("rete-comune-scelto", "line-color", colore("--primario"));
     });
     R.suggerimento(m, () => ["rete-interruzioni", "rete-cabine-punti", "rete-comuni-clic"], contenutoSuggerimento);
@@ -150,6 +157,7 @@
       for (const k of ["GIALLO", "ARANCIONE", "ROSSO"]) voce(R.campione("strisce", k), `qualche ${R.NOMI[k]} (fino a metà dei trasformatori)`);
       for (const k of ["GIALLO", "ARANCIONE", "ROSSO"]) voce(R.campione("pieno", k), `${R.NOMI[k]} (più di metà)`);
       voce(R.campione("senza-dato"), "dato non disponibile");
+      voce(R.campione("in-parte"), notaInParte());
       const n = h("span", "legenda-nota", "Criticità dei comuni: classificazione di EuGEnio dai dati mensili per trasformatore di e-distribuzione; comuni senza colore: tutti i trasformatori verdi.");
       L.appendChild(n);
     }
@@ -177,7 +185,7 @@
     if (!r) return { titolo, righe: ["nessun dato"] };
     if (!r.concessionario) return { titolo, righe: ["distributore diverso da e-distribuzione"] };
     return { titolo, righe: [[r.pieno ? R.COLORI[r.pieno] : r.strisce ? R.COLORI[r.strisce[1]] : null, `criticità: ${R.testoClasse(r)}`],
-      `trasformatori: ${R.testoTrasf(r.trasf)}`, "clic per i dettagli"] };
+      `trasformatori: ${R.testoTrasf(r.trasf)}`, ...(inParte(r) ? [notaInParte()] : []), "clic per i dettagli"] };
   }
 
   function clic(e) {
@@ -220,6 +228,7 @@
         p.conc = r.concessionario !== false;
         if (p.conc && r.pieno) p.pieno = r.pieno;
         if (p.conc && Array.isArray(r.strisce) && r.strisce.length === 2) p.strisce = r.strisce[1];
+        if (inParte(r)) p.in_parte = true;
       }
       return { type: "Feature", properties: p, geometry: f.geometry };
     }) };
@@ -297,6 +306,8 @@
       const c = h("p", "criticita-comune");
       c.append(r.pieno ? R.campione("pieno", r.pieno) : r.strisce ? R.campione("strisce", r.strisce[1]) : R.campione("pieno", "VERDE"), ` ${R.testoClasse(r)}`);
       S.appendChild(c);
+      if (inParte(r)) S.appendChild(avviso("", "Servito in parte da un altro distributore",
+        `${notaInParte().replace(/^./, (x) => x.toUpperCase())}: e-distribuzione segna il comune come non suo, ma vi ha trasformatori. La criticità vale per la parte servita da e-distribuzione.`));
       S.appendChild(h("p", "aiuto", `Trasformatori delle cabine che servono il comune: ${R.testoTrasf(r.trasf)}. Classificazione di EuGEnio dai dati mensili per trasformatore di e-distribuzione${st.stato ? ` (aggiornati il ${R.dataIt(st.stato.saturazione_aggiornata)})` : ""}.`));
     }
     // cabine e interruzioni in parallelo
@@ -313,6 +324,8 @@
       cabine = st.cabine.features.map((x) => x.properties).filter((x) => cod.has(x.cod_cp_ed) || String(x.comuni_serviti || "").split(";").includes(istat));
     }
     st.dettaglio.cabine = cabine;
+    if (cab.status === "fulfilled" && cab.value && cab.value.servito_in_parte && !inParte(r) && !S.querySelector(".nota-in-parte"))
+      S.insertBefore(Object.assign(h("p", "aiuto nota-in-parte", cab.value.nota || notaInParte())), S.children[1] || null);
     if (!mancante) {
       S.appendChild(h("h4", null, "Cabine primarie che servono il comune"));
       if (!cabine.length) S.appendChild(h("p", "aiuto", "Nessuna cabina primaria abbinata."));
@@ -405,6 +418,7 @@
   function opzioniImmagine() {
     if (!st.regione) return "Scegli prima una regione.";
     const righe = [];
+    if (acceso("criticita") && st.righe.some(inParte)) righe.push(`Bordo tratteggiato: comune ${notaInParte()}.`);
     if (acceso("criticita")) righe.push("Comuni: pieni = più di metà dei trasformatori al livello più alto presente (giallo, arancione, rosso); a strisce = fino a metà (strisce tra il livello precedente e quello più alto; bianco = verde); grigio a righe = dato non disponibile. " + R.ATTR.criticita + ".");
     if (acceso("nonConc")) righe.push("Retino: comuni serviti da un distributore diverso da e-distribuzione.");
     if (acceso("cabine")) righe.push("Cabine primarie (punti grandi): livello peggiore dei trasformatori (bianco = verde, giallo, arancione, rosso); grigio = altro distributore o senza dato. " + R.ATTR.osm + ".");
@@ -421,9 +435,9 @@
       const stato = mancanti.has(p.istat.slice(0, 3)) || r.mancante || (r.concessionario !== false && r.dato_disponibile === false) ? "dato non disponibile" : r.concessionario === false ? "altro distributore" : r.istat ? "e-distribuzione" : "nessun dato";
       const classe = r.pieno ? `pieno ${R.NOMI[r.pieno]}` : Array.isArray(r.strisce) ? `strisce ${R.NOMI[r.strisce[0]]}/${R.NOMI[r.strisce[1]]}` : r.livello ? "nessuna" : "";
       return [p.istat, p.nome, p.prov, stato, r.livello ? R.NOMI[r.livello] : "", Number.isFinite(+r.quota) && r.quota !== null ? Math.round(1000 * r.quota) / 10 : null, classe,
-        t.VERDE ?? null, t.GIALLO ?? null, t.ARANCIONE ?? null, t.ROSSO ?? null, (r.cabine || []).join(" ")];
+        t.VERDE ?? null, t.GIALLO ?? null, t.ARANCIONE ?? null, t.ROSSO ?? null, inParte(r) ? "sì" : "", (r.cabine || []).join(" ")];
     });
-    const intC = ["ISTAT", "Comune", "Prov.", "Distributore", "Livello più alto", "Quota al livello (%)", "Colore sulla mappa", "Trasf. verdi", "Trasf. gialli", "Trasf. arancioni", "Trasf. rossi", "Cabine (codici e-distribuzione)"];
+    const intC = ["ISTAT", "Comune", "Prov.", "Distributore", "Livello più alto", "Quota al livello (%)", "Colore sulla mappa", "Trasf. verdi", "Trasf. gialli", "Trasf. arancioni", "Trasf. rossi", "Servito in parte da un altro distributore", "Cabine (codici e-distribuzione)"];
     const cab = (st.cabine ? st.cabine.features : []).map((f) => { const p = f.properties, t = p.trasf || {}, [lon, lat] = f.geometry.coordinates;
       return [p.cod_cp_ed || "", R.nomeCabina(p), p.cod_ac || "", p.gestore || "", p.livello ? R.NOMI[p.livello] : "", t.VERDE ?? null, t.GIALLO ?? null, t.ARANCIONE ?? null, t.ROSSO ?? null,
         p.data_saturazione || "", Math.round(lat * 1e5) / 1e5, Math.round(lon * 1e5) / 1e5, p.esito || ""]; });
@@ -447,7 +461,7 @@
         { titolo: "Dati e regole", blocchi: [
           ...(R.PROVA ? [{ tipo: "avvertenza", testo: "DATI SINTETICI DI PROVA (?prova=1): non reali." }] : []),
           { tipo: "paragrafo", testo: st.stato ? `Saturazione aggiornata il ${R.oraIt(st.stato.saturazione_aggiornata)}; interruzioni lette il ${R.oraIt(st.stato.interruzioni_aggiornate)} (ogni 15 minuti).` : "Date di aggiornamento non disponibili." },
-          { tipo: "paragrafo", testo: "Criticità del comune (classificazione di EuGEnio): L = livello più alto tra i trasformatori delle cabine che servono il comune, q = quota dei trasformatori a quel livello. L verde: nessuna criticità; q > 0,5: pieno di L; altrimenti strisce tra il livello precedente e L. Durata delle interruzioni stimata: dall'inizio dichiarato all'ultima lettura in cui compare." },
+          { tipo: "paragrafo", testo: "Criticità del comune (classificazione di EuGEnio): L = livello più alto tra i trasformatori delle cabine che servono il comune, q = quota dei trasformatori a quel livello. L verde: nessuna criticità; q > 0,5: pieno di L; altrimenti strisce tra il livello precedente e L. Comuni segnati da e-distribuzione come serviti da altri ma con suoi trasformatori: colore della criticità e nota «servito in parte da un altro distributore». Durata delle interruzioni stimata: dall'inizio dichiarato all'ultima lettura in cui compare." },
           ...(provinceMancanti().length ? [{ tipo: "avvertenza", testo: `Dato non disponibile per la provincia ${provinceMancanti().map(nomeProvincia).join(", ")}.` }] : []),
         ] },
         ...sezioni.map((s) => ({ titolo: s.titolo, blocchi: [{ tipo: "tabella", intestazioni: s.intestazioni, righe: s.righe.length ? s.righe : [s.intestazioni.map(() => null)] }] })),

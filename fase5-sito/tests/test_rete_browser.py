@@ -335,3 +335,31 @@ def test_stato_della_rete_con_i_dati_veri_del_raccordo(base, browser):
     assert grigi and set(grigi) == {"#9a9a9a"}
     assert not pg.errori, pg.errori
     ctx.close()
+
+
+def test_comune_servito_in_parte(base, browser, tmp_path):
+    """(17/11/2026 sera, decisione di Paolo) comuni segnati «non serviti» da e-distribuzione ma con suoi trasformatori:
+    colore della criticità (niente retino), bordo tratteggiato, nota «servito in parte da un altro distributore» nel
+    riquadretto, nella scheda, nella legenda e nei file (colonna «Servito in parte da un altro distributore»)."""
+    ctx, pg = _pagina(browser)
+    pg.goto(base + "rete-elettrica.html?prova=1&regione=08")
+    _aspetta(pg, "() => { const s = window.EUGENIO_RETE_PAGINA && window.EUGENIO_RETE_PAGINA.st; return s && s.disegnati && s.righe.length > 300; }")
+    istat = pg.evaluate("window.EUGENIO_RETE_PAGINA.st.righe.find((r) => r.servito_in_parte && r.livello).istat")
+    p = pg.evaluate(f"window.EUGENIO_RETE_PAGINA.st.disegnati.features.find((f) => f.properties.istat === '{istat}').properties")
+    assert p["in_parte"] is True and p["conc"] is True and (p.get("pieno") or p.get("strisce") or True)
+    assert "servito in parte da un altro distributore" in pg.locator("#legenda-rete").inner_text()
+    pg.evaluate(f"window.EUGENIO_RETE_PAGINA.apriComune('{istat}')")
+    _aspetta(pg, "() => window.EUGENIO_RETE_PAGINA.st.dettaglio && window.EUGENIO_RETE_PAGINA.st.dettaglio.inter")
+    s = pg.locator("#scheda-comune").inner_text()
+    assert "Servito in parte da un altro distributore" in s and "Criticità" in s and "Il distributore è un altro" not in s
+    with pg.expect_download() as d:
+        pg.click("#scarica-dati button[data-formato=csv]")
+    f = tmp_path / "rete.csv"
+    d.value.save_as(f)
+    righe = f.read_text(encoding="utf-8-sig").splitlines()
+    testa = next(r.split(";") for r in righe if r.startswith("ISTAT;"))
+    k = testa.index("Servito in parte da un altro distributore")
+    riga = next(r.split(";") for r in righe if r.startswith(istat + ";"))
+    assert riga[k] == "sì" and riga[3] == "e-distribuzione"
+    assert not pg.errori, pg.errori
+    ctx.close()

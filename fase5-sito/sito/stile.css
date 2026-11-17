@@ -1675,3 +1675,4 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .elenco-punti .vuoto { padding: var(--s2) 0; border: 0; }
 .attribuzione-gse { font-size: var(--c-s); }
 .pagina-cabine .carica-file input[type="file"] { display: none; }
+.campione-rete.in-parte { background: transparent; border: 2px dashed var(--inchiostro); }

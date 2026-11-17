@@ -158,6 +158,7 @@
     else if (tipo === "cabina") { i.className = "campione-rete cabina"; i.style.background = livello in COLORI ? COLORI[livello] : livello; }
     else if (tipo === "punto") { i.className = "campione-rete punto"; i.style.background = livello; }
     else if (tipo === "area") { i.className = "campione-rete area"; }
+    else if (tipo === "in-parte") { i.className = "campione-rete in-parte"; }
     return i;
   }
 
@@ -277,7 +278,9 @@
         const t = { VERDE: 0, GIALLO: 0, ARANCIONE: 0, ROSSO: 0 };
         cs.forEach((x) => LIVELLI.forEach((k) => { t[k] += x.p.trasf ? Math.min(x.p.trasf[k], 1 + casuale(c.istat + k, 2)) : 0; }));
         if (!LIVELLI.some((k) => t[k])) t.VERDE = 1;
-        return { istat: c.istat, nome: c.nome, concessionario: true, ...classeComune(t), trasf: t, cabine: cs.map((x) => x.p.cod_cp_ed).filter(Boolean) };
+        // (17/11/2026 sera) un comune ogni 41 «servito in parte da un altro distributore» (come i 35 comuni milanesi veri)
+        return { istat: c.istat, nome: c.nome, concessionario: true, servito_in_parte: casuale(c.istat + "parte", 41) === 7, ...classeComune(t), trasf: t,
+          cabine: cs.map((x) => x.p.cod_cp_ed).filter(Boolean) };
       });
       const interruzioni = comuni.filter((c) => casuale(c.istat + "int", 37) === 3).slice(0, 12).map((c, k) => ({
         type: "Feature", geometry: { type: "Point", coordinates: [c.c[0] - 0.006, c.c[1] + 0.002] },
@@ -300,7 +303,7 @@
     const u = new URL(percorso, location.href), p = u.pathname, reg = u.searchParams.get("regione") || "08";
     await new Promise((ok) => setTimeout(ok, 30));
     if (p.endsWith("/api/rete/stato")) return { saturazione_aggiornata: "2026-11-17T03:10:00+01:00", interruzioni_aggiornate: new Date(Date.now() - 6 * 60000).toISOString(),
-      attive: 7, province_mancanti: ["001"], raccolta_dal: "2026-11-17T18:00:00+01:00", sintetico: true,
+      attive: 7, province_mancanti: ["001"], raccolta_dal: "2026-11-17T18:00:00+01:00", sintetico: true, nota_servito_in_parte: "servito in parte da un altro distributore",
       fonti: { saturazione: URL_ED, interruzioni: URL_ED_INT }, licenze: { posizioni: "ODbL 1.0", codici: "con citazione della fonte" } };
     if (p.endsWith("/api/rete/cabine")) return (await regioneFinta(reg)).cabine;
     if (p.endsWith("/api/rete/comuni")) return (await regioneFinta(reg)).righe;

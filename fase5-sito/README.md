@@ -120,6 +120,12 @@ collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre
   (`/api/rete/interruzioni/comune/<istat>`, grafico mensile con `grafici.js`); per un comune non concessionario il
   rimando alla mappa del GSE. Download: immagine (`esporta_mappa.js`, fonti nella fascia) e dati CSV (nel browser,
   citazione in riga 1) ed Excel/PDF (documento generico `POST /api/report`), con l'attribuzione ODbL delle posizioni.
+- **Comuni serviti in parte da un altro distributore** (17/11/2026 sera, decisione di Paolo): i comuni segnati
+  `servitoed = 0` ma con trasformatori e-distribuzione (35, soprattutto milanesi; `servito_in_parte: true` con
+  `concessionario: true` in `/api/rete/comuni`) hanno il colore della criticità, niente retino, bordo tratteggiato (strato
+  della criticità, voce di legenda) e la nota «servito in parte da un altro distributore» (`nota_servito_in_parte` di
+  `/api/rete/stato`) nel riquadretto, nella scheda del comune e nei file (colonna «Servito in parte da un altro
+  distributore»). Nei dati di prova un comune ogni 41 circa.
 - **Fotovoltaico › Cabine primarie** (`fv-cabine.html`, `fv_cabine.js`): mappa di regioni e comuni (clic su un comune =
   la mappa di dettaglio va lì) e, sotto, mappa di dettaglio con ortofoto (fonte automatica nel punto o scelta dal menu,
   contesto Sentinel-2), particelle ed edifici (`strati_gl.js`), frecce dell'ortofoto (`sposta_ortofoto.js`) e il punto
