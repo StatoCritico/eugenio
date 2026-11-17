@@ -340,8 +340,10 @@
         m.getSource("cercato").setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [lon, lat] } }] });
         stato.cercato = riga.centro_comune ? `centro del comune di ${riga.comune_catasto} (confini ISTAT, CC BY 4.0)`
           : `${[riga.indirizzo_trovato, riga.comune_catasto].filter(Boolean).join(", ") || `${lat.toFixed(5)}, ${lon.toFixed(5)}`}`
-          + ` (${riga.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT, CC BY 4.0" : "dati elaborati da Zornade, zornade.com"})`;
-        m.flyTo({ center: [lon, lat], zoom: riga.zoom || (window.EUGENIO_CERCA && window.EUGENIO_CERCA.ZOOM) || 17, duration: 900 });
+          + ` (${riga.fonte_testo || (riga.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT, CC BY 4.0" : "dati elaborati da Zornade, zornade.com")})`;
+        // (17/11/2026) particella del civico o via intera nella vista (cerca_luogo.js); senza riquadro come prima
+        if (window.EUGENIO_CERCA.inquadra) window.EUGENIO_CERCA.inquadra(m, lon, lat, riga);
+        else m.flyTo({ center: [lon, lat], zoom: riga.zoom || (window.EUGENIO_CERCA && window.EUGENIO_CERCA.ZOOM) || 17, duration: 900 });
       },
     });
   }

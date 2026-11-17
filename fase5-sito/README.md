@@ -145,6 +145,36 @@ collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre
 - Test: `tests/test_rete_browser.py` (menu, file, regola della criticità, le due pagine in Chromium con dati sintetici e
   con API e GSE simulati, GeoJSON separato, telefono).
 
+## Ricerca di un luogo: particella del civico e metà della via (17/11/2026, segnalazione di Paolo; versione da fissare alla pubblicazione)
+
+- **Problema**: cercando un indirizzo in Ortofoto e Modelli 3D la mappa andava sul punto della riga a zoom 17: con il civico
+  sull'accesso ANNCSU (Rimini, viale Settembrini 2: l'ospedale Infermi restava fuori dalla vista), senza civico su un civico
+  qualsiasi della via (Rimini, via Coriano, 8,7 km), con una via che non esiste lontano senza avviso (Perugia, «via
+  Sant'Andrea delle Fratte», frazione).
+- **`cerca_luogo.js`**: la richiesta porta `luogo=1`; il server aggiunge alla riga segnaposto e riquadro (fase 4, § «Ricerca
+  di un luogo»). Civico (o foglio e particella) → segnaposto in un punto interno della **particella catastale** (Agenzia delle
+  Entrate – Cartografia catastale, CC BY 4.0) e particella **tutta nella vista** (zoom al più `ZOOM_PARTICELLA` = 19); con
+  più accessi dello stesso civico, la particella più grande fra le loro (scelta B di Paolo: l'ospedale di viale
+  Settembrini 2), scritto nel messaggio. Sola via → mappa **centrata a metà della via**, zoom che la fa vedere tutta (o, se la
+  metà è molto fuori centro, buona parte: non oltre un livello sotto quello del riquadro). Più vie compatibili o via non
+  riconosciuta → **elenco di pulsanti** nella riga dei messaggi (vie e località di OpenStreetMap e dell'ANNCSU, più il punto
+  trovato da Zornade), la mappa resta ferma finché non si sceglie; con una via riconosciuta le altre simili sono pulsanti
+  «Altre vie simili». Località scelta: zoom `ZOOM_LOCALITA` (15). Avviso discreto (`.cerca-avviso`) se una fonte non risponde.
+  Il messaggio cita le fonti (ANNCSU o Zornade con il collegamento; particella: Agenzia delle Entrate; via: OpenStreetMap).
+- **Interfaccia compatibile**: `crea`, `cerca`, `ZOOM` come prima; nuovi `inquadra(mappa, lon, lat, riga, extra)` (usata da
+  `ortofoto.js` ed `edificio3d.js` al posto di `flyTo`), `ZOOM_PARTICELLA`, `ZOOM_LOCALITA`; la riga passata a `suTrovato` ha in
+  più `riquadro`, `luogo_tipo` e `fonte_testo` (attribuzione completa, usata per il punto in Modelli 3D e per le immagini e i
+  report di Ortofoto). Risposta senza i campi nuovi (server di prima, `LUOGO=false`): tutto come prima. `cerca(campi,
+  suScelta)`: con l'elenco restituisce `{ scelta, riga }` senza punto.
+- `stile.css`: `.cerca-corpo`, `.cerca-scelte`, `.cerca-avviso` dentro `.cerca-edificio`. `metodo.html` (fonti) e
+  `privacy.html` (fornitori: WFS catastale dell'Agenzia, cosa riceve Overpass) citano le fonti nuove.
+- **Da fare alla pubblicazione**: nuova versione (`python costruisci_pagine.py --versione …`, la voce del 17/11/2026 di
+  `novita.toml` porta `20261117`, da allineare): finché la versione non cambia `test_novita_versione_feed_e_menu` fallisce e
+  i browser tengono il vecchio `cerca_luogo.js`.
+- Test: `tests/test_ricerca_luogo_browser.py` (Ortofoto: ospedale nella vista, via Coriano centrata a metà e tutta visibile,
+  scelta di una via simile senza richiamare il server; Modelli 3D: elenco di Perugia e mappa ferma, località scelta; risposta
+  senza campi nuovi = zoom 17 come prima).
+
 ## Esempi e Contributi (15/11/2026, richiesta di Paolo; versione da fissare alla pubblicazione)
 
 - **Contributi** (`sito/contributi.html`, pagina di testo `main.articolo.contributi`): nella riga «Altre pagine» in alto e

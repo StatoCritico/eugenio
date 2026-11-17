@@ -235,10 +235,12 @@ async def converti(request: Request, file: UploadFile = File(...)):
 
 # ---------------------------------------------------------------------------------------------- patrimonio
 @app.post("/api/patrimonio")
-async def patrimonio_edifici(request: Request, file: UploadFile = File(...)):
+async def patrimonio_edifici(request: Request, file: UploadFile = File(...), luogo: str | None = Form(None)):
     """CSV di edifici (indirizzo, dati catastali o coordinate) → particella, comune, punto.
     Gli indirizzi si cercano prima nell'ANNCSU (file locale aggiornato ogni mese dal worker), poi con Zornade.
-    Il sito invia i file grandi a blocchi di qualche decina di righe e unisce i risultati."""
+    Il sito invia i file grandi a blocchi di qualche decina di righe e unisce i risultati.
+    Con `luogo=1` e una sola riga (ricerca delle pagine di mappa, 17/11/2026) la riga ha in più dove mettere il segnaposto
+    e cosa inquadrare: particella catastale del civico o metà della via, o le vie fra cui scegliere (servizio/luogo.py)."""
     from territorio import patrimonio
     from territorio.anncsu import Indirizzario
     from territorio.zornade import Zornade
@@ -255,6 +257,9 @@ async def patrimonio_edifici(request: Request, file: UploadFile = File(...)):
     if len(df) > C.MAX_EDIFICI:
         raise HTTPException(413, f"Troppi edifici ({len(df)}): massimo {C.MAX_EDIFICI} per caricamento")
     _limita(request, "patrimonio", len(df))
+    luogo = bool(luogo) and len(df) == 1 and C.LUOGO
+    if luogo:
+        P.limita(request, "luogo")
     P.zornade_disponibile(2 * len(df))      # al peggio una geocodifica e una particella per edificio
     z = Zornade(C.ZORNADE_API_KEY, C.DATI / "cache_zornade.sqlite")
     idx = Indirizzario(C.ANNCSU_FILE) if C.ANNCSU_FILE.exists() else None
@@ -262,10 +267,16 @@ async def patrimonio_edifici(request: Request, file: UploadFile = File(...)):
         ris = await run_in_threadpool(patrimonio.geolocalizza, df, z, meteo.comuni(), False, idx)
     finally:
         P.zornade_conta(z.chiamate)          # solo le chiamate vere: la cache non consuma quota
+    righe = json.loads(ris.drop(columns=["dettaglio"], errors="ignore").to_json(orient="records"))
+    fonti = patrimonio.fonti(ris)
+    if luogo and len(righe) == 1:
+        from . import luogo as LG
+        await run_in_threadpool(LG.arricchisci, righe, str(df.iloc[0].get("comune", "")), meteo.comuni(), idx)
+        fonti += [f for f in LG.fonti(righe[0]) if f not in fonti]
     return {"riepilogo": patrimonio.riepilogo(ris), "geojson": patrimonio.geojson(ris),
-            "righe": json.loads(ris.drop(columns=["dettaglio"], errors="ignore").to_json(orient="records")),
+            "righe": righe,
             "fonte": "Dati elaborati da Zornade (catasto Agenzia delle Entrate, ISTAT, OpenStreetMap ODbL)",
-            "fonte_url": "https://zornade.com", "fonti": patrimonio.fonti(ris)}
+            "fonte_url": "https://zornade.com", "fonti": fonti}
 
 
 # ---------------------------------------------------------------------------------------------- report

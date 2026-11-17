@@ -1556,10 +1556,12 @@
     if (stato.tegola) accendiTegola(false);               // (09/11/2026 d) nuova ricerca: la tegola si spegne
     esci3d(true);
     stato.punto = { lon, lat, origine: "ricerca", fonte: x.centro_comune ? "centro del comune (confini ISTAT, CC BY 4.0)"
-      : x.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)" : "dati elaborati da Zornade (zornade.com)",
+      : x.fonte_testo || (x.fonte_punto === "ANNCSU" ? "ANNCSU – Agenzia delle Entrate e ISTAT (CC BY 4.0)" : "dati elaborati da Zornade (zornade.com)"),
       testo: [x.indirizzo_trovato, x.comune_catasto].filter(Boolean).join(", ") };
     impostaPunto(lon, lat, "ricerca");
-    m.flyTo({ center: [lon, lat], zoom: x.zoom || ZOOM_CERCA, pitch: 0, bearing: 0, duration: 900 });
+    // (17/11/2026) particella del civico o via intera nella vista (cerca_luogo.js); senza riquadro come prima
+    if (window.EUGENIO_CERCA && window.EUGENIO_CERCA.inquadra) window.EUGENIO_CERCA.inquadra(m, lon, lat, x, { pitch: 0, bearing: 0 });
+    else m.flyTo({ center: [lon, lat], zoom: x.zoom || ZOOM_CERCA, pitch: 0, bearing: 0, duration: 900 });
     // solo il comune, o indirizzo senza coordinate (07/11/2026 sera): nessun edificio scelto, si avvicina l'utente
     if (x.centro_comune) {
       stato.daGenerare = null; evidenzia2d(""); $("genera-3d").disabled = true;

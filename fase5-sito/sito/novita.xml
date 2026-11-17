@@ -9,13 +9,15 @@
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
   <entry>
-    <title>17 novembre 2026 – Rete elettrica e cabine primarie</title>
+    <title>17 novembre 2026 – Rete elettrica, cabine primarie e ricerca degli indirizzi più precisa</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261117</id>
     <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261117"/>
     <updated>2026-11-17T12:00:00Z</updated>
-    <summary>Rete elettrica e cabine primarie</summary>
+    <summary>Rete elettrica, cabine primarie e ricerca degli indirizzi più precisa</summary>
     <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
-&lt;ul&gt;&lt;li&gt;Statistiche › Stato della rete elettrica: la mappa dei comuni colorati secondo la saturazione delle cabine primarie di e-distribuzione (pieni o a strisce), le cabine come grossi punti colorati, i comuni serviti da altri distributori e le interruzioni in corso. Scelto un comune: criticità, cabine che lo servono, interruzioni in corso e statistiche delle interruzioni mese per mese. Si scaricano l&amp;#x27;immagine e i dati in CSV, Excel e PDF.&lt;/li&gt;&lt;li&gt;Fotovoltaico › Cabine primarie: cerca un indirizzo o una particella, o carica l&amp;#x27;elenco delle tue sedi, e compaiono da sole le cabine primarie interessate, con l&amp;#x27;area convenzionale del GSE e la saturazione. «Aggiorna confini» mostra i perimetri delle aree letti dal GSE, scaricabili a parte con la loro licenza. Sotto, una mappa di dettaglio con ortofoto, particelle ed edifici, dove il punto si sposta a mano.&lt;/li&gt;&lt;/ul&gt;</content>
+&lt;ul&gt;&lt;li&gt;Statistiche › Stato della rete elettrica: la mappa dei comuni colorati secondo la saturazione delle cabine primarie di e-distribuzione (pieni o a strisce), le cabine come grossi punti colorati, i comuni serviti da altri distributori e le interruzioni in corso. Scelto un comune: criticità, cabine che lo servono, interruzioni in corso e statistiche delle interruzioni mese per mese. Si scaricano l&amp;#x27;immagine e i dati in CSV, Excel e PDF.&lt;/li&gt;&lt;li&gt;Fotovoltaico › Cabine primarie: cerca un indirizzo o una particella, o carica l&amp;#x27;elenco delle tue sedi, e compaiono da sole le cabine primarie interessate, con l&amp;#x27;area convenzionale del GSE e la saturazione. «Aggiorna confini» mostra i perimetri delle aree letti dal GSE, scaricabili a parte con la loro licenza. Sotto, una mappa di dettaglio con ortofoto, particelle ed edifici, dove il punto si sposta a mano.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Patrimonio › Ortofoto e Modelli 3D: cercando un indirizzo con il numero civico, la mappa mostra tutta la particella catastale del civico, con il segnaposto dentro. Prima andava sul portone e gli edifici grandi restavano fuori: a Rimini, in viale Settembrini 2, l&amp;#x27;ospedale Infermi non si vedeva.&lt;/li&gt;&lt;li&gt;Patrimonio › Ortofoto e Modelli 3D: cercando solo la via, la mappa si mette a metà della via e la fa vedere tutta (via Coriano a Rimini è lunga alcuni chilometri). Se ci sono più vie possibili, o la via non esiste con quel nome, compare l&amp;#x27;elenco da cui scegliere invece di andare lontano.&lt;/li&gt;&lt;li&gt;Statistiche › Costi energetici Sanità: la pagina si apre sempre sull&amp;#x27;Emilia-Romagna con l&amp;#x27;AUSL della Romagna, anche se nelle altre pagine si era scelta un&amp;#x27;altra regione.&lt;/li&gt;&lt;/ul&gt;</content>
   </entry>
   <entry>
     <title>16 novembre 2026 – Modelli 3D: gli edifici attorno alle zone coperte</title>

@@ -119,7 +119,8 @@ da `.gitignore`.
   come il sito ufficiale né come approvato da Stato Critico. Dettagli: pagina Licenza del sito, sezione «Nome e logo».
 - Liberi con attribuzione: Open-Meteo (CC BY 4.0), ISTAT e confini Gramscii (CC BY 4.0), Arpae
   (CC BY 4.0), ANNCSU (Agenzia delle Entrate e ISTAT, CC BY 4.0), Eurostat, Zornade (piano gratuito:
-  link "Dati elaborati da Zornade" + fonti; OSM ODbL).
+  link "Dati elaborati da Zornade" + fonti; OSM ODbL), cartografia catastale dell'Agenzia delle Entrate (WMS e, dal
+  17/11/2026, WFS INSPIRE per la particella del civico cercato nelle mappe: CC BY 4.0).
 - **Solo uso interno**: GME (licenza personale non commerciale) e TTF/EEX, compreso il PFOR
   ricostruito: servono a simulazioni e analisi, non si pubblicano e non si scaricano dal sito.
   I future trimestrali TTF si leggono dal sito EEX, che li mostra a scopo informativo, solo per

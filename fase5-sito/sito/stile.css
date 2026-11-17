@@ -1307,6 +1307,11 @@ label.casella { display: flex; gap: var(--s2); align-items: center; font-weight:
 .cerca-edificio label { display: grid; gap: .15rem; margin: 0; font-weight: 600; font-size: var(--c-s); }
 .cerca-edificio input { min-width: 0; width: 100%; max-width: none; }
 .cerca-edificio .aiuto { margin: 0; }
+/* (17/11/2026) ricerca di un luogo: vie fra cui scegliere e avviso discreto nella riga dei messaggi */
+.cerca-edificio .cerca-corpo { min-width: 0; }
+.cerca-edificio .cerca-scelte { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
+.cerca-edificio .cerca-scelte .bottone { font-size: var(--c-s); }
+.cerca-edificio .cerca-avviso { opacity: .8; font-size: var(--c-s); }
 .comandi-edificio { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin: var(--s3) 0 var(--s2); }
 .comandi-edificio [hidden], .mappa3d-comandi[hidden], .fonti-corpi[hidden] { display: none; }
 .pagina-edificio3d .mappa3d-comandi { margin: 0 0 var(--s2); }
