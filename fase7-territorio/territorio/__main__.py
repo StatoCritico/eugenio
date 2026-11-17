@@ -55,6 +55,8 @@ def main(argv=None):
                                           "--verifica e il PBF, si estraggono)")
     p.add_argument("--documenti", nargs="*", default=[], help="cabine-raccordo: testi (pdftotext -layout) delle "
                                                              "appendici dei Piani di Sviluppo e-distribuzione")
+    p.add_argument("--eccezioni", default=str(Path(__file__).resolve().parents[1] / "cabine_eccezioni.csv"),
+                   help="cabine-raccordo: CSV delle verifiche a mano (predefinito fase7-territorio/cabine_eccezioni.csv)")
     p.add_argument("--verifica", action="store_true", help="cabine-raccordo: secondo passaggio di verifica")
     p.add_argument("--comuni-ed", help="cabine-raccordo: JSON degli attributi di View_ComuniGestitiED2021Is "
                                        "(se manca si scarica)")
@@ -96,7 +98,10 @@ def main(argv=None):
             docs = [d for f in a.documenti for d in cabine.schede_piano_sviluppo(
                 Path(f).read_text(encoding="utf-8"), Path(f).stem)]
         r = cabine.costruisci(Path(a.dati_cp), Path(a.osm), Path(a.aree_gse), Path(a.mappa), Path(a.istat),
-                              Path(a.dest), comuni_gestiti=cg, linee=linee, luoghi=luoghi, documenti=docs)
+                              Path(a.dest), comuni_gestiti=cg, linee=linee, luoghi=luoghi, documenti=docs,
+                              eccezioni=cabine.leggi_eccezioni(Path(a.eccezioni)))
+        for x in r["avvisi_eccezioni"]:
+            print("Avviso:", x)
         if r["verifica"]:
             print(f"Secondo passaggio: prima {r['verifica']['prima']}, dopo {r['verifica']['dopo']}")
         print(f"Cabine e-distribuzione: {r['cabine']}; esiti: {dict(r['esiti'])}; aree GSE {r['versione_ac']}")

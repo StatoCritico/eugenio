@@ -294,9 +294,10 @@ def test_decidi_verifica():
     assert cb.decidi_verifica({**base, "linee": {"conferma": ["A - B"], "contro": []}})[0] == "sicuro"
     assert cb.decidi_verifica({**base, "luoghi": ["Vaccaro"]})[0] == "sicuro"
     assert cb.decidi_verifica({**base, "migliore_per_area": True, "esclusiva": True})[0] == "sicuro"
-    # posizione confermata ma area di un altro gestore: resta da verificare
+    # area di un altro gestore (scelta A): sicuro se la posizione è confermata, con la nota; altrimenti dubbia
     e, m = cb.decidi_verifica({**base, "area_ed": False, "luoghi": ["Gorizia"]})
-    assert e == "da_verificare" and "altro gestore" in m
+    assert e == "sicuro" and m.startswith("area GSE di un altro gestore")
+    assert cb.decidi_verifica({**base, "area_ed": False})[0] == "da_verificare"
     # Torino: comuniServiti mancante, nome uguale, area in comuni serviti senza dati
     assert cb.decidi_verifica({**base, "quota_area": 0.0, "quota_senza_dati": 0.95, "nome": 1.0})[0] == "sicuro"
 
@@ -323,3 +324,38 @@ def test_secondo_passaggio(scena):
     assert v["prima"]["da_verificare"] == 1 and v["dopo"].get("da_verificare", 0) == 0
     abano = next(r for r in righe if r["cod_cp_ed"] == "DV001380000")
     assert abano["esito"] == "senza_posizione" and "COD_AC confermato dai comuni" in abano["nota"]
+
+
+def test_eccezioni(scena, tmp_path):
+    cabine, comuni, sott, aree = scena
+    righe, _ = cb.raccorda(cabine, comuni, sott, aree)
+    righe += cb.righe_solo_gse(aree, {x["cod_ac"] for x in righe}, sott)
+    f = tmp_path / "ecc.csv"
+    f.write_text("# commento\n" + ",".join(cb.COLONNE_ECCEZIONI) + "\n"
+                 "DV001382982,,,,,sicuro,cartello «Padova Fiera»,Street View,2026-11-18\n"
+                 # ABANO: posizione letta a mano (non OSM) dentro l'area di Areti → codice dall'area che la contiene
+                 f"DV001380000,,{sott[2]['lat']},{sott[2]['lon']},,corretto,vista dal satellite,Paolo,2026-11-18\n"
+                 "DV999,,,,,sicuro,,,\n", encoding="utf-8")
+    ecc = cb.leggi_eccezioni(f)
+    assert len(ecc) == 3 and cb.leggi_eccezioni(tmp_path / "manca.csv") == []
+    avvisi = cb.applica_eccezioni(righe, ecc, sott, aree)
+    r = {x["cod_cp_ed"]: x for x in righe if x["cod_cp_ed"]}
+    assert r["DV001382982"]["esito"] == "sicuro" and r["DV001382982"]["cod_ac"] == "AC001E00909"
+    assert r["DV001382982"]["nota"].startswith("verifica a mano: cartello «Padova Fiera» (Street View, 2026-11-18)")
+    assert r["DV001380000"]["esito"] == "corretto" and r["DV001380000"]["cod_ac"] == "AC001A00001"
+    assert r["DV001380000"]["osm_id"] == "" and r["DV001380000"]["gestore"] == "ARETI SPA"
+    assert not any(x["esito"] == "solo_gse" and x["cod_ac"] == "AC001A00001" for x in righe)
+    assert any("DV999" in a for a in avvisi)
+    f.write_text(",".join(cb.COLONNE_ECCEZIONI) + "\nDV1,,45.1,,,,,,\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        cb.leggi_eccezioni(f)
+
+
+def test_serviti_in_parte():
+    tutti = [{"istat": "015009", "nome": "Arese", "con_trasformatori_ed": True},
+             {"istat": "090064", "nome": "San Teodoro", "con_trasformatori_ed": False}]
+    crit = {"015009": {"livello": "GIALLO"}}
+    nc, parte = cb.separa_serviti_in_parte(tutti, crit)
+    assert nc == [{"istat": "090064", "nome": "San Teodoro"}]
+    assert parte == [{"istat": "015009", "nome": "Arese", "servito_in_parte": True}]
+    assert crit["015009"]["servito_in_parte"] is True

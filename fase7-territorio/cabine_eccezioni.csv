@@ -1,0 +1,7 @@
+# Verifiche a mano del raccordo cabine primarie (letto da `python -m territorio cabine-raccordo`, applicato per ultimo).
+# Una riga per cabina e-distribuzione; campi vuoti = nessun cambiamento. Righe con # = commenti.
+# cod_cp_ed: codice e-distribuzione (obbligatorio). osm_id: sottostazione OSM da usare (es. way/97839983), oppure
+# lat/lon (WGS84, gradi decimali) per una posizione non OSM. cod_ac: area GSE da imporre (vuoto = area che contiene la
+# posizione). esito: sicuro | corretto | da_verificare | senza_posizione. nota, fonte (chi/che cosa), data (aaaa-mm-gg).
+# Esempio: DW001385043,way/146602758,,,,sicuro,cartello «CP Vaccaro» sul cancello,Street View (Paolo),2026-11-18
+cod_cp_ed,osm_id,lat,lon,cod_ac,esito,nota,fonte,data

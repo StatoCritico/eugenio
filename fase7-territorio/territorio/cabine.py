@@ -985,12 +985,100 @@ def non_concessionari(righe: list[dict], attuali: dict, successivi: dict | None,
     return out
 
 
+def separa_serviti_in_parte(tutti: list[dict], crit: dict) -> tuple[list[dict], list[dict]]:
+    """Divide l'uscita di `non_concessionari` in (non concessionari, serviti in parte). Un comune con trasformatori
+    e-distribuzione nel dato mensile non è mai non concessionario (decisione di Paolo, 17/11/2026): va negli serviti
+    in parte con `servito_in_parte = true`, e lo stesso campo si aggiunge alla sua voce in `crit`."""
+    nc = [{k: v for k, v in c.items() if k != "con_trasformatori_ed"} for c in tutti if not c["con_trasformatori_ed"]]
+    in_parte = [{k: v for k, v in c.items() if k != "con_trasformatori_ed"} | {"servito_in_parte": True}
+                for c in tutti if c["con_trasformatori_ed"]]
+    for c in in_parte:
+        if c["istat"] in crit:
+            crit[c["istat"]]["servito_in_parte"] = True
+    return nc, in_parte
+
+
 # ------------------------------------------------------------------------------------------- tutto insieme
+
+COLONNE_ECCEZIONI = ["cod_cp_ed", "osm_id", "lat", "lon", "cod_ac", "esito", "nota", "fonte", "data"]
+
+
+def leggi_eccezioni(percorso: Path) -> list[dict]:
+    """Eccezioni verificate a mano (CSV UTF-8 con intestazione `COLONNE_ECCEZIONI`, separatore virgola; le righe che
+    cominciano con «#» sono commenti). Una riga per cabina e-distribuzione; i campi vuoti non cambiano nulla."""
+    percorso = Path(percorso)
+    if not percorso.exists():
+        return []
+    righe = [l for l in percorso.read_text(encoding="utf-8").splitlines() if l.strip() and not l.lstrip().startswith("#")]
+    out = []
+    for r in csv.DictReader(righe):
+        r = {k: (v or "").strip() for k, v in r.items() if k}
+        if not r.get("cod_cp_ed"):
+            raise ValueError(f"eccezione senza cod_cp_ed: {r}")
+        if r.get("esito") and r["esito"] not in ("sicuro", "corretto", "da_verificare", "senza_posizione"):
+            raise ValueError(f"esito non ammesso nell'eccezione {r['cod_cp_ed']}: {r['esito']}")
+        if bool(r.get("lat")) != bool(r.get("lon")):
+            raise ValueError(f"eccezione {r['cod_cp_ed']}: servono sia lat sia lon")
+        out.append(r)
+    return out
+
+
+def applica_eccezioni(righe: list[dict], eccezioni: list[dict], sottostazioni: list[dict], aree: list[dict]) -> list[str]:
+    """Applica le eccezioni a mano dopo il calcolo (prevalgono su tutto). `osm_id` prende la posizione dalla
+    sottostazione OSM indicata; `lat`/`lon` danno una posizione non OSM; `cod_ac` vuoto = area che contiene la nuova
+    posizione (se cambiata). Se una riga `solo_gse` ha lo stesso `COD_AC`, si toglie. Restituisce gli avvisi."""
+    from shapely import STRtree
+    from shapely.geometry import Point
+    per_osm = {f["osm_id"]: f for f in sottostazioni}
+    per_cod = {a["COD_AC"]: a for a in aree}
+    alb = STRtree([a["geom"] for a in aree])
+    per_cp = {r["cod_cp_ed"]: r for r in righe if r.get("cod_cp_ed")}
+    avvisi = []
+    for e in eccezioni:
+        r = per_cp.get(e["cod_cp_ed"])
+        if r is None:
+            avvisi.append(f"eccezione per {e['cod_cp_ed']}: cabina non presente nei dati e-distribuzione, ignorata")
+            continue
+        nuova_pos = None
+        if e.get("osm_id"):
+            f = per_osm.get(e["osm_id"])
+            if f is None:
+                avvisi.append(f"eccezione per {e['cod_cp_ed']}: {e['osm_id']} non trovato nell'estratto OSM, ignorata")
+                continue
+            r.update(osm_id=f["osm_id"], osm_nome=f.get("name") or "")
+            nuova_pos = (round(float(f["lon"]), 6), round(float(f["lat"]), 6))
+        elif e.get("lat"):
+            r.update(osm_id="", osm_nome="")
+            nuova_pos = (round(float(e["lon"]), 6), round(float(e["lat"]), 6))
+        if nuova_pos:
+            r["lon"], r["lat"] = nuova_pos
+            r["distanza_m"] = None
+            if not e.get("cod_ac"):
+                x, y = utm(*nuova_pos)
+                j = [int(k) for k in alb.query(Point(float(x), float(y)), predicate="within")]
+                r["cod_ac"], r["gestore"] = (aree[j[0]]["COD_AC"], aree[j[0]].get("RAG_SOC", "")) if j else ("", "")
+        if e.get("cod_ac"):
+            r["cod_ac"] = e["cod_ac"]
+            r["gestore"] = per_cod.get(e["cod_ac"], {}).get("RAG_SOC", r.get("gestore", ""))
+            if e["cod_ac"] not in per_cod:
+                avvisi.append(f"eccezione per {e['cod_cp_ed']}: {e['cod_ac']} non è tra le aree GSE scaricate")
+        if e.get("esito"):
+            r["esito"] = e["esito"]
+        fonte = ", ".join(x for x in (e.get("fonte"), e.get("data")) if x)
+        r["nota"] = (f"verifica a mano: {e.get('nota') or 'confermata'}" + (f" ({fonte})" if fonte else "")
+                     + (f" [prima: {r['nota']}]" if r.get("nota") else ""))
+    usate = {r["cod_ac"] for r in righe if r.get("cod_cp_ed") and r.get("cod_ac")}
+    doppie = Counter(r["osm_id"] for r in righe if r.get("cod_cp_ed") and r.get("osm_id"))
+    avvisi += [f"sottostazione {k} usata da {n} cabine" for k, n in doppie.items() if n > 1
+               and any(e.get("osm_id") == k for e in eccezioni)]
+    righe[:] = [r for r in righe if not (r["esito"] == "solo_gse" and r["cod_ac"] in usate)]
+    return avvisi
+
 
 def costruisci(dati_cp: Path, osm: Path, aree_gse: Path, mappa: Path, istat: Path, dest: Path,
                comuni_gestiti: list[dict] | None = None, data: str | None = None,
                linee: list[dict] | None = None, luoghi: list[dict] | None = None,
-               documenti: list[dict] | None = None) -> dict:
+               documenti: list[dict] | None = None, eccezioni: list[dict] | None = None) -> dict:
     """Produce in `dest` i file del raccordo (vedi README della fase 7) e restituisce un riepilogo numerico.
 
     - dati_cp: cartella di cabine_edistribuzione.py (con `grezzi/PPP.json`)
@@ -1000,6 +1088,7 @@ def costruisci(dati_cp: Path, osm: Path, aree_gse: Path, mappa: Path, istat: Pat
     - istat: cartella con Elenco-comuni-italiani.csv e i CSV dei soppressi e delle variazioni
     - comuni_gestiti: attributi di View_ComuniGestitiED2021Is (se None non si scrive il file dei non concessionari)
     - linee, luoghi, documenti: se dati, secondo passaggio di verifica (`secondo_passaggio`) prima di scrivere
+    - eccezioni: verifiche a mano (`leggi_eccezioni`), applicate per ultime
     """
     dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
@@ -1031,27 +1120,35 @@ def costruisci(dati_cp: Path, osm: Path, aree_gse: Path, mappa: Path, istat: Pat
             senza_dati = serviti - {t[0] for t in tr} - {None}
         verifica = secondo_passaggio(righe, cab, comuni, aree, cand, linee or [], luoghi or [], province,
                                      documenti or [], data, senza_dati)
+    avvisi = applica_eccezioni(righe, eccezioni, sott, aree) if eccezioni else []
     righe.sort(key=lambda r: (r["cod_ac"] or "~", r["cod_cp_ed"]))
     scrivi_raccordo(righe, dest / "raccordo_cp.csv", data, versione)
     cont = conteggi_cabina(tr)
     (dest / "cabine_primarie.geojson").write_text(
         json.dumps(geojson_cabine(righe, cont, data_sat, data, versione), ensure_ascii=False), encoding="utf-8")
     crit = criticita_comuni(tr, attuali)
-    (dest / "comuni_criticita.json").write_text(json.dumps(
-        {"data": data_sat, "fonte": FONTE_ED, "regola": REGOLA_CRITICITA, "comuni": crit},
-        ensure_ascii=False), encoding="utf-8")
-    nc = None
+    nc = in_parte = None
     if comuni_gestiti is not None:
-        nc = non_concessionari(comuni_gestiti, attuali, succ, regioni, set(crit))
+        tutti = non_concessionari(comuni_gestiti, attuali, succ, regioni, set(crit))
+        # decisione di Paolo (17/11/2026): un comune con trasformatori e-distribuzione nel dato mensile non è mai
+        # «non concessionario»; resta nella criticità con servito_in_parte = true e fuori dall'elenco
+        nc, in_parte = separa_serviti_in_parte(tutti, crit)
         (dest / "comuni_non_concessionari.json").write_text(json.dumps(
             {"fonte": f"e-distribuzione S.p.A., strato View_ComuniGestitiED2021Is (servitoed = 0) – {COMUNI_ED}",
              "nota": "Comuni ISTAT 2021 ricondotti ai codici attuali con le tabelle ISTAT (soppressi, variazioni) "
-                     "e, in mancanza, con il nome.",
-             "data": data, "comuni": nc}, ensure_ascii=False), encoding="utf-8")
+                     "e, in mancanza, con il nome. Esclusi i comuni che hanno trasformatori e-distribuzione nel dato "
+                     "mensile comuniServiti: sono concessionari serviti in parte (elenco «serviti_in_parte»; nella "
+                     "criticità hanno servito_in_parte = true).",
+             "data": data, "comuni": nc, "serviti_in_parte": in_parte}, ensure_ascii=False), encoding="utf-8")
+    (dest / "comuni_criticita.json").write_text(json.dumps(
+        {"data": data_sat, "fonte": FONTE_ED, "regola": REGOLA_CRITICITA, "comuni": crit},
+        ensure_ascii=False), encoding="utf-8")
     return {"cabine": len(cab), "trasformatori": len(tr), "esiti": Counter(r["esito"] for r in righe),
             "diagnostica": diag, "versione_ac": versione, "data_saturazione": data_sat,
             "comuni_criticita": len(crit), "non_concessionari": len(nc) if nc is not None else None,
+            "serviti_in_parte": len(in_parte) if in_parte is not None else None,
             "codici_istat": Counter(m for _, m in mappa_cod.values()), "osm_candidate": len(cand), "verifica": verifica,
+            "avvisi_eccezioni": avvisi,
             "osm_tutte": len(sott), "righe": righe, "aree": aree, "cabine_ed": cab, "trasf": tr,
             "mappa_codici": mappa_cod, "comuni": comuni, "attuali": attuali, "regioni": regioni}
 
@@ -1119,7 +1216,8 @@ def decidi_verifica(prove: dict) -> tuple[str, str]:
     prove: {"quota_area": float, "migliore_per_area": bool, "linee": {"conferma": [...], "contro": [...]},
             "luoghi": [...], "nome": float, "esclusiva": bool, "documenti": [...], "area_ed": bool,
             "quota_senza_dati": float}
-    Regole: area di un altro gestore → resta da verificare; nome uguale (o ≥ 0,8 e unica candidata nell'area) e area
+    Regole: area di un altro gestore → stesso giudizio, con la nota «area GSE di un altro gestore» (scelta A del
+    17/11/2026: il COD_AC resta quello dell'area che contiene la cabina); nome uguale (o ≥ 0,8 e unica candidata nell'area) e area
     dentro comuni serviti da e-distribuzione ma senza dati (Torino) → sicuro; area che non tocca i comuni serviti (quota < 0,05) → errore; una linea AT col nome della cabina, una
     località omonima vicina o un documento → sicuro se l'area tocca i comuni serviti (≥ 0,2) e nessuna linea è
     contraria; altrimenti la sovrapposizione dei comuni basta se la cabina è la migliore per quell'area (quota ≥ 0,6)
@@ -1129,7 +1227,10 @@ def decidi_verifica(prove: dict) -> tuple[str, str]:
     qa = prove.get("quota_area", 0)
     lin = prove.get("linee") or {}
     if prove.get("area_ed") is False:
-        return "da_verificare", "area GSE di un altro gestore: " + decidi_verifica({**prove, "area_ed": True})[1]
+        # scelta A di Paolo (17/11/2026): si tiene il COD_AC dell'area che contiene la cabina, col suo gestore;
+        # sicuro se la posizione è confermata, altrimenti resta da verificare
+        e, m = decidi_verifica({**prove, "area_ed": True})
+        return ("sicuro" if e == "sicuro" else "da_verificare"), "area GSE di un altro gestore; " + m
     nome = prove.get("nome", 0)
     if qa < 0.2 and prove.get("quota_senza_dati", 0) >= 0.8 and not lin.get("contro") \
             and (nome >= 0.95 or (nome >= 0.8 and prove.get("esclusiva"))):

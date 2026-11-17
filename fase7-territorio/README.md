@@ -313,7 +313,39 @@ regole in `decidi_verifica`, tutte con test):
 - cabine «torinesi»: nome uguale in un'area fatta di comuni serviti da e-distribuzione ma senza dati `comuniServiti`.
 Una cabina in un'area GSE di un altro gestore resta `da_verificare` anche con la posizione confermata. Risultato del
 17/11: da 1.574 / 114 / 29 (sicuro / da_verificare / senza_posizione) a 1.647 sicuro, 4 corretto, 41 da_verificare, 25
-senza_posizione; nessuna riga già sicura cambiata.
+senza_posizione (con la scelta A per le aree di altri gestori: 1.654 / 4 / 34 / 25); nessuna riga già sicura cambiata.
+
+Aree GSE di altri gestori (scelta A di Paolo, 17/11/2026): una cabina e-distribuzione che cade nell'area di un altro
+distributore tiene il `COD_AC` di quell'area col suo gestore; è `sicuro` se la posizione è confermata, altrimenti resta
+`da_verificare`; nota «area GSE di un altro gestore».
+
+Comuni serviti in parte (decisione di Paolo, 17/11/2026): un comune con trasformatori e-distribuzione nel dato mensile
+non è mai «non concessionario» anche se lo strato `View_ComuniGestitiED2021Is` dice `servitoed = 0`. Esce
+nell'elenco `serviti_in_parte` di `comuni_non_concessionari.json` (fuori da `comuni`) e in `comuni_criticita.json` con
+`servito_in_parte: true` (`separa_serviti_in_parte`). Il 17/11: 550 non concessionari, 35 serviti in parte.
+
+### Eccezioni verificate a mano (`cabine_eccezioni.csv`)
+
+Le verifiche fatte a mano (cartelli sui cancelli, Street View, dataadl, documenti) si scrivono in
+`fase7-territorio/cabine_eccezioni.csv`; `cabine-raccordo` lo legge da solo (oppure `--eccezioni FILE`) e lo applica
+**per ultimo**, sopra il calcolo e il secondo passaggio. CSV UTF-8, virgola, righe che cominciano con `#` = commenti:
+
+```
+cod_cp_ed,osm_id,lat,lon,cod_ac,esito,nota,fonte,data
+DW001385043,way/146602758,,,,sicuro,cartello «CP Vaccaro» sul cancello,Street View (Paolo),2026-11-18
+DV001381250,,45.4170,11.8890,,corretto,cabina vista su dataadl,dataadl.it (Paolo),2026-11-18
+```
+
+- `cod_cp_ed` (obbligatorio): codice e-distribuzione della cabina; una riga per cabina.
+- `osm_id`: sottostazione OSM da usare (`way/…`, `node/…`, `relation/…`, anche non tra le candidate); oppure `lat` e
+  `lon` (WGS84, gradi decimali) per una posizione non OSM. Vuoti = posizione invariata.
+- `cod_ac`: area GSE da imporre; vuoto = area che contiene la nuova posizione (se la posizione cambia), altrimenti
+  invariata. Una riga `solo_gse` con lo stesso codice si toglie.
+- `esito`: `sicuro`, `corretto`, `da_verificare`, `senza_posizione` (vuoto = invariato).
+- `nota`, `fonte`, `data`: finiscono nella nota come «verifica a mano: <nota> (<fonte>, <data>) [prima: …]».
+Errori bloccanti: riga senza `cod_cp_ed`, esito non ammesso, solo `lat` o solo `lon`. Avvisi (stampati): codice non
+presente nei dati, `osm_id` non trovato, `cod_ac` sconosciuto, sottostazione usata da due cabine. Test in
+`tests/test_cabine.py::test_eccezioni`.
 
 ### Uso
 
@@ -336,13 +368,13 @@ scompattati). Servono `shapely`, `scipy` e, per leggere il PBF, `osmium` (pyosmi
 Escono in `<uscite>`: `raccordo_cp.csv` (colonne del contratto più `nota` in fondo), `cabine_primarie.geojson` (punti
 con livello peggiore e trasformatori per livello), `comuni_criticita.json`, `comuni_non_concessionari.json`,
 `osm_sottostazioni.geojson` (le candidate, ODbL). Risultati del 17/11/2026: 1.717 cabine e-distribuzione (manca
-Torino, il servizio risponde 500), 1.574 `sicuro`, 114 `da_verificare`, 29 `senza_posizione`, 450 aree `solo_gse` (dopo il secondo passaggio 1.647 / 4 `corretto` / 41 / 25, 446 `solo_gse`);
+Torino, il servizio risponde 500), 1.574 `sicuro`, 114 `da_verificare`, 29 `senza_posizione`, 450 aree `solo_gse` (dopo il secondo passaggio e la scelta A 1.654 / 4 `corretto` / 34 / 25, 446 `solo_gse`);
 prove note confermate (PADOVA FIERA `DV001382982` ↔ OSM way/97839983 «Padova San Lazzaro SC» ↔ `AC001E00909`; Padova
 Centro → `AC001E00906`, Bassanello → `AC001E00886`, Camin → `AC001E00887`).
 
 ## Test
 
 ```powershell
-python -m pytest tests -q      # 49 test, nessuna chiamata di rete (Zornade simulato, ZIP ANNCSU costruito nel test,
+python -m pytest tests -q      # 51 test, nessuna chiamata di rete (Zornade simulato, ZIP ANNCSU costruito nel test,
                                # cabine primarie su una «Padova» finta)
 ```
