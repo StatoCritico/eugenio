@@ -29,7 +29,7 @@ from openpyxl.drawing.text import Paragraph, ParagraphProperties, CharacterPrope
 QUI = os.path.dirname(os.path.abspath(__file__))
 # (14/11/2026) percorsi relativi: di predefinito il file scaricabile del sito; un altro percorso come primo argomento
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(QUI, "..", "..", "fase5-sito", "sito", "strumenti", "psicro_UTA.xlsx")
-VERSIONE = "2.2"
+VERSIONE = "2.3"
 DATA = "16/11/2026"
 UTA_SCALE = 55   # scala di stampa del foglio UTA (A4 orizzontale, 2 pagine)
 
@@ -1731,15 +1731,290 @@ def build_mollier(width_cm, height_cm):
     return ch
 
 
+# --------------------------------------------------------------- famiglie di curve e goniometro dell'originale
+# Ricostruzione, con le costanti e la pressione di questo foglio, del foglio «calc» di psicro_finale.xls:
+# asse delle entalpie (retta x = 20/30·T + 10 e parallela +4), isoentalpiche in kcal/kg (continue, fino
+# all'asse + 2), isoentalpiche in kJ/kg (tratteggiate, nella fascia tra le due rette d'asse), isocore
+# 0,78…0,95 m³/kg (fino a saturazione + 2), goniometro a due semicerchi centrati in (0; 30):
+# raggio 7 = fattore termico R (rombi), raggio 9 = rapporto Δh/Δx in kJ/g (quadrati).
+OG = wc.max_row + 3
+put(wc, f"B{OG}", "Diagramma T–x nello stile dell'originale (psicro_finale.xls): famiglie di curve", F_B, FILL_GREY)
+OG_T0 = OG + 3                     # prima riga dei dati (T = −10 °C)
+OG_NT = 61                         # T = −10…50 °C
+OG_T1 = OG_T0 + OG_NT - 1
+KCAL = list(range(0, 31))
+VOLS = [round(0.95 - 0.01 * i, 2) for i in range(18)]
+KJ = list(range(10, 100, 5))
+wc[f"C{OG + 1}"] = "T [°C]"
+wc[f"D{OG + 1}"] = "x sat"
+wc[f"E{OG + 1}"] = "asse h"
+wc[f"F{OG + 1}"] = "asse h2"
+OG_KC = {h: L(7 + i) for i, h in enumerate(KCAL)}
+OG_VO = {v: L(7 + len(KCAL) + i) for i, v in enumerate(VOLS)}
+OG_KJ = {h: L(7 + len(KCAL) + len(VOLS) + i) for i, h in enumerate(KJ)}
+for h, c in OG_KC.items():
+    wc[f"{c}{OG + 1}"] = f"h {h} kcal"
+    wc[f"{c}{OG + 2}"] = h
+for v, c in OG_VO.items():
+    wc[f"{c}{OG + 1}"] = f"v {str(v).replace('.', ',')}"
+    wc[f"{c}{OG + 2}"] = v
+for h, c in OG_KJ.items():
+    wc[f"{c}{OG + 1}"] = f"h {h} kJ"
+    wc[f"{c}{OG + 2}"] = h
+for i in range(OG_NT):
+    r = OG_T0 + i
+    t = f"$C{r}"
+    wc[f"C{r}"] = -10 + i
+    ps = PS(t)
+    wc[f"D{r}"] = f"=1000*0.621945*{ps}/({PL}-{ps})"
+    wc[f"E{r}"] = f"=20/30*{t}+10"
+    wc[f"F{r}"] = f"=E{r}+4"
+    for h, c in OG_KC.items():
+        xv = f"({c}${OG + 2}*4.1868-1.006*{t})/(2501+1.86*{t})*1000"
+        wc[f"{c}{r}"] = f"=MIN({xv},2+$E{r})"
+    for v, c in OG_VO.items():
+        xv = f"1000*0.621945*({c}${OG + 2}*{PL}/(287.055*(273.15+{t}))-1)"
+        wc[f"{c}{r}"] = f"=MIN({xv},2+$D{r})"
+    for h, c in OG_KJ.items():
+        xv = f"({c}${OG + 2}-1.006*{t})/(2501+1.86*{t})*1000"
+        wc[f"{c}{r}"] = f"=MIN(MAX({xv},$E{r}),2+$F{r})"
+
+# goniometro
+OGG = OG_T1 + 3
+put(wc, f"B{OGG}", "Goniometro dell'originale: centro (0; 30), raggio 7 = R, raggio 9 = Δh/Δx [kJ/g]", F_B, FILL_GREY)
+wc[f"C{OGG + 1}"] = "R"
+wc[f"D{OGG + 1}"] = "dx/dT"
+wc[f"E{OGG + 1}"] = "T"
+wc[f"F{OGG + 1}"] = "x"
+wc[f"H{OGG + 1}"] = "Δh/Δx [kJ/g]"
+wc[f"I{OGG + 1}"] = "dx/dT"
+wc[f"J{OGG + 1}"] = "T"
+wc[f"K{OGG + 1}"] = "x"
+wc[f"M{OGG + 1}"] = "arco 7: T"
+wc[f"N{OGG + 1}"] = "arco 7: x"
+wc[f"O{OGG + 1}"] = "arco 9: T"
+wc[f"P{OGG + 1}"] = "arco 9: x"
+GR = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0, -0.1, -0.2, -0.5, -0.8, -1, -2, -5, -1000,
+      1000, 5, 4, 3, 2, 1.8, 1.5, 1.2]
+GP = [100, 20, 10, 9, 8, 7, 6, 5, 4.5, 4, 3.8, 3.6, 3.4, 3.2, 3, 2.9, 2.8, 2.7, "=0.624*4.1868", 2.5, 2.4, 2.3,
+      2.2, 2.1, 2, 1.8, 1.6, 1.4, 1.2, 1, 0.8, 0.6, 0.4, 0.2, 0.0001, -1, -2, -5, -10]
+G0 = OGG + 2
+for i, R_ in enumerate(GR):
+    r = G0 + i
+    wc[f"C{r}"] = R_
+    if R_ == 0:
+        wc[f"E{r}"] = 0
+        wc[f"F{r}"] = 23
+        continue
+    wc[f"D{r}"] = f"=1.006*(1/C{r}-1)/2501*1000"
+    wc[f"F{r}"] = f"=-ABS(D{r})*7/SQRT(1+D{r}^2)+30"
+    wc[f"E{r}"] = f"=IF(D{r}=0,-7,(F{r}-30)/D{r})"
+for i, E_ in enumerate(GP):
+    r = G0 + i
+    wc[f"H{r}"] = E_
+    wc[f"I{r}"] = f"=1.006/(H{r}-2.501)"
+    wc[f"K{r}"] = f"=-ABS(I{r})*9/SQRT(1+I{r}^2)+30"
+    wc[f"J{r}"] = f"=(K{r}-30)/I{r}"
+r = G0 + len(GP)                   # chiusura a destra (Δh/Δx → ∞)
+wc[f"H{r}"] = "∞"
+wc[f"J{r}"] = 9
+wc[f"K{r}"] = 30
+G_P1 = r
+for i in range(37):                # semicerchi disegnati a passi di 5°
+    r = G0 + i
+    wc[f"M{r}"] = f"=7*COS(RADIANS({180 + 5 * i}))"
+    wc[f"N{r}"] = f"=30+7*SIN(RADIANS({180 + 5 * i}))"
+    wc[f"O{r}"] = f"=9*COS(RADIANS({180 + 5 * i}))"
+    wc[f"P{r}"] = f"=30+9*SIN(RADIANS({180 + 5 * i}))"
+GC = G0 + 40                       # centro ⊗ e rette ambiente di progetto (raggio 7)
+wc[f"C{GC}"] = "⊗"
+wc[f"E{GC}"] = 0
+wc[f"F{GC}"] = 30
+wc[f"C{GC + 1}"] = "∞"
+wc[f"E{GC + 1}"] = 9
+wc[f"F{GC + 1}"] = 30
+OG_RL = {}
+for j, s_ in enumerate(("E", "I")):
+    rr = GC + 3 + 3 * j
+    a, i_ = se_row(s_, "A"), se_row(s_, "I")
+    wc[f"C{rr}"] = "R estate (raggio 7)" if s_ == "E" else "R inverno (raggio 7)"
+    wc[f"E{rr}"] = 0
+    wc[f"F{rr}"] = 30
+    dT = f"({SEC['t']}{i_}-{SEC['t']}{a})"
+    dX = f"({SEC['xg']}{i_}-{SEC['xg']}{a})"
+    wc[f"D{rr + 1}"] = f"=IF(ABS({dT})<0.000001,1E+9*IF({dX}<0,1,-1),{dX}/{dT})"
+    wc[f"F{rr + 1}"] = f"=-ABS(D{rr + 1})*7/SQRT(1+D{rr + 1}^2)+30"
+    wc[f"E{rr + 1}"] = f"=IF(D{rr + 1}=0,-7,(F{rr + 1}-30)/D{rr + 1})"
+    OG_RL[s_] = rr
+
+
+def build_chart_orig(width_cm, height_cm):
+    """Diagramma T–x del foglio «psicro» con le famiglie di curve e il goniometro di psicro_finale.xls."""
+    from openpyxl.utils import column_index_from_string as CI
+    ch = base_chart(width_cm, height_cm)
+    S = ch.series
+    for j, (ct, cx, nref) in enumerate(RH_SER):
+        S.append(make_series(wc, 8 + 2 * j, 9 + 2 * j, RH_PTS0, RH_PTS1, name_ref=f"'Calcoli'!${ct}${RH_HDR}",
+                             color="000000", width=2.25 if j == 0 else 0.75))
+    for c, nm in (("E", "asse h"), ("F", "asse h2")):
+        S.append(make_series(wc, 3, CI(c), OG_T0, OG_T1, name=nm, color="000000", width=1))
+    for h, c in OG_KC.items():
+        S.append(make_series(wc, 3, CI(c), OG_T0, OG_T1, name_ref=f"'Calcoli'!${c}${OG + 1}", color="000000", width=1))
+    for k, (v, c) in enumerate(OG_VO.items()):
+        S.append(make_series(wc, 3, CI(c), OG_T0, OG_T1, name_ref=f"'Calcoli'!${c}${OG + 1}", color="000000", width=1,
+                             dash=None if k == 0 else "dash"))
+    for h, c in OG_KJ.items():
+        S.append(make_series(wc, 3, CI(c), OG_T0, OG_T1, name_ref=f"'Calcoli'!${c}${OG + 1}", color="000000", width=1,
+                             dash="dash"))
+    # goniometro
+    S.append(make_series(wc, 13, 14, G0, G0 + 36, name="goniometro R", color="000000", width=1))
+    S.append(make_series(wc, 15, 16, G0, G0 + 36, name="goniometro Δh/Δx", color="000000", width=1))
+    S.append(make_series(wc, 5, 6, G0, G0 + len(GR) - 1, name="R", color="000000", marker="diamond", msize=5,
+                         nolines=True))
+    S.append(make_series(wc, 10, 11, G0, G_P1, name="Δh/Δx", color="000000", marker="square", msize=4,
+                         nolines=True))
+    S.append(make_series(wc, 5, 6, GC + 1, GC + 1, name_ref=f"'Calcoli'!$C${GC + 1}", color="404040", nolines=True,
+                         marker="none", label_idx=0, label_pos="r", label_sz=1400))
+    inf_se, inf_dl = S[-1], S[-1].dLbls
+    for s_ in ("E", "I"):
+        rr = OG_RL[s_]
+        S.append(make_series(wc, 5, 6, rr, rr + 1, name="R " + ("estate" if s_ == "E" else "inverno"),
+                             color=COL_E if s_ == "E" else COL_I, width=3, marker="diamond", msize=7))
+    for j, s_ in enumerate(("E", "I")):
+        S.append(make_series(wc, 8 + 2 * j, 9 + 2 * j, RA0 + 1, RA0 + 2, name="retta ambiente",
+                             color=COL_E if s_ == "E" else COL_I, width=1.25, dash="sysDash"))
+    add_process_series(
+        S,
+        lambda s_, col: make_series(ws, 8, 10, SEAS[s_] + O_R0, SEAS[s_] + O_R0 + NROWS,
+                                    name="Estate" if s_ == "E" else "Inverno", color=col, width=W_PROC,
+                                    marker="circle", msize=6),
+        lambda s_, j, nm, col, mk, pos: make_series(ws, 8, 10, SEAS[s_] + 2 + j, SEAS[s_] + 2 + j, name=nm, color=col,
+                                                    marker=mk, msize=8, label_idx=0, label_pos=pos, label_color=col,
+                                                    label_sz=800, nolines=True))
+    # centro ⊗ (simbolo come etichetta, uguale in Excel e LibreOffice)
+    S.append(make_series(wc, 5, 6, GC, GC, name_ref=f"'Calcoli'!$C${GC}", color="404040", nolines=True,
+                         marker="none", label_idx=0, label_pos="ctr", label_sz=2000))
+    cen_se, cen_dl = S[-1], S[-1].dLbls
+    ch.x_axis.scaling.min, ch.x_axis.scaling.max = -10, 50
+    ch.y_axis.scaling.min, ch.y_axis.scaling.max = 0, 30
+    ch.x_axis.delete = ch.y_axis.delete = False
+    stile_originale(ch)
+    inf_se.dLbls = inf_dl
+    for d in inf_dl.dLbl:
+        d.txPr = rich(1400, "000000")
+    cen_se.dLbls = cen_dl
+    for d in cen_dl.dLbl:
+        d.txPr = rich(2000, "000000")
+    return ch
+
+
+# --------------------------------------------------------------- stile originale (psicro_finale.xls)
+# I fogli «psicro» e «Mollier» riprendono la grafica del diagramma originale dell'autore:
+# fondo bianco con bordo nero, griglia nera (principale continua, secondaria tratteggiata, passo 1),
+# curve di riferimento nere (saturazione 3 pt, le altre 1 pt; volume specifico tratteggiato),
+# nessun titolo degli assi, etichette dell'asse verticale a destra, Arial 10, ESTATE rossa e INVERNO blu
+# spessi 3 pt. La copia ridotta nel foglio UTA mantiene lo stile a colori.
+from openpyxl.chart.layout import Layout, ManualLayout
+
+OR_E, OR_I = "FF0000", "0000FF"      # colori dell'originale: estate rossa (ser a), inverno blu (ser b)
+_MAP_PROC = {COL_E: OR_E, COL_I: OR_I}
+
+
+def _rgb(fill):
+    c = getattr(fill, "srgbClr", None) if fill is not None else None
+    c = getattr(c, "val", c)
+    return str(c).upper()[-6:] if c is not None else None
+
+
+def _col(se):
+    ln = se.spPr.line if se.spPr is not None else None
+    return _rgb(ln.solidFill) if ln is not None else None
+
+
+def _mk_col(se):
+    gp = se.marker.graphicalProperties if se.marker is not None else None
+    return _rgb(gp.solidFill) if gp is not None else None
+
+
+def stile_originale(ch, etichette_curve=False):
+    """Ristila un grafico costruito da build_chart/build_mollier nello stile di psicro_finale.xls."""
+    for se in ch.series:
+        col = _col(se) or _mk_col(se)
+        ln = se.spPr.line
+        proc = col in _MAP_PROC
+        if proc:
+            nc = _MAP_PROC[col]
+            if ln is not None and not ln.noFill:
+                ln.solidFill = nc
+                if ln.prstDash is None:
+                    ln.w = 38100                  # 3 pt come «ser a» / «ser b»
+            if se.marker is not None and se.marker.symbol != "none":
+                se.marker.graphicalProperties = GraphicalProperties(solidFill=nc)
+                se.marker.graphicalProperties.line = LineProperties(solidFill=nc)
+                se.marker.size = 7 if se.marker.size and se.marker.size > 6 else 5
+            if se.dLbls is not None:
+                for d in se.dLbls.dLbl:
+                    d.txPr = rich(1000, nc)
+            se.smooth = False                     # trasformazioni rettilinee (punti calcolati)
+            continue
+        # curve di riferimento: nere
+        w0 = ln.w or 9525
+        if not ln.noFill:
+            ln.solidFill = "000000"
+            if col == "000000" and w0 >= 25000:
+                ln.w = 38100                      # saturazione 3 pt
+            elif col == "C9C9C9":
+                ln.noFill = True                  # isoterme ogni 1 °C (Mollier): la griglia secondaria basta
+                ln.solidFill = None
+            else:
+                ln.w = 12700                      # 1 pt
+                if ln.prstDash not in (None, "solid"):
+                    ln.prstDash = "lgDash"
+        if se.marker is not None and se.marker.symbol not in (None, "none"):
+            se.marker.graphicalProperties = GraphicalProperties(solidFill="000000")
+            se.marker.graphicalProperties.line = LineProperties(solidFill="000000")
+        # niente smussatura: le curve hanno già abbastanza punti, e LibreOffice smussa tutto il grafico
+        # se anche una sola serie è smussata (le trasformazioni devono restare rettilinee)
+        se.smooth = False
+        if se.dLbls is not None:
+            if etichette_curve or col == "404040":
+                for d in se.dLbls.dLbl:
+                    d.txPr = rich(800, "000000")
+            else:
+                se.dLbls = None
+    # assi: niente titoli, griglia nera, Arial 10, etichette verticali a destra
+    for ax in (ch.x_axis, ch.y_axis):
+        ax.title = None
+        ax.number_format = "General"
+        ax.majorGridlines = ChartLines(spPr=GraphicalProperties(ln=LineProperties(solidFill="000000", w=3175)))
+        ax.minorGridlines = ChartLines(spPr=GraphicalProperties(ln=LineProperties(solidFill="000000", w=3175,
+                                                                                    prstDash="dash")))
+        ax.minorUnit = 1
+        ax.majorUnit = 5
+        ax.txPr = rich(1000, "000000")
+        ax.spPr = GraphicalProperties(ln=LineProperties(solidFill="000000", w=3175))
+    ch.x_axis.majorTickMark = ch.x_axis.minorTickMark = "out"
+    ch.y_axis.majorTickMark = ch.y_axis.minorTickMark = "in"
+    ch.x_axis.crosses = "min"
+    ch.y_axis.crosses = "max"
+    ch.y_axis.tickLblPos = "high"
+    ch.x_axis.tickLblPos = "nextTo"
+    ch.plot_area.layout = Layout(manualLayout=ManualLayout(xMode="edge", yMode="edge",
+                                                           x=0.0071, y=0.0272, w=0.9902, h=0.9723))
+    ch.plot_area.spPr = GraphicalProperties(solidFill="FFFFFF", ln=LineProperties(solidFill="000000", w=12700))
+    ch.graphical_properties = GraphicalProperties(noFill=True, ln=LineProperties(noFill=True))
+    return ch
+
+
 # --------------------------------------------------------------- impostazioni di stampa
 from openpyxl.worksheet.page import PageMargins
 from openpyxl.worksheet.pagebreak import Break, RowBreak
 
 
-def print_setup(w, area, orientation, fit=None, scale=None, row_breaks=(), title_rows=None):
+def print_setup(w, area, orientation, fit=None, scale=None, row_breaks=(), title_rows=None, paper=9):
     w.print_area = area
     w.page_setup.orientation = orientation
-    w.page_setup.paperSize = 9                      # A4
+    w.page_setup.paperSize = paper                  # 9 = A4, 8 = A3
     w.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75, header=0.3, footer=0.3)
     if fit:
         w.sheet_properties.pageSetUpPr.fitToPage = True
@@ -1768,22 +2043,24 @@ def print_setup(w, area, orientation, fit=None, scale=None, row_breaks=(), title
 
 
 # --------------------------------------------------------------- fogli dei diagrammi
-CH_W, CH_H = 25.0, 14.5
-LG = 34
+# Impaginazione dell'originale: diagramma grande (35,2 × 23,2 cm) su A3 orizzontale, una pagina;
+# legenda e tabella dei punti sulla pagina seguente.
+CH_W, CH_H = 35.2, 23.2
 
 
 def chart_sheet(w, title, subtitle, chart, legend, tab):
     w.sheet_properties.tabColor = tab
     w.column_dimensions["A"].width = 2
     for c in range(2, 22):
-        w.column_dimensions[L(c)].width = 8.5
+        w.column_dimensions[L(c)].width = 9.5
     w["B1"] = title
     w["B1"].font = F_T
     w["B2"] = subtitle
     w["B2"].font = F_N
     w.add_chart(chart, "B4")
-    assert fonte_sotto(w, "B", 4, CH_H) < LG, "la citazione sotto il grafico finisce sulla legenda"
+    rf = fonte_sotto(w, "B", 4, CH_H)
     fonte_in_cima(w, "N1:U1")
+    LG = rf + 2
     for i, (a, bb) in enumerate(legend):
         put(w, f"B{LG + i}", a, F_B if i == 0 else Font(name=ARIAL, size=9), FILL_SUB if i == 0 else None)
         w.merge_cells(f"B{LG + i}:E{LG + i}")
@@ -1798,36 +2075,39 @@ def chart_sheet(w, title, subtitle, chart, legend, tab):
         b = SEAS[s]
         for j, nm in enumerate(("Esterno", "Ambiente", "Immissione")):
             put(w, f"O{rr}", f"{nm} – {'estate' if s == 'E' else 'inverno'}",
-                Font(name=ARIAL, size=9, bold=True, color=COL_E if s == "E" else COL_I),
-                FILL_SUB_E if s == "E" else FILL_SUB_I)
+                Font(name=ARIAL, size=9, bold=True, color=OR_E if s == "E" else OR_I),
+                FILL_SUB_I if s == "E" else FILL_SUB_E)
             w.merge_cells(f"O{rr}:Q{rr}")
             for q, col in enumerate("HIJK"):
                 calc(w, f"{L(18 + q)}{rr}", f"=UTA!{col}{b + 2 + j}", "0.0" if col != "J" else "0.00")
             rr += 1
     last = LG + max(len(legend), 7) - 1
-    print_setup(w, f"A1:U{last}", "landscape", fit=(1, 1))
+    print_setup(w, f"A1:U{last}", "landscape", fit=(1, 2), row_breaks=(rf,), paper=8)
 
 
 SUBT = (f"=\"Pressione di calcolo p = \"&FIXED({P},0,TRUE)&\" Pa (altitudine \"&FIXED(UTA!D{R_Z},0,TRUE)&\" m). "
-        f"Blu = ESTATE, rosso = INVERNO; E = esterno, A = ambiente, I = immissione.\"")
+        f"Rosso = ESTATE, blu = INVERNO; E = esterno, A = ambiente, I = immissione.\"")
 leg_common = [("Curva nera spessa", "saturazione (UR 100 %)"),
-              ("Curve grigie", "umidità relativa 10…90 % (etichetta a fine curva)"),
-              ("Rette blu sottili «h …»", "entalpia costante [kJ/kg aria secca]"),
-              ("Rette verdi tratteggiate «v …»", "volume specifico costante [m³/kg aria secca]"),
-              ("Spezzata BLU spessa", "sequenza ESTATE (punto 0 = esterno, poi uscita di ogni riga)"),
-              ("Spezzata ROSSA spessa", "sequenza INVERNO"),
+              ("Curve nere sottili", "umidità relativa 10…90 %"),
+              ("Rette nere continue discendenti", "entalpia costante [kJ/kg aria secca]"),
+              ("Rette nere tratteggiate", "volume specifico costante [m³/kg aria secca]"),
+              ("Spezzata ROSSA spessa", "sequenza ESTATE (punto 0 = esterno, poi uscita di ogni riga)"),
+              ("Spezzata BLU spessa", "sequenza INVERNO"),
               ("Rombo / quadrato / triangolo", "E esterno / A ambiente / I immissione"),
-              ("Tratteggio blu / rosso", "retta ambiente (da A verso I) estate / inverno")]
-leg_psicro = ([("Legenda – diagramma T–x", "")] + leg_common +
+              ("Tratteggio rosso / blu", "retta ambiente (da A verso I) estate / inverno")]
+leg_psicro = ([("Legenda – diagramma T–x", "")] +
+              [("Assi", "ascissa T a bulbo secco [°C]; ordinata (a destra) x [g/kg aria secca]")] + leg_common +
               [("Goniometro in alto a sinistra", "direzioni per R = Qs/(Qs+Ql); segmenti colorati = R di progetto"),
-               ("Nota", "le righe «Nessuna» ripetono il punto precedente; linee rettilinee (non smussate)")])
+               ("Nota", "le righe «Nessuna» ripetono il punto precedente; trasformazioni rettilinee (non smussate)")])
 leg_moll = ([("Legenda – diagramma di Mollier", "")] +
-            [("Ascissa / ordinata", "x [g/kg]; Y = (h − 2501·x)/1,006 = T·(1 + 1,849·x): a x = 0 coincide con T"),
-             ("Rette grigie quasi orizzontali", "isoterme ogni 1 °C (etichettate ogni 5 °C)")] + leg_common +
+            [("Assi", "ascissa x [g/kg]; ordinata (a destra) Y = (h − 2501·x)/1,006 = T·(1 + 1,849·x): a x = 0 coincide con T"),
+             ("Rette nere quasi orizzontali", "isoterme ogni 5 °C (etichettate)")] + leg_common +
             [("Scala di bordo Δh/Δx [kJ/kg]", "direzione = retta dal polo (x = 0; Y = 20) alla tacca; R ≈ 1 − 2501/(Δh/Δx)"),
              ("Raggi tratteggiati colorati", "rapporto Δh/Δx del punto A → I di progetto (con R) estate / inverno")])
-chart_sheet(wd, "Diagramma psicrometrico (T – x) con le trasformazioni dell'UTA", SUBT, build_chart(CH_W, CH_H), leg_psicro, "0070C0")
-chart_sheet(wm, "Diagramma di Mollier (h – x) con le trasformazioni dell'UTA", SUBT, build_mollier(CH_W, CH_H), leg_moll, "C00000")
+chart_sheet(wd, "Diagramma psicrometrico (T – x) con le trasformazioni dell'UTA", SUBT,
+            build_chart_orig(CH_W, CH_H), leg_psicro, "0070C0")
+chart_sheet(wm, "Diagramma di Mollier (h – x) con le trasformazioni dell'UTA", SUBT,
+            stile_originale(build_mollier(CH_W, CH_H), etichette_curve=True), leg_moll, "C00000")
 
 # copia ridotta del diagramma nel foglio UTA (fuori dall'area di stampa)
 ws.add_chart(build_chart(26, 16, labels=False), "V5")

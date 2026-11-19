@@ -24,6 +24,21 @@ La verifica vuole LibreOffice (`soffice`) e dura qualche minuto; il 14/11/2026: 
 15/11/2026, dopo il cambio dell'ambiente invernale predefinito, di nuovo **414/414** (i casi scrivono i loro ingressi) e
 **0 errori** di formula su 6.011 formule.
 
+**v2.3 (19/11/2026)** – richiesta di Paolo: i fogli «psicro» e «Mollier» riprendono stile, impaginazione e grafica del
+diagramma originale `psicro_finale.xls` (analizzato dal suo XML: 195 serie, griglia, assi, misure del disegno).
+`stile_originale()` ristila un grafico già costruito: fondo bianco con bordo nero, griglia nera (continua ogni 5, tratteggiata
+ogni 1), curve nere (saturazione 3 pt, le altre 1 pt, tratteggi lunghi), niente titoli degli assi, numeri dell'asse
+verticale a destra, Arial 10, estate rossa `FF0000` e inverno blu `0000FF` spessi 3 pt, trasformazioni rettilinee
+(nessuna serie smussata: LibreOffice smussa tutto il grafico se una sola serie lo è). `build_chart_orig()` costruisce il T–x
+del foglio «psicro» con le famiglie dell'originale ricalcolate nel foglio «Calcoli» (blocco in fondo, dopo tutte le altre
+celle: nessun indirizzo esistente cambia): asse delle entalpie x = 20/30·T + 10 e parallela +4, isoentalpiche in kcal/kg
+0…30 fino all'asse + 2, in kJ/kg 10…95 tratteggiate nella fascia tra le rette d'asse, isocore 0,78…0,95 fino a
+saturazione + 2, goniometro a due semicerchi centrati in (0; 30) – raggio 7 con i rombi del fattore termico R, raggio 9
+con i quadrati di Δh/Δx in kJ/g, ⊗ al centro e ∞ come etichette – e i due raggi di progetto A → I. Il Mollier ha lo stesso
+stile e tiene le sue etichette. Disegno 35,2 × 23,2 cm su A3 orizzontale; legenda e tabella dei punti in pagina 2. La
+copia ridotta nel foglio UTA non cambia. Verifica: **414/414** controlli, 0 errori di formula dopo il ricalcolo,
+prove della fase 14 passate.
+
 **v2.2 (16/11/2026)** – regola dei file Excel di EuGEnio (obbligo di licenza CC BY 4.0): «Fonte: EuGEnio –
 eugenio.statocritico.it» in cima a ogni foglio (riga 1 a destra del titolo, celle unite; nella Guida in B1, il testo parte
 da B2), sotto ogni grafico (prima riga libera sotto il grafico, calcolata con `fonte_sotto`) e a sinistra nel piè di
