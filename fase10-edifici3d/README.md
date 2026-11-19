@@ -277,7 +277,7 @@ CC BY-NC (escluso); PVGIS 30 chiamate/s, niente CORS, `userhorizon`.
 |---|---|---|
 | 1 | ER: RER 2023-24, 20 cm, CC BY 4.0, WMS `RER2023_24_RGB` | proxy con cache sul server (**fatto**; stato «da confermare» con la Regione, spegnibile) |
 | 2 | ortofoto regionali in CC BY verificate una per una, un TOML per regione | proxy con cache (**fatto**: Toscana 2023; Fase E: Bolzano 2023, Trento 2015) |
-| 3 | AGEA 2022–2024 RGB, 20 cm (CC BY 4.0, Reg. UE 2023/138) | proxy con cache, tutta Italia, anno più recente per tessera e anno nella citazione (**fatto** il 17/11/2026, fonte `agea`); anche a mano per siti puntuali (comando `ortofoto-sito`) |
+| 3 | AGEA 2022–2024 RGB, volo a 20 cm, tessere fino allo zoom 18 (CC BY 4.0, Reg. UE 2023/138; exportImage dà scacchiere, 19/11) | proxy con cache, tutta Italia, anno più recente per tessera e anno nella citazione (**fatto** il 17/11/2026, fonte `agea`); anche a mano per siti puntuali (comando `ortofoto-sito`) |
 | 4 | Sentinel-2 cloudless 2016 (EOX, CC BY 4.0) | contesto di zona (**fatto**, con copia) |
 | 5 | WMS Geoportale Nazionale (AGEA 2012) | solo dal vivo, senza cache, mai nei report; dal 17/11/2026 solo ripiego scelto a mano |
 

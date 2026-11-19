@@ -48,8 +48,11 @@ Regole:
     `2023,2022` sui confini): la pagina li raccoglie (protezione.js) e la citazione dice l'anno vero della vista. Per non
     chiedere a vuoto, gli anni che hanno dato una tessera tutta trasparente a uno zoom ≥ 10 non si chiedono più per le
     tessere figlie fino a 4 livelli sotto (memoria `_vuote_anno`). Fino allo zoom `zoom_tessere` (18) si usano le
-    tessere già pronte del servizio (`/tile/{z}/{y}/{x}`, ~0,5 s); oltre (19, 20 cm) `exportImage` sul riquadro della
-    tessera (anche questo ~0,5 s).
+    tessere già pronte del servizio (`/tile/{z}/{y}/{x}`, ~0,5 s); oltre, `exportImage` sul riquadro della tessera.
+  * **scacchiere** (19/11/2026, segnalazione di Paolo): l'`exportImage` del Geoportale AGEA risponde 200 con una
+    scacchiera bianca e nera al posto della foto (tutti gli anni, tutta Italia). La fonte `agea` ora arriva solo allo zoom
+    18 (tessere già pronte) e una tessera a scacchiera (`scacchiera`) di qualunque fonte vale come errore della fonte: non
+    si copia e la pagina vede una tessera vuota.
 """
 from __future__ import annotations
 
@@ -304,6 +307,24 @@ def senza_buchi(dati: bytes) -> tuple[bytes, str]:
         return out.getvalue(), "image/jpeg"
     im.save(out, "PNG", optimize=True)
     return out.getvalue(), "image/png"
+
+
+def scacchiera(dati: bytes) -> bool:
+    """Immagine segnaposto a scacchiera bianca e nera (19/11/2026: exportImage del Geoportale AGEA): quasi tutti i pixel
+    grigi neutri, molto chiari o molto scuri, con tutti e due i colori ben presenti. Una foto vera non è mai così."""
+    try:
+        import io
+        import numpy as np
+        from PIL import Image
+        a = np.asarray(Image.open(io.BytesIO(dati)).convert("RGB")).astype(np.int16)
+    except (OSError, ValueError):
+        return False
+    if a.size == 0:
+        return False
+    neutri = (np.abs(a[..., 0] - a[..., 1]) + np.abs(a[..., 1] - a[..., 2])) < 12
+    luce = a.mean(axis=2)
+    bianchi, neri = (neutri & (luce > 225)).mean(), (neutri & (luce < 30)).mean()
+    return bianchi + neri > 0.8 and min(bianchi, neri) > 0.2
 
 
 def vuota(dati: bytes) -> bool:
@@ -672,6 +693,9 @@ async def _anno(f: Fonte, anno: int, z: int, x: int, y: int, fine: float) -> tup
     if vuota(r.content):
         segna_vuoto(f.id, anno, z, x, y)
         return anno, "vuota", None
+    if await asyncio.to_thread(scacchiera, r.content):    # (19/11/2026) segnaposto, non la foto: errore della fonte
+        log.warning("Ortofoto %s %s: tessera a scacchiera %s/%s/%s, scartata", f.id, anno, z, x, y)
+        return anno, "fonte", None
     return anno, "ok", r.content
 
 
@@ -740,6 +764,8 @@ async def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str
                 anni = file_anno(p).read_text(encoding="ascii").strip()
             except (OSError, UnicodeDecodeError):
                 dati = None
+        if dati is not None and f.anni and z > f.zoom_tessere and await asyncio.to_thread(scacchiera, dati):
+            dati = None                         # (19/11/2026) scacchiere di exportImage copiate prima: si richiede
         if dati is not None and f.segnaposto and segnaposto_bianco(dati):
             dati = vuota_png()                  # segnaposto copiati prima del 09/11 b: vuoti anche dalla copia
             with contextlib.suppress(OSError):
@@ -788,6 +814,9 @@ async def tessera(request: Request, fonte: str, z: int, x: int, y: int, ext: str
         log.warning("Ortofoto %s: risposta %s %s dopo %.1f s", f.id, r.status_code, tipo, time.monotonic() - t0)
         return tessera_errore(f, "fonte", guasti.errore(f.id) or 30)
     dati = r.content
+    if await asyncio.to_thread(scacchiera, dati):      # (19/11/2026) segnaposto a scacchiera: errore, mai in copia
+        log.warning("Ortofoto %s: tessera a scacchiera %s/%s/%s, scartata", f.id, z, x, y)
+        return tessera_errore(f, "fonte", guasti.errore(f.id) or 30)
     if f.segnaposto and segnaposto_bianco(dati):
         dati, tipo = vuota_png(), "image/png"   # 09/11/2026 b: tessera segnaposto (fuori dalla regione) = vuota
     elif f.trasparente:

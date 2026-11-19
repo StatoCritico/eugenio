@@ -470,7 +470,7 @@ def test_agea_toml_url_e_priorita():
     tutte = {x.id: x for f in sorted(FONTI_REPO.glob("*.toml")) for x in O.leggi_toml(f)}
     a = tutte["agea"]
     assert a.tipo == "arcgis" and a.anni == (2024, 2023, 2022) and a.cache and a.nei_report and a.stato == "confermata"
-    assert a.licenza == "CC BY 4.0" and "{anni}" in a.citazione and a.zoom == (10, 19) and a.zoom_tessere == 18
+    assert a.licenza == "CC BY 4.0" and "{anni}" in a.citazione and a.zoom == (10, 18) and a.zoom_tessere == 18
     assert a.citazione_generica == "AGEA – Agenzia per le Erogazioni in Agricoltura, ortofoto RGB 2022-2024 (CC BY 4.0)"
     assert not O.ESCLUSI.search(a.url)                                  # l'RGB passa…
     for u in ("https://geoportale.agea.gov.it/image/rest/services/AgEA/Ortofoto_AgEA_IRG_2023/ImageServer",
@@ -541,10 +541,10 @@ def test_agea_anno_precedente_e_memoria_delle_zone_vuote(agea):
     chiesti.clear()
     c.get(f"/api/ortofoto/agea/17/{2190 * 32}/{1478 * 32}.jpg")
     assert (2024, "tile") in chiesti
-    # zoom 19: exportImage, stesso esito
+    # (19/11/2026) zoom 19: fuori dagli zoom della fonte (exportImage dà scacchiere), 404 senza chiamare AGEA
     chiesti.clear()
     r = c.get("/api/ortofoto/agea/19/280447/190521.jpg")
-    assert r.headers["x-ortofoto-anno"] == "2023" and all(t == "exportImage" for _, t in chiesti)
+    assert r.status_code == 404 and chiesti == []
     # il 404 della cache (fuori dagli zoom già pronti dell'anno) vale come «non ha volato», non come errore
     esiti[2024] = "404"
     chiesti.clear()
@@ -607,3 +607,36 @@ def test_agea_componi():
     assert tipo == "image/png" and usati == [2024] and not piena and d == v[1]
     d, tipo, usati, piena = O.componi([])
     assert usati == [] and not piena and O.vuota(d)
+
+
+def _scacchiera_jpeg(lato=16):
+    from PIL import Image
+    im = Image.new("RGB", (256, 256), (255, 255, 255))
+    px = im.load()
+    for x in range(256):
+        for y in range(256):
+            if (x // lato + y // lato) % 2:
+                px[x, y] = (0, 0, 0)
+    b = io.BytesIO()
+    im.save(b, "JPEG", quality=85)
+    return b.getvalue()
+
+
+def test_scacchiera_riconosciuta_e_foto_no():
+    """19/11/2026: l'exportImage del Geoportale AGEA dà una scacchiera bianca e nera al posto della foto."""
+    assert O.scacchiera(_scacchiera_jpeg()) and O.scacchiera(_scacchiera_jpeg(8))
+    assert not O.scacchiera(_foto(VERDE)) and not O.scacchiera(_trasparente_agea())
+    from PIL import Image
+    tutta_bianca = io.BytesIO(); Image.new("RGB", (256, 256), (255, 255, 255)).save(tutta_bianca, "JPEG")
+    assert not O.scacchiera(tutta_bianca.getvalue()) and not O.scacchiera(b"non immagine")
+
+
+def test_agea_tessera_a_scacchiera_scartata_e_non_copiata(agea, monkeypatch):
+    c, esiti, chiesti = agea
+    esiti[2024] = "piena"
+    finto = O._scarica
+    monkeypatch.setattr(O, "_scarica", lambda url: httpx.Response(200, content=_scacchiera_jpeg(), headers={"content-type": "image/jpeg"})
+                        if "Ortofoto_AgEA_2024" in url else finto(url))
+    r = c.get("/api/ortofoto/agea/16/34810/23910.jpg")
+    assert r.status_code == 200 and r.headers.get("x-ortofoto-errore") == "fonte" and r.headers["cache-control"] == "no-store"
+    assert not O.file_copia(O.fonti()["agea"], 16, 34810, 23910).exists()

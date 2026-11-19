@@ -32,6 +32,13 @@ Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, v
 
 ## Ortofoto AGEA 2022-2024 per tutta Italia (17/11/2026, segnalazione di Paolo)
 
+> **19/11/2026 sera (segnalazione di Paolo, scacchiere nella vista 3D)**: l'`exportImage` del Geoportale AGEA risponde 200
+> con una scacchiera bianca e nera al posto della foto (provato in sette città, tutti e tre gli anni; il servizio ha
+> maxScale = zoom 18). Le tessere dello zoom 19 venivano da lì e andavano in copia. Ora la fonte `agea` va da zoom 10 a 18
+> (`italia.toml`; oltre la mappa ingrandisce il 18) e `scacchiera()` in `servizio/ortofoto.py` scarta una tessera a
+> scacchiera di qualunque fonte come errore (mai in copia). Le copie dello zoom 19 sul server si possono cancellare
+> (`AGGIORNAMENTO_2026-11-19c.md`).
+
 - **Causa**: fuori da Emilia-Romagna, Toscana e Trentino-Alto Adige l'unica foto aerea era `pcn2012`, il WMS del
   Geoportale Nazionale (MASE) con il volo AGEA 2012 a 50 cm: solo dal vivo, lento e spesso in errore (502), da cui «non
   risponde o è occupata» in Ortofoto, Modelli 3D e Fotovoltaico › Cabine primarie.
