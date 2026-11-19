@@ -442,10 +442,34 @@ def gruppi(oggetti: list[list[tuple[float, float]]], distanza_m: float) -> list[
             padre[i] = padre[padre[i]]
             i = padre[i]
         return i
-    for i in range(len(oggetti)):
-        for j in range(i + 1, len(oggetti)):
-            if radice(i) != radice(j) and vicini(i, j):
-                padre[radice(i)] = radice(j)
+    if all(len(p) == 1 for p in pts):
+        # (19/11/2026, Venezia «piazza San Marco»: il sestiere ha migliaia di civici con un solo odonimo) solo punti: griglia
+        # di lato distanza/√2, i punti di una cella sono tutti entro la distanza (uniti senza confronti), poi si confrontano
+        # solo le celle entro due passi; prima tutte le coppie, n² (6.000 civici: 4 s per via, più sul server)
+        lato = max(float(distanza_m), 1.0) / math.sqrt(2)
+        celle: dict = {}
+        for i, p in enumerate(pts):
+            celle.setdefault((int(math.floor(p[0][0] / lato)), int(math.floor(p[0][1] / lato))), []).append(i)
+        for dentro in celle.values():
+            for i in dentro[1:]:
+                padre[radice(i)] = radice(dentro[0])
+        chiavi = list(celle)
+        for (cx, cy) in chiavi:
+            a = celle[(cx, cy)]
+            for dx in range(-2, 3):
+                for dy in range(-2, 3):
+                    if (dx, dy) <= (0, 0):
+                        continue
+                    b = celle.get((cx + dx, cy + dy))
+                    if not b or radice(a[0]) == radice(b[0]):
+                        continue
+                    if any(math.hypot(pts[i][0][0] - pts[j][0][0], pts[i][0][1] - pts[j][0][1]) <= distanza_m for i in a for j in b):
+                        padre[radice(a[0])] = radice(b[0])
+    else:
+        for i in range(len(oggetti)):
+            for j in range(i + 1, len(oggetti)):
+                if radice(i) != radice(j) and vicini(i, j):
+                    padre[radice(i)] = radice(j)
     out: dict = {}
     for i in range(len(oggetti)):
         out.setdefault(radice(i), []).append(i)

@@ -331,6 +331,9 @@ inquadrare (campi nel README della fase 4). Nessuna rete nel modulo: riceve le f
   metà della catena se è quasi tutta la via, altrimenti il punto che lascia metà della lunghezza da ciascuna parte lungo
   l'asse principale; gruppi a più di 1 km = vie diverse. Senza OSM, i civici ANNCSU (`Indirizzario.vie_simili`) ordinati
   lungo l'asse. Una via ANNCSU e una OSM con lo stesso nome nello stesso posto sono una sola scelta (con il numero dei civici).
+  Dal 19/11/2026 i gruppi dei soli civici si fanno con una griglia (lato 1.500 m/√2) invece che confrontando tutte le
+  coppie: a Venezia «piazza San Marco» l'odonimo ANNCSU del sestiere ha migliaia di civici e il confronto a coppie (n²)
+  teneva ferma la ricerca.
 - **Scelte**: una via riconosciuta (punteggio ≥ 0,8) o una nettamente migliore → si va lì, le altre simili sono «altre vie»;
   più vie riconosciute alla pari, o nessuna ma vie simili o una località con quel nome → si fa scegliere. Con il civico
   l'elenco si prepara solo se la via non è stata riconosciuta dall'ANNCSU (punto di Zornade o via interpretata).

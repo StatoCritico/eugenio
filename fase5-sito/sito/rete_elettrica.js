@@ -6,6 +6,9 @@
 // province senza dato e, scelto un comune, criticità, cabine, interruzioni in corso e statistiche storiche
 // (/api/rete/interruzioni/comune/<istat>). Download: immagine della mappa (esporta_mappa.js) e dati CSV, Excel, PDF
 // (rete.js), con fonti e licenze (ODbL per le posizioni delle cabine). ?prova=1: dati sintetici (rete.js).
+// 19/11/2026 (richiesta di Paolo): ortofoto sotto tutti gli strati, con la sua casella (contesto Sentinel-2 da lontano, la
+// fonte migliore della zona da vicino, come in Cabine primarie: /api/ortofoto/fonti e confini_gl.js), citazione sotto la
+// mappa e nell'immagine; cabine primarie grandi come i punti blu delle interruzioni; righello (righello.js).
 (function () {
   const $ = (id) => document.getElementById(id);
   const box = $("mappa-rete");
@@ -23,8 +26,12 @@
     nonConc: ["rete-non-conc"],
     cabine: ["rete-cabine-punti"],
     interruzioni: ["rete-interruzioni"],
+    ortofoto: ["contesto", "ortofoto"],
   };
-  const acceso = (k) => { const i = { criticita: "strato-criticita", nonConc: "strato-non-concessionari", cabine: "strato-cabine", interruzioni: "strato-interruzioni" }[k]; return !$(i) || $(i).checked; };
+  const CASELLE = { criticita: "strato-criticita", nonConc: "strato-non-concessionari", cabine: "strato-cabine", interruzioni: "strato-interruzioni", ortofoto: "strato-ortofoto" };
+  const acceso = (k) => { const i = CASELLE[k]; return !$(i) || $(i).checked; };
+  // (19/11/2026) cabine grandi come le interruzioni: stesso raggio per i due strati di punti
+  const RAGGIO_PUNTI = ["interpolate", ["linear"], ["zoom"], 5, 4, 10, 6, 14, 8];
   // campi delle interruzioni attive: nomi del contratto con i ripieghi sui nomi della fonte
   const I = {
     inizio: (p) => p.inizio || p.data_interruzione,
@@ -117,10 +124,10 @@
     m.addLayer({ id: "rete-comune-scelto", type: "line", source: "rete-comuni", filter: ["==", ["get", "istat"], ""],
       paint: { "line-color": colore("--primario"), "line-width": 3.5 } });
     m.addSource("rete-cabine", { type: "geojson", data: vuota(), attribution: "© contributori OpenStreetMap (ODbL); e-distribuzione" });
-    R.stratoCabine(m, "rete-cabine");
+    R.stratoCabine(m, "rete-cabine", { raggio: RAGGIO_PUNTI, bordo: ["interpolate", ["linear"], ["zoom"], 5, 1.2, 12, 1.6] });
     m.addSource("rete-int", { type: "geojson", data: vuota(), attribution: "Interruzioni: e-distribuzione" });
     m.addLayer({ id: "rete-interruzioni", type: "circle", source: "rete-int", paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 4, 10, 6, 14, 8], "circle-color": "#2f6fdb",
+      "circle-radius": RAGGIO_PUNTI, "circle-color": "#2f6fdb",
       "circle-stroke-color": "#ffffff", "circle-stroke-width": 1.6 } });
     document.addEventListener("eugenio:aspetto", () => {
       m.setPaintProperty("sfondo", "background-color", colore("--carta"));
@@ -130,8 +137,10 @@
     });
     R.suggerimento(m, () => ["rete-interruzioni", "rete-cabine-punti", "rete-comuni-clic"], contenutoSuggerimento);
     m.on("click", clic);
-    for (const id of ["strato-criticita", "strato-non-concessionari", "strato-cabine", "strato-interruzioni"]) $(id).addEventListener("change", strati);
+    for (const id of Object.values(CASELLE)) if ($(id)) $(id).addEventListener("change", strati);
     strati();
+    if (window.EUGENIO_RIGHELLO) window.EUGENIO_RIGHELLO.aggiungi(m, { dove: $("strati-rete") });     // righello (19/11/2026)
+    ortofoto(m);
     if (window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-mappa"), m, opzioniImmagine, $("messaggio-immagine"));
     R.pulsantiDati($("scarica-dati"), datiFile, $("messaggio-dati"));
     if (E) {
@@ -148,7 +157,83 @@
   function strati() {
     const m = st.mappa;
     for (const [k, ids] of Object.entries(STRATI)) ids.forEach((id) => { if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", acceso(k) ? "visible" : "none"); });
+    if (acceso("ortofoto") && orto.fonti.length) sceltaOrto();
+    attribuzioneOrto();
     legenda();
+  }
+
+  // ------------------------------------------------------------------ ortofoto sotto (19/11/2026)
+  // Come in Cabine primarie: contesto Sentinel-2 sempre sotto (si vede anche da lontano), sopra la fonte migliore applicabile
+  // al centro della vista (regionali a 20 cm, AGEA 2022-2024 da zoom 10…); niente menu: la fonte è scritta sotto la mappa.
+  const CONTESTO = "s2cloudless2016";
+  const orto = { fonti: [], fonte: null, contesto: null, giro: 0, citazione: "" };
+  const primoSopra = (m) => { const l = m.getStyle().layers.find((x) => !["sfondo", "contesto", "ortofoto"].includes(x.id)); return l ? l.id : undefined; };
+  const sorgenteOrto = (f) => ({ type: "raster", tiles: [location.origin + f.tessere], tileSize: 256, minzoom: f.zoom[0], maxzoom: f.zoom[1],
+    ...(Array.isArray(f.riquadro) && f.riquadro.length === 4 ? { bounds: f.riquadro } : {}), attribution: f.citazione });
+  const citOrto = (f) => (window.EUGENIO_ORTOFOTO_ANNI && st.mappa ? window.EUGENIO_ORTOFOTO_ANNI.citazione(f, st.mappa) : f.citazione);
+  async function ortofoto(m) {
+    try {
+      const r = await fetch("/api/ortofoto/fonti");
+      if (!r.ok || !/json/.test(r.headers.get("Content-Type") || "")) throw new Error(String(r.status));
+      // fonti a tessere del server (le fonti in PMTiles servono solo alle pagine che caricano pmtiles.js)
+      orto.fonti = ((await r.json()).fonti || []).filter((f) => f && f.tessere && Array.isArray(f.zoom) && !f.pmtiles);
+    } catch {
+      orto.fonti = [];
+      const a = $("attribuzione-ortofoto"); a.hidden = false; a.textContent = "Il servizio delle ortofoto non risponde: la mappa resta senza foto sotto.";
+      return;
+    }
+    orto.contesto = orto.fonti.find((f) => f.id === CONTESTO) || null;
+    if (orto.contesto) {
+      m.addSource("contesto", sorgenteOrto(orto.contesto));
+      m.addLayer({ id: "contesto", type: "raster", source: "contesto", paint: { "raster-opacity": 0.95 } }, primoSopra(m));
+    }
+    if (window.EUGENIO_ORTOFOTO_ANNI) window.EUGENIO_ORTOFOTO_ANNI.segui(m, "ortofoto", () => { if (orto.fonte && orto.fonte.anni && citOrto(orto.fonte) !== orto.citazione) attribuzioneOrto(); });
+    m.on("moveend", () => { if (acceso("ortofoto")) sceltaOrto(); });
+    await sceltaOrto();
+    strati();
+  }
+  async function sceltaOrto() {
+    const m = st.mappa, mio = ++orto.giro, c = m.getCenter();
+    let qui;
+    try { qui = C.fontiNelPunto ? await C.fontiNelPunto(orto.fonti, c.lng, c.lat) : orto.fonti; } catch { qui = orto.fonti; }
+    if (mio !== orto.giro) return;
+    const f = qui.find((x) => x.id !== CONTESTO) || null;
+    if ((f ? f.id : "") === (orto.fonte ? orto.fonte.id : "") && (!f || m.getSource("ortofoto"))) { attribuzioneOrto(); return; }
+    if (m.getLayer("ortofoto")) m.removeLayer("ortofoto");
+    if (m.getSource("ortofoto")) m.removeSource("ortofoto");
+    orto.fonte = f;
+    if (f) {
+      m.addSource("ortofoto", sorgenteOrto(f));
+      m.addLayer({ id: "ortofoto", type: "raster", source: "ortofoto", layout: { visibility: acceso("ortofoto") ? "visible" : "none" } }, primoSopra(m));
+    }
+    attribuzioneOrto();
+    chiudiAttribuzione();
+  }
+  function attribuzioneOrto() {
+    const a = $("attribuzione-ortofoto");
+    if (!a || !orto.fonti.length) return;
+    a.hidden = !acceso("ortofoto");
+    a.innerHTML = "";
+    const f = orto.fonte, z = st.mappa ? st.mappa.getZoom() : 0;
+    const parti = [];
+    if (f) parti.push([`Ortofoto: ${citOrto(f)} – licenza `, f.licenza, f.scheda, f.zoom[0] > z ? ` (si vede dallo zoom ${f.zoom[0]}: avvicinati)` : ""]);
+    if (orto.contesto) parti.push([`${f ? "Da lontano, contesto" : "Contesto"}: ${orto.contesto.citazione} – licenza `, orto.contesto.licenza, orto.contesto.scheda, ""]);
+    parti.forEach(([t, lic, url, dopo], i) => {
+      if (i) a.append(" ");
+      a.append(t);
+      const l = h("a", null, lic); if (url) l.href = url; a.append(l, `${dopo}.`);
+    });
+    if (!parti.length) a.textContent = "Nessuna ortofoto disponibile qui.";
+    orto.citazione = f ? citOrto(f) : "";
+  }
+  // righe dell'immagine scaricata; null se la fonte visibile è solo in consultazione dal vivo
+  function righeOrto() {
+    if (!acceso("ortofoto") || !orto.fonti.length) return [];
+    const f = orto.fonte, r = [];
+    if (f && !f.copia) return null;
+    if (f) r.push(`Ortofoto: ${citOrto(f)} – licenza ${f.licenza} (${f.scheda}).`);
+    if (orto.contesto) r.push(`Contesto: ${orto.contesto.citazione} – licenza ${orto.contesto.licenza} (${orto.contesto.scheda}).`);
+    return r;
   }
   function legenda() {
     const L = $("legenda-rete"); L.innerHTML = "";
@@ -168,6 +253,7 @@
       voce(R.campione("cabina", "GRIGIO"), "altro distributore o senza dato");
     }
     if (acceso("interruzioni")) voce(R.campione("punto", "#2f6fdb"), "interruzione in corso");
+    if (acceso("ortofoto") && orto.fonti.length) L.appendChild(h("span", "legenda-nota", "Sotto: ortofoto (da lontano il contesto satellitare); fonte e licenza sotto la mappa."));
   }
 
   function contenutoSuggerimento(f) {
@@ -417,11 +503,13 @@
   };
   function opzioniImmagine() {
     if (!st.regione) return "Scegli prima una regione.";
-    const righe = [];
+    const ro = righeOrto();
+    if (ro === null) return `«${orto.fonte.nome}» è solo in consultazione dal vivo: per scaricare l'immagine spegni la casella «Ortofoto».`;
+    const righe = [...ro];
     if (acceso("criticita") && st.righe.some(inParte)) righe.push(`Bordo tratteggiato: comune ${notaInParte()}.`);
     if (acceso("criticita")) righe.push("Comuni: pieni = più di metà dei trasformatori al livello più alto presente (giallo, arancione, rosso); a strisce = fino a metà (strisce tra il livello precedente e quello più alto; bianco = verde); grigio a righe = dato non disponibile. " + R.ATTR.criticita + ".");
     if (acceso("nonConc")) righe.push("Retino: comuni serviti da un distributore diverso da e-distribuzione.");
-    if (acceso("cabine")) righe.push("Cabine primarie (punti grandi): livello peggiore dei trasformatori (bianco = verde, giallo, arancione, rosso); grigio = altro distributore o senza dato. " + R.ATTR.osm + ".");
+    if (acceso("cabine")) righe.push("Cabine primarie (punti bordati di nero): livello peggiore dei trasformatori (bianco = verde, giallo, arancione, rosso); grigio = altro distributore o senza dato. " + R.ATTR.osm + ".");
     if (acceso("interruzioni")) righe.push("Punti blu: interruzioni in corso (e-distribuzione).");
     righe.push(...righeAttribuzione().filter((x) => x !== R.ATTR.osm || !acceso("cabine")));
     const nome = `rete_elettrica_${st.nomeRegione.toLowerCase().replace(/[^a-z0-9]+/g, "_")}_${new Date().toISOString().slice(0, 10)}`;

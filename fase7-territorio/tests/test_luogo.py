@@ -342,3 +342,23 @@ def test_arricchisci_via_non_riconosciuta_con_civico():
     xml = _wfs(_particella("G478_012300.45", [(12.304, 43.0900), (12.306, 43.0900), (12.306, 43.0902), (12.304, 43.0902)]))
     e = L.arricchisci(riga2, "054039", "G478", _idx(), lambda p: xml, lambda q: osm)
     assert not e["scegli_via"] and e["luogo_tipo"] == "particella" and e["particella_ade"]["mappale"] == "45"
+
+
+def test_gruppi_di_molti_civici_veloce_e_uguale_al_confronto_a_coppie():
+    """19/11/2026, Venezia «piazza San Marco»: un odonimo ANNCSU con migliaia di civici (il sestiere) non deve fermare la
+    ricerca. Solo punti: griglia (prima tutte le coppie, n²); stessi gruppi del confronto a coppie."""
+    import random
+    import time
+    from territorio import luogo as L
+    random.seed(7)
+    pts = [[(12.33 + random.random() * 0.012, 45.432 + random.random() * 0.008)] for _ in range(20000)]
+    t = time.perf_counter()
+    assert len(L.gruppi(pts, L.GRUPPO_CIVICI_M)) == 1
+    assert time.perf_counter() - t < 1.0
+    for k in range(100):
+        n = random.randint(1, 50)
+        p = [[(12 + random.random() * 0.2, 44 + random.random() * 0.15)] for _ in range(n)]
+        d = random.choice([300, 1000, 1500])
+        a = sorted(sorted(g) for g in L.gruppi(p, d))
+        b = sorted(sorted(g) for g in L.gruppi([q + q for q in p], d))     # linee degeneri: confronto a coppie
+        assert a == b, (k, n, d)

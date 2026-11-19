@@ -11,11 +11,11 @@ try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
 var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|aria|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261118a";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261118a"></script>
-<link rel="stylesheet" href="stile.css?v=20261118a">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261118a">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261118a">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261119b";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261119b"></script>
+<link rel="stylesheet" href="stile.css?v=20261119b">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261119b">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261119b">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
 </head>
@@ -23,7 +23,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261118a" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261119b" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -31,7 +31,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261118a" aria-current="page">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261119b" aria-current="page">Novità</a>
       <a href="esempi.html">Esempi</a>
       <a href="contributi.html">Contributi</a>
       <a href="contatti.html">Contattaci</a>
@@ -62,7 +62,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li><li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale</span></a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261118a" aria-current="page">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261119b" aria-current="page">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -165,13 +165,25 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </header>
 <!-- /testata -->
 
-<main class="articolo novita" data-ultima="20261118a">
+<main class="articolo novita" data-ultima="20261119b">
   <h1>Novità</h1>
   <p class="sotto">Le funzioni di EuGEnio per chi lo usa, pubblicazione per pubblicazione, dalla più recente: servizi
     nuovi, servizi migliorati e servizi verificati (non più sperimentali). Le stesse voci sono nel
     <a href="novita.xml">feed Atom</a> (per seguirle con un lettore di feed) e nelle
     <a href="https://github.com/statocritico/eugenio/releases">release del codice su GitHub</a>.</p>
 
+  <h2 id="d20261119-2">19 novembre 2026 – Terreno a 5 m in tutta Italia nella vista 3D</h2>
+  <div class="novita-voce">
+    <p class="novita-tipo">Migliorato</p>
+    <ul><li>Territorio › Modelli 3D e le altre pagine con la vista 3D: fuori dall&#x27;Emilia-Romagna e dalle zone del Veneto già caricate il terreno non è più quello a 90 m del satellite, ma il modello a 5 m di tutta Italia pubblicato dal CNR-IRPI (HR-DTM-5m). Colline, argini e scarpate si vedono molto meglio, e gli edifici disegnati da OpenStreetMap poggiano sulla quota giusta. La legenda dice da quale rilievo viene il terreno e di che anno: LiDAR dove c&#x27;è (circa metà dell&#x27;Italia), altrimenti il TINITALY a 10 m.</li></ul>
+  </div>
+  <h2 id="d20261119">19 novembre 2026 – Righello sulle mappe, 3D della vista e più edifici insieme, ortofoto nella rete elettrica</h2>
+  <div class="novita-voce">
+    <p class="novita-tipo">Nuovo</p>
+    <ul><li>Righello sulle mappe con l&#x27;ortofoto (Territorio › Ortofoto, Edifici pubblici e Modelli 3D, la pagina per aggiungere gli edifici dal DB topografico, Fotovoltaico › Cabine primarie, Statistiche › Stato della rete elettrica): un piccolo pulsante sotto la mappa. Acceso, ogni clic mette un punto; clic sul primo punto chiude la forma e misura anche l&#x27;area; un clic (o un tocco) su un punto lo prende e quello successivo lo posa, così funziona anche col dito; il clic destro li cancella. Passando sopra la misura compaiono lunghezza, perimetro e area.</li></ul>
+    <p class="novita-tipo">Migliorato</p>
+    <ul><li>Territorio › Modelli 3D: «Genera il 3D» funziona anche senza scegliere un edificio e fa l&#x27;alzato della zona che si vede sullo schermo (da vicino). Poi un clic su un volume ne dà i dati.</li><li>Territorio › Modelli 3D: con il tasto Maiuscolo premuto, un clic aggiunge un altro edificio alla scelta (o lo toglie), sulla mappa e nella vista 3D. Volume, superfici, rapporto S/V e gli altri valori diventano la somma degli edifici scelti.</li><li>Statistiche › Stato della rete elettrica: sotto i comuni c&#x27;è l&#x27;ortofoto (da lontano la foto satellitare), con la sua casella per spegnerla; le cabine primarie sono punti più piccoli, grandi come quelli delle interruzioni.</li><li>Territorio › Modelli 3D: «Torna alla mappa 2D» lascia attivi gli edifici scelti, in evidenza: «Genera il 3D» li rigenera senza sceglierli di nuovo.</li><li>Fotovoltaico › Cabine primarie: un clic sulla mappa che mette o sposta il punto, la ricerca o un clic su un punto mostrano da soli il confine dell&#x27;area convenzionale del GSE che lo contiene (bordo spesso) e quelli di tutte le aree confinanti (bordo sottile), senza premere «Aggiorna confini».</li></ul>
+  </div>
   <h2 id="d20261118">18 novembre 2026 – Rete elettrica, cabine primarie, ortofoto AGEA e ricerca degli indirizzi più precisa</h2>
   <div class="novita-voce">
     <p class="novita-tipo">Nuovo</p>
@@ -328,11 +340,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 
 <footer class="piede">
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261118a" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261119b" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL con <a href="licenza.html#attribuzione">termini aggiuntivi</a>, dati <a href="licenza.html#dati">CC BY 4.0</a>). <span class="piede-attribuzione">EuGEnio © 2026 Paolo Bianco – Stato Critico – <a href="https://eugenio.statocritico.it">https://eugenio.statocritico.it</a></span></p>
   <!-- /piede -->
 </footer>
-<script src="aspetto.js?v=20261118a"></script>
-<script src="indice.js?v=20261118a"></script>
+<script src="aspetto.js?v=20261119b"></script>
+<script src="indice.js?v=20261119b"></script>
 </body>
 </html>

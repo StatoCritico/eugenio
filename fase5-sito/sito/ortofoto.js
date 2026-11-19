@@ -183,7 +183,7 @@
     // archivi di /edifici3d/archivi.json (dal 07/11/2026 un archivio DBTR per comune), altrimenti il DBTR dell'ER
     let basi = ["/edifici3d/cc-by/er/prodotti/"];
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261118a", { cache: "no-cache" });
+      const r = await fetch("/edifici3d/archivi.json?v=20261119b", { cache: "no-cache" });
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const l = ((await r.json()).archivi || []).map((x) => x && x.base)
           .filter((b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes(".."));
@@ -335,6 +335,7 @@
     m.on("moveend", elenco);
     m.on("zoomend", aggiornaAvviso);
     m.on("error", (e) => { if (e && (e.sourceId === "ortofoto" || e.sourceId === "contesto")) messaggio("Alcune tessere non sono arrivate (fonte lenta o fuori zona).", true); });
+    if (window.EUGENIO_RIGHELLO) window.EUGENIO_RIGHELLO.aggiungi(m);      // righello per distanze e aree (19/11/2026)
     if (window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-ortofoto"), m, opzioniImmagine, $("messaggio-immagine"));
   })();
 

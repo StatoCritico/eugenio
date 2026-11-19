@@ -23,7 +23,7 @@
 //  R.suggerimento(mappa, strati, contenuto)    riquadretto al passaggio del mouse o al tocco ({ titolo, righe })
 //  R.righeCabina(p), R.dataIt(iso), R.oraIt(iso), R.num(n, dec)
 //  R.csv(nome, sezioni, piede), R.documento(doc, formato, messaggio)  file CSV nel browser, PDF/XLSX da POST /api/report
-//  R.gse.areaNelPunto(lon, lat), R.gse.aree(codici), R.gse.geojson(aree, sediPerArea)
+//  R.gse.areaNelPunto(lon, lat), R.gse.aree(codici), R.gse.areeVicine(lon, lat[, area]) (19/11/2026), R.gse.geojson(aree, sediPerArea)
 (function () {
   const parametri = new URLSearchParams(location.search);
   const PROVA = parametri.get("prova") === "1" || window.EUGENIO_RETE_PROVA === true;
@@ -163,12 +163,13 @@
   }
 
   // ------------------------------------------------------------------ strato delle cabine
+  // opz.raggio e opz.bordo (19/11/2026): Stato della rete elettrica disegna le cabine grandi come le interruzioni
   function stratoCabine(m, sorgente, opz = {}) {
     const id = `${sorgente}-punti`;
     m.addLayer({ id, type: "circle", source: sorgente, paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 4.5, 8, 7, 12, 10, 16, 12],
+      "circle-radius": opz.raggio || ["interpolate", ["linear"], ["zoom"], 5, 4.5, 8, 7, 12, 10, 16, 12],
       "circle-color": ["coalesce", ["get", "_colore"], COLORI.GRIGIO],
-      "circle-stroke-color": BORDO, "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 5, 1.2, 12, 2],
+      "circle-stroke-color": BORDO, "circle-stroke-width": opz.bordo || ["interpolate", ["linear"], ["zoom"], 5, 1.2, 12, 2],
     } }, opz.prima && m.getLayer(opz.prima) ? opz.prima : undefined);
     return id;
   }
@@ -340,6 +341,17 @@
     if (d && d.error) throw new Error(`servizio del GSE: ${d.error.message || "errore"}`);
     return d;
   }
+  // stessa richiesta in POST (form-urlencoded, nessuna richiesta preliminare CORS): serve quando la geometria della domanda è
+  // un poligono, troppo lungo per l'indirizzo (19/11/2026, aree confinanti)
+  async function gsePost(par) {
+    const corpo = new URLSearchParams();
+    Object.entries({ f: "geojson", outSR: "4326", ...par }).forEach(([k, v]) => { if (v !== undefined && v !== null) corpo.set(k, v); });
+    const r = await fetch(GSE_QUERY, { method: "POST", body: corpo, mode: "cors", credentials: "omit" });
+    if (!r.ok) throw new Error(`servizio del GSE: errore ${r.status}`);
+    const d = await r.json();
+    if (d && d.error) throw new Error(`servizio del GSE: ${d.error.message || "errore"}`);
+    return d;
+  }
   // area convenzionale che contiene il punto: { COD_AC, RAG_SOC, COD_CONSEG } o null (senza geometria)
   async function areaNelPunto(lon, lat) {
     if (PROVA) {
@@ -378,6 +390,32 @@
       fs.push(...((d && d.features) || []));
     }
     return { type: "FeatureCollection", features: fs };
+  }
+  // (19/11/2026, richiesta di Paolo) area del punto e aree confinanti, per i confini automatici di Cabine primarie.
+  // Mai l'intero strato: 1) punto → COD_AC (senza geometria, o `area` già letta); 2) poligono semplificato di quell'area con
+  // where=COD_AC IN (…); 3) codici delle aree che lo toccano, con la geometria della domanda = quel poligono e 30 m di margine
+  // per la semplificazione (POST, risposta senza geometria; se il servizio non accetta il margine, senza); i poligoni di tutte
+  // si chiedono poi con aree(). Al più `massimo` aree, quella del punto per prima. → { area, codici }
+  async function areeVicine(lon, lat, area = undefined, massimo = 40) {
+    const a = area === undefined ? await areaNelPunto(lon, lat) : area;
+    if (!a || !a.COD_AC) return { area: null, codici: [] };
+    if (PROVA) {
+      const C = window.EUGENIO_CONFINI, cod = C && (await C.regioneNelPunto(lon, lat));
+      const r = cod ? await regioneFinta(cod) : null;
+      const d2 = (f) => (f.geometry.coordinates[0] - lon) ** 2 + (f.geometry.coordinates[1] - lat) ** 2;
+      const vicine = r ? [...r.cabine.features].sort((x, y) => d2(x) - d2(y)).slice(0, 7).map((f) => f.properties.cod_ac) : [];
+      return { area: a, codici: [...new Set([a.COD_AC, ...vicine])].slice(0, massimo) };
+    }
+    const fc = await aree([a.COD_AC]);
+    const g = fc.features[0] && fc.features[0].geometry;
+    if (!g || !/Polygon$/.test(g.type)) return { area: a, codici: [a.COD_AC] };
+    const rings = g.type === "Polygon" ? g.coordinates : g.coordinates.flat();
+    const par = { geometry: JSON.stringify({ rings, spatialReference: { wkid: 4326 } }), geometryType: "esriGeometryPolygon", inSR: "4326",
+      spatialRel: "esriSpatialRelIntersects", outFields: "COD_AC", returnGeometry: "false", distance: "30", units: "esriSRUnit_Meter" };
+    let d;
+    try { d = await gsePost(par); } catch { d = await gsePost({ ...par, distance: undefined, units: undefined }); }
+    const altri = ((d && d.features) || []).map((f) => f.properties && f.properties.COD_AC).filter((c) => c && c !== a.COD_AC);
+    return { area: a, codici: [...new Set([a.COD_AC, ...altri])].slice(0, massimo) };
   }
   // il file separato (contratto: max 100 aree, proprietà solo COD_AC, gestore, COD_CONSEG e sedi dell'utente)
   function geojson(fc, sediPerArea) {
@@ -487,5 +525,5 @@
   window.EUGENIO_RETE = { PROVA, LIVELLI, NOMI, COLORI, BORDO, ATTR, FONTE, URL_ED, URL_ED_INT, URL_OSM, GSE, api, classeComune, coloreCabina,
     testoTrasf, testoClasse, righeCabina, nomeCabina, eDistribuzione, immagini, campione, stratoCabine, preparaCabine, suggerimento, num, dataIt, oraIt, oggi,
     csv, documento, pulsantiDati, tabella, avvisoProva, scaricaBlob,
-    gse: { areaNelPunto, aree, geojson } };
+    gse: { areaNelPunto, aree, areeVicine, geojson } };
 })();
