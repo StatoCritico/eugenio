@@ -22,6 +22,14 @@
 
 [[voce]]
 data = "2026-11-19"
+versione = "20261119e"
+titolo = "Cabine primarie: si parte da tutta Italia"
+migliorato = [
+  "Fotovoltaico › Cabine primarie: la mappa si apre su tutta Italia, con tutte le cabine primarie colorate con la saturazione. La pagina torna divisa in due metà, ognuna con la sua barra di scorrimento come nelle altre pagine, senza che la mappa si schiacci.",
+]
+
+[[voce]]
+data = "2026-11-19"
 versione = "20261119d"
 titolo = "Cabine primarie: una sola mappa con la foto aerea"
 migliorato = [

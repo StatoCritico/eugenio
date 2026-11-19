@@ -173,7 +173,14 @@ def test_cabine_confini_automatici_al_clic_prova(browser, base):
     pg.goto(base + "fv-cabine.html?prova=1&regione=08")
     webgl(pg)
     S = "window.EUGENIO_CABINE.st"
-    attendi(pg, f"{S}.det && {S}.det.isStyleLoaded() && {S}.det.getZoom() > 13", 25000)
+    attendi(pg, f"{S}.det && {S}.det.isStyleLoaded() && !{S}.det.isMoving()", 25000)
+    # (19/11/2026, 21:29) si apre su tutta Italia, mai sotto lo zoom 5 (sfondo Sentinel-2)
+    z = pg.evaluate(f"{S}.det.getZoom()")
+    assert 5 <= z < 6.5 and pg.evaluate(f"{S}.det.getBounds().contains([12.5, 42.0]) && {S}.det.getBounds().contains([9.2, 45.5])"), z
+    # due metà: la colonna di sinistra scorre da sola e la mappa non si schiaccia
+    assert pg.evaluate("getComputedStyle(document.querySelector('.mappa-area')).overflowY") == "auto"
+    assert pg.evaluate("document.getElementById('mappa-dettaglio').getBoundingClientRect().height") >= 330
+    pg.evaluate(f"{S}.det.jumpTo({{ center: [12.2597, 44.1326], zoom: 15 }})")
     assert pg.locator("#mappa-cabine").count() == 0 and pg.locator("#strato-fv-aree").count() == 0 and pg.locator("#nuovo-punto").count() == 0
     assert pg.locator("#svuota-punti").inner_text().strip() == "Cancella tutti"
     # comandi dei punti sotto la mappa, a sinistra
@@ -182,7 +189,7 @@ def test_cabine_confini_automatici_al_clic_prova(browser, base):
     assert sotto
     # cabine di tutta la tabella (qui: la regione sintetica) sullo strato colorato
     attendi(pg, f"{S}.det.getLayer('fv-tutte-punti') && {S}.det.getSource('fv-tutte')", 10000)
-    pg.evaluate("window.scrollTo(0, document.getElementById('mappa-dettaglio').getBoundingClientRect().top + scrollY - 80)")
+    pg.evaluate("document.querySelector('.mappa-area').scrollTop = document.getElementById('mappa-dettaglio').offsetTop - 20")
     pg.wait_for_timeout(500)
     x, y, w, h = _tela(pg, "#mappa-dettaglio")
     pg.mouse.click(x + w / 2, y + h / 2)                      # «Sposta»: il clic non mette punti

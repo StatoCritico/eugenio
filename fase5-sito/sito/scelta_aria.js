@@ -230,7 +230,7 @@
     let tabellaDPR = null;
     async function zonaClimatica(istat) {
       try {
-        if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261119d").then((x) => (x.ok ? x.json() : null)).catch(() => null);
+        if (!tabellaDPR) tabellaDPR = fetch("dati/dpr412.json?v=20261119e").then((x) => (x.ok ? x.json() : null)).catch(() => null);
         const t = await tabellaDPR, v = t && t.comuni && t.comuni[istat];
         st.zona = Array.isArray(v) && /^[A-F]$/.test(v[1]) ? v[1] : null;
       } catch (e) { st.zona = null; }

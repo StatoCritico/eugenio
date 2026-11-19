@@ -1688,9 +1688,10 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .ultime-interruzioni { margin-top: var(--s3); }
 .mappa-gl.mappa-dettaglio { height: min(72vh, 720px); min-height: 340px; }
 /* Cabine primarie, una sola mappa (19/11/2026 sera): «Sposta» / «Scegli punti» sotto la mappa a sinistra */
-/* colonna di sinistra alta quanto il contenuto: con la colonna fissa alta quanto la finestra la mappa si schiacciava e i
-   comandi sotto restavano nascosti (segnalazione di Paolo, «la pagina non funziona») */
-.pagina-cabine .mappa-area { position: static; height: auto; }
+/* due metà con la loro barra di scorrimento, come nelle altre pagine (19/11/2026, 21:29, Paolo): la colonna di sinistra
+   resta alta quanto la finestra e scorre da sola; i suoi elementi non si restringono (prima la mappa si schiacciava e i
+   comandi sotto restavano nascosti: «la pagina non funziona») */
+@media (min-width: 861px) { .pagina-cabine .mappa-area > * { flex-shrink: 0; } }
 .pagina-cabine .mappa-area .mappa-dettaglio { flex: none; }
 .pagina-cabine .comandi-punti { justify-content: flex-start; margin-top: var(--s2); }
 .modo-mappa { display: inline-flex; }

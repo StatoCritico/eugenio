@@ -317,15 +317,20 @@
   if (E) {
     E.suRegione = (cod) => vaiRegione(cod);
     E.suStessaRegione = (cod) => vaiRegione(cod);
-    E.mappaPrincipale = { nazionale: () => st.det && st.det.fitBounds([[C.ITALIA[0], C.ITALIA[1]], [C.ITALIA[2], C.ITALIA[3]]], { padding: 10, duration: 600 }) };
+    E.mappaPrincipale = { nazionale: () => st.det && vediItalia(st.det) };
   }
 
+  function vediItalia(m, durata = 600) {
+    const c = m.cameraForBounds([[C.ITALIA[0], C.ITALIA[1]], [C.ITALIA[2], C.ITALIA[3]]], { padding: 10 });
+    if (c) m.easeTo({ ...c, zoom: Math.max(5, c.zoom), bearing: 0, pitch: 0, duration: durata });
+  }
   // ================================================================== la mappa (ortofoto, cabine, punti, particelle, edifici)
   async function mappaDettaglio() {
-    const P0 = window.EUGENIO_CERCA && window.EUGENIO_CERCA.PARTENZA;
+    // (19/11/2026, 21:29, Paolo) si apre su tutta Italia, con le cabine di tutto il Paese; con ?lat=…&lon=… sul punto
     const lat0 = Number(q.get("lat")), lon0 = Number(q.get("lon")), conPunto = q.get("lat") && q.get("lon") && Number.isFinite(lat0) && Number.isFinite(lon0);
-    const centro = conPunto ? [lon0, lat0] : P0 ? [P0.lon, P0.lat] : [12.2597, 44.1326];
-    const m = new ml.Map({ container: "mappa-dettaglio", center: centro, zoom: conPunto ? 16 : (P0 ? P0.zoom : 15), maxZoom: 21, minZoom: 5, attributionControl: false,
+    const vista = conPunto ? { center: [lon0, lat0], zoom: 16 }
+      : { bounds: [[C.ITALIA[0], C.ITALIA[1]], [C.ITALIA[2], C.ITALIA[3]]], fitBoundsOptions: { padding: 10 } };
+    const m = new ml.Map({ container: "mappa-dettaglio", ...vista, maxZoom: 21, minZoom: 4, attributionControl: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
       style: { version: 8, sources: {}, layers: [{ id: "sfondo", type: "background", paint: { "background-color": colore("--carta") } }] } });
     st.det = m;
@@ -334,6 +339,9 @@
     m.addControl(new ml.ScaleControl({ unit: "metric" }), "bottom-left");
     m.addControl(new ml.AttributionControl({ compact: true }), "bottom-right");
     await new Promise((ok) => m.on("load", ok));
+    // inquadratura dell'Italia rifatta con la grandezza vera della mappa (alla creazione il riquadro non ha ancora
+    // l'altezza finale): mai sotto lo zoom 5, da cui parte lo sfondo Sentinel-2
+    if (!conPunto) { m.resize(); vediItalia(m, 0); }
     $("mappa-dettaglio").querySelectorAll(".maplibregl-compact-show").forEach((x) => x.classList.remove("maplibregl-compact-show"));
     document.addEventListener("eugenio:ridimensiona", () => m.resize());
     document.addEventListener("eugenio:aspetto", () => m.setPaintProperty("sfondo", "background-color", colore("--carta")));
