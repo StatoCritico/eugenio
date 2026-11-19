@@ -105,6 +105,18 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Cabine primarie: apertura su tutta Italia e due metà scorrevoli (19/11/2026, 21:29, `?v=20261119e`, richiesta di Paolo)
+
+- La mappa si apre su **tutta Italia** (`C.ITALIA`), mai sotto lo zoom 5 (da lì parte lo sfondo Sentinel-2): alla creazione
+  il riquadro non ha ancora l'altezza finale, quindi dopo `load` `resize()` e `vediItalia()` (`cameraForBounds`, zoom ≥ 5;
+  usata anche dal pulsante «Italia» della minimappa). Con `?lat=…&lon=…` si apre sul punto a zoom 16 come prima.
+- Tornate le **due metà con la loro barra di scorrimento** come nelle altre pagine (colonna di sinistra `sticky` alta
+  quanto la finestra con `overflow-y: auto`, pannello che scorre con la pagina): tolto `position: static; height: auto`
+  della `v2026.11.19d`; al suo posto `.pagina-cabine .mappa-area > * { flex-shrink: 0 }` (come Ortofoto e Modelli 3D), così
+  la mappa resta a `min(72vh, 720px)` e la colonna scorre.
+- Prove: `test_cabine_confini_automatici_al_clic_prova` controlla zoom e riquadro d'apertura, colonna scorrevole e altezza
+  della mappa.
+
 ## Cabine primarie con una sola mappa (19/11/2026 sera, `?v=20261119d`, richiesta di Paolo)
 
 Segnalazione: «la pagina cabine primarie non funziona». La colonna di sinistra era alta quanto la finestra (`.mappa-area`
