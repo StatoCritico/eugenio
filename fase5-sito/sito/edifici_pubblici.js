@@ -361,6 +361,7 @@
           sotto: () => ["pa-terreni", "cercato", "confini-comuni-clic", "confini-regioni-clic"].find((id) => m.getLayer(id)) });
       } catch { /* strati non disponibili */ }
     }
+    if (window.EUGENIO_RIGHELLO) window.EUGENIO_RIGHELLO.aggiungi(m);      // righello per distanze e aree (19/11/2026)
     if (window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-pubblici"), m, opzioniImmagine, $("messaggio-immagine"));
     if (q.get("ref")) apri(q.get("ref").toUpperCase(), !conPunto);
     else if (/^\d+$/.test(q.get("bene") || "")) apri(`b${q.get("bene")}`, !conPunto);

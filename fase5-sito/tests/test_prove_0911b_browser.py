@@ -115,7 +115,7 @@ def test_colore_e_alberi_sotto_la_mappa_accanto_ad_azzera(browser, base, larghez
     assert pg.evaluate("document.getElementById('aspetto-3d').parentElement.id") == "comandi-edificio"
     assert pg.evaluate("!document.querySelector('.pannello #colore-edifici') && !document.querySelector('.pannello #strato-alberi')")
     assert pg.evaluate("[...document.getElementById('comandi-edificio').children].filter((e) => !e.hidden).map((e) => e.id)") == \
-        ["genera-3d", "sposta-ortofoto", "aspetto-3d"]
+        ["genera-3d", "sposta-ortofoto", "aspetto-3d", "righello-mappa3d"]    # righello dal 19/11/2026
     r = pg.evaluate("""(() => Object.fromEntries([['frecce', '#sposta-ortofoto .freccia'], ['azzera', '#sposta-ortofoto .sposta-azzera'],
         ['colore', '#colore-edifici .vestito-pulsante'], ['alberi', '.casella-alberi'], ['genera', '#genera-3d']].map(([k, s]) => {
         const b = document.querySelector(s).getBoundingClientRect(); return [k, [b.top + b.height / 2, b.left, b.right]]; })))()""")

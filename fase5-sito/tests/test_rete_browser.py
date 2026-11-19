@@ -221,6 +221,9 @@ def test_cabine_primarie_con_api_e_gse_simulati(base, browser, tmp_path):
     testo = pg.locator("#elenco-cabine").inner_text()
     assert "CESENA OVEST" in testo and "Area GSE di: Punto dell'indirizzo" in testo and "CESENA SUD" in testo and "Serve il comune di" in testo
     assert "AC001E00776" in pg.locator("#elenco-punti").inner_text()
+    # (19/11/2026) i confini dell'area del punto arrivano da soli (test_prove_1911_browser.py); poi «Aggiorna confini»
+    _aspetta(pg, "() => window.EUGENIO_CABINE.st.aree && window.EUGENIO_CABINE.st.aree.centrale === 'AC001E00776'")
+    pg.evaluate("window.EUGENIO_CABINE.st.aree = null")
     # «Aggiorna confini»: solo le aree spuntate, con where=COD_AC IN (…), semplificate
     pg.click("#aggiorna-confini")
     _aspetta(pg, "() => window.EUGENIO_CABINE.st.aree")

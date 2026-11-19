@@ -589,7 +589,8 @@ def test_modelli3d_ripiego_osm_fuori_dal_dbtr(browser, base, tmp_path):
     attendi(pg, "/non ha risposto/.test(document.getElementById('messaggio').textContent)")
     t = pg.text_content("#messaggio")
     assert "OpenStreetMap" in t and "Overpass" in t and "fuori dalla zona coperta" in t
-    assert pg.locator("#genera-3d").is_disabled() and pg.evaluate(f"{s}.daGenerare") is None
+    # (19/11/2026) senza edificio scelto «Genera il 3D» resta premibile: fa il 3D della vista
+    assert pg.evaluate(f"{s}.daGenerare") is None and "zona che vedi" in pg.get_attribute("#genera-3d", "title")
     # dentro Rimini: nessuna richiesta a OpenStreetMap (vale il DBTR)
     n = len(chiamate)
     pg.evaluate(f"(() => {{ {E}.impostaPunto({muro[0]}, {muro[1]}, 'clic'); return {E}.puntoCambiato(); }})()")

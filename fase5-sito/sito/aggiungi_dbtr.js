@@ -156,6 +156,7 @@
       m.addControl(new window.maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
       m.addControl(new window.maplibregl.AttributionControl({ compact: true }), "bottom-right");
       await new Promise((ok) => m.on("load", ok));
+      if (window.EUGENIO_RIGHELLO) window.EUGENIO_RIGHELLO.aggiungi(m);      // righello per distanze e aree (19/11/2026)
       // (17/11/2026) a tessere arrivate la citazione delle ortofoto AGEA 2022-2024 dice gli anni di volo della vista
       if (window.EUGENIO_ORTOFOTO_ANNI) window.EUGENIO_ORTOFOTO_ANNI.segui(m, "ortofoto", () => { const f = stato.fonte; if (f && f.anni && window.EUGENIO_ORTOFOTO_ANNI.citazione(f, m) !== stato.citazioneOrto) attribuzione(f); });
       m.addSource("edifici", { type: "geojson", data: { type: "FeatureCollection", features: [] } });

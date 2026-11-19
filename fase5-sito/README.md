@@ -105,6 +105,39 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Righello, 3D della vista e più edifici, ortofoto nella rete, confini automatici delle cabine (19/11/2026, `?v=20261119a`, richiesta di Paolo)
+
+- **Righello** (`sito/righello.js`, nuovo, in tutte le pagine con l'ortofoto: Modelli 3D e le pagine 3D, Ortofoto, Edifici
+  pubblici, Aggiungi edifici, Cabine primarie – mappa di dettaglio –, Stato della rete elettrica). `EUGENIO_RIGHELLO.aggiungi(mappa,
+  { dove })` mette un piccolo pulsante (icona del righello, `aria-pressed`) nell'elemento indicato – riga dei comandi sotto la
+  mappa in Modelli 3D, caselle dei livelli in Cabine primarie e nella rete – o in una riga subito sotto la mappa (dopo la
+  maniglia dell'altezza). Acceso: clic sinistro = punto; clic sul primo punto (con almeno 3 punti) = forma chiusa con l'area;
+  un punto si trascina; clic destro = azzera (dopo una rotazione col tasto destro i punti restano); Esc o il pulsante = spento.
+  Passando sopra la linea o dentro l'area, riquadretto con lunghezza o perimetro e area (mentre si disegna anche l'ultimo
+  tratto fino al puntatore). Distanze orizzontali con la formula dell'emisenoverso (raggio medio 6.371.008,8 m), area nella
+  proiezione cilindrica equivalente attorno alla latitudine media. Gli eventi del mouse si fermano sul contenitore della
+  mappa (fase di cattura) prima di MapLibre: con il righello acceso la pagina non riceve i clic (niente scelta di edifici o di
+  comuni, niente punti spostati); spostamento e zoom restano. Strati `righello-*` sempre in cima; riquadretti della pagina
+  nascosti mentre è acceso.
+- **Modelli 3D** (`edificio3d.js`): «Genera il 3D» senza edificio scelto fa il 3D della vista (da zoom 15; la scritta resta la stessa per tenere la riga sotto la mappa su una sola riga, lo dice il suggerimento del pulsante):
+  `vista3d()` carica il contesto di 250 m attorno al centro (ripiego OSM, quote, tetti scelti, alberi), mette tutti i corpi
+  tra i vicini, nasconde i pannelli dell'edificio ed entra nel 3D; gli edifici delle tessere sono tutti quelli sullo schermo.
+  **Maiuscolo + clic** aggiunge o toglie un edificio: in 2D (`scegliLista2d`, `daGenerare.scelti`) e nella vista 3D (`clic`);
+  `scegli()` accetta un elenco di codici, carica il contesto attorno a ciascuno (`stato.puntiScelti`), tiene i vicini entro
+  250 m da uno qualsiasi e calcola corpi, superfici e indicatori (`E.indicatori`) sugli edifici scelti insieme. `stato.edifici`
+  è l'elenco, `stato.edificio` il codice o «A + B». Lo zoom a riquadro di MapLibre (Maiuscolo + trascinamento) è spento.
+- **Stato della rete elettrica** (`rete_elettrica.js`, `rete.js`): casella «Ortofoto» (accesa): contesto Sentinel-2 sempre
+  sotto e, sopra, la fonte migliore applicabile al centro (`/api/ortofoto/fonti` e `fontiNelPunto`, come in Cabine primarie),
+  citazione sotto la mappa (con «si vede dallo zoom N») e nell'immagine scaricata (rifiutata con una fonte solo dal vivo).
+  Cabine con lo stesso raggio delle interruzioni (`stratoCabine(m, id, { raggio, bordo })`).
+- **Cabine primarie** (`fv_cabine.js`, `rete.js`): confini automatici. Un punto nuovo o spostato con un clic, la ricerca, il
+  trascinamento e il clic su un punto chiedono `R.gse.areeVicine(lon, lat, area)` (codici dell'area e delle confinanti: il
+  poligono dell'area con `where=COD_AC IN (…)`, poi una domanda `POST` con quel poligono, 30 m di margine e `returnGeometry=false`)
+  e `R.gse.aree(codici)`; area del punto con il bordo spesso (`_centrale`), confinanti sottili; stesse regole di «Aggiorna
+  confini» (dal browser, solo a video, spente nelle immagini). Non per i punti di un elenco finché non se ne sceglie uno.
+- Prove: `tests/test_prove_1911_browser.py` (misure con valori noti, righello nella rete e in tutte le pagine con l'ortofoto,
+  ortofoto e cabine della rete, confini automatici in prova e con il GSE simulato, vista 3D e più edifici in 2D e in 3D).
+
 ## Territorio › Edifici pubblici e retino in Modelli 3D (17/11/2026, `?v=20261117a`, richiesta di Paolo)
 
 - **Menu**: il gruppo «Patrimonio» si chiama **«Territorio»** (solo l'etichetta: `data-gruppo="patrimonio"`, gli id e i

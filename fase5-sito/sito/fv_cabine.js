@@ -12,6 +12,11 @@
 //  - «Aggiorna confini»: perimetri delle aree delle cabine spuntate letti dal GSE dal browser (where=COD_AC IN (…),
 //    semplificati, al massimo 100), mai dal server né salvati; strato spegnibile con l'attribuzione del GSE, spento nelle
 //    immagini scaricate. «Scarica i confini delle aree (GSE, CC BY-NC-SA)»: GeoJSON del contratto, fatto nel browser.
+//  - Confini automatici (19/11/2026, richiesta di Paolo): un clic sulla mappa che mette o sposta il punto, la ricerca, il
+//    trascinamento e il clic su un punto (sulla mappa o nell'elenco) chiedono da soli al GSE il perimetro dell'area che
+//    contiene il punto e quelli di tutte le aree confinanti (R.gse.areeVicine, poi R.gse.aree): area del punto con il bordo
+//    spesso, confinanti sottili; stesse regole di «Aggiorna confini» (dal browser, solo a video, spenti nelle immagini). Non
+//    per i punti caricati da un elenco finché non si sceglie uno di loro.
 //  - Download: immagini delle due mappe (esporta_mappa.js) e dati CSV, Excel, PDF con i soli codici (rete.js).
 //  Indirizzo: ?lat=…&lon=… aggiunge un punto all'apertura; ?prova=1 dati sintetici (rete.js).
 (function () {
@@ -36,6 +41,7 @@
     colore: COLORI_PUNTI.find((c) => c.id === leggiPref()) || COLORI_PUNTI[0],
     cabineRegione: new Map(), tutte: null, cabine: [], selezione: new Set(), visti: new Set(), aree: null,
     fonti: [], fonte: null, contesto: null, manuale: false, sposta: null, strati: null, trascino: false, trascinato: 0, file: null,
+    giroConfini: 0,
   };
   R.avvisoProva(document.querySelector(".pannello"));
 
@@ -44,7 +50,8 @@
   function aggiungiPunto(d, { attiva = true, analizza: subito = true } = {}) {
     if (st.punti.length >= MASSIMO_PUNTI) { messaggio("messaggio-punti", `Al massimo ${MASSIMO_PUNTI} punti: togline qualcuno.`, true); return null; }
     const p = { k: ++st.seq, id: d.id || "", nome: d.nome || "", lon: +d.lon, lat: +d.lat, colore: d.colore || st.colore.colore, origine: d.origine || "mappa",
-      indirizzo: d.indirizzo || "", esito: d.esito || "", area: undefined, errArea: "", istat: null, comune: "", prov: "", regione: null };
+      indirizzo: d.indirizzo || "", esito: d.esito || "", area: undefined, errArea: "", istat: null, comune: "", prov: "", regione: null,
+      confini: !!attiva };                    // confini automatici dopo la lettura dell'area (19/11/2026)
     st.punti.push(p);
     if (attiva) st.attivo = p.k;
     if (subito) analizza(p);
@@ -55,6 +62,8 @@
   function attiva(k, vai = false) {
     st.attivo = k; disegnaPunti();
     const p = punto(k);
+    // (19/11/2026) clic su un punto: i confini della sua area e delle confinanti, se non sono già quelli a video
+    if (p && !(st.aree && st.aree.punto === p.k)) { p.confini = true; if (p.area !== undefined) confiniDelPunto(p); }
     if (p && vai) st.det.flyTo({ center: [p.lon, p.lat], zoom: Math.max(st.det.getZoom(), 16), duration: 700 });
     const li = document.querySelector(`#elenco-punti li[data-k="${k}"]`);
     if (li) li.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -64,7 +73,7 @@
     if (st.attivo === k) st.attivo = st.punti.length ? st.punti[st.punti.length - 1].k : null;
     disegnaPunti(); aggiornaCabine();
   }
-  function sposta(p, lon, lat) { p.lon = lon; p.lat = lat; p.spostato = true; disegnaPunti(); }
+  function sposta(p, lon, lat) { p.lon = lon; p.lat = lat; p.spostato = true; p.confini = true; disegnaPunti(); }
 
   // comune, regione e area GSE del punto (le richieste al GSE: al massimo GSE_INSIEME alla volta, in coda)
   const coda = []; let inCorso = 0;
@@ -86,6 +95,45 @@
     catch (e) { p.area = null; p.errArea = e.message || "servizio del GSE non raggiungibile"; }
     if (giro !== p.giro) return;
     pianifica();
+    if (p.confini && p.k === st.attivo) confiniDelPunto(p);
+  }
+
+  // ================================================================== confini automatici (19/11/2026)
+  // area del GSE che contiene il punto (bordo spesso) e tutte quelle confinanti, lette dal browser come «Aggiorna confini»
+  async function confiniDelPunto(p) {
+    p.confini = false;
+    const mio = ++st.giroConfini, nome = nomePunto(p);
+    if (!p.area) {
+      if (p.area === null) messaggio("messaggio-cabine", p.errArea ? `Confini non letti per «${nome}»: ${p.errArea}.` : `«${nome}»: nessuna area del GSE in questo punto, quindi nessun confine.`, !!p.errArea);
+      return;
+    }
+    messaggio("messaggio-cabine", `Chiedo al GSE i confini dell'area ${p.area.COD_AC} di «${nome}» e delle aree confinanti…`);
+    try {
+      const v = await inCoda(() => R.gse.areeVicine(p.lon, p.lat, p.area));
+      if (mio !== st.giroConfini) return;
+      const fc = await inCoda(() => R.gse.aree(v.codici));
+      if (mio !== st.giroConfini) return;
+      const centrale = p.area.COD_AC;
+      fc.features.forEach((f) => { f.properties = { ...(f.properties || {}), _centrale: f.properties && f.properties.COD_AC === centrale }; });
+      const primaVolta = !st.aree;
+      st.aree = { ...fc, letto: new Date().toISOString(), punto: p.k, centrale };
+      disegnaAree();
+      $("strato-fv-aree").disabled = false;
+      if (primaVolta) $("strato-fv-aree").checked = true;
+      visibilita();
+      const n = fc.features.length - (fc.features.some((f) => f.properties._centrale) ? 1 : 0);
+      messaggio("messaggio-cabine", `Confini letti dal GSE: area ${centrale} di «${nome}» (bordo spesso) e ${n} ${n === 1 ? "area confinante" : "aree confinanti"}. `
+        + "Sono solo a video, non vengono salvati." + ($("strato-fv-aree").checked ? "" : " Accendi la casella «Aree convenzionali (GSE)» per vederli."));
+      const tutte = fc.features.flatMap((f) => (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates));
+      if (tutte.length && st.top) {
+        let w = 180, s = 90, e = -180, nn = -90;
+        for (const pol of tutte) for (const [x, y] of pol[0]) { w = Math.min(w, x); e = Math.max(e, x); s = Math.min(s, y); nn = Math.max(nn, y); }
+        st.top.fitBounds([[w, s], [e, nn]], { padding: 30, duration: 700, maxZoom: 13 });
+      }
+    } catch (e) {
+      if (mio !== st.giroConfini) return;
+      messaggio("messaggio-cabine", `Confini non letti: ${e.message}. Il servizio del GSE potrebbe essere lento o non raggiungibile: riprova più tardi o usa «Aggiorna confini».`, true);
+    }
   }
 
   // ================================================================== cabine interessate
@@ -133,7 +181,9 @@
     for (const v of st.cabine) if (!st.visti.has(v.chiave)) { st.visti.add(v.chiave); st.selezione.add(v.chiave); }
     const chiavi = new Set(st.cabine.map((v) => v.chiave));
     [...st.selezione].forEach((k) => { if (!chiavi.has(k)) st.selezione.delete(k); });
-    messaggio("messaggio-cabine", errori.length ? `Cabine di alcune regioni non disponibili (${errori.join("; ")}).` : "", !!errori.length);
+    // (19/11/2026) il messaggio si toglie solo se era un errore delle cabine: quello dei confini automatici resta
+    if (errori.length) { messaggio("messaggio-cabine", `Cabine di alcune regioni non disponibili (${errori.join("; ")}).`, true); st.erroreCabine = true; }
+    else if (st.erroreCabine) { messaggio("messaggio-cabine", ""); st.erroreCabine = false; }
     elencoPunti(); elencoCabine(); disegnaCabine();
   }
 
@@ -162,8 +212,9 @@
   }
   function stratiRete(m, prima) {
     m.addSource("fv-aree", { type: "geojson", data: vuota(), attribution: R.ATTR.gse });
-    m.addLayer({ id: "fv-aree-fondo", type: "fill", source: "fv-aree", paint: { "fill-color": colore("--primario"), "fill-opacity": 0.12 } }, prima);
-    m.addLayer({ id: "fv-aree-linea", type: "line", source: "fv-aree", paint: { "line-color": colore("--primario"), "line-width": 2.4 } }, prima);
+    // (19/11/2026) con i confini automatici l'area del punto ha il bordo spesso e il fondo più pieno, le confinanti sottili
+    m.addLayer({ id: "fv-aree-fondo", type: "fill", source: "fv-aree", paint: { "fill-color": colore("--primario"), "fill-opacity": ["case", ["==", ["get", "_centrale"], false], 0.05, 0.12] } }, prima);
+    m.addLayer({ id: "fv-aree-linea", type: "line", source: "fv-aree", paint: { "line-color": colore("--primario"), "line-width": ["case", ["==", ["get", "_centrale"], false], 1.4, 2.8] } }, prima);
     m.addSource("fv-cabine", { type: "geojson", data: vuota(), attribution: "Cabine: © contributori OpenStreetMap (ODbL); e-distribuzione" });
     R.stratoCabine(m, "fv-cabine", { prima });
     m.addSource("fv-punti", { type: "geojson", data: vuota() });
@@ -173,7 +224,8 @@
     R.suggerimento(m, () => ["fv-punti", "fv-cabine-punti", "fv-aree-fondo"], (f) => {
       const p = f.properties || {};
       if (f.layer.id === "fv-punti") { const x = punto(+p.k); return x ? { titolo: nomePunto(x), righe: righePunto(x) } : null; }
-      if (f.layer.id === "fv-aree-fondo") return { titolo: `Area convenzionale ${p.COD_AC}`, righe: [`Gestore: ${p.RAG_SOC || "–"}`, R.ATTR.gse], cursore: false };
+      if (f.layer.id === "fv-aree-fondo") return { titolo: `Area convenzionale ${p.COD_AC}`, righe: [`Gestore: ${p.RAG_SOC || "–"}`,
+        ...(p._centrale === true ? ["area del punto scelto"] : p._centrale === false ? ["area confinante"] : []), R.ATTR.gse], cursore: false };
       const v = st.cabine.find((x) => x.chiave === p.chiave);
       const righe = R.righeCabina(p);
       if (v && v.area.length) righe.push(`Area GSE di: ${v.area.map(nomePunto).join(", ")}`);
@@ -213,7 +265,8 @@
       voce(R.campione("cabina", "GRIGIO"), "altro distributore o senza dato");
     }
     if ($("strato-fv-punti").checked) voce(R.campione("punto", st.colore.colore), "punti (bordo bianco: quello scelto)");
-    if (st.aree && $("strato-fv-aree").checked) voce(R.campione("area"), "aree convenzionali del GSE (dal vivo)");
+    if (st.aree && $("strato-fv-aree").checked) voce(R.campione("area"), st.aree.centrale
+      ? "aree convenzionali del GSE (dal vivo): bordo spesso l'area del punto, sottile le confinanti" : "aree convenzionali del GSE (dal vivo)");
   }
 
   // ================================================================== mappa in alto (regioni e comuni)
@@ -288,6 +341,8 @@
     }
     $("caselle-strati").addEventListener("change", aggiornaSposta);
     trascinamento(m);
+    // (19/11/2026) righello per distanze e aree, accanto alle caselle dei livelli della mappa di dettaglio (righello.js)
+    if (window.EUGENIO_RIGHELLO) window.EUGENIO_RIGHELLO.aggiungi(m, { dove: $("caselle-strati") });
     m.on("click", (e) => {
       if (st.trascino || Date.now() - st.trascinato < 400 || clicRete(m, e)) return;
       if (m.getZoom() < ZOOM_CLIC) { messaggio("messaggio-dettaglio", "Avvicinati (zoom 13 e oltre) per mettere o spostare il punto con un clic."); return; }

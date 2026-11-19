@@ -1,0 +1,73 @@
+# Aggiornamento del 19/11/2026 – righello, 3D della vista e più edifici, ortofoto nella rete, confini automatici delle cabine
+
+Pubblicazione sopra la `v2026.11.18`. Sito **`?v=20261119a`**, release **`v2026.11.19`**, voce nelle Novità. Cambiano solo
+file statici del sito: nessuna immagine da ricostruire, nessun archivio, nessun passo a mano sul server.
+
+## Richieste di Paolo (19/11/2026, mattina)
+
+| Richiesta | Cosa è stato fatto |
+|---|---|
+| Modelli 3D: fare l'alzato **senza selezionare un edificio**, secondo la vista sullo schermo | Senza edificio scelto **«Genera il 3D»** fa il 3D della vista (da zoom 15; la scritta del pulsante resta uguale, lo dice il suo suggerimento): 3D della zona sullo schermo con tutti gli edifici delle tessere; il contesto di 250 m attorno al centro dà ripiego OpenStreetMap, quote, tetti scelti e alberi. Nessun edificio in evidenza e nessun calcolo finché non si fa clic su un volume. |
+| Modelli 3D: **selezione multipla con Maiuscolo** e valori aggregati di volume e superficie | **Maiuscolo + clic** aggiunge o toglie un edificio, nella mappa 2D e nella vista 3D. Tabella dei corpi, superfici, volume lordo, superficie disperdente, S/V e gli altri indicatori sono calcolati sugli edifici scelti insieme (stesse funzioni di prima; le pareti in comune tra gli edifici scelti contano come «tra corpi»). Nella scheda «Edifici scelti insieme: N (valori sommati)». Maiuscolo + trascinamento non fa più lo zoom a riquadro, in questa pagina. |
+| Rete elettrica: **ortofoto sotto**, accendibile e spegnibile | Casella **«Ortofoto»** tra gli strati (accesa): da lontano il contesto satellitare Sentinel-2, da vicino (zoom 10 e oltre) la fonte migliore della zona (AGEA 2022-2024 o la regionale), scelta da sola come in Cabine primarie. Citazione sotto la mappa e nell'immagine scaricata. Per vedere bene la foto conviene spegnere «Criticità dei comuni». |
+| Rete elettrica: cabine **più piccole**, come i pallini blu delle interruzioni | Stesso raggio delle interruzioni (4 px a zoom 5, 6 a zoom 10, 8 a zoom 14; prima 4,5–12). Solo in questa pagina: in Cabine primarie restano come prima. |
+| **Righello** in tutte le pagine con l'ortofoto | Pulsante piccolo col righello sotto la mappa, accanto ai livelli: Modelli 3D e le pagine 3D (nella riga di «Genera il 3D»), Ortofoto, Edifici pubblici, Aggiungi edifici (sotto la mappa), Cabine primarie (accanto alle caselle della mappa di dettaglio), Stato della rete elettrica (accanto alle caselle). Clic sinistro = punto; clic sul primo punto = forma chiusa con l'area; i punti si trascinano; clic destro = azzera; Esc = spento. Passando sopra la misura: lunghezza, oppure area e perimetro. Con il righello acceso i clic non scelgono edifici o comuni. |
+| Cabine primarie: **confini richiesti al clic** sulla mappa, con le **aree confinanti** | Un clic sulla mappa di dettaglio che mette o sposta il punto, la ricerca, il trascinamento o il clic su un punto (mappa o elenco) chiedono da soli al GSE il perimetro dell'area che contiene il punto (bordo spesso) e quelli di tutte le aree che la toccano (bordo sottile). Il pulsante «Aggiorna confini» resta per le cabine spuntate. Non per i punti caricati da un elenco, finché non se ne sceglie uno. |
+
+## Note sulle regole già decise
+
+- **GSE**: valgono le regole del 17/11. I poligoni si chiedono sempre e solo con `where=COD_AC IN (…)`; le confinanti si
+  trovano con una domanda che manda il poligono dell'area del punto e riceve **solo i codici** (`returnGeometry=false`). La
+  domanda col poligono è un `POST` (il poligono non sta nell'indirizzo), dal browser come le altre: niente server di
+  EuGEnio, niente copie; strato spento nelle immagini; attribuzione CC BY-NC-SA 3.0 IT.
+- **Misure del righello**: distanze orizzontali sull'ellissoide, area nella proiezione equivalente locale; indicative (le
+  ortofoto hanno uno scarto di qualche metro), non sostituiscono un rilievo.
+
+## Test (19/11/2026, container, Chromium headless)
+
+| Prove | Esito |
+|---|---|
+| `tests/test_prove_1911_browser.py` (nuovo, 11 prove) | passate |
+| tutte le prove della fase 5 (`python -m pytest tests`) | 222 passate, 2 saltate (11 minuti) |
+| `fase4-server/tests/test_agenti.py` | passate |
+
+Modifiche alle prove esistenti: in `test_mappe_browser.py` il pulsante senza edificio scelto resta acceso
+(prima era spento); in `test_prove_0911b_browser.py` nella riga sotto la mappa c'è anche il righello; in
+`test_rete_browser.py` si aspettano i confini automatici prima di «Aggiorna confini».
+
+## Procedura AI1–AI3
+
+### AI1. [Browser] Merge e release
+1. Apri la pull request (collegamento di Claude; elenco su https://github.com/StatoCritico/eugenio/pulls), scheda **Files
+   changed**, poi **Merge pull request** → **Confirm merge**.
+2. Apri il collegamento `https://github.com/StatoCritico/eugenio/releases/new?…` già compilato da Claude e premi
+   **Publish release**.
+
+### AI2. [Server] Aggiornamento
+Niente da fare a mano: alle 4:40 l'aggiornamento notturno installa la `v2026.11.19` (email solo se qualcosa va storto). Per
+averla subito:
+```bash
+~/energia/fase4-server/aggiorna_da_github.sh
+```
+Cosa aspettarsi: `Aggiornamento da v2026.11.18 a v2026.11.19`, `Release v2026.11.19 installata`.
+
+### AI3. [Browser] Prove (Ctrl+F5 su ogni pagina)
+1. https://eugenio.statocritico.it/rete-elettrica.html: le cabine sono punti piccoli come quelli blu; sotto i comuni la
+   foto satellitare; avvicinandoti (zoom 10 e oltre) la foto aerea, con la citazione sotto la mappa. Togli la spunta
+   «Ortofoto»: la foto sparisce.
+2. Sulla stessa pagina premi il righello accanto alle caselle, fai tre clic sulla mappa e poi clic sul primo punto: compare
+   l'area gialla; passa sopra col mouse: area e perimetro. Trascina un punto; clic destro: tutto azzerato. Esc: righello
+   spento (il clic su un comune torna ad aprirlo).
+3. https://eugenio.statocritico.it/modelli3d.html: senza scegliere edifici, avvicinati (zoom 15 o più) e premi «Genera il 3D»:
+   il 3D della zona. Clic su un edificio: i suoi dati a destra. Maiuscolo + clic su un altro: la tabella dei
+   corpi li ha tutti e due, volume e superfici sono sommati. Maiuscolo + clic di nuovo sul secondo: torna al primo da solo.
+4. Torna alla mappa 2D, clic su un edificio, Maiuscolo + clic su un altro, «Genera il 3D»: tutti e due in arancio.
+5. https://eugenio.statocritico.it/fv-cabine.html: avvicinati sulla mappa di dettaglio e fai clic: compare il punto e, dopo
+   qualche secondo, il confine dell'area del GSE (bordo spesso) con le aree confinanti (bordo sottile), anche nella mappa in
+   alto. Se il GSE non risponde lo dice il messaggio sopra l'elenco delle cabine.
+
+## Da riportare in RIEPILOGO.md e DA_FARE.md
+
+- RIEPILOGO, stato: `?v=20261119a`, release `v2026.11.19`: righello, 3D della vista e più edifici, ortofoto nella rete,
+  cabine piccole, confini automatici delle cabine.
+- DA_FARE: [ ] **Paolo**: AI1 (Merge e release), AI3 dopo l'aggiornamento.

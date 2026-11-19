@@ -40,7 +40,7 @@
 // affidabilità) se c'è, altrimenti il DBTR dell'Emilia-Romagna; i corpi di un archivio meno affidabile che cadono dentro
 // quelli di uno più affidabile non si usano.
 //
-// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261118a):
+// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261119a):
 //  - il punto trovato con la ricerca (cerca_luogo.js, modulo comune con Ortofoto) si **trascina** per correggerlo (l'ANNCSU
 //    è a volte impreciso) e, da zoom 15, un clic sulla mappa lo sposta lì; la scelta dell'edificio usa sempre il punto
 //    corretto (l'edificio che lo contiene, o il più vicino entro 30 m) e «Genera il 3D» parte da lì;
@@ -63,6 +63,14 @@
 // ({ locale: true }, sorgente GeoJSON, celle in memoria), prima degli archivi del server per la scelta dei corpi (dove si
 // sovrappongono vince il file dell'utente) e «zona coperta» per la sessione: confine ISTAT del comune se il file è il
 // comune intero, altrimenti il riquadro dei corpi; fuori resta il ripiego OSM. Mai inviati al server.
+//
+// Vista e più edifici (19/11/2026, richiesta di Paolo):
+//  - «Genera il 3D» anche **senza edificio scelto** (da zoom 15): alzato della zona sullo schermo, con tutti gli edifici
+//    delle tessere, il ripiego OSM, le quote e gli alberi del contesto di 250 m attorno al centro; nessun edificio in
+//    evidenza e nessun calcolo finché non si sceglie un volume con un clic;
+//  - **Maiuscolo + clic** aggiunge (o toglie) un edificio alla scelta, in 2D e nella vista 3D: corpi, superfici, volume,
+//    S/V e il resto si calcolano sugli edifici scelti insieme (valori aggregati, pareti in comune tra loro comprese).
+//    In questa pagina Maiuscolo + trascinamento non fa più lo zoom a riquadro di MapLibre.
 (function () {
   const E = window.EUGENIO_EDIFICI, G = window.EUGENIO_GRAFICI, R = window.EUGENIO_REPORT;
   const main = document.querySelector("main.pagina-edificio3d");
@@ -74,6 +82,7 @@
   const BASI = SCELTA === "demo" ? ["dati/edifici3d/"] : SCELTA ? [`/edifici3d/${SCELTA.replace(/^\/+|\.\.+/g, "").replace(/\/?$/, "/")}`]
     : ["/edifici3d/cc-by/er/prodotti/", "dati/edifici3d/"];
   const RAGGIO = 250;
+  const ZOOM_VISTA = 15;                   // «Genera il 3D» senza edificio scelto: da questo zoom (19/11/2026)
   const ZOOM_CERCA = (window.EUGENIO_CERCA && window.EUGENIO_CERCA.ZOOM) || 17;   // zoom dopo la ricerca, uguale in Ortofoto (cerca_luogo.js)
   // Modelli 3D in due tempi (05/11/2026): mappa 2D con ricerca e scelta, poi «Genera il 3D». Dal 07/11/2026 sera tutte le
   // pagine 3D (Edificio, Fotovoltaico) hanno la stessa mappa di Modelli 3D (stessi elementi nell'HTML): stessi archivi per
@@ -89,6 +98,8 @@
     fvOrizzonti: {}, obblighi: null, dpr: null, lidar: null, falde: new Map(), celleFalde: new Map(), nascostiExtra: [], modello: null,
     alberi: new Map(), celleAlberi: new Map(), visura: {}, sede: null, archivi: [], in3d: !DUE_TEMPI, daGenerare: null, regione: null,
     osmAttivo: false, osm: { celle: new Map(), visti: new Map(), errore: null, info: null },
+    // (19/11/2026) edifici scelti insieme (Maiuscolo + clic) e punto da cui caricare il contesto di ciascuno; vista 3D senza scelta
+    edifici: [], puntiScelti: new Map(), vista: null,
     // (09/11/2026) colore degli edifici e alberi accesi (spenti in partenza): preferenze del browser
     coloreEdifici: (() => { try { return localStorage.getItem("eugenio-colore-edifici") || "grigio"; } catch { return "grigio"; } })(),
     alberiVisibili: (() => { try { return localStorage.getItem("eugenio-alberi-3d") === "1"; } catch { return false; } })() };
@@ -165,7 +176,7 @@
     let elenco = null;
     const valida = (b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes("..");
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261118a", { cache: "no-cache" });   // mai l'elenco vecchio
+      const r = await fetch("/edifici3d/archivi.json?v=20261119a", { cache: "no-cache" });   // mai l'elenco vecchio
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const d = await r.json();
         elenco = d.archivi;
@@ -906,7 +917,7 @@
   // (dal DTM, già nei corpi); poi MapLibre la affina con le tessere
   function quotaDelCentro() {
     const m = stato.mappa;
-    if (!m || !m.getTerrain || !m.getTerrain() || !stato.corpi.length) return 0;
+    if (!m || !m.getTerrain || !m.getTerrain() || (!stato.corpi.length && !stato.vista)) return 0;     // 3D della vista: mediana delle quote
     return Number.isFinite(stato.q0) ? stato.q0 : 0;
   }
   function quotaCamera() {
@@ -1130,11 +1141,26 @@
   const strati3d = () => [...(stato.sorgentiCorpi || []), "rilievo", "ombre", ...(pubbliciAccesi() ? stato.pubblici.strati3d : []), "scelto", "tetti-vicini", "falde", "fv", "facciate", "alberi", "linea"];
   const strati2dTutti = () => (stato.sorgentiCorpi || []).flatMap((id) => [`${id}-2d`, `${id}-2d-linea`, `${id}-2d-scelto`, `${id}-2d-bordo`, `${id}-2d-tetto`])
     .concat(pubbliciAccesi() ? stato.pubblici.strati2d : []).concat(["zone-coperte", "cercato"]);
+  // edificio o elenco di edifici in evidenza nella mappa 2D (19/11/2026: anche più edifici insieme)
   function evidenzia2d(edificio) {
     const m = stato.mappa;
+    const l = (Array.isArray(edificio) ? edificio : [edificio]).filter((x) => x !== null && x !== undefined && x !== "").map(String);
     (stato.sorgentiCorpi || []).forEach((id) => ["2d-scelto", "2d-bordo"].forEach((suf) => {
-      if (m.getLayer(`${id}-${suf}`)) m.setFilter(`${id}-${suf}`, ["==", ["get", "edificio"], edificio || ""]);
+      if (m.getLayer(`${id}-${suf}`)) m.setFilter(`${id}-${suf}`, ["in", ["to-string", ["get", "edificio"]], ["literal", l]]);
     }));
+  }
+  // edifici della scelta da generare: [{ edificio, lon, lat }]
+  const sceltiDi = (d) => (!d ? [] : d.scelti && d.scelti.length ? d.scelti : [{ edificio: d.edificio, lon: d.lon, lat: d.lat }]);
+  const nomeScelta = (l) => (l.length > 4 ? `${l.slice(0, 4).join(", ")} e altri ${l.length - 4}` : l.join(", "));
+  // «Genera il 3D» si può premere in 2D anche senza edificio scelto (3D della vista), se c'è un archivio o il ripiego OSM
+  function abilitaGenera() {
+    const b = $("genera-3d");
+    if (!b) return;
+    b.disabled = !!stato.in3d || !stato.mappa || (!stato.daGenerare && !(veri().length || stato.base));
+    // la scritta resta «Genera il 3D» (una sola riga sotto la mappa a 1366 px, decisione del 09/11/2026 b): cosa genera lo
+    // dicono il suggerimento del pulsante e il messaggio
+    b.title = stato.daGenerare ? (sceltiDi(stato.daGenerare).length > 1 ? `3D dei ${sceltiDi(stato.daGenerare).length} edifici scelti e dei vicini` : "3D dell'edificio scelto e dei vicini")
+      : `Nessun edificio scelto: 3D della zona che vedi sulla mappa (da zoom ${ZOOM_VISTA}); poi un clic su un volume ne dà i dati, Maiuscolo + clic ne aggiunge altri`;
   }
   // clic sulla mappa 2D: sceglie l'edificio (o lo toglie se è già quello scelto) e ci porta il punto; da zoom 15 un clic
   // fuori dagli edifici sposta solo il punto. false se il clic non riguarda il punto né un edificio
@@ -1149,7 +1175,14 @@
       return true;
     }
     const edificio = String(f.properties.edificio || "");
-    if (stato.daGenerare && stato.daGenerare.edificio === edificio) { togliScelta2d(); return true; }
+    // (19/11/2026) Maiuscolo + clic: aggiunge l'edificio alla scelta, o lo toglie se c'era già
+    if (e.originalEvent && e.originalEvent.shiftKey && stato.daGenerare) {
+      const l = sceltiDi(stato.daGenerare).slice(), i = l.findIndex((x) => x.edificio === edificio);
+      if (i >= 0) l.splice(i, 1); else l.push({ edificio, lon: e.lngLat.lng, lat: e.lngLat.lat });
+      if (!l.length) togliScelta2d(); else scegliLista2d(l);
+      return true;
+    }
+    if (stato.daGenerare && sceltiDi(stato.daGenerare).length === 1 && stato.daGenerare.edificio === edificio) { togliScelta2d(); return true; }
     impostaPunto(e.lngLat.lng, e.lngLat.lat, "clic");
     scegli2d(edificio, e.lngLat.lng, e.lngLat.lat, null, ids.indexOf(f.layer.id));
     return true;
@@ -1252,7 +1285,7 @@
       if (p.origine === "spostato") messaggio("messaggio", `Punto spostato in ${dove}: scelto l'edificio ${f.properties.edificio}. Premi «Genera il 3D» `
         + "o sposta ancora il punto." + avvisoOsm(+f.properties.archivio || 0));
     } else {
-      stato.daGenerare = null; evidenzia2d(""); $("genera-3d").disabled = true;
+      stato.daGenerare = null; evidenzia2d(""); abilitaGenera();
       messaggio("messaggio", await nessunEdificio(p.lon, p.lat, `Punto in ${dove}: `), true);
     }
   }
@@ -1276,15 +1309,26 @@
     m.on("touchstart", "cercato", (e) => { if (e.points && e.points.length === 1) inizio(e, true); });
   }
   function scegli2d(edificio, lon, lat, sede = null, k = 0) {
-    stato.daGenerare = { edificio, lon, lat, sede };
+    stato.daGenerare = { edificio, lon, lat, sede, scelti: [{ edificio, lon, lat }] };
     evidenzia2d(edificio);
-    $("genera-3d").disabled = false;
+    abilitaGenera();
     const a = stato.archivi[Math.max(0, k)], f = a && a.osm ? stato.osm.visti.get(edificio) : null;
     const att = f && f.properties && f.properties.regione_sagoma ? String(f.properties.fonte_sagoma || "") : a && a.indice.attribuzione;   // sagome regionali (08/11/2026)
     const fonte = att ? ` (sagome: ${att})` : "";
     messaggio("messaggio", `Edificio ${edificio} scelto${fonte}. Premi «Genera il 3D» sotto la mappa; un altro clic cambia la scelta, `
-      + "un clic sullo stesso edificio la toglie." + avvisoOsm(Math.max(0, k)));
+      + "un clic sullo stesso edificio la toglie, Maiuscolo + clic ne aggiunge altri." + avvisoOsm(Math.max(0, k)));
     notaPubblico(lon, lat);
+  }
+  // (19/11/2026) più edifici scelti insieme nella mappa 2D (Maiuscolo + clic)
+  function scegliLista2d(l) {
+    const p = l[0];
+    stato.daGenerare = { edificio: p.edificio, lon: p.lon, lat: p.lat, sede: null, scelti: l };
+    evidenzia2d(l.map((x) => x.edificio));
+    abilitaGenera();
+    messaggio("messaggio", l.length === 1 ? `Edificio ${p.edificio} scelto. Premi «Genera il 3D»; Maiuscolo + clic ne aggiunge altri.`
+      : `${l.length} edifici scelti (${nomeScelta(l.map((x) => x.edificio))}): «Genera il 3D» li ricostruisce insieme e somma volume, superfici e il resto. `
+        + "Maiuscolo + clic su un edificio lo aggiunge o lo toglie; un clic senza Maiuscolo ricomincia da quello.");
+    notaPubblico(p.lon, p.lat);
   }
   // filtro delle estrusioni dei corpi in tessera: corpi modificati, divisi o con le falde (disegnati altrove) e, dal 17/11/2026,
   // edifici pubblici vicini (disegnati retinati da «pubblici-3d», pubblici_mappa.js); i due elenchi si compongono qui
@@ -1308,18 +1352,60 @@
     el.append(a, ".");
   }
   function togliScelta2d() {
-    stato.daGenerare = null; evidenzia2d(""); $("genera-3d").disabled = true;
-    messaggio("messaggio", "Nessun edificio scelto: fai clic su un edificio della mappa.");
+    stato.daGenerare = null; evidenzia2d(""); abilitaGenera();
+    messaggio("messaggio", "Nessun edificio scelto: fai clic su un edificio della mappa (Maiuscolo + clic per sceglierne più d'uno), "
+      + "oppure premi «Genera il 3D» senza sceglierne per l'alzato della zona sullo schermo.");
     if ($("nota-pubblico")) $("nota-pubblico").hidden = true;
   }
   async function genera() {
     const d = stato.daGenerare;
-    if (!d) return;
     $("genera-3d").disabled = true;
     // (09/11/2026 d) indicatore sulla mappa durante «Genera il 3D» (edifici, terreno, alberi)
     const fatto = window.EUGENIO_LIMITI && window.EUGENIO_LIMITI.lavoro ? window.EUGENIO_LIMITI.lavoro("Genero il 3D…") : () => {};
-    try { if (await scegli(d.edificio, d.lon, d.lat, d.sede)) entra3d(); }
-    finally { fatto(); $("genera-3d").disabled = !stato.daGenerare || stato.in3d; }
+    try {
+      if (!d) { if (await vista3d()) entra3d(); }                    // (19/11/2026) nessun edificio: 3D della vista
+      else {
+        const l = sceltiDi(d);
+        if (await scegli(l.map((x) => x.edificio), d.lon, d.lat, l.length === 1 ? d.sede : null, l)) entra3d();
+      }
+    } finally { fatto(); abilitaGenera(); }
+  }
+  // (19/11/2026, richiesta di Paolo) 3D della zona sullo schermo senza edificio scelto: restano gli edifici delle tessere (tutti
+  // quelli visibili); il contesto di 250 m attorno al centro serve al ripiego OSM, alle quote, ai tetti scelti e agli alberi.
+  // Nessun edificio in evidenza e nessun calcolo: un clic su un volume lo sceglie (Maiuscolo + clic ne aggiunge altri)
+  async function vista3d() {
+    const m = stato.mappa;
+    if (!m) return false;
+    if (m.getZoom() < ZOOM_VISTA - 0.05) {
+      messaggio("messaggio", `Per il 3D della vista avvicinati (zoom ${ZOOM_VISTA} o più, ora ${fmt(m.getZoom(), 1)}), oppure scegli un edificio con un clic.`, true);
+      return false;
+    }
+    const c = m.getCenter(), lon = c.lng, lat = c.lat;
+    messaggio("messaggio", "Carico gli edifici attorno al centro della vista…");
+    stato.proj = E.proiezione(lon, lat);
+    const tutti = (await contesto(lon, lat)).map((f) => conFalde(aCorpo(f), f.properties));
+    // quote come in scegli(): edifici OSM senza quota tutti sullo stesso piano
+    const quote = tutti.filter((x) => x.quotaNota).map((x) => x.quota).sort((a, b) => a - b);
+    tutti.forEach((x) => { if (!x.quotaNota) x.quota = quote.length ? quote[0] : 0; });
+    const vero = tutti.find((x) => !(archivioDi(x) || {}).osm);
+    if (vero) terrenoDi(vero.archivio);
+    impostaSede(null);
+    stato.corpi = []; stato.vicini = tutti; stato.originali = []; stato.aree = []; stato.edificio = null; stato.edifici = [];
+    stato.modello = null; stato.nascostiExtra = []; stato.firma = null; stato.fv = null; stato.facciate = null; stato.pvgis = null;
+    stato.q0 = quote.length ? quote[Math.floor(quote.length / 2)] : 0; stato.vista = { lon, lat };
+    stato.sintetico = tutti.some((x) => x.sintetico);
+    // pannelli dell'edificio nascosti finché non se ne sceglie uno (restavano i dati dell'edificio di prima)
+    ["passo-corpi", "passo-superfici", "passo-geometria", "passo-obblighi", "passo-ombre", "passo-facciate", "passo-fv", "passo-pvgis",
+      "passo-consumi", "passo-report"].forEach((id) => { if ($(id)) $(id).hidden = true; });
+    if ($("scheda-edificio")) $("scheda-edificio").hidden = true;
+    if ($("nota-pubblico")) $("nota-pubblico").hidden = true;
+    evidenzia2d("");
+    mostraFacciate(); ridisegna();
+    const osm = tutti.some((x) => (archivioDi(x) || {}).osm);
+    messaggio("messaggio", `3D della vista: ${tutti.length} corpi attorno al centro (raggio ${RAGGIO} m) e tutti gli edifici delle tessere sullo schermo. `
+      + "Fai clic su un volume per i suoi dati (corpi, superfici, volume); Maiuscolo + clic per sceglierne più d'uno e sommare i valori."
+      + (osm ? ` ${avvisoOsm(tutti.find((x) => (archivioDi(x) || {}).osm).archivio).trim()}` : ""));
+    return true;
   }
   function entra3d() {
     const m = stato.mappa;
@@ -1357,7 +1443,8 @@
       evidenzia2d("");
       ["scelto", "tetti-vicini", "falde", "fv", "ombre", "facciate", "linea"].forEach((id) => { const g = m.getSource(id); if (g) g.setData({ type: "FeatureCollection", features: [] }); });
     } else m.easeTo({ pitch: 0, bearing: 0, roll: 0, duration: 600 });
-    $("torna-2d").hidden = true; $("genera-3d").hidden = false; $("genera-3d").disabled = !stato.daGenerare;
+    if (azzera) { stato.edifici = []; stato.vista = null; }
+    $("torna-2d").hidden = true; $("genera-3d").hidden = false; abilitaGenera();
     $("aiuto-2d").hidden = false; $("aiuto-3d").hidden = true;
     if (stato.barra3d) stato.barra3d.hidden = true;
     messaggio("messaggio", azzera ? "Mappa 2D: il 3D dell'edificio di prima è stato tolto. Scegli l'edificio con un clic, poi «Genera il 3D»."
@@ -1569,8 +1656,8 @@
     }
     righe.push(`${C ? C.ATTRIBUZIONE : "Confini: ISTAT (CC BY 4.0)"}. Mappa: MapLibre GL JS (BSD-3).`);
     const titolo = stato.in3d && stato.edificio
-      ? `${TITOLO} – ${stato.modello ? `modello «${stato.modello}»` : `edificio ${stato.edificio}`}${stato.comune ? `, ${stato.comune.nome}` : ""}`
-      : `${TITOLO} – mappa 2D, ${m.getCenter().lat.toFixed(5)} N ${m.getCenter().lng.toFixed(5)} E`;
+      ? `${TITOLO} – ${stato.modello ? `modello «${stato.modello}»` : stato.edifici.length > 1 ? `edifici ${nomeScelta(stato.edifici)}` : `edificio ${stato.edificio}`}${stato.comune ? `, ${stato.comune.nome}` : ""}`
+      : `${TITOLO} – ${stato.in3d ? "vista 3D" : "mappa 2D"}, ${m.getCenter().lat.toFixed(5)} N ${m.getCenter().lng.toFixed(5)} E`;
     const sint = stato.sintetico || (stato.indice && stato.indice.sintetico);
     return { titolo, righe, avviso: sint ? "Dati sintetici di esempio: sagome, altezze e terreno inventati, non rappresentano edifici reali." : "",
       nome: stato.in3d && stato.edificio ? `modello3d_${String(stato.edificio).replace(/[^\w-]+/g, "_").slice(0, 40)}` : "modelli3d_mappa" };
@@ -1592,7 +1679,7 @@
     else m.flyTo({ center: [lon, lat], zoom: x.zoom || ZOOM_CERCA, pitch: 0, bearing: 0, duration: 900 });
     // solo il comune, o indirizzo senza coordinate (07/11/2026 sera): nessun edificio scelto, si avvicina l'utente
     if (x.centro_comune) {
-      stato.daGenerare = null; evidenzia2d(""); $("genera-3d").disabled = true;
+      stato.daGenerare = null; evidenzia2d(""); abilitaGenera();
       messaggio("messaggio", `Centro del comune di ${x.comune_catasto || ""}: avvicinati, poi fai clic sull'edificio (o trascina il punto); infine «Genera il 3D».`);
       return;
     }
@@ -1720,7 +1807,18 @@
     const id = String(f.properties.corpo || f.properties.id || "");
     const c = [...stato.corpi, ...stato.vicini].find((x) => x.id === id);
     const edificio = String(f.properties.edificio || (c && c.edificio) || "");
-    if (!edificio || (stato.edificio && edificio === stato.edificio)) return;
+    if (!edificio || edificio === "MODELLO") return;
+    const ora = stato.modello ? [] : stato.edifici || [];
+    // (19/11/2026) Maiuscolo + clic: il volume si aggiunge agli edifici scelti (o si toglie, se ne resta almeno uno)
+    if (e.originalEvent && e.originalEvent.shiftKey && ora.length) {
+      const lista = ora.includes(edificio) ? ora.filter((x) => x !== edificio) : [...ora, edificio];
+      if (!lista.length) return;
+      if (!ora.includes(edificio)) stato.puntiScelti.set(edificio, [e.lngLat.lng, e.lngLat.lat]);
+      const p0 = stato.puntiScelti.get(lista[0]) || [e.lngLat.lng, e.lngLat.lat];
+      await scegli(lista, p0[0], p0[1]);
+      return;
+    }
+    if (ora.length === 1 && ora[0] === edificio) return;
     await scegli(edificio, e.lngLat.lng, e.lngLat.lat);
   }
 
@@ -1747,14 +1845,26 @@
       }
     }
   }
-  async function scegli(edificio, lon, lat, sede = null) {
-    impostaSede(sede);
-    messaggio("messaggio", "Carico gli edifici nel raggio di 250 m…");
+  // edificio: codice dell'edificio o, dal 19/11/2026, elenco di codici (più edifici scelti con Maiuscolo + clic); punti:
+  // [{ edificio, lon, lat }] dove caricare il contesto di ciascuno (senza, il punto ricordato o lon, lat)
+  async function scegli(edificio, lon, lat, sede = null, punti = null) {
+    const lista = [...new Set((Array.isArray(edificio) ? edificio : [edificio]).map(String).filter(Boolean))];
+    if (!lista.length) return false;
+    (punti || []).forEach((p) => { if (p && Number.isFinite(+p.lon) && Number.isFinite(+p.lat)) stato.puntiScelti.set(String(p.edificio), [+p.lon, +p.lat]); });
+    if (!punti && lista.length === 1) stato.puntiScelti.set(lista[0], [lon, lat]);
+    impostaSede(lista.length === 1 ? sede : null);
+    messaggio("messaggio", lista.length > 1 ? `Carico ${lista.length} edifici e i vicini nel raggio di 250 m…` : "Carico gli edifici nel raggio di 250 m…");
     stato.proj = E.proiezione(lon, lat);
-    const fs = await contesto(lon, lat);
-    const tutti = fs.map((f) => conFalde(aCorpo(f), f.properties));
-    const corpi = tutti.filter((c) => c.edificio === edificio);
-    if (!corpi.length) { messaggio("messaggio", "Edificio non trovato nell'archivio.", true); return false; }
+    // contesto attorno a ogni edificio scelto (punti vicini tra loro: una volta sola), corpi uniti per codice
+    const dove = [[lon, lat]];
+    lista.forEach((x) => { const p = stato.puntiScelti.get(x); if (p && !dove.some((q) => Math.abs(q[0] - p[0]) < 0.0015 && Math.abs(q[1] - p[1]) < 0.0011)) dove.push(p); });
+    const visti = new Map();
+    for (const [x, y] of dove) (await contesto(x, y)).forEach((f) => { const k = String(f.properties.id); if (!visti.has(k)) visti.set(k, f); });
+    const tutti = [...visti.values()].map((f) => conFalde(aCorpo(f), f.properties));
+    const corpi = tutti.filter((c) => lista.includes(c.edificio));
+    if (!corpi.length) { messaggio("messaggio", lista.length > 1 ? "Edifici non trovati nell'archivio." : "Edificio non trovato nell'archivio.", true); return false; }
+    const trovati = lista.filter((x) => corpi.some((c) => c.edificio === x)), persi = lista.filter((x) => !trovati.includes(x));
+    edificio = trovati.length === 1 ? trovati[0] : trovati.join(" + ");
     terrenoDi(corpi[0].archivio);
     // edificio OSM (ripiego, nessun DTM): tutto sullo stesso piano, anche i corpi DBTR vicini oltre il confine del comune
     const daOsm = (archivioDi(corpi[0]) || {}).osm;
@@ -1762,10 +1872,11 @@
     const conQuota = daOsm && corpi.every((c) => c.quotaNota);
     if (daOsm && !conQuota) tutti.forEach((c) => { c.quota = 0; });
     else if (conQuota) { const q = Math.min(...corpi.map((c) => c.quota)); tutti.forEach((c) => { if (!c.quotaNota) c.quota = q; }); }
-    const centro = E.centroide(corpi[0].ring);
-    stato.vicini = tutti.filter((c) => c.edificio !== edificio && Math.hypot(...E.centroide(c.ring).map((v, i) => v - centro[i])) <= RAGGIO + 60);
+    // vicini: entro 250 m (più 60) da uno degli edifici scelti
+    const centri = trovati.map((x) => E.centroide(corpi.find((c) => c.edificio === x).ring));
+    stato.vicini = tutti.filter((c) => !trovati.includes(c.edificio) && centri.some((centro) => Math.hypot(...E.centroide(c.ring).map((v, i) => v - centro[i])) <= RAGGIO + 60));
     stato.modello = null; stato.nascostiExtra = [];
-    stato.corpi = corpi; stato.edificio = edificio;
+    stato.corpi = corpi; stato.edificio = edificio; stato.edifici = trovati; stato.vista = null;
     stato.aree = []; stato.firma = null; stato.fv = null; stato.sintetico = corpi.some((c) => c.sintetico);
     stato.q0 = Math.min(...corpi.map((c) => c.quota || 0)); stato.lontano = null; stato.facciate = null; stato.pvgis = null;
     stato.fvOrizzonti = {}; mostraFacciate();
@@ -1779,13 +1890,19 @@
     ["passo-corpi", "passo-superfici", "passo-geometria", "passo-obblighi", "passo-ombre", "passo-facciate", "passo-fv", "passo-pvgis",
       "passo-consumi", "passo-report"].forEach((id) => { $(id).hidden = false; });
     $("aggiungi-priorita").disabled = false; $("calcola-pvgis").disabled = true;
-    messaggio("messaggio", `Edificio ${edificio}: ${corpi.length} ${corpi.length === 1 ? "corpo" : "corpi"}, ${stato.vicini.length} corpi vicini.`
+    messaggio("messaggio", (trovati.length > 1 ? `${trovati.length} edifici scelti insieme (${nomeScelta(trovati)}): ${corpi.length} corpi, ${stato.vicini.length} corpi vicini; `
+      + "volume, superfici e indicatori sono la somma degli edifici scelti (Maiuscolo + clic ne aggiunge o ne toglie)." + (persi.length ? ` Non trovati: ${persi.join(", ")}.` : "")
+      : `Edificio ${edificio}: ${corpi.length} ${corpi.length === 1 ? "corpo" : "corpi"}, ${stato.vicini.length} corpi vicini.${DUE_TEMPI ? " Maiuscolo + clic su altri edifici per sommarne i valori." : ""}`)
       + (stato.comune ? ` Comune: ${stato.comune.nome}.` : "") + (daOsm ? avvisoOsm(corpi[0].archivio) + (conQuota ? " Quote dei corpi dal terreno del server (DTM regionale o, dove manca, Copernicus DEM 90 m)." : " Quote del terreno non disponibili: edifici sullo stesso piano.") : ""));
     aggiorna();
     if (!DUE_TEMPI) stato.mappa.easeTo({ center: [lon, lat], zoom: 17.6, duration: 600 });
     apriVista();
     fontiCorpi();
-    if (DUE_TEMPI) { stato.daGenerare = { edificio, lon, lat, sede }; evidenzia2d(edificio); }
+    if (DUE_TEMPI) {
+      stato.daGenerare = { edificio: trovati[0], lon, lat, sede: trovati.length === 1 ? sede : null,
+        scelti: trovati.map((x) => { const p = stato.puntiScelti.get(x) || [lon, lat]; return { edificio: x, lon: p[0], lat: p[1] }; }) };
+      evidenzia2d(trovati);
+    }
     return true;
   }
 
@@ -1811,7 +1928,7 @@
   // comune che contiene il punto (confini ISTAT del sito, dati/mappa/08.json, stesse coordinate di patrimonio.js)
   async function comuneDi(lon, lat) {
     try {
-      const m = await json("dati/mappa/08.json?v=20261118a");
+      const m = await json("dati/mappa/08.json?v=20261119a");
       const p = lonlatSvg(lon, lat);
       for (const c of m.comuni) {
         for (const parte of c.d.split("M").filter(Boolean)) {
@@ -1914,6 +2031,7 @@
     const voci = [["Edificio", c0.nome ? `${c0.nome} (${stato.edificio})` : stato.edificio], ["Comune", stato.comune ? stato.comune.nome : "—"],
       ...(c0.foglio || c0.numero ? [["Foglio e numero (DBTR)", [c0.foglio && `foglio ${c0.foglio}`, c0.numero && `numero ${c0.numero}`].filter(Boolean).join(", ")]] : []),
       ...(c0.destinazione ? [["Destinazione d'uso (DBTR)", c0.destinazione]] : []),
+      ...(stato.edifici.length > 1 ? [["Edifici scelti insieme", `${stato.edifici.length} (valori sommati)`]] : []),
       ["Corpi", stato.corpi.length], ["Licenza delle sagome", [...new Set(stato.corpi.map((c) => c.licenza))].join(", ")]];
     voci.forEach(([k, v]) => { d.appendChild(h("dt", null, k)); d.appendChild(h("dd", null, String(v))); });
   }
@@ -2139,7 +2257,7 @@
   let lavoratore = null;
   function orizzonti(punti, ostacoli, lontano = null) {
     return new Promise((ok, ko) => {
-      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261118a"); } catch (e) { ko(e); return; }
+      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261119a"); } catch (e) { ko(e); return; }
       const id = Math.random();
       const f = (e) => { if (e.data.id === id) { lavoratore.removeEventListener("message", f); ok(e.data.orizzonti); } };
       lavoratore.addEventListener("message", f);
@@ -2757,7 +2875,7 @@
   async function datiDpr() {
     if (stato.dpr === null) {
       stato.dpr = false;
-      try { stato.dpr = await json("dati/dpr412.json?v=20261118a"); } catch { /* senza file: niente zona */ }
+      try { stato.dpr = await json("dati/dpr412.json?v=20261119a"); } catch { /* senza file: niente zona */ }
     }
     return stato.dpr || null;
   }
@@ -3017,7 +3135,7 @@
     const sotto = (c) => corpi.some((m) => E.dentro(E.centroide(c.ring), m.ring));
     stato.nascostiExtra = archivio.filter(sotto).map((c) => c.id);
     stato.vicini = archivio.filter((c) => !sotto(c) && Math.hypot(...E.centroide(c.ring)) <= RAGGIO + 60);
-    stato.corpi = corpi; stato.edificio = "MODELLO"; stato.modello = String(nome).slice(0, 80);
+    stato.corpi = corpi; stato.edificio = "MODELLO"; stato.edifici = []; stato.modello = String(nome).slice(0, 80);
     stato.aree = []; stato.firma = null; stato.fv = null; stato.sintetico = false;
     stato.q0 = Math.min(...corpi.map((c) => c.quota || 0)); stato.lontano = null; stato.facciate = null; stato.pvgis = null;
     stato.fvOrizzonti = {}; mostraFacciate();
@@ -3115,6 +3233,7 @@
         o.id = "fonti-osm"; o.hidden = true; $("fonti-3d").append(" ", o);
       }
       stato.mappa = await creaMappa();
+      if (DUE_TEMPI) { stato.mappa.boxZoom.disable(); abilitaGenera(); }   // Maiuscolo + clic sceglie più edifici (19/11/2026)
       controlliCoperture(); evidenziaTetti2d();             // sezione «Coperture» (09/11/2026 c)
       // livelli sopra la foto (particelle, contorni degli edifici): non nella demo, i cui edifici sono inventati
       if (DUE_TEMPI && window.EUGENIO_STRATI && $("caselle-strati")) {
@@ -3143,6 +3262,8 @@
         } catch (e) { console.warn("edifici pubblici", e); }
       }
       if (DUE_TEMPI && !(indice && indice.sintetico)) controlliAspetto3d();
+      // (19/11/2026) righello per distanze e aree, nella riga sotto la mappa (righello.js)
+      if (window.EUGENIO_RIGHELLO) stato.righello = window.EUGENIO_RIGHELLO.aggiungi(stato.mappa, $("comandi-edificio") ? { dove: $("comandi-edificio") } : {});
       caricaOrtofoto();
       if (DUE_TEMPI && window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-3d"), stato.mappa, opzioniImmagine, $("messaggio-immagine"));
       // demo sintetica: si esce sempre con «Esci dalla demo», che riapre la pagina normale (mappa 2D vera, ortofoto, ricerca)
@@ -3234,5 +3355,5 @@
   window.EUGENIO_EDIFICIO3D = { stato, corpoReport, scegli, apriModello, edificioNelPunto, alberiVicini, ostacoliRelativi, genera, entra3d, esci3d,
     vistaNominata, opzioniImmagine, livelloFonte, scegli2d, impostaPunto, puntoCambiato, trovato, coperto, nessunEdificio, geojson, edificiOsm,
     fonteTerreno, testoAltezza, lontanoDal3d, testoTetti, contaTetti, cambiaFormaTetti, accendiTegola, cliccaTegola, chiaveTetto, statoTetti,
-    esportaTetti, importaTetti, resetPiani, piuVicinoAllaCamera };
+    esportaTetti, importaTetti, resetPiani, piuVicinoAllaCamera, vista3d, scegliLista2d, clic2d, abilitaGenera };
 })();
