@@ -1,7 +1,8 @@
 # Aggiornamento del 19/11/2026 – righello, 3D della vista e più edifici, ortofoto nella rete, confini automatici delle cabine
 
-Pubblicazione sopra la `v2026.11.18`. Sito **`?v=20261119a`**, release **`v2026.11.19`**, voce nelle Novità. Cambiano solo
-file statici del sito: nessuna immagine da ricostruire, nessun archivio, nessun passo a mano sul server.
+Pubblicazione sopra la `v2026.11.18`. Sito **`?v=20261119a`**, release **`v2026.11.19`**, voce nelle Novità. Cambiano i file
+statici del sito e, per la ricerca degli indirizzi, `fase7-territorio/territorio/luogo.py`: l'aggiornamento ricostruisce
+l'immagine dell'api da solo; nessun archivio, nessun passo a mano sul server.
 
 ## Richieste di Paolo (19/11/2026, mattina)
 
@@ -22,6 +23,16 @@ file statici del sito: nessuna immagine da ricostruire, nessun archivio, nessun 
 - **Righello**: un punto non si trascina più tenendo premuto. Un clic o un tocco sul punto lo prende (arancione, più
   grande; col mouse segue il puntatore), il clic o tocco successivo lo posa; clic destro o Esc annullano lo spostamento. I
   tocchi brevi col dito valgono come clic; mentre il righello è acceso il doppio clic/tocco non ingrandisce la mappa.
+
+## Ricerca «piazza San Marco» a Venezia ferma (segnalazione di Paolo, 19/11/2026, 13:38)
+
+Il difetto è già nella versione online (`v2026.11.18`, ricerca di un luogo del 17–18/11). Con la sola via, il server
+raggruppa i civici ANNCSU della via per trovare i tratti lontani tra loro (frazioni); lo faceva confrontando **tutte le
+coppie** di civici. A Venezia l'odonimo ANNCSU di «San Marco» è il **sestiere**, con migliaia di civici: migliaia al quadrato
+di confronti (circa 4 s ogni 6.000 civici nel container, di più sul server ARM, per ognuna delle vie simili) e la pagina resta
+su «Cerco…». Ora i soli civici si raggruppano con una griglia (stesso risultato, 20.000 civici in 0,04 s); prova nuova in
+`fase7-territorio/tests/test_luogo.py`. Da confermare dopo l'aggiornamento (AI3, punto 6): dal browser non ho potuto vedere la
+risposta vera del server (riquadro del browser nascosto).
 
 ## Note sulle regole già decise
 
@@ -76,6 +87,8 @@ Cosa aspettarsi: `Aggiornamento da v2026.11.18 a v2026.11.19`, `Release v2026.11
 5. https://eugenio.statocritico.it/fv-cabine.html: avvicinati sulla mappa di dettaglio e fai clic: compare il punto e, dopo
    qualche secondo, il confine dell'area del GSE (bordo spesso) con le aree confinanti (bordo sottile), anche nella mappa in
    alto. Se il GSE non risponde lo dice il messaggio sopra l'elenco delle cabine.
+6. https://eugenio.statocritico.it/modelli3d.html: Comune «Venezia», Indirizzo «piazza San Marco», «Cerca l'indirizzo»:
+   entro qualche secondo la mappa va sulla piazza (o compare l'elenco delle vie fra cui scegliere).
 
 ## Da riportare in RIEPILOGO.md e DA_FARE.md
 
