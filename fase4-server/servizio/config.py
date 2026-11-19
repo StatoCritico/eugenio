@@ -253,6 +253,13 @@ TERRENO_CACHE_S = int(os.environ.get("TERRENO_CACHE_S", "2592000"))      # 30 gi
 TERRENO_ORA = int(os.environ.get("TERRENO_ORA", "6000"))                 # tessere da generare per IP all'ora (09/11/2026: 3000 → 6000)
 TERRENO_PARALLELE = int(os.environ.get("TERRENO_PARALLELE", "2"))        # tessere generate insieme
 TERRENO_ATTESA_S = float(os.environ.get("TERRENO_ATTESA_S", "10"))
+# (19/11/2026) DTM nazionale 5 m HR-DTM-5m del CNR-IRPI (Zenodo, doi:10.5281/zenodo.24009736, versione 1.3, CC BY 4.0),
+# letto a distanza (COG, 34 GB: non si copia sul server) dopo i DTM regionali e prima del Copernicus; "" lo spegne.
+# Dopo un errore di rete la fonte si salta per TERRENO_NAZIONALE_PAUSA_S secondi (si usa il Copernicus)
+TERRENO_NAZIONALE_URL = os.environ.get(
+    "TERRENO_NAZIONALE_URL", "https://zenodo.org/records/24009736/files/HRDM5m_20261030_cog.tif?download=1")
+TERRENO_NAZIONALE_PAUSA_S = float(os.environ.get("TERRENO_NAZIONALE_PAUSA_S", "600"))
+TERRENO_NAZIONALE_TIMEOUT_S = int(os.environ.get("TERRENO_NAZIONALE_TIMEOUT_S", "10"))
 ORIZZONTE_RAGGIO_KM = float(os.environ.get("ORIZZONTE_RAGGIO_KM", "25"))
 ORIZZONTE_ORA = int(os.environ.get("ORIZZONTE_ORA", "120"))               # profili per IP all'ora
 

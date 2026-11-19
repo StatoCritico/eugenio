@@ -9,6 +9,15 @@
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
   <entry>
+    <title>19 novembre 2026 – Terreno a 5 m in tutta Italia nella vista 3D</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261119-2</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261119-2"/>
+    <updated>2026-11-19T12:00:00Z</updated>
+    <summary>Terreno a 5 m in tutta Italia nella vista 3D</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Migliorato&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Territorio › Modelli 3D e le altre pagine con la vista 3D: fuori dall&amp;#x27;Emilia-Romagna e dalle zone del Veneto già caricate il terreno non è più quello a 90 m del satellite, ma il modello a 5 m di tutta Italia pubblicato dal CNR-IRPI (HR-DTM-5m). Colline, argini e scarpate si vedono molto meglio, e gli edifici disegnati da OpenStreetMap poggiano sulla quota giusta. La legenda dice da quale rilievo viene il terreno e di che anno: LiDAR dove c&amp;#x27;è (circa metà dell&amp;#x27;Italia), altrimenti il TINITALY a 10 m.&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
+  <entry>
     <title>19 novembre 2026 – Righello sulle mappe, 3D della vista e più edifici insieme, ortofoto nella rete elettrica</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261119</id>
     <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261119"/>

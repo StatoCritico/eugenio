@@ -22,6 +22,14 @@
 
 [[voce]]
 data = "2026-11-19"
+versione = "20261119b"
+titolo = "Terreno a 5 m in tutta Italia nella vista 3D"
+migliorato = [
+  "Territorio › Modelli 3D e le altre pagine con la vista 3D: fuori dall'Emilia-Romagna e dalle zone del Veneto già caricate il terreno non è più quello a 90 m del satellite, ma il modello a 5 m di tutta Italia pubblicato dal CNR-IRPI (HR-DTM-5m). Colline, argini e scarpate si vedono molto meglio, e gli edifici disegnati da OpenStreetMap poggiano sulla quota giusta. La legenda dice da quale rilievo viene il terreno e di che anno: LiDAR dove c'è (circa metà dell'Italia), altrimenti il TINITALY a 10 m.",
+]
+
+[[voce]]
+data = "2026-11-19"
 versione = "20261119a"
 titolo = "Righello sulle mappe, 3D della vista e più edifici insieme, ortofoto nella rete elettrica"
 nuovo = [

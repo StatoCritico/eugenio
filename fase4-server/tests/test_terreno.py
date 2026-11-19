@@ -164,7 +164,7 @@ def test_pulizia(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "CARTELLA_TERRENO_TESSERE", tmp_path)
     monkeypatch.setattr(C, "TERRENO_MAX_GB", 3e-6)        # 3 kB
     for k in range(6):
-        p = tmp_path / "v" / "14" / "1" / f"{k}.png"
+        p = tmp_path / T.versione() / "14" / "1" / f"{k}.png"
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(b"x" * 1000)
         p.with_suffix(".txt").write_text("dtm\n")
@@ -255,3 +255,155 @@ def test_quote_dei_punti_con_il_ripiego_copernicus(client, monkeypatch):
         raise OSError("S3 non raggiungibile")
     monkeypatch.setattr(O, "finestra_dem", rotto)
     assert T.quote_punti([fuori], ripiego=True) == [None]
+
+
+def test_pulizia_toglie_le_versioni_vecchie(tmp_path, monkeypatch):
+    """19/11/2026: con un DTM in più (il nazionale) la versione cambia; le tessere delle versioni vecchie si tolgono."""
+    monkeypatch.setattr(C, "CARTELLA_TERRENO_TESSERE", tmp_path)
+    for v in ("vecchia", T.versione()):
+        p = tmp_path / v / "14" / "1" / "1.png"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(b"x")
+    assert T.pulisci(forza=True) == 1
+    assert not (tmp_path / "vecchia").exists() and (tmp_path / T.versione() / "14" / "1" / "1.png").exists()
+
+
+# ---------------------------------------------------------------------------------------------- DTM nazionale (19/11/2026)
+def _nazionale(file: Path, lon: float, lat: float, quota: float, passo: float = 5.0, lato_km: float = 6.0) -> Path:
+    """DTM nazionale simulato: COG in EPSG:6875 come l'HR-DTM-5m (float32, ZSTD, NaN in mare), quota costante, con una
+    striscia di «mare» (NaN) sul lato ovest."""
+    import rasterio
+    from pyproj import Transformer
+    from rasterio.shutil import copy as rcopy
+    from rasterio.transform import from_origin
+    x, y = Transformer.from_crs("EPSG:4326", "EPSG:6875", always_xy=True).transform(lon, lat)
+    n = int(lato_km * 1000 / passo)
+    z = np.full((n, n), quota, dtype="float32")
+    z[:, : n // 10] = np.nan
+    grezzo = file.with_suffix(".grezzo.tif")
+    with rasterio.open(grezzo, "w", driver="GTiff", width=n, height=n, count=1, dtype="float32", crs="EPSG:6875",
+                       transform=from_origin(x - n * passo / 2, y + n * passo / 2, passo, passo), nodata=float("nan"),
+                       tiled=True, blockxsize=512, blockysize=512) as d:
+        d.write(z, 1)
+        d.build_overviews([2, 4, 8, 16])
+    rcopy(grezzo, file, driver="GTiff", tiled=True, blockxsize=512, blockysize=512, compress="zstd", predictor=3,
+          copy_src_overviews=True)
+    grezzo.unlink()
+    return file
+
+
+class _ServizioARange:
+    """Servizio HTTP simulato che, come Zenodo, risponde 206 alle richieste con Range (GDAL /vsicurl/)."""
+
+    def __init__(self, file: Path):
+        import http.server
+        import threading
+        dati = file.read_bytes()
+        self.richieste = []
+        ser = self
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def _rispondi(self, corpo: bool):
+                ser.richieste.append(self.headers.get("Range"))
+                r = self.headers.get("Range")
+                if r and r.startswith("bytes="):
+                    a, b = r[6:].split(",")[0].split("-")
+                    a, b = int(a), min(int(b) if b else len(dati) - 1, len(dati) - 1)
+                    self.send_response(206)
+                    self.send_header("Content-Range", f"bytes {a}-{b}/{len(dati)}")
+                    pezzo = dati[a:b + 1]
+                else:
+                    self.send_response(200)
+                    pezzo = dati
+                self.send_header("Accept-Ranges", "bytes")
+                self.send_header("Content-Length", str(len(pezzo)))
+                self.end_headers()
+                if corpo:
+                    self.wfile.write(pezzo)
+
+            def do_GET(self):
+                self._rispondi(True)
+
+            def do_HEAD(self):
+                self._rispondi(False)
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+        self.url = f"http://127.0.0.1:{self.server.server_port}/files/HRDM5m_prova_cog.tif?download=1"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def chiudi(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+def test_nazionale_letto_a_distanza_dopo_i_regionali(client, tmp_path, monkeypatch):
+    """Milano (nessun DTM regionale): la tessera viene dal DTM nazionale letto a pezzi dal servizio simulato (fonte «dtm»,
+    nome dell'HR-DTM-5m con il rilievo, licenza CC BY 4.0); la striscia di mare dal Copernicus. Brisighella: vince il DTM
+    regionale anche se il nazionale la copre."""
+    cl, scheda, chiamate = client
+    f = _nazionale(tmp_path / "naz.tif", 9.19, 45.46, 120.0)
+    srv = _ServizioARange(f)
+    try:
+        monkeypatch.setattr(C, "TERRENO_NAZIONALE_URL", srv.url)
+        monkeypatch.setattr(T, "_dtm_cache", None)
+        monkeypatch.setattr(T, "_pausa_nazionale", 0.0)
+        ds = T.dtm_disponibili()
+        assert ds[-1]["remoto"] and ds[-1]["percorso"] == "/vsicurl/" + srv.url and ds[0]["file"] == "dtm_prova.tif"
+        x, y = _tessera(9.19, 45.46, 15)
+        r = cl.get(f"/api/terreno/15/{x}/{y}.png")
+        assert r.status_code == 200 and r.headers["x-terreno-fonte"] == "dtm" and not chiamate
+        assert r.headers["x-terreno-nome"].startswith("DTM 5 m nazionale HR-DTM-5m del CNR-IRPI")
+        assert "CC BY 4.0" in r.headers["x-terreno-licenza"]
+        assert np.allclose(_quote(r), 120.0, atol=0.01)
+        assert srv.richieste and any(q and q.startswith("bytes=") for q in srv.richieste)      # letture a pezzi
+        # tessera a cavallo della striscia di mare: il resto dal Copernicus (simulato a 50 m)
+        x0, y0 = _tessera(9.19 - 0.035, 45.46, 13)
+        r = cl.get(f"/api/terreno/13/{x0}/{y0}.png")
+        q = _quote(r)
+        assert r.headers["x-terreno-fonte"] == "dtm+copernicus" and np.isclose(q, 120.0, atol=0.01).any() \
+            and np.isclose(q, 50.0, atol=0.01).any()
+        # quote dei punti dal nazionale
+        assert T.quote_punti([(9.19, 45.46)]) == [120.0]
+        # Brisighella: il regionale prima
+        lon, lat = _centro(scheda)
+        f2 = _nazionale(tmp_path / "naz2.tif", lon, lat, 999.0, passo=20.0, lato_km=20.0)
+        monkeypatch.setattr(C, "TERRENO_NAZIONALE_URL", str(f2))
+        monkeypatch.setattr(T, "_dtm_cache", None)
+        x, y = _tessera(lon, lat, 15)
+        r = cl.get(f"/api/terreno/15/{x}/{y}.png")
+        assert r.headers["x-terreno-fonte"] == "dtm" and not r.headers["x-terreno-nome"].startswith("DTM 5 m nazionale")
+        assert float(np.median(_quote(r))) < 900
+        fonti = cl.get("/api/terreno/fonti").json()
+        assert fonti["dtm"][-1]["doi"] == "10.5281/zenodo.24009736" and "HR-DTM-5m" in fonti["nota"]
+    finally:
+        srv.chiudi()
+
+
+def test_nazionale_irraggiungibile_va_in_pausa(client, monkeypatch):
+    """Il servizio remoto non risponde: la tessera viene dal Copernicus e per TERRENO_NAZIONALE_PAUSA_S il nazionale si
+    salta (nessuna attesa a ogni tessera)."""
+    cl, _, chiamate = client
+    monkeypatch.setattr(C, "TERRENO_NAZIONALE_URL", "http://127.0.0.1:9/HRDM5m_assente.tif")
+    monkeypatch.setattr(C, "TERRENO_NAZIONALE_TIMEOUT_S", 2)
+    monkeypatch.setattr(T, "_dtm_cache", None)
+    monkeypatch.setattr(T, "_pausa_nazionale", 0.0)
+    x, y = _tessera(9.19, 45.46, 14)
+    r = cl.get(f"/api/terreno/14/{x}/{y}.png")
+    assert r.status_code == 200 and r.headers["x-terreno-fonte"] == "copernicus" and chiamate
+    assert T._pausa_nazionale > 0 and T.in_pausa(T.dtm_disponibili()[-1])
+    assert T.quote_punti([(9.19, 45.46)]) == [None]                          # in pausa: niente rete
+
+
+def test_rilievo_d_origine_dal_file_delle_fonti():
+    """Il file delle fonti accanto al modulo (dal GeoPackage dell'HR-DTM-5m, griglia di 250 m) dice da quale rilievo
+    viene la quota: Palermo dal LiDAR ATA 2012-2013, Aosta dal LiDAR NOPRS, Roma da TINITALY; in mare niente."""
+    def b(lon, lat, d=0.005):
+        return (lon - d, lat - d, lon + d, lat + d)
+    assert T.rilievo_nazionale(b(13.3615, 38.1157)).startswith("LiDAR DTM 2m - ATA 2012 2013 (2012-2013)")
+    assert T.rilievo_nazionale(b(7.3201, 45.7376)) == "LiDAR NOPRS (2008-2015)"
+    assert T.rilievo_nazionale(b(12.4922, 41.8902)) == "TINITALY 1.1 a 10 m"
+    assert T.rilievo_nazionale(b(12.0, 42.5 - 3.0)) == ""                    # Tirreno
+    assert "qui da TINITALY" in T.nome_dtm(T.NAZIONALE, b(12.4922, 41.8902))

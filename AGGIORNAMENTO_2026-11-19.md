@@ -1,5 +1,9 @@
 # Aggiornamento del 19/11/2026 – righello, 3D della vista e più edifici, ortofoto nella rete, confini automatici delle cabine
 
+> **Aggiornato il 19/11/2026, primo pomeriggio**: questa pubblicazione esce insieme al terreno nazionale
+> (`AGGIORNAMENTO_2026-11-19b.md`): una sola pull request (#7, ramo `claude/terreno-hrdtm5m`, che contiene anche questo
+> ramo) e una sola release `v2026.11.19`, sito `?v=20261119b`. Al posto di AI1 vale AJ1; AI2 e AI3 restano validi.
+
 Pubblicazione sopra la `v2026.11.18`. Sito **`?v=20261119a`**, release **`v2026.11.19`**, voce nelle Novità. Cambiano i file
 statici del sito e, per la ricerca degli indirizzi, `fase7-territorio/territorio/luogo.py`: l'aggiornamento ricostruisce
 l'immagine dell'api da solo; nessun archivio, nessun passo a mano sul server.

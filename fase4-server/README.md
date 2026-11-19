@@ -497,7 +497,7 @@ Il Caddyfile serve dal 06/11/2026 i file `.md` del sito come `text/markdown; cha
 | GET | `/api/ortofoto/strati` | (05/11/2026, seconda pubblicazione) strati sopra le ortofoto accesi (`servizio/strati.py`): tema (`particelle`, `edifici`), regioni, licenza, citazione, colore, legenda, zoom, riquadro e modello d'indirizzo delle tessere |
 | GET | `/api/ortofoto/strati/{id}/{z}/{x}/{y}.png` | tessera **trasparente** 256×256 in web mercator: particelle catastali dell'Agenzia delle Entrate (WMS in EPSG:4258 riproiettato), contorni degli edifici del DBTR; solo linee, ricolorate; copia su disco, ritmo e limite come le ortofoto; 404 fuori zona o zoom, 502 se la fonte sbaglia, 503 col ritmo esaurito |
 | GET | `/api/ortofoto/strati/osm_edifici/16/{x}/{y}.json` | sagome degli edifici di OpenStreetMap (ODbL) della tessera z16, in GeoJSON, dall'API Overpass, con copia su disco |
-| GET | `/api/terreno/{z}/{x}/{y}.png` | (07/11/2026) **terreno della pagina 3D su richiesta** (`servizio/terreno.py`): tessera Terrarium 256×256 (zoom 8–15) letta a finestra dal COG del DTM 5 m in `/dati/terreno` (comando `dtm-server` della fase 10), altrove Copernicus DEM 90 m, se nemmeno quello tessera piatta dichiarata; copia su disco, `X-Terreno-Fonte`, Cache-Control 30 giorni; limite `terreno` solo sulle tessere da generare; 404 fuori dall'Italia o con `TERRENO_ATTIVO=false` |
+| GET | `/api/terreno/{z}/{x}/{y}.png` | (07/11/2026) **terreno della pagina 3D su richiesta** (`servizio/terreno.py`): tessera Terrarium 256×256 (zoom 8–15) letta a finestra dal COG del DTM 5 m in `/dati/terreno` (comando `dtm-server` della fase 10), poi (19/11/2026) il DTM nazionale **HR-DTM-5m** del CNR-IRPI letto a distanza da Zenodo, in mare e senza rete Copernicus DEM 90 m, se nemmeno quello tessera piatta dichiarata; copia su disco, `X-Terreno-Fonte`, Cache-Control 30 giorni; limite `terreno` solo sulle tessere da generare; 404 fuori dall'Italia o con `TERRENO_ATTIVO=false` |
 | GET | `/api/terreno/fonti` | (07/11/2026) DTM disponibili sul server (riquadro, licenza, attribuzione), zoom e ripiego |
 | GET | `/api/edifici/osm?lon=&lat=` | (07/11/2026) **ripiego OpenStreetMap di Modelli 3D** fuori dal DBTR (`servizio/edifici_osm.py`): edifici OSM entro 400 m dal centro della cella di 0,002° del punto, da Overpass, letti con le regole di `osm_campione` (multipoligoni con i cortili, altezza `height` → `building:levels` × 3 m → stima di 9 m), in GeoJSON WGS84 con licenza ODbL 1.0; Turnstile, limite `edifici_osm`, tetto orario per tutto il sito, copia di 30 giorni; 400 fuori dall'Italia, 404 se spento, 502/503 se Overpass non risponde |
 | GET | `/api/edifici/orizzonte?lat=&lon=&h=&direzioni=72` | (Fase B) orizzonte del terreno fino a 25 km dal Copernicus DEM 90 m (file `.om` di Open-Meteo su S3, come la fase 3), angoli per direzione; copia su disco per punto (~100 m) |
@@ -1035,6 +1035,35 @@ cedente né codici fiscali. Test: `tests/test_immobili_pa.py`.
 - Prove: `tests/test_ortofoto.py` (9, risposte simulate) e `tests/test_pvgis_orizzonte.py` (5, DEM sintetico e risposte
   simulate); `tests/test_edifici.py` con il report della Fase B. Dal vivo, dal container di sviluppo il 04/11/2026: WMS RER
   2023-24, WMS Toscana, EOX 2016, WMS del Geoportale Nazionale, PVGIS (con e senza `userhorizon`) e DEM su S3 rispondono.
+
+**DTM nazionale HR-DTM-5m (19/11/2026)**. Tra i DTM regionali e il Copernicus `terreno.py` usa il DTM a 5 m di tutta
+Italia del CNR-IRPI (M. Panza, M. Muto, I. Marchesini, M. Rossi, M. Alvioli, G. Iovine; Zenodo,
+https://doi.org/10.5281/zenodo.24009736, versione 1.3 del 06/11/2026, **CC BY 4.0**): LiDAR regionali a 1–2 m ricampionati
+dove ci sono (52 % del territorio), TINITALY 1.1 a 10 m altrove, mare senza dato (lì resta il Copernicus). È un COG di
+34,3 GB (EPSG:6875, float32, ZSTD con predittore 3, tessere 512, panoramiche fino a 1:513) e **non si copia sul server**
+(spazio libero ~24 GB): si legge con `/vsicurl/` dall'indirizzo `TERRENO_NAZIONALE_URL` (predefinito il file della
+versione 1.3; `""` spegne la fonte). Zenodo risponde 206 alle letture a pezzi, provato dal server il 19/11/2026.
+
+- **Ordine**: DTM regionali (il più dettagliato prima), poi il nazionale, poi Copernicus, poi piatta. Il nazionale è una
+  scheda fissa (`NAZIONALE`) aggiunta in coda a `dtm_disponibili()`: la versione della copia cambia e le tessere vecchie
+  si tolgono da sole (da questa pubblicazione `pulisci()` toglie subito le cartelle delle versioni che non ci sono più).
+- **File tenuto aperto**: riaprire il COG remoto costa ~1 s (HEAD e intestazione), due volte per tessera; `apri()` tiene
+  aperto un dataset per thread e per panoramica. Opzioni di GDAL per `/vsicurl/` (`opzioni_gdal()`): niente elenco della
+  cartella, letture a pezzi unite, 2 tentativi, `TERRENO_NAZIONALE_TIMEOUT_S` (10 s), cache HTTP di 64 MB, User-Agent di
+  EuGEnio.
+- **Pausa**: dopo un errore di rete il nazionale si salta per `TERRENO_NAZIONALE_PAUSA_S` (600 s) e si usa il Copernicus,
+  così una caduta di Zenodo non rallenta ogni tessera.
+- **Rilievo d'origine**: `X-Terreno-Nome` è «DTM 5 m nazionale HR-DTM-5m del CNR-IRPI (CC BY 4.0), qui da LiDAR <nome>
+  (<anno>)» o «… qui da TINITALY 1.1 a 10 m», dal file `servizio/hrdtm5m_fonti_250m.tif` (357 kB): il GeoPackage
+  `HRDTM5m_Mask_20mres.gpkg` della stessa pubblicazione (CC BY 4.0) rasterizzato una volta su una griglia di 250 m in
+  EPSG:6875, codici in `tags()["fonti"]` (14 rilievi; per rifarlo con una versione nuova: `rasterize` di rasterio sul
+  livello `simplified`, prima TINITALY e sopra i LiDAR). Si sceglie il rilievo più esteso tra 81 punti della tessera.
+- **Misure (19/11/2026)**: dal workspace di Claude e con il codice di questa pubblicazione, prima tessera ~3,6 s (apertura),
+  poi 0,3–0,9 s per tessera nuova, ~1 MB scaricato ciascuna; quote dei punti 0,5 s. Quote coerenti con quelle note: Bagno
+  di Romagna 509,3 m (DTM ER ~510), Susegana 70,2 m (Copernicus 70,9), Bologna (Due Torri) 59,5 m, Roma (Colosseo) 26,8 m.
+- **Prove**: `tests/test_terreno.py` con un DTM nazionale simulato (COG ZSTD in EPSG:6875 con una striscia di mare) servito
+  da un piccolo servizio HTTP che risponde a pezzi come Zenodo; `tests/conftest.py` spegne la fonte vera in tutte le prove.
+
 
 ## Strati sopra le ortofoto (05/11/2026, seconda pubblicazione)
 

@@ -40,7 +40,7 @@
 // affidabilità) se c'è, altrimenti il DBTR dell'Emilia-Romagna; i corpi di un archivio meno affidabile che cadono dentro
 // quelli di uno più affidabile non si usano.
 //
-// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261119a):
+// Seconda pubblicazione del 05/11/2026 (prove di Paolo su ?v=20261119b):
 //  - il punto trovato con la ricerca (cerca_luogo.js, modulo comune con Ortofoto) si **trascina** per correggerlo (l'ANNCSU
 //    è a volte impreciso) e, da zoom 15, un clic sulla mappa lo sposta lì; la scelta dell'edificio usa sempre il punto
 //    corretto (l'edificio che lo contiene, o il più vicino entro 30 m) e «Genera il 3D» parte da lì;
@@ -106,7 +106,8 @@
   // archivio «virtuale» del ripiego OpenStreetMap (07/11/2026): ultimo di stato.archivi, senza file statici
   const ATTRIBUZIONE_OSM = "© OpenStreetMap contributors (ODbL 1.0)";
   // terreno 3D dal server (07/11/2026, fase4-server/servizio/terreno.py): DTM regionale, altrove Copernicus DEM 90 m
-  const ATTRIBUZIONE_TERRENO = "Terreno: DTM regionali (Regione Emilia-Romagna – DTM 5×5 m, CC BY 4.0; Regione del Veneto – DTM 5 m da voli LiDAR, IODL 2.0); altrove Copernicus DEM GLO-90 (© DLR e Airbus)";
+  // 19/11/2026: tra i regionali e il Copernicus il DTM nazionale HR-DTM-5m del CNR-IRPI (letto dal server da Zenodo)
+  const ATTRIBUZIONE_TERRENO = "Terreno: DTM regionali (Regione Emilia-Romagna – DTM 5×5 m, CC BY 4.0; Regione del Veneto – DTM 5 m da voli LiDAR, IODL 2.0); altrove HR-DTM-5m – CNR-IRPI, Panza et al. (CC BY 4.0, doi:10.5281/zenodo.24009736); in mare Copernicus DEM GLO-90 (© DLR e Airbus)";
   const TESSERE_TERRENO = "/api/terreno/{z}/{x}/{y}.png";
   const MARGINE_CONFINE = 150;             // m: un punto a questa distanza da un corpo DBTR è coperto (confini ISTAT generalizzati)
   // tegola (09/11/2026 c): colore del bordo 2D dei corpi con il tetto a falde scelto e cursore della mappa con la tegola accesa
@@ -176,7 +177,7 @@
     let elenco = null;
     const valida = (b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes("..");
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261119a", { cache: "no-cache" });   // mai l'elenco vecchio
+      const r = await fetch("/edifici3d/archivi.json?v=20261119b", { cache: "no-cache" });   // mai l'elenco vecchio
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const d = await r.json();
         elenco = d.archivi;
@@ -1634,7 +1635,7 @@
     if (stato.alberiVisibili && alberiVicini().some((a) => a.stima))
       righe.push("Alberi: chiome indicative da OpenStreetMap (© contributori OpenStreetMap, ODbL 1.0), altezza dai dati OSM o stimata; nelle ombre come stima.");
     if (stato.in3d && stato.terrenoServer && !stato.sintetico && !stato.corpi.some((c) => (archivioDi(c) || {}).osm)) righe.push(`${ATTRIBUZIONE_TERRENO}; quote dei corpi dal DTM 5×5 m.`);
-    else if (stato.in3d && stato.terrenoServer && stato.nomeTerreno) righe.push(`Terreno: ${stato.nomeTerreno}; altrove Copernicus DEM GLO-90 (© DLR e Airbus).`);
+    else if (stato.in3d && stato.terrenoServer && stato.nomeTerreno) righe.push(`Terreno: ${stato.nomeTerreno}${/HR-DTM-5m/.test(stato.nomeTerreno) ? " – Panza et al., doi:10.5281/zenodo.24009736" : ""}; altrove Copernicus DEM GLO-90 (© DLR e Airbus).`);
     // legenda dei colori e del terreno nella vista 3D (07/11/2026 sera)
     if (stato.in3d) {
       const osmVisti = stato.osmAttivo && (stato.osm.visti.size || stato.vicini.some((c) => (archivioDi(c) || {}).osm));
@@ -1931,7 +1932,7 @@
   // comune che contiene il punto (confini ISTAT del sito, dati/mappa/08.json, stesse coordinate di patrimonio.js)
   async function comuneDi(lon, lat) {
     try {
-      const m = await json("dati/mappa/08.json?v=20261119a");
+      const m = await json("dati/mappa/08.json?v=20261119b");
       const p = lonlatSvg(lon, lat);
       for (const c of m.comuni) {
         for (const parte of c.d.split("M").filter(Boolean)) {
@@ -2260,7 +2261,7 @@
   let lavoratore = null;
   function orizzonti(punti, ostacoli, lontano = null) {
     return new Promise((ok, ko) => {
-      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261119a"); } catch (e) { ko(e); return; }
+      try { lavoratore = lavoratore || new Worker("ombre_worker.js?v=20261119b"); } catch (e) { ko(e); return; }
       const id = Math.random();
       const f = (e) => { if (e.data.id === id) { lavoratore.removeEventListener("message", f); ok(e.data.orizzonti); } };
       lavoratore.addEventListener("message", f);
@@ -2878,7 +2879,7 @@
   async function datiDpr() {
     if (stato.dpr === null) {
       stato.dpr = false;
-      try { stato.dpr = await json("dati/dpr412.json?v=20261119a"); } catch { /* senza file: niente zona */ }
+      try { stato.dpr = await json("dati/dpr412.json?v=20261119b"); } catch { /* senza file: niente zona */ }
     }
     return stato.dpr || null;
   }

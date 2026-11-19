@@ -1091,6 +1091,10 @@ Test della coda: `tests/test_coda.py`.
 
 ### Terreno: niente più DTM negli archivi dei comuni (decisione di Paolo, 07/11 ore 11:37)
 
+> **19/11/2026**: fuori dai DTM regionali il terreno della rotta `/api/terreno` viene dal DTM nazionale **HR-DTM-5m** del
+> CNR-IRPI (5 m, CC BY 4.0, doi:10.5281/zenodo.24009736) letto a distanza da Zenodo, poi dal Copernicus: dettagli nel
+> README della fase 4. Le quote dei corpi scritte da `prepara` restano quelle del DTM regionale dell'archivio.
+
 Gli archivi dei comuni montani erano pesanti per il terreno, non per gli edifici: Brisighella 169 MB di prodotti, di cui
 **98 MB** `terreno.pmtiles` (770 tessere a zoom 15 da ~92 kB l'una) e **71 MB** `dtm_cog.tif`, contro 2,9 MB di
 `corpi.pmtiles` e 5 MB di celle. La prima idea (zoom pieno solo entro 300 m dai corpi, zoom 13 altrove) avrebbe ridotto
