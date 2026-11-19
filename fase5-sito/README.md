@@ -112,7 +112,10 @@ collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre
   { dove })` mette un piccolo pulsante (icona del righello, `aria-pressed`) nell'elemento indicato – riga dei comandi sotto la
   mappa in Modelli 3D, caselle dei livelli in Cabine primarie e nella rete – o in una riga subito sotto la mappa (dopo la
   maniglia dell'altezza). Acceso: clic sinistro = punto; clic sul primo punto (con almeno 3 punti) = forma chiusa con l'area;
-  un punto si trascina; clic destro = azzera (dopo una rotazione col tasto destro i punti restano); Esc o il pulsante = spento.
+  un clic (o un tocco) su un punto lo prende – col mouse segue il puntatore – e il clic o tocco successivo lo posa (seconda
+  richiesta del 19/11: niente trascinamento tenendo premuto, così va anche col dito; tocchi brevi gestiti da `touchend`, zoom
+  col doppio clic/tocco sospeso mentre il righello è acceso); clic destro = annulla lo spostamento o azzera (dopo una
+  rotazione col tasto destro i punti restano); Esc = annulla lo spostamento o spegne.
   Passando sopra la linea o dentro l'area, riquadretto con lunghezza o perimetro e area (mentre si disegna anche l'ultimo
   tratto fino al puntatore). Distanze orizzontali con la formula dell'emisenoverso (raggio medio 6.371.008,8 m), area nella
   proiezione cilindrica equivalente attorno alla latitudine media. Gli eventi del mouse si fermano sul contenitore della
@@ -126,6 +129,7 @@ collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre
   `scegli()` accetta un elenco di codici, carica il contesto attorno a ciascuno (`stato.puntiScelti`), tiene i vicini entro
   250 m da uno qualsiasi e calcola corpi, superfici e indicatori (`E.indicatori`) sugli edifici scelti insieme. `stato.edifici`
   è l'elenco, `stato.edificio` il codice o «A + B». Lo zoom a riquadro di MapLibre (Maiuscolo + trascinamento) è spento.
+  «Torna alla mappa 2D» chiama `esci3d()` senza argomenti e lascia attiva la scelta (prima l'evento del clic valeva «azzera»).
 - **Stato della rete elettrica** (`rete_elettrica.js`, `rete.js`): casella «Ortofoto» (accesa): contesto Sentinel-2 sempre
   sotto e, sopra, la fonte migliore applicabile al centro (`/api/ortofoto/fonti` e `fontiNelPunto`, come in Cabine primarie),
   citazione sotto la mappa (con «si vede dallo zoom N») e nell'immagine scaricata (rifiutata con una fonte solo dal vivo).

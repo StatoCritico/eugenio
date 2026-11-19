@@ -1448,7 +1448,9 @@
     $("aiuto-2d").hidden = false; $("aiuto-3d").hidden = true;
     if (stato.barra3d) stato.barra3d.hidden = true;
     messaggio("messaggio", azzera ? "Mappa 2D: il 3D dell'edificio di prima è stato tolto. Scegli l'edificio con un clic, poi «Genera il 3D»."
-      : "Mappa 2D: scegli un altro edificio con un clic (o cercalo), poi «Genera il 3D». A destra restano i dati dell'ultimo edificio generato.");
+      : stato.daGenerare ? `Mappa 2D: ${sceltiDi(stato.daGenerare).length > 1 ? `restano scelti ${sceltiDi(stato.daGenerare).length} edifici` : `resta scelto l'edificio ${stato.daGenerare.edificio}`}`
+          + " (in evidenza): «Genera il 3D» lo rigenera, Maiuscolo + clic ne aggiunge o ne toglie, un clic su un altro edificio cambia la scelta. A destra restano i suoi dati."
+        : "Mappa 2D: scegli un edificio con un clic (o cercalo), poi «Genera il 3D»; senza sceglierne, «Genera il 3D» fa il 3D della vista.");
     fontiCorpi();
     if (stato.pubblici) stato.pubblici.aggiorna();
     stato.alberi2d = null; if (stato.alberiVisibili) applicaAlberi();
@@ -1696,7 +1698,8 @@
   if (DUE_TEMPI) {
     if (window.EUGENIO_CERCA) window.EUGENIO_CERCA.crea($("cerca-edificio"), { suTrovato: trovato });
     $("genera-3d").addEventListener("click", genera);
-    $("torna-2d").addEventListener("click", esci3d);
+    // (19/11/2026, Paolo) «Torna alla mappa 2D» lascia attiva la scelta: prima l'evento passato a esci3d valeva «azzera»
+    $("torna-2d").addEventListener("click", () => esci3d());
   }
 
   function inclinate(c) { return (c.falde || []).filter((f) => f.pendenza >= 5 && Number.isFinite(f.alto) && Number.isFinite(f.basso)); }

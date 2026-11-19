@@ -1,7 +1,7 @@
 """Richieste di Paolo del 19/11/2026, provate in Chromium (Playwright, senza rete; si salta se manca):
 
   - righello delle mappe con l'ortofoto (righello.js): pulsante accanto ai livelli sotto la mappa, punti col clic sinistro,
-    chiusura sul primo punto con l'area, punto trascinabile, clic destro che azzera, riquadretto passando sopra, i clic
+    chiusura sul primo punto con l'area, punto preso con un clic (o un tocco) e posato col successivo, clic destro che azzera, riquadretto passando sopra, i clic
     della pagina fermati mentre è acceso; misure (distanza e area) controllate con valori noti;
   - Stato della rete elettrica: ortofoto sotto gli strati con la casella, citazione sotto la mappa e nell'immagine; cabine
     grandi come le interruzioni;
@@ -114,18 +114,36 @@ def test_rete_righello_ortofoto_e_cabine_piccole(browser, base):
     attendi(pg, "getComputedStyle(document.querySelector('#mappa-rete .righello-etichetta')).display === 'block'")
     t = pg.text_content("#mappa-rete .righello-etichetta")
     assert "Area:" in t and "Perimetro:" in t and ("m²" in t or "ha" in t), t
-    # un punto si trascina
+    # un clic sul punto lo prende, il punto segue il puntatore, il clic successivo lo posa (19/11, anche col dito)
     prima = pg.evaluate(f"{m}._eugenioRighello.misura().punti[1]")
-    pg.mouse.move(cx + 120, cy - 60); pg.mouse.down(); pg.mouse.move(cx + 160, cy - 90, steps=5); pg.mouse.up()
+    pg.mouse.click(cx + 120, cy - 60)
+    assert "Punto preso" in pg.text_content("#mappa-rete .righello-etichetta")
+    pg.mouse.move(cx + 160, cy - 90, steps=5)
+    seguito = pg.evaluate(f"{m}._eugenioRighello.misura().punti[1]")
+    assert seguito != prima
+    pg.mouse.click(cx + 160, cy - 90)
     dopo = pg.evaluate(f"{m}._eugenioRighello.misura()")
-    assert dopo["punti"][1] != prima and dopo["chiuso"] and len(dopo["punti"]) == 3
+    assert abs(dopo["punti"][1][0] - seguito[0]) < 1e-9 and dopo["chiuso"] and len(dopo["punti"]) == 3
     assert abs(pg.evaluate(f"{m}.getCenter().lng") - 12.25) < 1e-6        # la mappa non si è spostata
+    # preso e poi clic destro: lo spostamento si annulla, i punti restano
+    pg.mouse.click(cx + 160, cy - 90); pg.mouse.move(cx, cy + 120, steps=3)
+    pg.mouse.click(cx, cy + 120, button="right")
+    assert pg.evaluate(f"{m}._eugenioRighello.misura()")["punti"][1] == dopo["punti"][1]
+    # col dito: tocco sul punto lo prende, tocco altrove lo posa (Touch simulati sul canvas)
+    tocca = f"""([x, y]) => {{ const c = {m}.getCanvas(), t = new Touch({{ identifier: 1, target: c, clientX: x, clientY: y }});
+        c.dispatchEvent(new TouchEvent('touchstart', {{ touches: [t], targetTouches: [t], changedTouches: [t], bubbles: true, cancelable: true }}));
+        c.dispatchEvent(new TouchEvent('touchend', {{ touches: [], targetTouches: [], changedTouches: [t], bubbles: true, cancelable: true }})); }}"""
+    pg.evaluate(f"({tocca})([{cx + 160}, {cy - 90}])")
+    pg.evaluate(f"({tocca})([{cx + 100}, {cy - 120}])")
+    col_dito = pg.evaluate(f"{m}._eugenioRighello.misura()")
+    assert col_dito["punti"][1] != dopo["punti"][1] and len(col_dito["punti"]) == 3 and col_dito["chiuso"], col_dito
+    assert pg.evaluate(f"{m}.doubleClickZoom.isEnabled()") is False     # doppio tocco: niente zoom mentre è acceso
     # clic destro: punti azzerati, righello acceso
     pg.mouse.click(cx, cy + 100, button="right")
     assert pg.evaluate(f"{m}._eugenioRighello.misura().punti.length") == 0 and b.get_attribute("aria-pressed") == "true"
     # Esc: spento; i clic tornano alla pagina
     pg.keyboard.press("Escape")
-    assert b.get_attribute("aria-pressed") == "false"
+    assert b.get_attribute("aria-pressed") == "false" and pg.evaluate(f"{m}.doubleClickZoom.isEnabled()") is True
     assert not pg.errori, pg.errori
     ctx.close()
 
@@ -271,6 +289,7 @@ def test_modelli3d_vista_senza_edificio_e_piu_edifici(browser, base, tmp_path):
     # in 2D: Maiuscolo + clic aggiunge e toglie; «Genera il 3D» li ricostruisce insieme
     pg.evaluate("document.getElementById('torna-2d').click()")
     attendi(pg, f"!{s}.in3d && {s}.mappa.getPitch() === 0", 10000)
+    assert pg.evaluate(f"{s}.daGenerare.edificio") == "E-K"      # la scelta resta (19/11)
     pg.evaluate(f"{E}.scegli2d('E-K', {lon}, {lat})")
     pg.evaluate(f"{s}.mappa.jumpTo({{ center: [{lon}, {lat}], zoom: 18 }})")
     attendi(pg, f"{s}.mappa.loaded() && {s}.mappa.queryRenderedFeatures({{ layers: {s}.strati2d.filter((id) => {s}.mappa.getLayer(id)) }}).length >= 4", 20000)
@@ -286,13 +305,13 @@ def test_modelli3d_vista_senza_edificio_e_piu_edifici(browser, base, tmp_path):
     attendi(pg, f"{s}.in3d && {s}.corpi.length === 4 && {s}.edifici.length === 2", 25000)
     pg.evaluate("document.getElementById('torna-2d').click()")
     attendi(pg, f"!{s}.in3d")
-    # «Torna alla mappa 2D» toglie la scelta (come prima): la si rifà e Maiuscolo + clic due volte su V1 la aggiunge e la toglie
-    pg.evaluate(f"{E}.scegli2d('E-K', {lon}, {lat})")
+    # (19/11, Paolo) «Torna alla mappa 2D» lascia attiva la scelta: i due edifici restano in evidenza e nel 3D di prima
+    assert pg.evaluate(f"{s}.daGenerare.scelti.map((x) => x.edificio).sort()") == ["E-K", "E-V"]
+    assert pg.evaluate(f"{s}.corpi.length") == 4 and "restano scelti 2 edifici" in pg.text_content("#messaggio")
+    filtro = json.dumps(pg.evaluate(f"{s}.mappa.getFilter('corpi-2d-scelto')"))
+    assert "E-K" in filtro and "E-V" in filtro
     pg.evaluate(f"{s}.mappa.jumpTo({{ center: [{lon}, {lat}], zoom: 18 }})")
-    attendi(pg, f"{s}.mappa.loaded() && {s}.mappa.queryRenderedFeatures({{ layers: {s}.strati2d.filter((id) => {s}.mappa.getLayer(id)) }}).length >= 4", 20000)
-    pg.evaluate(f"({clic2d})('V1', true)")
-    attendi(pg, f"{s}.daGenerare && {s}.daGenerare.scelti.length === 2")
-    pg.wait_for_timeout(450)
+    attendi(pg, f"{s}.mappa.loaded() && !{s}.mappa.isMoving() && {s}.mappa.queryRenderedFeatures({{ layers: {s}.strati2d.filter((id) => {s}.mappa.getLayer(id)) }}).length >= 4", 20000)
     pg.evaluate(f"({clic2d})('V1', true)")
     attendi(pg, f"{s}.daGenerare && {s}.daGenerare.scelti.length === 1 && {s}.daGenerare.edificio === 'E-K'")
     assert not pg.errori, pg.errori

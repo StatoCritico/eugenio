@@ -2,8 +2,8 @@
 // Righello delle mappe con l'ortofoto (19/11/2026, richiesta di Paolo): Modelli 3D e pagine 3D, Ortofoto, Edifici pubblici,
 // Aggiungi edifici, Cabine primarie (mappa di dettaglio), Stato della rete elettrica.
 //  - Un piccolo pulsante con il righello sotto la mappa, accanto alle caselle dei livelli. Acceso: clic sinistro = punto
-//    successivo; clic sul primo punto (con almeno tre punti) = la linea si chiude e diventa un'area; un punto si trascina
-//    con il mouse; clic destro = azzera i punti (il righello resta acceso); Esc o un secondo clic sul pulsante = spento.
+//    successivo; clic sul primo punto (con almeno tre punti) = la linea si chiude e diventa un'area; un clic (o un tocco)
+//    su un punto lo prende e il successivo lo posa (dal 19/11 pomeriggio, anche col dito); clic destro = azzera i punti (il righello resta acceso); Esc o un secondo clic sul pulsante = spento.
 //  - Passando sopra la linea o l'area compare un riquadretto con la lunghezza (o perimetro e area). Distanze orizzontali
 //    sull'ellissoide (formula dell'emisenoverso), aree nella proiezione locale equivalente attorno al centro (errore
 //    trascurabile sotto qualche chilometro): misure indicative, non sostituiscono un rilievo.
@@ -72,7 +72,8 @@
     if (!m) return null;
     if (m._eugenioRighello) return m._eugenioRighello;
     const box = m.getContainer(), canvas = () => m.getCanvas(), tela = () => m.getCanvasContainer();
-    const st = { attivo: false, punti: [], chiuso: false, cursore: null, trascina: -1, giu: null, giuDestro: null, finito: 0 };
+    const st = { attivo: false, punti: [], chiuso: false, cursore: null, preso: -1, originale: null, giu: null, giuDestro: null,
+      tocco: 0, toccoInizio: null, zoomDoppio: null };
 
     // ---------------------------------------------------------------- pulsante e aiuto
     const b = h("button", "bottone secondario righello");
@@ -80,7 +81,7 @@
     const titolo = "Righello: misura distanze e aree sulla mappa (clic per i punti, clic destro per azzerare)";
     b.title = titolo; b.setAttribute("aria-label", titolo); b.setAttribute("aria-pressed", "false");
     const aiuto = h("span", "aiuto-breve righello-aiuto",
-      "Clic: punto · clic sul primo punto: area · trascina un punto per spostarlo · clic destro: azzera · Esc: spegni. Passa sopra la misura per i valori.");
+      "Clic: punto · clic sul primo punto: area · clic su un punto per prenderlo, clic dove posarlo · clic destro: azzera · Esc: spegni. Passa sopra la misura per i valori.");
     aiuto.hidden = true;
     if (opz.dove) {
       const g = h("span", "righello-gruppo"); g.id = `righello-${box.id || "mappa"}`; g.append(b, aiuto);
@@ -115,7 +116,7 @@
         m.addLayer({ id: ID.anteprima, type: "line", source: "righello", filter: ["has", "anteprima"],
           paint: { "line-color": "#ffd23f", "line-width": 2.2, "line-dasharray": [2, 1.5] } });
         m.addLayer({ id: ID.punti, type: "circle", source: "righello-punti",
-          paint: { "circle-radius": ["case", ["get", "primo"], 6, 4.5], "circle-color": ["case", ["get", "primo"], "#ffd23f", "#ffffff"],
+          paint: { "circle-radius": ["case", ["get", "preso"], 8, ["get", "primo"], 6, 4.5], "circle-color": ["case", ["get", "preso"], "#ff7a1a", ["get", "primo"], "#ffd23f", "#ffffff"],
             "circle-stroke-color": "#1a1a1a", "circle-stroke-width": 1.6 } });
         return true;
       } catch { return false; }
@@ -134,11 +135,11 @@
       const P = st.punti, fs = [];
       if (st.chiuso && P.length > 2) fs.push({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[...P, P[0]]] } });
       else if (P.length > 1) fs.push({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: P } });
-      if (st.attivo && !st.chiuso && P.length && st.cursore && st.trascina < 0)
+      if (st.attivo && !st.chiuso && P.length && st.cursore && st.preso < 0)
         fs.push({ type: "Feature", properties: { anteprima: true }, geometry: { type: "LineString", coordinates: [P[P.length - 1], st.cursore] } });
       m.getSource("righello").setData({ type: "FeatureCollection", features: fs });
       m.getSource("righello-punti").setData({ type: "FeatureCollection", features: P.map((p, i) => ({ type: "Feature",
-        properties: { primo: i === 0 && !st.chiuso && P.length > 2 }, geometry: { type: "Point", coordinates: p } })) });
+        properties: { primo: i === 0 && !st.chiuso && P.length > 2, preso: i === st.preso }, geometry: { type: "Point", coordinates: p } })) });
     }
 
     // ---------------------------------------------------------------- testi
@@ -189,46 +190,62 @@
     }
     const ll = (px) => { const p = m.unproject(px); return [p.lng, p.lat]; };
 
+    // (19/11/2026, seconda richiesta di Paolo) un punto non si trascina più tenendo premuto: un clic (o un tocco) sul punto
+    // lo prende, il clic o il tocco successivo lo posa lì; col mouse, intanto, il punto segue il puntatore. Clic destro o
+    // Esc con un punto preso: annulla lo spostamento. Così funziona anche col dito.
     function giu(e) {
       if (!st.attivo || !sullaTela(e)) return;
       const px = pixel(e);
-      if (e.button === 2) { st.giuDestro = px; return; }
-      if (e.button !== 0) return;
-      st.giu = px;
+      if (e.button === 2) st.giuDestro = px; else if (e.button === 0) st.giu = px;
+    }
+    function azione(px) {
+      const P = st.punti;
+      if (st.preso >= 0) {                                               // posa il punto preso
+        P[st.preso] = ll(px); st.preso = -1; st.cursore = null; box.classList.remove("righello-preso");
+        disegna(); mostra(righe(false), px); annuncia(); return;
+      }
       const k = puntoVicino(px);
-      if (k < 0) return;                                  // fuori dai punti: la mappa si sposta come sempre
-      e.preventDefault(); e.stopPropagation();
-      st.trascina = k;
-      box.classList.add("righello-trascina");
-      let mosso = false;
-      const muovi = (ev) => {
-        const q = pixel(ev);
-        if (!mosso && Math.hypot(q[0] - px[0], q[1] - px[1]) <= MOSSO) return;      // ancora un clic, non un trascinamento
-        mosso = true; st.punti[st.trascina] = ll(q); disegna(); mostra(righe(false), q);
-      };
-      const su = () => {
-        window.removeEventListener("mousemove", muovi, true); window.removeEventListener("mouseup", su, true);
-        // un clic fermo su un punto resta un clic (sul primo punto chiude l'area): il click che segue non si scarta
-        if (mosso) st.finito = Date.now();
-        st.trascina = -1; box.classList.remove("righello-trascina"); disegna(); annuncia();
-      };
-      window.addEventListener("mousemove", muovi, true); window.addEventListener("mouseup", su, true);
+      if (!st.chiuso && P.length > 2 && k === 0) {                        // primo punto: chiude l'area
+        st.chiuso = true; st.cursore = null; disegna(); mostra(righe(false), px); annuncia(); return;
+      }
+      if (k >= 0) {                                                       // prende il punto
+        st.preso = k; st.originale = [...P[k]]; st.cursore = null; box.classList.add("righello-preso");
+        disegna(); mostra({ titolo: "Punto preso", righe: ["clic (o tocco) dove posarlo", "clic destro o Esc: annulla"] }, px);
+        stato.textContent = "Punto preso: fai clic dove posarlo."; return;
+      }
+      if (st.chiuso) { st.punti = []; st.chiuso = false; }               // area finita: il clic ne comincia un'altra
+      st.punti.push(ll(px));
+      st.cursore = st.punti[st.punti.length - 1];
+      disegna(); mostra(righe(true), px); annuncia();
+    }
+    function annullaPreso() {
+      if (st.preso < 0) return false;
+      st.punti[st.preso] = st.originale; st.preso = -1; box.classList.remove("righello-preso");
+      mostra(null); disegna(); annuncia(); return true;
     }
     function clic(e) {
       if (!st.attivo || !sullaTela(e)) return;
       e.stopPropagation(); e.preventDefault();
-      if (Date.now() - st.finito < 350) return;                         // fine del trascinamento di un punto
+      if (Date.now() - st.tocco < 600) return;                           // già fatto dal tocco
       const px = pixel(e);
       if (st.giu && Math.hypot(st.giu[0] - px[0], st.giu[1] - px[1]) > MOSSO) return;   // fine di uno spostamento della mappa
       st.giu = null;
-      if (st.chiuso) { st.punti = []; st.chiuso = false; }             // area finita: il clic ne comincia un'altra
-      if (st.punti.length > 2) {
-        const q = proietta(st.punti[0]);
-        if (Math.hypot(q[0] - px[0], q[1] - px[1]) <= VICINO) { st.chiuso = true; st.cursore = null; disegna(); mostra(righe(false), px); annuncia(); return; }
-      }
-      st.punti.push(ll(px));
-      st.cursore = st.punti[st.punti.length - 1];
-      disegna(); mostra(righe(true), px); annuncia();
+      azione(px);
+    }
+    // tocchi: un tocco breve e fermo con un dito vale un clic (senza aspettare il clic simulato dal browser); spostamenti,
+    // pizzichi e rotazioni della mappa restano a MapLibre
+    function toccoGiu(e) {
+      if (!st.attivo || !sullaTela(e)) return;
+      st.toccoInizio = e.touches.length === 1 ? { px: pixel(e.touches[0]), t: Date.now() } : null;
+    }
+    function toccoSu(e) {
+      const t0 = st.toccoInizio; st.toccoInizio = null;
+      if (!st.attivo || !t0 || e.touches.length || e.changedTouches.length !== 1) return;
+      const px = pixel(e.changedTouches[0]);
+      if (Date.now() - t0.t > 600 || Math.hypot(px[0] - t0.px[0], px[1] - t0.px[1]) > 2 * MOSSO) return;
+      e.preventDefault();                                                 // niente clic simulato verso la pagina
+      st.tocco = Date.now();
+      azione(px);
     }
     function destro(e) {
       if (!st.attivo || !sullaTela(e)) return;
@@ -237,13 +254,15 @@
       // dopo una rotazione col tasto destro (pagine 3D) i punti restano
       if (st.giuDestro && Math.hypot(st.giuDestro[0] - px[0], st.giuDestro[1] - px[1]) > MOSSO) { st.giuDestro = null; return; }
       st.giuDestro = null;
-      azzera();
+      if (!annullaPreso()) azzera();
     }
     function ferma(e) { if (st.attivo && sullaTela(e)) { e.stopPropagation(); e.preventDefault(); } }
     function muovi(e) {
-      if (st.trascina >= 0) return;
       if (!sullaTela(e)) { if (!st.attivo) mostra(null); return; }
       const px = pixel(e);
+      if (st.attivo && st.preso >= 0) {                                   // il punto preso segue il puntatore
+        st.punti[st.preso] = ll(px); disegna(); mostra(righe(false), px); return;
+      }
       box.classList.toggle("righello-su-punto", st.attivo && puntoVicino(px) >= 0);
       if (st.attivo && !st.chiuso && st.punti.length) {
         st.cursore = ll(px); disegna(); mostra(righe(true), px); return;
@@ -255,23 +274,29 @@
       if (!st.attivo || e.key !== "Escape") return;
       const t = e.target && e.target.tagName;
       if (/^(INPUT|SELECT|TEXTAREA)$/.test(t || "")) return;
-      spegni();
+      if (!annullaPreso()) spegni();
     }
     box.addEventListener("mousedown", giu, true);
     box.addEventListener("click", clic, true);
     box.addEventListener("contextmenu", destro, true);
     box.addEventListener("dblclick", ferma, true);
+    box.addEventListener("touchstart", toccoGiu, { capture: true, passive: true });
+    box.addEventListener("touchend", toccoSu, { capture: true, passive: false });
     box.addEventListener("mousemove", muovi);
     box.addEventListener("mouseleave", fuori);
     document.addEventListener("keydown", tasto);
 
-    function azzera() { st.punti = []; st.chiuso = false; st.cursore = null; mostra(null); disegna(); annuncia(); }
+    function azzera() { st.punti = []; st.chiuso = false; st.cursore = null; st.preso = -1; box.classList.remove("righello-preso"); mostra(null); disegna(); annuncia(); }
     function accendi() {
       st.attivo = true; b.setAttribute("aria-pressed", "true"); aiuto.hidden = false; box.classList.add("righello-attivo");
+      // due tocchi veloci (due punti) non devono ingrandire la mappa: zoom col doppio clic/tocco sospeso finché è acceso
+      st.zoomDoppio = m.doubleClickZoom.isEnabled(); m.doubleClickZoom.disable();
       disegna(); stato.textContent = "Righello acceso: clic sulla mappa per i punti.";
     }
     function spegni() {
       st.attivo = false; b.setAttribute("aria-pressed", "false"); aiuto.hidden = true;
+      if (st.zoomDoppio) m.doubleClickZoom.enable();
+      st.zoomDoppio = null;
       box.classList.remove("righello-attivo", "righello-su-punto");
       azzera(); stato.textContent = "Righello spento.";
     }

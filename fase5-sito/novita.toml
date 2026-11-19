@@ -25,12 +25,13 @@ data = "2026-11-19"
 versione = "20261119a"
 titolo = "Righello sulle mappe, 3D della vista e più edifici insieme, ortofoto nella rete elettrica"
 nuovo = [
-  "Righello sulle mappe con l'ortofoto (Territorio › Ortofoto, Edifici pubblici e Modelli 3D, la pagina per aggiungere gli edifici dal DB topografico, Fotovoltaico › Cabine primarie, Statistiche › Stato della rete elettrica): un piccolo pulsante sotto la mappa. Acceso, ogni clic mette un punto; clic sul primo punto chiude la forma e misura anche l'area; i punti si trascinano con il mouse; il clic destro li cancella. Passando sopra la misura compaiono lunghezza, perimetro e area.",
+  "Righello sulle mappe con l'ortofoto (Territorio › Ortofoto, Edifici pubblici e Modelli 3D, la pagina per aggiungere gli edifici dal DB topografico, Fotovoltaico › Cabine primarie, Statistiche › Stato della rete elettrica): un piccolo pulsante sotto la mappa. Acceso, ogni clic mette un punto; clic sul primo punto chiude la forma e misura anche l'area; un clic (o un tocco) su un punto lo prende e quello successivo lo posa, così funziona anche col dito; il clic destro li cancella. Passando sopra la misura compaiono lunghezza, perimetro e area.",
 ]
 migliorato = [
   "Territorio › Modelli 3D: «Genera il 3D» funziona anche senza scegliere un edificio e fa l'alzato della zona che si vede sullo schermo (da vicino). Poi un clic su un volume ne dà i dati.",
   "Territorio › Modelli 3D: con il tasto Maiuscolo premuto, un clic aggiunge un altro edificio alla scelta (o lo toglie), sulla mappa e nella vista 3D. Volume, superfici, rapporto S/V e gli altri valori diventano la somma degli edifici scelti.",
   "Statistiche › Stato della rete elettrica: sotto i comuni c'è l'ortofoto (da lontano la foto satellitare), con la sua casella per spegnerla; le cabine primarie sono punti più piccoli, grandi come quelli delle interruzioni.",
+  "Territorio › Modelli 3D: «Torna alla mappa 2D» lascia attivi gli edifici scelti, in evidenza: «Genera il 3D» li rigenera senza sceglierli di nuovo.",
   "Fotovoltaico › Cabine primarie: un clic sulla mappa che mette o sposta il punto, la ricerca o un clic su un punto mostrano da soli il confine dell'area convenzionale del GSE che lo contiene (bordo spesso) e quelli di tutte le aree confinanti (bordo sottile), senza premere «Aggiorna confini».",
 ]
 

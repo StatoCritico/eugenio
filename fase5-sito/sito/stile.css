@@ -1717,7 +1717,7 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .righello-aiuto { font-size: var(--c-xs); max-width: 40rem; }
 .righello-aiuto[hidden] { display: none; }
 .mappa.righello-attivo .maplibregl-canvas { cursor: crosshair !important; }
-.mappa.righello-attivo.righello-su-punto .maplibregl-canvas, .mappa.righello-trascina .maplibregl-canvas { cursor: move !important; }
+.mappa.righello-attivo.righello-su-punto .maplibregl-canvas, .mappa.righello-preso .maplibregl-canvas { cursor: move !important; }
 .etichetta-mappa.righello-etichetta { z-index: 3; }
 .mappa.righello-attivo .etichetta-mappa:not(.righello-etichetta) { display: none !important; }   /* riquadretti della pagina: non sopra la misura */
 .etichetta-mappa.righello-etichetta div { color: var(--inchiostro); }

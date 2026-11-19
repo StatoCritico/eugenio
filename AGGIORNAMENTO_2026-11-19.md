@@ -11,8 +11,17 @@ file statici del sito: nessuna immagine da ricostruire, nessun archivio, nessun 
 | Modelli 3D: **selezione multipla con Maiuscolo** e valori aggregati di volume e superficie | **Maiuscolo + clic** aggiunge o toglie un edificio, nella mappa 2D e nella vista 3D. Tabella dei corpi, superfici, volume lordo, superficie disperdente, S/V e gli altri indicatori sono calcolati sugli edifici scelti insieme (stesse funzioni di prima; le pareti in comune tra gli edifici scelti contano come «tra corpi»). Nella scheda «Edifici scelti insieme: N (valori sommati)». Maiuscolo + trascinamento non fa più lo zoom a riquadro, in questa pagina. |
 | Rete elettrica: **ortofoto sotto**, accendibile e spegnibile | Casella **«Ortofoto»** tra gli strati (accesa): da lontano il contesto satellitare Sentinel-2, da vicino (zoom 10 e oltre) la fonte migliore della zona (AGEA 2022-2024 o la regionale), scelta da sola come in Cabine primarie. Citazione sotto la mappa e nell'immagine scaricata. Per vedere bene la foto conviene spegnere «Criticità dei comuni». |
 | Rete elettrica: cabine **più piccole**, come i pallini blu delle interruzioni | Stesso raggio delle interruzioni (4 px a zoom 5, 6 a zoom 10, 8 a zoom 14; prima 4,5–12). Solo in questa pagina: in Cabine primarie restano come prima. |
-| **Righello** in tutte le pagine con l'ortofoto | Pulsante piccolo col righello sotto la mappa, accanto ai livelli: Modelli 3D e le pagine 3D (nella riga di «Genera il 3D»), Ortofoto, Edifici pubblici, Aggiungi edifici (sotto la mappa), Cabine primarie (accanto alle caselle della mappa di dettaglio), Stato della rete elettrica (accanto alle caselle). Clic sinistro = punto; clic sul primo punto = forma chiusa con l'area; i punti si trascinano; clic destro = azzera; Esc = spento. Passando sopra la misura: lunghezza, oppure area e perimetro. Con il righello acceso i clic non scelgono edifici o comuni. |
+| **Righello** in tutte le pagine con l'ortofoto | Pulsante piccolo col righello sotto la mappa, accanto ai livelli: Modelli 3D e le pagine 3D (nella riga di «Genera il 3D»), Ortofoto, Edifici pubblici, Aggiungi edifici (sotto la mappa), Cabine primarie (accanto alle caselle della mappa di dettaglio), Stato della rete elettrica (accanto alle caselle). Clic sinistro = punto; clic sul primo punto = forma chiusa con l'area; un clic (o un tocco) su un punto lo prende e quello successivo lo posa, anche col dito; clic destro = azzera (o annulla lo spostamento); Esc = spento. Passando sopra la misura: lunghezza, oppure area e perimetro. Con il righello acceso i clic non scelgono edifici o comuni. |
 | Cabine primarie: **confini richiesti al clic** sulla mappa, con le **aree confinanti** | Un clic sulla mappa di dettaglio che mette o sposta il punto, la ricerca, il trascinamento o il clic su un punto (mappa o elenco) chiedono da soli al GSE il perimetro dell'area che contiene il punto (bordo spesso) e quelli di tutte le aree che la toccano (bordo sottile). Il pulsante «Aggiorna confini» resta per le cabine spuntate. Non per i punti caricati da un elenco, finché non se ne sceglie uno. |
+
+## Seconda richiesta di Paolo (19/11/2026, 11:03)
+
+- **«Torna alla mappa 2D» lascia la scelta attiva**: gli edifici generati restano in evidenza e in `daGenerare`; «Genera il
+  3D» li rigenera, Maiuscolo + clic ne aggiunge o ne toglie, un clic su un altro edificio cambia la scelta. (Prima il
+  pulsante passava l'evento a `esci3d`, che lo prendeva per «azzera».)
+- **Righello**: un punto non si trascina più tenendo premuto. Un clic o un tocco sul punto lo prende (arancione, più
+  grande; col mouse segue il puntatore), il clic o tocco successivo lo posa; clic destro o Esc annullano lo spostamento. I
+  tocchi brevi col dito valgono come clic; mentre il righello è acceso il doppio clic/tocco non ingrandisce la mappa.
 
 ## Note sulle regole già decise
 
@@ -56,12 +65,14 @@ Cosa aspettarsi: `Aggiornamento da v2026.11.18 a v2026.11.19`, `Release v2026.11
    foto satellitare; avvicinandoti (zoom 10 e oltre) la foto aerea, con la citazione sotto la mappa. Togli la spunta
    «Ortofoto»: la foto sparisce.
 2. Sulla stessa pagina premi il righello accanto alle caselle, fai tre clic sulla mappa e poi clic sul primo punto: compare
-   l'area gialla; passa sopra col mouse: area e perimetro. Trascina un punto; clic destro: tutto azzerato. Esc: righello
+   l'area gialla; passa sopra col mouse: area e perimetro. Clic su un punto: diventa arancione e segue il mouse; clic dove
+   posarlo. Prova lo stesso col dito dal telefono. Clic destro: tutto azzerato. Esc: righello
    spento (il clic su un comune torna ad aprirlo).
 3. https://eugenio.statocritico.it/modelli3d.html: senza scegliere edifici, avvicinati (zoom 15 o più) e premi «Genera il 3D»:
    il 3D della zona. Clic su un edificio: i suoi dati a destra. Maiuscolo + clic su un altro: la tabella dei
    corpi li ha tutti e due, volume e superfici sono sommati. Maiuscolo + clic di nuovo sul secondo: torna al primo da solo.
-4. Torna alla mappa 2D, clic su un edificio, Maiuscolo + clic su un altro, «Genera il 3D»: tutti e due in arancio.
+4. «Torna alla mappa 2D»: gli edifici scelti restano in evidenza. Clic su un altro edificio, Maiuscolo + clic su un terzo,
+   «Genera il 3D»: tutti e due in arancio.
 5. https://eugenio.statocritico.it/fv-cabine.html: avvicinati sulla mappa di dettaglio e fai clic: compare il punto e, dopo
    qualche secondo, il confine dell'area del GSE (bordo spesso) con le aree confinanti (bordo sottile), anche nella mappa in
    alto. Se il GSE non risponde lo dice il messaggio sopra l'elenco delle cabine.
