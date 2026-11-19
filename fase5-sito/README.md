@@ -105,10 +105,41 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Cabine primarie con una sola mappa (19/11/2026 sera, `?v=20261119d`, richiesta di Paolo)
+
+Segnalazione: «la pagina cabine primarie non funziona». La colonna di sinistra era alta quanto la finestra (`.mappa-area`
+sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i comandi sotto (righello compreso) fuori vista.
+- **Una sola mappa** (`#mappa-dettaglio`, con l'ortofoto): tolte la mappa grande di regioni e comuni (`#mappa-cabine`), le
+  sue caselle degli strati, la sua immagine e il titolo «Dettaglio». In questa pagina la colonna di sinistra è alta quanto
+  il contenuto (`.pagina-cabine .mappa-area { position: static; height: auto }`), mappa a `min(72vh, 720px)`.
+- **Righello** in un posto suo sotto la mappa (`#posto-righello`), creato subito al caricamento della mappa (prima arrivava
+  solo dopo confini e strati, anche 8 s).
+- **Sotto la mappa a sinistra** i comandi dei punti (`#comandi-punti`): «Sposta» / «Scegli punti» (`#modo-sposta`,
+  `#modo-scegli`, `aria-pressed`, `st.modo`), «Cancella tutti» (`#svuota-punti`: punti, confini e aree aggiunte) e il colore.
+  Con «Sposta» il mouse trascina la mappa e il clic non mette punti (sceglie un punto o spunta una cabina dei punti); con
+  «Scegli punti» ogni clic segna un punto nuovo, **a qualsiasi zoom** (tolto il limite dello zoom 13), cursore a croce
+  (`.modo-scegli`). Tolto «Nuovo punto al centro del dettaglio».
+- **Cabine di tutta Italia** sull'ortofoto: `/api/rete/cabine` (una richiesta, ~2.000 punti) nello strato `fv-tutte-punti`,
+  colorate con la saturazione e grandi come nella rete (`RAGGIO_CABINE`); le cabine dei punti hanno un anello
+  (`fv-cabine-punti`, spesso se spuntate). La tabella nazionale serve anche alle cabine dei punti (niente più richieste per
+  regione).
+- **Confini per ogni punto** (anche quelli dell'elenco): area del punto e confinanti come prima (`R.gse.areeVicine`, poi
+  `R.gse.aree` con `where=COD_AC IN (…)`), ma **sommati** fra i punti: poligoni in memoria per `COD_AC` (`st.poligoni`),
+  codici delle vicine chiesti una volta per area (`st.vicine`), «Aggiorna confini» aggiunge (`st.extra`); `ricomponiAree()`
+  rifà lo strato (aree dei punti col bordo spesso). Al massimo 600 aree a video. Togliendo un punto spariscono le sue aree.
+- **Area sotto il mouse** retinata di azzurro chiaro trasparente: sorgente `fv-aree` con `promoteId: "COD_AC"`,
+  `feature-state` `sopra` (`st.sopra`).
+- Niente più caselle degli strati: le aree del GSE si vedono quando ci sono (con l'attribuzione), sempre spente nelle
+  immagini scaricate. La minimappa dell'Italia accanto al titolo porta la mappa sulla regione.
+- Prove: `tests/test_prove_1911_browser.py::test_cabine_confini_automatici_al_clic_prova` (niente mappa in alto, comandi
+  sotto la mappa, «Sposta» senza punti, «Scegli punti» a zoom 20,5, aree sommate, evidenza sotto il mouse, «Cancella
+  tutti»), `tests/test_rete_browser.py` (confini anche per i punti dell'elenco). Provata anche con l'API e il GSE veri: la
+  domanda `POST` delle confinanti al GSE funziona (8 aree a Cesena).
+
 ## Righello, 3D della vista e più edifici, ortofoto nella rete, confini automatici delle cabine (19/11/2026, `?v=20261119a`, richiesta di Paolo)
 
 - **Righello** (`sito/righello.js`, nuovo, in tutte le pagine con l'ortofoto: Modelli 3D e le pagine 3D, Ortofoto, Edifici
-  pubblici, Aggiungi edifici, Cabine primarie – mappa di dettaglio –, Stato della rete elettrica). `EUGENIO_RIGHELLO.aggiungi(mappa,
+  pubblici, Aggiungi edifici, Cabine primarie, Stato della rete elettrica). `EUGENIO_RIGHELLO.aggiungi(mappa,
   { dove })` mette un piccolo pulsante (icona del righello, `aria-pressed`) nell'elemento indicato – riga dei comandi sotto la
   mappa in Modelli 3D, caselle dei livelli in Cabine primarie e nella rete – o in una riga subito sotto la mappa (dopo la
   maniglia dell'altezza). Acceso: clic sinistro = punto; clic sul primo punto (con almeno 3 punti) = forma chiusa con l'area;
@@ -190,18 +221,18 @@ collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre
   della criticità, voce di legenda) e la nota «servito in parte da un altro distributore» (`nota_servito_in_parte` di
   `/api/rete/stato`) nel riquadretto, nella scheda del comune e nei file (colonna «Servito in parte da un altro
   distributore»). Nei dati di prova un comune ogni 41 circa.
-- **Fotovoltaico › Cabine primarie** (`fv-cabine.html`, `fv_cabine.js`): mappa di regioni e comuni (clic su un comune =
-  la mappa di dettaglio va lì) e, sotto, mappa di dettaglio con ortofoto (fonte automatica nel punto o scelta dal menu,
-  contesto Sentinel-2), particelle ed edifici (`strati_gl.js`), frecce dell'ortofoto (`sposta_ortofoto.js`) e il punto
-  scelto da trascinare (clic da zoom 13 = lo sposta lì; senza punti lo crea). A destra ricerca (`cerca_luogo.js`), elenco
-  nel formato di Patrimonio (max 200 righe; con `lat`/`lon` restano nel browser, le altre a `POST /api/patrimonio` a
-  blocchi di 40), punti con colore dal menu come quello degli edifici di Modelli 3D (`localStorage`
-  `eugenio-colore-punti-cabine`). Per ogni punto: area GSE (`COD_AC`, richiesta dal browser senza geometria, al massimo 4
-  insieme) → cabina da `/api/rete/cabine?regione=RR` (ripiego su tutte le cabine), più le cabine e-distribuzione del comune.
-  «Aggiorna confini» (cabine spuntate, max 100): poligoni dal GSE con `where=COD_AC IN (…)`, `maxAllowableOffset=0.0002`,
-  solo a video con l'attribuzione del GSE, spenti nelle immagini scaricate (`opz.dopo` di `esporta_mappa.js` li
-  riaccende). «Scarica i confini delle aree (GSE, CC BY-NC-SA)»: GeoJSON del contratto fatto nel browser. Dati CSV,
-  Excel, PDF con i soli codici. `?lat=…&lon=…` aggiunge un punto all'apertura.
+- **Fotovoltaico › Cabine primarie** (`fv-cabine.html`, `fv_cabine.js`): dal 19/11/2026 sera **una sola mappa** con
+  ortofoto (fonte automatica nel punto o scelta dal menu, contesto Sentinel-2), particelle ed edifici (`strati_gl.js`),
+  frecce dell'ortofoto (`sposta_ortofoto.js`), righello, cabine di tutta Italia colorate con la saturazione e i punti; sotto,
+  a sinistra, «Sposta» / «Scegli punti», «Cancella tutti» e il colore (sezione sopra). Il punto scelto si trascina. A destra
+  ricerca (`cerca_luogo.js`), elenco nel formato di Patrimonio (max 200 righe; con `lat`/`lon` restano nel browser, le
+  altre a `POST /api/patrimonio` a blocchi di 40), punti con colore dal menu come quello degli edifici di Modelli 3D
+  (`localStorage` `eugenio-colore-punti-cabine`). Per ogni punto: area GSE (`COD_AC`, richiesta dal browser senza
+  geometria, al massimo 4 insieme) → cabina da `/api/rete/cabine`, più le cabine e-distribuzione del comune, e i confini
+  dell'area e delle confinanti (sommati fra i punti). «Aggiorna confini» (cabine spuntate, max 100): poligoni dal GSE con
+  `where=COD_AC IN (…)`, `maxAllowableOffset=0.0002`, solo a video con l'attribuzione del GSE, spenti nelle immagini
+  scaricate (`opz.dopo` di `esporta_mappa.js` li riaccende). «Scarica i confini delle aree (GSE, CC BY-NC-SA)»: GeoJSON del
+  contratto fatto nel browser. Dati CSV, Excel, PDF con i soli codici. `?lat=…&lon=…` aggiunge un punto all'apertura.
 - **Servizio del GSE**: indirizzo solo in `rete.js` (`GSE.SERVIZIO`, test); CORS aperto (`Access-Control-Allow-Origin: *`).
   Il Caddyfile non ha `connect-src` (CSP solo `frame-ancestors`): nessuna modifica necessaria.
 - **Modo di prova** `?prova=1`: dati sintetici generati in `rete.js` dai confini ISTAT del sito (cabine ogni 7 comuni,

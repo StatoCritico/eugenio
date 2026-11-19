@@ -11,20 +11,20 @@ try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
 var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|aria|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261119c";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261119c"></script>
-<link rel="stylesheet" href="stile.css?v=20261119c">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261119c">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261119c">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261119d";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261119d"></script>
+<link rel="stylesheet" href="stile.css?v=20261119d">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261119d">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261119d">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
-<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261119c">
+<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261119d">
 </head>
 <body>
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261119c" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261119d" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -32,7 +32,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261119c">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261119d">Novità</a>
       <a href="esempi.html">Esempi</a>
       <a href="contributi.html">Contributi</a>
       <a href="contatti.html">Contattaci</a>
@@ -63,7 +63,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li><li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale</span></a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261119c">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261119d">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -173,29 +173,27 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <p class="sotto">A quale cabina primaria è collegato un edificio? Per le comunità energetiche e l'autoconsumo diffuso
       conta l'area convenzionale della cabina. Cerca un indirizzo o una particella, oppure carica l'elenco delle tue sedi: per
       ogni punto compaiono da sole le cabine interessate, con la loro saturazione.</p>
-    <div class="mappa mappa-gl mappa-cabine" id="mappa-cabine" role="region" aria-label="Mappa di regioni e comuni con le cabine primarie"></div>
-    <div class="caselle-strati strati-rete" id="strati-cabine" role="group" aria-label="Strati della mappa">
-      <label class="casella-strato"><input id="strato-fv-cabine" type="checkbox" checked> Cabine primarie</label>
-      <label class="casella-strato"><input id="strato-fv-punti" type="checkbox" checked> Punti</label>
-      <label class="casella-strato"><input id="strato-fv-aree" type="checkbox" checked disabled> Aree convenzionali (GSE)</label>
+    <div class="mappa mappa-gl mappa-dettaglio" id="mappa-dettaglio" role="region" aria-label="Mappa con ortofoto, cabine primarie, punti e aree convenzionali del GSE"></div>
+    <div class="riga-campi comandi-punti" id="comandi-punti">
+      <div class="modo-mappa" role="group" aria-label="Uso del mouse sulla mappa">
+        <button class="bottone secondario" id="modo-sposta" type="button" aria-pressed="true" title="Il mouse trascina la mappa">Sposta</button>
+        <button class="bottone secondario" id="modo-scegli" type="button" aria-pressed="false" title="Ogni clic sulla mappa segna un punto e cerca la sua cabina primaria">Scegli punti</button>
+      </div>
+      <button class="bottone secondario" id="svuota-punti" type="button" disabled>Cancella tutti</button>
     </div>
-    <div class="legenda legenda-rete" id="legenda-cabine" aria-live="polite"></div>
-    <p class="aiuto attribuzione-gse" id="attribuzione-gse" hidden></p>
-    <p class="aiuto">Mappa in alto: trascina per spostare, rotella o due dita per ingrandire; un clic su una regione la sceglie,
-      da vicino un clic su un comune lo evidenzia e porta lì la mappa di dettaglio; un clic su un punto lo sceglie.</p>
-    <div id="scarica-cabine"></div>
-    <div class="messaggio" id="messaggio-immagine" role="status" aria-live="polite"></div>
-
-    <h2 class="titolo-dettaglio">Dettaglio</h2>
-    <div class="mappa mappa-gl mappa-dettaglio" id="mappa-dettaglio" role="region" aria-label="Mappa di dettaglio con ortofoto, particelle ed edifici"></div>
     <div class="comandi-ortofoto comandi-dettaglio">
       <label>Ortofoto <select id="fonte-dettaglio"><option value="">nessuna ortofoto</option></select></label>
       <div class="caselle-strati" id="caselle-strati"></div>
+      <div id="posto-righello"></div>
       <div id="sposta-ortofoto"></div>
     </div>
-    <p class="aiuto">Mappa di dettaglio: il punto scelto (bordo bianco più grande) si trascina per correggerlo; da vicino un clic
-      sulla mappa lo sposta lì. Senza punti, il clic ne crea uno. Particelle catastali e contorni degli edifici si accendono da
-      vicino (zoom 16 e oltre).</p>
+    <div class="legenda legenda-rete" id="legenda-cabine" aria-live="polite"></div>
+    <p class="aiuto">Con <b>Sposta</b> il mouse trascina la mappa; con <b>Scegli punti</b> ogni clic segna un punto, a qualsiasi
+      ingrandimento, e cerca la sua cabina primaria con i confini dell'area del GSE e delle aree confinanti. Un clic su un punto
+      lo sceglie; il punto scelto (bordo bianco) si trascina per correggerlo. Passando col mouse dentro un'area la si vede
+      evidenziata. Le cabine primarie di tutta Italia hanno il colore della saturazione, come nello Stato della rete elettrica.
+      Particelle catastali e contorni degli edifici si accendono da vicino (zoom 16 e oltre).</p>
+    <p class="aiuto attribuzione-gse" id="attribuzione-gse" hidden></p>
     <p class="attribuzione-ortofoto" id="attribuzione-ortofoto" aria-live="polite"></p>
     <div class="legenda-strati" id="legenda-strati" aria-live="polite" hidden></div>
     <div id="scarica-dettaglio"></div>
@@ -210,7 +208,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         Mappa interattiva delle cabine primarie</a> (© GSE S.p.A., CC BY-NC-SA 3.0 IT), lette dal tuo browser dal servizio
         del GSE: non passano dal server di EuGEnio e non vengono salvate. Ricerca: ANNCSU – Agenzia delle Entrate e ISTAT
         (CC BY 4.0) e <a href="https://zornade.com">dati elaborati da Zornade</a>. Ortofoto: licenza e citazione sotto la
-        mappa di dettaglio, secondo la fonte scelta. Particelle: <a
+        mappa, secondo la fonte scelta. Particelle: <a
         href="https://www.agenziaentrate.gov.it/portale/schede/fabbricatiterreni/consultazione-cartografia-catastale/servizio-consultazione-cartografia">Agenzia
         delle Entrate – Cartografia catastale</a> (CC BY 4.0); contorni degli edifici: DBTR Emilia-Romagna (CC BY 4.0) e, fuori
         dall'Emilia-Romagna, © contributori OpenStreetMap (ODbL 1.0). Confini: <a href="https://www.istat.it/">ISTAT</a>,
@@ -220,7 +218,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         (POD), non l'indirizzo: la verifica ufficiale è la ricerca per POD sul sito del GSE.</p>
       </div>
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261119c" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261119d" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL con <a href="licenza.html#attribuzione">termini aggiuntivi</a>, dati <a href="licenza.html#dati">CC BY 4.0</a>). <span class="piede-attribuzione">EuGEnio © 2026 Paolo Bianco – Stato Critico – <a href="https://eugenio.statocritico.it">https://eugenio.statocritico.it</a></span></p>
   <!-- /piede -->
     </footer>
@@ -241,7 +239,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <div class="passo" id="passo-cerca">
       <h2><span class="n">1</span>Cerca un luogo</h2>
       <p class="aiuto">Con l'indirizzo, con foglio e particella o solo con il comune: il punto trovato si aggiunge all'elenco
-        qui sotto e si può trascinare nella mappa di dettaglio.</p>
+        qui sotto e si può trascinare nella mappa.</p>
       <div id="cerca-luogo"></div>
     </div>
 
@@ -263,12 +261,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 
     <div class="passo" id="passo-punti">
       <h2><span class="n">3</span>Punti</h2>
-      <p class="aiuto">Un clic su un punto lo sceglie: diventa quello spostabile della mappa di dettaglio. Il colore vale per il
-        punto scelto e per i prossimi.</p>
-      <div class="riga-campi comandi-punti" id="comandi-punti">
-        <button class="bottone secondario" id="nuovo-punto" type="button">Nuovo punto al centro del dettaglio</button>
-        <button class="bottone secondario" id="svuota-punti" type="button" disabled>Togli tutti i punti</button>
-      </div>
+      <p class="aiuto">I punti trovati con la ricerca, caricati dall'elenco o segnati sulla mappa con «Scegli punti». Un clic su
+        un punto lo sceglie e porta lì la mappa. Il colore (sotto la mappa) vale per il punto scelto e per i prossimi; «Cancella
+        tutti» toglie i punti e spegne i confini.</p>
       <div class="messaggio" id="messaggio-punti" role="status" aria-live="polite"></div>
       <ol class="elenco-punti" id="elenco-punti"></ol>
     </div>
@@ -304,21 +299,21 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   </section>
 </main>
 
-<script src="aspetto.js?v=20261119c"></script>
-<script src="grafici.js?v=20261119c"></script>
-<script src="divisore.js?v=20261119c"></script>
-<script src="report.js?v=20261119c"></script>
-<script src="tabelle.js?v=20261119c"></script>
-<script src="lib/maplibre-gl/maplibre-gl.js?v=20261119c"></script>
-<script src="lib/pmtiles/pmtiles.js?v=20261119c"></script>
-<script src="minimappa.js?v=20261119c"></script>
-<script src="confini_gl.js?v=20261119c"></script>
-<script src="esporta_mappa.js?v=20261119c"></script>
-<script src="cerca_luogo.js?v=20261119c"></script>
-<script src="strati_gl.js?v=20261119c"></script>
-<script src="sposta_ortofoto.js?v=20261119c"></script>
-<script src="righello.js?v=20261119c"></script>
-<script src="rete.js?v=20261119c"></script>
-<script src="fv_cabine.js?v=20261119c"></script>
+<script src="aspetto.js?v=20261119d"></script>
+<script src="grafici.js?v=20261119d"></script>
+<script src="divisore.js?v=20261119d"></script>
+<script src="report.js?v=20261119d"></script>
+<script src="tabelle.js?v=20261119d"></script>
+<script src="lib/maplibre-gl/maplibre-gl.js?v=20261119d"></script>
+<script src="lib/pmtiles/pmtiles.js?v=20261119d"></script>
+<script src="minimappa.js?v=20261119d"></script>
+<script src="confini_gl.js?v=20261119d"></script>
+<script src="esporta_mappa.js?v=20261119d"></script>
+<script src="cerca_luogo.js?v=20261119d"></script>
+<script src="strati_gl.js?v=20261119d"></script>
+<script src="sposta_ortofoto.js?v=20261119d"></script>
+<script src="righello.js?v=20261119d"></script>
+<script src="rete.js?v=20261119d"></script>
+<script src="fv_cabine.js?v=20261119d"></script>
 </body>
 </html>

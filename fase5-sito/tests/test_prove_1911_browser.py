@@ -167,26 +167,62 @@ def test_righello_in_tutte_le_pagine_con_ortofoto(browser, base, pagina_html, se
 
 # ---------------------------------------------------------------------------------------------- cabine primarie
 def test_cabine_confini_automatici_al_clic_prova(browser, base):
+    """19/11/2026 sera: una sola mappa con l'ortofoto; «Sposta» non mette punti, «Scegli punti» sì a qualsiasi zoom; i confini
+    dei punti si sommano; l'area sotto il mouse si evidenzia; «Cancella tutti» toglie punti e confini."""
     ctx, pg = _pagina_rete(browser)
     pg.goto(base + "fv-cabine.html?prova=1&regione=08")
     webgl(pg)
     S = "window.EUGENIO_CABINE.st"
     attendi(pg, f"{S}.det && {S}.det.isStyleLoaded() && {S}.det.getZoom() > 13", 25000)
+    assert pg.locator("#mappa-cabine").count() == 0 and pg.locator("#strato-fv-aree").count() == 0 and pg.locator("#nuovo-punto").count() == 0
+    assert pg.locator("#svuota-punti").inner_text().strip() == "Cancella tutti"
+    # comandi dei punti sotto la mappa, a sinistra
+    sotto = pg.evaluate("""(() => { const m = document.getElementById('mappa-dettaglio').getBoundingClientRect(),
+        c = document.getElementById('comandi-punti').getBoundingClientRect(); return c.top >= m.bottom - 1 && c.left < m.left + 40; })()""")
+    assert sotto
+    # cabine di tutta la tabella (qui: la regione sintetica) sullo strato colorato
+    attendi(pg, f"{S}.det.getLayer('fv-tutte-punti') && {S}.det.getSource('fv-tutte')", 10000)
+    pg.evaluate("window.scrollTo(0, document.getElementById('mappa-dettaglio').getBoundingClientRect().top + scrollY - 80)")
     pg.wait_for_timeout(500)
     x, y, w, h = _tela(pg, "#mappa-dettaglio")
-    pg.mouse.click(x + w / 2, y + h / 2)                      # clic sulla mappa: punto nuovo
+    pg.mouse.click(x + w / 2, y + h / 2)                      # «Sposta»: il clic non mette punti
+    pg.wait_for_timeout(400)
+    assert pg.evaluate(f"{S}.punti.length") == 0
+    pg.click("#modo-scegli")
+    assert pg.get_attribute("#modo-scegli", "aria-pressed") == "true" and "modo-scegli" in pg.get_attribute("#mappa-dettaglio", "class")
+    pg.evaluate(f"{S}.det.jumpTo({{ zoom: 20.5 }})")          # anche molto vicino
+    pg.wait_for_timeout(300)
+    pg.mouse.click(x + w / 2, y + h / 2)
     attendi(pg, f"{S}.punti.length === 1 && {S}.aree && {S}.aree.centrale", 20000)
     a = pg.evaluate(f"(() => {{ const a = {S}.aree; return {{ n: a.features.length, centrali: a.features.filter((f) => f.properties._centrale).map((f) => f.properties.COD_AC),"
                     f" area: {S}.punti[0].area.COD_AC, punto: a.punto }}; }})()")
     assert a["n"] >= 3 and a["centrali"] == [a["area"]] and a["punto"] == pg.evaluate(f"{S}.punti[0].k"), a
-    assert pg.is_checked("#strato-fv-aree") and pg.locator("#attribuzione-gse").is_visible()
+    assert pg.locator("#attribuzione-gse").is_visible()
     assert "confinant" in pg.text_content("#messaggio-cabine") and "bordo spesso" in pg.text_content("#legenda-cabine")
-    # bordo spesso per l'area del punto
-    assert "_centrale" in json.dumps(pg.evaluate(f"{S}.top.getPaintProperty('fv-aree-linea', 'line-width')"))
+    assert "_centrale" in json.dumps(pg.evaluate(f"{S}.det.getPaintProperty('fv-aree-linea', 'line-width')"))
+    # area sotto il mouse: stato «sopra» sull'area del GSE
+    # (nei dati di prova l'area è disegnata attorno alla cabina: il mouse va al centro dell'area del punto)
+    c = pg.evaluate(f"""(() => {{ const f = {S}.aree.features.find((x) => x.properties._centrale), r = f.geometry.coordinates[0];
+        const lo = r.reduce((s, p) => s + p[0], 0) / r.length, la = r.reduce((s, p) => s + p[1], 0) / r.length;
+        {S}.det.jumpTo({{ center: [lo, la], zoom: 11 }}); return [lo, la]; }})()""")
+    pg.wait_for_timeout(600)
+    pg.mouse.move(x + w / 2 + 3, y + h / 2 + 3)
+    pg.mouse.move(x + w / 2 + 6, y + h / 2 + 6)
+    attendi(pg, f"{S}.sopra !== null", 5000)
+    assert "feature-state" in json.dumps(pg.evaluate(f"{S}.det.getPaintProperty('fv-aree-fondo', 'fill-opacity')"))
+    # un secondo punto: i confini si sommano
+    n1 = pg.evaluate(f"{S}.aree.features.length")
+    pg.mouse.click(x + w / 2 + 160, y + h / 2 - 120)
+    attendi(pg, f"{S}.punti.length === 2 && {S}.punti[1].area !== undefined && {S}.aree.punto === {S}.punti[1].k", 20000)
+    assert pg.evaluate(f"{S}.aree.features.length") >= n1
     # l'immagine li spegne (stessa regola di «Aggiorna confini»)
     pg.evaluate(f"window._o = window.EUGENIO_CABINE.opzioniImmagine({S}.det, 'dettaglio')")
     assert pg.evaluate(f"{S}.det.getLayoutProperty('fv-aree-linea', 'visibility')") == "none"
     pg.evaluate("window._o.dopo()")
+    # «Cancella tutti»: niente punti né confini
+    pg.click("#svuota-punti")
+    assert pg.evaluate(f"[{S}.punti.length, {S}.aree, {S}.det.getLayoutProperty('fv-aree-linea', 'visibility')]") == [0, None, "none"]
+    assert pg.locator("#attribuzione-gse").is_hidden()
     assert not pg.errori, pg.errori
     ctx.close()
 
