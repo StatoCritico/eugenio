@@ -1686,9 +1686,20 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .criticita-comune { display: flex; align-items: center; gap: .5rem; font-weight: 600; margin: 0; }
 .grafico-rete { margin-top: var(--s3); position: relative; }
 .ultime-interruzioni { margin-top: var(--s3); }
-.mappa-gl.mappa-cabine { height: min(48vh, 460px); min-height: 280px; }
-.mappa-gl.mappa-dettaglio { height: min(58vh, 560px); min-height: 300px; }
-.titolo-dettaglio { font: 700 var(--c-l)/1.25 var(--titoli); margin: var(--s5) 0 var(--s2); }
+.mappa-gl.mappa-dettaglio { height: min(72vh, 720px); min-height: 340px; }
+/* Cabine primarie, una sola mappa (19/11/2026 sera): «Sposta» / «Scegli punti» sotto la mappa a sinistra */
+/* colonna di sinistra alta quanto il contenuto: con la colonna fissa alta quanto la finestra la mappa si schiacciava e i
+   comandi sotto restavano nascosti (segnalazione di Paolo, «la pagina non funziona») */
+.pagina-cabine .mappa-area { position: static; height: auto; }
+.pagina-cabine .mappa-area .mappa-dettaglio { flex: none; }
+.pagina-cabine .comandi-punti { justify-content: flex-start; margin-top: var(--s2); }
+.modo-mappa { display: inline-flex; }
+.modo-mappa .bottone { border-radius: 0; }
+.modo-mappa .bottone:first-child { border-radius: var(--raggio, 6px) 0 0 var(--raggio, 6px); }
+.modo-mappa .bottone:last-child { border-radius: 0 var(--raggio, 6px) var(--raggio, 6px) 0; margin-left: -1px; }
+.modo-mappa .bottone[aria-pressed="true"] { background: var(--primario); border-color: var(--primario); color: var(--su-primario, #fff); }
+.mappa.modo-scegli .maplibregl-canvas { cursor: crosshair; }
+.campione-rete.anello { width: 13px; height: 13px; border-radius: 50%; background: transparent; border: 2px solid var(--primario); }
 .comandi-dettaglio { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); margin-top: var(--s2); }
 .comandi-dettaglio select { width: auto; max-width: 22rem; }
 .comandi-dettaglio > .caselle-strati { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); }

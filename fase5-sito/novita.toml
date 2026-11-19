@@ -22,6 +22,15 @@
 
 [[voce]]
 data = "2026-11-19"
+versione = "20261119d"
+titolo = "Cabine primarie: una sola mappa con la foto aerea"
+migliorato = [
+  "Fotovoltaico › Cabine primarie: resta una sola mappa, quella con la foto aerea, più grande, con il righello. Sopra la foto si vedono le cabine primarie di tutta Italia, colorate con la saturazione come nello Stato della rete elettrica.",
+  "Fotovoltaico › Cabine primarie: sotto la mappa il pulsante «Sposta» / «Scegli punti». Con «Scegli punti» ogni clic segna un punto, a qualsiasi ingrandimento, e cerca la sua cabina primaria con i confini della sua area e di quelle vicine; i confini dei vari punti restano insieme sulla mappa. Passando col mouse dentro un'area, l'area si colora di azzurro chiaro. «Cancella tutti» toglie i punti e i confini.",
+]
+
+[[voce]]
+data = "2026-11-19"
 versione = "20261119c"
 titolo = "Niente più scacchiere al posto della foto aerea"
 migliorato = [

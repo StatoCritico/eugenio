@@ -224,17 +224,17 @@ def test_cabine_primarie_con_api_e_gse_simulati(base, browser, tmp_path):
     # (19/11/2026) i confini dell'area del punto arrivano da soli (test_prove_1911_browser.py); poi «Aggiorna confini»
     _aspetta(pg, "() => window.EUGENIO_CABINE.st.aree && window.EUGENIO_CABINE.st.aree.centrale === 'AC001E00776'")
     pg.evaluate("window.EUGENIO_CABINE.st.aree = null")
-    # «Aggiorna confini»: solo le aree spuntate, con where=COD_AC IN (…), semplificate
+    # «Aggiorna confini»: solo le aree spuntate non ancora lette (quella del punto c'è già: 19/11 sera, i confini si sommano),
+    # con where=COD_AC IN (…), semplificate
     pg.click("#aggiorna-confini")
     _aspetta(pg, "() => window.EUGENIO_CABINE.st.aree")
     w = chiamate[-1]
-    assert w["where"] == "COD_AC IN ('AC001E00776','AC001E00777')" and w["maxAllowableOffset"] == "0.0002" and w["returnGeometry"] == "true"
+    assert w["where"] == "COD_AC IN ('AC001E00777')" and w["maxAllowableOffset"] == "0.0002" and w["returnGeometry"] == "true"
     assert pg.locator("#attribuzione-gse").is_visible() and "CC BY-NC-SA 3.0 IT" in pg.locator("#attribuzione-gse").inner_text()
-    assert not pg.locator("#strato-fv-aree").is_disabled()
     # immagine: strato GSE spento durante la copia, riacceso dopo
-    vis = "window.EUGENIO_CABINE.st.top.getLayoutProperty('fv-aree-linea', 'visibility')"
+    vis = "window.EUGENIO_CABINE.st.det.getLayoutProperty('fv-aree-linea', 'visibility')"
     assert pg.evaluate(vis) == "visible"
-    pg.evaluate("window._o = window.EUGENIO_CABINE.opzioniImmagine(window.EUGENIO_CABINE.st.top, 'panoramica')")
+    pg.evaluate("window._o = window.EUGENIO_CABINE.opzioniImmagine(window.EUGENIO_CABINE.st.det, 'dettaglio')")
     assert pg.evaluate(vis) == "none" and "OpenStreetMap" in pg.evaluate("window._o.righe.join(' ')")
     pg.evaluate("window._o.dopo()")
     assert pg.evaluate(vis) == "visible"
@@ -278,6 +278,8 @@ def test_cabine_primarie_elenco_e_colore(base, browser, tmp_path):
     _aspetta(pg, "() => window.EUGENIO_CABINE.st.punti.length === 2 && window.EUGENIO_CABINE.st.cabine.length > 0")
     assert not patrimonio and "2 punti aggiunti su 2 righe" in pg.locator("#messaggio-elenco").inner_text()
     assert "A1 · Ospedale" in pg.locator("#elenco-punti").inner_text()
+    # (19/11/2026 sera) confini automatici anche per i punti dell'elenco
+    _aspetta(pg, "() => window.EUGENIO_CABINE.st.aree && window.EUGENIO_CABINE.st.aree.centrali.length >= 1")
     # colore del punto scelto dal menu come in Modelli 3D
     pg.locator("#elenco-punti li").nth(1).click()
     pg.click("#colore-punti .vestito-pulsante")
