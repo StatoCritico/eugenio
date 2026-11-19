@@ -9,13 +9,18 @@
 # su Rimini, 04/11/2026; AccessConstraints «Nessuno», Fees «Nessuna condizione applicata»). La licenza dell'immagine
 # resta ambigua: **solo dal vivo, senza copia** (cache = false) e senza figure nei report. L'https rimanda all'http.
 # (17/11/2026) Lento e spesso in errore (502, «non risponde o è occupata» nelle prove di Paolo): resta acceso solo come
-# ripiego scelto a mano, dietro le ortofoto AGEA 2022-2024 qui sotto, che coprono tutta Italia a 20 cm.
+# ripiego scelto a mano, dietro le ortofoto AGEA 2022-2024 qui sotto, che coprono tutta Italia (volo a 20 cm).
 #
 # Ortofoto AGEA 2022-2024 RGB del Geoportale AGEA (17/11/2026): servizi ArcGIS ImageServer
 # AgEA/Ortofoto_AgEA_<anno> con le tessere già pronte (singleFusedMapCache, capabilities «Image,Metadata,Catalog,TileMap»,
 # EPSG:3857, origine web mercator standard, righe 256, formato MIXED: JPEG dove l'anno ha volato, PNG trasparente di
-# 876 byte dove no), pixel 0,20 m. Tessere già pronte fino allo zoom 18 (dal 19 il servizio dà 404): allo zoom 19 il
-# proxy chiede exportImage sul riquadro della tessera. Prove dal container il 17/11/2026: ~0,5–0,7 s a tessera.
+# 876 byte dove no), pixel 0,20 m. Tessere già pronte fino allo zoom 18 (dal 19 il servizio dà 404). Prove dal container
+# il 17/11/2026: ~0,5–0,7 s a tessera.
+# (19/11/2026, segnalazione di Paolo: scacchiere al posto della foto nella vista 3D) **exportImage non dà la foto**: in
+# tutta Italia e per tutti e tre gli anni risponde 200 con una scacchiera bianca e nera (JPEG di ~11 kB; servizio con
+# maxScale 2256,99 = zoom 18, minPixelSize 0,597 m). Le tessere dello zoom 19 venivano da lì, finivano in copia e la
+# vista 3D, che vicino alla camera usa lo zoom 19, mostrava le scacchiere. Ora la fonte arriva allo zoom 18: oltre la
+# mappa ingrandisce le tessere del 18 (~0,43 m a terra a 44° N); il proxy scarta comunque le scacchiere.
 # Ogni anno AGEA vola circa un terzo d'Italia, per regioni intere (catalogo dei servizi, campo «regione»):
 #   2024 Piemonte, Valle d'Aosta, Lombardia, Veneto, Molise, Calabria;
 #   2023 Trentino-Alto Adige, Friuli-Venezia Giulia, Emilia-Romagna, Umbria, Lazio, Campania, Basilicata;
@@ -49,11 +54,11 @@ priorita = 9
 
 [[fonte]]
 id = "agea"
-nome = "AGEA – ortofoto RGB 2022-2024 (20 cm, anno più recente)"
+nome = "AGEA – ortofoto RGB 2022-2024 (anno più recente)"
 tipo = "arcgis"
 url = "https://geoportale.agea.gov.it/image/rest/services/AgEA/Ortofoto_AgEA_{anno}/ImageServer"
 anni = [2024, 2023, 2022]          # dal più recente: per ogni tessera il primo che copre, i precedenti nei buchi
-zoom_tessere = 18                  # tessere già pronte fino al 18; al 19 exportImage
+zoom_tessere = 18                  # tessere già pronte fino al 18 (exportImage dà scacchiere: mai, 19/11/2026)
 formato = "image/jpeg"             # JPEG le tessere piene, PNG trasparente dove nessun anno copre (stesso file .jpg)
 licenza = "CC BY 4.0"
 citazione = "AGEA – Agenzia per le Erogazioni in Agricoltura, ortofoto RGB {anni} (CC BY 4.0)"
@@ -62,7 +67,7 @@ stato = "confermata"               # CC BY 4.0 nelle note legali del geoportale,
 attiva = true
 cache = true
 nei_report = true
-zoom = [10, 19]                    # 20 cm a terra = zoom 19 (0,21 m/pixel a 44° N); oltre la mappa ingrandisce il 19
+zoom = [10, 18]                    # (19/11/2026) solo le tessere già pronte; oltre la mappa ingrandisce il 18
 riquadro = [6.6, 35.4, 18.6, 47.1]
 ritmo = { al_secondo = 10, all_ora = 8000 }  # cortese: ogni tessera nuova = 1 chiamata (fino a 3 sui confini), poi copia
 priorita = 2                       # dopo le regionali più recenti o uguali (RER 2023-24, Toscana 2023, Bolzano 2023)
