@@ -26,6 +26,7 @@ PROVE = Path("/home/claude/wt_collegamento_prove")      # screenshot, solo se la
 # dal file. Le pagine che non sono qui non hanno il collegamento (testo, segnaposto, moduli, solo file).
 PAGINE = {
     "legge10.html": "a", "dati.html": "a", "indicatori.html": "a", "elettricita.html": "a",
+    "rete-elettrica.html": "a",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -277,3 +278,32 @@ def test_elettricita(browser, base, dati_el):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "elettricita", dati_el)
+
+
+# ---------------------------------------------------------------------------------------------- Stato della rete elettrica
+SENZA_ARCGIS = [("https://services-eu1.arcgis.com/**", lambda r: r.abort())]
+
+
+def test_rete_elettrica(browser, base):
+    pronta = "() => window.EUGENIO_RETE_PAGINA && window.EUGENIO_RETE_PAGINA.st.pronto"
+    ctx, pg, errori = _apri(browser, base + "rete-elettrica.html?prova=1&regione=08", rotte=SENZA_ARCGIS)
+    pg.wait_for_function(pronta, timeout=20000)
+    istat = pg.evaluate("window.EUGENIO_RETE_PAGINA.st.righe.find((r) => r.concessionario && r.pieno).istat")
+    pg.evaluate(f"window.EUGENIO_RETE_PAGINA.apriComune('{istat}')")
+    pg.uncheck("#strato-cabine")
+    pg.uncheck("#strato-ortofoto")
+    link = _collegamento(pg)
+    for parte in ("prova=1", "regione=08", f"comune={istat}", "cabine=0", "ortofoto=0", "criticita=1"):
+        assert parte in link, parte
+    _foto(pg, "rete_elettrica_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=SENZA_ARCGIS)
+    pg.wait_for_function(pronta, timeout=20000)
+    assert pg.evaluate("window.EUGENIO_RETE_PAGINA.st.scelto") == istat
+    assert not pg.is_checked("#strato-cabine") and not pg.is_checked("#strato-ortofoto") and pg.is_checked("#strato-criticita")
+    assert pg.evaluate("window.EUGENIO_RETE_PAGINA.st.mappa.getLayoutProperty('rete-cabine-punti', 'visibility')") == "none"
+    pg.wait_for_timeout(800)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "rete_elettrica", SENZA_ARCGIS)
