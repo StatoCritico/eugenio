@@ -101,7 +101,8 @@
       ["CO₂ evitata (+) o aggiunta (−)", `${fmt(r.evitata_t, 1)} t (${fmt(r.evitata_pct, 1)} %)`],
       ["Fattore della rete di pareggio", r.soglia_rete_g_kwh !== null ? `${fmt(r.soglia_rete_g_kwh, 0)} g/kWh: con una rete più pulita il cogeneratore emette di più` : "—"]]
       .forEach(([k, v]) => { const tr = b.insertRow(); tr.appendChild(h("th", null, k)); tr.appendChild(h("td", "num", v)); });
-    box.appendChild(t);
+    // (20/11/2026) dentro .tabella-scorre: sul telefono la tabella scorre da sola e la pagina non si allarga
+    const scorre = h("div", "tabella-scorre"); scorre.appendChild(t); box.appendChild(scorre);
     // sensibilità: tutti i fattori della rete dell'anno scelto
     const ts = h("table", "mensili"), r1 = ts.createTHead().insertRow();
     ["Fattore della rete (ISPRA, " + f.anno + ")", "g CO₂/kWh", "CO₂ evitata (t)", "%"].forEach((x) => r1.appendChild(h("th", null, x)));
@@ -139,6 +140,15 @@
     { area: [sx, 20, W - 10, H - 20], guida: false });
   }
   $("calcola-emissioni").addEventListener("click", esegui);
+  // collegamento a questa simulazione (20/11/2026): i campi sono controlli data-collegamento (modo, elettrica, calore, gas,
+  // unita_gas, potenza, ore, eta_e, eta_t, anno, rete, eta_caldaia); calcolato=1 se il risultato era in vista, così
+  // riaprendo il collegamento il calcolo si rifà da solo
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    chiavi: ["calcolato"],
+    pronto: () => !!stato.dati,
+    leggi: () => ({ calcolato: $("passo-risultati").hidden ? null : "1" }),
+    applica: (p) => { if (p.get("calcolato") === "1") esegui(); },
+  });
   $("scarica-emissioni").addEventListener("click", () => {
     if (!stato.ultimo) return;
     const { d, f, r, eta, scelto } = stato.ultimo, q = (x) => (x === null || x === undefined ? "" : String(x).replace(".", ","));

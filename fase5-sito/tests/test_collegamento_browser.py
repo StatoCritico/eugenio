@@ -30,6 +30,7 @@ PAGINE = {
     "rete-elettrica.html": "a", "ortofoto.html": "a",
     "edifici-pubblici.html": "a",
     "aria-trasformazioni.html": "a", "aria-ore.html": "a", "aria-latenti.html": "a", "aria-freecooling.html": "a",
+    "cog-emissioni.html": "a", "edificio-clima.html": "a",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -494,3 +495,70 @@ def test_aria_trasformazioni(browser, base):
         assert st["generali"]["quotaEsterna"] == 40 and st["generali"]["riferimento"] == 2
         assert pg.input_value("#aria-trasformazioni-riferimento") == "2"
     _aria(browser, base, "aria-trasformazioni", cambia, controlla, ("uta=",))
+
+
+# ---------------------------------------------------------------------------------------------- Cogenerazione › Emissioni
+def test_cog_emissioni(browser, base):
+    ctx, pg, errori = _apri(browser, base + "cog-emissioni.html")
+    pg.wait_for_selector("#anno-fattori option", state="attached")
+    pg.check("input[name='modo-cog'][value='taglia']")
+    pg.fill("#potenza", "350")
+    pg.fill("#ore", "4200")
+    anno = pg.eval_on_selector("#anno-fattori", "s => s.options[s.options.length - 1].value")
+    pg.select_option("#anno-fattori", anno)
+    pg.select_option("#fattore-rete", "termoelettrica_lorda")
+    pg.fill("#eta-caldaia", "85")
+    pg.click("#calcola-emissioni")
+    risultato = pg.inner_text("#messaggio-emissioni")
+    link = _collegamento(pg)
+    for parte in ("modo=taglia", "potenza=350", "ore=4200", f"anno={anno}", "rete=termoelettrica_lorda", "eta_caldaia=85", "calcolato=1"):
+        assert parte in link, parte
+    _foto(pg, "cog_emissioni_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link)
+    assert pg.is_checked("input[name='modo-cog'][value='taglia']") and pg.is_visible("#campi-taglia")
+    assert pg.input_value("#potenza") == "350" and pg.input_value("#ore") == "4200" and pg.input_value("#anno-fattori") == anno
+    assert pg.input_value("#fattore-rete") == "termoelettrica_lorda" and pg.input_value("#eta-caldaia") == "85"
+    assert pg.is_visible("#passo-risultati") and pg.inner_text("#messaggio-emissioni") == risultato
+    pg.wait_for_timeout(800)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "cog_emissioni")
+
+
+# ---------------------------------------------------------------------------------------------- Cambiamento climatico
+def _clima(route):
+    url = route.request.url
+    if "dati/clima/regioni.json" in url:
+        return route.fulfill(json={"037006": "08"})
+    if "dati/clima/08/037006.json" in url:
+        return route.fulfill(json={"nome": "Bologna", "stagioni": {"da": 1940, "gg_zona": [3000 - 8 * k for k in range(86)]}})
+    return route.fallback()
+
+
+def test_edificio_clima(browser, base):
+    rotte = [("**/dati/clima/**", _clima)]
+    ctx, pg, errori = _apri(browser, base + "edificio-clima.html", rotte=rotte)
+    pg.fill("#clima-comune", "037006")
+    pg.click("#clima-carica")
+    pg.wait_for_function("document.getElementById('messaggio-clima').textContent.includes('stagioni dal')")
+    pg.select_option("#clima-dal", "n20")
+    pg.fill("#firma-base", "300")
+    pg.dispatch_event("#firma-base", "change")
+    pg.wait_for_function("document.getElementById('messaggio-clima').textContent.includes('20 stagioni')")
+    testo = pg.inner_text("#messaggio-clima")
+    link = _collegamento(pg)
+    for parte in ("istat=037006", "dal=n20", "base=300"):
+        assert parte in link, parte
+    _foto(pg, "edificio_clima_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=rotte)
+    pg.wait_for_function("document.getElementById('messaggio-clima').textContent.includes('20 stagioni')")
+    assert pg.input_value("#clima-dal") == "n20" and pg.input_value("#firma-base") == "300"
+    assert pg.inner_text("#messaggio-clima") == testo
+    pg.wait_for_timeout(800)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "edificio_clima", rotte)

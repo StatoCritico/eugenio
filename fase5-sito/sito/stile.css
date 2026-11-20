@@ -1784,3 +1784,6 @@ table.sedi-cer .origine-cabina { font-style: italic; }
 .collegamento-esito:empty { min-height: 0; flex-basis: 0; }
 .collegamento-simulazione .collegamento-aiuto { margin: var(--s1) 0 0; }
 .collegamento-simulazione .collegamento-avviso { color: var(--inchiostro); border-left: 3px solid var(--attenzione); padding-left: var(--s2); }
+/* Emissioni della cogenerazione e Cambiamento climatico: le tabelle dei risultati scorrono da sole sul telefono, la pagina
+   non si allarga (20/11/2026, trovato con le prove del collegamento a 375 px) */
+#sensibilita, #risultati-clima { overflow-x: auto; max-width: 100%; }

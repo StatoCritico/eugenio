@@ -133,6 +133,10 @@
       return c ? String(c.istat).padStart(6, "0") : null;
     }
     async function carica() {
+      st.caricando = true;
+      try { await caricaComune(); } finally { st.caricando = false; }
+    }
+    async function caricaComune() {
       const istat = await istatDa($("clima-comune").value);
       if (!istat) return msg("messaggio-clima", "Comune non trovato: scrivi il nome come nell'elenco o il codice ISTAT di 6 cifre.", true);
       msg("messaggio-clima", "Carico il clima dal 1940 del comune…");
@@ -141,8 +145,9 @@
         const rr = reg[istat] || reg[String(+istat)];
         if (!rr) throw new Error("comune senza dati del clima dal 1940");
         st.dati = await (await fetch(`dati/clima/${rr}/${istat}.json${V}`)).json();
+        st.istat = istat;
       } catch (e) {
-        st.dati = null;
+        st.dati = null; st.istat = null;
         return msg("messaggio-clima", `Il clima dal 1940 di questo comune non è disponibile qui (${e.message || e}): sul server vero i file stanno in dati/clima/.`, true);
       }
       calcola();
@@ -200,7 +205,11 @@
     $("clima-carica").addEventListener("click", carica);
     ["clima-dal", "firma-base", "firma-pendenza"].forEach((id) => $(id).addEventListener("change", calcola));
     const q = new URLSearchParams(location.search).get("istat");
-    if (q) { $("clima-comune").value = q; carica(); }
+    if (q) { $("clima-comune").value = q; st.caricando = true; carica(); }
+    // collegamento a questa simulazione (20/11/2026): comune caricato (?istat=, lo legge già la pagina) e, con
+    // data-collegamento, periodo della tendenza e firma energetica (dal, base, pendenza)
+    if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({ chiavi: ["istat"],
+      pronto: () => !st.caricando, leggi: () => (st.caricando ? null : { istat: st.istat || null }) });
     $("clima-comune").addEventListener("focus", comuni, { once: true });
   }
 
