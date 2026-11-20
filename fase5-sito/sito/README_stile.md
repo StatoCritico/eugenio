@@ -118,6 +118,11 @@ G.registra(document.getElementById("grafico-consumi"), (dest, misure) => disegna
   cerchi sulle curve) ed `elementi` (le barre da evidenziare). Si chiama alla fine del disegno.
 - I colori calcolati (non `var(--…)`) vanno rifatti all'evento `eugenio:aspetto`, come già scritto sopra: il riquadro
   aperto ridisegna comunque il suo grafico a ogni cambio di tema o di vestito.
+- **Grafici con molti punti e zoom nella pagina** (20/11/2026, Carichi elettrici, `carichi.js`): con decine di
+  migliaia di valori il grafico non si ingrandisce col viewBox ma si ridisegna con i dati della vista (percorsi
+  aggregati per pixel). L'SVG ha la classe `zoom-proprio` (cursore a mano, `touch-action: pan-y`) e
+  `svg.__zoomProprio = { zoom(fattore, clientX), vistaIniziale() }`: nel riquadro `grafici.js` non tocca rotella,
+  trascinamento e doppio clic (li gestisce l'SVG) e manda `+ − 0` e «Vista iniziale» a queste due funzioni.
 
 ## Mappe (regole dal 29/10/2026)
 
