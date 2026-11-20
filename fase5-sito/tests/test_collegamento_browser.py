@@ -29,6 +29,7 @@ PAGINE = {
     "legge10.html": "a", "dati.html": "a", "indicatori.html": "a", "elettricita.html": "a",
     "rete-elettrica.html": "a", "ortofoto.html": "a",
     "edifici-pubblici.html": "a",
+    "aria-trasformazioni.html": "a", "aria-ore.html": "a", "aria-latenti.html": "a", "aria-freecooling.html": "a",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -389,3 +390,107 @@ def test_edifici_pubblici(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "edifici_pubblici")
+
+
+# ---------------------------------------------------------------------------------------------- Trattamento aria (?prova=1)
+ARIA_PRONTA = "() => window.EUGENIO_ARIA_PAGINA && window.EUGENIO_ARIA_PAGINA.scelta.serie()"
+
+
+def _aria_comuni(pg):
+    """Comune diverso da quello di partenza, anni, livello invernale e diagramma di Mollier (moduli comuni)."""
+    pg.wait_for_function(ARIA_PRONTA, timeout=30000)
+    pg.select_option("#aria-comune", "037032")                                    # Imola
+    pg.eval_on_selector("#aria-anni", "r => { r.value = 1; r.dispatchEvent(new Event('change', {bubbles: true})); }")
+    pg.select_option("select[id$='-inverno']", "95")
+    pg.click(".aria-vista button[data-modo='mollier']")
+    pg.wait_for_function(ARIA_PRONTA, timeout=30000)
+
+
+def _aria_controlla_comuni(pg):
+    pg.wait_for_function(ARIA_PRONTA, timeout=30000)
+    st = pg.evaluate("() => window.EUGENIO_ARIA_PAGINA.scelta.stato()")
+    assert st["istat"] == "037032" and st["anni"] == 2
+    assert pg.evaluate("() => window.EUGENIO_ARIA_PAGINA.livello.valori().inverno") == 95
+    assert pg.evaluate("() => window.EUGENIO_ARIA_PAGINA.diagramma.modo()") == "mollier"
+
+
+def _aria(browser, base, pagina, cambia, controlla, parti):
+    ctx, pg, errori = _apri(browser, base + f"{pagina}.html?prova=1")
+    _aria_comuni(pg)
+    cambia(pg)
+    pg.wait_for_timeout(300)
+    link = _collegamento(pg)
+    for parte in ("prova=1", "comune=037032", "anni=2", "inverno=95", "diagramma=mollier", *parti):
+        assert parte in link, parte
+    _foto(pg, f"{pagina.replace('-', '_')}_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link)              # contesto nuovo: niente memoria del browser
+    _aria_controlla_comuni(pg)
+    controlla(pg)
+    pg.wait_for_timeout(800)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, pagina.replace("-", "_"))
+    return link
+
+
+def test_aria_ore(browser, base):
+    def cambia(pg):
+        pg.click("#aria-gruppi .aria-gruppo >> nth=0 >> button[data-preset='ufficio']")
+        pg.click(".aria-ore-modo button[data-nuvola='densita']")
+        pg.select_option("#ore-raggio", "1.6")
+        pg.fill("#ore-zona-tMin", "19")
+
+    def controlla(pg):
+        g = pg.evaluate("() => window.EUGENIO_ARIA_PAGINA.gruppi.gruppi().map((g) => [g.nome, g.oraDa, g.oraA, g.giorni])")
+        assert g[0][1:] == [8, 18, "feriali"]
+        st = pg.evaluate("() => { const s = window.EUGENIO_ARIA_PAGINA.stato; return [s.modo, s.raggio, s.zona.tMin]; }")
+        assert st == ["densita", 1.6, 19]
+        assert pg.input_value("#ore-raggio") == "1.6" and pg.input_value("#ore-zona-tMin") == "19"
+    _aria(browser, base, "aria-ore", cambia, controlla, ("gruppi=", "nuvola=densita", "raggio=1.6", "comfort=19"))
+
+
+def test_aria_latenti(browser, base):
+    def cambia(pg):
+        pg.evaluate("() => window.EUGENIO_ARIA_PAGINA.obiettivo('estate', 25, 55)")
+        pg.fill("#lat-portata", "2500")
+        pg.dispatch_event("#lat-portata", "input")
+        pg.select_option("#lat-riferimento", "2")
+        pg.click("#aria-gruppi-inverno button[data-preset='ufficio']")
+
+    def controlla(pg):
+        assert pg.input_value("#lat-portata").replace(".", "") == "2500" and pg.input_value("#lat-riferimento") == "2"
+        g = pg.evaluate("() => window.EUGENIO_ARIA_PAGINA.gruppi.inverno.gruppi()[0]")
+        assert [g["oraDa"], g["oraA"], g["giorni"]] == [8, 18, "feriali"]
+    link = _aria(browser, base, "aria-latenti", cambia, controlla, ("portata=2500", "riferimento=2", "gruppi-inverno=", "obiettivo_estate=25*55"))
+    assert "gruppi-estate=" in link
+
+
+def test_aria_freecooling(browser, base):
+    def cambia(pg):
+        pg.fill("#fc-V", "12000")
+        pg.dispatch_event("#fc-V", "input")
+        pg.select_option("#fc-tipoRec", "entalpico")
+        pg.fill("#fc-epsL", "0,55")
+        pg.dispatch_event("#fc-epsL", "input")
+        pg.select_option("#fc-economizzatore", "temperatura")
+
+    def controlla(pg):
+        assert pg.input_value("#fc-V") == "12000" and pg.input_value("#fc-tipoRec") == "entalpico"
+        assert pg.input_value("#fc-epsL") == "0,55" and pg.input_value("#fc-economizzatore") == "temperatura"
+    _aria(browser, base, "aria-freecooling", cambia, controlla, ("V=12000", "tipoRec=entalpico", "epsL=0%2C55", "economizzatore=temperatura"))
+
+
+def test_aria_trasformazioni(browser, base):
+    def cambia(pg):
+        pg.fill("#aria-trasformazioni-quota-esterna", "40")
+        pg.dispatch_event("#aria-trasformazioni-quota-esterna", "input")
+        pg.dispatch_event("#aria-trasformazioni-quota-esterna", "change")
+        pg.select_option("#aria-trasformazioni-riferimento", "2")
+
+    def controlla(pg):
+        st = pg.evaluate("() => window.EUGENIO_ARIA_PAGINA.stato()")
+        assert st["generali"]["quotaEsterna"] == 40 and st["generali"]["riferimento"] == 2
+        assert pg.input_value("#aria-trasformazioni-riferimento") == "2"
+    _aria(browser, base, "aria-trasformazioni", cambia, controlla, ("uta=",))

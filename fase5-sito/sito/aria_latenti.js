@@ -153,6 +153,23 @@
   }
   if (Number.isFinite(mem.V) && mem.V > 0) st.V = mem.V;
   if ([0, 1, 2, 3].includes(mem.rif)) st.rif = mem.rif;
+  // (20/11/2026) collegamento a questa simulazione: obiettivi (T*UR per stagione), portata e riferimento dall'indirizzo,
+  // più forti della memoria del browser; comune, anni, livello, gruppi e diagramma li leggono i moduli comuni
+  {
+    const q = new URLSearchParams(location.search);
+    for (const s of ["estate", "inverno"]) {
+      const [t, ur] = (q.get(s === "estate" ? "obiettivo_estate" : "obiettivo_inverno") || "").split("*").map((x) => Number(x.replace(",", ".")));
+      if (Number.isFinite(t) && t >= LIMITI.t[0] && t <= LIMITI.t[1]) st[s].t = t;
+      if (Number.isFinite(ur) && ur >= LIMITI.ur[0] && ur <= LIMITI.ur[1]) st[s].ur = ur;
+    }
+    if (Number(q.get("portata")) > 0) st.V = Number(q.get("portata"));
+    if (["0", "1", "2", "3"].includes(q.get("riferimento"))) st.rif = Number(q.get("riferimento"));
+  }
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    chiavi: ["obiettivo_estate", "obiettivo_inverno", "portata", "riferimento"],
+    leggi: () => ({ obiettivo_estate: `${st.estate.t}*${st.estate.ur}`, obiettivo_inverno: `${st.inverno.t}*${st.inverno.ur}`,
+      portata: st.V, riferimento: st.rif }),
+  });
   function salva() {
     try { localStorage.setItem(CHIAVE, JSON.stringify({ estate: { t: st.estate.t, ur: st.estate.ur }, inverno: { t: st.inverno.t, ur: st.inverno.ur }, V: st.V, rif: st.rif })); } catch (e) { /* niente */ }
   }
