@@ -38,6 +38,15 @@ DATASET = {
     # richiesta per regione (dal 2005)
     "ConsumptionBySource": "Anno",         # copertura della domanda per fonte
     "ElectricityByType": "Anno",           # rinnovabili, tradizionali, saldo import/export
+    # (20/11/2026, richiesta di Paolo) calore della cogenerazione, produzione termoelettrica per tecnologia, autoconsumo
+    "ThermalHeat": "Anno",                 # calore prodotto dagli impianti cogenerativi [GWh], per tipo di impianto
+    "ProductionThermal": "Anno",           # produzione termoelettrica per categoria (cogenerativa o no) e sottocategoria
+    "GrossVsCO2Emissions": "Anno",         # produzione lorda ed emissioni di CO2 per combustibile e regione
+    "Market": "Consumo (GWh)",             # consumi per mercato: autoconsumo, mercato libero, mercato tutelato
+    # consumi per attività economica (Ateco) e classe, per regione e provincia
+    "IndustrialSector": "Consumo (GWh)",
+    "ServiceSector": "Consumo (GWh)",
+    "Total": "Consumo (GWh)",
 }
 
 
