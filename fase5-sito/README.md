@@ -107,7 +107,25 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
-## Comunità energetiche: aree convenzionali del GSE dal vivo (20/11/2026, versione da fissare alla riunione dei rami)
+## Comunità energetiche con la struttura delle altre pagine (20/11/2026, 08:49, `?v=20261120c`, richiesta di Paolo)
+
+Segnalazione: «la pagina si è scombinata» (era un articolo a colonna unica con la mappa in mezzo). Ora segue le regole
+generali delle pagine con mappa (come Cabine primarie, Ortofoto, Modelli 3D):
+
+- `main.strumento.pagina-cer` con **due metà e barre di scorrimento distinte**: a sinistra (`.mappa-area`, colonna `sticky`
+  che scorre da sola, barra a sinistra) titolo, minimappa, **mappa con l'ortofoto** (`.mappa-dettaglio`, `min(72vh, 720px)`)
+  e i **comandi**: «Sposta» / «Aggiungi sedi» (ogni clic aggiunge una sede), «Togli tutte le sedi», menu dell'ortofoto
+  (fonte scelta da sola nel punto, contesto Sentinel-2, anni AGEA nella citazione), **caselle dei livelli** (aree
+  convenzionali del GSE, particelle catastali, contorni degli edifici: `strati_gl.js`), **righello** (`righello.js`),
+  frecce per spostare l'ortofoto (`sposta_ortofoto.js`), legenda, attribuzioni, immagine e fonti nel piè della colonna;
+  a destra (`.pannello`) avviso sperimentale, **istruzioni ed esiti**: ricerca (indirizzo, foglio e particella, comune:
+  `cerca_luogo.js`), sede con le coordinate, elenco, tabella delle sedi con cabina e menu del comune, dati orari, energia
+  condivisa, scarica, come si calcola, stesso gruppo.
+- Il modo di prova (`?prova=1`) mette il suo avviso nel pannello (prima in testa a `main`, che spostava le colonne).
+- Prove: `test_cer_browser.py` (la mappa si porta in vista prima del clic: la colonna di sinistra scorre da sola; niente
+  scorrimento orizzontale a 375 px).
+
+## Comunità energetiche: aree convenzionali del GSE dal vivo (20/11/2026, `?v=20261120b`)
 
 Pagina `edificio-cer.html` (resta **in lavorazione** nel menu), nuovo `cer_sedi.js`; riferimento tecnico
 `documenti/CABINE_PRIMARIE_GSE_SERVIZIO_2026-11-17.md` (punti A-D). Principio: il browser chiede al GSE solo ciò che serve,

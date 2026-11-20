@@ -22,6 +22,14 @@
 
 [[voce]]
 data = "2026-11-20"
+versione = "20261120c"
+titolo = "Comunità energetiche: mappa con ortofoto, livelli e righello"
+migliorato = [
+  "Fotovoltaico › Comunità energetiche (ancora in anteprima): la pagina ha la struttura delle altre, con la mappa e i comandi a sinistra (ortofoto, particelle catastali, contorni degli edifici, aree convenzionali del GSE, righello, «Aggiungi sedi» con un clic) e istruzioni, ricerca ed esiti a destra, ognuna con la sua barra di scorrimento.",
+]
+
+[[voce]]
+data = "2026-11-20"
 versione = "20261120b"
 titolo = "LiDAR: collegamento alla nuova app del Ministero"
 migliorato = [

@@ -19,6 +19,8 @@
 //    consegna e collegamento alla mappa del GSE, attribuzione fissa sotto la mappa quando è acceso.
 //  - Immagini (esporta_mappa.js): strato GSE spento durante la copia (punto C). File CSV, Excel, ODS, PDF (rete.js,
 //    pulsantiDati): solo il codice della cabina con la nota R.GSE.NOTA_FILE, mai i perimetri.
+//  (20/11/2026, 08:49, Paolo) struttura delle altre pagine: mappa con ortofoto, livelli, righello e comandi a sinistra;
+//    istruzioni, ricerca, sedi ed esiti a destra; «Aggiungi sedi» sotto la mappa aggiunge una sede a ogni clic.
 //  Nessuna richiesta al GSE senza un'azione dell'utente: solo per le sedi che aggiunge e con lo strato acceso.
 //  ?prova=1: dati sintetici di rete.js (nessuna richiesta al server né al GSE).
 (function () {
@@ -32,8 +34,10 @@
   function h(tag, cls, t) { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined && t !== null) e.textContent = t; return e; }
   function messaggio(id, t, errore = false) { const m = $(id); if (!m) return; m.textContent = t; m.classList.toggle("errore", errore); }
   const chiave = (nome) => String(nome || "").trim().toLowerCase();
-  const st = { sedi: [], seq: 0, mappa: null, comuni: new Map(), acceso: false, attesa: 0, giro: 0, aree: null, etichette: [], popup: null };
-  R.avvisoProva(document.querySelector("main.articolo"));
+  const st = { sedi: [], seq: 0, mappa: null, comuni: new Map(), acceso: false, attesa: 0, giro: 0, aree: null, etichette: [], popup: null,
+    modo: "sposta", fonti: [], fonte: null, contesto: null, manuale: false, strati: null, righello: null, sposta: null, citazioneOrto: "" };
+  const E = window.EUGENIO, CONTESTO = "s2cloudless2016";
+  R.avvisoProva(document.querySelector("main .pannello") || document.querySelector("main"));
 
   // ================================================================== coda delle richieste al GSE (4 alla volta)
   const coda = []; let inCorso = 0;
@@ -241,6 +245,19 @@
     $("sede-nome").value = ""; $("sede-lat").value = ""; $("sede-lon").value = "";
     inquadra();
   });
+  // ricerca (indirizzo, foglio e particella o comune: cerca_luogo.js, come Cabine primarie): il luogo trovato diventa una sede
+  if (window.EUGENIO_CERCA && $("cerca-luogo")) {
+    window.EUGENIO_CERCA.crea($("cerca-luogo"), {
+      suTrovato: (lon, lat, riga) => {
+        const nome = riga.centro_comune ? `Centro di ${riga.comune_catasto || "comune"}` : (riga.indirizzo_trovato || (riga.mappale ? `Foglio ${riga.foglio_catasto} part. ${riga.mappale}` : "Sede cercata"));
+        const s = aggiungi({ nome, lat, lon });
+        if (!s) return;
+        tabella(); disegnaSedi(); cambiate();
+        messaggio("messaggio-sedi", `«${s.nome}» aggiunta: chiedo al GSE la sua area convenzionale.`);
+        if (st.mappa) st.mappa.flyTo({ center: [lon, lat], zoom: riga.zoom || window.EUGENIO_CERCA.ZOOM || 17, duration: 900 });
+      },
+    });
+  }
   $("sedi-svuota").addEventListener("click", () => { st.sedi = []; tabella(); disegnaSedi(); disegnaCabine(); avanzamento(); cambiate(); messaggio("messaggio-sedi", "Sedi tolte."); });
   const norm = (c) => String(c || "").trim().toLowerCase().replace(/["']/g, "").replace(/[^a-z0-9àèéìòù_]/g, "_").replace(/^_+|_+$/g, "");
   if (T) $("sedi-file").setAttribute("accept", T.ACCETTA);
@@ -312,18 +329,28 @@
     }
     if (st.acceso) voce(R.campione("area"), "aree convenzionali del GSE (dal vivo, da zoom 10)");
   }
+  // (20/11/2026, richiesta di Paolo: «come le altre pagine») mappa a sinistra con l'ortofoto (fonte scelta da sola nel
+  // punto, menu per cambiarla, come Cabine primarie e Ortofoto), particelle catastali e contorni degli edifici (strati_gl.js),
+  // frecce per spostare l'ortofoto (sposta_ortofoto.js), righello (righello.js), confini ISTAT; «Sposta» / «Aggiungi sedi».
   async function creaMappa() {
     if (!ml || !$("mappa-cer")) return;
     const I = (C && C.ITALIA) || [6.6, 35.4, 18.6, 47.1];
-    const m = new ml.Map({ container: "mappa-cer", bounds: [[I[0], I[1]], [I[2], I[3]]], fitBoundsOptions: { padding: 10 }, maxZoom: 19, minZoom: 4,
+    const m = new ml.Map({ container: "mappa-cer", bounds: [[I[0], I[1]], [I[2], I[3]]], fitBoundsOptions: { padding: 10 }, maxZoom: 21, minZoom: 4,
       attributionControl: false, canvasContextAttributes: { preserveDrawingBuffer: true },
       style: { version: 8, sources: {}, layers: [{ id: "sfondo", type: "background", paint: { "background-color": colore("--carta", "#fff") } }] } });
     st.mappa = m;
+    if (window.EUGENIO_LIMITI) window.EUGENIO_LIMITI.collega(m);
     m.addControl(new ml.NavigationControl({ showCompass: false }), "top-right");
     m.addControl(new ml.ScaleControl({ unit: "metric" }), "bottom-left");
     m.addControl(new ml.AttributionControl({ compact: true }), "bottom-right");
     await new Promise((ok) => m.on("load", ok));
+    m.resize(); vediItalia(m, 0);
+    $("mappa-cer").querySelectorAll(".maplibregl-compact-show").forEach((x) => x.classList.remove("maplibregl-compact-show"));
     document.addEventListener("eugenio:aspetto", () => m.setPaintProperty("sfondo", "background-color", colore("--carta", "#fff")));
+    document.addEventListener("eugenio:ridimensiona", () => m.resize());
+    if (window.pmtiles && !st.protocollo) { st.protocollo = new window.pmtiles.Protocol(); ml.addProtocol("pmtiles", st.protocollo.tile); }
+    if (window.EUGENIO_RIGHELLO) st.righello = window.EUGENIO_RIGHELLO.aggiungi(m, { dove: $("posto-righello") });
+    if (window.EUGENIO_SPOSTA && $("sposta-ortofoto")) st.sposta = window.EUGENIO_SPOSTA.crea($("sposta-ortofoto"), { pagina: "edificio-cer", suCambio: spostaTessere });
     if (C) { try { await C.aggiungi(m, { clic: false }); } catch { /* confini non disponibili */ } }
     m.addSource("cer-aree", { type: "geojson", data: vuota(), attribution: R.GSE.ATTRIBUZIONE_STRATO });
     m.addLayer({ id: "cer-aree-fondo", type: "fill", source: "cer-aree", layout: { visibility: "none" }, paint: { "fill-color": colore("--primario", "#e4572e"), "fill-opacity": 0.06 } });
@@ -341,15 +368,130 @@
       let t = p.trasf; if (typeof t === "string") { try { t = JSON.parse(t); } catch { t = null; } }
       return { titolo: R.nomeCabina(p), righe: R.righeCabina({ ...p, trasf: t }), cursore: false };
     });
-    m.on("click", (e) => clicArea(e));
+    if (window.EUGENIO_STRATI) {
+      try { st.strati = await window.EUGENIO_STRATI.aggiungi(m, { caselle: $("caselle-strati"), legenda: $("legenda-strati"), sotto: () => primoSopra(m) }); }
+      catch { /* strati non disponibili */ }
+    }
+    $("caselle-strati").addEventListener("change", aggiornaSposta);
+    m.on("click", (e) => {
+      if (st.modo === "scegli" && !(st.righello && st.righello.attivo && st.righello.attivo())) {
+        const s = aggiungi({ nome: `Sede ${st.seq + 1}`, lat: e.lngLat.lat, lon: e.lngLat.lng });
+        if (s) { tabella(); disegnaSedi(); cambiate(); messaggio("messaggio-sedi", `«${s.nome}» aggiunta: cerco l'area convenzionale del GSE e le cabine del comune.`); }
+        return;
+      }
+      clicArea(e);
+    });
     m.on("moveend", aggiornaStrato);
     document.addEventListener("eugenio:aspetto", () => {
       m.setPaintProperty("cer-aree-fondo", "fill-color", colore("--primario", "#e4572e"));
       m.setPaintProperty("cer-aree-linea", "line-color", colore("--primario", "#e4572e"));
     });
-    document.addEventListener("eugenio:ridimensiona", () => m.resize());
+    await ortofoto(m);
     if (window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-mappa-cer"), m, opzioniImmagine, $("messaggio-mappa-cer"));
     disegnaSedi(); disegnaCabine(); inquadra();
+  }
+  function vediItalia(m, durata = 600) {
+    if (!C || !C.ITALIA) return;
+    const c = m.cameraForBounds([[C.ITALIA[0], C.ITALIA[1]], [C.ITALIA[2], C.ITALIA[3]]], { padding: 10 });
+    if (c) m.easeTo({ ...c, zoom: Math.max(5, c.zoom), bearing: 0, pitch: 0, duration: durata });
+  }
+  // primo strato sopra le foto (particelle, edifici, confini, aree, cabine, sedi)
+  function primoSopra(m) {
+    const l = m.getStyle().layers.find((x) => !["sfondo", "contesto", "ortofoto"].includes(x.id));
+    return l ? l.id : undefined;
+  }
+  // minimappa dell'Italia accanto al titolo: un clic su una regione porta lì la mappa
+  async function vaiRegione(cod) {
+    const b = C && C.riquadroRegione ? await C.riquadroRegione(cod) : null;
+    if (E && E.seleziona) E.seleziona(cod);
+    if (b && st.mappa) st.mappa.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 20, duration: 600 });
+  }
+  if (E) {
+    E.suRegione = (cod) => vaiRegione(cod);
+    E.suStessaRegione = (cod) => vaiRegione(cod);
+    E.mappaPrincipale = { nazionale: () => st.mappa && vediItalia(st.mappa) };
+  }
+  // «Sposta» / «Aggiungi sedi» (come «Sposta» / «Scegli punti» in Cabine primarie)
+  function modo(nuovo) {
+    st.modo = nuovo;
+    $("modo-sposta").setAttribute("aria-pressed", String(nuovo === "sposta"));
+    $("modo-scegli").setAttribute("aria-pressed", String(nuovo === "scegli"));
+    $("mappa-cer").classList.toggle("modo-scegli", nuovo === "scegli");
+    if (nuovo === "scegli" && st.righello && st.righello.attivo && st.righello.attivo()) st.righello.spegni();
+    messaggio("messaggio-mappa-cer", nuovo === "scegli" ? "Aggiungi sedi: ogni clic sulla mappa aggiunge una sede e cerca la sua area convenzionale." : "");
+  }
+  $("modo-sposta").addEventListener("click", () => modo("sposta"));
+  $("modo-scegli").addEventListener("click", () => modo(st.modo === "scegli" ? "sposta" : "scegli"));
+
+  // ---- ortofoto (come Cabine primarie e Ortofoto: fonti del server, migliore applicabile nel punto, scelta a mano dal menu)
+  const tessere = (f, spostata) => location.origin + (spostata && st.sposta ? st.sposta.url(f.tessere) : f.tessere);
+  function sorgente(f, spostata = false) {
+    return f.pmtiles ? { type: "raster", url: `pmtiles://${location.origin}${f.pmtiles}`, tileSize: 256, attribution: f.citazione }
+      : { type: "raster", tiles: [tessere(f, spostata)], tileSize: 256, minzoom: f.zoom[0], maxzoom: f.zoom[1], bounds: f.riquadro, attribution: f.citazione };
+  }
+  async function ortofoto(m) {
+    try {
+      const r = await fetch("/api/ortofoto/fonti");
+      if (!r.ok || !/json/.test(r.headers.get("Content-Type") || "")) throw new Error(String(r.status));
+      st.fonti = (await r.json()).fonti || [];
+    } catch {
+      $("attribuzione-ortofoto").textContent = "Il servizio delle ortofoto non risponde: restano i confini, le particelle e gli edifici.";
+      return;
+    }
+    st.contesto = st.fonti.find((f) => f.id === CONTESTO) || null;
+    if (st.contesto) {
+      m.addSource("contesto", sorgente(st.contesto));
+      m.addLayer({ id: "contesto", type: "raster", source: "contesto", paint: { "raster-opacity": 0.95 } }, primoSopra(m));
+    }
+    $("fonte-dettaglio").addEventListener("change", (e) => { st.manuale = true; scegliFonte(e.target.value); });
+    if (window.EUGENIO_ORTOFOTO_ANNI) window.EUGENIO_ORTOFOTO_ANNI.segui(m, "ortofoto", () => { const f = st.fonte; if (f && f.anni && citOrto(f) !== st.citazioneOrto) attribuzioneOrto(); });
+    await elencoFonti();
+    m.on("moveend", elencoFonti);
+  }
+  let giroFonti = 0;
+  async function elencoFonti() {
+    const m = st.mappa, mio = ++giroFonti, c = m.getCenter();
+    let qui;
+    try { qui = C && C.fontiNelPunto ? await C.fontiNelPunto(st.fonti, c.lng, c.lat) : st.fonti; } catch { qui = st.fonti; }
+    if (mio !== giroFonti) return;
+    const sel = $("fonte-dettaglio"); sel.innerHTML = "";
+    qui.forEach((f) => { const o = h("option", null, `${f.nome}${f.copia ? "" : " (solo consultazione)"}`); o.value = f.id; sel.appendChild(o); });
+    const n = h("option", null, "nessuna ortofoto"); n.value = ""; sel.appendChild(n);
+    if (st.manuale && st.fonte && !qui.some((f) => f.id === st.fonte.id)) st.manuale = false;
+    const migliore = qui.find((f) => f.id !== CONTESTO) || qui[0] || null;
+    if (!st.manuale && (migliore ? migliore.id : "") !== (st.fonte ? st.fonte.id : "")) scegliFonte(migliore ? migliore.id : "");
+    sel.value = st.fonte ? st.fonte.id : "";
+  }
+  function scegliFonte(id) {
+    const m = st.mappa, f = st.fonti.find((x) => x.id === id) || null;
+    if (m.getLayer("ortofoto")) m.removeLayer("ortofoto");
+    if (m.getSource("ortofoto")) m.removeSource("ortofoto");
+    st.fonte = f;
+    if (f && f.id !== CONTESTO) {
+      m.addSource("ortofoto", sorgente(f, true));
+      m.addLayer({ id: "ortofoto", type: "raster", source: "ortofoto" }, primoSopra(m));
+    }
+    aggiornaSposta();
+    attribuzioneOrto();
+  }
+  function citOrto(f) {
+    return window.EUGENIO_ORTOFOTO_ANNI && st.mappa ? window.EUGENIO_ORTOFOTO_ANNI.citazione(f, st.mappa) : f.citazione;
+  }
+  function attribuzioneOrto() {
+    const f = st.fonte, a = $("attribuzione-ortofoto"); a.innerHTML = "";
+    if (!f) a.textContent = st.contesto ? `Nessuna ortofoto: sotto si vede il contesto ${st.contesto.citazione} (${st.contesto.licenza}).` : "Nessuna ortofoto.";
+    else {
+      a.append("Ortofoto: ", citOrto(f), " – licenza ");
+      const l = h("a", null, f.licenza); l.href = f.scheda; a.appendChild(l);
+      a.append(f.copia ? "." : ". Solo consultazione dal vivo: non entra nelle immagini scaricate.");
+    }
+    st.citazioneOrto = f ? citOrto(f) : "";
+  }
+  function vettoriAccesi() { const s = st.strati && st.strati.stato; return !!(s && (s.particelle || s.edifici)); }
+  function aggiornaSposta() { if (st.sposta) st.sposta.fonte(st.fonte, { vettori: vettoriAccesi() }); }
+  function spostaTessere() {
+    const src = st.mappa && st.mappa.getSource("ortofoto"), f = st.fonte;
+    if (src && f && !f.pmtiles && src.setTiles) src.setTiles([tessere(f, true)]);
   }
 
   // ---- strato «Aree convenzionali (GSE)» (punto B)
@@ -448,7 +590,12 @@
   // ---- immagini: strato del GSE spento (punto C)
   function opzioniImmagine() {
     const m = st.mappa;
-    const righe = [];
+    const righe = [], f = st.fonte;
+    if (f && !f.copia) return `«${f.nome}» è solo in consultazione dal vivo: per scaricare l'immagine scegli un'altra ortofoto.`;
+    if (f) righe.push(`Ortofoto: ${citOrto(f)} – licenza ${f.licenza} (${f.scheda}).`);
+    else if (st.contesto) righe.push(`Contesto: ${st.contesto.citazione} – licenza ${st.contesto.licenza} (${st.contesto.scheda}).`);
+    if (f && st.sposta && st.sposta.riga()) righe.push(st.sposta.riga());
+    if (st.strati) righe.push(...st.strati.righe());
     if (st.sedi.some(coordinate)) righe.push(`Sedi dell'utente: ${st.sedi.filter(coordinate).length}.`);
     if (fcCabine().features.length) righe.push(`Cabine primarie dei comuni delle sedi: livello peggiore dei trasformatori (bianco = verde, giallo, arancione, rosso). ${R.ATTR.osm}. ${R.ATTR.ed_breve}.`);
     righe.push(`${R.ATTR.confini}. Mappa: MapLibre GL JS (BSD-3).`);
