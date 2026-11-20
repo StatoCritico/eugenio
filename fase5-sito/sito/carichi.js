@@ -324,10 +324,12 @@
     const p = 10 ** Math.floor(Math.log10(max || 1)), passo = [1, 2, 2.5, 5, 10].map((k) => k * p).find((k) => max / k <= 5) || p * 10;
     return { passo, top: Math.ceil(max / passo) * passo || 1 };
   }
-  function asseY(v, top, unita, fmt = num) {
-    const { area, fondo, assi } = v, Y = (y) => area[3] - (area[3] - area[1]) * y / top, { passo } = scala(top);
-    for (let y = 0; y <= top + 1e-9; y += passo) {
-      s("line", { x1: area[0], x2: area[2], y1: Y(y), y2: Y(y), stroke: y === 0 ? "var(--inchiostro)" : "var(--linea)", "stroke-width": y === 0 ? 1 : 0.6 }, fondo);
+  // asseY(v, top, unita, fmt, bot): da bot (0 se manca) a top; con il grafico ingrandito bot può essere più alto di 0
+  function asseY(v, top, unita, fmt = num, bot = 0) {
+    const { area, fondo, assi } = v, Y = (y) => area[3] - (area[3] - area[1]) * (y - bot) / (top - bot || 1), { passo } = scala(top - bot);
+    for (let y = Math.ceil(bot / passo) * passo; y <= top + 1e-9; y += passo) {
+      const base = Math.abs(y - bot) < 1e-9;
+      s("line", { x1: area[0], x2: area[2], y1: Y(y), y2: Y(y), stroke: base ? "var(--inchiostro)" : "var(--linea)", "stroke-width": base ? 1 : 0.6 }, fondo);
       s("text", { x: area[0] - 5, y: Y(y) + 4, "text-anchor": "end" }, assi).textContent = fmt(y);
     }
     s("text", { x: 4, y: 12 }, assi).textContent = unita;
@@ -341,6 +343,12 @@
       s("line", { x1: px, x2: px, y1: area[1], y2: area[3], stroke: "var(--linea)", "stroke-width": forte ? 0.8 : 0.4 }, fondo);
       s("text", { x: px, y: area[3] + 16, "text-anchor": "middle" }, assi).textContent = t;
     }
+  }
+  // intervallo verticale: da 0 nella vista intera; ingrandito, attorno ai valori visibili
+  function intervallo(v, mn, mx) {
+    if (!v.zoom || !Number.isFinite(mn)) return [0, scala(mx * 1.04 || 1).top];
+    const marg = Math.max(1, (mx - mn) * 0.08), { passo } = scala(Math.max(1, mx - mn + 2 * marg));
+    return [Math.max(0, Math.floor((mn - marg) / passo) * passo), Math.ceil((mx + marg) / passo) * passo];
   }
   // tacche dell'asse dei tempi, in ora italiana
   function tackeTempo(x0, x1, largo) {
@@ -389,9 +397,10 @@
       disegna(v) {
         const P = st.prof; if (!P) return;
         const w = st.passo / 60, xc = (k) => k * w + w / 2;
-        let top = 0;
-        for (let k = 0; k < P.K; k++) if (xc(k) >= v.x0 - w && xc(k) <= v.x1 + w && Number.isFinite(P.mx[k])) top = Math.max(top, P.mx[k]);
-        const Y = asseY(v, scala(top * 1.04 || 1).top, "MW");
+        let top = 0, bot = Infinity;
+        for (let k = 0; k < P.K; k++) if (xc(k) >= v.x0 - w && xc(k) <= v.x1 + w && P.c[k]) { top = Math.max(top, P.mx[k]); bot = Math.min(bot, P.mn[k]); }
+        const [y0, y1] = intervallo(v, bot, top);
+        const Y = asseY(v, y1, "MW", num, y0);
         const quante = Math.max(3, (v.area[2] - v.area[0]) / 55);
         const passoOre = [0.25, 0.5, 1, 2, 3, 6].find((p) => (v.x1 - v.x0) / p <= quante) || 6;
         const tk = [];
@@ -442,7 +451,8 @@
       disegna(v) {
         const D = st.dur; if (!D || !D.length) return;
         const w = st.passo / 60, idx = (x) => limita(Math.floor(x / w), 0, D.length - 1);
-        const Y = asseY(v, scala(D[idx(v.x0)] * 1.04 || 1).top, "MW");
+        const [y0, y1] = intervallo(v, D[idx(v.x1)], D[idx(v.x0)]);
+        const Y = asseY(v, y1, "MW", num, y0);
         v.Y = Y;
         const span = v.x1 - v.x0, largo = v.area[2] - v.area[0];
         const p = 10 ** Math.floor(Math.log10(span / Math.max(2, largo / 90))), passo = [1, 2, 5, 10].map((k) => k * p).find((k) => span / k <= Math.max(2, largo / 90)) || p * 10;
@@ -457,7 +467,7 @@
           pts.push(`${(v.area[0] + c * largo / colonne).toFixed(1)},${Y(D[idx(x)]).toFixed(1)}`);
         }
         const xFine = Math.min(v.area[2], v.X(D.length * w));
-        s("polygon", { points: `${v.area[0]},${Y(0)} ${pts.join(" ")} ${xFine.toFixed(1)},${Y(0)}`, fill: "var(--primario)", "fill-opacity": 0.18 }, v.corpo);
+        s("polygon", { points: `${v.area[0]},${Y(y0)} ${pts.join(" ")} ${xFine.toFixed(1)},${Y(y0)}`, fill: "var(--primario)", "fill-opacity": 0.18 }, v.corpo);
         s("polyline", { points: pts.join(" "), fill: "none", stroke: "var(--primario)", "stroke-width": 2 }, v.corpo);
       },
       punto(x, v) {

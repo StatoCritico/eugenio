@@ -1789,7 +1789,7 @@ table.sedi-cer .origine-cabina { font-style: italic; }
 .pagina-carichi #stato-carichi { margin-top: var(--s2); }
 .pagina-carichi .carichi-sezione h2 { margin: var(--s6) 0 var(--s2); font-size: var(--c-xl); }
 .pagina-carichi .carichi-sezione > .aiuto { max-width: 90ch; }
-.carichi-riepilogo { display: grid; grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); gap: var(--s3); margin: 0; }
+.carichi-riepilogo { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: var(--s3); margin: 0; }
 .carichi-riepilogo div { background: var(--foglio); border: 1px solid var(--linea); border-radius: var(--r); padding: .55rem .8rem; }
 .carichi-riepilogo dt { font-size: var(--c-xs); color: var(--tenue); }
 .carichi-riepilogo dd { margin: .1rem 0 0; font: 700 var(--c-l)/1.2 var(--titoli); font-variant-numeric: tabular-nums; }
@@ -1801,3 +1801,5 @@ svg.zoom-proprio.trascina { cursor: grabbing; }
 .pagina-carichi .nota-zona-fonti { margin: var(--s2) 0; max-width: 90ch; }
 .pagina-carichi .legenda i.linea { background: none; }
 .pagina-carichi .carichi-regole li { max-width: 90ch; }
+svg.zoom-proprio:focus { outline: none; }
+svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-offset: 2px; }
