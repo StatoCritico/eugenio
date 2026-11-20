@@ -13,6 +13,7 @@ import functools
 import json
 import re
 import threading
+from urllib.parse import urlparse
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -26,7 +27,7 @@ PROVE = Path("/home/claude/wt_collegamento_prove")      # screenshot, solo se la
 # dal file. Le pagine che non sono qui non hanno il collegamento (testo, segnaposto, moduli, solo file).
 PAGINE = {
     "legge10.html": "a", "dati.html": "a", "indicatori.html": "a", "elettricita.html": "a",
-    "rete-elettrica.html": "a",
+    "rete-elettrica.html": "a", "ortofoto.html": "a",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -107,13 +108,36 @@ def _api(route):
         return route.fulfill(json=CATALOGO)
     if "/api/storici/stima" in url:
         return route.fulfill(json=STIMA)
+    percorso = urlparse(url).path
     for chiave, risposta in RISPOSTE.items():
-        if chiave in url:
+        if percorso == chiave:
             return route.fulfill(json=risposta(url) if callable(risposta) else risposta)
     return route.fulfill(status=404, body=json.dumps({"detail": "non simulata"}), content_type="application/json")
 
 
-RISPOSTE: dict = {}
+FONTI = {"fonti": [
+    {"id": "rer2023", "nome": "Ortofoto RER 2023-24 (20 cm)", "licenza": "CC BY 4.0", "citazione": "Regione Emilia-Romagna – Ortofoto RER",
+     "scheda": "https://geoportale.regione.emilia-romagna.it/", "stato": "da confermare", "copia": True, "nei_report": True,
+     "zoom": [12, 20], "riquadro": [9.19, 43.73, 12.84, 45.16], "tessere": "/api/ortofoto/rer2023/{z}/{x}/{y}.jpg",
+     "spostabile": True, "spostamento_max": 20},
+    {"id": "s2cloudless2016", "nome": "Sentinel-2 cloudless 2016 (10 m)", "licenza": "CC BY 4.0", "citazione": "Sentinel-2 cloudless – EOX",
+     "scheda": "https://cloudless.eox.at/", "stato": "confermata", "copia": True, "nei_report": True, "zoom": [5, 15],
+     "riquadro": [6.6, 35.4, 18.6, 47.1], "tessere": "/api/ortofoto/s2cloudless2016/{z}/{x}/{y}.jpg", "spostabile": False,
+     "spostamento_max": 0},
+    {"id": "pcn2012", "nome": "Geoportale Nazionale (solo consultazione)", "licenza": "da verificare", "citazione": "Geoportale – AGEA 2012",
+     "scheda": "https://gn.mase.gov.it/", "stato": "da confermare", "copia": False, "nei_report": False, "zoom": [12, 19],
+     "riquadro": [6.6, 35.4, 18.6, 47.1], "tessere": "/api/ortofoto/pcn2012/{z}/{x}/{y}.jpg", "spostabile": True,
+     "spostamento_max": 20}]}
+STRATI = {"strati": [
+    {"id": "catasto", "tema": "particelle", "nome": "Confini delle particelle catastali", "licenza": "CC BY 4.0",
+     "citazione": "Agenzia delle Entrate – Cartografia catastale, CC BY 4.0", "scheda": "https://www.agenziaentrate.gov.it/",
+     "stato": "confermata", "regioni": [], "zoom": [16, 20], "riquadro": [6.6, 35.4, 18.6, 47.1], "colore": "#ffd400",
+     "legenda": "linee gialle", "tipo": "immagine", "nota": "", "tessere": "/api/ortofoto/strati/catasto/{z}/{x}/{y}.png"},
+    {"id": "osm_edifici", "tema": "edifici", "nome": "Contorni OSM", "licenza": "ODbL 1.0",
+     "citazione": "© contributori OpenStreetMap (ODbL 1.0)", "scheda": "https://www.openstreetmap.org/copyright",
+     "stato": "confermata", "regioni": [], "zoom": [16, 16], "riquadro": [6.6, 35.4, 18.6, 47.1], "colore": "#00e5ff",
+     "legenda": "linee azzurre", "tipo": "vettori", "nota": "", "tessere": "/api/ortofoto/strati/osm_edifici/{z}/{x}/{y}.json"}]}
+RISPOSTE: dict = {"/api/ortofoto/fonti": FONTI, "/api/ortofoto/strati": STRATI}
 
 
 def _apri(browser, url, larghezza=1400, altezza=950, rotte=()):
@@ -121,6 +145,7 @@ def _apri(browser, url, larghezza=1400, altezza=950, rotte=()):
     pg = ctx.new_page()
     errori = []
     pg.on("pageerror", lambda e: errori.append(str(e)))
+    pg.route(lambda u: not u.startswith("http://127.0.0.1"), lambda r: r.abort())     # nessuna rete esterna
     pg.route("**/api/**", _api)
     for schema, gestore in rotte:
         pg.route(schema, gestore)
@@ -307,3 +332,30 @@ def test_rete_elettrica(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "rete_elettrica", SENZA_ARCGIS)
+
+
+# ---------------------------------------------------------------------------------------------- Ortofoto
+def test_ortofoto(browser, base):
+    pronta = "() => window.EUGENIO_ORTOFOTO && window.EUGENIO_ORTOFOTO.stato.pronto"
+    ctx, pg, errori = _apri(browser, base + "ortofoto.html")
+    pg.wait_for_function(pronta, timeout=20000)
+    pg.evaluate("() => window.EUGENIO_ORTOFOTO.stato.mappa.jumpTo({ center: [11.3426, 44.4949], zoom: 15.5 })")
+    pg.check("input[name='fonte'][value='pcn2012']")
+    pg.check("#strato-particelle")
+    link = _collegamento(pg)
+    for parte in ("lat=44.494900", "lon=11.342600", "z=15.50", "fonte=pcn2012", "particelle=1", "contorni=0"):
+        assert parte in link, parte
+    _foto(pg, "ortofoto_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link)
+    pg.wait_for_function(pronta, timeout=20000)
+    c = pg.evaluate("() => { const m = window.EUGENIO_ORTOFOTO.stato.mappa, c = m.getCenter(); return [c.lat, c.lng, m.getZoom()]; }")
+    assert abs(c[0] - 44.4949) < 1e-5 and abs(c[1] - 11.3426) < 1e-5 and abs(c[2] - 15.5) < 1e-6
+    assert pg.evaluate("() => window.EUGENIO_ORTOFOTO.stato.scelta.id") == "pcn2012"
+    assert pg.is_checked("#strato-particelle") and not pg.is_checked("#strato-edifici")
+    assert pg.evaluate("() => window.EUGENIO_ORTOFOTO.stato.strati.stato.particelle") is True
+    pg.wait_for_timeout(800)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "ortofoto")
