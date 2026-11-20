@@ -290,7 +290,9 @@
     if (!r.applica) return;
     try { await r.applica(p); } catch (err) { console.warn("collegamento: applica", err); }
   }
-  const nostro = (ev) => { const t = ev.target; return !t || (t.closest && t.closest(".collegamento-simulazione")) || t.type === "file"; };
+  // eventi da non contare: il riquadro stesso, i campi di file, la testata con il menu e il piè (non sono scelte)
+  const FUORI = ".collegamento-simulazione, .testata, header, footer, nav.riga-fissata, .menu-pannello";
+  const nostro = (ev) => { const t = ev.target; return !t || !t.closest || !!t.closest(FUORI) || t.type === "file"; };
   // fase di cattura: arriva sempre (anche con stopPropagation), ma prima della pagina → riscrittura in coda
   function ascolta(ev) { if (!nostro(ev)) aggiorna(); }
   ["input", "change", "click"].forEach((n) => document.addEventListener(n, ascolta, true));
@@ -313,10 +315,7 @@
     } catch { /* sessionStorage non disponibile */ }
   });
   // i risultati arrivano dopo un clic (fetch): si rilegge anche un po' dopo
-  document.addEventListener("click", (ev) => {
-    if (ev.target && ev.target.closest && ev.target.closest(".collegamento-simulazione")) return;
-    setTimeout(() => aggiorna(), 1200);
-  }, true);
+  document.addEventListener("click", (ev) => { if (!nostro(ev)) setTimeout(() => aggiorna(), 1200); }, true);
 
   // registrazione arrivata dopo il ripristino (pagina che si prepara in modo asincrono): si applica subito
   const iniziali = new URLSearchParams(location.search);
