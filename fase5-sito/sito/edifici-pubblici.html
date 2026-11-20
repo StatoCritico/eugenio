@@ -256,8 +256,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <p class="riga-campi"><button class="bottone secondario" id="tutti-enti" type="button">Tutti</button>
         <button class="bottone secondario" id="nessun-ente" type="button">Nessuno</button></p>
       <div class="riga-campi sfondo-3d">
-        <label class="casella-strato"><input id="strato-ortofoto" type="checkbox" checked> Ortofoto</label>
-        <label>fonte <select id="sfondo-ortofoto"><option value="">automatica</option></select></label>
+        <label class="casella-strato"><input id="strato-ortofoto" type="checkbox" checked data-collegamento="ortofoto"> Ortofoto</label>
+        <label>fonte <select id="sfondo-ortofoto" data-collegamento="fonte"><option value="">automatica</option></select></label>
       </div>
       <div class="caselle-strati" id="caselle-strati"></div>
     </div>
@@ -290,6 +290,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </main>
 
 <script src="aspetto.js?v=20261120d"></script>
+<script src="collegamento.js?v=20261120d"></script>
 <script src="divisore.js?v=20261120d"></script>
 <script src="lib/maplibre-gl/maplibre-gl.js?v=20261120d"></script>
 <script src="lib/pmtiles/pmtiles.js?v=20261120d"></script>

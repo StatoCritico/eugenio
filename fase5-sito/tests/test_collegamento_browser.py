@@ -28,6 +28,7 @@ PROVE = Path("/home/claude/wt_collegamento_prove")      # screenshot, solo se la
 PAGINE = {
     "legge10.html": "a", "dati.html": "a", "indicatori.html": "a", "elettricita.html": "a",
     "rete-elettrica.html": "a", "ortofoto.html": "a",
+    "edifici-pubblici.html": "a",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -359,3 +360,32 @@ def test_ortofoto(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "ortofoto")
+
+
+# ---------------------------------------------------------------------------------------------- Edifici pubblici
+def test_edifici_pubblici(browser, base):
+    pronta = "() => window.EUGENIO_PUBBLICI && window.EUGENIO_PUBBLICI.stato.pronto"
+    ctx, pg, errori = _apri(browser, base + "edifici-pubblici.html?lat=44.1394&lon=12.2431&z=16")
+    pg.wait_for_function(pronta, timeout=20000)
+    pg.uncheck("#tipi-pubblici input[value='T']")
+    pg.uncheck("#gruppi-pubblici input[value='U']")
+    pg.wait_for_selector("#sfondo-ortofoto option[value='pcn2012']", state="attached")
+    pg.select_option("#sfondo-ortofoto", "pcn2012")
+    pg.uncheck("#strato-ortofoto")
+    link = _collegamento(pg)
+    for parte in ("lat=44.139400", "z=16.00", "tipi=E%2CS", "enti=", "fonte=pcn2012", "ortofoto=0"):
+        assert parte in link, parte
+    assert "U" not in re.search(r"enti=([^&]*)", link).group(1).replace("%2C", ",").split(",")
+    _foto(pg, "edifici_pubblici_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link)
+    pg.wait_for_function(pronta, timeout=20000)
+    assert pg.evaluate("() => [...window.EUGENIO_PUBBLICI.stato.tipi].sort().join()") == "E,S"
+    assert not pg.evaluate("() => window.EUGENIO_PUBBLICI.stato.gruppi.has('U')")
+    assert pg.evaluate("() => window.EUGENIO_PUBBLICI.stato.gruppi.has('C')")
+    assert pg.input_value("#sfondo-ortofoto") == "pcn2012" and not pg.is_checked("#strato-ortofoto")
+    pg.wait_for_timeout(800)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "edifici_pubblici")
