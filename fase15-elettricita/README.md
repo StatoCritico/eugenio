@@ -53,7 +53,8 @@ produzione). Anni: quelli che restituisce il servizio al 20/11/2026.
 | CapacityThermal | 2000–2025 | … Categoria, Sottocategoria, Potenza efficiente (MW) | termoelettrico per categoria e sottocategoria (come ProductionThermal) |
 | ElectricityBySource | 2000–2025 | Anno, Tipo produzione (Lorda/Netta), Regione, Provincia, Fonte, Produzione (GWh) | produzione per fonte |
 | ProductionRenewableSources | 2000–2025 | … Fonte rinnovabile, Produzione (GWh) | rinnovabili con le bioenergie |
-| ElectricalEnergy | 2000–2024 | Anno, Regione, Provincia, Settore, Consumo (GWh) | consumi per settore: Industria, Servizi, Domestico, Agricoltura |
+| Total | 2000–2024 | Anno, Regione, Provincia, Settore, Attività, Classe, Consumo (GWh) | consumi per settore (Industria, Servizi, Domestico, Agricoltura), sommando attività e classi |
+| ElectricalEnergy | 2000–2024 | Anno, Regione, Provincia, Settore, Consumo (GWh) | solo riserva per gli anni senza Total e per il confronto (vedi «Problemi noti») |
 | ConsumptionBySource | 2005–2024 | Anno, Regione, Fonte, Copertura (GWh) | copertura della richiesta per fonte, solo regione |
 | ElectricityByType | 2005–2024 | Anno, Regione, Tipologia, Domanda (GWh) | rinnovabili, tradizionali, saldo import/export, solo regione |
 
@@ -98,6 +99,7 @@ Total). **La classificazione cambia nel 2019**: 2000–2018 classi merceologiche
 attività, servizi 50 classi in 18 attività, agricoltura 13 classi). Righe ripetute per chiave fino al 2020: si
 sommano. In IndustrialSector c'è un'attività vuota con classe vuota (107 righe, sempre 0 GWh). La somma di Total per
 settore coincide con ElectricalEnergy (salvo 2019–2020, vedi sotto) e con IndustrialSector / ServiceSector.
+Dal 20/11/2026 la pagina prende i consumi per settore da Total (vedi la tabella sopra).
 
 ## Autoconsumo (dataset Market)
 
@@ -130,8 +132,14 @@ Che cosa comprende, verificato sui dati scaricati il 20/11/2026:
 
 - **ElectricalEnergy 2019 e 2020: mancano ~7 e ~5,5 TWh di industria** rispetto a Total, Market e IndustrialSector
   (2019: 121 978 contro 128 940 GWh; 2020: 119 952 contro 125 417), concentrati a Brescia (2019: 4 606 contro 8 535)
-  e Taranto (796 contro 3 828), cioè metallurgia e autoconsumo. Gli altri settori e gli altri anni coincidono. La
-  pagina usa ElectricalEnergy: per Brescia e Taranto 2019–2020 mostra un calo che non c'è; da valutare se usare Total.
+  e Taranto (796 contro 3 828), cioè metallurgia e autoconsumo. Gli altri settori e gli altri anni coincidono.
+  **Risolto il 20/11/2026**: il costruttore prende i consumi da Total (somma per anno, provincia e settore) e usa
+  ElectricalEnergy solo per gli anni in cui Total manca. `confronta_consumi()` confronta i due per provincia e anno e
+  scrive nel log (stderr) e nel campo `note` di `italia.json` (non usato da `elettricita.js`) le differenze sopra il
+  5 %: con i dati del 20/11/2026 sono solo Brescia 2019 (12 738 contro 8 809 GWh, −31 %) e 2020 (11 727 contro
+  8 804, −25 %), Taranto 2019 (5 199 contro 2 167, −58 %) e 2020 (4 617 contro 2 076, −55 %). Totale Italia dei
+  consumi: 2019 296 254 GWh (prima 289 290), 2020 279 171 (prima 273 705); 2015 +41 GWh (servizi di alcune grandi
+  province, sotto la soglia); gli altri anni invariati.
 - **ElectricityBySource 2017**: produzione lorda uguale alla netta per tutte le fonti e fotovoltaico Italia 193 GWh
   (contro 22 104 nel 2016 e 22 654 nel 2018). Il costruttore prende già il massimo con ProductionRenewableSources.
 - Righe doppie con la stessa chiave in GenerationPlants (2017, +16 GW di termoelettrico), ThermalHeat (tutti gli anni,

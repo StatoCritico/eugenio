@@ -33,9 +33,18 @@ def _raw(tmp: Path) -> Path:
         _scrivi(raw, "CapacityThermal", a, ["Anno", "Tipo capacità", "Regione", "Provincia", "Categoria", "Sottocategoria", "MW"], [
             [a, "Lorda", "Emilia-Romagna", "Bologna", "Cogenerative", "Ciclo combinato", 300.0],
             [a, "Lorda", "Emilia-Romagna", "Bologna", "Non cogenerative", "Turbine a gas", 300.0]])
+        # Total: consumi per attività e classe (si sommano per settore). ElectricalEnergy: nel 2021 manca una riga di
+        # industria (come Brescia e Taranto 2019–2020 nei dati veri) e non deve contare
+        _scrivi(raw, "Total", a, ["Anno", "Regione", "Provincia", "Settore", "Attività", "Classe", "GWh"], [
+            [a, "Emilia-Romagna", "Bologna", "Industria", "Attività manifatturiere", "Metallurgia", 10.0],
+            [a, "Emilia-Romagna", "Bologna", "Industria", "Attività manifatturiere", "Alimentari", 5.0],
+            [a, "Emilia-Romagna", "Bologna", "Domestico", None, None, 3.0],
+            [a, "Emilia-Romagna", "Bologna", "Servizi", "Commercio", None, 2.0],
+            [a, "Emilia-Romagna", "Bologna", "Agricoltura", None, None, 1.0]])
         _scrivi(raw, "ElectricalEnergy", a, ["Anno", "Regione", "Provincia", "Settore", "GWh"], [
-            [a, "Emilia-Romagna", "Bologna", "Industria", 10.0], [a, "Emilia-Romagna", "Bologna", "Industria", 5.0],
-            [a, "Emilia-Romagna", "Bologna", "Domestico", 3.0]])
+            [a, "Emilia-Romagna", "Bologna", "Industria", 5.0]] + ([] if a == 2021 else [[a, "Emilia-Romagna", "Bologna", "Industria", 10.0]]) + [
+            [a, "Emilia-Romagna", "Bologna", "Domestico", 3.0], [a, "Emilia-Romagna", "Bologna", "Servizi", 2.0],
+            [a, "Emilia-Romagna", "Bologna", "Agricoltura", 1.0]])
         _scrivi(raw, "ConsumptionBySource", a, ["Anno", "Regione", "Fonte", "GWh"], [
             [a, "Emilia-Romagna", "Termoelettrico tradizionale", 20.0], [a, "Emilia-Romagna", "Saldo import/export", -4.0],
             [a, "Trentino-Alto Adige", "Idrico rinnovabile", 7.0]])
@@ -53,7 +62,9 @@ def test_costruisci(tmp_path):
     assert c21["termo"] == 560 and c21["bio"] == 40 and c21["idro"] == 50 and c21["pomp"] == 10
     assert c21["fv"] == 140                                     # Bologna 130 + Forlì-Cesena 10 (nome riparato)
     cons = dict(zip([v["id"] for v in it["voci"]["consumi"]], er["consumi"]["2021"]))
-    assert cons["ind"] == 15 and cons["dom"] == 3               # righe di dettaglio sommate
+    assert cons == {"ind": 15, "ser": 2, "dom": 3, "agr": 1}    # da Total, righe di dettaglio sommate
+    # confronto con ElectricalEnergy: solo Bologna 2021 supera il 5 % (6 contro 21 GWh); nel log e in «note»
+    assert len(it["note"]) == 1 and "2021, Bologna" in it["note"][0] and esito["note"] == it["note"]
     rich = dict(zip([v["id"] for v in it["voci"]["richiesta"]], er["richiesta"]["2021"]))
     assert rich["saldo"] == -4 and rich["termo"] == 20
     # obiettivi: Tabella A; Trentino-Alto Adige = Bolzano + Trento
@@ -65,6 +76,25 @@ def test_costruisci(tmp_path):
     assert sud["storica"] is True and sud["cod"] is None
     fc = next(p for p in json.loads((tmp_path / "out" / "08.json").read_text(encoding="utf-8"))["province"] if p["sigla"] == "FC")
     assert fc["nome"] == "Forlì-Cesena"
+
+
+def test_riserva_electricalenergy(tmp_path):
+    """Anni senza Total: consumi da ElectricalEnergy, nessuna nota."""
+    raw = _raw(tmp_path)
+    _scrivi(raw, "ElectricalEnergy", 2022, ["Anno", "Regione", "Provincia", "Settore", "GWh"], [
+        [2022, "Emilia-Romagna", "Bologna", "Industria", 7.0], [2022, "Emilia-Romagna", "Bologna", "Industria", 4.0]])
+    K.costruisci(raw, tmp_path / "out", MAPPA)
+    it = json.loads((tmp_path / "out" / "italia.json").read_text(encoding="utf-8"))
+    er = next(r for r in it["regioni"] if r["cod"] == "08")
+    assert er["consumi"]["2022"][0] == 11 and er["consumi"]["2021"][0] == 15
+    assert it["anni"]["consumi"] == [2020, 2021, 2022] and len(it["note"]) == 1
+
+
+def test_confronta_consumi():
+    tot = {("Puglia", "Taranto", 2019, "ind"): 100.0, ("Puglia", "Bari", 2019, "ind"): 100.0}
+    ee = {("Puglia", "Taranto", 2019, "ind"): 94.0, ("Puglia", "Bari", 2019, "ind"): 96.0}
+    note = K.confronta_consumi(tot, ee)
+    assert len(note) == 1 and "Taranto" in note[0] and "-6 %" in note[0]
 
 
 def test_regione_sconosciuta(tmp_path):

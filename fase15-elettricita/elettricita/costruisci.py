@@ -16,7 +16,9 @@ Grandezze (tutte lorde, come le pubblica Terna; valori per provincia sommati per
   capacita    potenza efficiente lorda [MW] per fonte (dal 2000)
   produzione  produzione lorda [GWh] per fonte (dal 2000)
   richiesta   richiesta di energia elettrica per regione [GWh] per fonte di copertura (dal 2005; solo regioni)
-  consumi     consumi [GWh] per settore, per regione e provincia (dal 2000)
+  consumi     consumi [GWh] per settore, per regione e provincia (dal 2000), da «Total» (consumi per attività)
+              sommato per settore; «ElectricalEnergy» solo per gli anni senza Total. Le differenze tra i due sopra il
+              5 % per provincia e anno vanno nel log e nel campo «note» di italia.json.
 Le fonti separano il termoelettrico tradizionale dalle bioenergie (termoelettrico − bioenergie) e i pompaggi
 dall'idrico rinnovabile (idrico − idrico rinnovabile), come fa Terna nella copertura della domanda.
 
@@ -267,12 +269,58 @@ def leggi(raw: Path) -> dict:
         voce = mappa_cop.get(r["Fonte"].lower())
         if voce:
             add("richiesta", r["Regione"], None, r["Anno"], voce, _val(r, "_v"))
-    # consumi per settore (negli anni fino al 2023 Terna dà più righe per provincia e settore, una per attività: si sommano)
+    # consumi per settore da «Total» (consumi per attività; negli anni fino al 2023 anche ElectricalEnergy ha più righe
+    # per provincia e settore): si somma per anno, provincia e settore. «ElectricalEnergy» (Energia elettrica per
+    # settore) solo per gli anni in cui Total manca: nel 2019 e nel 2020 ha ~7 e ~5,5 TWh di industria in meno (Brescia,
+    # Taranto) rispetto a Total, Market e IndustrialSector.
     mappa_set = {"industria": "ind", "servizi": "ser", "domestico": "dom", "agricoltura": "agr"}
-    for r in _righe(raw, "ElectricalEnergy"):
-        voce = mappa_set.get(r["Settore"].lower())
+    tot = _consumi(raw, "Total", mappa_set)
+    ee = _consumi(raw, "ElectricalEnergy", mappa_set)
+    anni_tot = {k[2] for k in tot}
+    for (reg, prov, anno, voce), v in tot.items():
+        add("consumi", reg, prov, anno, voce, v)
+    for (reg, prov, anno, voce), v in ee.items():
+        if anno not in anni_tot:
+            add("consumi", reg, prov, anno, voce, v)
+    T["_note"] = confronta_consumi(tot, ee)
+    return T
+
+
+def _consumi(raw: Path, ds: str, mappa_set: dict) -> dict:
+    """{(regione, provincia, anno, voce): GWh} sommando le righe di dettaglio (attività, classe)."""
+    out: dict = defaultdict(float)
+    for r in _righe(raw, ds):
+        voce = mappa_set.get((r.get("Settore") or "").lower())
         if voce:
-            add("consumi", r["Regione"], r["Provincia"], r["Anno"], voce, _val(r, "_v"))
+            out[(r["Regione"], r["Provincia"], int(r["Anno"]), voce)] += _val(r, "_v")
+    return out
+
+
+SOGLIA_CONFRONTO = 0.05
+
+
+def confronta_consumi(tot: dict, ee: dict, soglia: float = SOGLIA_CONFRONTO) -> list[str]:
+    """Province e anni in cui Total ed ElectricalEnergy differiscono di più della soglia (sul maggiore dei due)."""
+    somma = {"Total": defaultdict(float), "ElectricalEnergy": defaultdict(float)}
+    nomi: dict = {}
+    for ds, d in (("Total", tot), ("ElectricalEnergy", ee)):
+        for (reg, prov, anno, _v), x in d.items():
+            k = (norm(reg), norm(prov or ""), anno)
+            somma[ds][k] += x
+            nomi.setdefault(k, ripara(prov or reg))
+    anni_comuni = {k[2] for k in somma["Total"]} & {k[2] for k in somma["ElectricalEnergy"]}
+    note = []
+    for k in sorted(set(somma["Total"]) | set(somma["ElectricalEnergy"]), key=lambda k: (k[2], k[0], k[1])):
+        if k[2] not in anni_comuni:
+            continue
+        a, b = somma["Total"].get(k, 0.0), somma["ElectricalEnergy"].get(k, 0.0)
+        m = max(abs(a), abs(b))
+        if m > 0 and abs(a - b) / m > soglia:
+            note.append(f"Consumi {k[2]}, {nomi[k]}: Total {a:.1f} GWh, ElectricalEnergy {b:.1f} GWh "
+                        f"({(b - a) / m * 100:+.0f} %); si usa Total")
+    for n in note:
+        print(n, file=sys.stderr)
+    return note
     return T
 
 
@@ -302,6 +350,7 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None) -> dict:
     mappa = mappa or uscita.parent / "mappa"     # nel worker: SITO_DATI/.elettricita_nuova → SITO_DATI/mappa
     regioni_pos, province_pos = posizioni(mappa)
     T = leggi(raw)
+    note = T.pop("_note", [])
     uscita.mkdir(parents=True, exist_ok=True)
     anni = {g: sorted({a for serie in T[g].values() for a in serie}) for g in VOCI}
 
@@ -342,7 +391,7 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None) -> dict:
     comune = {"fonte": FONTE, "unita": UNITA, "voci": voci_out, "fer": FER, "anni": anni,
               "obiettivi_anni": ANNI_OBIETTIVI, "obiettivi_base": 2020,
               "obiettivi_fonte": "DM MASE 21 giugno 2024 (aree idonee), art. 2, Tabella A (GU n. 153 del 2/7/2024)"}
-    (uscita / "italia.json").write_text(json.dumps({**comune, "regioni": regioni_out}, ensure_ascii=False,
+    (uscita / "italia.json").write_text(json.dumps({**comune, "note": note, "regioni": regioni_out}, ensure_ascii=False,
                                                    separators=(",", ":")), encoding="utf-8")
 
     # province per regione
@@ -390,7 +439,7 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None) -> dict:
     if non_trovate:
         raise ValueError(f"province di Terna senza posizione: {sorted(non_trovate)}")
     dimensioni["italia.json"] = (uscita / "italia.json").stat().st_size
-    return {"anni": anni, "dimensioni": dimensioni}
+    return {"anni": anni, "dimensioni": dimensioni, "note": note}
 
 
 def main() -> None:
