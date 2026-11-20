@@ -32,7 +32,7 @@ PAGINE = {
     "aria-trasformazioni.html": "a", "aria-ore.html": "a", "aria-latenti.html": "a", "aria-freecooling.html": "a",
     "cog-emissioni.html": "a", "edificio-clima.html": "a",
     "indici-prezzi.html": "b", "index.html": "b",
-    "fv-cabine.html": "b",
+    "fv-cabine.html": "b", "edificio-cer.html": "b",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -667,3 +667,34 @@ def test_fv_cabine(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "fv_cabine", SENZA_ARCGIS)
+
+
+# ---------------------------------------------------------------------------------------------- Comunità energetiche (con file)
+def test_edificio_cer(browser, base):
+    pronta = "() => window.EUGENIO_CER_SEDI && window.EUGENIO_CER_SEDI.st.pronto"
+    ctx, pg, errori = _apri(browser, base + "edificio-cer.html?prova=1", rotte=SENZA_ARCGIS)
+    pg.wait_for_function(pronta, timeout=30000)
+    pg.fill("#sede-nome", "Scuola Rossi")
+    pg.fill("#sede-lat", "44,139412")
+    pg.fill("#sede-lon", "12,243101")
+    pg.click("#sede-aggiungi")
+    pg.evaluate("() => { const s = window.EUGENIO_CER_SEDI.st.sedi[0]; s.cabina = 'AC001'; s.origine = 'mano'; }")
+    pg.evaluate("() => window.EUGENIO_CER_SEDI.aggiungi({ nome: 'Sede del file', lat: 44.06, lon: 12.56, daFile: true })")
+    pg.evaluate("() => window.EUGENIO_CER_SEDI.st.mappa.jumpTo({ center: [12.2431, 44.1394], zoom: 14 })")
+    link = _collegamento(pg)
+    for parte in ("prova=1", "centro=44.139400*12.243100*14.00", "sedi=44.139412*12.243101*AC001", "aree_gse=0"):
+        assert parte in link, parte
+    assert "Rossi" not in link and "44.060000" not in link                   # niente nomi, niente sedi del file
+    _foto(pg, "edificio_cer_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=SENZA_ARCGIS)
+    pg.wait_for_function(pronta, timeout=30000)
+    sedi = pg.evaluate("() => window.EUGENIO_CER_SEDI.st.sedi.map((s) => [s.lat, s.lon, s.cabina])")
+    assert sedi == [[44.139412, 12.243101, "AC001"]]
+    c = pg.evaluate("() => { const m = window.EUGENIO_CER_SEDI.st.mappa, c = m.getCenter(); return [c.lat, c.lng, m.getZoom()]; }")
+    assert abs(c[0] - 44.1394) < 1e-5 and abs(c[2] - 14) < 1e-6
+    pg.wait_for_timeout(1000)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "edificio_cer", SENZA_ARCGIS)
