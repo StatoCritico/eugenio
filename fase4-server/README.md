@@ -14,7 +14,7 @@ Container:
 | Container | Cosa fa |
 |---|---|
 | `api` | FastAPI: riceve il CSV dei consumi, costruisce le covariate meteo e di calendario, chiama **TiRex-2** e restituisce la previsione probabilistica (quantili 10–90 %). Fa anche da proxy verso **Zornade** (la chiave resta sul server) e geolocalizza i patrimoni edilizi (ANNCSU + Zornade) |
-| `worker` | (20/11/2026) **controllo mensile del servizio del GSE delle aree convenzionali** il 3 del mese dalle 7 (`gse-aree`, una richiesta `?f=json`, email solo se non risponde); (17/11/2026) **interruzioni della rete elettrica ogni 15 minuti** (thread a parte) e **saturazione dei trasformatori ogni notte alle 01:15** (`rete-interruzioni`, `rete-saturazione`, database `/dati/rete/rete.sqlite`); (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
+| `worker` | (20/11/2026) **dati di Terna**: ogni giorno alle 06:30 il giorno prima dall'API ufficiale e qualche mese di storico dal Download Center (`terna-api`, archivio `/dati/terna/serie`), poi i file di «Carichi elettrici» (`carichi`); il 5 del mese alle 05:00 le statistiche annuali per «Produzione e consumi di elettricità» (`elettricita`), vedi § «Dati di Terna»; (20/11/2026) **controllo mensile del servizio del GSE delle aree convenzionali** il 3 del mese dalle 7 (`gse-aree`, una richiesta `?f=json`, email solo se non risponde); (17/11/2026) **interruzioni della rete elettrica ogni 15 minuti** (thread a parte) e **saturazione dei trasformatori ogni notte alle 01:15** (`rete-interruzioni`, `rete-saturazione`, database `/dati/rete/rete.sqlite`); (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
 | `caddy` | sito statico della fase 5 e instradamento verso l'API, solo dentro la rete Docker |
 | `cloudflared` | **Cloudflare Tunnel**: collega il server a Cloudflare senza aprire porte; l'HTTPS lo fa Cloudflare |
 | `listmonk` + `postgres` | newsletter automatica dei dati: liste, doppia conferma, cancellazione, invii |
@@ -46,6 +46,16 @@ Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, v
   ricreata solo per il campo nuovo di `/api/rete/stato`.
 - Prove: `tests/test_rete.py` (risposta valida, HTTP 503, non JSON, errore ArcGIS, strato 0 mancante, rete assente, stesso
   indirizzo in rete.py e rete.js) e `tests/test_worker.py` (email solo se non risponde, una volta al mese nel ciclo).
+
+## Aggiunte del 20/11/2026 e (dati di Terna nel worker)
+
+- Modulo `servizio/terna.py` e tre lavori nuovi del worker: `terna-api` (serie quartorarie e IMCEI), `elettricita`
+  (statistiche annuali, fase 15) e `carichi` (file di «Carichi elettrici», fase 15). Dettagli: § «Dati di Terna».
+- Immagine: `fase15-elettricita/elettricita` copiata in `/app/elettricita` (`api/Dockerfile`, come la fase 8);
+  `aggiorna_da_github.sh` copia anche `fase15-elettricita` e non tocca `dati/elettricita/` e `dati/carichi/` del sito.
+- Variabili nuove nel `.env`: `TERNA_CLIENT_ID`, `TERNA_CLIENT_SECRET` (facoltative: senza, l'API non parte; le altre hanno
+  valori predefiniti). Nessuna modifica al Caddyfile né ai volumi: le pagine leggono `dati/elettricita/` e `dati/carichi/`
+  nella cartella del sito, già montata nel worker come `/sito/dati`. Messa in servizio: `../AGGIORNAMENTO_2026-11-20e.md`.
 
 ## Ortofoto AGEA 2022-2024 per tutta Italia (17/11/2026, segnalazione di Paolo)
 
@@ -618,6 +628,111 @@ quando riparte, né per Torino da sola, né per un giro notturno fallito (solo n
 minuti). **Prove**: `tests/test_rete.py` (regola, interruzioni a pagine con chiusura, riapertura e lettura sospetta,
 saturazione con Torino in errore, ritentativi, pause, gettone mai registrato, fotografia mensile, rotte e 503/422/429) e
 `tests/test_worker.py` (orari delle letture, email solo oltre le 72 ore, più di 5 province ferme, una per episodio).
+
+## Dati di Terna (20/11/2026)
+
+Dati di Terna per le pagine «Produzione e consumi di elettricità» (statistiche annuali) e «Carichi elettrici» (serie
+quartorarie) e per le analisi future. **Decisione di Paolo**: si caricano sul server per le elaborazioni del sito ma
+**non si scaricano** dal sito e **mai nel repository** (`.gitignore`: `fase5-sito/sito/dati/elettricita/`,
+`fase5-sito/sito/dati/carichi/`). **Niente dati di prezzo o di mercato di Terna** (cataloghi Market e Fees: prezzi,
+corrispettivi, MSD): restano esclusi come GME ed EEX; una prova controlla che il modulo non li chiami.
+
+### Lavori
+
+| lavoro | quando | cosa fa | richieste |
+|---|---|---|---|
+| `terna-api` | ogni giorno dalle **06:30** (`TERNA_API_ORA`, ora italiana) | 1) **API ufficiale** (se ci sono le chiavi): il giorno prima (e quelli rimasti indietro, al più `TERNA_API_GIORNI_MAX` = 7) per `load/v2.0/total-load`, `load/v2.0/market-load`, `load/v2.0/peak-valley-load`, `generation/v2.0/actual-generation`, `generation/v2.0/renewable-generation`, `generation/v2.0/energy-balance` (`dateFrom`=`dateTo`=gg/mm/aaaa, carico di tutte le zone senza filtro); l'**IMCEI** (`load/v2.0/monthly-index-industrial-electrical-consumption`, `year`, `month`) dal 2021 fino al primo mese recente non ancora pubblicato (i mesi vecchi senza dati si saltano), poi una prova al giorno dal 20 del mese (`TERNA_IMCEI_GIORNO`). 2) **Storico dal Download Center** (senza chiave, non consuma la quota): `TERNA_STORICO_MESI` (6) mesi per serie al giorno dal `TERNA_STORICO_INIZIO` (2021-01), ripreso da dove era rimasto, solo mesi finiti (un mese entra appena finisce). 3) **Riserva**: se un mese dello storico non arriva dal Download Center lo si chiede all'API (una richiesta per serie e mese, se c'è quota); se l'API non è configurata o non ha risposto, il mese in corso si legge dal Download Center. 4) Se l'archivio è cambiato, il lavoro `carichi` | API: 6 al giorno + 1 token (~7; il primo giorno ~55 con gli ultimi 7 giorni e 12 mesi di IMCEI; recupero dell'IMCEI ≤ 12 al giorno per ~6 giorni); Download Center: ~36 nei giorni dello storico (~12 giorni per 2021→oggi), poi 6 il primo giorno del mese |
+| `carichi` | subito dopo `terna-api`, se l'archivio è cambiato | se la fase 15 ha `costruisci_carichi(archivio, uscita)` (import protetto: `elettricita.carichi`, poi `elettricita.costruisci`), la chiama con `/dati/terna/serie` e `/sito/dati/.carichi_nuova` e pubblica in `/sito/dati/carichi` con `_pubblica` se il controllo passa (almeno un JSON, non meno del 90 % di prima); se non c'è o solleva `NotImplementedError`, riga nel registro e niente pubblicato | nessuna |
+| `elettricita` | il **5 del mese dalle 05:00** (`ELETTRICITA_GIORNO`, `ELETTRICITA_ORA`); **subito** se `/dati/terna/statistiche` è vuota | `terna_dc.scarica(/dati/terna/statistiche, ultimi=2)` (fase 15: anni mancanti più gli ultimi due, provvisori → consolidati) e `costruisci(raw, /sito/dati/.elettricita_nuova)`; pubblica in `/sito/dati/elettricita` con `_pubblica` solo se c'è `italia.json` e i JSON non sono meno del 90 % di prima. `NotImplementedError` (costruttore non ancora pronto): avviso nel registro, niente pubblicato, nessuna email | Download Center, ~10–20 richieste al mese |
+
+Tutti e tre si lanciano anche a mano: `docker compose run --rm worker python -m servizio.worker terna-api` (o
+`elettricita`, `carichi`). Un solo `terna-api` alla volta (lucchetto `/dati/terna/.aggiorna.lock`): se il ciclo del worker
+sta già lavorando, il lancio a mano scrive «un altro aggiornamento è in corso» e termina. Nel `worker_stato.json` le voci `terna_api` ed `elettricita` (una volta al giorno). Dopo un
+**429 o un 5xx** di Terna il lavoro si ferma subito (nessuna ripetizione immediata, la quota non si brucia), lo stato non
+avanza e il ciclo riprova dopo `TERNA_RIPROVA_MIN` (60) minuti, al più `TERNA_RIPROVA_MAX` (4) volte al giorno.
+
+### API ufficiale: chiavi, limiti, errori
+
+- Applicazione creata da Paolo su https://developer.terna.it (procedura in `../AGGIORNAMENTO_2026-11-20e.md`); **una
+  sola**: mai altre chiavi per aggirare i limiti. `TERNA_CLIENT_ID` e `TERNA_CLIENT_SECRET` stanno **solo** nel `.env` del
+  server (permessi 600), mai nel codice, nei documenti, nei registri. Senza le due chiavi la parte dell'API non parte
+  (riga «TERNA_CLIENT_ID o TERNA_CLIENT_SECRET mancanti» nel registro, **nessuna email**); lo storico dal Download Center
+  continua.
+- Token: `POST https://api.terna.it/public-api/access-token` (`grant_type=client_credentials`, `client_id`,
+  `client_secret`, form-urlencoded), valido 300 s, rinnovato 30 s prima della scadenza; poi
+  `Authorization: Bearer <token>`. **401** → token nuovo e una sola ripetizione.
+- Limiti di Terna: **1 richiesta al secondo, 300 al giorno**. Pausa minima `TERNA_PAUSA_S` (1,1 s, mai sotto 1, vale anche
+  per il Download Center); contatore persistente `/dati/terna/quota_api.json` (`{"giorno": "AAAA-MM-GG", "richieste":
+  n}`, giorno italiano, scritto **prima** di ogni richiesta, anche del token) con tetto `TERNA_API_TETTO` (250, mai sopra
+  300); un giorno si scarica solo se restano almeno 7 richieste.
+- Corpo vuoto (Terna risponde così ai parametri non riconosciuti, senza errore): riga nel registro, giorno considerato
+  senza dati.
+
+### Email all'amministratore
+
+Solo per errori veri: (a) l'archivio non si aggiorna da più di `TERNA_AVVISO_GIORNI` (3) giorni — con le chiavi conta
+l'API (chiavi scadute o revocate), senza conta il Download Center — una volta per episodio; (b) `elettricita`: il
+Download Center non risponde in **due mesi diversi di fila**, oppure i file costruiti sono incompleti; (c) `carichi`: file
+incompleti o errore del costruttore; (d) errore imprevisto del codice. Mai per le chiavi mancanti, per un 429 isolato, né
+per i costruttori non ancora pronti.
+
+### Cartelle
+
+| sul server | nel container | cosa |
+|---|---|---|
+| `/srv/energia/dati/terna/serie/<serie>/<AAAA-MM>.parquet` | `/dati/terna/serie/…` | archivio delle serie (sotto) |
+| `/srv/energia/dati/terna/statistiche/<Dataset>_<anno>.json` | `/dati/terna/statistiche/` | risposte del Download Center per le statistiche annuali (fase 15, `terna_dc`) |
+| `/srv/energia/dati/terna/stato.json` | `/dati/terna/stato.json` | stato: mese successivo dello storico per serie (`dc`), ultimo giorno dall'API (`api_giorno`), IMCEI (`imcei`), ultimi aggiornamenti riusciti, avvisi |
+| `/srv/energia/dati/terna/quota_api.json` | `/dati/terna/quota_api.json` | contatore delle richieste all'API di oggi |
+| `/srv/energia/dati/terna/elettricita_stato.json` | idem | mesi in cui il Download Center non ha risposto (email al secondo) |
+| `/srv/energia/sito/dati/elettricita/`, `/srv/energia/sito/dati/carichi/` | `/sito/dati/elettricita/`, `/sito/dati/carichi/` | file statici delle due pagine, scritti solo dal worker |
+
+`/dati/terna` non è mai servita da Caddy.
+
+### Formato dell'archivio (`/dati/terna/serie`)
+
+Un file **Parquet per serie e mese** (`<AAAA-MM>.parquet`, mese **italiano** dell'istante), scritto in un file temporaneo
+e poi rinominato; **deduplicato sulla chiave**, vince l'ultima riga scritta (il Download Center di fine mese sostituisce
+le righe dell'API dello stesso istante). Righe ordinate per chiave.
+
+| serie | fonte (API / Download Center) | chiave | colonne |
+|---|---|---|---|
+| `carico_totale` | `total-load` / `TotalLoad` | `istante`, `zona` | `carico_mw`, `previsione_mw` |
+| `carico_mercato` | `market-load` / `MarketLoad` | `istante`, `zona` | `carico_mw`, `previsione_mw` |
+| `picco_valle` | `peak-valley-load` / `PeakValleyLoad` | `istante`, `fonte` | `picco_gw`, `valle_gw`, `fonte_gw` |
+| `produzione` | `actual-generation` / `ActualGeneration` | `istante`, `fonte` | `energia_gwh` |
+| `rinnovabili` | `renewable-generation` / `RenewableGeneration` | `istante`, `fonte` | `energia_gwh` |
+| `bilancio` | `energy-balance` / `EnergyBalance` | `istante`, `fonte` | `energia_gwh` |
+| `imcei` | `monthly-index-industrial-electrical-consumption` (solo API) | `mese`, `regione`, `settore`, `tensione` | `indice`, `consumo_gwh` |
+
+- `istante`: `timestamp[us, UTC]` (per l'ora italiana: `df.istante.dt.tz_convert("Europe/Rome")`); passo di 15 minuti
+  (carichi, produzione, bilancio), un'ora per picco e valle del giorno. Dall'API: `date` + `date_offset` (esatto). Dal
+  Download Center la data è l'ora locale senza fuso (millisecondi dall'1/1/0001): nell'**ora ripetuta di fine ottobre**
+  Terna dà due righe con la stessa ora e in ordine qualsiasi; per ogni zona o fonte la riga più vicina al quarto d'ora
+  precedente è l'ora legale (continuità), l'altra l'ora solare.
+- `zona`: nomi inglesi di Terna — `Italy`, `North`, `Centre-North`, `Centre-South`, `South`, `Calabria`, `Sicily`,
+  `Sardinia` (`Italy` è il totale: non sommarla alle zone).
+- `fonte`: nomi inglesi di Terna — produzione: `Thermal`, `Hydro`, `Wind`, `Photovoltaic`, `Geothermal`,
+  `Self-consumption`; rinnovabili: `Hydro`, `Wind`, `Photovoltaic`, `Geothermal`, `Biomass`; bilancio e picco/valle anche
+  `Net Foreign Exchange`, `Pumping-consumption`. In `picco_valle` la riga con `fonte` vuota è il totale (picco o valle del
+  giorno in GW, l'altro vuoto); le righe per fonte (solo Download Center) hanno la copertura in `fonte_gw`. Nel Download
+  Center le colonne si chiamano «Peak Load [MW]» e «Valley Load [MW]» ma i valori sono GW (42,3 il 31/10/2025), come
+  nell'API.
+- `energia_gwh`: il valore come lo chiama Terna («GWh»); al passo di 15 minuti i valori corrispondono alla potenza media
+  in GW (Thermal ~14 di notte): controllare l'unità prima di sommare.
+- `imcei`: `mese` testo `AAAA-MM`; `regione`, `settore` (ALIMENTARE, ALTRI, CARTARIA, …), `tensione` (AT, MT).
+- `origine`: `api` o `dc`. Numeri `float64` (i formati misti di Terna — `" 13"`, `"1.234,5"` — sono già convertiti),
+  testi `string`. Leggere un anno: `pd.concat(pd.read_parquet(f) for f in sorted(Path(archivio, "carico_totale").glob("2025-*.parquet")))`.
+
+### Prove
+
+`tests/test_terna.py` (nessuna rete): quota con tetto e azzeramento il giorno dopo, tetto mai sopra 300, token nuovo dopo
+un 401 e alla scadenza, 429/5xx senza ripetizioni, corpo vuoto, chiavi mai nel registro, quota esaurita, numeri misti,
+date del Download Center, ora ripetuta di ottobre, picco/valle, deduplicazione, mese italiano, IMCEI, pagine del Download
+Center, storico che riprende dallo stato, Download Center fermo, email dopo 3 giorni, aggiornamento giornaliero dall'API,
+429 con riserva, primo avvio con 7 giorni, riserva dello storico dall'API, `elettricita` che non pubblica se `costruisci`
+non è pronto o i file sono pochi (o manca `italia.json`), email dopo due mesi senza risposta, `carichi` assente/non
+pronto/pubblicato, lavori nel ciclo e nei comandi, nessun catalogo di mercato, un aggiornamento alla volta, mesi vecchi dell'IMCEI senza dati saltati.
 
 ## Archivio psicrometrico per «Trattamento aria» (14/11/2026)
 
@@ -1306,12 +1421,12 @@ Niente pacchetti `codice.tar.gz`/`sito.tar.gz` da copiare con scp.
 | `~/energia/fase4-server/aggiorna_da_github.sh --notte` | dal crontab alle 4:40: solo se c'è una release nuova; **email solo se qualcosa va storto** (16/11/2026) |
 
 Passi: copia di sicurezza di `~/energia` (`~/energia_prima_<release>`, si tengono le ultime 3) e delle convenzioni (`~/convenzioni_prima_<release>`); codice delle fasi 3, 4,
-6, 7, 8, 9, 10 in `~/energia` con rsync **senza cancellare** (restano `.env`, fase 2, `uni_privato`,
+6, 7, 8, 9, 10 e (20/11/2026) 15 in `~/energia` con rsync **senza cancellare** (restano `.env`, fase 2, `uni_privato`,
 `mercati_energia/dati/` e tutto ciò che non è nel repository); convenzioni `*.toml` e `fonti/*.toml` in
 `/srv/energia/dati/mercati/convenzioni`; `docker compose build api` e `up -d --force-recreate api worker` con attesa di
 `/api/salute` (3 minuti: se l'api non risponde si torna **da soli** alla copia e si esce con errore, email
-all'amministratore); sito in `/srv/energia/sito` (senza cancellare; `dati/indicatori/` e `dati/prezzi/` non si toccano) con
-il controllo della versione `?v=`; `worker prezzi`; **Purge Everything** su Cloudflare se nel `.env` ci sono `CF_ZONE_ID` e
+all'amministratore); sito in `/srv/energia/sito` (senza cancellare; `dati/indicatori/`, `dati/prezzi/` e, dal 20/11/2026, `dati/elettricita/` e
+`dati/carichi/` non si toccano) con il controllo della versione `?v=`; `worker prezzi`; **Purge Everything** su Cloudflare se nel `.env` ci sono `CF_ZONE_ID` e
 `CF_PURGE_TOKEN` (token con il **solo** permesso «Zone › Cache Purge» sulla zona; lo script non li stampa mai). Registro in
 `~/aggiorna_da_github.log`; un solo aggiornamento alla volta (`flock`). Lo script si riavvia da una copia temporanea, così
 può aggiornare anche se stesso.
