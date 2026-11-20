@@ -16,6 +16,25 @@ max_minuti_storico = 60              # ogni notte, tempo massimo per recuperare 
 giorni_riverifica = 7                # ogni notte riscarica anche gli ultimi 7 giorni
 volumi = true                        # volumi MGP per zona
 
+# Mercato del giorno prima (lavoro `mercato-mgp`, 04:15): liquidità, transiti, fabbisogno, curve aggregate di domanda e
+# offerta, offerte pubbliche. SOLO USO INTERNO: mai sul sito, mai esportati. Tutte le voci sono facoltative.
+[mgp]
+abilitato = true
+max_minuti = 45                      # tempo massimo a notte, storico compreso
+# inizio_serie = 2004-04-01          # liquidità, transiti, fabbisogno (vuoto = [gme].inizio_orario)
+giorni_riverifica = 7
+domanda_offerta = true               # curve aggregate (ME_DemandAndSupply), un Parquet al giorno
+domanda_offerta_inizio = 2025-10-01
+domanda_offerta_giorni_per_notte = 7
+offerte = true                       # offerte pubbliche (Offers_PublicDomain), un Parquet al giorno, ~4-20 MB
+offerte_inizio = 2025-10-01          # più indietro solo dopo aver controllato lo spazio (README, «Spazio»)
+offerte_giorni_per_notte = 3         # storico all'indietro, giorni per notte
+offerte_ritardo_giorni = 8           # il GME le pubblica dopo 7 giorni
+pausa_s = 20                         # pausa fra due richieste grandi
+giorni_ferma = 4                     # email se una serie non riceve dati nuovi da più giorni
+offerte_max_gb = 12                  # oltre, niente più storico delle offerte (i giorni nuovi sì)
+spazio_minimo_gb = 8                 # sotto, niente storico ed email
+
 [eex]
 ttf = true                           # TTF Neutral Gas Price, file pubblico degli ultimi 60 giorni
 ttf_trimestrali = true               # future trimestrali TTF letti dal sito EEX (a scopo informativo),
