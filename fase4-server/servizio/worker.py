@@ -21,13 +21,16 @@
   rete: saturazione      ogni notte alle RETE_SATURAZIONE_ORA (01:15, ora italiana): comuniServiti per tutte le province,
                          comuni gestiti da e-distribuzione, elenco delle province; subito se il database non ne ha ancora
                          (email solo se interruzioni non lette, o più di 5 province ferme, da più di 72 ore)
+  aree GSE               una volta al mese, il giorno GSE_CONTROLLO_GIORNO (3) dalle GSE_CONTROLLO_ORA (7, ora italiana):
+                         il servizio del GSE delle aree convenzionali risponde? Una richiesta ?f=json, nessun dato salvato,
+                         email solo se non risponde (20/11/2026; le aree le legge solo il browser)
 I file del sito (indicatori, clima) si scrivono in una cartella nuova e si scambiano con quella pubblicata solo a
 lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
 
   python -m servizio.worker                 ciclo continuo
   python -m servizio.worker previsioni|storico|psicro|mercati|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
-                            |rete-interruzioni|rete-saturazione
+                            |rete-interruzioni|rete-saturazione|gse-aree
                                             una sola esecuzione (anche con docker compose run --rm worker …)
 """
 from __future__ import annotations
@@ -237,6 +240,26 @@ def rete_saturazione() -> dict:
     return esito
 
 
+def gse_aree() -> dict:
+    """(20/11/2026) Controllo mensile del servizio del GSE delle aree convenzionali (rete.controlla_servizio_gse): una sola
+    richiesta ?f=json, nessun dato salvato; email all'amministratore SOLO se non risponde (il nome del servizio cambierà
+    con AC_Comuni_2027: allora va aggiornato in servizio/rete.py e in fase5-sito/sito/rete.js)."""
+    from . import rete
+    try:
+        esito = rete.controlla_servizio_gse()
+    except Exception as e:
+        log.warning("Servizio del GSE delle aree convenzionali: %s: %s", type(e).__name__, e)
+        avvisi.invia("servizio del GSE delle aree convenzionali non risponde",
+                     f"Controllo mensile di {rete.URL_GSE_AREE}?f=json non riuscito: {type(e).__name__}: {e}\n\n"
+                     "Le pagine «Cabine primarie» e «Comunità energetiche» non possono leggere le aree convenzionali. "
+                     "Se il GSE ha pubblicato un servizio nuovo (es. AC_Comuni_2027), aggiornare l'indirizzo in "
+                     "fase4-server/servizio/rete.py (URL_GSE_AREE) e in fase5-sito/sito/rete.js (GSE.SERVIZIO).\n"
+                     f"Mappa del GSE: {rete.PAGINA_GSE_AREE}")
+        return {"ok": False, "errore": f"{type(e).__name__}: {e}"}
+    log.info("Servizio del GSE delle aree convenzionali: risponde (%s)", esito.get("strato_0"))
+    return esito
+
+
 class _Errori:
     """Letture delle interruzioni fallite (decisione di Paolo del 17/11/2026): un'email SOLO quando non si leggono da più
     di RETE_AVVISO_ORE ore consecutive (dall'ultima lettura riuscita, presa dal database all'avvio), una per episodio;
@@ -362,6 +385,12 @@ def ciclo() -> None:
             except Exception:
                 log.exception("Errore in saturazione della rete elettrica")
             fatti["rete_saturazione"] = oggi
+        if loc.day == C.GSE_CONTROLLO_GIORNO and loc.hour >= C.GSE_CONTROLLO_ORA and fatti.get("gse_aree") != oggi:
+            try:                        # una sola richiesta al mese, anche se fallisce (l'email la manda gse_aree)
+                gse_aree()
+            except Exception:
+                log.exception("Errore nel controllo del servizio del GSE")
+            fatti["gse_aree"] = oggi
         _stato_scrivi(fatti)
         time.sleep(300)
 
@@ -371,4 +400,4 @@ if __name__ == "__main__":
     {"ciclo": ciclo, "previsioni": meteo.aggiorna_previsioni, "storico": meteo.aggiorna_storico, "psicro": psicro,
      "mercati": mercati, "prezzi": prezzi, "mensile": mensile, "settimanale": settimanale, "avvisi": avvisi_meteo, "territorio": territorio, "anncsu": anncsu,
      "indicatori": indicatori, "clima": clima, "rete-interruzioni": rete_interruzioni,
-     "rete-saturazione": rete_saturazione}[cmd]()
+     "rete-saturazione": rete_saturazione, "gse-aree": gse_aree}[cmd]()

@@ -1717,6 +1717,26 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .attribuzione-gse { font-size: var(--c-s); }
 .pagina-cabine .carica-file input[type="file"] { display: none; }
 .campione-rete.in-parte { background: transparent; border: 2px dashed var(--inchiostro); }
+/* Comunità energetiche (20/11/2026): sedi con la cabina proposta dal GSE, mappa con lo strato delle aree convenzionali */
+.mappa-gl.mappa-cer { height: min(60vh, 520px); min-height: 300px; margin-top: var(--s2); }
+table.sedi-cer { width: 100%; border-collapse: collapse; font-size: var(--c-s); }
+table.sedi-cer th, table.sedi-cer td { padding: .5rem .6rem; border-bottom: 1px solid var(--linea); text-align: left; vertical-align: top; }
+table.sedi-cer thead th { background: var(--rialzo); font: 600 var(--c-s)/1.2 var(--titoli); }
+table.sedi-cer tbody th strong { display: block; }
+table.sedi-cer .coordinate-cer { display: block; color: var(--tenue); font-size: var(--c-xs); white-space: nowrap; }
+table.sedi-cer .cabina-cer { min-width: 15rem; max-width: 26rem; }
+table.sedi-cer .cabina-cer input { width: 100%; max-width: 16rem; font-family: var(--mono, monospace); }
+table.sedi-cer .menu-cer { min-width: 14rem; max-width: 24rem; }
+table.sedi-cer .menu-cer select { width: 100%; }
+table.sedi-cer p { margin: .25rem 0 0; font-size: var(--c-xs); color: var(--tenue); max-width: none; }
+table.sedi-cer p.attenzione, table.sedi-cer p.errore { color: var(--inchiostro); font-weight: 600; }
+table.sedi-cer .origine-cabina { font-style: italic; }
+.comandi-cer { margin-top: var(--s2); }
+.etichetta-ac { font: 700 11px/1.1 var(--testo, sans-serif); color: var(--inchiostro); background: color-mix(in srgb, var(--foglio) 80%, transparent);
+  border: 1px solid var(--primario); border-radius: 3px; padding: 1px 4px; pointer-events: none; white-space: nowrap; }
+.etichetta-ac[hidden] { display: none; }
+.popup-ac { font-size: var(--c-s); color: #1a1a1a; display: grid; gap: .2rem; }
+.popup-ac .aiuto { font-size: var(--c-xs); color: #555; }
 
 /* ------------------------------------------------------------------------------------------- righello delle mappe
    righello.js (19/11/2026): pulsante piccolo sotto la mappa accanto ai livelli, punti e linea gialli bordati di scuro

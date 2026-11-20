@@ -248,3 +248,26 @@ def test_rete_saturazione_cinque_province_ferme_nessuna_email(tmp_path, monkeypa
     monkeypatch.setattr(R, "aggiorna_saturazione", lambda: {"ok": 100, "falliti": {}})
     monkeypatch.setattr(R, "adesso", lambda: t0 + dt.timedelta(days=10))
     assert len(W.rete_saturazione()["ferme_72h"]) == 5 and inviati == []
+
+
+# ---------------------------------------------------------------------------------------------- servizio GSE (20/11/2026)
+def test_gse_aree_email_solo_se_non_risponde(monkeypatch):
+    from servizio import rete as R
+    inviati = []
+    monkeypatch.setattr(W.avvisi, "invia", lambda oggetto, testo: inviati.append((oggetto, testo)))
+    monkeypatch.setattr(R, "controlla_servizio_gse", lambda: {"ok": True, "strato_0": "AC_2025"})
+    assert W.gse_aree()["ok"] and inviati == []
+    def guasto():
+        raise RuntimeError("servizio del GSE: HTTP 404")
+    monkeypatch.setattr(R, "controlla_servizio_gse", guasto)
+    e = W.gse_aree()
+    assert e == {"ok": False, "errore": "RuntimeError: servizio del GSE: HTTP 404"}
+    assert len(inviati) == 1 and inviati[0][0] == "servizio del GSE delle aree convenzionali non risponde"
+    assert R.URL_GSE_AREE in inviati[0][1] and "rete.js" in inviati[0][1]
+
+
+def test_gse_aree_nel_ciclo_una_volta_al_mese():
+    import inspect
+    s = inspect.getsource(W.ciclo)
+    assert "C.GSE_CONTROLLO_GIORNO" in s and 'fatti.get("gse_aree") != oggi' in s
+    assert 1 <= C.GSE_CONTROLLO_GIORNO <= 28 and 0 <= C.GSE_CONTROLLO_ORA <= 23
