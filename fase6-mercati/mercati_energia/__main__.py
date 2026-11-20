@@ -12,6 +12,9 @@
   convenzioni costo ID LOTTO --consumi consumi.csv [--pod N] [--potenza KW]
   quote-gme                        quote residue dell'API del GME
   sorveglianza [stato]             controlla subito le fonti delle convenzioni (quello della notte) o ne mostra lo stato
+  mgp                              mercato del giorno prima: liquidità, transiti, fabbisogno, curve aggregate e offerte
+                                   pubbliche (lavoro `mercato-mgp` del worker; solo uso interno)
+  mgp-stato                        giorni in archivio e spazio occupato dalle serie MGP (nessun valore dei dati)
 """
 from __future__ import annotations
 
@@ -115,6 +118,14 @@ def main(argv=None):
         else:
             e = sorveglianza.esegui(cfg.cartella, cfg.convenzioni)
             print(sorveglianza.riepilogo(e) or f"Nessuna novità ({e['controllate']} pagine controllate)")
+    elif a.comando == "mgp":
+        from . import mgp_notturno
+        e = mgp_notturno.esegui(cfg)
+        print(json.dumps({k: v for k, v in e.items() if k != "stato"}, indent=1, ensure_ascii=False, default=str))
+        return 1 if e["da_segnalare"] else 0
+    elif a.comando == "mgp-stato":
+        from . import mgp_notturno
+        print(mgp_notturno.riepilogo(cfg))
     elif a.comando == "quote-gme":
         print(json.dumps(gme.ClientGME(cfg.gme.utente, cfg.gme.password()).quote(), indent=1))
     else:

@@ -254,7 +254,8 @@ def offerte_pubbliche(cl: ClientGME, giorno: dt.date, attese_quota: int = 1) -> 
     df = leggi_offerte_xml(dati)
     if not df.empty and "MARKET_CD" in df:
         df = df[df["MARKET_CD"].isna() | (df["MARKET_CD"].str.upper() == "MGP")]
-    return df.reset_index(drop=True)
+    ordine = [c for c in ("PURPOSE_CD", "ZONE_CD", "UNIT_REFERENCE_NO", "periodo", "MERIT_ORDER_NO") if c in df]
+    return df.sort_values(ordine, kind="stable").reset_index(drop=True)   # righe simili vicine: file più piccoli
 
 
 # ---------------------------------------------------------------------------------------------- curve ordinate
