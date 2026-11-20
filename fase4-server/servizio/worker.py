@@ -7,6 +7,11 @@
   mercati (GME, TTF)     ogni notte alle ORA_MERCATI (ora italiana), con la sorveglianza delle fonti delle
                          convenzioni (email solo quando cambia qualcosa), i listini delle convenzioni e, subito dopo,
                          gli indici dei prezzi pubblicabili per il sito (prezzi: /sito/dati/prezzi/indici.json)
+  mercato del giorno    ogni notte alle ORA_MERCATO_MGP (04:15, ora italiana; 20/11/2026): MGP del GME, cioè liquidità,
+  prima (mercato-mgp)    transiti, fabbisogno, curve aggregate di domanda e offerta e offerte pubbliche (tutte, pubblicate
+                         dopo 7 giorni; un Parquet al giorno in /dati/mercati/mgp_offerte), storico all'indietro qualche
+                         giorno per notte. SOLO USO INTERNO: niente sul sito, nessuna rotta, nessuna esportazione. Email
+                         solo per credenziali GME rifiutate, fonte ferma da giorni, disco quasi pieno (fase6 mgp_notturno)
   newsletter dei dati    mensile, il giorno NOTIZIARIO_GIORNO (listmonk; dal 14/11/2026 un messaggio per iscritto con
                          le sue regioni)
   previsioni per email   ogni settimana, giorno SETTIMANALE_GIORNO dalle SETTIMANALE_ORA: la settimana dopo per i comuni
@@ -37,7 +42,7 @@ lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
 
   python -m servizio.worker                 ciclo continuo
-  python -m servizio.worker previsioni|storico|psicro|mercati|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
+  python -m servizio.worker previsioni|storico|psicro|mercati|mercato-mgp|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
                             |rete-interruzioni|rete-saturazione|gse-aree|terna-api|elettricita|carichi
                                             una sola esecuzione (anche con docker compose run --rm worker …)
 """
@@ -101,6 +106,21 @@ def mercati() -> None:
     if s.get("da_segnalare"):
         from mercati_energia.sorveglianza import riepilogo
         avvisi.invia("convenzioni e fonti: novità", riepilogo(s))
+
+
+def mercato_mgp() -> dict:
+    """(20/11/2026) Mercato del giorno prima del GME, solo uso interno (fase 6, mercati_energia/mgp_notturno.py): serie
+    aggiuntive, curve aggregate e offerte pubbliche in /dati/mercati. Email solo per i motivi in esito["da_segnalare"]
+    (credenziali rifiutate, fonte ferma da giorni, disco quasi pieno, 3 notti fallite di fila), una volta per episodio."""
+    if not Path(C.MERCATI_CONFIG).exists():
+        log.info("Mercato del giorno prima: configurazione dei mercati assente (%s)", C.MERCATI_CONFIG)
+        return {}
+    from mercati_energia import mgp_notturno
+    from mercati_energia.config import carica
+    esito = mgp_notturno.esegui(carica(C.MERCATI_CONFIG))
+    if esito.get("da_segnalare"):
+        avvisi.invia("mercato del giorno prima (GME): da controllare", "\n\n".join(esito["da_segnalare"]))
+    return esito
 
 
 def prezzi() -> None:
@@ -488,6 +508,12 @@ def ciclo() -> None:
         if (loc.hour, loc.minute) >= (hm, mm) and fatti.get("mercati") != oggi:
             _sicuro(mercati, "mercati")
             fatti["mercati"] = oggi
+        if (loc.hour, loc.minute) >= tuple(map(int, C.ORA_MERCATO_MGP.split(":"))) and fatti.get("mercato_mgp") != oggi:
+            try:                        # niente _sicuro: le email le decide mgp_notturno (da_segnalare)
+                mercato_mgp()
+            except Exception:
+                log.exception("Errore nel mercato del giorno prima")
+            fatti["mercato_mgp"] = oggi
         if loc.day == C.NOTIZIARIO_GIORNO and loc.hour >= 9 and fatti.get("mensile") != oggi:
             _sicuro(mensile, "newsletter mensile")
             fatti["mensile"] = oggi
@@ -552,7 +578,7 @@ def ciclo() -> None:
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "ciclo"
     {"ciclo": ciclo, "previsioni": meteo.aggiorna_previsioni, "storico": meteo.aggiorna_storico, "psicro": psicro,
-     "mercati": mercati, "prezzi": prezzi, "mensile": mensile, "settimanale": settimanale, "avvisi": avvisi_meteo, "territorio": territorio, "anncsu": anncsu,
+     "mercati": mercati, "mercato-mgp": mercato_mgp, "prezzi": prezzi, "mensile": mensile, "settimanale": settimanale, "avvisi": avvisi_meteo, "territorio": territorio, "anncsu": anncsu,
      "indicatori": indicatori, "clima": clima, "rete-interruzioni": rete_interruzioni,
      "rete-saturazione": rete_saturazione, "gse-aree": gse_aree, "terna-api": terna_api, "elettricita": elettricita,
      "carichi": carichi}[cmd]()

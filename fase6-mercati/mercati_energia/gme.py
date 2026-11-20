@@ -40,6 +40,14 @@ class ErroreGME(RuntimeError):
     pass
 
 
+class CredenzialiGME(ErroreGME):
+    """Autenticazione rifiutata (password scaduta o sbagliata): ferma tutte le richieste della notte."""
+
+
+class QuotaGME(ErroreGME):
+    """Richiesta respinta per le quote anche dopo le attese previste (per esempio una risposta troppo grande)."""
+
+
 # Limiti letti dal vivo con GetMyQuotas il 28/10/2026 (la guida tecnica non li pubblica). Il client li rilegge
 # all'avvio e usa questi solo se la lettura fallisce. Ogni chiamata conta come connessione: Auth, GetMyQuotas e
 # RequestData, comprese quelle respinte con 429.
@@ -126,7 +134,7 @@ class ClientGME:
         d = _json_ci(r)
         if r.status_code != 200 or not d.get("success"):
             motivo = d.get("reason") or r.text[:200]
-            raise ErroreGME(f"Autenticazione GME fallita: {motivo}. La password scade ogni 6 mesi: "
+            raise CredenzialiGME(f"Autenticazione GME fallita: {motivo}. La password scade ogni 6 mesi: "
                             "va rinnovata su https://api.mercatoelettrico.org/users/")
         self.token = d.get("token")
 
@@ -189,13 +197,16 @@ class ClientGME:
             return 65 if volte == 1 else 900
 
     def richiesta(self, segmento: str, nome: str, dal: dt.date, al: dt.date, attributi: dict | None = None,
-                  piattaforma: str = "PublicMarketResults", dati_stimati: int = 0) -> list[dict]:
-        """`dati_stimati` non serve più (il limitatore conta i byte ricevuti): resta per compatibilità."""
+                  piattaforma: str = "PublicMarketResults", dati_stimati: int = 0, grezzo: bool = False,
+                  attese_quota: int = 6):
+        """Righe della risposta JSON; con `grezzo=True` i byte dello ZIP restituito (b"" se non ci sono dati), per i dati
+        in XML come le offerte pubbliche (`Offers_PublicDomain`). `attese_quota`: quante volte aspettare 15 minuti se il
+        GME respinge la richiesta per le quote, poi QuotaGME. `dati_stimati` non serve più: resta per compatibilità."""
         corpo = {"Platform": piattaforma, "Segment": segmento, "DataName": nome,
                  "IntervalStart": int(dal.strftime("%Y%m%d")), "IntervalEnd": int(al.strftime("%Y%m%d")),
                  "Attributes": attributi or {}}
         self._assicura_quote()
-        respinte = 0
+        respinte = quota = 0
         for tentativo in range(6):
             try:
                 r = self._chiama("POST", f"{URL}/RequestData", json=corpo, headers=self._intestazioni())
@@ -220,13 +231,16 @@ class ClientGME:
             if not contenuto:
                 motivo = d.get("resultrequest") or r.text[:300]
                 if "quot" in str(motivo).lower() or "limit" in str(motivo).lower():
+                    quota += 1
+                    if quota > attese_quota:
+                        raise QuotaGME(f"GME {nome} {segmento} {dal}–{al}: {motivo}")
                     log.warning("GME: %s – attendo 15 minuti", motivo)
                     _dormi(900)
                     continue
                 if "nessun" in str(motivo).lower() or "no data" in str(motivo).lower():
-                    return []
+                    return b"" if grezzo else []
                 raise ErroreGME(f"GME {nome} {segmento} {dal}–{al}: {motivo}")
-            return _decodifica(contenuto)
+            return base64.b64decode(contenuto) if grezzo else _decodifica(contenuto)
         raise ErroreGME(f"GME {nome}: troppi tentativi falliti")
 
 

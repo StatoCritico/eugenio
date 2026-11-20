@@ -39,6 +39,7 @@ MAX_ORIZZONTE_GIORNI = 365
 # dati di mercato (fase 6)
 MERCATI_CONFIG = os.environ.get("MERCATI_CONFIG", "/dati/mercati/config.toml")
 ORA_MERCATI_LOCALE = os.environ.get("ORA_MERCATI", "02:30")          # aggiornamento notturno, ora italiana
+ORA_MERCATO_MGP = os.environ.get("ORA_MERCATO_MGP", "04:15")    # MGP: offerte pubbliche e curve (20/11/2026)
 # I dati GME e TTF/EEX sono solo per uso interno (simulazioni e analisi): nessuna rotta li espone.
 
 # patrimonio edilizio (fase 7)

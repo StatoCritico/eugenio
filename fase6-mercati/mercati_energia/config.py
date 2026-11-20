@@ -29,6 +29,26 @@ class Gme:
 
 
 @dataclass
+class Mgp:
+    """Lavoro `mercato-mgp` (20/11/2026): serie aggiuntive dell'MGP, curve aggregate, offerte pubbliche. Solo uso interno."""
+    abilitato: bool = True
+    max_minuti: int = 45                   # tempo massimo a notte, recupero dello storico compreso
+    inizio_serie: dt.date | None = None    # liquidità, transiti, fabbisogno (None = [gme].inizio_orario, 1/4/2004)
+    giorni_riverifica: int = 7             # serie piccole: riscarica gli ultimi N giorni (rettifiche)
+    domanda_offerta: bool = True           # curve aggregate (ME_DemandAndSupply), un file al giorno
+    domanda_offerta_inizio: dt.date = dt.date(2025, 10, 1)
+    domanda_offerta_giorni_per_notte: int = 7
+    offerte: bool = True                   # offerte pubbliche (Offers_PublicDomain), un file al giorno
+    offerte_inizio: dt.date = dt.date(2025, 10, 1)
+    offerte_giorni_per_notte: int = 3      # giorni dello storico all'indietro per notte
+    offerte_ritardo_giorni: int = 8        # il GME le pubblica dopo 7 giorni: si chiedono fino a oggi − 8
+    pausa_s: float = 20.0                    # pausa gentile fra due richieste grandi (curve, offerte)
+    giorni_ferma: int = 4                  # email se una fonte non porta dati nuovi da tanti giorni
+    offerte_max_gb: float = 12.0             # oltre, niente più storico delle offerte (i giorni nuovi sì)
+    spazio_minimo_gb: float = 8.0            # spazio libero sotto cui ci si ferma (e si avvisa)
+
+
+@dataclass
 class Config:
     cartella: Path
     gme: Gme
@@ -41,6 +61,7 @@ class Config:
     arera_cmem: bool = True                        # PSV day-ahead mensile ufficiale (ARERA CMEM,m)
     sorveglianza: bool = True                      # controllo notturno delle fonti delle convenzioni
     pfor_sorgente: dict = field(default_factory=dict)   # fonte automatica delle forward TTF, se disponibile
+    mgp: Mgp = field(default_factory=Mgp)          # mercato del giorno prima: offerte pubbliche e serie aggiuntive
 
     def percorso(self, *parti) -> Path:
         p = self.cartella.joinpath(*parti)
@@ -76,6 +97,10 @@ def carica(path: str | Path) -> Config:
         giorni_riverifica=int(g.get("giorni_riverifica", 7)),
         volumi=bool(g.get("volumi", True)),
     )
+    m, base_mgp = raw.get("mgp", {}), Mgp()
+    mgp = Mgp(**{k: (_data(v) if isinstance(getattr(base_mgp, k), dt.date) or k == "inizio_serie"
+                     else type(getattr(base_mgp, k))(v))
+                 for k, v in m.items() if k in Mgp.__dataclass_fields__})
     a = raw.get("archivio", {})
     return Config(
         cartella=p(os.environ.get("MERCATI_ARCHIVIO", a.get("cartella", "archivio_mercati"))),
@@ -89,4 +114,5 @@ def carica(path: str | Path) -> Config:
         arera_cmem=raw.get("arera", {}).get("cmem", True),
         sorveglianza=raw.get("sorveglianza", {}).get("attiva", True),
         pfor_sorgente=raw.get("pfor", {}).get("sorgente", {}),
+        mgp=mgp,
     )

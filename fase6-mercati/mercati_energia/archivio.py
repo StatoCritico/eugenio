@@ -93,3 +93,43 @@ def salva_stato_storico(cartella: Path, stato: dict) -> None:
     p = cartella / "storico.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(stato, indent=1, default=str), encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------------------------- un file per giorno
+# Per i dataset grandi (offerte pubbliche MGP, curve aggregate di domanda e offerta) riscrivere ogni notte un file annuale
+# costerebbe troppo: un file Parquet per giorno, <cartella>/<dataset>/<AAAA>/<AAAA-MM-GG>.parquet, sostituito per intero
+# (scrittura su file temporaneo e rename) quando il giorno si riscarica. Così la deduplicazione è per costruzione.
+def file_giorno(cartella: Path, dataset: str, giorno) -> Path:
+    g = pd.Timestamp(giorno).date()
+    return cartella / dataset / f"{g.year}" / f"{g.isoformat()}.parquet"
+
+
+def scrivi_giorno(cartella: Path, dataset: str, giorno, df: pd.DataFrame) -> int:
+    """Sostituisce il file del giorno con `df` (righe identiche tolte). Restituisce le righe scritte."""
+    if df is None or df.empty:
+        return 0
+    df = df.drop_duplicates().reset_index(drop=True)
+    _scrivi(df, file_giorno(cartella, dataset, giorno))
+    return len(df)
+
+
+def leggi_giorno(cartella: Path, dataset: str, giorno, colonne: list[str] | None = None) -> pd.DataFrame:
+    p = file_giorno(cartella, dataset, giorno)
+    return pd.read_parquet(p, columns=colonne) if p.exists() else pd.DataFrame()
+
+
+def giorni(cartella: Path, dataset: str) -> list:
+    """Giorni presenti in archivio, in ordine."""
+    d = cartella / dataset
+    out = []
+    for f in (d.glob("*/*.parquet") if d.exists() else []):
+        try:
+            out.append(pd.Timestamp(f.stem).date())
+        except ValueError:
+            continue
+    return sorted(out)
+
+
+def dimensione(cartella: Path, dataset: str) -> int:
+    d = cartella / dataset
+    return sum(f.stat().st_size for f in d.rglob("*") if f.is_file()) if d.exists() else 0
