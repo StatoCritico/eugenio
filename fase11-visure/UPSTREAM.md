@@ -1,13 +1,14 @@
 # Proposte «upstream» della fase 11 (EuGEnio Visure)
 
-Stato al 04/11/2026: **bozze, nessuna inviata**. Correzioni e contributi che EuGEnio potrebbe proporre ai progetti e alle
+Stato al 16/11/2026: la n. 1 e la n. 2 sono **inviate** (16/11/2026; i testi spediti sono nei documenti del Project, non
+nel repository); le altre sono bozze. Correzioni e contributi che EuGEnio potrebbe proporre ai progetti e alle
 fonti usate, nati dal lavoro sulla Fase D. Le invia Paolo, quando e se lo ritiene utile; dopo l'invio annotare qui data e
 risposta.
 
 | # | Destinatario | Tipo | Priorità | Stato |
 |---|---|---|---|---|
-| 1 | Zornade – `visura-api` | tre contributi del § 13 e due nuovi | media | bozza |
-| 2 | Agenzia delle Entrate | richiesta di chiarimento sulle condizioni d'uso (automazione, riuso dei dati letti) | **alta**, prima di attivare `visura-api` | bozza |
+| 1 | Zornade – `visura-api` | tre contributi del § 13 e due nuovi | media | **inviata il 16/11/2026** con la risposta al § 14.2 |
+| 2 | Agenzia delle Entrate | richiesta di chiarimento sulle condizioni d'uso (automazione, riuso dei dati letti) | **alta**, prima di attivare `visura-api` | **inviata il 16/11/2026** (dc.sccpi@agenziaentrate.it), in attesa |
 | 3 | Agenzia delle Entrate | proposta di dati aperti e di visure leggibili dalle macchine | bassa | bozza |
 | 4 | pypdf | nessuna correzione necessaria per ora; segnalazione solo se le visure vere mostrano problemi | — | da rivalutare |
 | 5 | PyInstaller, SignPath Foundation | nessun contributo; adesione a SignPath per la firma (non è un contributo) | — | da fare con la prima release |
