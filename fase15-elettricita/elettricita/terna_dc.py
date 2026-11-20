@@ -5,7 +5,8 @@
 (developer.terna.it, 300 chiamate al giorno). Si usa per gli archivi annuali consolidati (dal 2000), che cambiano una
 volta l'anno; le serie quartorarie le legge invece il worker con l'API ufficiale.
 
-Una richiesta al secondo; ogni risposta in <raw>/<dataset>_<anno>.json con le colonne di Terna:
+Una richiesta al secondo; gli anni con più di 50 000 righe (Market dal 2019) si leggono a pagine (pageIndex 0, 1, 2…)
+finché le righe arrivano al totale dichiarato (Count). Ogni anno in <raw>/<dataset>_<anno>.json con le colonne di Terna:
 {"Columns": {...}, "Count": n, "Data": [[...], ...]}.
 
   python -m elettricita.terna_dc <cartella_raw> [--ultimi N] [--dataset A,B]
@@ -70,12 +71,32 @@ def anni_disponibili(dataset: str) -> list[int]:
     return sorted(int(a) for a in d.get("Years") or [])
 
 
-def scarica_anno(dataset: str, anno: int) -> dict:
-    d = _post({"filterDataset": dataset, "filterYear": str(anno), "orderByColumn": DATASET[dataset],
-               "orderByDir": "desc", "pageIndex": "0", "pageSize": "50000", "db": "dati"})
-    if d.get("Count", 0) > len(d.get("Data") or []):
-        raise RuntimeError(f"{dataset} {anno}: {d.get('Count')} righe, ricevute {len(d.get('Data') or [])}")
-    return {"Columns": d.get("Columns") or {}, "Count": d.get("Count", 0), "Data": d.get("Data") or []}
+PAGINA = 50000  # righe per richiesta (il massimo che il servizio restituisce)
+
+
+def scarica_anno(dataset: str, anno: int, pausa: float = 1.0) -> dict:
+    """Tutte le righe di un anno, una pagina alla volta (pageIndex 0, 1, 2…), una richiesta ogni `pausa` secondi,
+    finché le righe ricevute arrivano a `Count`; alla fine controlla che siano esattamente `Count`."""
+    righe: list = []
+    colonne: dict = {}
+    totale = None
+    pagina = 0
+    while True:
+        if pagina:
+            time.sleep(pausa)
+        d = _post({"filterDataset": dataset, "filterYear": str(anno), "orderByColumn": DATASET[dataset],
+                   "orderByDir": "desc", "pageIndex": str(pagina), "pageSize": str(PAGINA), "db": "dati"})
+        colonne = colonne or d.get("Columns") or {}
+        if totale is None:
+            totale = int(d.get("Count") or 0)
+        dati = d.get("Data") or []
+        righe.extend(dati)
+        pagina += 1
+        if len(righe) >= totale or not dati:
+            break
+    if len(righe) != totale:
+        raise RuntimeError(f"{dataset} {anno}: {totale} righe, ricevute {len(righe)} in {pagina} pagine")
+    return {"Columns": colonne, "Count": totale, "Data": righe}
 
 
 def scarica(raw: Path, dataset: list[str] | None = None, ultimi: int | None = None, pausa: float = 1.0) -> dict:
@@ -92,7 +113,7 @@ def scarica(raw: Path, dataset: list[str] | None = None, ultimi: int | None = No
             if f.exists() and a not in rifare:
                 continue
             tmp = f.with_suffix(".tmp")
-            tmp.write_text(json.dumps(scarica_anno(ds, a), ensure_ascii=False), encoding="utf-8")
+            tmp.write_text(json.dumps(scarica_anno(ds, a, pausa), ensure_ascii=False), encoding="utf-8")
             tmp.replace(f)
             fatti.setdefault(ds, []).append(a)
             time.sleep(pausa)
