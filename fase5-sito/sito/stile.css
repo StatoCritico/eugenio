@@ -1770,3 +1770,17 @@ table.sedi-cer .origine-cabina { font-style: italic; }
 .tabella-elettricita tfoot th, .tabella-elettricita tfoot td { font-weight: 700; border-top: 2px solid var(--linea); }
 .tabella-elettricita thead th { font-size: var(--c-xs); vertical-align: bottom; }
 #passo-vista h3, #passo-tabella h3 { font: 600 var(--c-m)/1.25 var(--titoli); margin: var(--s4) 0 var(--s1); }
+
+/* Collegamento a questa simulazione (20/11/2026, collegamento.js): in fondo al pannello o all'articolo */
+.collegamento-simulazione { margin: var(--s5) 0 var(--s4); padding: var(--s4) 0 0; border-top: 1px solid var(--linea); min-width: 0; }
+.pannello > .collegamento-simulazione { border-top: 0; padding-top: 0; margin-top: var(--s4); }
+.collegamento-simulazione .collegamento-titolo { font: 700 var(--c-l)/1.25 var(--titoli); margin: 0 0 var(--s2); }
+.collegamento-riga { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; min-width: 0; }
+.collegamento-riga .collegamento-campo { flex: 1 1 16rem; min-width: 0; width: auto; font: var(--c-s)/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--inchiostro); background: var(--rialzo); text-overflow: ellipsis; }
+.collegamento-riga .collegamento-copia { flex: none; margin: 0; }
+.collegamento-esito { flex: 1 0 100%; font-size: var(--c-s); color: var(--successo); min-height: 1.2em; }
+.collegamento-esito.errore { color: var(--errore); }
+.collegamento-esito:empty { min-height: 0; flex-basis: 0; }
+.collegamento-simulazione .collegamento-aiuto { margin: var(--s1) 0 0; }
+.collegamento-simulazione .collegamento-avviso { color: var(--inchiostro); border-left: 3px solid var(--attenzione); padding-left: var(--s2); }
