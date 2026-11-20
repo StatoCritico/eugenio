@@ -10,7 +10,8 @@
 //   consumoAnnuo(firma, gg) consumo = 12 · base + pendenza · GG (firma mensile: consumo del mese = base + pendenza · GG)
 //   condivisa(righe)      → energia condivisa per cabina e ora: min(Σ immissioni, Σ prelievi) delle sedi della stessa
 //                           cabina primaria (D.Lgs. 199/2021, art. 31 e 32; DM MASE 7/12/2023 n. 414)
-//   leggiCer(testo)       → righe { ora, sede, cabina, prelievo, immissione } da un CSV in formato lungo
+//   leggiCer(testo)       → righe { ora, sede, cabina, prelievo, immissione } da un CSV in formato lungo (dal 20/11/2026 la
+//                           colonna cabina è facoltativa: nella pagina vale la cabina dell'elenco delle sedi, cer_sedi.js)
 (function (radice) {
   function tendenza(x, y) {
     const p = x.map((v, i) => [+v, +y[i]]).filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b));
@@ -62,13 +63,13 @@
     const c = (...n) => tit.findIndex((t) => n.includes(t));
     const io = c("ora", "data_ora", "data e ora", "timestamp"), is = c("sede", "pod", "utenza"), ic = c("cabina", "cabina_primaria"),
       ip = c("prelievo", "prelievo_kwh", "prelevata", "consumo_kwh"), ii = c("immissione", "immissione_kwh", "immessa");
-    if ([io, is, ic, ip, ii].some((x) => x < 0)) throw new Error("servono le colonne ora, sede, cabina, prelievo e immissione (kWh)");
+    if ([io, is, ip, ii].some((x) => x < 0)) throw new Error("servono le colonne ora, sede, prelievo e immissione (kWh); cabina se la sede non è nell'elenco delle sedi");
     const out = [];
     for (const r of righe.slice(1)) {
       const v = r.split(sep);
       const p = num(v[ip]), m = num(v[ii]);
       if (!v[io] || !v[is]) continue;
-      out.push({ ora: v[io].trim(), sede: v[is].trim(), cabina: (v[ic] || "").trim() || "—", prelievo: Number.isFinite(p) ? p : 0,
+      out.push({ ora: v[io].trim(), sede: v[is].trim(), cabina: (ic >= 0 ? (v[ic] || "").trim() : "") || "—", prelievo: Number.isFinite(p) ? p : 0,
         immissione: Number.isFinite(m) ? m : 0 });
     }
     if (!out.length) throw new Error("nessuna riga valida");
@@ -205,7 +206,13 @@
 
   // ---- analisi 7: Comunità energetiche
   if ($("cer-file")) {
-    const st = { righe: null, esito: null };
+    const st = { righe: null, esito: null, nome: "" };
+    // (20/11/2026) cabina di ogni sede: quella dell'elenco delle sedi (cer_sedi.js: proposta dal GSE, scelta dal menu o scritta
+    // a mano), altrimenti la colonna «cabina» del file orario; ricalcolo quando cambiano le cabine dell'elenco
+    const S = () => window.EUGENIO_CER_SEDI;
+    const conCabine = (righe) => righe.map((r) => { const c = S() ? S().cabinaDi(r.sede) : ""; return c ? { ...r, cabina: c, _elenco: true } : r; });
+    document.addEventListener("eugenio:cer-sedi", () => { if (st.righe) mostra(st.nome); });
+    window.EUGENIO_CER_ORARI = { st };
     async function leggi(f) {
       try {
         const T = window.EUGENIO_TABELLE;
@@ -215,9 +222,13 @@
       } catch (e) { msg("messaggio-cer", `File non letto: ${e.message || e}.`, true); }
     }
     function mostra(nome) {
-      const es = condivisa(st.righe); st.esito = es;
-      const ore = new Set(st.righe.map((r) => r.ora)).size, sedi = new Set(st.righe.map((r) => r.sede)).size;
-      msg("messaggio-cer", `${nome}: ${st.righe.length} righe, ${sedi} sedi, ${ore} ore, ${es.length} ${es.length === 1 ? "cabina" : "cabine"}.`);
+      st.nome = nome;
+      const righe = conCabine(st.righe);
+      const es = condivisa(righe); st.esito = es;
+      const ore = new Set(righe.map((r) => r.ora)).size, sedi = new Set(righe.map((r) => r.sede)).size;
+      const dalElenco = new Set(righe.filter((r) => r._elenco).map((r) => r.sede)).size;
+      msg("messaggio-cer", `${nome}: ${righe.length} righe, ${sedi} sedi, ${ore} ore, ${es.length} ${es.length === 1 ? "cabina" : "cabine"}`
+        + `${dalElenco ? ` (cabina dall'elenco delle sedi per ${dalElenco} ${dalElenco === 1 ? "sede" : "sedi"})` : ""}.`);
       const box = $("risultati-cer"); box.innerHTML = "";
       const t = h("table", "mensili"), r1 = t.createTHead().insertRow();
       ["Cabina primaria", "Prelievi (kWh)", "Immissioni (kWh)", "Energia condivisa (kWh)", "% delle immissioni", "% dei prelievi"].forEach((c) => r1.appendChild(h("th", null, c)));

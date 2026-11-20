@@ -14,7 +14,7 @@ Container:
 | Container | Cosa fa |
 |---|---|
 | `api` | FastAPI: riceve il CSV dei consumi, costruisce le covariate meteo e di calendario, chiama **TiRex-2** e restituisce la previsione probabilistica (quantili 10–90 %). Fa anche da proxy verso **Zornade** (la chiave resta sul server) e geolocalizza i patrimoni edilizi (ANNCSU + Zornade) |
-| `worker` | (17/11/2026) **interruzioni della rete elettrica ogni 15 minuti** (thread a parte) e **saturazione dei trasformatori ogni notte alle 01:15** (`rete-interruzioni`, `rete-saturazione`, database `/dati/rete/rete.sqlite`); (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
+| `worker` | (20/11/2026) **controllo mensile del servizio del GSE delle aree convenzionali** il 3 del mese dalle 7 (`gse-aree`, una richiesta `?f=json`, email solo se non risponde); (17/11/2026) **interruzioni della rete elettrica ogni 15 minuti** (thread a parte) e **saturazione dei trasformatori ogni notte alle 01:15** (`rete-interruzioni`, `rete-saturazione`, database `/dati/rete/rete.sqlite`); (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
 | `caddy` | sito statico della fase 5 e instradamento verso l'API, solo dentro la rete Docker |
 | `cloudflared` | **Cloudflare Tunnel**: collega il server a Cloudflare senza aprire porte; l'HTTPS lo fa Cloudflare |
 | `listmonk` + `postgres` | newsletter automatica dei dati: liste, doppia conferma, cancellazione, invii |
@@ -29,6 +29,23 @@ Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, v
   § «Stato della rete elettrica». Messa in servizio: `../AGGIORNAMENTO_2026-11-18_rete.md`.
 - Nessuna variabile obbligatoria nel `.env` (valori predefiniti in `.env.example`), nessuna modifica al Caddyfile né al
   compose: il database sta nella cartella dei dati già montata.
+
+## Aggiunte del 20/11/2026 (aree convenzionali del GSE per Comunità energetiche)
+
+- `servizio/rete.py`: costante `URL_GSE_AREE` (FeatureServer `AC_Comuni_2025` del GSE, unico indirizzo lato server; quello
+  del browser è in `fase5-sito/sito/rete.js` e una prova controlla che coincidano) e `controlla_servizio_gse()`: una sola
+  richiesta `URL_GSE_AREE?f=json`, nessun dato salvato; errore se non risponde, se risponde con un errore ArcGIS o se manca
+  lo strato 0. I perimetri delle aree **non passano mai dal server**: li legge il browser.
+- `servizio/worker.py`: lavoro `gse-aree` **una volta al mese**, il giorno `GSE_CONTROLLO_GIORNO` (3) dalle
+  `GSE_CONTROLLO_ORA` (7, ora italiana), registrato in `worker_stato.json` (una volta anche se fallisce); **email
+  all'amministratore solo se il servizio non risponde** (oggetto «servizio del GSE delle aree convenzionali non risponde»,
+  con le istruzioni per AC_Comuni_2027). A mano: `docker compose run --rm worker python -m servizio.worker gse-aree`.
+- `/api/rete/stato`: in `fonti` anche `aree_convenzionali_gse` e `pagina_aree_convenzionali_gse` (solo indirizzi).
+- Nessuna rotta nuova: la pagina usa `/api/rete/cabine/comune/{istat}`. Nessuna variabile obbligatoria. Per attivare il
+  controllo basta ricreare il worker con il codice nuovo (`docker compose up -d --force-recreate worker`); l'API va
+  ricreata solo per il campo nuovo di `/api/rete/stato`.
+- Prove: `tests/test_rete.py` (risposta valida, HTTP 503, non JSON, errore ArcGIS, strato 0 mancante, rete assente, stesso
+  indirizzo in rete.py e rete.js) e `tests/test_worker.py` (email solo se non risponde, una volta al mese nel ciclo).
 
 ## Ortofoto AGEA 2022-2024 per tutta Italia (17/11/2026, segnalazione di Paolo)
 
@@ -215,7 +232,8 @@ prima riga che contiene solo «Fonte: EuGEnio…», così un file di EuGEnio ric
 - **Terreno da più DTM** (`servizio/terreno.py`): le schede di `CARTELLA_TERRENO` si ordinano dal passo più fine; per ogni
   tessera il primo DTM che la copre, poi gli altri per i vuoti, poi Copernicus, poi piatta; intestazione nuova
   `X-Terreno-Nome` (nome del DTM, anche dalla copia). DTM del Veneto: `dtm-server --regione veneto --crs EPSG:6876 --file
-  <cartella delle tavole> --uscita /dati/terreno/dtm5_veneto_tv.tif` (passo J5 bis). Test
+  <cartella delle tavole> --uscita /dati/terreno/dtm5_veneto_tv.tif` (passo J5 bis; procedura completa e permessi in
+  «Come si aggiunge un DTM sul server», più sotto). Test
   `test_piu_dtm_veneto_in_6876_il_piu_dettagliato_prima` (tavole ASCII Grid sintetiche senza `.prj`).
 - **Report dell'edificio**: sezione «Forma dei tetti» (scelta e corpi per fonte) dal campo `tetti`.
 
@@ -593,7 +611,8 @@ quando riparte, né per Torino da sola, né per un giro notturno fallito (solo n
 `Cache-Control: public` da 1 minuto (stato) a 30 minuti (cabine, comuni).
 
 **Variabili** (tutte facoltative): `RETE_DB`, `RETE_RACCORDO`, `RETE_ATTIVA` (false spegne i due lavori), `RETE_INTERRUZIONI_MIN`
-(15, minimo 5), `RETE_SATURAZIONE_ORA` (01:15), `RETE_PAUSA_S` (4, minimo 4), `RETE_ORA` (1200), `RETE_AVVISO_ORE` (72), `RETE_AVVISO_PROVINCE` (5).
+(15, minimo 5), `RETE_SATURAZIONE_ORA` (01:15), `RETE_PAUSA_S` (4, minimo 4), `RETE_ORA` (1200), `RETE_AVVISO_ORE` (72), `RETE_AVVISO_PROVINCE` (5);
+(20/11/2026) `GSE_CONTROLLO_GIORNO` (3) e `GSE_CONTROLLO_ORA` (7) per il controllo mensile del servizio del GSE.
 
 **A mano**: `docker compose run --rm worker python -m servizio.worker rete-interruzioni` (o `rete-saturazione`, ~10
 minuti). **Prove**: `tests/test_rete.py` (regola, interruzioni a pagine con chiusura, riapertura e lettura sospetta,
@@ -1042,6 +1061,37 @@ cedente né codici fiscali. Test: `tests/test_immobili_pa.py`.
 - Prove: `tests/test_ortofoto.py` (9, risposte simulate) e `tests/test_pvgis_orizzonte.py` (5, DEM sintetico e risposte
   simulate); `tests/test_edifici.py` con il report della Fase B. Dal vivo, dal container di sviluppo il 04/11/2026: WMS RER
   2023-24, WMS Toscana, EOX 2016, WMS del Geoportale Nazionale, PVGIS (con e senza `userhorizon`) e DEM su S3 rispondono.
+
+**Come si aggiunge un DTM sul server** (20/11/2026). `/srv/energia/dati/terreno` (`/dati/terreno` nei container) e le
+altre cartelle scritte dai container (`psicro`, `rete`, …) sono dell'utente 1000: un `cp` dell'utente `ubuntu` fallisce
+con «permission denied» (successo il 16/11/2026 con il DTM di Perugia). Due strade, dalla cartella `~/energia/fase4-server`:
+
+1. **Generare il COG nel container** (`edifici-lidar` gira come utente 1000 e scrive `<nome>.tif` e la scheda
+   `<nome>.json`). I file d'origine devono stare sotto `/srv/energia/dati` (il container vede solo `/dati`), copiati con
+   `sudo`:
+   ```bash
+   sudo mkdir -p /srv/energia/dati/terreno/grezzi/<zona>
+   sudo cp ~/<tavole>/* /srv/energia/dati/terreno/grezzi/<zona>/ && sudo chown -R 1000:1000 /srv/energia/dati/terreno/grezzi
+   docker compose --profile edifici run --rm edifici-lidar dtm-server --regione veneto --crs EPSG:6876 \
+       --file /dati/terreno/grezzi/<zona> --uscita /dati/terreno/dtm5_<zona>.tif
+   ```
+   `--file` accetta uno o più zip, TIFF, ESRI ASCII Grid o cartelle (mosaicati); `--regione er|veneto|pst_umbria` sceglie
+   la scheda (licenza, attribuzione, nome in legenda; altrimenti `--licenza`, `--attribuzione`, `--nome`); `--crs` solo
+   per i file senza sistema. Le sottocartelle (`grezzi/`) non sono lette dalla rotta.
+2. **Copiare un COG già pronto** (fatto sul PC con `python -m edifici3d dtm-server …`), sempre `.tif` **e** `.json` con lo
+   stesso nome:
+   ```bash
+   sudo cp ~/perugia_1611/dtm1_pst_perugia.tif ~/perugia_1611/dtm1_pst_perugia.json /srv/energia/dati/terreno/ \
+     && sudo chown 1000:1000 /srv/energia/dati/terreno/dtm1_pst_perugia.tif /srv/energia/dati/terreno/dtm1_pst_perugia.json
+   ```
+   (per una cartella `sudo cp -r` o `sudo mv`, poi `sudo chown -R 1000:1000`).
+
+L'api rilegge le schede ogni **5 minuti** (`dtm_disponibili()`), senza riavvio; la copia delle tessere cambia versione da
+sola. Verifica dopo 5 minuti: `curl -s https://eugenio.statocritico.it/api/terreno/fonti` deve elencare il file nuovo in
+`dtm` (`file`, `riquadro_wgs84`, `licenza`, `nome`); poi le intestazioni di una tessera dentro il riquadro (il parametro in
+coda evita la copia di Cloudflare, che tiene le tessere 30 giorni), ad es. Perugia centro:
+`curl -sI "https://eugenio.statocritico.it/api/terreno/15/17511/12026.png?prova=$(date +%s)" | grep -i x-terreno` →
+`X-Terreno-Fonte: dtm` e `X-Terreno-Nome` con il nome del DTM nuovo (non «DTM 5 m nazionale HR-DTM-5m …»).
 
 **DTM nazionale HR-DTM-5m (19/11/2026)**. Tra i DTM regionali e il Copernicus `terreno.py` usa il DTM a 5 m di tutta
 Italia del CNR-IRPI (M. Panza, M. Muto, I. Marchesini, M. Rossi, M. Alvioli, G. Iovine; Zenodo,

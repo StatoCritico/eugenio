@@ -87,9 +87,11 @@ sito/
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
   rete-elettrica.html  Statistiche › Stato della rete elettrica (17/11/2026, sperimentale): rete_elettrica.js
   fv-cabine.html    Fotovoltaico › Cabine primarie (17/11/2026, sperimentale): fv_cabine.js
-  rete.js           parte comune delle due pagine della rete: API /api/rete/…, dati sintetici con ?prova=1, colori e
-                    regola della criticità, strisce e retino, cabine, riquadretti, GSE dal browser, CSV/PDF/Excel
-                    (sezione «Rete elettrica» qui sotto)
+  rete.js           parte comune delle pagine della rete (e di Comunità energetiche): API /api/rete/…, dati sintetici
+                    con ?prova=1, colori e regola della criticità, strisce e retino, cabine, riquadretti, GSE dal browser
+                    (unico indirizzo del servizio nel sito), CSV/PDF/Excel/ODS (sezione «Rete elettrica» qui sotto)
+  edificio-cer.html Fotovoltaico › Comunità energetiche (in lavorazione): cer_sedi.js (sedi, aree convenzionali del GSE
+                    dal vivo, cabine del comune, mappa) e analisi_pubbliche.js (energia condivisa)
 costruisci_dpr412.py  rigenera dati/dpr412.* (Normattiva + elenchi ISTAT di comuni, soppressi e variazioni)
 abbinamento_dpr412.md scelte e casi dell'abbinamento al codice ISTAT attuale (refusi, fusioni, cambi di nome)
 costruisci_mappa.py  genera dati/mappa/ dai confini Gramscii (versione bloccata) e da comuni.parquet nazionale
@@ -104,6 +106,42 @@ Menu di tutte le pagine (il gruppo Patrimonio si chiama Territorio dal 17/11/202
 di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occupano tutta la larghezza dello schermo
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
+
+## Comunità energetiche: aree convenzionali del GSE dal vivo (20/11/2026, versione da fissare alla riunione dei rami)
+
+Pagina `edificio-cer.html` (resta **in lavorazione** nel menu), nuovo `cer_sedi.js`; riferimento tecnico
+`documenti/CABINE_PRIMARIE_GSE_SERVIZIO_2026-11-17.md` (punti A-D). Principio: il browser chiede al GSE solo ciò che serve,
+lo mostra e lo dimentica (nessun proxy, nessun file, nessun localStorage; cache in memoria finché la pagina è aperta) e
+solo su azione dell'utente (sede aggiunta o strato acceso).
+
+- **Passo 1, sedi**: una sede a mano (nome, latitudine, longitudine) o un elenco CSV/Excel/ODS (`sede`, `lat`, `lon`,
+  facoltativi `cabina` e `istat`; al massimo 200). Per ogni sede con coordinate `R.gse.areeAccanto` (rete.js) chiede lo
+  strato 0 del GSE con `distance=50` m e senza geometria; se tornano più aree, una seconda richiesta senza margine dice
+  quale contiene il punto. Il COD_AC **precompila** il campo «Cabina» (modificabile) con la nota «proposta dalla mappa del
+  GSE dalle coordinate; in caso di dubbio vale la ricerca per POD…»; confine (< 50 m, due aree): tutte e due con avviso;
+  nessuna area (isola minore, SDC, mare): avviso. Elenchi: al massimo 4 richieste al GSE alla volta (`GSE.INSIEME`); una
+  cabina presa dal file non viene sostituita.
+- **Menu delle cabine del comune**: comune dai confini ISTAT del sito (`C.comuneNelPunto`), cabine da
+  `GET /api/rete/cabine/comune/<istat>` (rotta esistente, una richiesta per comune): nome, COD_AC del raccordo, saturazione;
+  la scelta riempie il campo. `R.statoComune`: comune di un altro distributore → avviso e rimando alla mappa del GSE;
+  `servitoed = 0` con trasformatori di e-distribuzione → «servito in parte da un altro distributore» (mai «non
+  concessionario», regola in vigore).
+- **Mappa** (confini ISTAT, sedi, cabine dei comuni delle sedi col colore della saturazione) con la casella **«Aree
+  convenzionali (GSE)»**, spenta all'apertura: da zoom 10 (sotto: «avvicinati…»), ~400 ms dopo la fine di ogni
+  spostamento una richiesta per il riquadro visibile (`R.gse.areeNelRiquadro`: riquadro allargato alla griglia delle
+  tessere dello zoom, così i piccoli spostamenti ritrovano la risposta in memoria; `maxAllowableOffset` ≈ un pixel; con
+  `exceededTransferLimit` un avviso, niente paginazione), contorni con l'etichetta COD_AC (segnaposto HTML: le mappe del
+  sito non hanno font), al clic codice, gestore, data di consegna e collegamento alla mappa del GSE; attribuzione fissa
+  sotto la mappa quando è acceso. Immagini scaricate (JPG/PNG/PDF): strato ed etichette spenti, riaccesi dopo.
+- **Energia condivisa**: la colonna `cabina` del file orario è ora facoltativa; per le sedi dell'elenco (stesso nome) vale
+  il campo «Cabina»; ricalcolo a ogni modifica (evento `eugenio:cer-sedi`).
+- **File** CSV, Excel, ODS, PDF (`R.pulsantiDati` con il nuovo parametro dei formati): sedi con il solo codice della
+  cabina e la nota «area convenzionale proposta dalla mappa del GSE; verifica ufficiale: GSE», più l'energia condivisa;
+  mai i perimetri.
+- **Indirizzo del servizio**: solo in `rete.js` (`GSE_FS`, `GSE.FEATURESERVER`, `GSE.SERVIZIO` = strato 0) e, lato server,
+  in `servizio/rete.py` (`URL_GSE_AREE`, controllo mensile del worker); una prova della fase 4 controlla che coincidano.
+- Prove: `tests/test_cer_browser.py` (GSE e `/api/rete/…` simulati: richieste, confine, mare, menu, regola del comune,
+  4 alla volta, strato, riquadro al clic, immagine, file, telefono, `?prova=1`).
 
 ## Cabine primarie: apertura su tutta Italia e due metà scorrevoli (19/11/2026, 21:29, `?v=20261119e`, richiesta di Paolo)
 

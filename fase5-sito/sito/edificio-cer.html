@@ -4,26 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EuGEnio – Comunità energetiche</title>
-<meta name="description" content="Quanta energia fotovoltaica e quanti consumi stanno sotto la stessa cabina primaria: la base per progettare una comunità energetica. Pagina in preparazione.">
+<meta name="description" content="Quanta energia fotovoltaica e quanti consumi stanno sotto la stessa cabina primaria: area convenzionale del GSE di ogni sede, cabine del comune e energia condivisa ora per ora. Pagina in preparazione.">
 <!-- testa -->
 <script>/* tema e vestito prima del CSS, per non vedere lampi di colori sbagliati; aspetto.js fa il resto */
 try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage.getItem("vestito");
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
 var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|aria|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261120a";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261120a"></script>
-<link rel="stylesheet" href="stile.css?v=20261120a">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261120a">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261120a">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261120b";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261120b"></script>
+<link rel="stylesheet" href="stile.css?v=20261120b">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261120b">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261120b">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
+<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261120b">
 </head>
 <body>
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261120a" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261120b" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -31,7 +32,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261120a">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261120b">Novità</a>
       <a href="esempi.html">Esempi</a>
       <a href="contributi.html">Contributi</a>
       <a href="contatti.html">Contattaci</a>
@@ -62,7 +63,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li><li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale</span></a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261120a">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261120b">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -182,37 +183,97 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     sotto la stessa cabina. Solo energia: <strong>nessun prezzo né incentivo</strong>, perché la tariffa premio dipende dai
     prezzi di mercato (attesa della licenza del GME).</p>
 
-  <h2 id="file"><span class="n">1</span> I dati orari delle sedi</h2>
+  <h2 id="sedi"><span class="n">1</span> Le sedi e la loro cabina primaria</h2>
+  <p class="aiuto">Per ogni sede con le coordinate il tuo browser chiede alla mappa del GSE l'<strong>area convenzionale</strong>
+    che la contiene e ne scrive il codice (COD_AC) nel campo «Cabina», che puoi sempre cambiare. Il menu accanto elenca le
+    cabine primarie di e-distribuzione che servono il comune della sede, con la saturazione. Un elenco di sedi è un CSV
+    (o Excel, ODS) con le colonne <code>sede</code>, <code>lat</code>, <code>lon</code> e, se vuoi, <code>cabina</code>; al
+    massimo 200 righe. Le sedi restano nel browser: al GSE vanno solo le coordinate, al server di EuGEnio solo il codice ISTAT
+    del comune.</p>
+  <div class="riga-campi" id="aggiungi-sede-cer">
+    <label>Sede <input id="sede-nome" type="text" autocomplete="off" placeholder="Scuola A"></label>
+    <label>Latitudine <input id="sede-lat" type="text" inputmode="decimal" placeholder="44,4949"></label>
+    <label>Longitudine <input id="sede-lon" type="text" inputmode="decimal" placeholder="11,3426"></label>
+    <button class="bottone" id="sede-aggiungi" type="button">Aggiungi la sede</button>
+  </div>
+  <div class="riga-campi">
+    <label>Elenco delle sedi <input id="sedi-file" type="file" accept=".csv,.txt,.xlsx,.ods"></label>
+    <button class="bottone secondario" id="sedi-svuota" type="button" disabled>Togli tutte le sedi</button>
+  </div>
+  <div class="avanzamento" id="avanzamento-sedi" hidden><span id="barra-sedi"></span></div>
+  <div class="messaggio" id="messaggio-sedi" role="status" aria-live="polite"></div>
+  <div id="tabella-sedi-cer"></div>
+  <p class="aiuto">La cabina che conta per gli incentivi è quella dell'area convenzionale che contiene il <strong>punto di
+    connessione</strong> (POD), non l'indirizzo: in caso di dubbio vale la ricerca per POD sulla <a
+    href="https://www.gse.it/servizi-per-te/autoconsumo/mappa-interattiva-delle-cabine-primarie">mappa del GSE</a> o
+    nell'Area Clienti del GSE.</p>
+
+  <h3 id="mappa">Mappa delle sedi</h3>
+  <div class="mappa mappa-gl mappa-cer" id="mappa-cer" role="region" aria-label="Mappa delle sedi, delle cabine primarie dei loro comuni e delle aree convenzionali del GSE"></div>
+  <div class="riga-campi comandi-cer">
+    <label class="casella"><input id="strato-aree-gse" type="checkbox"> Aree convenzionali (GSE)</label>
+  </div>
+  <div class="messaggio" id="messaggio-aree-gse" role="status" aria-live="polite"></div>
+  <div class="legenda legenda-rete" id="legenda-cer" aria-live="polite"></div>
+  <p class="aiuto attribuzione-gse" id="attribuzione-aree-gse" hidden></p>
+  <div id="scarica-mappa-cer"></div>
+  <div class="messaggio" id="messaggio-mappa-cer" role="status" aria-live="polite"></div>
+
+  <h2 id="file"><span class="n">2</span> I dati orari delle sedi</h2>
   <p class="aiuto">Un file CSV (o Excel, ODS) con una riga per sede e per ora e le colonne <code>ora</code>, <code>sede</code>,
-    <code>cabina</code>, <code>prelievo</code> e <code>immissione</code> in kWh. Le curve orarie si scaricano dal portale del
-    distributore; la produzione FV si stima nella pagina «Producibilità con le ombre» (in lavorazione). Il
-    codice della <strong>cabina primaria</strong> di ogni sede lo scrivi tu: EuGEnio non ha i perimetri delle cabine (quelli
-    del GSE hanno una licenza incompatibile, CC BY-NC-SA, e non si usano). I CSV restano nel browser.</p>
+    <code>prelievo</code> e <code>immissione</code> in kWh; la colonna <code>cabina</code> serve solo per le sedi che non
+    sono nell'elenco del passo 1 (per quelle vale il campo «Cabina» dell'elenco, a parità di nome della sede). Le curve
+    orarie si scaricano dal portale del distributore; la produzione FV si stima nella pagina «Producibilità con le ombre»
+    (in lavorazione). I CSV restano nel browser.</p>
   <div class="riga-campi">
     <label>File <input id="cer-file" type="file" accept=".csv,.txt,.xlsx,.ods"></label>
     <button class="bottone secondario" id="cer-esempio" type="button">Prova con l'esempio (dati inventati)</button>
   </div>
   <div class="messaggio" id="messaggio-cer" role="status" aria-live="polite"></div>
   <div id="passo-cer-risultati" hidden>
-    <h2 id="risultati"><span class="n">2</span> Energia condivisa</h2>
+    <h2 id="risultati"><span class="n">3</span> Energia condivisa</h2>
     <div id="risultati-cer" data-riquadro-tabella data-titolo="Energia condivisa per cabina primaria"></div>
     <h3>Per sede</h3>
     <div id="sedi-cer" data-riquadro-tabella data-titolo="Sedi"></div>
     <p class="aiuto">«Condivisa attribuita»: la condivisa di ogni ora divisa tra le sedi in proporzione al loro prelievo;
       è solo un esempio di ripartizione, quella vera la decide lo statuto della comunità.</p>
   </div>
+  <h3 id="scarica">Scarica</h3>
+  <p class="aiuto">Sedi con il codice della cabina e, se hai caricato i dati orari, l'energia condivisa. Nei file c'è solo il
+    codice dell'area convenzionale, mai i suoi confini, con la nota «area convenzionale proposta dalla mappa del GSE;
+    verifica ufficiale: GSE».</p>
+  <div id="scarica-cer"></div>
+  <div class="messaggio" id="messaggio-scarica-cer" role="status" aria-live="polite"></div>
 
   <h2 id="metodo">Come si calcola</h2>
   <ul>
     <li>Energia condivisa dell'ora = minimo tra la somma delle immissioni e la somma dei prelievi delle sedi della stessa
       cabina primaria (definizione del <a href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2021-11-08;199!vig=">D.Lgs. 199/2021</a>,
       artt. 31 e 32, e del DM MASE 7 dicembre 2023, n. 414). Le ore mancanti contano come zero.</li>
+    <li>Cabina di ogni sede: il campo «Cabina» dell'elenco delle sedi (proposto dalla mappa del GSE, scelto dal menu o
+      scritto a mano) o, per le sedi che non sono nell'elenco, la colonna <code>cabina</code> del file orario.</li>
+    <li>Area convenzionale dalle coordinate: il browser chiede al servizio pubblico del GSE l'area che contiene il punto,
+      con 50 m di margine; se a meno di 50 m c'è un'altra area le mostriamo tutte e due. Le risposte restano in memoria
+      solo finché la pagina è aperta: niente passa dal server di EuGEnio e niente viene salvato.</li>
+    <li>Comuni serviti da un altro distributore: il menu delle cabine resta vuoto e si rimanda alla mappa del GSE. Un comune
+      in cui e-distribuzione ha trasformatori non è mai «di un altro distributore»: se e-distribuzione lo segna come non
+      suo è «servito in parte da un altro distributore».</li>
     <li>Limiti: niente controllo dei requisiti dei soci e degli impianti, né della data di entrata in esercizio; niente
       incentivi e corrispettivi.</li>
   </ul>
   <h2 id="fonti">Fonti</h2>
   <ul class="fonti-pagina">
     <li>D.Lgs. 8 novembre 2021, n. 199 e DM MASE 7/12/2023 n. 414 (atti normativi); dati orari dell'utente.</li>
+    <li>Aree convenzionali e codici COD_AC: <a href="https://www.gse.it/servizi-per-te/autoconsumo/mappa-interattiva-delle-cabine-primarie">GSE
+      – Mappa interattiva delle cabine primarie</a> (© GSE S.p.A., CC BY-NC-SA 3.0 IT), letti dal tuo browser dal servizio
+      del GSE al momento: non passano dal server di EuGEnio, non vengono salvati e non entrano nelle immagini né nei file
+      scaricati (lì solo il codice).</li>
+    <li>Cabine primarie che servono il comune e saturazione (dato mensile per trasformatore): <a
+      href="https://www.e-distribuzione.it/a-chi-ci-rivolgiamo/produttori/aree-critiche.html">e-distribuzione S.p.A. – Aree
+      critiche</a> (dati pubblici, citati come fonte); posizioni delle cabine: © <a
+      href="https://www.openstreetmap.org/copyright">contributori OpenStreetMap</a> (ODbL 1.0).</li>
+    <li>Confini e comune della sede: <a href="https://www.istat.it/">ISTAT</a>, unità amministrative a fini statistici
+      (generalizzati, CC BY 4.0). Mappa: <a href="https://maplibre.org/">MapLibre GL JS</a> (BSD-3).</li>
   </ul>
 
   <h2 id="stesso-gruppo">Nello stesso gruppo</h2>
@@ -231,12 +292,18 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 
 <footer class="piede">
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261120a" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261120b" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL con <a href="licenza.html#attribuzione">termini aggiuntivi</a>, dati <a href="licenza.html#dati">CC BY 4.0</a>). <span class="piede-attribuzione">EuGEnio © 2026 Paolo Bianco – Stato Critico – <a href="https://eugenio.statocritico.it">https://eugenio.statocritico.it</a></span></p>
   <!-- /piede -->
 </footer>
-<script src="aspetto.js?v=20261120a"></script>
-<script src="tabelle.js?v=20261120a"></script>
-<script src="analisi_pubbliche.js?v=20261120a"></script>
+<script src="aspetto.js?v=20261120b"></script>
+<script src="report.js?v=20261120b"></script>
+<script src="tabelle.js?v=20261120b"></script>
+<script src="lib/maplibre-gl/maplibre-gl.js?v=20261120b"></script>
+<script src="confini_gl.js?v=20261120b"></script>
+<script src="esporta_mappa.js?v=20261120b"></script>
+<script src="rete.js?v=20261120b"></script>
+<script src="cer_sedi.js?v=20261120b"></script>
+<script src="analisi_pubbliche.js?v=20261120b"></script>
 </body>
 </html>

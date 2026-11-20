@@ -12,6 +12,8 @@ Database SQLite in C.RETE_DB (sul server /srv/energia/dati/rete/rete.sqlite), sc
     (`servitoed`: comuni dove il distributore è un altro). Una fotografia per mese e provincia (l'ultima del mese).
 Letture: rotte /api/rete/… (in fondo al file) e la tabella di raccordo C.RETE_RACCORDO (`raccordo_cp.csv` dell'agente
 DATI: posizioni OSM → ODbL, `COD_AC` del GSE, gestore). Nessuna geometria del GSE passa dal server.
+Servizio delle aree convenzionali del GSE (`URL_GSE_AREE`, 20/11/2026): letto solo dal browser; qui il controllo mensile
+del worker (`controlla_servizio_gse`, una richiesta ?f=json, nessun dato salvato).
 
 Criticità del comune: `classe_comune` (regola del contratto; copia identica di `fase7-territorio/territorio/cabine.py`,
 da unificare al merge).
@@ -53,6 +55,11 @@ URL_GETTONE = "https://www.e-distribuzione.it/content/e-distribuzione/it/homepag
 URL_COMUNI_SERVITI = "https://xs-portale-pubblico-api-mngmt.de-c1.eu1.cloudhub.io/v1/precar/determina40/comuniServiti"
 INTESTAZIONI = {"User-Agent": "EuGEnio/1.0 (+https://eugenio.statocritico.it) - stato della rete elettrica",
                 "Origin": "https://www.e-distribuzione.it", "Referer": PAGINA_AREE}
+# (20/11/2026) servizio pubblico del GSE con le aree convenzionali delle cabine primarie (strato 0 = AC_2025): i perimetri
+# li legge SOLO il browser dell'utente (rete.js, GSE.SERVIZIO, stesso indirizzo); qui serve solo al controllo mensile del
+# worker (`controlla_servizio_gse`). Quando il GSE pubblicherà AC_Comuni_2027 il nome cambierà: va cambiato qui e in rete.js.
+URL_GSE_AREE = "https://services-eu1.arcgis.com/sawHMGY9o8rHlY2j/arcgis/rest/services/AC_Comuni_2025/FeatureServer"
+PAGINA_GSE_AREE = "https://www.gse.it/servizi-per-te/autoconsumo/mappa-interattiva-delle-cabine-primarie"
 PAGINA_ARCGIS = 1000          # maxRecordCount degli strati e-distribuzione
 MIN_COMUNI_ED = 1000          # sotto questa soglia la lettura dei comuni gestiti è incompleta: si tiene quella di prima
 
@@ -297,6 +304,35 @@ def regione_di(istat: str | None, ana: dict, prov: dict) -> str | None:
 # ---------------------------------------------------------------------------------------------- client HTTP
 def client(**kw) -> httpx.Client:
     return httpx.Client(headers=INTESTAZIONI, timeout=60, follow_redirects=True, **kw)
+
+
+def controlla_servizio_gse(cl: httpx.Client | None = None) -> dict:
+    """(20/11/2026) Il servizio delle aree convenzionali del GSE risponde? Una sola richiesta `URL_GSE_AREE?f=json`
+    (descrizione del FeatureServer, nessun dato delle aree), niente salvato. Solleva RuntimeError se non risponde, se
+    risponde con un errore ArcGIS o se lo strato 0 non c'è più (es. servizio rinominato in AC_Comuni_2027)."""
+    proprio = cl is None
+    cl = cl or httpx.Client(headers={"User-Agent": INTESTAZIONI["User-Agent"]}, timeout=30, follow_redirects=True)
+    try:
+        try:
+            r = cl.get(URL_GSE_AREE, params={"f": "json"})
+        except httpx.HTTPError as e:
+            raise RuntimeError(f"servizio del GSE non raggiungibile: {type(e).__name__}: {e}") from e
+        if r.status_code != 200:
+            raise RuntimeError(f"servizio del GSE: HTTP {r.status_code}")
+        try:
+            j = r.json()
+        except ValueError as e:
+            raise RuntimeError("servizio del GSE: risposta non JSON") from e
+        if not isinstance(j, dict) or j.get("error"):
+            err = j.get("error") if isinstance(j, dict) else None
+            raise RuntimeError(f"servizio del GSE: errore {((err or {}).get('code'))} {((err or {}).get('message') or '')}".strip())
+        strati = {x.get("id"): x.get("name") for x in (j.get("layers") or []) if isinstance(x, dict)}
+        if 0 not in strati:
+            raise RuntimeError(f"servizio del GSE: manca lo strato 0 delle aree convenzionali (strati: {strati})")
+        return {"ok": True, "servizio": URL_GSE_AREE, "strato_0": strati[0], "strati": len(strati)}
+    finally:
+        if proprio:
+            cl.close()
 
 
 def _arcgis_tutto(cl: httpx.Client, url: str, params: dict) -> list[dict]:
@@ -1087,7 +1123,9 @@ def stato() -> dict:
                         "saturazione": "e-distribuzione, mappa delle Aree critiche (servizio comuniServiti)",
                         "comuni_gestiti": URL_COMUNI_ED.rsplit("/query", 1)[0],
                         "province": URL_PROVINCE.rsplit("/query", 1)[0],
-                        "pagina_aree_critiche": PAGINA_AREE},
+                        "pagina_aree_critiche": PAGINA_AREE,
+                        # (20/11/2026) solo l'indirizzo: le aree le legge il browser dal GSE, mai il server
+                        "aree_convenzionali_gse": URL_GSE_AREE, "pagina_aree_convenzionali_gse": PAGINA_GSE_AREE},
                  licenze=LICENZE)
     return out
 

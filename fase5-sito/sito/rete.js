@@ -24,6 +24,9 @@
 //  R.righeCabina(p), R.dataIt(iso), R.oraIt(iso), R.num(n, dec)
 //  R.csv(nome, sezioni, piede), R.documento(doc, formato, messaggio)  file CSV nel browser, PDF/XLSX da POST /api/report
 //  R.gse.areaNelPunto(lon, lat), R.gse.aree(codici), R.gse.areeVicine(lon, lat[, area]) (19/11/2026), R.gse.geojson(aree, sediPerArea)
+//  (20/11/2026, Comunità energetiche) R.gse.areeAccanto(lon, lat) → { dentro, vicine } (confine a 50 m), R.gse.areeNelRiquadro(
+//  [o, s, e, n], zoom) per lo strato della mappa (da zoom 10), R.gse.dataConsegna(s), R.statoComune(rispostaCabineComune),
+//  R.pulsantiDati(dove, dati, messaggio[, formati]); cache in memoria per la durata della pagina, mai localStorage
 (function () {
   const parametri = new URLSearchParams(location.search);
   const PROVA = parametri.get("prova") === "1" || window.EUGENIO_RETE_PROVA === true;
@@ -46,14 +49,25 @@
   const URL_ED = "https://www.e-distribuzione.it/a-chi-ci-rivolgiamo/produttori/aree-critiche.html";
   const URL_ED_INT = "https://www.e-distribuzione.it/";
   const URL_OSM = "https://www.openstreetmap.org/copyright";
+  // (20/11/2026) indirizzo del FeatureServer in un solo punto del sito (lo stesso di URL_GSE_AREE in fase4-server/servizio/
+  // rete.py, che lo usa solo per il controllo mensile del worker; una prova li confronta); strato 0 = aree AC_2025
+  const GSE_FS = "https://services-eu1.arcgis.com/sawHMGY9o8rHlY2j/arcgis/rest/services/AC_Comuni_2025/FeatureServer";
   const GSE = {
-    SERVIZIO: "https://services-eu1.arcgis.com/sawHMGY9o8rHlY2j/arcgis/rest/services/AC_Comuni_2025/FeatureServer/0",
+    FEATURESERVER: GSE_FS,
+    SERVIZIO: `${GSE_FS}/0`,
     SCHEDA: "https://www.gse.it/servizi-per-te/autoconsumo/mappa-interattiva-delle-cabine-primarie",
     LICENZA: "CC BY-NC-SA 3.0 IT – https://creativecommons.org/licenses/by-nc-sa/3.0/it/",
     FONTE: "GSE S.p.A. – Mappa interattiva delle cabine primarie – https://www.gse.it/servizi-per-te/autoconsumo/mappa-interattiva-delle-cabine-primarie",
     AVVISO: "Estratto letto dal servizio pubblico del GSE al momento del download, geometrie semplificate. Non fa parte dei dati CC BY 4.0 di EuGEnio. La verifica ufficiale dell'area di un punto di connessione è la ricerca per POD del GSE.",
     MASSIMO: 100,
     SEMPLIFICA: 0.0002,         // ~20 m (maxAllowableOffset in gradi)
+    // (20/11/2026, documenti/CABINE_PRIMARIE_GSE_SERVIZIO_2026-11-17.md, punti A-D) sede → area e strato sulla mappa
+    CONFINE_M: 50,              // entro 50 m dal bordo di un'altra area: si mostrano tutte e due
+    ZOOM_MIN: 10,               // strato «Aree convenzionali (GSE)» solo da zoom 10
+    INSIEME: 4,                 // richieste contemporanee al GSE per un elenco di sedi
+    ATTRIBUZIONE_STRATO: "Aree convenzionali: © GSE S.p.A. – mappa interattiva delle cabine primarie (CC BY-NC-SA 3.0 IT), dati letti dal servizio del GSE al momento",
+    NOTA_SEDE: "proposta dalla mappa del GSE dalle coordinate; in caso di dubbio vale la ricerca per POD sulla mappa del GSE o nell'Area Clienti",
+    NOTA_FILE: "area convenzionale proposta dalla mappa del GSE; verifica ufficiale: GSE",
   };
 
   const num = (n, dec = 0) => (n === null || n === undefined || !Number.isFinite(+n) ? "–"
@@ -324,8 +338,13 @@
     }
     m = /\/api\/rete\/cabine\/comune\/(\d{6})$/.exec(p);
     if (m) {
-      const r = await regioneDi(m[1]);
-      return { type: "FeatureCollection", features: r ? r.cabine.features.filter((f) => (f.properties.comuni_serviti || "").split(";").includes(m[1])) : [] };
+      // (20/11/2026) stessa forma della rotta vera (servizio/rete.py, cabine_comune): concessionario, servito in parte, cabine
+      const r = await regioneDi(m[1]), riga = r ? r.righe.find((x) => x.istat === m[1]) : null;
+      const cab = r ? r.cabine.features.filter((f) => (f.properties.comuni_serviti || "").split(";").includes(m[1])) : [];
+      return { istat: m[1], nome: riga ? riga.nome : null, sintetico: true, concessionario: riga ? riga.concessionario : true,
+        servito_in_parte: !!(riga && riga.servito_in_parte), nota: riga && riga.servito_in_parte ? "servito in parte da un altro distributore" : null,
+        cabine: (riga && !riga.concessionario ? [] : cab).map((f) => ({ ...f.properties, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1],
+          trasformatori_del_comune: f.properties.trasf ? [{ cod_trasf: "01", livello: f.properties.livello, montanti: [] }] : [] })) };
     }
     throw new Error(`percorso di prova sconosciuto: ${p}`);
   }
@@ -417,6 +436,78 @@
     const altri = ((d && d.features) || []).map((f) => f.properties && f.properties.COD_AC).filter((c) => c && c !== a.COD_AC);
     return { area: a, codici: [...new Set([a.COD_AC, ...altri])].slice(0, massimo) };
   }
+  // (20/11/2026, punto A) sede → aree convenzionali, con il caso del confine: una richiesta con distance=50 m (senza
+  // geometria); se tornano più aree, una seconda senza margine dice quale contiene il punto. Cache in memoria per la durata
+  // della pagina (niente localStorage). → { dentro: [{COD_AC, RAG_SOC, COD_CONSEG}], vicine: [...] }
+  //   0 aree = fuori dalle aree (isola minore, SDC, mare); dentro 1 e vicine 0 = caso normale; vicine > 0 = confine
+  const memoPunti = new Map();
+  const soloAttributi = (d) => ((d && d.features) || []).map((f) => f.properties || {}).filter((x) => x.COD_AC)
+    .map((x) => ({ COD_AC: x.COD_AC, RAG_SOC: x.RAG_SOC || "", COD_CONSEG: x.COD_CONSEG || "" }));
+  function areeAccanto(lon, lat) {
+    const k = `${(+lon).toFixed(6)},${(+lat).toFixed(6)}`;
+    if (!memoPunti.has(k)) {
+      const pr = (async () => {
+        if (PROVA) { const a = await areaNelPunto(lon, lat); return { dentro: a ? [a] : [], vicine: [] }; }
+        const base = { geometry: `${lon},${lat}`, geometryType: "esriGeometryPoint", inSR: "4326", spatialRel: "esriSpatialRelIntersects",
+          outFields: "COD_AC,RAG_SOC,COD_CONSEG", returnGeometry: "false" };
+        const tutte = soloAttributi(await gseGet({ ...base, distance: String(GSE.CONFINE_M), units: "esriSRUnit_Meter" }));
+        const uniche = [...new Map(tutte.map((x) => [x.COD_AC, x])).values()];
+        if (uniche.length <= 1) return { dentro: uniche, vicine: [] };
+        const dentro = soloAttributi(await gseGet(base));
+        const cod = new Set(dentro.map((x) => x.COD_AC));
+        return { dentro, vicine: uniche.filter((x) => !cod.has(x.COD_AC)) };
+      })();
+      pr.catch(() => memoPunti.delete(k));          // un errore non resta in memoria: si può riprovare
+      memoPunti.set(k, pr);
+    }
+    return memoPunti.get(k);
+  }
+  // (20/11/2026, punto B) aree del riquadro visibile per lo strato della mappa: riquadro allargato alla griglia delle tessere
+  // dello zoom (così piccoli spostamenti ritrovano la stessa richiesta in memoria), semplificate a circa un pixel
+  // (maxAllowableOffset), solo COD_AC, gestore e data di consegna. Mai l'intero strato: solo da zoom GSE.ZOOM_MIN; con
+  // exceededTransferLimit si avvisa (troppe: true), niente paginazione. → FeatureCollection { troppe }
+  const memoRiquadri = new Map();
+  function riquadroGriglia(b, zoom) {
+    const z = Math.max(0, Math.floor(zoom)), passo = 360 / 2 ** z;
+    const giu = (v) => Math.floor(v / passo) * passo, su = (v) => Math.ceil(v / passo) * passo, r = (v) => Math.round(v * 1e6) / 1e6;
+    return { z, b: [r(giu(b[0])), r(Math.max(-85, giu(b[1]))), r(su(b[2])), r(Math.min(85, su(b[3])))] };
+  }
+  function areeNelRiquadro(b, zoom) {
+    if (!(zoom >= GSE.ZOOM_MIN)) return Promise.reject(new Error(`strato delle aree solo da zoom ${GSE.ZOOM_MIN}`));
+    const g = riquadroGriglia(b, zoom), k = `${g.z}:${g.b.join(",")}`;
+    if (!memoRiquadri.has(k)) {
+      const pr = (async () => {
+        if (PROVA) {
+          const C = window.EUGENIO_CONFINI, cod = C && (await C.regioneNelPunto((g.b[0] + g.b[2]) / 2, (g.b[1] + g.b[3]) / 2));
+          const r = cod ? await regioneFinta(cod) : null;
+          const cs = r ? r.cabine.features.filter((f) => { const [x, y] = f.geometry.coordinates; return x >= g.b[0] - 0.06 && x <= g.b[2] + 0.06 && y >= g.b[1] - 0.05 && y <= g.b[3] + 0.05; })
+            .map((f) => f.properties.cod_ac).slice(0, GSE.MASSIMO) : [];
+          return { ...(await aree(cs)), troppe: false };
+        }
+        const pixel = 360 / (512 * 2 ** zoom);           // gradi di un pixel della vista (tessere da 512 px)
+        const d = await gseGet({ geometry: g.b.join(","), geometryType: "esriGeometryEnvelope", inSR: "4326", spatialRel: "esriSpatialRelIntersects",
+          outFields: "COD_AC,RAG_SOC,COD_CONSEG", returnGeometry: "true", maxAllowableOffset: String(Math.max(0.00001, +pixel.toPrecision(2))), geometryPrecision: "5" });
+        const troppe = !!(d && (d.exceededTransferLimit || (d.properties && d.properties.exceededTransferLimit)));
+        return { type: "FeatureCollection", features: ((d && d.features) || []).filter((f) => f.geometry && f.properties && f.properties.COD_AC), troppe };
+      })();
+      pr.catch(() => memoRiquadri.delete(k));
+      memoRiquadri.set(k, pr);
+    }
+    return memoRiquadri.get(k);
+  }
+  // COD_CONSEG del GSE («30092025») → «30/09/2025»
+  const dataConsegna = (s) => { const t = String(s || "").trim(); return /^\d{8}$/.test(t) ? `${t.slice(0, 2)}/${t.slice(2, 4)}/${t.slice(4)}` : t; };
+  // (20/11/2026) chi distribuisce nel comune, dalla risposta di /api/rete/cabine/comune/<istat>. Regola in vigore (servizio/
+  // rete.py): un comune con trasformatori di e-distribuzione non è MAI «non concessionario»; se e-distribuzione lo segna
+  // come non suo (servitoed = 0) è «servito in parte da un altro distributore». → "ed" | "in_parte" | "altro" | null
+  function statoComune(j) {
+    if (!j) return null;
+    const conTrasf = (j.cabine || []).some((c) => (c.trasformatori_del_comune || []).length || (c.trasf && LIVELLI.some((k) => +c.trasf[k])));
+    if (j.servito_in_parte || (j.concessionario === false && conTrasf)) return "in_parte";
+    if (j.concessionario === false) return "altro";
+    return "ed";
+  }
+
   // il file separato (contratto: max 100 aree, proprietà solo COD_AC, gestore, COD_CONSEG e sedi dell'utente)
   function geojson(fc, sediPerArea) {
     return {
@@ -478,10 +569,12 @@
     return true;
   }
   // pulsanti «Scarica i dati: CSV · Excel · PDF»; dati() → { csv: [nome, sezioni, piede], doc } o un testo (motivo)
-  function pulsantiDati(dove, dati, messaggio) {
+  // (20/11/2026) formati: di predefinito CSV, Excel e PDF; Comunità energetiche aggiunge ODS
+  const NOMI_FORMATI = { csv: "CSV", xlsx: "Excel", ods: "ODS", pdf: "PDF" };
+  function pulsantiDati(dove, dati, messaggio, formati = ["csv", "xlsx", "pdf"]) {
     const box = document.createElement("div"); box.className = "scarica scarica-dati-rete";
     const t = document.createElement("span"); t.className = "scarica-titolo"; t.textContent = "Scarica i dati:"; box.appendChild(t);
-    for (const [f, nome] of [["csv", "CSV"], ["xlsx", "Excel"], ["pdf", "PDF"]]) {
+    for (const [f, nome] of formati.map((x) => [x, NOMI_FORMATI[x] || x.toUpperCase()])) {
       const b = document.createElement("button"); b.type = "button"; b.className = "bottone secondario"; b.dataset.formato = f; b.textContent = nome;
       b.title = `Scarica i dati in ${nome}, con fonti e licenze`;
       b.addEventListener("click", async () => {
@@ -524,6 +617,6 @@
 
   window.EUGENIO_RETE = { PROVA, LIVELLI, NOMI, COLORI, BORDO, ATTR, FONTE, URL_ED, URL_ED_INT, URL_OSM, GSE, api, classeComune, coloreCabina,
     testoTrasf, testoClasse, righeCabina, nomeCabina, eDistribuzione, immagini, campione, stratoCabine, preparaCabine, suggerimento, num, dataIt, oraIt, oggi,
-    csv, documento, pulsantiDati, tabella, avvisoProva, scaricaBlob,
-    gse: { areaNelPunto, aree, areeVicine, geojson } };
+    csv, documento, pulsantiDati, tabella, avvisoProva, scaricaBlob, statoComune,
+    gse: { areaNelPunto, aree, areeVicine, geojson, areeAccanto, areeNelRiquadro, dataConsegna } };
 })();

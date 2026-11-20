@@ -305,3 +305,8 @@ RETE_ORA = int(os.environ.get("RETE_ORA", "1200"))                      # richie
 # ore consecutive; una sola email per episodio, nessun'altra
 RETE_AVVISO_ORE = float(os.environ.get("RETE_AVVISO_ORE", "72"))
 RETE_AVVISO_PROVINCE = int(os.environ.get("RETE_AVVISO_PROVINCE", "5"))
+# (20/11/2026) aree convenzionali del GSE: le legge solo il browser (pagine Cabine primarie e Comunità energetiche); il
+# worker controlla una volta al mese, il giorno GSE_CONTROLLO_GIORNO dalle GSE_CONTROLLO_ORA (ora italiana), che il
+# servizio risponda (una sola richiesta ?f=json, nessun dato salvato) e manda un'email solo se non risponde
+GSE_CONTROLLO_GIORNO = int(os.environ.get("GSE_CONTROLLO_GIORNO", "3"))
+GSE_CONTROLLO_ORA = int(os.environ.get("GSE_CONTROLLO_ORA", "7"))
