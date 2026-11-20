@@ -421,12 +421,15 @@ def _aria_controlla_comuni(pg):
 
 def _aria(browser, base, pagina, cambia, controlla, parti):
     ctx, pg, errori = _apri(browser, base + f"{pagina}.html?prova=1")
+    pg.wait_for_function(ARIA_PRONTA, timeout=30000)
+    cambia(pg)                       # prima le scelte della pagina (i gruppi possono alzare da soli gli anni), poi il passo 1
+    pg.wait_for_timeout(300)
     _aria_comuni(pg)
-    cambia(pg)
     pg.wait_for_timeout(300)
     link = _collegamento(pg)
-    for parte in ("prova=1", "comune=037032", "anni=2", "inverno=95", "diagramma=mollier", *parti):
+    for parte in ("prova=1", "comune=037032", "inverno=95", "diagramma=mollier", *parti):
         assert parte in link, parte
+    assert re.search(r"[?&]anni=2(&|$)", link), link
     _foto(pg, f"{pagina.replace('-', '_')}_1400.png")
     ctx.close()
     ctx, pg, errori2 = _apri(browser, link)              # contesto nuovo: niente memoria del browser
