@@ -418,3 +418,54 @@ def test_rotte_senza_database_e_limite(db_vuoto, monkeypatch):
     P.limiti.clear()
     assert [t.get("/api/rete/stato").status_code for _ in range(3)] == [200, 200, 429]
     P.limiti.clear()
+
+
+# ---------------------------------------------------------------------------------------------- servizio del GSE (20/11/2026)
+def _gse(risposta):
+    viste = []
+
+    def gestore(req: httpx.Request) -> httpx.Response:
+        viste.append(req)
+        return risposta(req) if callable(risposta) else risposta
+    return httpx.Client(transport=httpx.MockTransport(gestore)), viste
+
+
+def test_controllo_servizio_gse_risponde():
+    cl, viste = _gse(httpx.Response(200, json={"currentVersion": 11.5, "layers": [
+        {"id": 0, "name": "AC_2025"}, {"id": 2, "name": "Comuni"}, {"id": 5, "name": "Aree modificate 2025"}]}))
+    e = R.controlla_servizio_gse(cl)
+    assert e == {"ok": True, "servizio": R.URL_GSE_AREE, "strato_0": "AC_2025", "strati": 3}
+    # una sola richiesta, alla descrizione del FeatureServer con f=json: nessuna query delle aree
+    assert len(viste) == 1 and str(viste[0].url) == R.URL_GSE_AREE + "?f=json"
+    assert R.URL_GSE_AREE.endswith("/AC_Comuni_2025/FeatureServer") and "/query" not in str(viste[0].url)
+
+
+@pytest.mark.parametrize("risposta, testo", [
+    (httpx.Response(503, text="non disponibile"), "HTTP 503"),
+    (httpx.Response(200, text="<html>pagina</html>"), "non JSON"),
+    (httpx.Response(200, json={"error": {"code": 400, "message": "Invalid URL"}}), "Invalid URL"),
+    (httpx.Response(200, json={"layers": [{"id": 1, "name": "Altro"}]}), "strato 0"),
+])
+def test_controllo_servizio_gse_non_risponde(risposta, testo):
+    cl, _ = _gse(risposta)
+    with pytest.raises(RuntimeError, match=testo):
+        R.controlla_servizio_gse(cl)
+
+
+def test_controllo_servizio_gse_rete_assente():
+    def guasto(req):
+        raise httpx.ConnectError("nessuna rete", request=req)
+    cl, _ = _gse(guasto)
+    with pytest.raises(RuntimeError, match="non raggiungibile"):
+        R.controlla_servizio_gse(cl)
+
+
+def test_indirizzo_gse_uguale_nel_server_e_nel_browser():
+    """Un solo indirizzo per lato: URL_GSE_AREE (server) e GSE.SERVIZIO di rete.js (browser) devono coincidere."""
+    rete_js = (Path(__file__).resolve().parents[2] / "fase5-sito" / "sito" / "rete.js").read_text(encoding="utf-8")
+    import re
+    m = re.search(r'const GSE_FS = "([^"]+)"', rete_js)
+    assert m and m.group(1) == R.URL_GSE_AREE
+    assert rete_js.count("services-eu1.arcgis.com") == 1
+    py = Path(R.__file__).read_text(encoding="utf-8")
+    assert py.count("services-eu1.arcgis.com") == 1
