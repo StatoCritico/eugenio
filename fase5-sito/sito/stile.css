@@ -1779,6 +1779,7 @@ table.sedi-cer .origine-cabina { font-style: italic; }
 .collegamento-riga .collegamento-campo { flex: 1 1 16rem; min-width: 0; width: auto; font: var(--c-s)/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   color: var(--inchiostro); background: var(--rialzo); text-overflow: ellipsis; }
 .collegamento-riga .collegamento-copia { flex: none; margin: 0; }
+.articolo .collegamento-riga { max-width: 43rem; }
 .collegamento-esito { flex: 1 0 100%; font-size: var(--c-s); color: var(--successo); min-height: 1.2em; }
 .collegamento-esito.errore { color: var(--errore); }
 .collegamento-esito:empty { min-height: 0; flex-basis: 0; }

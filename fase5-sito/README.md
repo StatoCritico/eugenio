@@ -118,8 +118,8 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 
 - Modulo comune `sito/collegamento.js` (`window.EUGENIO_COLLEGAMENTO`: `registra`, `aggiorna`, `quando`, `indirizzo`) e stile
   `.collegamento-simulazione` in `stile.css`; regole e istruzioni per le pagine nuove in `sito/README_stile.md` § «Collegamento
-  a questa simulazione». Il riquadro sta in fondo al pannello di destra (in fondo all'articolo nelle pagine a una colonna,
-  prima di «Nello stesso gruppo»); lo script è incluso pagina per pagina, subito dopo `aspetto.js` (non nella testa comune:
+  a questa simulazione». Il riquadro sta in fondo al pannello di destra (in fondo all'articolo nelle pagine a una colonna;
+  in tutte e due prima di «Nello stesso gruppo», se c'è); lo script è incluso pagina per pagina, subito dopo `aspetto.js` (non nella testa comune:
   le pagine di testo non lo caricano).
 - Lo stato è nella query string con nomi brevi in italiano, riscritto con `history.replaceState` a ogni modifica (350 ms di
   ritardo); i parametri che le pagine usavano già restano quelli. All'apertura il modulo rimette i controlli

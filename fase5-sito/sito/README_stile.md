@@ -537,9 +537,10 @@ riaprendolo, riparte esattamente dalle stesse scelte. Modulo comune `collegament
 stile `.collegamento-simulazione` in `stile.css`; inventario delle pagine nel README della fase 5 (§ «Collegamento a questa
 simulazione»), prove in `tests/test_collegamento_browser.py`.
 
-- **Riquadro** «Collegamento a questa simulazione» creato dal modulo **in fondo al pannello di destra** (`main > .pannello`,
-  ultimo elemento) o, nelle pagine a una colonna (`main.articolo`), prima di «Nello stesso gruppo» (`#stesso-gruppo`) o in
-  fondo a `main`; un elemento `#collegamento-simulazione` nella pagina, se c'è, lo ospita al posto di questi. Dentro: titolo
+- **Riquadro** «Collegamento a questa simulazione» creato dal modulo **in fondo al pannello di destra** (`main > .pannello`)
+  o, nelle pagine a una colonna (`main.articolo`), in fondo a `main`; in tutte e due, se c'è, subito prima di «Nello stesso
+  gruppo» (titolo `#stesso-gruppo`). Un elemento `#collegamento-simulazione` nella pagina, se c'è, lo ospita al posto di
+  questi. Dentro: titolo
   (h2 `.collegamento-titolo`, `--c-l`), campo di sola lettura con l'indirizzo completo (carattere a spaziatura fissa, fondo
   `--rialzo`, si seleziona tutto al fuoco), pulsante «Copia» (`.bottone.secondario`; Clipboard API, ripiego su selezione +
   `document.execCommand("copy")`; esito «Copiato» in `--successo`, `role="status"`), la riga di aiuto «Salvalo o mandalo:

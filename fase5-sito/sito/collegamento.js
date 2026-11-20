@@ -213,10 +213,10 @@
     const main = document.querySelector("main");
     if (!main) return null;
     const pannello = main.querySelector(":scope > .pannello");
-    if (pannello) return { dentro: pannello };
-    const stesso = main.querySelector(":scope > #stesso-gruppo");
-    if (stesso) return { prima: stesso };
-    return { dentro: main };
+    const colonna = pannello || main;
+    // prima di «Nello stesso gruppo» (titolo #stesso-gruppo) se c'è, altrimenti in fondo al pannello o all'articolo
+    const stesso = colonna.querySelector(":scope > #stesso-gruppo");
+    return stesso ? { prima: stesso } : { dentro: colonna };
   }
   function creaRiquadro() {
     const p = posto();
