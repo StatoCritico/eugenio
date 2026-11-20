@@ -25,7 +25,7 @@ archivio, comandi) e il worker della fase 4 (lavoro nuovo `mercato-mgp`). **Il s
   liberi, lavoro fallito 3 notti di fila; una volta per episodio.
 - **Spazio stimato**: 4–20 MB al giorno di offerte, ~1,5–7 GB all'anno; con lo storico dal 1/10/2025 ~2–8 GB in tutto. Lo
   storico si ferma da solo oltre 12 GB di offerte o sotto gli 8 GB liberi.
-- Prove: fase 6 68 passate (1 fallita anche prima di questo ramo: `test_tabella_arera_2022_23_e_storico`, manca il file
+- Prove: fase 6 67 passate e 1 fallita, che falliva già prima di questo ramo ( `test_tabella_arera_2022_23_e_storico`, manca il file
   `mercati_energia/dati/psv_da_arera_2022_2023.csv`, escluso da `.gitignore`); fase 4 359 passate (con `PYTHONPATH` sulle
   fasi 3, 4, 6, 7, 8, 10).
 
