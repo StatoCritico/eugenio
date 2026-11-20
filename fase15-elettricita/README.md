@@ -15,8 +15,8 @@ Prove: `cd fase15-elettricita && python -m pytest -q` (solo dati inventati, nien
 
 ## Produzione e consumi di elettricità (`terna_dc.py`, `costruisci.py`)
 
-Stato al 20/11/2026: scaricatore e costruttore funzionanti; pagina «Produzione e consumi di elettricità»
-(`fase5-sito/sito/elettricita.html`, `elettricita.js`) in lavorazione, senza versione pubblicata.
+Stato al 21/11/2026: scaricatore e costruttore funzionanti; pagina «Produzione e consumi di elettricità»
+(`fase5-sito/sito/elettricita.html`, `elettricita.js`) pubblicata il 21/11/2026 (`?v=20261121a`, sperimentale), come «Carichi elettrici».
 
 I dati di Terna **non vanno nel repository** e **non si scaricano dal sito** (decisione di Paolo): la cartella
 `raw/` e `fase5-sito/sito/dati/elettricita/` sono nel `.gitignore`.

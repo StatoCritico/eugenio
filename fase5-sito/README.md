@@ -109,7 +109,7 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
-## Numeri col punto delle migliaia ovunque (20/11/2026, richiesta di Paolo; versione da fissare alla pubblicazione)
+## Numeri col punto delle migliaia ovunque (20/11/2026, richiesta di Paolo; `?v=20261121a`)
 
 Modulo comune `sito/numeri.js` (`window.EUGENIO_NUMERI.formato(v, decimali, minimi, vuoto)` e `raggruppa(testo)`), nella
 testa di ogni pagina (`parti/testa.html`, subito dopo `protezione.js`), nel worker del DB topografico (`dbtr_worker.js`,
@@ -126,7 +126,7 @@ sedi). Restano senza punto date, anni, codici, coordinate, indirizzi, campi modi
 Regola in `README_stile.md` («Numeri»); prova `test_costruisci_pagine.py::test_numeri_col_punto_delle_migliaia` (nessun
 `toLocaleString`/`Intl.NumberFormat` per i numeri negli script, modulo in ogni pagina, casi in node).
 
-## Collegamento a questa simulazione (20/11/2026, richiesta di Paolo; versione da fissare alla pubblicazione)
+## Collegamento a questa simulazione (20/11/2026, richiesta di Paolo; `?v=20261121a`)
 
 «Per tutte le pagine che non richiedono il caricamento di un file CSV ma funzionano tramite selezioni, si generi un
 collegamento che l'utente può salvare e reincollare nel browser per ripartire con la stessa simulazione, cioè con la stessa
@@ -184,7 +184,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
   nuovo (senza memoria del browser), stesse scelte, campo uguale all'indirizzo, 375 px senza scorrimento orizzontale,
   nessun errore JavaScript; screenshot (1400 e 375 px) se esiste `/home/claude/wt_collegamento_prove/`.
 
-## Comunità energetiche: strato delle aree acceso in partenza (20/11/2026, 18:40, richiesta di Paolo; versione da fissare alla prossima release)
+## Comunità energetiche: strato delle aree acceso in partenza (20/11/2026, 18:40, richiesta di Paolo; `?v=20261121a`)
 
 «Modifica la pagina per iniziare con il layer aree convenzionali attivo; anche se è spento, quando l'utente aggiunge un punto
 della mappa si accende.» La casella «Aree convenzionali (GSE)» è `checked` nell'HTML e `strato()` la legge alla fine di
@@ -194,7 +194,7 @@ la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
 
-## Statistiche › Carichi elettrici (20/11/2026, richiesta di Paolo; sperimentale, versione da fissare alla pubblicazione)
+## Statistiche › Carichi elettrici (20/11/2026, richiesta di Paolo; sperimentale, `?v=20261121a`)
 
 Pagina `carichi.html` + `carichi.js`, voce «Carichi elettrici» (sperimentale) nel gruppo Statistiche dopo «Produzione e
 consumi di elettricità». **Pagina unica a tutta larghezza** (`main.articolo.pagina-carichi`), senza mappa grande e senza
