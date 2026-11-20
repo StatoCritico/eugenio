@@ -188,7 +188,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <div class="comandi-ortofoto comandi-dettaglio">
       <label>Ortofoto <select id="fonte-dettaglio"><option value="">nessuna ortofoto</option></select></label>
       <div class="caselle-strati" id="caselle-strati">
-        <label class="casella-strato"><input id="strato-aree-gse" type="checkbox"> Aree convenzionali (GSE)</label>
+        <label class="casella-strato"><input id="strato-aree-gse" type="checkbox" checked> Aree convenzionali (GSE)</label>
       </div>
       <div id="posto-righello"></div>
       <div id="sposta-ortofoto"></div>
@@ -197,7 +197,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <div class="legenda legenda-rete" id="legenda-cer" aria-live="polite"></div>
     <p class="aiuto">Con <b>Sposta</b> il mouse trascina la mappa; con <b>Aggiungi sedi</b> ogni clic aggiunge una sede, a
       qualsiasi ingrandimento, e cerca la sua area convenzionale. Le cabine primarie dei comuni delle sedi hanno il colore della
-      saturazione. Le aree convenzionali del GSE si vedono da zoom 10; particelle catastali e contorni degli edifici da vicino
+      saturazione. Le aree convenzionali del GSE (casella accesa in partenza; aggiungere una sede la riaccende) si vedono da zoom 10, quelle delle sedi e le confinanti a qualsiasi zoom; particelle catastali e contorni degli edifici da vicino
       (zoom 16 e oltre). Il righello sotto la mappa misura distanze e aree.</p>
     <p class="aiuto attribuzione-gse" id="attribuzione-aree-gse" hidden></p>
     <p class="attribuzione-ortofoto" id="attribuzione-ortofoto" aria-live="polite"></p>

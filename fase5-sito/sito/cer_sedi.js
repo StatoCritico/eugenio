@@ -62,6 +62,7 @@
       istat: /^\d{6}$/.test(String(d.istat || "")) ? String(d.istat) : "", comune: "", prov: "",
       cabina: String(d.cabina || "").trim(), origine: d.cabina ? "file" : "", gse: null, giro: 0 };
     st.sedi.push(s);
+    if (coordinate(s)) accendiStrato();
     analizza(s);
     return s;
   }
@@ -121,16 +122,16 @@
   async function confiniSede(s) {
     const a = areaSede(s);
     if (!a) { ricomponiConfini(); return; }
-    if (st.poligoni.size >= MASSIMO_AREE) { messaggio("messaggio-aree-gse", `Ci sono già ${st.poligoni.size} aree a video: togli qualche sede per vederne altre.`, true); return; }
+    if (st.poligoni.size >= MASSIMO_AREE) { messaggio("messaggio-sedi", `Ci sono già ${st.poligoni.size} aree a video: togli qualche sede per vederne altre.`, true); return; }
     try {
       const codici = await vicineDi(s, a);
       await poligoniDi(codici);
       if (!st.sedi.includes(s)) return;
       ricomponiConfini();
       const n = codici.filter((c) => c !== a.COD_AC && st.poligoni.has(c)).length;
-      messaggio("messaggio-aree-gse", `Confini letti dal GSE: area ${a.COD_AC} di «${s.nome}» (bordo spesso) e ${n} ${n === 1 ? "area confinante" : "aree confinanti"}; si vedono a qualsiasi zoom e restano solo a video.`);
+      messaggio("messaggio-sedi", `Confini letti dal GSE: area ${a.COD_AC} di «${s.nome}» (bordo spesso) e ${n} ${n === 1 ? "area confinante" : "aree confinanti"}; si vedono a qualsiasi zoom e restano solo a video.`);
     } catch (e) {
-      messaggio("messaggio-aree-gse", `Confini dell'area di «${s.nome}» non letti: ${e.message}. Il servizio del GSE potrebbe essere lento o non raggiungibile.`, true);
+      messaggio("messaggio-sedi", `Confini dell'area di «${s.nome}» non letti: ${e.message}. Il servizio del GSE potrebbe essere lento o non raggiungibile.`, true);
     }
   }
   function ricomponiConfini() {
@@ -470,6 +471,7 @@
     await ortofoto(m);
     if (window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-mappa-cer"), m, opzioniImmagine, $("messaggio-mappa-cer"));
     disegnaSedi(); disegnaCabine(); inquadra();
+    strato();                                   // casella accesa in partenza (20/11/2026, 18:40)
   }
   function vediItalia(m, durata = 600) {
     if (!C || !C.ITALIA) return;
@@ -662,12 +664,20 @@
     if (st.popup) st.popup.remove();
     st.popup = new ml.Popup({ closeButton: true, maxWidth: "18rem" }).setLngLat(e.lngLat).setDOMContent(box).addTo(m);
   }
-  $("strato-aree-gse").addEventListener("change", (e) => {
-    st.acceso = e.target.checked;
+  function strato() {
+    st.acceso = $("strato-aree-gse").checked;
     if (!st.acceso) { clearTimeout(st.attesa); st.giro++; datiStrato(null); if (st.popup) st.popup.remove(); messaggio("messaggio-aree-gse", ""); }
     visibilitaStrato();
     aggiornaStrato();
-  });
+  }
+  $("strato-aree-gse").addEventListener("change", strato);
+  // (20/11/2026, 18:40, Paolo) lo strato parte acceso; se l'utente l'ha spento, aggiungere una sede lo riaccende.
+  // Le domande al GSE partono comunque solo da zoom 10 o con una sede (un'azione dell'utente).
+  function accendiStrato() {
+    if ($("strato-aree-gse").checked) return;
+    $("strato-aree-gse").checked = true;
+    strato();
+  }
 
   // ---- immagini: strato del GSE spento (punto C)
   function opzioniImmagine() {
