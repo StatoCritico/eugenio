@@ -25,7 +25,7 @@ PROVE = Path("/home/claude/wt_collegamento_prove")      # screenshot, solo se la
 # (pagina, classe) – classe «a»: a sole scelte, collegamento completo; «b»: con file, solo le scelte che non dipendono
 # dal file. Le pagine che non sono qui non hanno il collegamento (testo, segnaposto, moduli, solo file).
 PAGINE = {
-    "legge10.html": "a", "dati.html": "a", "indicatori.html": "a",
+    "legge10.html": "a", "dati.html": "a", "indicatori.html": "a", "elettricita.html": "a",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -115,12 +115,14 @@ def _api(route):
 RISPOSTE: dict = {}
 
 
-def _apri(browser, url, larghezza=1400, altezza=950):
+def _apri(browser, url, larghezza=1400, altezza=950, rotte=()):
     ctx = browser.new_context(viewport={"width": larghezza, "height": altezza})
     pg = ctx.new_page()
     errori = []
     pg.on("pageerror", lambda e: errori.append(str(e)))
     pg.route("**/api/**", _api)
+    for schema, gestore in rotte:
+        pg.route(schema, gestore)
     pg.goto(url)
     pg.wait_for_selector("html[data-collegamento-pronto]", state="attached", timeout=30000)
     return ctx, pg, errori
@@ -140,9 +142,9 @@ def _foto(pg, nome):
         pg.screenshot(path=str(PROVE / nome.replace(".png", "_riquadro.png")), full_page=False)
 
 
-def _stretta(browser, url, nome):
+def _stretta(browser, url, nome, rotte=()):
     """A 375 px: niente scorrimento orizzontale e riquadro visibile."""
-    ctx, pg, errori = _apri(browser, url, 375, 800)
+    ctx, pg, errori = _apri(browser, url, 375, 800, rotte)
     pg.wait_for_timeout(500)
     larga = pg.evaluate("document.documentElement.scrollWidth")
     assert larga <= 376, (nome, larga)
@@ -232,3 +234,46 @@ def test_indicatori(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "indicatori")
+
+
+# ---------------------------------------------------------------------------------------------- Elettricità (Terna)
+@pytest.fixture(scope="module")
+def dati_el(tmp_path_factory):
+    import sys
+    sys.path.insert(0, str(QUI.parent / "fase15-elettricita"))
+    sys.path.insert(0, str(QUI.parent / "fase15-elettricita" / "tests"))
+    from elettricita import costruisci as K
+    import test_costruisci as T
+    tmp = tmp_path_factory.mktemp("el")
+    K.costruisci(T._raw(tmp), tmp / "out", SITO / "dati" / "mappa")
+    out = tmp / "out"
+    return [("**/dati/elettricita/**",
+             lambda r: r.fulfill(path=str(out / r.request.url.split("/dati/elettricita/")[1].split("?")[0])))]
+
+
+def test_elettricita(browser, base, dati_el):
+    pronta = "() => window.EUGENIO_ELETTRICITA && window.EUGENIO_ELETTRICITA.stato.pronto"
+    ctx, pg, errori = _apri(browser, base + "elettricita.html?vista=italia", rotte=dati_el)
+    pg.wait_for_function(pronta, timeout=20000)
+    pg.evaluate("() => window.EUGENIO_ELETTRICITA.scegliRegione('08')")
+    pg.wait_for_function("() => document.getElementById('titolo-vista').textContent === 'Emilia-Romagna'", timeout=10000)
+    # i dati inventati hanno due anni di capacità (2020, 2021): si sceglie il primo, non predefinito
+    pg.eval_on_selector("#anno-elettricita", "c => { c.value = 0; c.dispatchEvent(new Event('input', {bubbles: true})); c.dispatchEvent(new Event('change', {bubbles: true})); }")
+    anno = pg.inner_text("#anno-scelto")
+    pg.uncheck("#strato-fondo")
+    pg.check("#strato-ortofoto")
+    link = _collegamento(pg)
+    for parte in ("regione=08", "modo=capacita", "anno=2020", "fondo=0", "ortofoto=1", "barre=1"):
+        assert parte in link, parte
+    _foto(pg, "elettricita_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=dati_el)
+    assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.regione") == "08"
+    assert pg.get_attribute('[data-modo="capacita"]', "aria-pressed") == "true"
+    assert pg.inner_text("#anno-scelto") == anno and pg.evaluate("() => String(window.EUGENIO_ELETTRICITA.stato.anno)") == anno
+    assert not pg.is_checked("#strato-fondo") and pg.is_checked("#strato-ortofoto") and pg.is_checked("#strato-barre")
+    pg.wait_for_timeout(800)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "elettricita", dati_el)

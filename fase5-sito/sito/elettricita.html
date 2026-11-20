@@ -189,9 +189,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       </label>
     </div>
     <div class="caselle-strati strati-rete" id="strati-elettricita" role="group" aria-label="Strati della mappa">
-      <label class="casella-strato"><input id="strato-barre" type="checkbox" checked> Istogrammi</label>
-      <label class="casella-strato"><input id="strato-fondo" type="checkbox" checked> Regioni bianche</label>
-      <label class="casella-strato"><input id="strato-ortofoto" type="checkbox"> Ortofoto</label>
+      <label class="casella-strato"><input id="strato-barre" type="checkbox" checked data-collegamento="barre"> Istogrammi</label>
+      <label class="casella-strato"><input id="strato-fondo" type="checkbox" checked data-collegamento="fondo"> Regioni bianche</label>
+      <label class="casella-strato"><input id="strato-ortofoto" type="checkbox" data-collegamento="ortofoto"> Ortofoto</label>
     </div>
     <div class="legenda legenda-rete" id="legenda-elettricita" aria-live="polite"></div>
     <p class="aiuto attribuzione-ortofoto" id="attribuzione-ortofoto" aria-live="polite" hidden></p>
@@ -280,6 +280,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </main>
 
 <script src="aspetto.js?v=20261120d"></script>
+<script src="collegamento.js?v=20261120d"></script>
 <script src="grafici.js?v=20261120d"></script>
 <script src="divisore.js?v=20261120d"></script>
 <script src="lib/maplibre-gl/maplibre-gl.js?v=20261120d"></script>
