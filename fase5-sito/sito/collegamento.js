@@ -27,10 +27,20 @@
 //   aggiunge e toglie solo i suoi.
 (function () {
   const LIMITE = 2000;                 // caratteri oltre i quali un indirizzo rischia di non funzionare ovunque
-  const RITARDO = 350;                 // ms: non si riscrive l'indirizzo a ogni tasto
+  const RITARDO = 350;                 // ms tra due riscritture dell'indirizzo (non a ogni tasto)
   const ATTESA_OPZIONI = 15000;        // ms: quanto si aspetta un'opzione di un menu caricato dopo
   const registrazioni = [];
   const sostituisci = history.replaceState.bind(history);
+  const CHIAVE_USCITA = "eugenio-collegamento-uscita";
+  // pagina lasciata da pochi secondi con l'indirizzo non ancora riscritto (ricarica subito dopo una scelta): prima che gli
+  // script della pagina leggano l'indirizzo, si rimette quello giusto
+  try {
+    const u = JSON.parse(sessionStorage.getItem(CHIAVE_USCITA) || "null");
+    sessionStorage.removeItem(CHIAVE_USCITA);
+    if (u && u.percorso === location.pathname && u.vecchio === location.search && Date.now() - u.quando < 10000) {
+      sostituisci(history.state, "", location.pathname + u.nuovo + location.hash);
+    }
+  } catch { /* sessionStorage non disponibile */ }
   let ripristino = true;               // durante il ripristino non si scrive niente
   let timer = 0, box = null, campo = null, stato = null, avviso = null;
   let ridotto = false;
@@ -164,6 +174,7 @@
   function scrivi() {
     timer = 0;
     if (ripristino) return;
+    ultima = Date.now();
     const u = indirizzo();
     const ora = new URL(location.href);
     if (u.search !== ora.search) {
@@ -172,9 +183,15 @@
     }
     mostra(u);
   }
+  // al più una riscrittura ogni RITARDO ms: la prima subito (appena la pagina ha finito di gestire l'evento), le altre in
+  // coda; così un clic o una scelta finiscono nell'indirizzo prima di un eventuale «ricarica», e scrivere di seguito in un
+  // campo non riscrive l'indirizzo a ogni tasto (Chrome limita anche il numero di replaceState)
+  let ultima = 0;
   function aggiorna(subito) {
     if (timer) clearTimeout(timer);
-    if (subito) scrivi(); else timer = setTimeout(scrivi, RITARDO);
+    timer = 0;
+    if (subito) { scrivi(); return; }
+    timer = setTimeout(scrivi, Math.max(0, RITARDO - (Date.now() - ultima)));
   }
   // la pagina (o la piccola mappa) cambia l'indirizzo da sé: il campo la segue
   history.replaceState = function (...a) {
@@ -273,13 +290,28 @@
     if (!r.applica) return;
     try { await r.applica(p); } catch (err) { console.warn("collegamento: applica", err); }
   }
-  function ascolta(ev) {
-    const t = ev.target;
-    if (t && t.closest && t.closest(".collegamento-simulazione")) return;
-    if (t && t.type === "file") return;
-    aggiorna();
+  const nostro = (ev) => { const t = ev.target; return !t || (t.closest && t.closest(".collegamento-simulazione")) || t.type === "file"; };
+  // fase di cattura: arriva sempre (anche con stopPropagation), ma prima della pagina → riscrittura in coda
+  function ascolta(ev) { if (!nostro(ev)) aggiorna(); }
+  ["input", "change", "click"].forEach((n) => document.addEventListener(n, ascolta, true));
+  // fase di risalita sulla finestra: la pagina ha già aggiornato il suo stato → scelte e clic vanno nell'indirizzo subito;
+  // i tasti e i cursori (input) al più ogni RITARDO ms
+  function subito(ev) {
+    if (nostro(ev) || ripristino) return;
+    if (ev.type !== "input" || Date.now() - ultima >= RITARDO) aggiorna(true);
   }
-  ["input", "change", "click", "keyup"].forEach((n) => document.addEventListener(n, ascolta, true));
+  ["input", "change", "click"].forEach((n) => addEventListener(n, subito));
+  // ricarica o «indietro» subito dopo una scelta, prima che l'indirizzo sia riscritto: l'indirizzo nuovo resta nella scheda
+  // (sessionStorage) e la pagina riaperta con quello vecchio lo riprende (vedi in cima)
+  addEventListener("pagehide", () => {
+    if (ripristino) return;
+    try {
+      const nuovo = indirizzo();
+      if (nuovo.search !== location.search) {
+        sessionStorage.setItem(CHIAVE_USCITA, JSON.stringify({ percorso: location.pathname, vecchio: location.search, nuovo: nuovo.search, quando: Date.now() }));
+      }
+    } catch { /* sessionStorage non disponibile */ }
+  });
   // i risultati arrivano dopo un clic (fetch): si rilegge anche un po' dopo
   document.addEventListener("click", (ev) => {
     if (ev.target && ev.target.closest && ev.target.closest(".collegamento-simulazione")) return;
