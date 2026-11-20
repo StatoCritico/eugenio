@@ -874,3 +874,13 @@ def test_attribuzione_agpl_in_tutte_le_pagine():
         assert ATTRIBUZIONE in t and 'href="licenza.html#attribuzione"' in t, f.name
     assert 'id="attribuzione"' in (QUI / "sito" / "licenza.html").read_text(encoding="utf-8")
     assert ATTRIBUZIONE in (QUI.parent / "TERMINI_AGGIUNTIVI.md").read_text(encoding="utf-8")
+
+
+def test_esempi_un_caso_per_ogni_pagina_del_menu():
+    """(20/11/2026) Esempi: ogni pagina cliccabile delle tendine del menu ha almeno un caso d'uso con il suo collegamento."""
+    t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
+    tendine = "".join(re.findall(r'<ul class="tendina">.*?</ul>', t, re.S))
+    pagine = sorted(set(re.findall(r'href="([^"#]+\.html)"', tendine)))
+    main = re.search(r"<main.*?</main>", (QUI / "sito" / "esempi.html").read_text(encoding="utf-8"), re.S).group(0)
+    assert "carichi.html" in pagine and "elettricita.html" in pagine
+    assert [p for p in pagine if f'href="{p}' not in main] == []
