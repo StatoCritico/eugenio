@@ -31,6 +31,7 @@ PAGINE = {
     "edifici-pubblici.html": "a",
     "aria-trasformazioni.html": "a", "aria-ore.html": "a", "aria-latenti.html": "a", "aria-freecooling.html": "a",
     "cog-emissioni.html": "a", "edificio-clima.html": "a",
+    "indici-prezzi.html": "b",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -562,3 +563,33 @@ def test_edificio_clima(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "edificio_clima", rotte)
+
+
+# ---------------------------------------------------------------------------------------------- Indici dei prezzi (con file)
+def test_indici_prezzi(browser, base):
+    import sys
+    sys.path.insert(0, str(QUI / "tests"))
+    from test_indici_prezzi_browser import INDICI
+    rotte = [("**/dati/prezzi/indici.json*", lambda r: r.fulfill(json=INDICI))]
+    ctx, pg, errori = _apri(browser, base + "indici-prezzi.html", rotte=rotte)
+    pg.wait_for_selector("#consip-ee22 table")
+    pg.locator("#intercenter-ee19-2026 button.filtro", has_text="Fascia F3").click()
+    pg.locator("#consip-ee22 select").select_option("1")
+    pg.locator("#consip-ee22 button.filtro", has_text="Monoraria").click()
+    pg.select_option("#lotto-confronto", "1")
+    link = _collegamento(pg)
+    for parte in ("intercenter-ee19-2026*1*F3", "consip-ee22*1*F0", "lotto_consip=1"):
+        assert parte in link, parte
+    _foto(pg, "indici_prezzi_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=rotte)
+    assert pg.get_attribute("#intercenter-ee19-2026 button.filtro:has-text('Fascia F3')", "aria-pressed") == "true"
+    assert pg.locator("#intercenter-ee19-2026 tbody tr").nth(0).inner_text().split("\t")[1] == "120,00"
+    assert pg.locator("#consip-ee22 select").input_value() == "1"
+    assert pg.get_attribute("#consip-ee22 button.filtro:has-text('Monoraria')", "aria-pressed") == "true"
+    assert pg.input_value("#lotto-confronto") == "1"
+    pg.wait_for_timeout(800)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "indici_prezzi", rotte)
