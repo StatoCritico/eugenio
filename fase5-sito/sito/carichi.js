@@ -13,7 +13,8 @@
 // grande di grafici.js (svg.__zoomProprio: grafici.js gli passa rotella, tasti e «Vista iniziale").
 // Dati: dati/carichi/indice.json, carico_AAAA-MM.json, fonti_AAAA-MM.json (fase 15, elettricita/carichi.py, costruiti
 // dal worker con i dati di Terna). Decisione di Paolo (20/11/2026): i dati non si scaricano.
-// Le scelte stanno nell'indirizzo: ?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60 (history.replaceState).
+// Le scelte stanno nell'indirizzo: ?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60 (history.replaceState); il riquadro
+// «Collegamento a questa simulazione» in fondo alla pagina lo mostra e lo copia (collegamento.js).
 (function () {
   const $ = (id) => document.getElementById(id);
   const G = window.EUGENIO_GRAFICI, E = window.EUGENIO;
@@ -710,5 +711,16 @@
     minimappa();
     await calcola();
   }
-  avvio().catch((e) => stato(`Errore: ${e.message}`, true));
+  avvio().catch((e) => stato(`Errore: ${e.message}`, true)).finally(() => { st.pronto = true; });
+
+  // collegamento a questa simulazione (20/11/2026, collegamento.js): l'avvio legge già ?zona=&da=&a=&passo= (Italia =
+  // niente zona), quindi basta dire al modulo quali sono i parametri e quando la pagina è pronta.
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    regione: false,
+    chiavi: ["zona", "da", "a", "passo"],
+    principali: ["zona", "da", "a", "passo"],
+    pronto: () => st.pronto,
+    leggi: () => (st.pronto && st.ix && st.da
+      ? { zona: st.zona === "ITA" ? null : st.zona, da: st.da, a: st.a, passo: String(st.passo) } : null),
+  });
 })();

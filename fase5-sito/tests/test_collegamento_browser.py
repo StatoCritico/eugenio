@@ -26,7 +26,7 @@ PROVE = Path("/home/claude/wt_collegamento_prove")      # screenshot, solo se la
 # (pagina, classe) – classe «a»: a sole scelte, collegamento completo; «b»: con file, solo le scelte che non dipendono
 # dal file. Le pagine che non sono qui non hanno il collegamento (testo, segnaposto, moduli, solo file).
 PAGINE = {
-    "legge10.html": "a", "dati.html": "a", "indicatori.html": "a", "elettricita.html": "a",
+    "legge10.html": "a", "dati.html": "a", "indicatori.html": "a", "elettricita.html": "a", "carichi.html": "a",
     "rete-elettrica.html": "a", "ortofoto.html": "a",
     "edifici-pubblici.html": "a",
     "aria-trasformazioni.html": "a", "aria-ore.html": "a", "aria-latenti.html": "a", "aria-freecooling.html": "a",
@@ -672,6 +672,51 @@ def test_fv_cabine(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "fv_cabine", SENZA_ARCGIS)
+
+
+# ---------------------------------------------------------------------------------------------- Carichi elettrici
+@pytest.fixture(scope="module")
+def dati_carichi(tmp_path_factory):
+    """File della pagina costruiti dai dati inventati della fase 15 (come test_carichi_browser.py)."""
+    import sys
+    sys.path.insert(0, str(QUI.parent / "fase15-elettricita"))
+    sys.path.insert(0, str(QUI.parent / "fase15-elettricita" / "tests"))
+    from elettricita import carichi as K
+    import test_carichi as T
+    tmp = tmp_path_factory.mktemp("car_coll")
+    K.costruisci_carichi(T._archivio(tmp), tmp / "out")
+    return tmp / "out"
+
+
+def test_carichi(browser, base, dati_carichi):
+    rotte = [("**/dati/carichi/**", lambda r: r.fulfill(path=str(dati_carichi / r.request.url.split("/dati/carichi/")[1].split("?")[0])))]
+    pronta = "() => document.getElementById('stato-carichi').textContent.startsWith('Dati')"
+    ctx, pg, errori = _apri(browser, base + "carichi.html", rotte=rotte)
+    pg.wait_for_function(pronta, timeout=20000)
+    pg.wait_for_selector("#minimappa-zone path[data-zona]")
+    pg.locator('#minimappa-zone path[data-zona="SICI"]').click()
+    pg.wait_for_function("() => document.getElementById('zona-scelta').textContent === 'Sicilia'")
+    pg.locator("#carichi-quarti").uncheck()
+    pg.fill("#carichi-da", "2026-09-10")
+    pg.dispatch_event("#carichi-da", "change")
+    pg.fill("#carichi-a", "2026-10-05")
+    pg.dispatch_event("#carichi-a", "change")
+    pg.wait_for_function(pronta)
+    link = _collegamento(pg)
+    for parte in ("zona=SICI", "da=2026-09-10", "a=2026-10-05", "passo=60"):
+        assert parte in link, parte
+    _foto(pg, "carichi_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=rotte)
+    pg.wait_for_function(pronta, timeout=20000)
+    assert pg.locator("#zona-scelta").inner_text() == "Sicilia" and not pg.is_checked("#carichi-quarti")
+    assert pg.input_value("#carichi-da") == "2026-09-10" and pg.input_value("#carichi-a") == "2026-10-05"
+    assert pg.locator("#nota-zona-fonti").is_visible()
+    pg.wait_for_timeout(1000)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "carichi", rotte)
 
 
 # ---------------------------------------------------------------------------------------------- Comunità energetiche (con file)

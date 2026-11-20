@@ -193,7 +193,9 @@ divisione in due metà.
 - **Periodo**: due date modificabili, predefinito gli ultimi 12 mesi fino all'ultimo dato; pulsante «Ultimi 12 mesi».
   **Passo**: casella «Quarti d'ora» (predefinita); senza, ore = media dei quarti d'ora dell'ora.
 - **Indirizzo**: `?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60` (`history.replaceState` a ogni scelta; senza
-  `zona` = Italia), pronto per il «collegamento alla simulazione».
+  `zona` = Italia). Dopo l'unione (20/11/2026) la pagina carica `collegamento.js` e si registra con queste quattro chiavi
+  (`regione: false`, `pronto` alla fine dell'avvio): riquadro «Collegamento a questa simulazione» in fondo alla pagina;
+  prova in `test_collegamento_browser.py::test_carichi`.
 - **Grafici** (tutti con la freccina del riquadro): valori del periodo (energia, potenza massima e minima con l'istante,
   media, quota rinnovabile per l'Italia, quarti d'ora senza dati); profilo giornaliero (fascia minimo–massimo e media
   per quarto d'ora o ora del giorno, ora italiana); curva di durata (potenze in ordine decrescente, ascissa in ore);
