@@ -107,6 +107,15 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Comunità energetiche: strato delle aree acceso in partenza (20/11/2026, 18:40, richiesta di Paolo; versione da fissare alla prossima release)
+
+«Modifica la pagina per iniziare con il layer aree convenzionali attivo; anche se è spento, quando l'utente aggiunge un punto
+della mappa si accende.» La casella «Aree convenzionali (GSE)» è `checked` nell'HTML e `strato()` la legge alla fine di
+`creaMappa()`; `aggiungi()` chiama `accendiStrato()` per ogni sede con le coordinate (clic, ricerca, coordinate, elenco), che
+la riaccende se l'utente l'aveva spenta. Le domande al GSE per lo strato partono sempre e solo da zoom 10 (all'apertura la
+mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
+quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
+
 ## Comunità energetiche: confini delle aree delle sedi a qualsiasi zoom (20/11/2026, 14:08, `?v=20261120d`, richiesta di Paolo)
 
 «Le aree delle cabine primarie una volta che si sceglie un punto si devono vedere a qualsiasi zoom, inoltre va evidenziata
