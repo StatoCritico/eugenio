@@ -183,7 +183,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <div class="riga-campi">
     <label>Comune (nome o codice ISTAT) <input id="clima-comune" list="elenco-comuni" autocomplete="off"></label>
     <datalist id="elenco-comuni"></datalist>
-    <label>Tendenza calcolata su <select id="clima-dal"><option value="n5">ultime 5 stagioni</option>
+    <label>Tendenza calcolata su <select id="clima-dal" data-collegamento="dal"><option value="n5">ultime 5 stagioni</option>
       <option value="n10">ultime 10 stagioni</option><option value="n20">ultime 20 stagioni</option>
       <option value="1991">stagioni dal 1991/92</option><option value="1981" selected>stagioni dal 1981/82</option>
       <option value="1961">stagioni dal 1961/62</option><option value="1940">tutta la serie (dal 1940/41)</option></select></label>
@@ -196,8 +196,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     del mese, per esempio da una retta sui consumi mensili e sui gradi giorno di <a href="dati.html">Dati climatici</a>),
     con i due numeri la tabella dice il consumo annuo atteso.</p>
   <div class="riga-campi">
-    <label>Carico di base (al mese) <input id="firma-base" type="text" inputmode="decimal" placeholder="es. 300"></label>
-    <label>Pendenza (per grado giorno) <input id="firma-pendenza" type="text" inputmode="decimal" placeholder="es. 9"></label>
+    <label>Carico di base (al mese) <input id="firma-base" type="text" data-collegamento="base" inputmode="decimal" placeholder="es. 300"></label>
+    <label>Pendenza (per grado giorno) <input id="firma-pendenza" type="text" data-collegamento="pendenza" inputmode="decimal" placeholder="es. 9"></label>
   </div>
   <div class="messaggio" id="messaggio-clima" role="status" aria-live="polite"></div>
   <div id="passo-clima-risultati" hidden>
@@ -239,6 +239,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <!-- /piede -->
 </footer>
 <script src="aspetto.js?v=20261120d"></script>
+<script src="collegamento.js?v=20261120d"></script>
 <script src="grafici.js?v=20261120d"></script>
 <script src="analisi_pubbliche.js?v=20261120d"></script>
 </body>

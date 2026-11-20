@@ -116,8 +116,10 @@
     const prova = !!(opz.prova || window.EUGENIO_ARIA_PROVA || parametri.get("prova") === "1");
     const E = window.EUGENIO;
     const ricordata = leggi();
+    // (20/11/2026) collegamento a questa simulazione: ?anni= nell'indirizzo vale più di quello ricordato
+    const anniLink = parametri.has("anni") ? Number(parametri.get("anni")) : NaN;
     const st = { regione: (E && E.regione) || "08", comuni: new Map(), percorsi: new Map(), istat: null, nome: ricordata.nome || "", prov: ricordata.prov || "",
-      anni: ANNI.includes(ricordata.anni) ? ricordata.anni : 10, serie: null, richiesta: 0, zona: null, svg: null };
+      anni: ANNI.includes(anniLink) ? anniLink : ANNI.includes(ricordata.anni) ? ricordata.anni : 10, serie: null, richiesta: 0, zona: null, svg: null };
     const copie = new Map();         // `${istat}|${anni}` → promessa della serie normalizzata
     const ascoltatori = [];
 
@@ -343,6 +345,9 @@
       }
     })();
 
+    // collegamento a questa simulazione (20/11/2026): comune (lo scrive già scegli()) e anni della serie
+    if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({ chiavi: ["anni"], leggi: () => ({ anni: st.anni }) });
+
     const ctrl = {
       pronta,
       su(f) { if (typeof f === "function") ascoltatori.push(f); return ctrl; },
@@ -371,7 +376,14 @@
     const PRED = (P && P.LIVELLI_PREDEFINITI) || { inverno: 99, estate: 1 };
     const SCELTE = (P && P.SCELTE_LIVELLO) || { inverno: [99.6, 99, 95], estate: [0.4, 1, 5] };
     const norm = (o) => (P && P.livelli ? P.livelli(o || {}) : { ...PRED, ...(o || {}) });
-    let val = norm({ ...PRED, ...(leggi().livelli || {}), ...(opz.valori || {}) });
+    // (20/11/2026) collegamento a questa simulazione: ?inverno=&estate= nell'indirizzo valgono più di quelli ricordati
+    const dalLink = {};
+    for (const k of ["inverno", "estate"]) if (parametri.has(k) && Number.isFinite(Number(parametri.get(k)))) dalLink[k] = Number(parametri.get(k));
+    let val = norm({ ...PRED, ...(leggi().livelli || {}), ...(opz.valori || {}), ...dalLink });
+    if (Object.keys(dalLink).length) scrivi({ livelli: val });
+    if (window.EUGENIO_COLLEGAMENTO && numLivello === 0) {
+      window.EUGENIO_COLLEGAMENTO.registra({ chiavi: ["inverno", "estate"], leggi: () => ({ inverno: val.inverno, estate: val.estate }) });
+    }
     const ascoltatori = [];
     const id = `aria-livello-${++numLivello}`;
     box.classList.add("aria-livello");

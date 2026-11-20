@@ -44,8 +44,9 @@ def test_pagina_in_lavorazione_e_script():
     assert 'href="edificio-cer.html"' not in t and t.count('<span class="voce-gme voce-corso" data-pagina="edificio-cer.html"') == 2
     s = (SITO / "edificio-cer.html").read_text(encoding="utf-8")
     assert re.search(r'<script src="rete\.js\?v=\w+"></script>\s*<script src="cer_sedi\.js\?v=\w+"></script>\s*<script src="analisi_pubbliche\.js\?v=', s)
-    # (20/11/2026, 18:40) casella delle aree accesa in partenza
+    # (20/11/2026, 18:40) casella delle aree accesa in partenza, salvata nel collegamento
     assert "checked" in re.search(r'<input id="strato-aree-gse"[^>]*>', s).group(0)
+    assert 'data-collegamento="aree_gse"' in re.search(r'<input id="strato-aree-gse"[^>]*>', s).group(0)
     piatto = re.sub(r"\s+", " ", s)
     assert "CC BY-NC-SA 3.0 IT" in piatto and "mappa-interattiva-delle-cabine-primarie" in s and NOTA_FILE in piatto
     assert C.main(["--controlla"]) == 0

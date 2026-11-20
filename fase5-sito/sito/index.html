@@ -184,7 +184,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <ul class="risultati-ricerca" id="risultati"></ul>
       <p class="aiuto">Oppure scegli il comune sulla mappa o dall'elenco.</p>
       <label for="comune">Comune</label>
-      <select id="comune"><option value="">Scegli…</option></select>
+      <select id="comune" data-collegamento><option value="">Scegli…</option></select>
       <p class="comune-scelto" id="comune-scelto" hidden></p>
     </div>
 
@@ -193,8 +193,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <fieldset style="border:0;padding:0;margin:0 0 var(--s3)">
         <legend class="aiuto" style="padding:0">Cosa prevedere</legend>
         <div class="scelta" role="radiogroup">
-          <label><input type="radio" name="cosa" value="consumi" checked><span>I consumi, con il meteo</span></label>
-          <label><input type="radio" name="cosa" value="clima"><span>Solo il clima, senza consumi</span></label>
+          <label><input type="radio" name="cosa" value="consumi" data-collegamento="cosa" checked><span>I consumi, con il meteo</span></label>
+          <label><input type="radio" name="cosa" value="clima" data-collegamento="cosa"><span>Solo il clima, senza consumi</span></label>
         </div>
       </fieldset>
       <p class="aiuto" id="aiuto-solo-clima" hidden>Solo le variabili meteo previste per il comune (temperatura,
@@ -210,7 +210,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <span id="nome-file">Scegli il file o trascinalo qui</span>
       </label>
       <label for="tipo">I valori sono</label>
-      <select id="tipo">
+      <select id="tipo" data-collegamento>
         <option value="energia">energia per intervallo (kWh, Smc…): si sommano</option>
         <option value="potenza">potenza o media (kW, °C…): si mediano</option>
       </select>
@@ -224,18 +224,18 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <fieldset style="border:0;padding:0;margin:0">
         <legend class="aiuto" style="padding:0">Orizzonte</legend>
         <div class="scelta" role="radiogroup">
-          <label><input type="radio" name="modalita" value="breve" checked><span>Prossimi giorni, ora per ora</span></label>
-          <label><input type="radio" name="modalita" value="lungo"><span>Prossimi mesi, giorno per giorno</span></label>
+          <label><input type="radio" name="modalita" value="breve" data-collegamento="modalita" checked><span>Prossimi giorni, ora per ora</span></label>
+          <label><input type="radio" name="modalita" value="lungo" data-collegamento="modalita"><span>Prossimi mesi, giorno per giorno</span></label>
         </div>
       </fieldset>
       <div class="riga">
         <div>
           <label for="orizzonte" id="orizzonte-etichetta">Ore da prevedere</label>
-          <input id="orizzonte" type="number" min="1" max="360" value="72">
+          <input id="orizzonte" type="number" data-collegamento min="1" max="360" value="72">
         </div>
         <div id="blocco-verifica">
           <label for="verifica">Modo</label>
-          <select id="verifica">
+          <select id="verifica" data-collegamento>
             <option value="false">Prevedi il futuro</option>
             <option value="true">Mettila alla prova sull'ultimo periodo</option>
           </select>
@@ -264,6 +264,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <!-- /piede -->
 </footer>
 <script src="aspetto.js?v=20261120d"></script>
+<script src="collegamento.js?v=20261120d"></script>
 <script src="grafici.js?v=20261120d"></script>
 <script src="divisore.js?v=20261120d"></script>
 <script src="minimappa.js?v=20261120d"></script>

@@ -506,6 +506,9 @@
   function crea(box, opz = {}) {
     if (!box) return null;
     const id = `diagramma-aria-${++numero}`;
+    // (20/11/2026) collegamento a questa simulazione: ?diagramma=mollier nell'indirizzo (solo il primo diagramma della pagina)
+    const linkModo = numero === 1 && typeof location !== "undefined" ? new URLSearchParams(location.search).get("diagramma") : null;
+    if (linkModo === "mollier" || linkModo === "psicrometrico") opz = { ...opz, modo: linkModo };
     const st = { modo: opz.modo === "mollier" ? "mollier" : "psicrometrico", p: opz.pressione || 101325, strati: new Map(), ordine: 0,
       titolo: opz.titolo || "Diagramma dell'aria umida", attesa: 0, g: null, ascolta: { modo: [] }, evidenzia: null };
     box.classList.add("aria-diagramma");
@@ -905,6 +908,9 @@
     document.addEventListener("eugenio:aspetto", () => { legendaOra(); ridisegna(); });
     document.addEventListener("eugenio:ridimensiona", ridisegna);
     disegnaOra();
+    if (window.EUGENIO_COLLEGAMENTO && id === "diagramma-aria-1") {
+      window.EUGENIO_COLLEGAMENTO.registra({ chiavi: ["diagramma"], leggi: () => ({ diagramma: st.modo === "mollier" ? "mollier" : null }) });
+    }
     return api;
   }
 

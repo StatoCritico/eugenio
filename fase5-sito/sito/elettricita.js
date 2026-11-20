@@ -218,6 +218,7 @@
     if (q.get("modo") && MODI[q.get("modo")]) cambiaModo(q.get("modo"), false);
     if (/^\d\d$/.test(q.get("regione") || "") && q.get("vista") !== "italia" && D().regioni.some((r) => r.cod === q.get("regione"))) await scegliRegione(q.get("regione"));
     else { await disegnaBarre(); pannello(); }
+    st.pronto = true;
     document.addEventListener("eugenio:aspetto", () => { m.setPaintProperty("sfondo", "background-color", css("--carta", "#f4f4f4")); pannello(); });
   }
 
@@ -313,6 +314,23 @@
     $("torna-italia").addEventListener("click", () => togliRegione());
     cambiaModo("capacita", false);
   }
+  // collegamento a questa simulazione (20/11/2026): regione, vista e modo li scrive già aggiornaIndirizzo(); qui l'anno
+  // (l'anno vero, non la posizione del cursore) e, con data-collegamento, le caselle barre, fondo e ortofoto
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    regione: false,                    // la regione la decide la pagina (assente con vista=italia)
+    chiavi: ["modo", "anno"],
+    pronto: () => st.pronto,
+    leggi: () => (st.pronto ? { modo: st.modo, anno: st.anno } : null),
+    async applica(p) {
+      const a = +p.get("anno"), anni = anniDi(st.modo);
+      if (!a || !anni.includes(a) || a === st.anno) return;
+      st.anno = a;
+      $("anno-elettricita").value = anni.indexOf(a);
+      $("anno-scelto").textContent = String(a);
+      await disegnaBarre(); pannello();
+    },
+  });
+
   function cambiaModo(modo, ridisegna) {
     st.modo = modo;
     document.querySelectorAll("#modo-elettricita [data-modo]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.modo === modo)));

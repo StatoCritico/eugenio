@@ -95,6 +95,11 @@ Statistiche, più le prime tre pagine di Edifici (sperimentali) e, dal 17/11/202
 
 Parametri dell'indirizzo comuni: `?regione=RR` (codice regione ISTAT a 2 cifre, predefinito `08`) sceglie la regione della
 mappa in Previsioni, Patrimonio, Legge 10, Dati climatici, Ortofoto; `?vista=italia` apre la mappa grande su tutta Italia.
+**Collegamento a questa simulazione** (dal 20/11/2026, `collegamento.js`): nelle pagine che funzionano a scelte tutte le
+scelte stanno nella query string, con nomi brevi in italiano (per esempio `legge10.html?regione=08&comune=037006&anni=5`,
+`dati.html?dataset=meteo_giornaliero&var=t_media,pioggia&freq=mensile&dal=2020-03-01&area=comuni&comuni=037006`,
+`ortofoto.html?lat=44.4949&lon=11.3426&z=15.5&fonte=pcn2012&particelle=1`); il riquadro in fondo alla pagina mostra
+l'indirizzo completo e aprirlo rimette le stesse scelte. Mai file caricati, nomi o dati personali; tutto nel browser.
 
 ### Clima e meteo
 

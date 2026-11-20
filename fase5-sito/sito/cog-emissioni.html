@@ -187,28 +187,28 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <h2 id="dati"><span class="n">1</span> Il cogeneratore</h2>
   <fieldset class="scelte-posa">
     <legend class="solo-lettori">Da quali dati partire</legend>
-    <label class="casella"><input type="radio" name="modo-cog" value="consuntivo" checked> dati misurati di un anno (contatori)</label>
-    <label class="casella"><input type="radio" name="modo-cog" value="taglia"> taglia, ore di funzionamento e rendimenti</label>
+    <label class="casella"><input type="radio" name="modo-cog" value="consuntivo" data-collegamento="modo" checked> dati misurati di un anno (contatori)</label>
+    <label class="casella"><input type="radio" name="modo-cog" value="taglia" data-collegamento="modo"> taglia, ore di funzionamento e rendimenti</label>
   </fieldset>
   <div class="riga-campi" id="campi-consuntivo">
-    <label>Energia elettrica prodotta (MWh/anno) <input id="elettrica" type="text" inputmode="decimal" value="1000"></label>
-    <label>Calore utile recuperato (MWh/anno) <input id="calore" type="text" inputmode="decimal" value="1150"></label>
-    <label>Gas consumato <input id="gas" type="text" inputmode="decimal" value="2650"></label>
-    <label>Unità del gas <select id="unita-gas"><option value="mwh">MWh (potere calorifico inferiore)</option>
+    <label>Energia elettrica prodotta (MWh/anno) <input id="elettrica" type="text" data-collegamento inputmode="decimal" value="1000"></label>
+    <label>Calore utile recuperato (MWh/anno) <input id="calore" type="text" data-collegamento inputmode="decimal" value="1150"></label>
+    <label>Gas consumato <input id="gas" type="text" data-collegamento inputmode="decimal" value="2650"></label>
+    <label>Unità del gas <select id="unita-gas" data-collegamento="unita_gas"><option value="mwh">MWh (potere calorifico inferiore)</option>
       <option value="smc">Sm³</option></select></label>
   </div>
   <div class="riga-campi" id="campi-taglia" hidden>
-    <label>Potenza elettrica (kWe) <input id="potenza" type="text" inputmode="decimal" value="200"></label>
-    <label>Ore equivalenti all'anno <input id="ore" type="text" inputmode="decimal" value="5000"></label>
-    <label>Rendimento elettrico (%) <input id="eta-e" type="text" inputmode="decimal" value="38"></label>
-    <label>Rendimento termico (%) <input id="eta-t" type="text" inputmode="decimal" value="44"></label>
+    <label>Potenza elettrica (kWe) <input id="potenza" type="text" data-collegamento inputmode="decimal" value="200"></label>
+    <label>Ore equivalenti all'anno <input id="ore" type="text" data-collegamento inputmode="decimal" value="5000"></label>
+    <label>Rendimento elettrico (%) <input id="eta-e" type="text" data-collegamento="eta_e" inputmode="decimal" value="38"></label>
+    <label>Rendimento termico (%) <input id="eta-t" type="text" data-collegamento="eta_t" inputmode="decimal" value="44"></label>
   </div>
 
   <h2 id="riferimento"><span class="n">2</span> L'alternativa separata</h2>
   <div class="riga-campi">
-    <label>Fattori dell'anno <select id="anno-fattori"></select></label>
-    <label>Fattore della rete <select id="fattore-rete"></select></label>
-    <label>Rendimento medio della caldaia sostituita (%) <input id="eta-caldaia" type="text" inputmode="decimal" value="90"></label>
+    <label>Fattori dell'anno <select id="anno-fattori" data-collegamento="anno"></select></label>
+    <label>Fattore della rete <select id="fattore-rete" data-collegamento="rete"></select></label>
+    <label>Rendimento medio della caldaia sostituita (%) <input id="eta-caldaia" type="text" data-collegamento="eta_caldaia" inputmode="decimal" value="90"></label>
   </div>
   <p class="aiuto">Quale fattore della rete usare dipende dalla domanda: i <strong>consumi elettrici</strong> (media di tutta
     l'elettricità consumata in Italia, importazioni comprese) dicono quanto emette in media un kWh preso dalla rete; la
@@ -261,6 +261,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <!-- /piede -->
 </footer>
 <script src="aspetto.js?v=20261120d"></script>
+<script src="collegamento.js?v=20261120d"></script>
 <script src="grafici.js?v=20261120d"></script>
 <script src="emissioni_cog.js?v=20261120d"></script>
 </body>

@@ -154,9 +154,11 @@
 
   // ---- stato (ricordato nel browser)
   function leggiStato() {
+    try { return daOggetto(JSON.parse(localStorage.getItem(CHIAVE) || "null")); } catch (e) { return predefiniti(); }
+  }
+  function daOggetto(j) {
     const pred = predefiniti();
     try {
-      const j = JSON.parse(localStorage.getItem(CHIAVE) || "null");
       if (!j || j.versione !== 1) return pred;
       const unisci = (a, b) => { const o = { ...a }; for (const k of Object.keys(a)) if (b && b[k] !== undefined) o[k] = a[k] && typeof a[k] === "object" && !Array.isArray(a[k]) ? unisci(a[k], b[k]) : b[k]; return o; };
       const s = unisci(pred, j);
@@ -167,7 +169,36 @@
       return s;
     } catch (e) { return pred; }
   }
-  let stato = leggiStato();
+  // (20/11/2026) collegamento a questa simulazione: i dati e le sequenze che differiscono dai predefiniti vanno
+  // nell'indirizzo come JSON compatto (?uta=…; «predefiniti» se non cambia niente); aprendolo valgono quelli e non la
+  // memoria del browser. Comune, anni, livello e diagramma li portano i moduli comuni.
+  function differenze(a, b) {
+    if (JSON.stringify(a) === JSON.stringify(b)) return undefined;
+    if (a && b && typeof a === "object" && typeof b === "object" && !Array.isArray(a) && !Array.isArray(b)) {
+      const o = {};
+      for (const k of Object.keys(b)) { const d = differenze(a[k], b[k]); if (d !== undefined) o[k] = d; }
+      return Object.keys(o).length ? o : undefined;
+    }
+    return b;
+  }
+  function statoDalCollegamento() {
+    const q = new URLSearchParams(location.search), t = q.get("uta");
+    if (!t) return null;
+    let j = {};
+    if (t !== "predefiniti") { try { j = JSON.parse(t); } catch (e) { return null; } }
+    const s = daOggetto({ ...j, versione: 1 });
+    s.istat = q.get("comune") || null;
+    return s;
+  }
+  let stato = statoDalCollegamento() || leggiStato();
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    chiavi: ["uta"],
+    principali: [],
+    leggi: () => {
+      const d = differenze(predefiniti(), { ...stato, istat: null, versione: 1 });
+      return { uta: d ? JSON.stringify(d) : "predefiniti" };
+    },
+  });
   function salvaStato() { try { localStorage.setItem(CHIAVE, JSON.stringify(stato)); } catch (e) { /* memoria piena o vietata */ } }
 
   // ---- moduli comuni: diagramma, passo 1, livello

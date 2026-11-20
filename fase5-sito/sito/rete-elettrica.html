@@ -177,11 +177,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       lo servono e le statistiche delle interruzioni.</p>
     <div class="mappa mappa-gl" id="mappa-rete" role="region" aria-label="Mappa delle cabine primarie e delle criticità"></div>
     <div class="caselle-strati strati-rete" id="strati-rete" role="group" aria-label="Strati della mappa">
-      <label class="casella-strato"><input id="strato-criticita" type="checkbox" checked> Criticità dei comuni</label>
-      <label class="casella-strato"><input id="strato-non-concessionari" type="checkbox" checked> Comuni con un altro distributore</label>
-      <label class="casella-strato"><input id="strato-cabine" type="checkbox" checked> Cabine primarie</label>
-      <label class="casella-strato"><input id="strato-interruzioni" type="checkbox" checked> Interruzioni in corso</label>
-      <label class="casella-strato"><input id="strato-ortofoto" type="checkbox" checked> Ortofoto</label>
+      <label class="casella-strato"><input id="strato-criticita" type="checkbox" checked data-collegamento="criticita"> Criticità dei comuni</label>
+      <label class="casella-strato"><input id="strato-non-concessionari" type="checkbox" checked data-collegamento="altri"> Comuni con un altro distributore</label>
+      <label class="casella-strato"><input id="strato-cabine" type="checkbox" checked data-collegamento="cabine"> Cabine primarie</label>
+      <label class="casella-strato"><input id="strato-interruzioni" type="checkbox" checked data-collegamento="interruzioni"> Interruzioni in corso</label>
+      <label class="casella-strato"><input id="strato-ortofoto" type="checkbox" checked data-collegamento="ortofoto"> Ortofoto</label>
     </div>
     <div class="legenda legenda-rete" id="legenda-rete" aria-live="polite"></div>
     <p class="aiuto attribuzione-ortofoto" id="attribuzione-ortofoto" aria-live="polite" hidden></p>
@@ -276,6 +276,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </main>
 
 <script src="aspetto.js?v=20261120d"></script>
+<script src="collegamento.js?v=20261120d"></script>
 <script src="grafici.js?v=20261120d"></script>
 <script src="divisore.js?v=20261120d"></script>
 <script src="report.js?v=20261120d"></script>

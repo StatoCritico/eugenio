@@ -237,6 +237,7 @@
     const sp = h("span", null, unita ? `${etichetta} [${unita}]` : etichetta);
     const inp = document.createElement("input");
     inp.type = "text"; inp.inputMode = "decimal"; inp.id = `fc-${chiave}`; inp.autocomplete = "off";
+    inp.dataset.collegamento = chiave;            // collegamento a questa simulazione (20/11/2026)
     inp.value = fmt(valore, dec).replace(/\./g, "");
     if (aiuto) inp.title = aiuto;
     inp.dataset.min = min; inp.dataset.max = max;
@@ -255,6 +256,7 @@
     const l = h("label", "aria-campo aria-fc-campo");
     l.appendChild(h("span", null, etichetta));
     const sel = h("select"); sel.id = `fc-${chiave}`;
+    sel.dataset.collegamento = chiave;
     opzioniSel.forEach(([v, t]) => { const o = h("option", null, t); o.value = String(v); sel.appendChild(o); });
     sel.value = String(valore);
     sel.addEventListener("change", () => programma());
@@ -313,6 +315,7 @@
       "sui due flussi solo nelle ore in cui il recuperatore recupera: nelle altre si suppone una serranda di by-pass."),
   );
   const selDiagramma = h("select"); selDiagramma.id = "fc-gruppo-diagramma";
+  selDiagramma.dataset.collegamento = "gruppo_diagramma";
   const lDiag = h("label", "aria-campo aria-fc-campo");
   lDiag.append(h("span", null, "Gruppo nel diagramma e nella tabella mensile"), selDiagramma);
   const ripristina = h("button", "bottone secondario piccolo", "Valori predefiniti");

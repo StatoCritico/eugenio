@@ -589,3 +589,7 @@ function fonti() {
 // i grafici si adattano da soli alla larghezza del loro box (finestra o divisore delle colonne): grafici.js
 
 carica().catch((e) => messaggio(`Indicatori non disponibili: ${e.message}`, true));
+
+// collegamento a questa simulazione (20/11/2026): regione ed ente li scrive già la pagina; componente, «mostra le tre
+// componenti» e anno sono controlli data-collegamento (comp, componenti, anno), rimessi quando gli enti sono caricati
+if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({ pronto: () => stato.dati && stato.chiave });

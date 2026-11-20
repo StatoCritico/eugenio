@@ -3355,7 +3355,25 @@
       console.warn(e);
       messaggio("messaggio", `La mappa 3D non si è aperta: ${e.message || e}. Serve un browser con WebGL.`, true);
     }
-  })();
+  })().finally(() => { stato.pronto = true; });
+
+  // collegamento a questa simulazione (20/11/2026): edificio in 3D (?edificio=&lat=&lon=, che la pagina legge già
+  // all'apertura) oppure, in 2D, il punto scelto (?lat=&lon=); i campi del pannello (uso, dati dell'edificio, giorno e ora,
+  // modulo, consumi…) e i livelli sono controlli data-collegamento, rimessi dopo l'apertura dell'edificio. Niente
+  // edificio né punto quando vengono da un file (modello importato, DB topografico letto nel browser, sede del Patrimonio).
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    chiavi: ["edificio", "lat", "lon"],
+    principali: ["edificio", "lat", "lon"],
+    pronto: () => stato.pronto,
+    leggi() {
+      if (!stato.pronto) return null;
+      if (stato.modello || stato.locale || stato.sede) return { edificio: null, lat: null, lon: null };
+      const sei = (x) => Number(x).toFixed(6);
+      const id = stato.in3d && typeof stato.edificio === "string" && stato.edificio && !stato.edificio.includes(" + ") ? stato.edificio : null;
+      const p = id && stato.puntiScelti.get(id) ? stato.puntiScelti.get(id) : stato.punto ? [stato.punto.lon, stato.punto.lat] : null;
+      return { edificio: id, lat: p ? sei(p[1]) : null, lon: p ? sei(p[0]) : null };
+    },
+  });
   window.EUGENIO_EDIFICIO3D = { stato, corpoReport, scegli, apriModello, edificioNelPunto, alberiVicini, ostacoliRelativi, genera, entra3d, esci3d,
     vistaNominata, opzioniImmagine, livelloFonte, scegli2d, impostaPunto, puntoCambiato, trovato, coperto, nessunEdificio, geojson, edificiOsm,
     fonteTerreno, testoAltezza, lontanoDal3d, testoTetti, contaTetti, cambiaFormaTetti, accendiTegola, cliccaTegola, chiaveTetto, statoTetti,

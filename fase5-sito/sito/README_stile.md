@@ -534,3 +534,65 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
 - **Gruppi di ore** (`gruppi_ore.js`): un `fieldset.aria-gruppo` per gruppo con il bordo sinistro nel colore del gruppo,
   campione, nome (va in legenda), «Mostra», «Togli»; pulsanti dei preset piccoli; campi data «gg/mm», ore 0–24, giorni;
   conteggio delle ore sotto; «Aggiungi un gruppo» fino a 4.
+
+## Collegamento a questa simulazione (20/11/2026, regola per le pagine future)
+
+Richiesta di Paolo: nelle pagine che funzionano a scelte (non con un file caricato) l'utente salva un indirizzo e,
+riaprendolo, riparte esattamente dalle stesse scelte. Modulo comune `collegamento.js` (`window.EUGENIO_COLLEGAMENTO`),
+stile `.collegamento-simulazione` in `stile.css`; inventario delle pagine nel README della fase 5 (§ «Collegamento a questa
+simulazione»), prove in `tests/test_collegamento_browser.py`.
+
+- **Riquadro** «Collegamento a questa simulazione» creato dal modulo **in fondo al pannello di destra** (`main > .pannello`)
+  o, nelle pagine a una colonna (`main.articolo`), in fondo a `main`; in tutte e due, se c'è, subito prima di «Nello stesso
+  gruppo» (titolo `#stesso-gruppo`). Un elemento `#collegamento-simulazione` nella pagina, se c'è, lo ospita al posto di
+  questi. Dentro: titolo
+  (h2 `.collegamento-titolo`, `--c-l`), campo di sola lettura con l'indirizzo completo (carattere a spaziatura fissa, fondo
+  `--rialzo`, si seleziona tutto al fuoco), pulsante «Copia» (`.bottone.secondario`; Clipboard API, ripiego su selezione +
+  `document.execCommand("copy")`; esito «Copiato» in `--successo`, `role="status"`), la riga di aiuto «Salvalo o mandalo:
+  riaprendolo la pagina riparte con le stesse scelte; non contiene file caricati.» e, se serve, l'avviso dell'indirizzo
+  troppo lungo (bordo sinistro `--attenzione`). Nel pannello niente riga sopra (c'è già quella dei passi). A 375 px il campo
+  si restringe e il pulsante va a capo se serve: nessuno scorrimento orizzontale.
+- **Stato nella query string**, con parametri leggibili e nomi brevi in italiano (`comune`, `anni`, `regione`, `modo`,
+  `lat`, `lon`, `z`, `fonte`…); liste separate da virgole (`var=t_media,pioggia`), valori composti con `*` e voci con `_`
+  (`punti=44.139412*12.243101_44.06*12.56`, `gruppi=Estate*1*10*0106*3009*0*24*t`): caratteri che l'indirizzo non trasforma
+  in `%..`. Il modulo riscrive l'indirizzo con `history.replaceState` dopo ogni `input`, `change` o clic (350 ms di ritardo,
+  non a ogni tasto) e anche quando la pagina lo cambia da sé (avvolge `history.replaceState`): il campo segue sempre
+  l'indirizzo. All'apertura senza parametri l'indirizzo non si tocca finché l'utente non cambia qualcosa.
+- **Parametri che le pagine usavano già** (`?regione=`, `?comune=`, `?vista=italia`, `?modo=`, `?lat=&lon=&z=`, `?dataset=`,
+  `?ente=`, `?edificio=`, `?istat=`, `?prova=1`…): restano com'erano e sono la base del collegamento; il modulo aggiunge e
+  toglie solo i suoi. La regione della piccola mappa (`minimappa.js`) va nell'indirizzo, così vale più di quella ricordata
+  nel browser; le pagine in cui la regione è solo un'evidenziazione (MapLibre) la escludono con `regione: false`.
+- **Limiti**: niente dati di file caricati (CSV, Excel, DXF/IFC, DBTR, visure, sedi o punti di un elenco), niente nomi né
+  dati personali (email, nomi delle sedi), niente segreti; tutto nel browser, niente al server. Oltre 2.000 caratteri il
+  collegamento tiene solo le scelte principali (`principali` della registrazione; i controlli con
+  `data-collegamento-secondario` cadono per primi) e lo dice.
+
+### Come aggiungere il collegamento a una pagina nuova
+
+1. `<script src="collegamento.js?v=…"></script>` subito dopo `aspetto.js` e **prima** dello script della pagina (la
+   versione la tiene allineata `costruisci_pagine.py`).
+2. **Controlli semplici** (`input`, `select`, `textarea` con un `id`): attributo `data-collegamento` (vuoto = l'id come
+   nome del parametro, altrimenti il nome breve: `data-collegamento="anno"`); i radio con lo stesso `name` hanno tutti
+   `data-collegamento="nome"`. Anche quelli creati dallo script (`campo.dataset.collegamento = "…"`). Il modulo li legge
+   (caselle `1`/`0`) e all'apertura li rimette **nell'ordine della pagina**, aspettando le opzioni dei menu che arrivano
+   dopo (regione → comune → ente…), con gli eventi `input` e `change`: la pagina reagisce come a una scelta a mano.
+   Mai sui campi di file, password ed email (il modulo li salta comunque).
+3. **Scelte che non sono controlli** (clic sulla mappa, pulsanti, elenchi, vista della mappa) con una registrazione:
+   ```js
+   if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+     chiavi: ["anno", "punti"],                 // parametri gestiti (tolti quando la scelta sparisce)
+     principali: ["anno"],                      // restano anche con un indirizzo troppo lungo
+     pronto: () => stato.pronto,                // facoltativo: si aspetta prima di rimettere controlli e scelte
+     leggi: () => (stato.pronto ? { anno: stato.anno, punti: … } : null),   // null = non ancora pronta, parametri lasciati
+     applica: async (p) => { … },               // p = URLSearchParams dell'indirizzo aperto; dopo i controlli semplici
+   });
+   ```
+   Se l'apertura della pagina legge già i parametri (come `?lat=&lon=&z=` delle mappe), basta `leggi`. Dopo una scelta che
+   non passa da un evento (per esempio la fine di uno spostamento della mappa) si chiama `EUGENIO_COLLEGAMENTO.aggiorna()`.
+   Una pagina che si prepara in modo asincrono mette un `stato.pronto = true` alla fine dell'avvio (anche in caso di errore,
+   con `.finally`) e lo passa in `pronto`.
+4. Un risultato che si ottiene con un pulsante («Calcola») e senza file si rifà da solo: parametro `calcolato=1` scritto
+   solo con il risultato in vista e `applica` che richiama il calcolo (Emissioni, Previsioni «Solo il clima»).
+5. Una riga nella tabella del README della fase 5 e una prova in `tests/test_collegamento_browser.py`: scelte, collegamento,
+   pagina nuova (contesto nuovo, senza la memoria del browser) con quell'indirizzo, stesse scelte, campo uguale
+   all'indirizzo, 375 px senza scorrimento orizzontale.
