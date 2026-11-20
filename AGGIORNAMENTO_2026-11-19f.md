@@ -19,10 +19,15 @@ diagramma di Mollier.» Dopo il primo confronto: «1 ok dritte, 2 rifallo identi
   (35,2 × 23,2 cm) in pagina 1, legenda e tabella dei punti in pagina 2.
 - Nel T–x tornano le famiglie di curve dell'originale (asse obliquo delle entalpie, isoentalpiche in kcal/kg e in kJ/kg,
   isocore 0,78…0,95 m³/kg) e il goniometro identico: due semicerchi centrati in (0; 30), rombi del fattore termico R,
-  quadrati di Δh/Δx, ⊗ al centro, ∞; i due raggi spessi sono le direzioni A → I di progetto. Niente etichette sulle curve,
-  come nell'originale.
+  quadrati di Δh/Δx, ⊗ al centro, ∞; i due raggi spessi sono le direzioni A → I di progetto.
+- **Scritte dell'originale nelle stesse posizioni** (20/11, Paolo con lo screenshot di Excel: «rimettile in tutte le
+  posizioni, sia in psicro che in mollier»): valori delle isoentalpiche in kcal e kJ, «h[kcal]», «h[kJ]», volumi, UR 10…90 %,
+  scale del goniometro, «∆hs/∆htot», «∆h/∆x», «x(g/Kg)», «T (C°)». Volumi e UR si spostano con la pressione del comune.
+  Unità della scala Δh/Δx scritta «kJ/g» (nell'originale «kcal/kgh2o», ma i valori sono kJ/g).
+- **Mollier** con le stesse famiglie di curve e le stesse scritte del T–x, portate nelle sue coordinate, più isoterme ogni
+  5 °C, scala di bordo Δh/Δx e polo.
 - Trasformazioni rettilinee (decisione di Paolo: l'originale le smussava e la curva passava oltre la saturazione).
-- Il Mollier tiene le sue etichette (UR, h, °C, Δh/Δx); la copia ridotta nel foglio UTA resta com'era (a colori, estate
+- La copia ridotta nel foglio UTA resta com'era (a colori, estate
   blu e inverno rosso come le tabelle).
 - Nessuna cella di ingresso o di risultato cambia (`cellmap.json` invariato): il blocco delle nuove curve è in fondo al
   foglio «Calcoli». Verifica: 414/414 controlli, 0 errori di formula dopo il ricalcolo, prove della fase 14 passate.

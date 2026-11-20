@@ -1847,6 +1847,95 @@ for j, s_ in enumerate(("E", "I")):
     wc[f"E{rr + 1}"] = f"=IF(D{rr + 1}=0,-7,(F{rr + 1}-30)/D{rr + 1})"
     OG_RL[s_] = rr
 
+# stesse famiglie nelle coordinate di Mollier: X = x, Y = T·(1 + 1,849·x/1000) (vedi foglio «Mollier»)
+OG_MY = {}
+_c0 = 7 + len(KCAL) + len(VOLS) + len(KJ)
+for k, c in enumerate(["E", "F"] + list(OG_KC.values()) + list(OG_VO.values()) + list(OG_KJ.values())):
+    cy = L(_c0 + k)
+    OG_MY[c] = cy
+    wc[f"{cy}{OG + 1}"] = f"Mollier Y ({wc[f'{c}{OG + 1}'].value or c})"
+    for i in range(OG_NT):
+        r = OG_T0 + i
+        wc[f"{cy}{r}"] = f"=$C{r}*(1+0.001849*{c}{r})"
+
+# etichette dell'originale (foglio «calc», colonne CE…CO): posizione (T; x) e testo, nelle stesse posizioni.
+# Le rette di entalpia non dipendono dalla pressione; volume specifico e umidità relativa sì: le loro etichette
+# si spostano quanto la curva rispetto alla posizione dell'originale (101325 Pa).
+_P0 = 101325
+ETI = []          # (T, x, testo, gruppo)  gruppo: h, v_basso, v_destra, ur, gon, testo
+ETI += [(t, x, str(h), "h") for t, x, h in [
+    (-7.5, 3, 0), (-6, 4, 1), (-4, 5, 2), (-2, 6, 3), (-1, 7, 4), (1, 8, 5), (3, 9, 6), (4, 10, 7), (6, 11, 8),
+    (7.5, 12, 9), (9, 13, 10), (10.7, 14, 11), (12.5, 15, 12), (14, 16, 13), (15.5, 17, 14), (17, 18, 15),
+    (18.8, 19, 16), (20.3, 20, 17), (21.8, 21, 18), (23, 22.2, 19), (24, 23.4, 20), (25, 24.6, 21), (26, 25.8, 22),
+    (27.3, 27, 23), (28.3, 28.2, 24)]]
+ETI += [(t, x, str(h), "h") for t, x, h in [
+    (-10, 8.5, 10), (-8.2, 9.4, 15), (-6.5, 10.7, 20), (-4.5, 11.8, 25), (-2.67, 13.31, 30), (-1, 14.47, 35),
+    (1.04, 15.6, 40), (3, 16.8, 45), (4.8, 18, 50), (6.5, 19.4, 55), (8.5, 20.5, 60), (10.4, 21.7, 65),
+    (12, 22.9, 70), (14, 24.2, 75), (15.8, 25.3, 80), (17.5, 26.6, 85), (19.4, 27.7, 90), (21.2, 29, 95)]]
+ETI += [(t, x, v, "v_basso" if t < 47 else "v_destra") for t, x, v in [
+    (8.6, 0.5, "0,8"), (12.2, 0.5, "0,81"), (15.8, 0.5, "0,82"), (19, 0.7, "0,83"), (22, 0.5, "0,84"),
+    (25.7, 0.5, "0,85"), (29.7, 0.5, "0,86"), (33.2, 0.5, "0,87"), (36.8, 0.5, "0,88"), (40, 1, "0,89"),
+    (43.4, 1.5, "0,9"), (46.6, 2, "0,91"), (48, 4.5, "0,92"), (48.2, 12.5, "0,93"), (48.2, 19, "0,94"),
+    (48.1, 25.5, "0,95")]]
+ETI += [(t, x, f"{int(round(u * 100))}%", "ur") for t, x, u in [
+    (45.5, 6.6, 0.1), (42.3, 11.2, 0.2), (40.5, 15.5, 0.3), (39, 19, 0.4), (37.6, 21.5, 0.5), (36, 24, 0.6),
+    (34.8, 26.2, 0.7), (33.8, 28, 0.8), (32, 28.8, 0.9)]]
+ETI += [(t, x, txt, "gon") for t, x, txt in [
+    (-9, 30, "1.0"), (-9, 29.2, "0.8"), (-7.2, 28.8, "0.7"), (-8.4, 28.1, "0.6"), (-6.4, 27.4, "0.5"),
+    (-7.7, 26.4, "0.4"), (-5.4, 25.2, "0.3"), (-5.4, 24, "0.2"), (-2.6, 23.6, "0.1"), (-0.8, 22.5, "0"),
+    (0.2, 23.5, "-0.1"), (2, 23.1, "-0.2"), (2.65, 24.7, "-0.5"), (3.3, 25.4, "-0.8"), (5.2, 25.6, "-1"),
+    (4.1, 26.4, "-2"), (6, 27, "5.0"), (5, 27.4, "∞"), (5, 28, "4.0"), (6.7, 28.7, "2.0"), (5.2, 29.1, "1.5"),
+    (6.7, 29.6, "1.2"),
+    (-9.5, 30, "∞"), (-9.5, 28.8, "-10"), (-10, 26.6, "5.0"), (-9.2, 25, "4.0"), (-5.7, 21.9, "3.0"),
+    (-1, 20.4, "2.5"), (4, 22, "2.0"), (7.2, 24.5, "1.0"), (8, 26, "0.4"), (8.2, 26.7, "0.0"), (8.5, 27.5, "-1"),
+    (8.85, 29.3, "-10"), (9, 30, "∞"),
+    (-1.6, 26.5, "∆hs/∆htot"), (-1.2, 19.5, "∆h/∆x"), (-1.6, 18.5, "kJ/g")]]
+ETI += [(t, x, txt, "testo") for t, x, txt in [
+    (49, 30, "x(g/Kg)"), (-6.2, 13.5, "h[kJ]"), (8, 11, "h[kcal]"), (46.5, 0, "T (C°)")]]
+ETI0 = GC + 12
+put(wc, f"B{ETI0 - 2}", "Etichette del diagramma (posizioni dell'originale; volume e UR spostati con la pressione)",
+    F_B, FILL_GREY)
+for j, t in enumerate(["T", "x", "testo", "gruppo", "Mollier X", "Mollier Y"]):
+    wc[f"{L(3 + j)}{ETI0 - 1}"] = t
+for i, (t, x, txt, g) in enumerate(ETI):
+    r = ETI0 + i
+    if g == "v_basso":
+        v = float(txt.replace(",", "."))
+        wc[f"C{r}"] = f"={t}+{v}*({PL}-{_P0})/(287.055*(1+{x}/621.945))"
+        wc[f"D{r}"] = x
+    elif g == "v_destra":
+        v = float(txt.replace(",", "."))
+        wc[f"C{r}"] = t
+        wc[f"D{r}"] = f"={x}+621.945*{v}*({PL}-{_P0})/(287.055*({t}+273.15))"
+    elif g == "ur":
+        u = int(txt[:-1]) / 100
+        ps = PS(str(t))
+        wc[f"C{r}"] = t
+        wc[f"D{r}"] = f"={x}+621.945*{u}*{ps}/({PL}-{u}*{ps})-621.945*{u}*{ps}/({_P0}-{u}*{ps})"
+    else:
+        wc[f"C{r}"] = t
+        wc[f"D{r}"] = x
+    wc[f"E{r}"] = txt
+    wc[f"F{r}"] = g
+    if txt == "x(g/Kg)":                 # nel Mollier gli assi sono scambiati
+        wc[f"G{r}"], wc[f"H{r}"] = 27.6, -9.3
+    elif txt == "T (C°)":
+        wc[f"G{r}"], wc[f"H{r}"] = 0.3, 48.8
+    else:
+        wc[f"G{r}"] = f"=D{r}"
+        wc[f"H{r}"] = f"=C{r}*(1+0.001849*D{r})"
+ETI1 = ETI0 + len(ETI) - 1
+_ETICHETTE = set()
+
+
+def serie_etichetta(xc, yc, r):
+    """Serie di un solo punto, invisibile, con il testo della cella E come etichetta (come nell'originale)."""
+    se = make_series(wc, xc, yc, r, r, name_ref=f"'Calcoli'!$E${r}", color="000000", nolines=True, marker="none",
+                     label_idx=0, label_pos="r", label_sz=800)
+    se.dLbls.dLbl[0].txPr = rich(800, "000000", b=True)
+    _ETICHETTE.add(id(se))
+    return se
+
 
 def build_chart_orig(width_cm, height_cm):
     """Diagramma T–x del foglio «psicro» con le famiglie di curve e il goniometro di psicro_finale.xls."""
@@ -1873,9 +1962,8 @@ def build_chart_orig(width_cm, height_cm):
                          nolines=True))
     S.append(make_series(wc, 10, 11, G0, G_P1, name="Δh/Δx", color="000000", marker="square", msize=4,
                          nolines=True))
-    S.append(make_series(wc, 5, 6, GC + 1, GC + 1, name_ref=f"'Calcoli'!$C${GC + 1}", color="404040", nolines=True,
-                         marker="none", label_idx=0, label_pos="r", label_sz=1400))
-    inf_se, inf_dl = S[-1], S[-1].dLbls
+    for r in range(ETI0, ETI1 + 1):
+        S.append(serie_etichetta(3, 4, r))
     for s_ in ("E", "I"):
         rr = OG_RL[s_]
         S.append(make_series(wc, 5, 6, rr, rr + 1, name="R " + ("estate" if s_ == "E" else "inverno"),
@@ -1899,12 +1987,67 @@ def build_chart_orig(width_cm, height_cm):
     ch.y_axis.scaling.min, ch.y_axis.scaling.max = 0, 30
     ch.x_axis.delete = ch.y_axis.delete = False
     stile_originale(ch)
-    inf_se.dLbls = inf_dl
-    for d in inf_dl.dLbl:
-        d.txPr = rich(1400, "000000")
     cen_se.dLbls = cen_dl
     for d in cen_dl.dLbl:
         d.txPr = rich(2000, "000000")
+    return ch
+
+
+
+def build_mollier_orig(width_cm, height_cm):
+    """Mollier del foglio «Mollier»: le stesse famiglie e le stesse etichette del T–x dell'originale, portate nelle
+    coordinate di Mollier (X = x, Y = T·(1 + 1,849·x/1000)), più isoterme, scala di bordo Δh/Δx e polo."""
+    from openpyxl.utils import column_index_from_string as CI
+    ch = base_chart(width_cm, height_cm)
+    S = ch.series
+    for r, t in I5:
+        S.append(make_series(wc, (4, 5), (6, 7), r, r, name_ref=f"'Calcoli'!$B${r}", color="000000", width=0.75,
+                             label_idx=1, label_pos="r" if t <= 30 else "l", label_color="000000", label_sz=800,
+                             rows=True))
+    for j, (cx, cy, nref, phi) in enumerate(MRH):
+        S.append(make_series(wc, cx, cy, MRH_P0, MRH_P1, name_ref=nref, color="000000",
+                             width=2.25 if j == 0 else 0.75))
+    for c, nm in (("E", "asse h"), ("F", "asse h2")):
+        S.append(make_series(wc, CI(c), CI(OG_MY[c]), OG_T0, OG_T1, name=nm, color="000000", width=1))
+    for c in OG_KC.values():
+        S.append(make_series(wc, CI(c), CI(OG_MY[c]), OG_T0, OG_T1, name_ref=f"'Calcoli'!${c}${OG + 1}",
+                             color="000000", width=1))
+    for k, c in enumerate(OG_VO.values()):
+        S.append(make_series(wc, CI(c), CI(OG_MY[c]), OG_T0, OG_T1, name_ref=f"'Calcoli'!${c}${OG + 1}",
+                             color="000000", width=1, dash=None if k == 0 else "dash"))
+    for c in OG_KJ.values():
+        S.append(make_series(wc, CI(c), CI(OG_MY[c]), OG_T0, OG_T1, name_ref=f"'Calcoli'!${c}${OG + 1}",
+                             color="000000", width=1, dash="dash"))
+    for r, pos in TK:
+        S.append(make_series(wc, (9, 10), (11, 12), r, r, name_ref=f"'Calcoli'!$B${r}", color="404040", width=1.25,
+                             label_idx=1, label_pos=pos, label_color="404040", label_sz=800, rows=True))
+    for s_ in ("E", "I"):
+        r = RAYS[s_]
+        S.append(make_series(wc, (9, 10), (11, 12), r, r, name_ref=f"'Calcoli'!$B${r}",
+                             color=COL_E if s_ == "E" else COL_I, width=1.5, dash="dash", label_idx=1,
+                             label_pos="r" if s_ == "E" else "t", label_color=COL_E if s_ == "E" else COL_I,
+                             label_sz=800, rows=True))
+    S.append(make_series(wc, 3, 4, POLE_R, POLE_R, name_ref=f"'Calcoli'!$B${POLE_R}", color="404040", marker="circle",
+                         msize=6, label_idx=0, label_pos="t", label_color="404040", label_sz=800, nolines=True))
+    for s_ in ("E", "I"):
+        cx, cy = RAMC[s_]
+        S.append(make_series(wc, cx, cy, RAM, RAM + 1, name="retta ambiente", color=COL_E if s_ == "E" else COL_I,
+                             width=1.25, dash="sysDash"))
+    add_process_series(
+        S,
+        lambda s_, col: make_series(wc, PROC[s_][0], PROC[s_][1], PROC[s_][2], PROC[s_][3],
+                                    name="Estate" if s_ == "E" else "Inverno", color=col, width=W_PROC,
+                                    marker="circle", msize=6),
+        lambda s_, j, nm, col, mk, pos: make_series(wc, 2, 3, PTS[(s_, j)], PTS[(s_, j)], name=nm, color=col,
+                                                    marker=mk, msize=8, label_idx=0, label_pos=pos, label_color=col,
+                                                    label_sz=800, nolines=True))
+    for i, (t, x, txt, g) in enumerate(ETI):
+        if g != "gon":
+            S.append(serie_etichetta(7, 8, ETI0 + i))
+    stile_originale(ch, etichette_curve=True)
+    ch.x_axis.scaling.min, ch.x_axis.scaling.max = 0, 30
+    ch.y_axis.scaling.min, ch.y_axis.scaling.max = -10, 50
+    ch.x_axis.delete = ch.y_axis.delete = False
     return ch
 
 
@@ -1939,6 +2082,8 @@ def _mk_col(se):
 def stile_originale(ch, etichette_curve=False):
     """Ristila un grafico costruito da build_chart/build_mollier nello stile di psicro_finale.xls."""
     for se in ch.series:
+        if id(se) in _ETICHETTE:
+            continue
         col = _col(se) or _mk_col(se)
         ln = se.spPr.line
         proc = col in _MAP_PROC
@@ -2089,15 +2234,16 @@ SUBT = (f"=\"Pressione di calcolo p = \"&FIXED({P},0,TRUE)&\" Pa (altitudine \"&
         f"Rosso = ESTATE, blu = INVERNO; E = esterno, A = ambiente, I = immissione.\"")
 leg_common = [("Curva nera spessa", "saturazione (UR 100 %)"),
               ("Curve nere sottili", "umidità relativa 10…90 %"),
-              ("Rette nere continue discendenti", "entalpia costante [kJ/kg aria secca]"),
-              ("Rette nere tratteggiate", "volume specifico costante [m³/kg aria secca]"),
+              ("Rette nere continue discendenti", "entalpia costante in kcal/kg (scritte 0…24, «h[kcal]»)"),
+              ("Rette tratteggiate discendenti", "entalpia costante in kJ/kg, nella fascia dell'asse h (scritte 10…95, «h[kJ]»)"),
+              ("Rette tratteggiate ripide", "volume specifico costante 0,78…0,95 m³/kg aria secca"),
               ("Spezzata ROSSA spessa", "sequenza ESTATE (punto 0 = esterno, poi uscita di ogni riga)"),
               ("Spezzata BLU spessa", "sequenza INVERNO"),
               ("Rombo / quadrato / triangolo", "E esterno / A ambiente / I immissione"),
               ("Tratteggio rosso / blu", "retta ambiente (da A verso I) estate / inverno")]
 leg_psicro = ([("Legenda – diagramma T–x", "")] +
               [("Assi", "ascissa T a bulbo secco [°C]; ordinata (a destra) x [g/kg aria secca]")] + leg_common +
-              [("Goniometro in alto a sinistra", "direzioni per R = Qs/(Qs+Ql); segmenti colorati = R di progetto"),
+              [("Goniometro in alto a sinistra", "centro ⊗; semicerchio interno R = ∆hs/∆htot, esterno ∆h/∆x [kJ/g]; segmenti = A → I di progetto"),
                ("Nota", "le righe «Nessuna» ripetono il punto precedente; trasformazioni rettilinee (non smussate)")])
 leg_moll = ([("Legenda – diagramma di Mollier", "")] +
             [("Assi", "ascissa x [g/kg]; ordinata (a destra) Y = (h − 2501·x)/1,006 = T·(1 + 1,849·x): a x = 0 coincide con T"),
@@ -2107,7 +2253,7 @@ leg_moll = ([("Legenda – diagramma di Mollier", "")] +
 chart_sheet(wd, "Diagramma psicrometrico (T – x) con le trasformazioni dell'UTA", SUBT,
             build_chart_orig(CH_W, CH_H), leg_psicro, "0070C0")
 chart_sheet(wm, "Diagramma di Mollier (h – x) con le trasformazioni dell'UTA", SUBT,
-            stile_originale(build_mollier(CH_W, CH_H), etichette_curve=True), leg_moll, "C00000")
+            build_mollier_orig(CH_W, CH_H), leg_moll, "C00000")
 
 # copia ridotta del diagramma nel foglio UTA (fuori dall'area di stampa)
 ws.add_chart(build_chart(26, 16, labels=False), "V5")

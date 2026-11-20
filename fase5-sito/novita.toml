@@ -25,7 +25,7 @@ data = "2026-11-19"
 versione = "20261119f"
 titolo = "Foglio psicro_UTA.xlsx: i diagrammi tornano con la grafica originale"
 migliorato = [
-  "Trattamento aria › Trasformazioni (UTA): nel foglio Excel psicro_UTA.xlsx (versione 2.3) i fogli «psicro» e «Mollier» hanno di nuovo la grafica del diagramma originale: fondo bianco, griglia e curve nere, estate in rosso e inverno in blu, diagramma grande su un foglio A3. Nel diagramma T–x tornano le rette di entalpia in kcal e in kJ, le rette di volume specifico e il goniometro a due semicerchi.",
+  "Trattamento aria › Trasformazioni (UTA): nel foglio Excel psicro_UTA.xlsx (versione 2.3) i fogli «psicro» e «Mollier» hanno di nuovo la grafica del diagramma originale: fondo bianco, griglia e curve nere, estate in rosso e inverno in blu, diagramma grande su un foglio A3. Nel diagramma T–x tornano le rette di entalpia in kcal e in kJ, le rette di volume specifico e il goniometro a due semicerchi, con tutte le scritte dell'originale nelle stesse posizioni; il Mollier ha le stesse curve e le stesse scritte.",
 ]
 
 [[voce]]

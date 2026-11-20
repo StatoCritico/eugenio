@@ -122,7 +122,7 @@ GUIDA = [
       "nella fascia tra le due rette d'asse, isocore 0,78…0,95 m³/kg a trattini –, etichette dell'asse x a destra, ESTATE in rosso e INVERNO in blu. "
       "Il goniometro ha due semicerchi centrati nel punto ⊗ (0 °C; 30 g/kg): sul semicerchio interno (raggio 7, rombi) le direzioni del fattore termico R = 1; 0,9; … 0; −0,1 … −1000 e 1000 … 1,2; "
       "su quello esterno (raggio 9, quadrati) le direzioni del rapporto Δh/Δx = 100; 20; 10 … −10 kJ/g, fino a ∞ a destra. I due segmenti spessi dal centro sono le direzioni A → I di progetto (rosso estate, blu inverno): "
-      "una trasformazione con lo stesso R è parallela al segmento. Le curve sono calcolate con le formule di questo foglio e la pressione di calcolo (le tabelle sono nel foglio «Calcoli»)."),
+      "una trasformazione con lo stesso R è parallela al segmento. Le scritte sono quelle dell'originale e nelle stesse posizioni: valori delle isoentalpiche in kcal e in kJ, «h[kcal]» e «h[kJ]», volumi 0,8…0,95 in basso e a destra, umidità relativa 10…90 %, R e Δh/Δx sul goniometro, «x(g/Kg)» e «T (C°)»; quelle del volume e dell'umidità relativa si spostano con la curva quando la pressione del comune è diversa da 101325 Pa. Unica differenza voluta: l'unità della scala Δh/Δx è scritta «kJ/g» (nell'originale «kcal/kgh2o», ma i valori sono in kJ per grammo d'acqua). Le curve e le scritte sono calcolate con le formule di questo foglio e la pressione di calcolo (le tabelle sono nel foglio «Calcoli»)."),
 ("H", "9. Il diagramma di Mollier (foglio «Mollier»)"),
 ("P", "Il foglio «Mollier» mostra le STESSE trasformazioni del foglio «psicro» nel diagramma h–x di Mollier (forma usata nei testi europei e italiani). "
       "Gli stati sono gli stessi del foglio UTA: si cambia solo il sistema di coordinate, nessun calcolo è duplicato."),
@@ -133,7 +133,7 @@ GUIDA = [
       "Isoentalpiche: Y = (h − 2,501·x[g/kg])/1,006 → rette oblique, −2,486 °C per g/kg\n"
       "Scala di bordo: q = Δh/Δx [kJ/kg]; direzione ΔY/Δx = (q − 2501)/1006 °C per g/kg\n"
       "Fattore termico: R ≈ 1 − 2501/q"),
-("P", "Come si legge: un riscaldamento o raffreddamento sensibile è una retta VERTICALE (x costante); l'umidificazione adiabatica segue le rette nere oblique di entalpia costante; "
+("P", "Come si legge: un riscaldamento o raffreddamento sensibile è una retta VERTICALE (x costante); l'umidificazione adiabatica segue le isoentalpiche (kcal continue, kJ tratteggiate); "
       "l'umidificazione a vapore è quasi parallela alle isoterme; la miscela di due arie sta esattamente sul segmento che le congiunge (in h–x la regola della leva è esatta); "
       "la batteria fredda porta l'aria vicino alla curva di saturazione."),
 ("P", "Scala di bordo Δh/Δx: al posto del goniometro, sul bordo del grafico ci sono tacche con i valori del rapporto q = Δh/Δx [kJ/kg]. "
@@ -187,7 +187,7 @@ GUIDA = [
 ("P", "v2.3 (19/11/2026) – Fogli «psicro» e «Mollier» con la grafica del diagramma originale (richiesta dell'autore): fondo bianco e griglia nera, curve nere, assi senza titolo con i numeri dell'asse verticale a destra, "
       "ESTATE rossa e INVERNO blu spesse 3 pt, carta A3 orizzontale con il diagramma grande in una pagina e legenda nella seconda; nel diagramma T–x tornano le famiglie di curve dell'originale "
       "(isoentalpiche in kcal/kg e in kJ/kg con l'asse obliquo delle entalpie, isocore 0,78…0,95) e il goniometro a due semicerchi con il centro ⊗ e il segno ∞. "
-      "Le trasformazioni restano rettilinee (l'originale le smussava e la curva passava oltre la saturazione). La copia ridotta del diagramma nel foglio UTA resta a colori (estate blu, inverno rosso, come le tabelle). "
+      "Le trasformazioni restano rettilinee (l'originale le smussava e la curva passava oltre la saturazione). Tutte le scritte dell'originale nelle stesse posizioni, anche nel Mollier (portate nelle sue coordinate), dove le famiglie di curve sono le stesse del T–x. La copia ridotta del diagramma nel foglio UTA resta a colori (estate blu, inverno rosso, come le tabelle). "
       "Nessuna cella di UTA cambia; il foglio «Calcoli» ha in fondo le tabelle delle nuove curve."),
 ("P", "v2.2 (16/11/2026) – Citazione obbligatoria della licenza CC BY 4.0 «Fonte: EuGEnio – eugenio.statocritico.it» in cima a ogni foglio, sotto ogni grafico e nel piè di pagina di ogni pagina stampata: chi usa il foglio o ne riporta grafici e valori deve mantenerla."),
 ("P", "v2.1 (14/11/2026) – Nuovo foglio «Mollier» (diagramma h–x con isoterme, UR, entalpia, volume specifico, scala di bordo Δh/Δx con R, stesse trasformazioni del diagramma T–x); "

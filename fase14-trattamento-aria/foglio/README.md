@@ -34,8 +34,11 @@ del foglio «psicro» con le famiglie dell'originale ricalcolate nel foglio «Ca
 celle: nessun indirizzo esistente cambia): asse delle entalpie x = 20/30·T + 10 e parallela +4, isoentalpiche in kcal/kg
 0…30 fino all'asse + 2, in kJ/kg 10…95 tratteggiate nella fascia tra le rette d'asse, isocore 0,78…0,95 fino a
 saturazione + 2, goniometro a due semicerchi centrati in (0; 30) – raggio 7 con i rombi del fattore termico R, raggio 9
-con i quadrati di Δh/Δx in kJ/g, ⊗ al centro e ∞ come etichette – e i due raggi di progetto A → I. Il Mollier ha lo stesso
-stile e tiene le sue etichette. Disegno 35,2 × 23,2 cm su A3 orizzontale; legenda e tabella dei punti in pagina 2. La
+con i quadrati di Δh/Δx in kJ/g, ⊗ al centro e ∞ come etichette – e i due raggi di progetto A → I. **Scritte dell'originale** (20/11, richiesta di Paolo con lo screenshot di Excel): tabella
+`ETI` copiata dalle colonne CE…CO del foglio «calc» (posizione e testo), una serie invisibile di un punto per scritta
+(`serie_etichetta`), Arial 8 grassetto; volumi e UR spostati quanto la curva rispetto a 101325 Pa; unità della scala
+Δh/Δx scritta «kJ/g» (nell'originale «kcal/kgh2o», sbagliata). `build_mollier_orig()`: nel Mollier le stesse famiglie e
+le stesse scritte portate in X = x, Y = T·(1 + 1,849·x/1000) (colonne `OG_MY`), più isoterme, scala di bordo Δh/Δx e polo. Disegno 35,2 × 23,2 cm su A3 orizzontale; legenda e tabella dei punti in pagina 2. La
 copia ridotta nel foglio UTA non cambia. Verifica: **414/414** controlli, 0 errori di formula dopo il ricalcolo,
 prove della fase 14 passate.
 
