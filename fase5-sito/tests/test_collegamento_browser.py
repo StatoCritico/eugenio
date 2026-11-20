@@ -32,6 +32,7 @@ PAGINE = {
     "aria-trasformazioni.html": "a", "aria-ore.html": "a", "aria-latenti.html": "a", "aria-freecooling.html": "a",
     "cog-emissioni.html": "a", "edificio-clima.html": "a",
     "indici-prezzi.html": "b", "index.html": "b",
+    "fv-cabine.html": "b",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -634,3 +635,35 @@ def test_previsioni(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "previsioni")
+
+
+# ---------------------------------------------------------------------------------------------- Cabine primarie (con file)
+def test_fv_cabine(browser, base):
+    pronta = "() => window.EUGENIO_CABINE && window.EUGENIO_CABINE.st.pronto"
+    ctx, pg, errori = _apri(browser, base + "fv-cabine.html?prova=1", rotte=SENZA_ARCGIS)
+    pg.wait_for_function(pronta, timeout=30000)
+    pg.evaluate("() => window.EUGENIO_CABINE.aggiungiPunto({ lat: 44.139412, lon: 12.243101, origine: 'mappa' })")
+    pg.evaluate("() => window.EUGENIO_CABINE.aggiungiPunto({ lat: 44.0601, lon: 12.5672, origine: 'elenco (coordinate del file)', nome: 'Sede A' })")
+    pg.evaluate("() => window.EUGENIO_CABINE.st.det.jumpTo({ center: [12.2431, 44.1394], zoom: 15 })")
+    pg.wait_for_selector("#fonte-dettaglio option[value='pcn2012']", state="attached")
+    pg.select_option("#fonte-dettaglio", "pcn2012")
+    pg.check("#strato-particelle")
+    link = _collegamento(pg)
+    for parte in ("prova=1", "centro=44.139400*12.243100*15.00", "punti=44.139412*12.243101", "fonte=pcn2012", "particelle=1"):
+        assert parte in link, parte
+    assert "44.0601" not in link and "Sede" not in link            # niente dati del file
+    _foto(pg, "fv_cabine_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=SENZA_ARCGIS)
+    pg.wait_for_function(pronta, timeout=30000)
+    punti = pg.evaluate("() => window.EUGENIO_CABINE.st.punti.map((p) => [p.lat, p.lon])")
+    assert punti == [[44.139412, 12.243101]]
+    c = pg.evaluate("() => { const m = window.EUGENIO_CABINE.st.det, c = m.getCenter(); return [c.lat, c.lng, m.getZoom()]; }")
+    assert abs(c[0] - 44.1394) < 1e-5 and abs(c[1] - 12.2431) < 1e-5 and abs(c[2] - 15) < 1e-6
+    assert pg.evaluate("() => window.EUGENIO_CABINE.st.fonte && window.EUGENIO_CABINE.st.fonte.id") == "pcn2012"
+    assert pg.is_checked("#strato-particelle")
+    pg.wait_for_timeout(1000)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "fv_cabine", SENZA_ARCGIS)
