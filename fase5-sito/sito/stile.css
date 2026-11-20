@@ -1754,3 +1754,19 @@ table.sedi-cer .origine-cabina { font-style: italic; }
 .etichetta-mappa.righello-etichetta { z-index: 3; }
 .mappa.righello-attivo .etichetta-mappa:not(.righello-etichetta) { display: none !important; }   /* riquadretti della pagina: non sopra la misura */
 .etichetta-mappa.righello-etichetta div { color: var(--inchiostro); }
+/* Produzione e consumi di elettricità (20/11/2026): due metà come nelle altre pagine con la mappa; selettore della grandezza
+   e cursore dell'anno sotto la mappa */
+@media (min-width: 861px) { .pagina-elettricita .mappa-area > * { flex-shrink: 0; } }
+.comandi-elettricita { display: flex; flex-wrap: wrap; align-items: end; gap: var(--s2) var(--s4); margin-top: var(--s2); }
+.modo-elettricita { flex-wrap: wrap; }
+.modo-elettricita .bottone { padding-inline: .7rem; }
+.cursore-anno { display: flex; flex-direction: column; gap: .2rem; min-width: 14rem; flex: 1; font-size: var(--c-s); }
+.cursore-anno b { font-size: var(--c-m); }
+.cursore-riga { display: flex; align-items: center; gap: .5rem; color: var(--tenue); font-size: var(--c-xs); }
+.cursore-riga input[type="range"] { flex: 1; accent-color: var(--primario); }
+.grafico-elettricita { position: relative; margin-top: var(--s2); }
+.legenda-grafico { display: flex; flex-wrap: wrap; gap: .25rem var(--s3); font-size: var(--c-xs); margin-top: var(--s1); }
+.tabella-elettricita td { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tabella-elettricita tfoot th, .tabella-elettricita tfoot td { font-weight: 700; border-top: 2px solid var(--linea); }
+.tabella-elettricita thead th { font-size: var(--c-xs); vertical-align: bottom; }
+#passo-vista h3, #passo-tabella h3 { font: 600 var(--c-m)/1.25 var(--titoli); margin: var(--s4) 0 var(--s1); }

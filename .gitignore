@@ -33,3 +33,6 @@ visure_vere/
 
 # file scritto ogni notte dal worker sul server (indici dei prezzi, 11/11/2026): mai nel repository
 fase5-sito/sito/dati/prezzi/
+# (20/11/2026, decisione di Paolo) dati di Terna: solo sul server, li costruisce il worker; mai nel repository né scaricabili
+fase5-sito/sito/dati/elettricita/
+fase15-elettricita/raw/
