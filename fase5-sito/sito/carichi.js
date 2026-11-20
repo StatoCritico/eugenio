@@ -31,7 +31,18 @@
     if (parent) parent.appendChild(e);
     return e;
   }
-  const num = (v, d = 0) => (v === null || v === undefined || !Number.isFinite(+v) ? "–" : (+v).toLocaleString("it-IT", { maximumFractionDigits: d, minimumFractionDigits: d }));
+  // numeri all'italiana, sempre con il punto delle migliaia (anche a 4 cifre: 4.063). In it-IT il raggruppamento
+  // normale scatta solo da 5 cifre, quindi useGrouping: "always"; dove il browser non lo conosce (controllo fatto
+  // una volta sola), si formatta senza raggruppamento e si mette il punto ogni tre cifre nella parte intera.
+  const GRUPPI_SEMPRE = (() => { try { return new Intl.NumberFormat("it-IT", { useGrouping: "always" }).format(1234) === "1.234"; } catch (e) { return false; } })();
+  const formati = new Map();
+  const num = (v, d = 0) => {
+    if (v === null || v === undefined || !Number.isFinite(+v)) return "–";
+    let f = formati.get(d);
+    if (!f) { f = new Intl.NumberFormat("it-IT", { useGrouping: GRUPPI_SEMPRE ? "always" : false, minimumFractionDigits: d, maximumFractionDigits: d }); formati.set(d, f); }
+    const t = f.format(+v);
+    return GRUPPI_SEMPRE ? t : t.replace(/^(\D*)(\d+)/, (_, segno, intera) => segno + intera.replace(/\B(?=(\d{3})+$)/g, "."));
+  };
   const MW = (v) => `${num(v)} MW`;
   const pc = (v) => `${num(v, v < 10 ? 1 : 0)} %`;
   const limita = (x, lo, hi) => Math.min(hi, Math.max(lo, x));

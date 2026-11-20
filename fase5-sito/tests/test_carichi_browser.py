@@ -111,7 +111,10 @@ def test_pagina(browser, base, dati):
         assert pg.locator(f"{g} svg.zoom-proprio").count() == 1 and pg.locator(f"{g} .grafico-apri").count() == 1
     assert pg.locator("#grafico-fonti svg.zoom-proprio path[fill='#f7cb15']").count() == 1     # fotovoltaico
     assert pg.locator("#nota-zona-fonti").is_hidden()
-    assert "Quarti d'ora" in pg.locator("#riepilogo-carichi").inner_text() and "5860" in pg.locator("#riepilogo-carichi").inner_text()
+    riep = pg.locator("#riepilogo-carichi").inner_text()
+    assert "Quarti d'ora" in riep and "5.860" in riep and "5860" not in riep      # punto delle migliaia anche a 4 cifre
+    assi = pg.evaluate("() => [...document.querySelectorAll('#grafico-durata svg text')].map((t) => t.textContent)")
+    assert "1.000 h" in assi and "1000 h" not in assi                                    # anche sull'asse delle ore
     # zona dalla piccola mappa, secondo clic → Italia
     pg.locator('#minimappa-zone path[data-zona="SICI"]').click()
     pg.wait_for_function("() => document.getElementById('zona-scelta').textContent === 'Sicilia'")
