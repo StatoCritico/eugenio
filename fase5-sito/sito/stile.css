@@ -1691,9 +1691,9 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 /* due metà con la loro barra di scorrimento, come nelle altre pagine (19/11/2026, 21:29, Paolo): la colonna di sinistra
    resta alta quanto la finestra e scorre da sola; i suoi elementi non si restringono (prima la mappa si schiacciava e i
    comandi sotto restavano nascosti: «la pagina non funziona») */
-@media (min-width: 861px) { .pagina-cabine .mappa-area > * { flex-shrink: 0; } }
-.pagina-cabine .mappa-area .mappa-dettaglio { flex: none; }
-.pagina-cabine .comandi-punti { justify-content: flex-start; margin-top: var(--s2); }
+@media (min-width: 861px) { .pagina-cabine .mappa-area > *, .pagina-cer .mappa-area > * { flex-shrink: 0; } }
+.pagina-cabine .mappa-area .mappa-dettaglio, .pagina-cer .mappa-area .mappa-dettaglio { flex: none; }
+.pagina-cabine .comandi-punti, .pagina-cer .comandi-punti { justify-content: flex-start; margin-top: var(--s2); }
 .modo-mappa { display: inline-flex; }
 .modo-mappa .bottone { border-radius: 0; }
 .modo-mappa .bottone:first-child { border-radius: var(--raggio, 6px) 0 0 var(--raggio, 6px); }
@@ -1718,7 +1718,8 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .pagina-cabine .carica-file input[type="file"] { display: none; }
 .campione-rete.in-parte { background: transparent; border: 2px dashed var(--inchiostro); }
 /* Comunità energetiche (20/11/2026): sedi con la cabina proposta dal GSE, mappa con lo strato delle aree convenzionali */
-.mappa-gl.mappa-cer { height: min(60vh, 520px); min-height: 300px; margin-top: var(--s2); }
+/* (20/11/2026, Paolo) come le altre pagine: mappa e comandi a sinistra, istruzioni ed esiti a destra (.pagina-cer) */
+.pagina-cer .pannello table.sedi-cer { display: block; overflow-x: auto; }
 table.sedi-cer { width: 100%; border-collapse: collapse; font-size: var(--c-s); }
 table.sedi-cer th, table.sedi-cer td { padding: .5rem .6rem; border-bottom: 1px solid var(--linea); text-align: left; vertical-align: top; }
 table.sedi-cer thead th { background: var(--rialzo); font: 600 var(--c-s)/1.2 var(--titoli); }

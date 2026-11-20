@@ -249,6 +249,9 @@ def test_strato_aree_convenzionali(base, browser):
     assert len([c for c in pg.chiamate if c.get("geometryType") == "esriGeometryEnvelope"]) == 1
     # clic sull'area: codice, gestore, data di consegna, link alla mappa del GSE
     _aspetta(pg, f"() => {S}.mappa.queryRenderedFeatures({S}.mappa.project([11.34, 44.495]), {{ layers: ['cer-aree-fondo'] }}).length > 0")
+    # (20/11/2026) mappa nella colonna di sinistra che scorre da sola: accendere la casella sotto la mappa la fa scorrere
+    pg.evaluate("document.getElementById('mappa-cer').scrollIntoView({ block: 'center' })")
+    pg.wait_for_timeout(200)
     xy = pg.evaluate(f"(() => {{ const p = {S}.mappa.project([11.34, 44.495]), r = {S}.mappa.getCanvas().getBoundingClientRect(); return [r.left + p.x, r.top + p.y]; }})()")
     pg.mouse.click(xy[0], xy[1])
     _aspetta(pg, "() => document.querySelector('.popup-ac')")
