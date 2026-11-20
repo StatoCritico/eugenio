@@ -310,3 +310,34 @@ RETE_AVVISO_PROVINCE = int(os.environ.get("RETE_AVVISO_PROVINCE", "5"))
 # servizio risponda (una sola richiesta ?f=json, nessun dato salvato) e manda un'email solo se non risponde
 GSE_CONTROLLO_GIORNO = int(os.environ.get("GSE_CONTROLLO_GIORNO", "3"))
 GSE_CONTROLLO_ORA = int(os.environ.get("GSE_CONTROLLO_ORA", "7"))
+
+# (20/11/2026) dati di Terna (servizio/terna.py; pagine «Produzione e consumi di elettricità» e «Carichi elettrici»).
+# Decisione di Paolo: si caricano sul server per le elaborazioni del sito ma non si scaricano dal sito; mai nel repository.
+# Niente dati di prezzo o di mercato di Terna (cataloghi Market e Fees esclusi: solo uso interno come GME ed EEX).
+TERNA_DATI = Path(os.environ.get("TERNA_DATI") or str(DATI / "terna"))
+# statistiche annuali dal Download Center (fase 15, terna_dc.scarica; nessuna chiave, nessuna quota): una volta al mese,
+# il giorno ELETTRICITA_GIORNO dalle ELETTRICITA_ORA (ora italiana); subito se l'archivio delle statistiche è vuoto
+ELETTRICITA_GIORNO = int(os.environ.get("ELETTRICITA_GIORNO", "5"))
+ELETTRICITA_ORA = os.environ.get("ELETTRICITA_ORA", "05:00")
+# API ufficiale (https://developer.terna.it, OAuth2 client_credentials). Le due chiavi stanno SOLO nel .env del server;
+# senza, la parte dell'API non parte (riga nel registro, nessuna email). Una sola applicazione: mai altre chiavi per
+# aggirare i limiti di Terna (1 richiesta al secondo, 300 al giorno). TERNA_API_TETTO è il nostro tetto giornaliero
+# (contatore in TERNA_DATI/quota_api.json, azzerato a mezzanotte, ora italiana), mai sopra 300.
+TERNA_CLIENT_ID = os.environ.get("TERNA_CLIENT_ID", "")
+TERNA_CLIENT_SECRET = os.environ.get("TERNA_CLIENT_SECRET", "")
+TERNA_API_TETTO = max(0, min(300, int(os.environ.get("TERNA_API_TETTO", "250"))))
+TERNA_PAUSA_S = max(1.0, float(os.environ.get("TERNA_PAUSA_S", "1.1")))     # mai sotto 1 s (vale anche per il Download Center)
+# lavoro terna-api: ogni giorno dalle TERNA_API_ORA (ora italiana) il giorno prima dall'API (e quelli rimasti indietro,
+# al più TERNA_API_GIORNI_MAX), l'IMCEI del mese, TERNA_STORICO_MESI mesi di storico dal Download Center (dal
+# TERNA_STORICO_INIZIO, ripreso da dove era rimasto), poi i file di «Carichi elettrici». Dopo un 429 o un 5xx si riprova
+# dopo TERNA_RIPROVA_MIN minuti (al più TERNA_RIPROVA_MAX volte al giorno), senza ripetere subito le richieste.
+TERNA_API_ORA = os.environ.get("TERNA_API_ORA", "06:30")
+TERNA_API_GIORNI_MAX = max(1, int(os.environ.get("TERNA_API_GIORNI_MAX", "7")))
+TERNA_STORICO_INIZIO = os.environ.get("TERNA_STORICO_INIZIO", "2021-01")
+TERNA_STORICO_MESI = max(0, int(os.environ.get("TERNA_STORICO_MESI", "6")))
+TERNA_IMCEI_GIORNO = int(os.environ.get("TERNA_IMCEI_GIORNO", "20"))       # dal giorno 20 si cerca il mese nuovo dell'IMCEI
+TERNA_RIPROVA_MIN = max(15, int(os.environ.get("TERNA_RIPROVA_MIN", "60")))
+TERNA_RIPROVA_MAX = int(os.environ.get("TERNA_RIPROVA_MAX", "4"))
+# email all'amministratore una volta per episodio se né l'API né il Download Center aggiornano l'archivio da più di
+# TERNA_AVVISO_GIORNI giorni (le chiavi mancanti non contano: è una configurazione, non un guasto)
+TERNA_AVVISO_GIORNI = float(os.environ.get("TERNA_AVVISO_GIORNI", "3"))
