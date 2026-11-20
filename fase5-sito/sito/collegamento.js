@@ -16,7 +16,8 @@
 //        EUGENIO_COLLEGAMENTO.registra({
 //          chiavi: ["comune", "vista"],          // parametri gestiti (per toglierli quando la scelta sparisce)
 //          principali: ["comune"],               // restano anche se l'indirizzo è troppo lungo
-//          leggi: () => ({ comune: stato.istat, vista: stato.vista }),   // null, undefined o "" = parametro tolto
+//          leggi: () => ({ comune: stato.istat, vista: stato.vista }),   // valore null, undefined o "" = parametro tolto;
+//                                                // leggi() che restituisce null = pagina non pronta, parametri lasciati
 //          applica: async (p) => { … },          // p: URLSearchParams dell'indirizzo aperto
 //        });
 //      e, dopo una scelta che non passa da un evento input/change/click, EUGENIO_COLLEGAMENTO.aggiorna().
@@ -117,10 +118,11 @@
     }
     Object.assign(valori, leggiControlli());
     for (const r of registrazioni) {
+      let v = {};
+      try { v = r.leggi ? r.leggi() : {}; } catch (err) { console.warn("collegamento: leggi", err); v = null; }
+      if (v === null || v === undefined) continue;     // pagina non ancora pronta: i suoi parametri restano come sono
       (r.chiavi || []).forEach((k) => gestite.add(k));
       (r.principali || r.chiavi || []).forEach((k) => principali.add(k));
-      let v = {};
-      try { v = (r.leggi && r.leggi()) || {}; } catch (err) { console.warn("collegamento: leggi", err); }
       for (const [k, x] of Object.entries(v)) {
         gestite.add(k);
         if (!r.principali && !r.chiavi) principali.add(k);
@@ -289,7 +291,17 @@
     ripristino = false;
     aggiorna(true);
   }
+  // aspetta che la pagina sia pronta (dati caricati in modo asincrono), al più `ms`
+  async function quando(cond, ms = ATTESA_OPZIONI) {
+    const fine = Date.now() + ms;
+    while (Date.now() < fine) {
+      try { if (cond()) return true; } catch { /* non ancora */ }
+      await attendi(60);
+    }
+    return false;
+  }
   window.EUGENIO_COLLEGAMENTO = {
+    quando,
     registra(r) { registrazioni.push(r || {}); if (!ripristino) tardiva(r); return r; },
     aggiorna,
     indirizzo: () => indirizzo().href,
