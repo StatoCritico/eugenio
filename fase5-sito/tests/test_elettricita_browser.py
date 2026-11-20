@@ -116,7 +116,7 @@ def test_pagina(browser, base, dati):
     pg.click('[data-modo="burden"]')
     pg.wait_for_timeout(1500)
     testo = pg.locator("#tabella-elettricita").inner_text()
-    assert "Obiettivo 2030" in testo and "6330" in testo.replace(".", "")
+    assert "Obiettivo 2030" in testo and "6.330" in testo and "6330" not in testo     # punto delle migliaia anche a 4 cifre
     assert pg.locator("#anno-scelto").inner_text() == "2021"
     assert errori == []
 
