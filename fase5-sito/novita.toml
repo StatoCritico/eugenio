@@ -21,6 +21,15 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
+data = "2026-11-20"
+versione = "20261120a"
+titolo = "Newsletter e avvisi: «Annulla iscrizione» senza blocchi"
+migliorato = [
+  "Newsletter e avvisi: «Annulla iscrizione» del programma di posta (per esempio Gmail), su qualunque email di EuGEnio, toglie dai servizi di EuGEnio e basta: l'indirizzo non resta più bloccato e ci si può reiscrivere quando si vuole dalla pagina. Ogni messaggio dei servizi ha in fondo anche il collegamento «Cancellati con un clic».",
+  "Newsletter e avvisi: se un indirizzo era già stato bloccato dal servizio di posta, la pagina lo dice chiaramente invece di «Email non spedita» e rimanda ai Contatti per sbloccarlo.",
+]
+
+[[voce]]
 data = "2026-11-19"
 versione = "20261119f"
 titolo = "Foglio psicro_UTA.xlsx: i diagrammi tornano con la grafica originale"
