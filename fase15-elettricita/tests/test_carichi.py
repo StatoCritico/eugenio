@@ -129,3 +129,38 @@ def test_zona_sconosciuta(tmp_path):
 
 def test_mesi_tra():
     assert K.mesi_tra("2025-11", "2026-02") == [(2025, 11), (2025, 12), (2026, 1), (2026, 2)]
+
+
+def test_archivio_parquet_del_worker(tmp_path):
+    """(20/11/2026, unione con il worker) l'archivio Parquet del server (TERNA_DATI/serie, servizio/terna.py della fase 4:
+    istante in UTC, zona/fonte, carico_mw/energia_gwh) dà gli stessi file dell'archivio JSON del Download Center."""
+    pd = pytest.importorskip("pandas")
+    pytest.importorskip("pyarrow")
+    arch = _archivio(tmp_path)
+    serie = tmp_path / "serie"
+    for ds, (nome, chiave, valore) in K.PARQUET.items():
+        (serie / nome).mkdir(parents=True)
+        for f in sorted(arch.glob(f"{ds}_*.json")):
+            am = f.stem.split("_")[1]
+            col_v, col_k = {"TotalLoad": ("Total Load [MW]", "Bidding Zone"), "ActualGeneration": ("Actual Generation", "Primary Source"),
+                            "RenewableGeneration": ("Renewable Generation", "Energy Source")}[ds]
+            righe = list(K._leggi(f, col_v, col_k))
+            df = pd.DataFrame({"istante": pd.to_datetime([t for t, _, _ in righe], utc=True), chiave: [k for _, k, _ in righe],
+                               valore: [v for _, _, v in righe], "origine": "dc"})
+            df.to_parquet(serie / nome / f"{am}.parquet", index=False)
+    (serie / "picco_valle").mkdir()                    # le altre serie dell'archivio non disturbano
+    a, b = tmp_path / "da_json", tmp_path / "da_parquet"
+    assert K.costruisci_carichi(arch, a)["mesi"] == K.costruisci_carichi(serie, b)["mesi"] == ["2026-09", "2026-10"]
+    nomi = sorted(f.name for f in a.glob("*.json"))
+    assert nomi == sorted(f.name for f in b.glob("*.json")) and "fonti_2026-10.json" in nomi
+    for nome in nomi:
+        x, y = (json.loads((d / nome).read_text(encoding="utf-8")) for d in (a, b))
+        if nome == "indice.json":
+            x.pop("aggiornato"); y.pop("aggiornato")
+        assert x == y, nome
+
+
+def test_archivio_vuoto(tmp_path):
+    (tmp_path / "serie" / "carico_totale").mkdir(parents=True)
+    with pytest.raises(FileNotFoundError):
+        K.costruisci_carichi(tmp_path / "serie", tmp_path / "out")

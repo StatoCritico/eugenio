@@ -31,6 +31,11 @@ Formato dell'archivio (una cartella, un file per dataset e mese):
                          Hydro, Wind, Geothermal, Photovoltaic, Self-consumption)
     RenewableGeneration  Date, «Renewable Generation» [GW], «Energy Source» (Biomass, Hydro, Wind, Geothermal,
                          Photovoltaic)
+  Oppure (20/11/2026, unione con il worker) l'archivio Parquet del server, TERNA_DATI/serie (servizio/terna.py della
+  fase 4, formato nel README della fase 4, § «Dati di Terna»): <archivio>/<serie>/<AAAA-MM>.parquet con `istante` già in
+  UTC (ora ripetuta di ottobre già risolta), `zona`/`fonte` con i nomi inglesi di Terna e i valori `carico_mw` (serie
+  carico_totale = TotalLoad) ed `energia_gwh` (produzione = ActualGeneration, rinnovabili = RenewableGeneration; al
+  passo di 15 minuti GW medi). Si riconosce dalla cartella `carico_totale/`; il resto della costruzione è lo stesso.
   Date: millisecondi dal 1/1/0001 in ora locale italiana (come il Download Center), oppure testo ISO
   «AAAA-MM-GGTHH:MM[:SS]» in ora locale, oppure ISO con il fuso («…Z», «…+01:00»). Nel giorno del ritorno all'ora
   solare le ore 02:00–02:45 compaiono due volte con la stessa data locale: la prima volta valgono come ora legale
@@ -230,6 +235,49 @@ def _leggi(f: Path, valore: str, chiave: str):
         yield t, k, float(v)
 
 
+# archivio Parquet del worker (fase 4, servizio/terna.py): dataset del Download Center → (serie, colonna chiave, valore)
+PARQUET = {
+    "TotalLoad": ("carico_totale", "zona", "carico_mw"),
+    "ActualGeneration": ("produzione", "fonte", "energia_gwh"),
+    "RenewableGeneration": ("rinnovabili", "fonte", "energia_gwh"),
+}
+
+
+def _parquet(archivio: Path) -> bool:
+    """True se `archivio` è l'archivio Parquet del worker (cartella carico_totale/ con dentro dei .parquet)."""
+    return any((archivio / PARQUET[FONTE_CARICO["dataset"]][0]).glob("*.parquet")) if FONTE_CARICO["dataset"] in PARQUET else False
+
+
+def _file_mese(archivio: Path, dataset: str, am: str) -> Path:
+    if _parquet(archivio) and dataset in PARQUET:
+        return archivio / PARQUET[dataset][0] / f"{am}.parquet"
+    return archivio / f"{dataset}_{am}.json"
+
+
+def _mesi(archivio: Path, dataset: str) -> list[str]:
+    if _parquet(archivio) and dataset in PARQUET:
+        cartella, modello = archivio / PARQUET[dataset][0], r"(\d{4}-\d\d)\.parquet$"
+    else:
+        cartella, modello = archivio, rf"{dataset}_(\d{{4}}-\d\d)\.json$"
+    return sorted({m.group(1) for f in cartella.glob("*") if (m := re.match(modello, f.name))})
+
+
+def _leggi_parquet(f: Path, dataset: str):
+    """Righe (istante UTC, chiave, valore) di un file Parquet dell'archivio del worker."""
+    import pandas as pd
+    _, chiave, valore = PARQUET[dataset]
+    df = pd.read_parquet(f, columns=["istante", chiave, valore])
+    df = df[df[valore].notna() & df["istante"].notna()]
+    ist = pd.to_datetime(df["istante"], utc=True)
+    for t, k, v in zip(ist, df[chiave], df[valore]):
+        yield t.to_pydatetime().astimezone(UTC), str(k).strip(), float(v)
+
+
+def _righe(archivio: Path, dataset: str, am: str, valore: str, chiave: str):
+    f = _file_mese(archivio, dataset, am)
+    return _leggi_parquet(f, dataset) if f.suffix == ".parquet" else _leggi(f, valore, chiave)
+
+
 def _griglia(anno: int, mese: int) -> tuple[dt.datetime, int]:
     """Primo quarto d'ora del mese (UTC) e numero di quarti d'ora del mese locale."""
     t0 = dt.datetime(anno, mese, 1, tzinfo=ROMA).astimezone(UTC)
@@ -329,14 +377,14 @@ def costruisci_carichi(archivio: Path, uscita: Path) -> dict:
     archivio, uscita = Path(archivio), Path(uscita)
     uscita.mkdir(parents=True, exist_ok=True)
     ds_c = FONTE_CARICO["dataset"]
-    mesi = sorted({m.group(1) for f in archivio.glob(f"{ds_c}_*.json") if (m := re.match(rf"{ds_c}_(\d{{4}}-\d\d)\.json$", f.name))})
+    mesi = _mesi(archivio, ds_c)
     if not mesi:
-        raise FileNotFoundError(f"nessun file {ds_c}_AAAA-MM.json in {archivio}")
+        raise FileNotFoundError(f"nessun file {ds_c}_AAAA-MM.json (né {PARQUET.get(ds_c, ('?',))[0]}/AAAA-MM.parquet) in {archivio}")
     elenco, dimensioni = [], {}
     for am in mesi:
         a, m = map(int, am.split("-"))
         t0, n = _griglia(a, m)
-        car, passo_c = _serie(_leggi(archivio / f"{ds_c}_{am}.json", FONTE_CARICO["valore"], FONTE_CARICO["zona"]), t0, n, _zona)
+        car, passo_c = _serie(_righe(archivio, ds_c, am, FONTE_CARICO["valore"], FONTE_CARICO["zona"]), t0, n, _zona)
         car = {z: [None if v is None else v * FONTE_CARICO["scala"] for v in s] for z, s in car.items()}
         if "ITA" not in car and car:        # Italia = somma delle zone, se la fonte non la dà
             car["ITA"] = [None if any(car[z][i] is None for z in car) else sum(car[z][i] for z in car) for i in range(n)]
@@ -350,10 +398,12 @@ def costruisci_carichi(archivio: Path, uscita: Path) -> dict:
         f.write_text(json.dumps({"mese": am, "zone": {z: _interi(s[:n_dati]) for z, s in car.items()}}, separators=(",", ":")),
                      encoding="utf-8")
         dimensioni[f.name] = f.stat().st_size
-        fa, fr = archivio / f"ActualGeneration_{am}.json", archivio / f"RenewableGeneration_{am}.json"
+        fa, fr = _file_mese(archivio, "ActualGeneration", am), _file_mese(archivio, "RenewableGeneration", am)
         if fa.exists():
-            att, passo_g = _serie(_leggi(fa, "Actual Generation", "Primary Source"), t0, n, lambda k: ATTUALE.get(k.lower()))
-            rin, _ = _serie(_leggi(fr, "Renewable Generation", "Energy Source"), t0, n, lambda k: RINNOVABILE.get(k.lower())) if fr.exists() else ({}, 15)
+            att, passo_g = _serie(_righe(archivio, "ActualGeneration", am, "Actual Generation", "Primary Source"), t0, n,
+                                  lambda k: ATTUALE.get(k.lower()))
+            rin, _ = (_serie(_righe(archivio, "RenewableGeneration", am, "Renewable Generation", "Energy Source"), t0, n,
+                             lambda k: RINNOVABILE.get(k.lower())) if fr.exists() else ({}, 15))
             out = {k: [None] * n_dati for k, _, _ in VOCI}
             presenti = 0
             for i in range(n_dati):

@@ -179,7 +179,8 @@ fonti è sempre dell'Italia; con una zona scelta la pagina lo dice (nessuna ripa
 
 ### Archivio (ingresso)
 
-Una cartella con un file per dataset e mese: `<archivio>/<Dataset>_<AAAA>-<MM>.json` =
+Due formati (vedi anche «Aggancio al worker» sotto per il Parquet del server). Sul PC: una cartella con un file per
+dataset e mese: `<archivio>/<Dataset>_<AAAA>-<MM>.json` =
 `{"Columns": {nome: tipo, …}, "Data": [[…], …]}`, cioè la risposta del Download Center così com'è.
 
 | Dataset | Colonne usate | Unità |
@@ -222,16 +223,25 @@ python -m elettricita.carichi costruisci <archivio> <uscita>      # costruisci_c
 La pagina scarica solo i mesi del periodo scelto (12 mesi ≈ 2,6 MB non compressi, molto meno con la compressione del
 server).
 
-### Come agganciarlo al worker (lo prepara un'altra sessione: `fase4-server` non è toccato qui)
+### Aggancio al worker (fase 4, unito il 20/11/2026)
 
-Una volta al giorno, dopo l'aggiornamento di Terna:
+Il lavoro `carichi` del worker (`fase4-server/servizio/worker.py`, README della fase 4 § «Dati di Terna») gira subito
+dopo `terna-api` se l'archivio è cambiato: chiama `costruisci_carichi(TERNA_DATI/serie, sito/dati/.carichi_nuova)` e
+pubblica la cartella in `sito/dati/carichi/` con `_pubblica` se il controllo passa. Il worker **non** usa `scarica` di
+questo modulo: l'archivio lo tiene `servizio/terna.py` (API ufficiale per il giorno prima, Download Center per lo
+storico dal 2021), in **Parquet**, una cartella per serie e un file per mese:
 
-1. `scarica(archivio, mesi_tra(<12 mesi fa o il primo mese da tenere>, <mese corrente>))` per i mesi mancanti, e
-   `scarica(archivio, [<mese corrente>], rifai=True)` (anche il mese precedente nei primi giorni del mese);
-   `archivio` fuori dal sito (per esempio `/srv/eugenio/archivio/terna_carichi/`).
-2. `costruisci_carichi(archivio, <cartella nuova>)` e, se va a buon fine, pubblicazione atomica della cartella in
-   `fase5-sito/sito/dati/carichi/` (come `_pubblica` per `dati/elettricita/`).
-3. Il server deve comprimere i `.json` (gzip/brotli) e può tenerli in cache per un giorno.
+| Dataset di questo modulo | Serie dell'archivio del worker | Colonne lette |
+|---|---|---|
+| `TotalLoad` | `carico_totale/AAAA-MM.parquet` | `istante` (UTC), `zona`, `carico_mw` |
+| `ActualGeneration` | `produzione/AAAA-MM.parquet` | `istante`, `fonte`, `energia_gwh` (GW medi al passo di 15 minuti) |
+| `RenewableGeneration` | `rinnovabili/AAAA-MM.parquet` | `istante`, `fonte`, `energia_gwh` |
+
+`costruisci_carichi` riconosce da sé i due formati (cartella `carico_totale/` con dei `.parquet` = archivio del worker,
+altrimenti i JSON del Download Center sopra); i file della pagina sono identici (prova `test_archivio_parquet_del_worker`).
+L'ora ripetuta di ottobre nel Parquet è già risolta da `terna.py`; `_ora_doppia` la ricontrolla con la somma delle zone.
+`scarica` e `python -m elettricita.carichi scarica` restano per le prove sul PC. Il server deve comprimere i `.json`
+(gzip/brotli) e può tenerli in cache per un giorno.
 
 Prova con i dati veri (20/11/2026): 13 mesi (novembre 2025 – 19 novembre 2026), 39 richieste in circa 2 minuti,
 costruzione in 5 secondi, nessun quarto d'ora mancante tranne il 14–15 gennaio 2026 (192, assenti anche nei dati di
