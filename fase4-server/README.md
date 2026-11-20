@@ -215,7 +215,8 @@ prima riga che contiene solo «Fonte: EuGEnio…», così un file di EuGEnio ric
 - **Terreno da più DTM** (`servizio/terreno.py`): le schede di `CARTELLA_TERRENO` si ordinano dal passo più fine; per ogni
   tessera il primo DTM che la copre, poi gli altri per i vuoti, poi Copernicus, poi piatta; intestazione nuova
   `X-Terreno-Nome` (nome del DTM, anche dalla copia). DTM del Veneto: `dtm-server --regione veneto --crs EPSG:6876 --file
-  <cartella delle tavole> --uscita /dati/terreno/dtm5_veneto_tv.tif` (passo J5 bis). Test
+  <cartella delle tavole> --uscita /dati/terreno/dtm5_veneto_tv.tif` (passo J5 bis; procedura completa e permessi in
+  «Come si aggiunge un DTM sul server», più sotto). Test
   `test_piu_dtm_veneto_in_6876_il_piu_dettagliato_prima` (tavole ASCII Grid sintetiche senza `.prj`).
 - **Report dell'edificio**: sezione «Forma dei tetti» (scelta e corpi per fonte) dal campo `tetti`.
 
@@ -1042,6 +1043,37 @@ cedente né codici fiscali. Test: `tests/test_immobili_pa.py`.
 - Prove: `tests/test_ortofoto.py` (9, risposte simulate) e `tests/test_pvgis_orizzonte.py` (5, DEM sintetico e risposte
   simulate); `tests/test_edifici.py` con il report della Fase B. Dal vivo, dal container di sviluppo il 04/11/2026: WMS RER
   2023-24, WMS Toscana, EOX 2016, WMS del Geoportale Nazionale, PVGIS (con e senza `userhorizon`) e DEM su S3 rispondono.
+
+**Come si aggiunge un DTM sul server** (20/11/2026). `/srv/energia/dati/terreno` (`/dati/terreno` nei container) e le
+altre cartelle scritte dai container (`psicro`, `rete`, …) sono dell'utente 1000: un `cp` dell'utente `ubuntu` fallisce
+con «permission denied» (successo il 16/11/2026 con il DTM di Perugia). Due strade, dalla cartella `~/energia/fase4-server`:
+
+1. **Generare il COG nel container** (`edifici-lidar` gira come utente 1000 e scrive `<nome>.tif` e la scheda
+   `<nome>.json`). I file d'origine devono stare sotto `/srv/energia/dati` (il container vede solo `/dati`), copiati con
+   `sudo`:
+   ```bash
+   sudo mkdir -p /srv/energia/dati/terreno/grezzi/<zona>
+   sudo cp ~/<tavole>/* /srv/energia/dati/terreno/grezzi/<zona>/ && sudo chown -R 1000:1000 /srv/energia/dati/terreno/grezzi
+   docker compose --profile edifici run --rm edifici-lidar dtm-server --regione veneto --crs EPSG:6876 \
+       --file /dati/terreno/grezzi/<zona> --uscita /dati/terreno/dtm5_<zona>.tif
+   ```
+   `--file` accetta uno o più zip, TIFF, ESRI ASCII Grid o cartelle (mosaicati); `--regione er|veneto|pst_umbria` sceglie
+   la scheda (licenza, attribuzione, nome in legenda; altrimenti `--licenza`, `--attribuzione`, `--nome`); `--crs` solo
+   per i file senza sistema. Le sottocartelle (`grezzi/`) non sono lette dalla rotta.
+2. **Copiare un COG già pronto** (fatto sul PC con `python -m edifici3d dtm-server …`), sempre `.tif` **e** `.json` con lo
+   stesso nome:
+   ```bash
+   sudo cp ~/perugia_1611/dtm1_pst_perugia.tif ~/perugia_1611/dtm1_pst_perugia.json /srv/energia/dati/terreno/ \
+     && sudo chown 1000:1000 /srv/energia/dati/terreno/dtm1_pst_perugia.tif /srv/energia/dati/terreno/dtm1_pst_perugia.json
+   ```
+   (per una cartella `sudo cp -r` o `sudo mv`, poi `sudo chown -R 1000:1000`).
+
+L'api rilegge le schede ogni **5 minuti** (`dtm_disponibili()`), senza riavvio; la copia delle tessere cambia versione da
+sola. Verifica dopo 5 minuti: `curl -s https://eugenio.statocritico.it/api/terreno/fonti` deve elencare il file nuovo in
+`dtm` (`file`, `riquadro_wgs84`, `licenza`, `nome`); poi le intestazioni di una tessera dentro il riquadro (il parametro in
+coda evita la copia di Cloudflare, che tiene le tessere 30 giorni), ad es. Perugia centro:
+`curl -sI "https://eugenio.statocritico.it/api/terreno/15/17511/12026.png?prova=$(date +%s)" | grep -i x-terreno` →
+`X-Terreno-Fonte: dtm` e `X-Terreno-Nome` con il nome del DTM nuovo (non «DTM 5 m nazionale HR-DTM-5m …»).
 
 **DTM nazionale HR-DTM-5m (19/11/2026)**. Tra i DTM regionali e il Copernicus `terreno.py` usa il DTM a 5 m di tutta
 Italia del CNR-IRPI (M. Panza, M. Muto, I. Marchesini, M. Rossi, M. Alvioli, G. Iovine; Zenodo,
