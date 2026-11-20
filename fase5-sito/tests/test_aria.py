@@ -71,7 +71,7 @@ def test_pagine_costruite(sito):
         assert 'id="scelta-aria"' in destra and '<span class="n">1</span>Comune e serie meteo' in destra, p
         script = re.findall(r'<script src="([\w.]+)\?v=\d{8}[a-z]?"></script>', s)
         # collegamento.js (20/11/2026) subito dopo aspetto.js, prima degli script che si registrano
-        ordine = ["protezione.js", "aspetto.js", "collegamento.js", "grafici.js", "divisore.js", "minimappa.js", "esporta_mappa.js", "psicro.js", "diagramma_aria.js", "scelta_aria.js"]
+        ordine = ["protezione.js", "numeri.js", "aspetto.js", "collegamento.js", "grafici.js", "divisore.js", "minimappa.js", "esporta_mappa.js", "psicro.js", "diagramma_aria.js", "scelta_aria.js"]
         assert script[:len(ordine)] == ordine and script[-1] == p.replace("-", "_").replace(".html", ".js"), (p, script)
         assert ("gruppi_ore.js" in script) == (p != "aria-trasformazioni.html"), p
         assert "Open-Meteo.com" in s and "psychrolib" in s and "non valori di norma" in s, p
