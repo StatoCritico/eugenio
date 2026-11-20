@@ -21,6 +21,11 @@
 //    opzioni: area = [x0, y0, x1, y1]; guida: false per non disegnare la linea verticale (grafici a sole barre)
 //    x e i segni sono in coordinate dell'SVG; righe sono già formattate all'italiana; elementi (barre) prendono la
 //    classe .evidenziata; area = [x0, y0, x1, y1] è la zona del disegno (per la linea guida).
+//
+//  Grafici con lo zoom proprio (20/11/2026, Carichi elettrici): se l'SVG ha svg.__zoomProprio = { zoom(fattore, clientX),
+//  vistaIniziale() } il grafico si ingrandisce da solo (ridisegna i dati della vista invece di cambiare il viewBox):
+//  nel riquadro rotella, trascinamento e doppio clic restano all'SVG, e + − 0 e «Vista iniziale» chiamano queste due
+//  funzioni.
 (function () {
   const NS = "http://www.w3.org/2000/svg";
   const registrati = new WeakMap();     // box → { box, disegna, opz, larghezza }
@@ -357,7 +362,10 @@
     if (vbPrima && misurePrima === riq.misure) scriviVb(svg, vbPrima);
   }
 
-  function vistaIniziale() { if (riq && riq.svg && riq.vb0) { nascondiSuggerimento(); scriviVb(riq.svg, riq.vb0); } }
+  function vistaIniziale() {
+    if (riq && riq.svg && riq.svg.__zoomProprio) { nascondiSuggerimento(); riq.svg.__zoomProprio.vistaIniziale(); return; }
+    if (riq && riq.svg && riq.vb0) { nascondiSuggerimento(); scriviVb(riq.svg, riq.vb0); }
+  }
 
   // ------------------------------------------------------------------ zoom (viewBox) e trascinamento nel riquadro
   const ZOOM_MAX = 12;
@@ -370,7 +378,9 @@
     return v;
   }
   function zoomIn(fattore, cx, cy) {
-    const svg = riq.svg, v = svg && leggiVb(svg);
+    const svg = riq.svg;
+    if (svg && svg.__zoomProprio) { svg.__zoomProprio.zoom(fattore, cx); return; }
+    const v = svg && leggiVb(svg);
     if (!v) return;
     const p = puntoSvg(svg, cx, cy);
     if (!p) return;
@@ -385,7 +395,7 @@
   }
   function zoomETrascinamento(corpo) {
     corpo.addEventListener("wheel", (e) => {
-      if (!riq.svg || !riq.svg.contains(e.target)) return;
+      if (!riq.svg || !riq.svg.contains(e.target) || riq.svg.__zoomProprio) return;
       e.preventDefault();
       const d = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
       zoomIn(Math.exp(-d * 0.0015), e.clientX, e.clientY);
@@ -402,7 +412,7 @@
     };
     corpo.addEventListener("pointerdown", (e) => {
       const svg = riq.svg;
-      if (!svg || !svg.contains(e.target) || (e.pointerType === "mouse" && e.button !== 0)) return;
+      if (!svg || !svg.contains(e.target) || svg.__zoomProprio || (e.pointerType === "mouse" && e.button !== 0)) return;
       dita.set(e.pointerId, { x: e.clientX, y: e.clientY });
       try { svg.setPointerCapture(e.pointerId); } catch (err) { /* puntatore già rilasciato */ }
       avvia();
@@ -439,7 +449,7 @@
     };
     corpo.addEventListener("pointerup", fine);
     corpo.addEventListener("pointercancel", fine);
-    corpo.addEventListener("dblclick", (e) => { if (riq.svg && riq.svg.contains(e.target)) { e.preventDefault(); vistaIniziale(); } });
+    corpo.addEventListener("dblclick", (e) => { if (riq.svg && riq.svg.contains(e.target) && !riq.svg.__zoomProprio) { e.preventDefault(); vistaIniziale(); } });
   }
 
   // ------------------------------------------------------------------ tabelle nel riquadro (29/10/2026)

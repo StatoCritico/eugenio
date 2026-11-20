@@ -76,7 +76,7 @@ GRUPPI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "d
           "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
                          "dbtr-istruzioni.html", "visure.html"],
           "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
-               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html"]}   # (11/11/2026) Indici dei prezzi prima;
+               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html"]}   # (11/11/2026) Indici dei prezzi prima;
 #                                                    (17/11/2026) Stato della rete elettrica in fondo
 VIETATI = ("PUN Index GME =", "€/MWh", "Prezzo medio")   # nessun valore nelle pagine in attesa della licenza GME
 
@@ -599,8 +599,9 @@ def test_etichette_brevi_nelle_tendine():
     # «in sviluppo» cliccabili (LiDAR, Visure), 16 voci in lavorazione con il triangolo e non cliccabili, 6 GME;
     # (09/11/2026 f) + 3 «S» (Edifici: Obblighi di legge, Geometria e luce naturale, Consumi): 8 «S», 13 in lavorazione
     # (14/11/2026) + 4 «S» del Trattamento aria: 12; (17/11/2026) + «S» di Territorio › Edifici pubblici: 13;
-    # (17/11/2026) + Cabine primarie e Stato della rete elettrica: 15; (20/11/2026) + Produzione e consumi di elettricità: 16
-    assert len(s) == pannello.count(">sperimentale<") == 16 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    # (17/11/2026) + Cabine primarie e Stato della rete elettrica: 15; (20/11/2026) + Produzione e consumi di elettricità: 16;
+    # (20/11/2026) + Carichi elettrici: 17
+    assert len(s) == pannello.count(">sperimentale<") == 17 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
     assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
@@ -742,7 +743,7 @@ ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html
                "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
                "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
-               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html"]}   # (11/11/2026) Indici dei prezzi prima;
+               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html"]}   # (11/11/2026) Indici dei prezzi prima;
 #                                                    (17/11/2026) Stato della rete elettrica in fondo
 
 

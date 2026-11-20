@@ -1,4 +1,19 @@
-# Fase 15 – Produzione e consumi di elettricità (statistiche annuali di Terna)
+# Fase 15 – Statistiche dell'elettricità (Terna)
+
+Modulo `elettricita` per due pagine della sezione Statistiche del sito (sperimentali):
+
+| Modulo | Pagina | Dati di Terna |
+|---|---|---|
+| `terna_dc.py`, `costruisci.py` | «Produzione e consumi di elettricità» (`elettricita.html`) | statistiche annuali per regione e provincia |
+| `carichi.py` | «Carichi elettrici» (`carichi.html`, 20/11/2026) | fabbisogno ogni 15 minuti per zona di mercato, produzione per fonte (Italia) |
+
+**Decisione di Paolo (20/11/2026):** i dati di Terna si caricano sul sito per le elaborazioni ma **non si scaricano**
+(nessun CSV, Excel o JSON da scaricare; al più immagini delle elaborazioni). I file costruiti stanno solo sul server:
+`fase5-sito/sito/dati/elettricita/` e `fase5-sito/sito/dati/carichi/` sono in `.gitignore`.
+
+Prove: `cd fase15-elettricita && python -m pytest -q` (solo dati inventati, niente rete).
+
+## Produzione e consumi di elettricità (`terna_dc.py`, `costruisci.py`)
 
 Stato al 20/11/2026: scaricatore e costruttore funzionanti; pagina «Produzione e consumi di elettricità»
 (`fase5-sito/sito/elettricita.html`, `elettricita.js`) in lavorazione, senza versione pubblicata.
@@ -6,7 +21,7 @@ Stato al 20/11/2026: scaricatore e costruttore funzionanti; pagina «Produzione 
 I dati di Terna **non vanno nel repository** e **non si scaricano dal sito** (decisione di Paolo): la cartella
 `raw/` e `fase5-sito/sito/dati/elettricita/` sono nel `.gitignore`.
 
-## Uso
+### Uso
 
 ```sh
 # scarico (una richiesta al secondo; salta gli anni già presenti, --ultimi N riscarica gli ultimi N anni)
@@ -21,7 +36,7 @@ rm -rf ../fase5-sito/sito/dati/elettricita && cp -r /tmp/el ../fase5-sito/sito/d
 python3 -m pytest -q      # prove (niente rete)
 ```
 
-## Lo scaricatore (`elettricita/terna_dc.py`)
+### Lo scaricatore (`elettricita/terna_dc.py`)
 
 Usa l'interfaccia della pagina https://dati.terna.it/download-center (POST JSON su
 `/api/sitecore/dati/downloadcenter/recordsv2`, nessuna chiave, non consuma la quota dell'API ufficiale). Ogni anno
@@ -38,13 +53,13 @@ Attenzione: `ElectricalEnergy` 2019 e 2020 erano stati scaricati prima di questo
 righe (metà dei consumi); riscaricati il 20/11/2026. Per controllare una cartella `raw` vecchia: ogni file deve avere
 `Count == len(Data)`.
 
-## Dataset
+### Dataset
 
 Unità: energia in GWh, potenza in MW. Livello territoriale: regione e provincia (107 province, nomi di Terna:
 alcuni da riparare, vedi `ripara()` in `costruisci.py`; «Valle D'Aosta» nei consumi, «Valle d'Aosta» nella
 produzione). Anni: quelli che restituisce il servizio al 20/11/2026.
 
-### Già usati dalla pagina
+#### Già usati dalla pagina
 
 | Dataset | Anni | Colonne | Contenuto |
 |---|---|---|---|
@@ -58,7 +73,7 @@ produzione). Anni: quelli che restituisce il servizio al 20/11/2026.
 | ConsumptionBySource | 2005–2024 | Anno, Regione, Fonte, Copertura (GWh) | copertura della richiesta per fonte, solo regione |
 | ElectricityByType | 2005–2024 | Anno, Regione, Tipologia, Domanda (GWh) | rinnovabili, tradizionali, saldo import/export, solo regione |
 
-### Nuovi (20/11/2026, per analisi future; la pagina non li usa ancora)
+#### Nuovi (20/11/2026, per analisi future; la pagina non li usa ancora)
 
 **ThermalHeat** – calore prodotto dagli impianti cogenerativi. 2000–2025, regione e provincia.
 Colonne: Anno, Regione, Provincia, Impianto cogenerativo, Calore prodotto (GWh). Tipi di impianto:
@@ -101,7 +116,7 @@ sommano. In IndustrialSector c'è un'attività vuota con classe vuota (107 righe
 settore coincide con ElectricalEnergy (salvo 2019–2020, vedi sotto) e con IndustrialSector / ServiceSector.
 Dal 20/11/2026 la pagina prende i consumi per settore da Total (vedi la tabella sopra).
 
-## Autoconsumo (dataset Market)
+### Autoconsumo (dataset Market)
 
 Che cosa comprende, verificato sui dati scaricati il 20/11/2026:
 
@@ -128,7 +143,7 @@ Che cosa comprende, verificato sui dati scaricati il 20/11/2026:
 - Serie Italia (GWh): 23 819 (2000), 20 169 (2006), 17 530 (2009), 21 103 (2010), 24 995 (2014), 29 125 (2018),
   28 468 (2020), 30 745 (2021), 30 866 (2023), 34 310 (2024).
 
-## Problemi noti nei dati di Terna
+### Problemi noti nei dati di Terna
 
 - **ElectricalEnergy 2019 e 2020: mancano ~7 e ~5,5 TWh di industria** rispetto a Total, Market e IndustrialSector
   (2019: 121 978 contro 128 940 GWh; 2020: 119 952 contro 125 417), concentrati a Brescia (2019: 4 606 contro 8 535)
@@ -147,3 +162,77 @@ Che cosa comprende, verificato sui dati scaricati il 20/11/2026:
 - Nomi non uniformi: «Valle D'Aosta» / «Valle d'Aosta», «Gas naturale» / «Gas Naturale», sottocategorie
   termoelettriche con maiuscole diverse, province con caratteri sbagliati (`ripara()`).
 - Anni diversi tra dataset: produzione e potenza fino al 2025, consumi fino al 2024, ServiceSector solo dal 2019.
+
+## Carichi elettrici (`elettricita/carichi.py`)
+
+### Fonte: Terna e non il GME
+
+Paolo aveva chiesto la «potenza richiesta ricalcolata dall'energia scambiata in borsa». I dati del **GME** sono però
+solo per uso interno e non si mostrano sul sito: la pagina usa il **fabbisogno di Terna** («Fabbisogno Italia»,
+dataset `TotalLoad` del Download Center: carico effettivo in MW medi ogni 15 minuti, per zona di mercato e Italia;
+comprende perdite e autoconsumi). Il punto unico per cambiare fonte è `FONTE_CARICO` in `carichi.py` (dataset
+dell'archivio, colonne, scala, testo della fonte): se arrivasse la licenza del GME basta scrivere nell'archivio un
+dataset con le stesse colonne e cambiare lì.
+
+La produzione per fonte di Terna (`ActualGeneration`, `RenewableGeneration`) è **solo nazionale**: il grafico delle
+fonti è sempre dell'Italia; con una zona scelta la pagina lo dice (nessuna ripartizione per zona inventata).
+
+### Archivio (ingresso)
+
+Una cartella con un file per dataset e mese: `<archivio>/<Dataset>_<AAAA>-<MM>.json` =
+`{"Columns": {nome: tipo, …}, "Data": [[…], …]}`, cioè la risposta del Download Center così com'è.
+
+| Dataset | Colonne usate | Unità |
+|---|---|---|
+| `TotalLoad` (obbligatorio) | `Date`, `Total Load [MW]`, `Bidding Zone` (Italy, North, Centre-North, Centre-South, South, Calabria, Sicily, Sardinia) | MW |
+| `ActualGeneration` | `Date`, `Actual Generation`, `Primary Source` (Thermal, Hydro, Wind, Geothermal, Photovoltaic, Self-consumption) | GW medi |
+| `RenewableGeneration` | `Date`, `Renewable Generation`, `Energy Source` (Biomass, Hydro, Wind, Geothermal, Photovoltaic) | GW medi |
+
+`Date`: millisecondi dal 1/1/0001 in ora locale italiana (come il Download Center), oppure ISO `AAAA-MM-GGTHH:MM[:SS]`
+in ora locale, oppure ISO con il fuso. Nel giorno del ritorno all'ora solare le 02:00–02:45 compaiono due volte senza
+indicazione: la prima occorrenza vale come ora legale, la seconda come solare, e per ogni zona si sceglie poi l'ordine
+che fa tornare la somma delle zone con l'Italia (`_ora_doppia`). I dati orari (la generazione fino al 2024) valgono per
+i quattro quarti d'ora dell'ora. Una zona sconosciuta ferma la costruzione (configurazione zonale cambiata: aggiornare
+`ZONE` e `fase5-sito/costruisci_zone.py`).
+
+Scaricamento (una richiesta al secondo, pagine da 50.000 righe con `pageIndex` se `Count` le supera):
+
+```
+python -m elettricita.carichi scarica <archivio> --da 2025-11 [--a 2026-11] [--rifai-ultimo]
+```
+
+### File della pagina (uscita)
+
+```
+python -m elettricita.carichi costruisci <archivio> <uscita>      # costruisci_carichi(archivio, uscita)
+```
+
+- `indice.json`: fonti, data di costruzione, zone (`ITA`, `NORD`, `CNOR`, `CSUD`, `SUD`, `CALA`, `SICI`, `SARD`),
+  voci con i colori (gli stessi di `costruisci.py`: termo #8a8f99, bio #f0912a, idro #7cc7e0, geo #d4561c,
+  eol #a9c641, fv #f7cb15, saldo #c7a0c0) e i mesi: `inizio` (primo quarto d'ora, UTC = mezzanotte italiana del
+  primo del mese), `n` (quarti d'ora con dati: il mese in corso è tagliato all'ultimo), `ora_legale` (`[[indice,
+  minuti dall'UTC], …]` a ogni cambio), `passo_carico`, `fonti`, `passo_fonti` (15 o 60), `rinnovabili`.
+- `carico_AAAA-MM.json`: `{"mese", "zone": {ITA: [MW interi o null] × n, …}}` (≈ 120 kB al mese).
+- `fonti_AAAA-MM.json`: `{"mese", "voci": {termo, bio, idro, geo, eol, fv, saldo: [MW interi o null] × n}}`
+  (≈ 100 kB al mese): fv, eol, geo, idro (con i pompaggi), bio dalla produzione rinnovabile (autoconsumi compresi);
+  termo = produzione totale con gli autoconsumi meno le rinnovabili (senza `RenewableGeneration`: le rinnovabili di
+  `ActualGeneration` e bio = 0); saldo = potenza richiesta dell'Italia − produzione (estero meno pompaggi e accumuli,
+  può essere negativo).
+
+La pagina scarica solo i mesi del periodo scelto (12 mesi ≈ 2,6 MB non compressi, molto meno con la compressione del
+server).
+
+### Come agganciarlo al worker (lo prepara un'altra sessione: `fase4-server` non è toccato qui)
+
+Una volta al giorno, dopo l'aggiornamento di Terna:
+
+1. `scarica(archivio, mesi_tra(<12 mesi fa o il primo mese da tenere>, <mese corrente>))` per i mesi mancanti, e
+   `scarica(archivio, [<mese corrente>], rifai=True)` (anche il mese precedente nei primi giorni del mese);
+   `archivio` fuori dal sito (per esempio `/srv/eugenio/archivio/terna_carichi/`).
+2. `costruisci_carichi(archivio, <cartella nuova>)` e, se va a buon fine, pubblicazione atomica della cartella in
+   `fase5-sito/sito/dati/carichi/` (come `_pubblica` per `dati/elettricita/`).
+3. Il server deve comprimere i `.json` (gzip/brotli) e può tenerli in cache per un giorno.
+
+Prova con i dati veri (20/11/2026): 13 mesi (novembre 2025 – 19 novembre 2026), 39 richieste in circa 2 minuti,
+costruzione in 5 secondi, nessun quarto d'ora mancante tranne il 14–15 gennaio 2026 (192, assenti anche nei dati di
+Terna); somma delle zone = Italia (scarto massimo 2 MW, arrotondamenti).

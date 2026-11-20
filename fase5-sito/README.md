@@ -116,6 +116,42 @@ la riaccende se l'utente l'aveva spenta. Le domande al GSE per lo strato partono
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
 
+## Statistiche › Carichi elettrici (20/11/2026, richiesta di Paolo; sperimentale, versione da fissare alla pubblicazione)
+
+Pagina `carichi.html` + `carichi.js`, voce «Carichi elettrici» (sperimentale) nel gruppo Statistiche dopo «Produzione e
+consumi di elettricità». **Pagina unica a tutta larghezza** (`main.articolo.pagina-carichi`), senza mappa grande e senza
+divisione in due metà.
+
+- **Zona**: solo dalla piccola mappa accanto al titolo, grande come nelle altre pagine ma con le **zone di mercato**
+  (`dati/mappa/zone.json`, costruito da `costruisci_zone.py` unendo le regioni di `italia.json` con shapely; colori
+  `--reg-RR` di una regione della zona; zoom `+ − ⟲` con `EUGENIO.zoomabile` di `minimappa.js`, che qui non disegna
+  la sua mappa delle regioni perché manca `.mappa-area`). Clic = zona; secondo clic o «Tutta Italia» = Italia.
+  Zone dal 1° gennaio 2021 (ARERA 103/2019; GME, «Zone geografiche», 18/10/2023), le stesse dei dati di Terna del
+  2026: Nord, Centro-Nord (Toscana, Marche), Centro-Sud (Umbria, Lazio, Abruzzo, Campania), Sud (Molise, Puglia,
+  Basilicata), Calabria, Sicilia, Sardegna.
+- **Periodo**: due date modificabili, predefinito gli ultimi 12 mesi fino all'ultimo dato; pulsante «Ultimi 12 mesi».
+  **Passo**: casella «Quarti d'ora» (predefinita); senza, ore = media dei quarti d'ora dell'ora.
+- **Indirizzo**: `?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60` (`history.replaceState` a ogni scelta; senza
+  `zona` = Italia), pronto per il «collegamento alla simulazione».
+- **Grafici** (tutti con la freccina del riquadro): valori del periodo (energia, potenza massima e minima con l'istante,
+  media, quota rinnovabile per l'Italia, quarti d'ora senza dati); profilo giornaliero (fascia minimo–massimo e media
+  per quarto d'ora o ora del giorno, ora italiana); curva di durata (potenze in ordine decrescente, ascissa in ore);
+  fonti (barre al 100 % per quarto d'ora o ora, colori di `fase15-elettricita/elettricita/costruisci.py`, solo Italia:
+  con una zona scelta compare la nota «Terna pubblica la produzione per fonte solo per tutta l'Italia»).
+- **Zoom proprio**: rotella = zoom dell'asse orizzontale attorno al puntatore, trascinamento = spostamento, due dita =
+  zoom, doppio clic = vista iniziale, tastiera (frecce, `+ − 0`). Il grafico si **ridisegna con i dati della vista**
+  (percorsi aggregati per pixel: le barre delle fonti sono una colonna per pixel che somma i quarti d'ora coperti, o una
+  barra per quarto d'ora quando c'è posto; la curva di durata un punto per pixel). Con il grafico ingrandito l'asse
+  verticale si adatta ai valori visibili. La vista è comune alla pagina e al riquadro. `grafici.js` passa all'SVG
+  con `svg.__zoomProprio = { zoom(fattore, clientX), vistaIniziale() }` i tasti `+ − 0` e «Vista iniziale» del
+  riquadro e gli lascia rotella, trascinamento e doppio clic (regola in `README_stile.md`, «Grafici»).
+- **Dati**: `dati/carichi/indice.json`, `carico_AAAA-MM.json`, `fonti_AAAA-MM.json`, costruiti dal worker con
+  `fase15-elettricita/elettricita/carichi.py` (formato nel README della fase 15); si caricano solo i mesi del periodo.
+  Fuori dal repository (`.gitignore`) e **non scaricabili** (decisione di Paolo): nessun CSV né JSON da scaricare.
+  Senza `indice.json` la pagina dice che i dati non ci sono ancora.
+- Fonti e licenze nel piè, sezione `metodo.html#carichi`, «Come leggere i grafici» in fondo alla pagina.
+- Prove: `tests/test_carichi_browser.py` (Playwright, dati inventati dalla fase 15).
+
 ## Comunità energetiche: confini delle aree delle sedi a qualsiasi zoom (20/11/2026, 14:08, `?v=20261120d`, richiesta di Paolo)
 
 «Le aree delle cabine primarie una volta che si sceglie un punto si devono vedere a qualsiasi zoom, inoltre va evidenziata

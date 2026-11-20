@@ -38,3 +38,5 @@ fase5-sito/sito/dati/prezzi/
 fase5-sito/sito/dati/elettricita/
 fase5-sito/sito/dati/carichi/
 fase15-elettricita/raw/
+# (20/11/2026) carichi elettrici (Terna, quartorari): solo sul server, li costruisce il worker; mai nel repository né scaricabili
+fase5-sito/sito/dati/carichi/
