@@ -12,6 +12,8 @@
 #   ma la licenza non è scritta nel servizio e la scheda INSPIRE non si apre (certificato scaduto): in attesa;
 # - DTM 5×5 m: WCS pubblico «dtm5x5», copertura DTM5X5_RDN32_RMD (il «dtm5» della Fase A risponde 401);
 # - portale PST/SIM del MASE (LiDAR PNRR): HTTP 500/503, offline fino al 7/11/2026; nessuna interfaccia automatica.
+#   Verifica del 16/11/2026: app PST di nuovo online (https://sim.mase.gov.it/pst/, senza login), ma con i soli livelli
+#   PST 2008-2015 e interferometria PS; nessun livello PNRR, nessuna scheda PNRR nel RNDT, licenza PNRR non scritta.
 
 [zona]
 nome = "Rimini"
@@ -61,10 +63,10 @@ licenza = "da confermare"
 licenza_confermata = false
 attiva = false
 stato = "in attesa"
-motivo = "dati pubblicati a blocchi nell'app PST, senza interfaccia automatica; licenza e copertura della Romagna da verificare dopo il 7/11/2026"
+motivo = "16/11/2026: LiDAR PNRR non ancora pubblicato (nell'app PST solo i livelli PST 2008-2015 e PS; nessuna scheda PNRR nel RNDT); licenza non scritta (per il PST: CC BY 4.0); copertura della Romagna da verificare quando esce; download solo a mano dal carrello dell'app (al più 20 elementi e 6 GB per richiesta), senza interfaccia automatica; prossimo controllo tra 2–4 settimane (documenti/LIDAR_MASE_VERIFICA_2026-11-16.md)"
 attribuzione = "Ministero dell'Ambiente e della Sicurezza Energetica – LiDAR PNRR"
-scheda = "https://sim.mase.gov.it/portalediaccesso/mappe/#/viewer/new"
-verifica = "04/11/2026: sim.mase.gov.it risponde 500/503 (portale offline fino al 7/11/2026)"
+scheda = "https://sim.mase.gov.it/pst/"
+verifica = "16/11/2026: app PST di nuovo online (https://sim.mase.gov.it/pst/), nessun livello PNRR; RNDT senza schede PNRR; licenza PNRR non scritta"
 url = ""
 
 [fonti.rer_las]
