@@ -22,6 +22,14 @@
 
 [[voce]]
 data = "2026-11-20"
+versione = "20261120d"
+titolo = "Comunità energetiche: confini delle aree delle sedi"
+migliorato = [
+  "Fotovoltaico › Comunità energetiche (ancora in anteprima): scelta una sede, la sua area convenzionale del GSE (bordo spesso) e le aree confinanti si vedono a qualsiasi ingrandimento, come in Cabine primarie; l'area sotto il mouse si colora di azzurro chiaro.",
+]
+
+[[voce]]
+data = "2026-11-20"
 versione = "20261120c"
 titolo = "Comunità energetiche: mappa con ortofoto, livelli e righello"
 migliorato = [

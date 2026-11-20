@@ -30,6 +30,8 @@
   const ml = window.maplibregl;
   const MASSIMO = 200, ATTESA_MS = 400;
   const vuota = () => ({ type: "FeatureCollection", features: [] });
+  const sopraArea = ["boolean", ["feature-state", "sopra"], false];
+  const fondoColore = () => ["case", sopraArea, "#bfe3ff", colore("--primario", "#e4572e")];
   const colore = (n, d = "#888") => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || d;
   function h(tag, cls, t) { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined && t !== null) e.textContent = t; return e; }
   function messaggio(id, t, errore = false) { const m = $(id); if (!m) return; m.textContent = t; m.classList.toggle("errore", errore); }
@@ -37,6 +39,9 @@
   const st = { sedi: [], seq: 0, mappa: null, comuni: new Map(), acceso: false, attesa: 0, giro: 0, aree: null, etichette: [], popup: null,
     modo: "sposta", fonti: [], fonte: null, contesto: null, manuale: false, strati: null, righello: null, sposta: null, citazioneOrto: "" };
   const E = window.EUGENIO, CONTESTO = "s2cloudless2016";
+  // (20/11/2026, 14:08, Paolo) confini delle aree delle sedi a qualsiasi zoom, come in Cabine primarie
+  Object.assign(st, { vicine: new Map(), poligoni: new Map(), confini: null, sopra: null });
+  const MASSIMO_AREE = 600;
   R.avvisoProva(document.querySelector("main .pannello") || document.querySelector("main"));
 
   // ================================================================== coda delle richieste al GSE (4 alla volta)
@@ -60,7 +65,7 @@
     analizza(s);
     return s;
   }
-  function togli(k) { st.sedi = st.sedi.filter((s) => s.k !== k); tabella(); disegnaSedi(); disegnaCabine(); cambiate(); }
+  function togli(k) { st.sedi = st.sedi.filter((s) => s.k !== k); tabella(); disegnaSedi(); disegnaCabine(); ricomponiConfini(); cambiate(); }
   async function analizza(s) {
     const giro = ++s.giro;
     s.gse = coordinate(s) ? { stato: "attesa" } : null;
@@ -74,6 +79,7 @@
       catch (e) { s.gse = { stato: "errore", errore: e.message || "servizio del GSE non raggiungibile" }; }
       if (giro !== s.giro) return;
       proponi(s);
+      confiniSede(s);
     }
     riga(s);
     if (s.istat) {
@@ -91,6 +97,57 @@
     const a = g.dentro[0] || null;            // sul confine: quella che contiene il punto; fuori da tutte: niente
     s.cabina = a ? a.COD_AC : ""; s.origine = a ? "gse" : "";
     cambiate();
+  }
+  // ---- confini delle aree delle sedi (20/11/2026, 14:08, richiesta di Paolo: «una volta che si sceglie un punto si devono
+  // vedere a qualsiasi zoom»): per ogni sede l'area del GSE che la contiene (bordo spesso) e tutte le confinanti (sottili),
+  // sommate fra le sedi, come in Cabine primarie (R.gse.areeVicine, poi R.gse.aree con where=COD_AC IN (…)). Lette dal
+  // browser, solo a video, mai nelle immagini né nei file; i codici delle vicine si chiedono una volta per area.
+  function vicineDi(s, a) {
+    if (!st.vicine.has(a.COD_AC)) {
+      const pr = inCoda(() => R.gse.areeVicine(s.lon, s.lat, a)).then((v) => { pr._codici = v.codici; return v.codici; });
+      pr.catch(() => st.vicine.delete(a.COD_AC));
+      st.vicine.set(a.COD_AC, pr);
+    }
+    return st.vicine.get(a.COD_AC);
+  }
+  async function poligoniDi(codici) {
+    const mancano = codici.filter((c) => !st.poligoni.has(c));
+    for (let i = 0; i < mancano.length; i += R.GSE.MASSIMO) {
+      const fc = await inCoda(() => R.gse.aree(mancano.slice(i, i + R.GSE.MASSIMO)));
+      for (const f of fc.features) if (f.properties && f.properties.COD_AC) st.poligoni.set(f.properties.COD_AC, f);
+    }
+  }
+  function areaSede(s) { return s.gse && s.gse.stato === "ok" && s.gse.dentro[0] ? s.gse.dentro[0] : null; }
+  async function confiniSede(s) {
+    const a = areaSede(s);
+    if (!a) { ricomponiConfini(); return; }
+    if (st.poligoni.size >= MASSIMO_AREE) { messaggio("messaggio-aree-gse", `Ci sono già ${st.poligoni.size} aree a video: togli qualche sede per vederne altre.`, true); return; }
+    try {
+      const codici = await vicineDi(s, a);
+      await poligoniDi(codici);
+      if (!st.sedi.includes(s)) return;
+      ricomponiConfini();
+      const n = codici.filter((c) => c !== a.COD_AC && st.poligoni.has(c)).length;
+      messaggio("messaggio-aree-gse", `Confini letti dal GSE: area ${a.COD_AC} di «${s.nome}» (bordo spesso) e ${n} ${n === 1 ? "area confinante" : "aree confinanti"}; si vedono a qualsiasi zoom e restano solo a video.`);
+    } catch (e) {
+      messaggio("messaggio-aree-gse", `Confini dell'area di «${s.nome}» non letti: ${e.message}. Il servizio del GSE potrebbe essere lento o non raggiungibile.`, true);
+    }
+  }
+  function ricomponiConfini() {
+    const centrali = new Set(st.sedi.map(areaSede).filter(Boolean).map((a) => a.COD_AC)), tieni = new Set();
+    for (const c of centrali) { tieni.add(c); const v = st.vicine.get(c); if (v && v._codici) v._codici.forEach((x) => tieni.add(x)); }
+    const features = [...tieni].filter((c) => st.poligoni.has(c)).map((c) => {
+      const f = st.poligoni.get(c);
+      return { type: "Feature", geometry: f.geometry, properties: { ...(f.properties || {}), _centrale: centrali.has(c) } };
+    });
+    st.confini = features.length ? { type: "FeatureCollection", features } : null;
+    const m = st.mappa;
+    if (m && m.getSource("cer-confini")) {
+      st.sopra = null;
+      m.getSource("cer-confini").setData(st.confini || vuota());
+      for (const id of ["cer-confini-fondo", "cer-confini-linea"]) m.setLayoutProperty(id, "visibility", st.confini ? "visible" : "none");
+    }
+    visibilitaStrato();
   }
   function cabinaDi(nome) {
     const k = chiave(nome), s = st.sedi.find((x) => chiave(x.nome) === k && x.cabina);
@@ -258,7 +315,7 @@
       },
     });
   }
-  $("sedi-svuota").addEventListener("click", () => { st.sedi = []; tabella(); disegnaSedi(); disegnaCabine(); avanzamento(); cambiate(); messaggio("messaggio-sedi", "Sedi tolte."); });
+  $("sedi-svuota").addEventListener("click", () => { st.sedi = []; tabella(); disegnaSedi(); disegnaCabine(); ricomponiConfini(); avanzamento(); cambiate(); messaggio("messaggio-sedi", "Sedi tolte."); });
   const norm = (c) => String(c || "").trim().toLowerCase().replace(/["']/g, "").replace(/[^a-z0-9àèéìòù_]/g, "_").replace(/^_+|_+$/g, "");
   if (T) $("sedi-file").setAttribute("accept", T.ACCETTA);
   $("sedi-file").addEventListener("change", async (e) => {
@@ -327,6 +384,7 @@
       for (const k of ["GIALLO", "ARANCIONE", "ROSSO"]) voce(R.campione("cabina", k), R.NOMI[k]);
       voce(R.campione("cabina", "GRIGIO"), "senza dato");
     }
+    if (st.confini) voce(R.campione("area"), "aree del GSE delle sedi (bordo spesso) e confinanti, a qualsiasi zoom");
     if (st.acceso) voce(R.campione("area"), "aree convenzionali del GSE (dal vivo, da zoom 10)");
   }
   // (20/11/2026, richiesta di Paolo: «come le altre pagine») mappa a sinistra con l'ortofoto (fonte scelta da sola nel
@@ -352,15 +410,36 @@
     if (window.EUGENIO_RIGHELLO) st.righello = window.EUGENIO_RIGHELLO.aggiungi(m, { dove: $("posto-righello") });
     if (window.EUGENIO_SPOSTA && $("sposta-ortofoto")) st.sposta = window.EUGENIO_SPOSTA.crea($("sposta-ortofoto"), { pagina: "edificio-cer", suCambio: spostaTessere });
     if (C) { try { await C.aggiungi(m, { clic: false }); } catch { /* confini non disponibili */ } }
-    m.addSource("cer-aree", { type: "geojson", data: vuota(), attribution: R.GSE.ATTRIBUZIONE_STRATO });
-    m.addLayer({ id: "cer-aree-fondo", type: "fill", source: "cer-aree", layout: { visibility: "none" }, paint: { "fill-color": colore("--primario", "#e4572e"), "fill-opacity": 0.06 } });
+    m.addSource("cer-aree", { type: "geojson", data: vuota(), attribution: R.GSE.ATTRIBUZIONE_STRATO, promoteId: "COD_AC" });
+    m.addLayer({ id: "cer-aree-fondo", type: "fill", source: "cer-aree", layout: { visibility: "none" }, paint: { "fill-color": fondoColore(), "fill-opacity": ["case", sopraArea, 0.38, 0.06] } });
     m.addLayer({ id: "cer-aree-linea", type: "line", source: "cer-aree", layout: { visibility: "none" }, paint: { "line-color": colore("--primario", "#e4572e"), "line-width": 2 } });
+    // confini delle aree delle sedi: a qualsiasi zoom, bordo spesso l'area della sede, sottile le confinanti
+    m.addSource("cer-confini", { type: "geojson", data: st.confini || vuota(), attribution: R.GSE.ATTRIBUZIONE_STRATO, promoteId: "COD_AC" });
+    m.addLayer({ id: "cer-confini-fondo", type: "fill", source: "cer-confini", layout: { visibility: st.confini ? "visible" : "none" }, paint: {
+      "fill-color": fondoColore(), "fill-opacity": ["case", sopraArea, 0.38, ["==", ["get", "_centrale"], true], 0.07, 0] } });
+    m.addLayer({ id: "cer-confini-linea", type: "line", source: "cer-confini", layout: { visibility: st.confini ? "visible" : "none" }, paint: {
+      "line-color": colore("--primario", "#e4572e"), "line-width": ["case", ["==", ["get", "_centrale"], true], 2.8, 1.4] } });
+    // area sotto il mouse in azzurro chiaro trasparente, come in Cabine primarie (19/11/2026 sera)
+    const togliSopra = () => {
+      if (st.sopra) { try { m.setFeatureState({ source: st.sopra.src, id: st.sopra.id }, { sopra: false }); } catch { /* sparita */ } st.sopra = null; }
+    };
+    m.on("mousemove", (e) => {
+      const ids = ["cer-confini-fondo", "cer-aree-fondo"].filter((id) => m.getLayer(id) && m.getLayoutProperty(id, "visibility") !== "none");
+      const f = ids.length ? m.queryRenderedFeatures(e.point, { layers: ids })[0] : null;
+      const nuovo = f && f.id !== undefined ? { src: f.source, id: f.id } : null;
+      if ((nuovo && st.sopra && nuovo.src === st.sopra.src && nuovo.id === st.sopra.id) || (!nuovo && !st.sopra)) return;
+      togliSopra();
+      if (nuovo) { m.setFeatureState({ source: nuovo.src, id: nuovo.id }, { sopra: true }); st.sopra = nuovo; }
+    });
+    m.on("mouseout", togliSopra);
     m.addSource("cer-cabine", { type: "geojson", data: vuota(), attribution: "Cabine: © contributori OpenStreetMap (ODbL); e-distribuzione" });
     R.stratoCabine(m, "cer-cabine");
     m.addSource("cer-sedi", { type: "geojson", data: vuota() });
     m.addLayer({ id: "cer-sedi", type: "circle", source: "cer-sedi", paint: { "circle-radius": 7, "circle-color": "#1e88e5", "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 } });
-    R.suggerimento(m, () => ["cer-sedi", "cer-cabine-punti"], (f) => {
+    R.suggerimento(m, () => ["cer-sedi", "cer-cabine-punti", "cer-confini-fondo"], (f) => {
       const p = f.properties || {};
+      if (f.layer.id === "cer-confini-fondo") return { titolo: `Area convenzionale ${p.COD_AC}`, righe: [`Gestore: ${p.RAG_SOC || "–"}`,
+        p._centrale === true ? "area di una sede" : "area confinante", "© GSE S.p.A., CC BY-NC-SA 3.0 IT"], cursore: false };
       if (f.layer.id === "cer-sedi") {
         const s = st.sedi.find((x) => x.k === +p.k);
         return s ? { titolo: s.nome, righe: [s.comune ? `Comune: ${s.comune}` : "", `Cabina: ${s.cabina || "–"}${ORIGINI[s.origine] ? ` (${ORIGINI[s.origine]})` : ""}`].filter(Boolean), cursore: false } : null;
@@ -383,7 +462,9 @@
     });
     m.on("moveend", aggiornaStrato);
     document.addEventListener("eugenio:aspetto", () => {
-      m.setPaintProperty("cer-aree-fondo", "fill-color", colore("--primario", "#e4572e"));
+      m.setPaintProperty("cer-aree-fondo", "fill-color", fondoColore());
+      m.setPaintProperty("cer-confini-fondo", "fill-color", fondoColore());
+      m.setPaintProperty("cer-confini-linea", "line-color", colore("--primario", "#e4572e"));
       m.setPaintProperty("cer-aree-linea", "line-color", colore("--primario", "#e4572e"));
     });
     await ortofoto(m);
@@ -499,9 +580,9 @@
     const m = st.mappa;
     if (m) for (const id of ["cer-aree-fondo", "cer-aree-linea"]) if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", st.acceso ? "visible" : "none");
     st.etichette.forEach((x) => { x.getElement().hidden = !st.acceso; });
-    const a = $("attribuzione-aree-gse");
-    a.hidden = !st.acceso;
-    a.textContent = st.acceso ? `${R.GSE.ATTRIBUZIONE_STRATO}. Non entrano nelle immagini né nei file scaricati.` : "";
+    const a = $("attribuzione-aree-gse"), vis = st.acceso || !!st.confini;
+    a.hidden = !vis;
+    a.textContent = vis ? `${R.GSE.ATTRIBUZIONE_STRATO}. Non entrano nelle immagini né nei file scaricati.` : "";
     disegnaLegenda();
   }
   function datiStrato(fc) {
@@ -566,8 +647,9 @@
   }
   function clicArea(e) {
     const m = st.mappa;
-    if (!st.acceso || !m.getLayer("cer-aree-fondo")) return;
-    const f = m.queryRenderedFeatures(e.point, { layers: ["cer-aree-fondo"] })[0];
+    const ids = ["cer-confini-fondo", "cer-aree-fondo"].filter((id) => m.getLayer(id) && m.getLayoutProperty(id, "visibility") !== "none");
+    if (!ids.length) return;
+    const f = m.queryRenderedFeatures(e.point, { layers: ids })[0];
     if (!f) return;
     const p = f.properties || {};
     const box = h("div", "popup-ac");
@@ -599,14 +681,14 @@
     if (st.sedi.some(coordinate)) righe.push(`Sedi dell'utente: ${st.sedi.filter(coordinate).length}.`);
     if (fcCabine().features.length) righe.push(`Cabine primarie dei comuni delle sedi: livello peggiore dei trasformatori (bianco = verde, giallo, arancione, rosso). ${R.ATTR.osm}. ${R.ATTR.ed_breve}.`);
     righe.push(`${R.ATTR.confini}. Mappa: MapLibre GL JS (BSD-3).`);
-    if (st.acceso) righe.push("Le aree convenzionali del GSE non entrano nell'immagine (licenza CC BY-NC-SA 3.0 IT).");
+    if (st.acceso || st.confini) righe.push("Le aree convenzionali del GSE non entrano nell'immagine (licenza CC BY-NC-SA 3.0 IT).");
     if (R.PROVA) righe.unshift("ATTENZIONE: DATI SINTETICI DI PROVA (?prova=1), non reali.");
-    const accesi = ["cer-aree-fondo", "cer-aree-linea"].filter((id) => m.getLayer(id) && m.getLayoutProperty(id, "visibility") !== "none");
+    const accesi = ["cer-aree-fondo", "cer-aree-linea", "cer-confini-fondo", "cer-confini-linea"].filter((id) => m.getLayer(id) && m.getLayoutProperty(id, "visibility") !== "none");
     accesi.forEach((id) => m.setLayoutProperty(id, "visibility", "none"));
     st.etichette.forEach((x) => { x.getElement().hidden = true; });
     if (st.popup) st.popup.remove();
     return { titolo: "Comunità energetiche – sedi e cabine primarie", righe, nome: `comunita_energetiche_sedi_${new Date().toISOString().slice(0, 10)}`,
-      dopo: () => { accesi.forEach((id) => { if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", st.acceso ? "visible" : "none"); }); visibilitaStrato(); } };
+      dopo: () => { accesi.forEach((id) => { if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", "visible"); }); visibilitaStrato(); ricomponiConfini(); } };
   }
 
   // ================================================================== file scaricati: solo i codici (punto C)

@@ -107,6 +107,17 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Comunità energetiche: confini delle aree delle sedi a qualsiasi zoom (20/11/2026, 14:08, `?v=20261120d`, richiesta di Paolo)
+
+«Le aree delle cabine primarie una volta che si sceglie un punto si devono vedere a qualsiasi zoom, inoltre va evidenziata
+quella su cui si trova il mouse come era nella versione precedente.» Come in Cabine primarie: per ogni sede con un'area del
+GSE, `confiniSede()` chiede i codici delle confinanti (`R.gse.areeVicine`, una volta per area) e i poligoni semplificati
+(`R.gse.aree`, `where=COD_AC IN (…)`); `ricomponiConfini()` li somma fra le sedi nella sorgente `cer-confini`
+(`promoteId: COD_AC`): bordo spesso l'area di una sede, sottile le confinanti, **nessuno zoom minimo** e nessuna casella;
+togliendo le sedi spariscono. Area sotto il mouse in azzurro chiaro (`feature-state` «sopra», `#bfe3ff`, opacità 0,38) sia
+nei confini delle sedi sia nello strato «Aree convenzionali (GSE)» della casella (che resta da zoom 10). Al più 600 aree a
+video; mai nelle immagini né nei file. Prova: `test_confini_delle_sedi_a_ogni_zoom_e_area_sotto_il_mouse`.
+
 ## Comunità energetiche con la struttura delle altre pagine (20/11/2026, 08:49, `?v=20261120c`, richiesta di Paolo)
 
 Segnalazione: «la pagina si è scombinata» (era un articolo a colonna unica con la mappa in mezzo). Ora segue le regole

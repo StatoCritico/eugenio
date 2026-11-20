@@ -91,6 +91,7 @@ def _area(cod, rag="e-distribuzione S.p.A.", conseg="30092025", geom=None):
 
 
 BOLOGNA = {"type": "Polygon", "coordinates": [[[11.30, 44.47], [11.38, 44.47], [11.38, 44.52], [11.30, 44.52], [11.30, 44.47]]]}
+BOLOGNA_EST = {"type": "Polygon", "coordinates": [[[11.38, 44.47], [11.46, 44.47], [11.46, 44.52], [11.38, 44.52], [11.38, 44.47]]]}
 COMUNI = {
     # Bologna: e-distribuzione lo segna come non suo (concessionario false) ma ci sono trasformatori: «servito in parte»
     "037006": {"istat": "037006", "nome": "Bologna", "concessionario": False, "servito_in_parte": False, "cabine": [
@@ -121,9 +122,18 @@ def _pagina(browser, larghezza=1366, altezza=900):
 
     def gse(r):
         q = {k: v[0] for k, v in parse_qs(urlparse(r.request.url).query).items()}
+        if r.request.method == "POST":
+            q = {k: v[0] for k, v in parse_qs(r.request.post_data or "").items()}
         pg.chiamate.append(q)
         fs = []
-        if q.get("geometryType") == "esriGeometryPoint":
+        if "where" in q:                                     # poligoni delle aree con questi codici
+            for c in re.findall(r"'([A-Za-z0-9_-]+)'", q["where"]):
+                g = BOLOGNA if c == "AC001E00693" else BOLOGNA_EST if c == "AC001E00694" else None
+                if g:
+                    fs.append(_area(c, geom=g))
+        elif q.get("geometryType") == "esriGeometryPolygon":  # aree che toccano l'area della sede (POST, senza geometria)
+            fs = [_area("AC001E00693"), _area("AC001E00694")]
+        elif q.get("geometryType") == "esriGeometryPoint":
             lon = float(q["geometry"].split(",")[0])
             if abs(lon - 11.3426) < 1e-6:
                 fs = [_area("AC001E00693")]
@@ -161,7 +171,8 @@ def test_sedi_aree_del_gse_e_cabine_del_comune(base, browser, tmp_path):
     q = pg.chiamate[0]
     assert q["geometry"] == "11.3426,44.4949" and q["geometryType"] == "esriGeometryPoint" and q["inSR"] == "4326"
     assert q["distance"] == "50" and q["units"] == "esriSRUnit_Meter" and q["returnGeometry"] == "false" and q["outFields"] == "COD_AC,RAG_SOC,COD_CONSEG"
-    assert len(pg.chiamate) == 1                              # una sola area: nessuna seconda richiesta
+    # una sola area: nessuna seconda richiesta sul punto (le altre sono i confini dell'area e delle confinanti, 20/11 14:08)
+    assert len([c for c in pg.chiamate if c.get("geometryType") == "esriGeometryPoint"]) == 1
     r1 = _riga(pg, 1)
     assert r1.locator("input").input_value() == "AC001E00693"
     testo = r1.inner_text()
@@ -282,7 +293,7 @@ def test_elenco_di_sedi_quattro_richieste_alla_volta(base, browser, tmp_path):
       const vero = window.fetch; window._gse = { ora: 0, max: 0, n: 0 };
       window.fetch = async (u, o) => {
         if (!String(u).includes('arcgis.com')) return vero(u, o);
-        const g = window._gse; g.n++; g.ora++; g.max = Math.max(g.max, g.ora);
+        const g = window._gse; if (String(u).includes('esriGeometryPoint')) g.n++; g.ora++; g.max = Math.max(g.max, g.ora);
         await new Promise((ok) => setTimeout(ok, 150)); g.ora--;
         const f = { type: 'Feature', geometry: null, properties: { COD_AC: 'AC001E00693', RAG_SOC: 'e-distribuzione S.p.A.', COD_CONSEG: '30092025' } };
         return new Response(JSON.stringify({ type: 'FeatureCollection', features: [f] }), { status: 200, headers: { 'Content-Type': 'application/geo+json' } });
@@ -320,5 +331,46 @@ def test_prova_e_telefono(base, browser):
     assert "(sintetica)" in _riga(pg, 1).inner_text()
     pg.wait_for_timeout(500)
     assert pg.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+    assert not pg.errori, pg.errori
+    ctx.close()
+
+
+def test_confini_delle_sedi_a_ogni_zoom_e_area_sotto_il_mouse(base, browser):
+    """(20/11/2026, 14:08, Paolo) scelta una sede, la sua area (bordo spesso) e le confinanti si vedono a qualsiasi zoom,
+    senza la casella dello strato; l'area sotto il mouse si colora di azzurro chiaro come in Cabine primarie."""
+    ctx, pg = _pagina(browser)
+    pg.goto(base + "edificio-cer.html")
+    _aspetta(pg, f"() => window.EUGENIO_CER_SEDI && {S}.mappa && {S}.mappa.loaded()")
+    assert pg.evaluate(f"{S}.mappa.getZoom()") < 7 and not pg.is_checked("#strato-aree-gse")
+    _sede(pg, "Scuola A", "44,4949", "11,3426")
+    _aspetta(pg, f"() => {S}.confini && {S}.confini.features.length === 2")
+    cen = pg.evaluate(f"{S}.confini.features.map((f) => [f.properties.COD_AC, f.properties._centrale])")
+    assert sorted(cen) == [["AC001E00693", True], ["AC001E00694", False]]
+    assert pg.evaluate(f"{S}.mappa.getLayoutProperty('cer-confini-linea', 'visibility')") == "visible"
+    pg.evaluate(f"{S}.mappa.jumpTo({{ center: [11.38, 44.495], zoom: 5 }})")   # niente zoom minimo per i confini delle sedi
+    pg.wait_for_timeout(300)
+    assert pg.evaluate(f"{S}.mappa.getLayoutProperty('cer-confini-linea', 'visibility')") == "visible"
+    assert "Confini letti dal GSE" in pg.inner_text("#messaggio-aree-gse")
+    assert pg.locator("#attribuzione-aree-gse").is_visible()
+    # mouse sopra l'area della sede: feature-state «sopra»
+    pg.evaluate(f"{S}.mappa.jumpTo({{ center: [11.38, 44.495], zoom: 11 }})")
+    pg.evaluate("document.getElementById('mappa-cer').scrollIntoView({ block: 'center' })")
+    _aspetta(pg, f"() => {S}.mappa.queryRenderedFeatures({S}.mappa.project([11.34, 44.495]), {{ layers: ['cer-confini-fondo'] }}).length > 0")
+    xy = pg.evaluate(f"(() => {{ const p = {S}.mappa.project([11.34, 44.495]), r = {S}.mappa.getCanvas().getBoundingClientRect(); return [r.left + p.x, r.top + p.y]; }})()")
+    pg.mouse.move(xy[0], xy[1])
+    _aspetta(pg, f"() => {S}.sopra && {S}.sopra.id === 'AC001E00693'")
+    assert pg.evaluate(f"{S}.mappa.getFeatureState({{ source: 'cer-confini', id: 'AC001E00693' }}).sopra") is True
+    xy2 = pg.evaluate(f"(() => {{ const p = {S}.mappa.project([11.42, 44.495]), r = {S}.mappa.getCanvas().getBoundingClientRect(); return [r.left + p.x, r.top + p.y]; }})()")
+    pg.mouse.move(xy2[0], xy2[1])
+    _aspetta(pg, f"() => {S}.sopra && {S}.sopra.id === 'AC001E00694'")
+    assert not pg.evaluate(f"{S}.mappa.getFeatureState({{ source: 'cer-confini', id: 'AC001E00693' }}).sopra")
+    # immagine: confini spenti durante la copia; sede tolta: confini spariti
+    pg.evaluate("window._o = window.EUGENIO_CER_SEDI.opzioniImmagine()")
+    assert pg.evaluate(f"{S}.mappa.getLayoutProperty('cer-confini-linea', 'visibility')") == "none"
+    pg.evaluate("window._o.dopo()")
+    assert pg.evaluate(f"{S}.mappa.getLayoutProperty('cer-confini-linea', 'visibility')") == "visible"
+    pg.click("#sedi-svuota")
+    _aspetta(pg, f"() => !{S}.confini")
+    assert pg.evaluate(f"{S}.mappa.getLayoutProperty('cer-confini-linea', 'visibility')") == "none"
     assert not pg.errori, pg.errori
     ctx.close()
