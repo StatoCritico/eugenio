@@ -1,5 +1,12 @@
 # Fase 10 – Edifici 3D, ortofoto, LiDAR e analisi energetiche
 
+Stato al 20/11/2026 (LiDAR PNRR, verifica del 16/11/2026):
+- **`zone/rimini.toml`**, fonte `pnrr_dsm`: `verifica`, `motivo` e `scheda` aggiornati alla verifica del 16/11/2026
+  (`documenti/LIDAR_MASE_VERIFICA_2026-11-16.md`): l'app PST è di nuovo online su https://sim.mase.gov.it/pst/ (il vecchio
+  indirizzo `portalediaccesso/mappe/` rimanda lì), ma ha solo i livelli PST 2008-2015 e PS; nessun livello PNRR, nessuna
+  scheda PNRR nel RNDT, licenza PNRR non scritta. La fonte resta `attiva = false`, «in attesa»; prossimo controllo tra
+  2–4 settimane. Stesso indirizzo nuovo nei collegamenti di questo README e nella pagina `lidar.html`.
+
 Stato al 17/11/2026 (ortofoto AGEA 2022-2024, segnalazione di Paolo):
 - **`ortofoto/italia.toml`**: nuova fonte `agea` (`tipo = "arcgis"`, `anni = [2024, 2023, 2022]`, `zoom_tessere = 18`,
   zoom 10–19, `cache = true`, `nei_report = true`, priorità 2, citazione con `{anni}`): ortofoto RGB 20 cm del Geoportale
@@ -268,7 +275,7 @@ ripiego spento).
 Verifiche fatte (§ 3): il catasto AdE in blocco non ha i fabbricati; aggregati Protezione Civile nazionali senza
 altezze; DBTR UVL con altezze ±3 m (da verificare se gronda o colmo, e se c'è il numero di piani); DTM ER 5×5 m
 (dicembre 2025); LiDAR RER2023/24 e RER2025/26 (DSM e LAS solo su richiesta); PST MASE non automatizzabile, portale
-offline fino al 7/11/2026; LiDAR PNRR a 25 cm in arrivo; strato edifici Zornade = OSM (ODbL); GlobalBuildingAtlas
+offline fino al 7/11/2026 (dal 16/11/2026 di nuovo online su https://sim.mase.gov.it/pst/); LiDAR PNRR a 25 cm in arrivo; strato edifici Zornade = OSM (ODbL); GlobalBuildingAtlas
 CC BY-NC (escluso); PVGIS 30 chiamate/s, niente CORS, `userhorizon`.
 
 ## Ortofoto (§ 6)
@@ -637,7 +644,8 @@ TrueNorth; IFC in millimetri con IfcMapConversion, arredo e spazio da escludere)
   risponde, ma il servizio non indica la licenza e la scheda INSPIRE non si apre (certificato scaduto): fonte
   `rer_dsm_costa_2019` in attesa, da chiedere all'Archivio Cartografico insieme a DSM e LAS.
 - **LiDAR PNRR (portale PST/SIM del MASE)**: HTTP 500/503 (offline fino al 7/11/2026), nessuna interfaccia automatica:
-  fonte `pnrr_dsm` in attesa.
+  fonte `pnrr_dsm` in attesa. Verifica del 16/11/2026: app PST di nuovo online (https://sim.mase.gov.it/pst/), solo livelli
+  PST 2008-2015 e PS, nessun livello PNRR né scheda PNRR nel RNDT, licenza PNRR non scritta: la fonte resta in attesa.
 
 ## Fase E – come si usa (04/11/2026)
 
@@ -1439,7 +1447,7 @@ Sardegna e Campania; `servizio/edifici_osm.py` tiene anche il campo dell'uso del
 - [x] Prima zona: Rimini configurata (`zone/rimini.toml`). [ ] Misurare spazio e tempi reali (servono i corpi della Fase A
       e una fonte DSM/LAS attiva).
 - [x] DSM/LAS RER, DSM costa 2019 e LiDAR PNRR predisposti come fonti «in attesa». [ ] Attivarli con URL e licenza
-      confermata (risposta della Regione; app PST dopo il 7/11/2026).
+      confermata (risposta della Regione; LiDAR PNRR: al 16/11/2026 non ancora nell'app PST, nuovo controllo tra 2–4 settimane).
 - [x] Import DXF/IFC (comando sul PC, modello aperto solo nel browser). [x] Lettura diretta dei DXF/IFC nel browser
       (04/11/2026 notte: pagina Importa DXF/IFC con dxf-parser e web-ifc; file pesanti convertiti sul PC con EuGEnio Visure).
 - [x] Corpi dal solo LiDAR (raggruppamento per altezza, § 7) per le zone senza UVL; ombre degli alberi dal DSM
@@ -1482,7 +1490,7 @@ Sardegna e Campania; `servizio/edifici_osm.py` tiene anche il campo dell'uso del
 - GeoPortale AGEA, note legali: https://geoportale.agea.gov.it/legal-notes
 - Ortofoto Toscana 2023: https://geodati.gov.it/resource/id/r_toscan:66ca3807-815a-4bd1-b626-98ca240d72a2
 - EOX Sentinel-2 cloudless: https://cloudless.eox.at/pricing
-- App PST: https://sim.mase.gov.it/portalediaccesso/mappe/#/viewer/new
+- App PST: https://sim.mase.gov.it/pst/
 - LiDAR PNRR, stato aprile 2026: https://www.gisinfrastrutture.it/2026/04/ottime-notizie-per-il-dtm-ad-alta-precisione-di-tutta-litalia/
 - PVGIS API: https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/getting-started-pvgis/api-non-interactive-service_en
 - OSM, completezza in Italia: https://iris.uniroma1.it/retrieve/32c1587a-0b38-4b80-bb32-3b3490acdff8/Salvati_Official-Statistics_2022.pdf
