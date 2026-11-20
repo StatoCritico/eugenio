@@ -21,7 +21,9 @@ services:
     env_file: .env
     volumes:
       - ${CARTELLA_DATI:-/srv/energia/dati}:/dati
-      # file del sito rifatti dal worker: indicatori (ogni mese) e clima dal 1940 (gennaio e luglio)
+      # file del sito rifatti dal worker: indicatori (ogni mese), clima dal 1940 (gennaio e luglio), (20/11/2026) dati di
+      # Terna: elettricita/ (ogni mese) e carichi/ (ogni giorno). Le chiavi dell'API di Terna (TERNA_CLIENT_ID,
+      # TERNA_CLIENT_SECRET) arrivano dal .env; l'archivio delle serie sta in /dati/terna (mai servito da Caddy)
       - ${CARTELLA_SITO:-../fase5-sito/sito}/dati:/sito/dati
     restart: unless-stopped
     mem_limit: 3g   # il ricalcolo del clima dal 1940 usa ~1,5 GB per qualche minuto
