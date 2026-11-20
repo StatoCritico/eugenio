@@ -120,6 +120,12 @@ def url_cancella_un_clic(sid: int, lista: int) -> str:
     return f"{C.SITO_URL}/api/email/via?t={gettone('via', sid, 400, lista)}"
 
 
+def url_cancella_tutto(sid: int) -> str:
+    """(20/11/2026) Rotta POST per i programmi di posta sulle email fuori dai servizi (collegamento personale): toglie
+    l'iscritto da tutti i servizi. Mai l'indirizzo email nel gettone (finirebbe nei registri del server)."""
+    return f"{C.SITO_URL}/api/email/via-tutto?t={gettone('tutto', sid, 400)}"
+
+
 # ---------------------------------------------------------------------------------------------- comuni e regioni
 @lru_cache(maxsize=2)
 def _comuni(mtime: float) -> pd.DataFrame:
@@ -226,13 +232,62 @@ async def chiedi_link(request: Request, email: str = Body(..., embed=True, max_l
     if P.limiti.prova(impronta, "email_dest", C.EMAIL_LINK_GIORNO, 86400):
         url = f"{C.SITO_URL}/{PAGINA}#t={gettone('pref', email, C.EMAIL_LINK_GIORNI)}"
         testo, html = _testo_collegamento(url)
-        ok = await run_in_threadpool(avvisi.invia_a, email, "EuGEnio – il tuo collegamento per newsletter e avvisi",
-                                     testo, html)
+        # (20/11/2026) nostra intestazione «Annulla iscrizione»: per chi è già iscritto toglie da tutti i servizi, per gli
+        # altri non fa niente. Senza, OCI metterebbe la sua e l'indirizzo finirebbe nella lista di soppressione.
+        try:
+            s = await run_in_threadpool(L.iscritto, email)
+        except Exception:                                   # listmonk lento o spento: il collegamento parte lo stesso
+            s = None
+        via_tutto = url_cancella_tutto(int(s["id"])) if s and s.get("id") else None
+        try:
+            ok = await run_in_threadpool(lambda: avvisi.invia_a(
+                email, "EuGEnio – il tuo collegamento per newsletter e avvisi", testo, html,
+                cancella=via_tutto, solleva_bloccato=True))
+        except avvisi.IndirizzoBloccato:
+            log.warning("Dati per email: collegamento chiesto da un indirizzo nella lista di soppressione di OCI")
+            avvisi.invia("indirizzo bloccato dal servizio di posta",
+                         f"{email} ha chiesto il collegamento per newsletter e avvisi, ma è nella lista di soppressione "
+                         f"di OCI Email Delivery (di solito dopo «Annulla iscrizione» dal programma di posta).\n"
+                         f"Se la richiesta è sua: cloud.oracle.com › Email Delivery › Suppression List (compartimento "
+                         f"radice), togliere l'indirizzo e rispondergli di riprovare.")
+            raise HTTPException(409, "Email non spedita: questo indirizzo è bloccato dal servizio di posta, di solito "
+                                     "perché in passato è stato usato «Annulla iscrizione» del programma di posta su "
+                                     "un'email di EuGEnio. Abbiamo avvisato l'amministratore, che può sbloccarlo: "
+                                     f"scrivici da {C.SITO_URL}/contatti.html e ti rispondiamo quando è fatto.")
         if not ok:
             raise HTTPException(503, "Email non spedita: riprova tra qualche minuto.")
     else:
         log.info("Dati per email: troppi collegamenti allo stesso indirizzo nelle 24 ore (non spedito)")
     return {"inviato": True}
+
+
+@router.post("/via-tutto")
+async def via_tutto(request: Request, t: str | None = None):
+    """(20/11/2026) «Annulla iscrizione» del programma di posta sull'email del collegamento personale: toglie l'iscritto
+    da tutti i servizi (resta in listmonk; si reiscrive dalla pagina)."""
+    _attiva()
+    P.limita(request, "email_pref")
+    g = leggi_gettone((t or "")[:2048], "tutto")
+    if "id" not in g:
+        raise HTTPException(401, "Collegamento non valido.")
+    try:
+        liste = {v for v in (await run_in_threadpool(L.liste_servizi, False)).values() if v}
+        if liste:
+            await run_in_threadpool(L.cancella, g["id"], liste)
+    except httpx.HTTPError as e:
+        log.warning("Dati per email: cancellazione da tutti i servizi non riuscita (%s)", e)
+        raise HTTPException(503, "Cancellazione non riuscita: riprova tra poco.")
+    log.info("Dati per email: iscritto %s tolto da tutti i servizi con un clic dal programma di posta", g["id"])
+    return {"cancellato": "tutti"}
+
+
+@router.post("/servizio")
+async def servizio(request: Request):
+    """(20/11/2026) «Annulla iscrizione» sulle email del servizio per l'amministratore: non c'è niente da cancellare (si
+    spengono dal .env). La rotta esiste perché la nostra intestazione eviti quella di OCI, che bloccherebbe l'indirizzo."""
+    P.limita(request, "email_pref")
+    log.info("Email del servizio: richiesta di cancellazione con un clic ignorata (si spengono da EMAIL_AMMINISTRATORE)")
+    return {"cancellato": None}
 
 
 def _chi(t: dict) -> tuple[str, dict | None]:

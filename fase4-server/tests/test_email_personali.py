@@ -253,10 +253,15 @@ def test_rotte(api, monkeypatch):
     assert len(api.get("/api/email/comuni").json()) == 6
     # collegamento: spedito, risposta uguale per tutti, al massimo EMAIL_LINK_GIORNO al giorno allo stesso indirizzo
     email = []
-    monkeypatch.setattr(PE.avvisi, "invia_a", lambda dest, ogg, testo, html: email.append((dest, testo)) or True)
+    monkeypatch.setattr(L, "iscritto", lambda e: {"id": 41})
+    monkeypatch.setattr(PE.avvisi, "invia_a", lambda dest, ogg, testo, html, **k: email.append((dest, testo, k)) or True)
     for _ in range(4):
         assert api.post("/api/email/link", json={"email": "Mario@Esempio.it"}).json() == {"inviato": True}
     assert len(email) == 3 and email[0][0] == "mario@esempio.it"
+    # (20/11/2026) nostra intestazione «Annulla iscrizione» (via-tutto con il numero dell'iscritto, mai l'indirizzo)
+    k = email[0][2]
+    assert k["solleva_bloccato"] is True and "/api/email/via-tutto?t=v1.tutto." in k["cancella"]
+    assert PE.leggi_gettone(k["cancella"].split("t=")[1], "tutto")["id"] == 41 and "esempio" not in k["cancella"]
     assert api.post("/api/email/link", json={"email": "non-valido"}).status_code == 422
     t = email[0][1].split("#t=")[1].split()[0]
     # lettura: nuovo iscritto, niente scelto
@@ -292,3 +297,65 @@ def test_rotte_spente_senza_configurazione(api, monkeypatch):
     monkeypatch.setattr(C, "LISTMONK_API_TOKEN", "")
     assert api.get("/api/email/opzioni").json()["attivo"] is False
     assert api.post("/api/email/link", json={"email": "a@b.it"}).status_code == 503
+
+
+def test_intestazione_annulla_iscrizione_e_indirizzo_bloccato(monkeypatch):
+    """20/11/2026: ogni email diretta porta la nostra List-Unsubscribe HTTPS (OCI non mette la sua, che sopprime
+    l'indirizzo); un destinatario nella lista di soppressione di OCI viene riconosciuto."""
+    import smtplib
+    from servizio import avvisi as Av
+    spedite, rifiuta = [], {"no": False}
+
+    class SMTPFinto:
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def starttls(self): pass
+        def login(self, u, p): pass
+        def send_message(self, m):
+            if rifiuta["no"]:
+                raise smtplib.SMTPRecipientsRefused({m["To"]: (254, b"4.7.1 -  x@y.it is suppressed for sender ocid1.x")})
+            spedite.append(m)
+
+    monkeypatch.setattr(Av.smtplib, "SMTP", SMTPFinto)
+    monkeypatch.setattr(C, "SMTP_SERVER", "smtp.prova")
+    monkeypatch.setattr(C, "SMTP_MITTENTE", "eugenio@prova.it")
+    monkeypatch.setattr(C, "EMAIL_AMMINISTRATORE", "admin@prova.it")
+    monkeypatch.setattr(C, "SITO_URL", "https://eugenio.prova")
+    assert Av.invia("errore", "testo")
+    m = spedite[-1]
+    assert m["List-Unsubscribe"] == "<https://eugenio.prova/api/email/servizio>"
+    assert m["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
+    assert "Non usare «Annulla iscrizione»" in m.get_content()
+    assert Av.invia_a("x@y.it", "o", "t", cancella="https://eugenio.prova/api/email/via-tutto?t=g")
+    assert spedite[-1]["List-Unsubscribe"] == "<https://eugenio.prova/api/email/via-tutto?t=g>"
+    rifiuta["no"] = True
+    assert Av.invia_a("x@y.it", "o", "t") is False
+    with pytest.raises(Av.IndirizzoBloccato):
+        Av.invia_a("x@y.it", "o", "t", solleva_bloccato=True)
+
+
+def test_rotte_indirizzo_bloccato_via_tutto_e_servizio(api, monkeypatch):
+    from servizio import avvisi as Av
+    amministratore = []
+    monkeypatch.setattr(L, "iscritto", lambda e: None)
+
+    def bloccato(*a, **k):
+        raise Av.IndirizzoBloccato()
+    monkeypatch.setattr(PE.avvisi, "invia_a", bloccato)
+    monkeypatch.setattr(PE.avvisi, "invia", lambda o, t, *a: amministratore.append((o, t)) or True)
+    r = api.post("/api/email/link", json={"email": "Bloccato@Esempio.it"})
+    assert r.status_code == 409 and "bloccato dal servizio di posta" in r.json()["detail"]
+    assert "contatti.html" in r.json()["detail"]
+    assert amministratore and "bloccato@esempio.it" in amministratore[0][1] and "Suppression List" in amministratore[0][1]
+    # «Annulla iscrizione» del programma di posta sul collegamento personale: fuori da tutti i servizi
+    tolti = []
+    monkeypatch.setattr(L, "liste_servizi", lambda crea=True: {"mensile": 3, "settimanale": 7, "avvisi": None})
+    monkeypatch.setattr(L, "cancella", lambda sid, liste: tolti.append((sid, liste)))
+    g = PE.gettone("tutto", 41, 400)
+    r = api.post(f"/api/email/via-tutto?t={g}", content="List-Unsubscribe=One-Click",
+                 headers={"Content-Type": "application/x-www-form-urlencoded"})
+    assert r.status_code == 200 and tolti == [(41, {3, 7})]
+    assert api.post(f"/api/email/via-tutto?t={PE.gettone('via', 41, 400, 3)}").status_code == 401
+    # email del servizio: risponde e non fa niente
+    assert api.post("/api/email/servizio", content="List-Unsubscribe=One-Click").json() == {"cancellato": None}

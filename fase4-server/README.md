@@ -1218,7 +1218,28 @@ bollettino nazionale di criticità.
 
 Anteprima del mensile per una regione, dal server (`cd ~/energia/fase4-server`):
 `docker compose run --rm --no-deps worker python -c "import datetime as d; from servizio import notiziario as n; c=n._capoluoghi_italia(); v=n._voci_freddo(c,2026,10); print(n.testo_mensile_regioni(2026,10,d.date(2026,11,12),['08'],v,n._nomi_regioni(c))[1])"`.
-Prove: `tests/test_email_personali.py` (13) e, nel sito, `tests/test_dati_per_email_browser.py` (4).
+Prove: `tests/test_email_personali.py` (15) e, nel sito, `tests/test_dati_per_email_browser.py` (4).
+
+**«Annulla iscrizione» dei programmi di posta e lista di soppressione di OCI (20/11/2026)**. OCI Email Delivery aggiunge
+una sua intestazione `List-Unsubscribe` a ogni email che non ne ha già una HTTPS; con quella, «Annulla iscrizione» di
+Gmail mette l'indirizzo nella **lista di soppressione** di OCI e da lì OCI rifiuta ogni email per lui (errore SMTP 254
+«… is suppressed for sender …»), anche il collegamento per reiscriversi. Successo a Paolo il 19–20/11 (prova voluta di
+«Annulla iscrizione»). Ora:
+- i messaggi dei tre servizi avevano già la nostra intestazione (`/api/email/via`, cancella solo da quel servizio) e il
+  collegamento «Cancellati con un clic» nel piè;
+- **tutte le email spedite direttamente** (`avvisi.invia_a`: collegamento personale, email del servizio per
+  l'amministratore) hanno ora la nostra intestazione HTTPS con `List-Unsubscribe-Post`: il collegamento personale punta a
+  `/api/email/via-tutto?t=…` (gettone `tutto` con il **numero** dell'iscritto, mai l'indirizzo; toglie da tutti i servizi;
+  per chi non è iscritto la rotta `/api/email/servizio`, che non fa niente), le email del servizio a
+  `/api/email/servizio` e portano in fondo «Non usare "Annulla iscrizione"…: si spengono togliendo EMAIL_AMMINISTRATORE»;
+- un destinatario nella lista di soppressione è riconosciuto (`avvisi.IndirizzoBloccato`): la pagina dice che l'indirizzo
+  è bloccato dal servizio di posta e rimanda a Contatti (risposta 409), l'amministratore riceve un'email con l'indirizzo e
+  il percorso per sbloccarlo; nel registro solo «lista di soppressione di OCI», senza l'indirizzo.
+- **Per sbloccare un indirizzo**: https://cloud.oracle.com (regione Milano) › Developer Services › Email Delivery ›
+  Suppression List, compartimento **radice**, riga dell'indirizzo › Delete.
+- Restano senza la nostra intestazione solo le email di sistema di listmonk (conferme della doppia conferma, se mai
+  usate: il sito iscrive con liste già confermate); le campagne di listmonk usano la sua intestazione (Impostazioni ›
+  Privacy › «Includi l'intestazione List-Unsubscribe», da tenere accesa).
 
 ## Aggiornamento del server da GitHub (`aggiorna_da_github.sh`, dal 12/11/2026)
 
