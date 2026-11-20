@@ -31,7 +31,7 @@ PAGINE = {
     "edifici-pubblici.html": "a",
     "aria-trasformazioni.html": "a", "aria-ore.html": "a", "aria-latenti.html": "a", "aria-freecooling.html": "a",
     "cog-emissioni.html": "a", "edificio-clima.html": "a",
-    "indici-prezzi.html": "b",
+    "indici-prezzi.html": "b", "index.html": "b",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -593,3 +593,44 @@ def test_indici_prezzi(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "indici_prezzi", rotte)
+
+
+# ---------------------------------------------------------------------------------------------- Previsioni (con file)
+def test_previsioni(browser, base):
+    ctx, pg, errori = _apri(browser, base + "index.html?regione=08")
+    pg.wait_for_selector("#comune option[value='040007']", state="attached")       # Cesena
+    pg.select_option("#comune", "040007")
+    pg.check("input[name='cosa'][value='clima']")
+    pg.check("input[name='modalita'][value='lungo']")
+    pg.fill("#orizzonte", "60")
+    pg.dispatch_event("#orizzonte", "change")
+    primo = pg.eval_on_selector("#covariate input:checked", "i => i.value")
+    pg.uncheck(f"#covariate input[value='{primo}']")
+    cov = pg.eval_on_selector_all("#covariate input:checked", "is => is.map(i => i.value).join(',')")
+    link = _collegamento(pg)
+    for parte in ("regione=08", "comune=040007", "cosa=clima", "modalita=lungo", "orizzonte=60", "cov="):
+        assert parte in link, parte
+    assert "calcolato" not in link                       # nessun risultato in vista (previsioni simulate assenti)
+    _foto(pg, "previsioni_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link)
+    assert pg.input_value("#comune") == "040007" and pg.is_checked("input[name='cosa'][value='clima']")
+    assert pg.is_checked("input[name='modalita'][value='lungo']") and pg.input_value("#orizzonte") == "60"
+    assert pg.eval_on_selector_all("#covariate input:checked", "is => is.map(i => i.value).join(',')") == cov
+    assert pg.is_hidden("#blocco-consumi") and not pg.is_disabled("#calcola")
+    pg.wait_for_timeout(800)
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    # con calcolato=1 («Solo il clima» già calcolato) la pagina rifà la richiesta da sola, con le stesse scelte
+    chiamate = []
+    ctx = browser.new_context(viewport={"width": 1400, "height": 950})
+    pg = ctx.new_page()
+    pg.route(lambda u: not u.startswith("http://127.0.0.1"), lambda r: r.abort())
+    pg.route("**/api/**", lambda r: (chiamate.append(r.request.url), r.fulfill(status=404, json={"detail": "simulata"})))
+    pg.goto(link + "&calcolato=1")
+    pg.wait_for_function("document.getElementById('messaggio').textContent.includes('non disponibili')")
+    richiesta = [c for c in chiamate if "/api/clima-previsto/040007" in c]
+    assert richiesta and "modalita=lungo" in richiesta[0] and "orizzonte=60" in richiesta[0]
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "previsioni")

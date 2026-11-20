@@ -654,6 +654,27 @@ function corpoReport(r, richiesta) { return { ...r, richiesta: richiesta || null
 disegnaCovariate();
 aggiornaCosa();     // anche se il browser ha ricordato «Solo clima» tornando alla pagina
 
+// collegamento a questa simulazione (20/11/2026): regione (minimappa.js), comune, cosa, tipo, modalita, orizzonte e
+// verifica sono controlli data-collegamento; qui le variabili meteo (cov) e, con «Solo il clima», calcolato=1 per rifare
+// da solo il calcolo. Il file dei consumi non va nell'indirizzo: con i consumi va ricaricato.
+if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+  chiavi: ["cov", "calcolato"],
+  leggi: () => ({
+    cov: [...document.querySelectorAll("#covariate input:checked")].map((i) => i.value).join(",") || "nessuna",
+    calcolato: soloClima() && stato.richiesta && stato.richiesta.solo_clima && $("risultato").childElementCount ? "1" : null,
+  }),
+  async applica(p) {
+    if (p.has("cov")) {
+      const si = new Set(p.get("cov").split(","));
+      document.querySelectorAll("#covariate input").forEach((i) => { i.checked = si.has(i.value); });
+    }
+    if (p.get("calcolato") === "1" && soloClima()) {
+      await window.EUGENIO_COLLEGAMENTO.quando(() => stato.istat);
+      if (stato.istat) await calcolaClima();
+    }
+  },
+});
+
 // cambio di tema o di vestito (aspetto.js, senza ricaricare la pagina): i grafici usano "var(--…)" e cambiano da
 // soli; qui si rifanno i colori calcolati della mappa (fondo dei comuni e scala dei gradi giorno)
 document.addEventListener("eugenio:aspetto", () => {
