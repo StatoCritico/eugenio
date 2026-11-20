@@ -22,6 +22,14 @@
 
 [[voce]]
 data = "2026-11-20"
+versione = "20261120b"
+titolo = "LiDAR: collegamento alla nuova app del Ministero"
+migliorato = [
+  "Edifici › LiDAR: il collegamento «Banca dati PST e LiDAR PNRR» porta alla nuova app del Ministero dell'Ambiente (https://sim.mase.gov.it/pst/); il LiDAR del PNRR a 25 cm non è ancora pubblicato (verifica del 16/11).",
+]
+
+[[voce]]
+data = "2026-11-20"
 versione = "20261120a"
 titolo = "Newsletter e avvisi: «Annulla iscrizione» senza blocchi"
 migliorato = [
