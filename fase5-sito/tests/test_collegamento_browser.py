@@ -33,6 +33,8 @@ PAGINE = {
     "cog-emissioni.html": "a", "edificio-clima.html": "a",
     "indici-prezzi.html": "b", "index.html": "b",
     "fv-cabine.html": "b", "edificio-cer.html": "b",
+    **{f"{n}.html": "b" for n in ("modelli3d", "edificio-geometria", "edificio-consumi", "edificio-obblighi", "fv-dlgs199",
+                                  "fv-irradiazione", "fv-ombre", "fv-producibilita", "fv-pvgis")},
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -698,3 +700,55 @@ def test_edificio_cer(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "edificio_cer", SENZA_ARCGIS)
+
+
+# ---------------------------------------------------------------------------------------------- pagine 3D (demo sintetica)
+@pytest.fixture(scope="module")
+def base_range():
+    """Come base, ma con le richieste Range (PMTiles della demo), come Caddy."""
+    import sys
+    sys.path.insert(0, str(QUI / "tests"))
+    from test_mappe_browser import ConRange
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(ConRange, directory=str(SITO)))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{srv.server_port}/"
+    srv.shutdown()
+
+
+SENZA_ARCHIVI = [(re.compile(r"^http://127\.0\.0\.1:\d+/edifici3d/"), lambda r: r.fulfill(status=404, body="{}"))]
+
+
+@pytest.mark.parametrize("pagina", ["modelli3d", "fv-ombre"])
+def test_pagine_3d(browser, base_range, pagina):
+    s = "window.EUGENIO_EDIFICIO3D.stato"
+    ctx, pg, errori = _apri(browser, base_range + f"{pagina}.html?archivio=demo", rotte=SENZA_ARCHIVI)
+    if not pg.evaluate("!!document.createElement('canvas').getContext('webgl2') || !!document.createElement('canvas').getContext('webgl')"):
+        pytest.skip("WebGL non disponibile in questo Chromium")
+    pg.wait_for_function(f"window.EUGENIO_EDIFICIO3D && {s}.pronto && {s}.indice", timeout=30000)
+    pg.evaluate(f"(() => {{ const c = {s}.indice.centro; window.EUGENIO_EDIFICIO3D.scegli2d('E-DEMO', c[0], c[1]); }})()")
+    pg.evaluate("document.getElementById('genera-3d').click()")
+    pg.wait_for_function(f"{s}.in3d && {s}.corpi.length === 3", timeout=30000)
+    pg.fill("#giorno", "2026-06-21")
+    pg.dispatch_event("#giorno", "change")
+    pg.eval_on_selector("#ora", "r => { r.value = 600; r.dispatchEvent(new Event('input', {bubbles: true})); r.dispatchEvent(new Event('change', {bubbles: true})); }")
+    pg.select_option("#uso", index=2)
+    uso = pg.input_value("#uso")
+    link = _collegamento(pg)
+    # in «Ombre» l'ora può avanzare da sola (animazione): si controlla solo in Modelli 3D
+    for parte in ("archivio=demo", "edificio=E-DEMO", "lat=", "lon=", "giorno=2026-06-21", "ora=", f"uso={uso}"):
+        assert parte in link, (parte, link)
+    ora = pg.input_value("#ora")
+    if pagina == "modelli3d":
+        assert ora == "600"
+    _foto(pg, f"{pagina.replace('-', '_')}_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=SENZA_ARCHIVI)
+    pg.wait_for_function(f"{s}.in3d && {s}.corpi.length === 3 && {s}.edificio === 'E-DEMO'", timeout=30000)
+    assert pg.input_value("#giorno") == "2026-06-21" and pg.input_value("#uso") == uso
+    if pagina == "modelli3d":
+        assert pg.input_value("#ora") == ora
+        pg.wait_for_timeout(1000)
+        assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, pagina.replace("-", "_"), SENZA_ARCHIVI)

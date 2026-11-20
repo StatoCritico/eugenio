@@ -263,8 +263,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <p class="aiuto">Sotto gli edifici puoi mettere l'ortofoto (scegli la fonte) e, da vicino, i confini delle particelle
         catastali e i contorni degli edifici. Legenda e fonti compaiono sotto la mappa ed entrano nell'immagine scaricata.</p>
       <div class="riga-campi sfondo-3d">
-        <label class="casella-strato"><input id="strato-ortofoto" type="checkbox" checked> Ortofoto</label>
-        <label>fonte <select id="sfondo-ortofoto"><option value="">nessuna ortofoto</option></select></label>
+        <label class="casella-strato"><input id="strato-ortofoto" type="checkbox" checked data-collegamento="ortofoto"> Ortofoto</label>
+        <label>fonte <select id="sfondo-ortofoto" data-collegamento="fonte"><option value="">nessuna ortofoto</option></select></label>
       </div>
       <div class="caselle-strati" id="caselle-strati"></div>
     </div>
@@ -303,7 +303,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         tabella dei corpi («tetto a falde scelto dall'utente»).</p>
       <div class="riga-campi coperture-comandi">
         <button class="bottone secondario tegola" id="tegola" type="button" aria-pressed="false" title="Tetto a falde: clic su un edificio per cambiarlo" aria-label="Tetto a falde: clic su un edificio per cambiarlo"><svg class="icona-tegola" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M2.6 11.6 12 6.2l9.4 5.4L12 17z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M2.6 11.6v2.6L12 19.6l9.4-5.4v-2.6M12 17v2.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.3 9.5l9.4 5.4M9.4 7.7l9.4 5.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span>Tegola</span></button>
-        <label class="inclinazione-tetti">Inclinazione <input id="inclinazione-tetti" type="number" min="5" max="60" step="1" value="22" inputmode="decimal"> °</label>
+        <label class="inclinazione-tetti">Inclinazione <input id="inclinazione-tetti" data-collegamento="inclinazione" type="number" min="5" max="60" step="1" value="22" inputmode="decimal"> °</label>
       </div>
       <div class="riga-campi coperture-comandi">
         <button class="bottone secondario" id="reset-piani" type="button" disabled>Reset piani</button>
@@ -331,7 +331,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           ne prendono inclinazione e orientamento; ombre, sole e producibilità si ricalcolano quando cambi un tetto (le
           inclinazioni e gli orientamenti che hai corretto a mano restano). Se correggi un corpo, le sue falde non valgono più.</p>
         <div class="riga-campi forma-tetti">
-          <label>Forma dei tetti <select id="forma-tetti">
+          <label>Forma dei tetti <select id="forma-tetti" data-collegamento="tetti">
             <option value="utente">Scelti dall'utente (tegola in «Coperture»)</option>
             <option value="piani">Tutti piani</option>
           </select></label>
@@ -353,17 +353,17 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <p class="aiuto">I valori che scrivi qui (o che arrivano dal file del Patrimonio, colonne facoltative) hanno la
         precedenza sulle stime: file → visura → stima dall'altezza. Accanto a ogni numero c'è la sua fonte.</p>
       <div class="riga-campi">
-        <label>Uso <select id="uso">
+        <label>Uso <select id="uso" data-collegamento>
           <option value="">dalla sagoma</option><option value="residenziale">residenziale (3,0 m)</option>
           <option value="uffici">uffici (3,4 m)</option><option value="scuola">scuola (3,5 m)</option>
           <option value="ospedale">ospedale (4,0 m)</option><option value="commerciale">commerciale (4,0 m)</option>
           <option value="capannone">capannone o palestra (un piano)</option><option value="altro">altro (3,2 m)</option></select></label>
-        <label>Piani fuori terra <input id="csv-piani_fuori_terra" type="number" min="1" step="1"></label>
-        <label>Piani interrati <input id="csv-piani_interrati" type="number" min="0" step="1"></label>
-        <label>Superficie lorda (m²) <input id="csv-superficie_lorda" type="number" min="0"></label>
-        <label>Superficie netta (m²) <input id="csv-superficie_netta" type="number" min="0"></label>
-        <label>Superficie catastale (m²) <input id="csv-superficie_catastale" type="number" min="0"></label>
-        <label>Anno di costruzione <input id="csv-anno_costruzione" type="number" min="1000" max="2100"></label>
+        <label>Piani fuori terra <input id="csv-piani_fuori_terra" data-collegamento="piani_fuori_terra" type="number" min="1" step="1"></label>
+        <label>Piani interrati <input id="csv-piani_interrati" data-collegamento="piani_interrati" type="number" min="0" step="1"></label>
+        <label>Superficie lorda (m²) <input id="csv-superficie_lorda" data-collegamento="superficie_lorda" type="number" min="0"></label>
+        <label>Superficie netta (m²) <input id="csv-superficie_netta" data-collegamento="superficie_netta" type="number" min="0"></label>
+        <label>Superficie catastale (m²) <input id="csv-superficie_catastale" data-collegamento="superficie_catastale" type="number" min="0"></label>
+        <label>Anno di costruzione <input id="csv-anno_costruzione" data-collegamento="anno_costruzione" type="number" min="1000" max="2100"></label>
       </div>
       <div id="superfici" data-riquadro-tabella data-titolo="Piani e superfici"></div>
       <p class="aiuto" id="nota-sede" hidden></p>
@@ -387,12 +387,12 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         ristrutturazioni importanti di primo livello (dipende dalla quota di superfici vetrate: se non la scrivi, EuGEnio la
         stima dall'uso dell'edificio).</p>
       <div class="riga-campi">
-        <label>Intervento <select id="intervento-199">
+        <label>Intervento <select id="intervento-199" data-collegamento="intervento">
           <option value="nuovo">nuova costruzione</option>
           <option value="primo" selected>ristrutturazione importante di primo livello</option>
           <option value="secondo">ristrutturazione importante di secondo livello</option>
           <option value="impianto">ristrutturazione dell'impianto termico</option></select></label>
-        <label class="casella"><input id="pubblico-199" type="checkbox"> edificio pubblico</label>
+        <label class="casella"><input id="pubblico-199" type="checkbox" data-collegamento="pubblico"> edificio pubblico</label>
         <label>Superfici vetrate (% dell'involucro, prima dell'intervento) <input id="quota-vetrata" type="number" min="0"
           max="100" step="0.5" placeholder="stima"></label>
       </div>
@@ -406,8 +406,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         Dove c'è il rilievo LiDAR anche gli alberi (in verde, dal modello delle superfici) fanno ombra, sul terreno e nei
         calcoli del fotovoltaico e delle facciate.</p>
       <div class="riga-campi">
-        <label>Giorno <input id="giorno" type="date"></label>
-        <label>Ora <input id="ora" type="range" min="0" max="1439" step="15"></label>
+        <label>Giorno <input id="giorno" type="date" data-collegamento></label>
+        <label>Ora <input id="ora" data-collegamento type="range" min="0" max="1439" step="15"></label>
         <button class="bottone secondario" id="anima" type="button" aria-pressed="false">▶ Ciclo del giorno</button>
       </div>
       <p class="sole" id="sole" aria-live="polite"></p>
@@ -436,9 +436,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <button class="bottone" id="calcola-fv" type="button" disabled>Calcola la producibilità</button>
       </div>
       <div class="riga-campi">
-        <label>Modulo (W) <input id="modulo-w" type="number" value="430" min="100" max="800"></label>
-        <label>Lati del modulo (m) <input id="modulo-lati" type="text" value="1,13 × 1,72"></label>
-        <label>Fascia di rispetto (m) <input id="fascia" type="number" value="0.5" min="0" step="0.1"></label>
+        <label>Modulo (W) <input id="modulo-w" data-collegamento="modulo_w" type="number" value="430" min="100" max="800"></label>
+        <label>Lati del modulo (m) <input id="modulo-lati" data-collegamento="modulo_lati" type="text" value="1,13 × 1,72"></label>
+        <label>Fascia di rispetto (m) <input id="fascia" data-collegamento type="number" value="0.5" min="0" step="0.1"></label>
       </div>
       <div class="tabella-scorre"><table class="aree-fv" id="tabella-fv"></table></div>
       <div class="messaggio" id="messaggio-fv" role="status" aria-live="polite"></div>
@@ -465,12 +465,12 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <code>mese</code> e <code>consumo</code>. Li confrontiamo con i gradi giorno reali del comune (base 20 °C,
         archivio meteo di EuGEnio) e li dividiamo per superficie e volume.</p>
       <div class="riga-campi">
-        <label>Vettore <select id="vettore"><option value="gas">gas</option><option value="termica">energia termica</option>
+        <label>Vettore <select id="vettore" data-collegamento><option value="gas">gas</option><option value="termica">energia termica</option>
           <option value="elettricita">energia elettrica</option></select></label>
-        <label>Unità <input id="unita-consumi" type="text" value="Smc"></label>
+        <label>Unità <input id="unita-consumi" data-collegamento="unita" type="text" value="Smc"></label>
       </div>
       <label for="consumi">Consumi mensili</label>
-      <textarea id="consumi" rows="6" placeholder="2025-01;4170"></textarea>
+      <textarea id="consumi" data-collegamento data-collegamento-secondario rows="6" placeholder="2025-01;4170"></textarea>
       <div class="scarica">
         <button class="bottone" id="calcola-firma" type="button">Calcola la firma</button>
         <button class="bottone secondario" id="esempio-consumi" type="button">Consumi di esempio (sintetici)</button>
@@ -498,7 +498,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <code>fv_kwh</code> (kWh/anno possibili), <code>sensibilita</code> (kWh per grado giorno), <code>base</code> (quota
         del carico di base, 0–1). Il gas si converte con il potere calorifico superiore convenzionale (0,03852 GJ/Smc ≈ 10,70 kWh/Smc).</p>
       <div class="riga-campi">
-        <label>Costo annuo dell'energia di questo edificio (€) <input id="costo-edificio" type="number" min="0" step="100"></label>
+        <label>Costo annuo dell'energia di questo edificio (€) <input id="costo-edificio" data-collegamento="costo" type="number" min="0" step="100"></label>
       </div>
       <p class="aiuto">Il costo lo scrivi tu (bollette, o il prezzo della tua convenzione regionale per i consumi): EuGEnio non
         lo calcola dai prezzi di borsa, che usa solo per uso interno.</p>
@@ -520,6 +520,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </main>
 
 <script src="aspetto.js?v=20261120d"></script>
+<script src="collegamento.js?v=20261120d"></script>
 <script src="grafici.js?v=20261120d"></script>
 <script src="divisore.js?v=20261120d"></script>
 <script src="report.js?v=20261120d"></script>
