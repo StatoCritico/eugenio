@@ -46,6 +46,11 @@ testo di `EUGENIO_PER_AGENTI.md` (radice e `fase5-sito/sito/`, identici) e `fase
 versione del sito. Il test `fase4-server/tests/test_agenti.py` fallisce se le due copie differiscono, se la versione
 non è quella del sito o se le rotte `/api/…` dell'app e quelle citate nel file non coincidono.
 
+**Regola per i comandi delle procedure** (`AGGIORNAMENTO_<data>.md` e README, 20/11/2026): ogni `cp`/`mv`/`mkdir`/`tar -x`
+dell'utente `ubuntu` verso le cartelle dati scritte dai container (`/srv/energia/dati/terreno`, `psicro`, `rete`, …:
+utente 1000) si scrive `sudo cp FILE… CARTELLA/ && sudo chown 1000:1000 CARTELLA/FILE…` (cartelle: `sudo cp -r` o
+`sudo mv`, poi `sudo chown -R 1000:1000`); esempio nel README della fase 4, «Come si aggiunge un DTM sul server».
+
 ## Novità e release
 
 Il registro delle versioni del sito è `fase5-sito/novita.toml` (dal 07/11/2026): `fase5-sito/costruisci_pagine.py` ne fa

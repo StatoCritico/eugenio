@@ -32,7 +32,8 @@ Stato al 16/11/2026 g (sito `?v=20261116g`, procedura AG di `AGGIORNAMENTO_2026-
   scheda `pst_umbria` per `dtm-server --regione` (`dtm_locale.SCHEDE_DTM`), «ODbL 1.0» tra i `TESTI_LICENZA` accettati da
   `controlla-archivio`, PST nazionale «attiva» in `fonti/regioni.toml`; test `tests/test_umbria.py`.
 - **Terreno**: COG `dtm1_pst_perugia.tif` (1 m, 49 MB) con la sua scheda `.json` per `/api/terreno`: quote 474 m in centro,
-  303 m a Fontivegge.
+  303 m a Fontivegge. Sul server va in `/srv/energia/dati/terreno/` con `sudo cp` e `sudo chown 1000:1000` (20/11/2026:
+  il `cp` semplice del 16/11 è fallito; README della fase 4, «Come si aggiunge un DTM sul server»).
 - **Comandi** (dalla cartella della fase 10; `ARCH` = cartella degli archivi; tavole DTM e DSM First del PST scompattate):
   ```
   python -m edifici3d.adattatori.umbria osm-geojson --osm perugia.osm --crs EPSG:7792 --uscita perugia_osm.geojson
@@ -1112,7 +1113,11 @@ Brisighella a ~70 MB; la decisione è stata più netta:
   container), convertito **una volta** dallo zip della Regione con `dtm-server` (`dtm_locale.cog_server`: DEFLATE con
   predittore, tessere 512, panoramiche; accanto `<nome>.json` con sistema, riquadro in WGS84, licenza e attribuzione).
   Quadrante SE: 1.459.636.279 byte di zip → **1,30 GB** di COG (il TIFF dentro è 1,87 GB), 815 s nel container con altri
-  due processi in corso;
+  due processi in corso. **Come si aggiunge un DTM sul server** (20/11/2026): `dtm-server` nel container
+  (`docker compose --profile edifici run --rm edifici-lidar dtm-server --file /dati/… --uscita /dati/terreno/<nome>.tif`)
+  oppure copia di un COG già pronto (`.tif` e `.json`) con `sudo cp` seguito da `sudo chown 1000:1000` (la cartella è
+  dell'utente dei container: un `cp` semplice fallisce); l'api rilegge le schede ogni 5 minuti; verifica con
+  `/api/terreno/fonti` e `X-Terreno-Nome`. Comandi completi nel README della fase 4, stesso titolo;
 - **la rotta `/api/terreno/{z}/{x}/{y}.png`** (`fase4-server/servizio/terreno.py`) genera le tessere Terrarium **solo dove
   qualcuno apre il 3D** (lettura a finestra, panoramica adatta allo zoom: 0,03–0,13 s per tessera; 40–120 kB), con copia
   su disco (5 GB al massimo), Cache-Control di 30 giorni e limite per IP; fuori dal DTM regionale e nei suoi vuoti il
