@@ -2,7 +2,8 @@
 """Testata, piè e parte comune del <head> delle pagine del sito da un unico modello.
 
 Le parti comuni stanno in parti/ (accanto a questo file):
-  testa.html    script del tema e del vestito, foglio di stile e icone (nel <head>)
+  testa.html    script del tema e del vestito, protezione.js, numeri.js (numeri col punto delle migliaia), foglio di
+                stile e icone (nel <head>)
   testata.html  la testata: marchio, menu dei servizi a cinque gruppi con sottomenu a tendina (dal 03/11/2026), altre
                 pagine (Indicatori, Come funziona …), ✱ e ◐, menu del telefono, riga del menu fissato (04/11/2026,
                 riempita da aspetto.js); le voci «licenza GME» non sono collegamenti (span.voce-gme)

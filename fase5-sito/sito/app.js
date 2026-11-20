@@ -128,8 +128,8 @@ function coloraMappa(d) {
     p.dataset.dettaglio = `Prossimi 7 giorni: ${x[s.campo]} ${s.nome}\ntemperatura media ${x.t} °C`;
     Object.assign(stato.comuni.get(istat), x, { sintesi: `${x[s.campo]} ${s.nome}` });
   }
-  $("scala-min").textContent = `${min.toFixed(0)} GG`;
-  $("scala-max").textContent = `${max.toFixed(0)} GG`;
+  $("scala-min").textContent = `${EUGENIO_NUMERI.formato(min)} GG`;
+  $("scala-max").textContent = `${EUGENIO_NUMERI.formato(max)} GG`;
   $("scala-barra").style.background = `linear-gradient(90deg, ${colore(0)}, ${colore(1)})`;
 }
 
@@ -243,7 +243,7 @@ async function scegliIndirizzo(r) {
     scegli(d.comune.istat, lonlatSvg(r.lon, r.lat));
     const prima = $("messaggio").textContent;     // l'eventuale avviso del file dei consumi tolto resta
     if (d.particella) messaggio((prima ? `${prima} ` : "") + `Particella catastale ${d.particella.etichetta || d.particella.id}` +
-      (d.particella.area_m2 ? `, ${Math.round(d.particella.area_m2).toLocaleString("it-IT")} m²` : "") + ".");
+      (d.particella.area_m2 ? `, ${EUGENIO_NUMERI.formato(d.particella.area_m2)} m²` : "") + ".");
   } catch (err) { messaggio(err.message, true); }
 }
 
@@ -275,7 +275,7 @@ async function impostaFile(f) {
     messaggio("Foglio di calcolo: il server leggerà il primo foglio.");
   } else if (f) messaggio("");
   stato.file = f;
-  $("nome-file").textContent = f ? `${f.name} · ${(f.size / 1024).toFixed(0)} kB` : "Scegli il file o trascinalo qui";
+  $("nome-file").textContent = f ? `${f.name} · ${EUGENIO_NUMERI.formato(f.size / 1024)} kB` : "Scegli il file o trascinalo qui";
   $("zona-file").classList.toggle("pieno", !!f);
   aggiornaBottone();
 }
@@ -450,7 +450,7 @@ function riempiScheda(pan, chiave, r, nome) {
   mostraDettagli(r, pan, consumo);
 }
 
-const numero = (x, dec = 2) => x === null || x === undefined ? "—" : Number(x).toLocaleString("it-IT", { maximumFractionDigits: dec });
+const numero = (x, dec = 2) => x === null || x === undefined ? "—" : EUGENIO_NUMERI.formato(x, dec, 0);
 const DEBOLI = { "previsione IFS": "meteo globale", "miscela ICON-2I/IFS": null, "climatologia": "climatologia" };
 
 // zone con meteo meno affidabile (modello globale o climatologia), sopra il fondo e sotto le linee
@@ -476,7 +476,7 @@ function assiTempo(svg, { W, H, sx, dx, su, gi, ymin, ymax, Y, X, etich, passo }
     const v = ymin + (ymax - ymin) * k / 4, y = Y(v);
     el("line", { x1: sx, x2: W - dx, y1: y, y2: y, stroke: "var(--linea)", "stroke-width": .6 }, svg);
     const t = el("text", { x: sx - 6, y: y + 4, "text-anchor": "end" }, svg);
-    t.textContent = v.toLocaleString("it-IT", { maximumFractionDigits: Math.abs(ymax - ymin) < 20 ? 1 : 0 });
+    t.textContent = EUGENIO_NUMERI.formato(v, Math.abs(ymax - ymin) < 20 ? 1 : 0, 0);
   }
   const passi = Math.max(2, Math.min(12, Math.round((W - sx - dx) / 100)));
   for (let k = 0; k <= passi; k++) {
@@ -624,7 +624,7 @@ function righeCsv(r) {
 function mostraDettagli(r, box, consumo) {
   if (consumo && r.verifica) {
     const v = r.verifica, d = document.createElement("div"); d.className = "verifica";
-    const fmt = (x, p) => x === null ? "—" : p ? `${(x * 100).toFixed(0)} %` : x.toLocaleString("it-IT", { maximumFractionDigits: 2 });
+    const fmt = (x, p) => x === null ? "—" : p ? `${EUGENIO_NUMERI.formato(x * 100)} %` : EUGENIO_NUMERI.formato(x, 2, 0);
     d.innerHTML = `<div><b>${fmt(v.wape, true)}</b><span>errore relativo complessivo (WAPE)</span></div>` +
       `<div><b>${fmt(v.mae)}</b><span>errore medio per ${r.passo}</span></div>` +
       `<div><b>${fmt(v.copertura_80, true)}</b><span>valori reali dentro la fascia larga (atteso 80 %)</span></div>`;

@@ -29,7 +29,7 @@
   const colore = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
   function h(tag, cls, t) { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; }
   function messaggio(id, t, errore = false) { const m = $(id); if (!m) return; m.textContent = t; m.classList.toggle("errore", errore); }
-  const num = (v, dec = 0) => (v === undefined || v === null || v === "" ? "" : Number(v).toLocaleString("it-IT", { maximumFractionDigits: dec }));
+  const num = (v, dec = 0) => (v === undefined || v === null || v === "" ? "" : EUGENIO_NUMERI.formato(v, dec, 0, ""));
   const copre = (f, [lon, lat]) => !Array.isArray(f.riquadro) || (lon >= f.riquadro[0] && lon <= f.riquadro[2] && lat >= f.riquadro[1] && lat <= f.riquadro[3]);
 
   // ------------------------------------------------------------------ filtri delle tessere
@@ -176,7 +176,7 @@
       if (!r.ok) throw new Error(r.status === 503 ? "dati non ancora sul server" : r.status === 429 ? "troppe richieste: riprova tra poco" : r.status === 400 ? "ricerca non valida" : `errore ${r.status}`);
       const d = await r.json();
       if (!d.risultati.length) { messaggio("messaggio-cerca", "Nessun immobile trovato: prova con meno parole o con parole diverse."); return; }
-      messaggio("messaggio-cerca", `${d.risultati.length}${d.altri ? " (e altri: aggiungi parole per restringere)" : ""} risultati: un clic porta la mappa sull'immobile e apre la scheda.`);
+      messaggio("messaggio-cerca", `${EUGENIO_NUMERI.formato(d.risultati.length)}${d.altri ? " (e altri: aggiungi parole per restringere)" : ""} risultati: un clic porta la mappa sull'immobile e apre la scheda.`);
       d.risultati.forEach((b) => {
         const li = h("li"), bt = h("button", "risultato-pubblico");
         bt.type = "button";

@@ -55,7 +55,7 @@
   const norm = (c) => String(c).trim().toLowerCase().replace(/["']/g, "").replace(/[^a-z0-9àèéìòù_]/g, "_").replace(/^_+|_+$/g, "");
   const nomeComune = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, " ").trim();
-  const fmt = (v, dec) => Number(v).toLocaleString("it-IT", { maximumFractionDigits: dec !== undefined ? dec : Math.abs(v) < 10 ? 2 : Math.abs(v) < 1000 ? 1 : 0 });
+  const fmt = (v, dec) => EUGENIO_NUMERI.formato(v, dec !== undefined ? dec : Math.abs(v) < 10 ? 2 : Math.abs(v) < 1000 ? 1 : 0, 0);
   function h(tag, cls, testo) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -571,7 +571,7 @@
       });
       box.appendChild(tab);
     }
-    box.appendChild(h("p", "aiuto", `Somme su tutte le ${stato.sedi.length} sedi del file, anche quelle spente sulla mappa.`));
+    box.appendChild(h("p", "aiuto", `Somme su tutte le ${EUGENIO_NUMERI.formato(stato.sedi.length)} sedi del file, anche quelle spente sulla mappa.`));
     const pz = $("prezzi");
     pz.innerHTML = "";
     const cp = coppie();
@@ -948,7 +948,7 @@
       tabelle.push({ titolo: "Consumi e costi per metro quadro", tipo: "consumo", intestazioni: stato.normalizzati.intestazioni,
         righe: stato.normalizzati.righe, decimali: stato.normalizzati.intestazioni.map((x, i) => (i ? 2 : null)),
         nota: "Valori del file divisi per la superficie lorda, netta o catastale: colonna del file, altrimenti visura (segnata con «v»)." });
-    return { titolo: "Valori per sede", sottotitolo: `${stato.sedi.length} sedi${nomi ? " – " + nomi : ""}`,
+    return { titolo: "Valori per sede", sottotitolo: `${EUGENIO_NUMERI.formato(stato.sedi.length)} sedi${nomi ? " – " + nomi : ""}`,
       totali, prezzi, ...immagini, tabelle, note, fonti: [...stato.fonti],
       ...(stato.esempio ? { avviso: { titolo: AVVISO_TITOLO, testo: AVVISO_TESTO } } : {}) };
   }
@@ -1025,7 +1025,7 @@
         : a.colonne.some((c) => c.unita) ? "Unità lette dai titoli o dalle celle." : "Nessuna unità: ogni colonna ha la sua scala.";
       messaggio([
         stato.esempio ? `${AVVISO_TITOLO}.` : "",
-        `${nc} ${nc === 1 ? "colonna" : "colonne"} di consumo e ${nk} di costo; ${sulla} sedi su ${a.sedi.length} sulla mappa`
+        `${nc} ${nc === 1 ? "colonna" : "colonne"} di consumo e ${nk} di costo; ${EUGENIO_NUMERI.formato(sulla)} sedi su ${EUGENIO_NUMERI.formato(a.sedi.length)} sulla mappa`
           + (centro ? ` (${centro} al centro del comune)` : "") + (spente ? `, ${spente} spente perché nel loro comune ce ne sono più di ${SEDI_PER_COMUNE}` : "") + ".",
         unitaTesto, letto.nota, r.interrotto].filter(Boolean).join(" "), !!r.interrotto);
       totali();
@@ -1050,7 +1050,7 @@
 
   function impostaFile(f) {
     stato.file = f || null;
-    $("nome-valori").textContent = f ? `${f.name} · ${(f.size / 1024).toFixed(0)} kB` : "Scegli il file o trascinalo qui";
+    $("nome-valori").textContent = f ? `${f.name} · ${EUGENIO_NUMERI.formato(f.size / 1024)} kB` : "Scegli il file o trascinalo qui";
     $("zona-valori").classList.toggle("pieno", !!f);
     $("calcola-valori").disabled = !f;
     messaggio("");

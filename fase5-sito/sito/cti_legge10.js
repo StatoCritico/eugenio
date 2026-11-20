@@ -19,7 +19,7 @@
     ["h_glob", "Irradiazione globale", "MJ/m² giorno", 2], ["h_dif", "di cui diffusa", "MJ/m² giorno", 2],
     ["pv", "Pressione del vapore", "Pa", 0], ["ur", "Umidità relativa", "%", 0], ["vento", "Vento", "m/s", 1]];
   const num = (x, dec = 0) => (x === null || x === undefined || Number.isNaN(x)) ? "—"
-    : Number(x).toLocaleString("it-IT", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    : EUGENIO_NUMERI.formato(x, dec);
   const segno = (x, dec = 0) => (x === null || x === undefined) ? "—" : `${x > 0 ? "+" : ""}${num(x, dec)}`;
   function h(tag, cls, testo) {
     const e = document.createElement(tag);

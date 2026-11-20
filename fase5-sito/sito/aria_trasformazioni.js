@@ -9,6 +9,8 @@
 // Parte pura (stima stagionale, celle del foglio, scrittura dell'xlsx) esportata anche per node: test in
 // fase14-trattamento-aria/tests/test_trasformazioni.py e fase5-sito/tests/test_aria_trasformazioni*.py.
 (function (radice) {
+  // numeri col punto delle migliaia (numeri.js); in node (prove) lo si carica con require
+  const NUMERI = () => (typeof EUGENIO_NUMERI !== "undefined" ? EUGENIO_NUMERI : require("./numeri.js"));
   const P = radice.EUGENIO_PSICRO || (typeof require === "function" ? require("./psicro.js") : null);
   const fin = Number.isFinite;
   const MAX_RIGHE = 10, RIGHE_FOGLIO = 6, CHIAVE = "eugenio-aria-trasf-v1";
@@ -145,7 +147,7 @@
     if (!fin(v)) return "—";
     const f = Math.pow(10, d), r = Math.round(v * f) / f;
     // migliaia sempre col punto (5.592 kg/h) e segno meno tipografico (−1,7 °C), come le altre pagine
-    return (r === 0 ? 0 : r).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" }).replace(/^-/, "−");
+    return NUMERI().formato(r === 0 ? 0 : r, d).replace(/^-/, "−");
   }
   const fmtCampo = (v, d = 1) => (fin(v) ? String(Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).replace(".", ",") : "");
   const dataIt = (s) => (/^\d{4}-\d{2}-\d{2}/.test(String(s || "")) ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : String(s || ""));
@@ -723,7 +725,7 @@
     const s = serie();
     if (!stato.nuvola || !s) { D.togli("ore"); return; }
     const V = P.vettori(s.t, s.ur, s.p);
-    D.nuvola("ore", "#8c8c8c", { t: s.t, x: V.x }, { etichetta: "ore della serie", nota: `(${(s.n - s.mancanti).toLocaleString("it-IT", { useGrouping: "always" })} ore, contesto)` });
+    D.nuvola("ore", "#8c8c8c", { t: s.t, x: V.x }, { etichetta: "ore della serie", nota: `(${NUMERI().formato(s.n - s.mancanti)} ore, contesto)` });
   }
   const uguali = (a, b) => Math.abs(a.t - b.t) < 0.005 && Math.abs(a.x - b.x) < 2e-6;
   function disegna(r) {

@@ -171,7 +171,7 @@
 
   // ==================================================================== la pagina
   // migliaia sempre col punto (it-IT non separa i numeri di 4 cifre)
-  const fmt = (n, d = 0) => (Number.isFinite(n) ? Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" }) : "—");
+  const fmt = (n, d = 0) => (Number.isFinite(n) ? EUGENIO_NUMERI.formato(n, d) : "—");
   const fmtT = (n, d = 1) => fmt(n, d).replace(/^-/, "−");
   const kwh = (n) => (Number.isFinite(n) ? fmt(Math.abs(n) >= 100 ? Math.round(n / 10) * 10 : n, 0) : "—");
   const kw = (n) => fmt(n, Math.abs(n) >= 100 ? 0 : 1);

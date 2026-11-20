@@ -26,7 +26,7 @@
     isoterme5: "#7F7F7F", griglia: "#BFBFBF", grigliaMinore: "#E7E6E6", inchiostro: "#000000" };
   const SCURO = { estate: "#4DA3FF", inverno: "#FF6B6B", entalpia: "#6EA8DE", volume: "#8CC46A" };
   const COLORI = { estate: EXCEL.estate, inverno: EXCEL.inverno };
-  const fmt = (n, d = 0) => (Number.isFinite(n) ? Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" }) : "—");
+  const fmt = (n, d = 0) => (Number.isFinite(n) ? EUGENIO_NUMERI.formato(n, d) : "—");
   const meno = (s) => String(s).replace(/^-/, "−");
   function h(tag, cls, testo) {
     const e = document.createElement(tag);

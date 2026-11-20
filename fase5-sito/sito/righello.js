@@ -45,7 +45,7 @@
     for (let i = 0; i < xy.length; i++) { const p = xy[i], q = xy[(i + 1) % xy.length]; a += p[0] * q[1] - q[0] * p[1]; }
     return Math.abs(a) / 2;
   }
-  const num = (v, d) => v.toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const num = (v, d) => EUGENIO_NUMERI.formato(v, d);
   const testoL = (m) => (m < 1000 ? `${num(m, m < 100 ? 2 : 1)} m` : `${num(m / 1000, 3)} km`);
   function testoA(a) {
     if (a < 10000) return `${num(a, a < 100 ? 2 : 0)} m²`;

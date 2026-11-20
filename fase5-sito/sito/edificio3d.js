@@ -90,7 +90,7 @@
   const DUE_TEMPI = !!$("genera-3d");
   const TITOLO = VISTA === "modelli" ? "Modelli 3D" : (($("mappa3d") && document.querySelector("main h1")) || {}).textContent || "Modelli 3D";
   const C = window.EUGENIO_CONFINI;
-  const fmt = (v, d = 0) => (v === null || v === undefined || !Number.isFinite(+v) ? "—" : (+v).toLocaleString("it-IT", { maximumFractionDigits: d, minimumFractionDigits: d }));
+  const fmt = (v, d = 0) => (v === null || v === undefined || !Number.isFinite(+v) ? "—" : EUGENIO_NUMERI.formato(v, d));
   const NOMI_FONTE = { csv: "dato inserito", visura: "visura", stima: "stima", mancante: "—", "dato del corpo": "dato del corpo" };
   const stato = { base: null, indice: null, mappa: null, celle: new Map(), corpi: [], originali: [], edificio: null, vicini: [],
     proj: null, istat: null, comune: null, csv: {}, uso: "", aree: [], modo: null, punti: [], anima: null, firma: null, fv: null,
@@ -444,8 +444,8 @@
     const parti = [`${n.osm_height + n.osm_piani} con l'altezza dal dato OSM (height o piani × 3 m${n.regionali ? ", dall'edificio OSM sovrapposto" : ""})`,
       `${n.dbtr_vicini} stimati dalla mediana dei corpi DBTR vicini (entro 200 m)`,
       ...(n.osm_vicini ? [`${n.osm_vicini} dalla mediana dei vicini con l'altezza OSM (entro 200 m)`] : []), `${n.fissa} a 9 m fissi (stima)`];
-    const chi = n.regionali ? `Edifici fuori dal DBTR${dove}: ${tot.toLocaleString("it-IT")} (${n.regionali.toLocaleString("it-IT")} con la sagoma della Regione, `
-      + `${(tot - n.regionali).toLocaleString("it-IT")} da OpenStreetMap)` : `Edifici OpenStreetMap${dove}: ${tot.toLocaleString("it-IT")}`;
+    const chi = n.regionali ? `Edifici fuori dal DBTR${dove}: ${EUGENIO_NUMERI.formato(tot)} (${EUGENIO_NUMERI.formato(n.regionali)} con la sagoma della Regione, `
+      + `${EUGENIO_NUMERI.formato(tot - n.regionali)} da OpenStreetMap)` : `Edifici OpenStreetMap${dove}: ${EUGENIO_NUMERI.formato(tot)}`;
     return `${n.regionali ? `${testoSagomeRegionali()} ` : ""}${chi}, di cui ${parti.join(", ")}. Le altezze stimate sono indicate come «stima» nella tabella dei corpi.`;
   }
   // corpi OSM della vista: in 3D l'edificio e i vicini, in 2D le sagome OSM ricevute che cadono nella mappa
@@ -573,7 +573,7 @@
   // fonte dell'altezza da mostrare (07/11/2026): l'altezza del DBTR non plausibile portata alla stima si dichiara
   function testoAltezza(c) {
     if (c.h_scartata !== null && c.h_scartata !== undefined && !c.modificato && !(c.lidar && c.lidar.stato === "ok"))
-      return `altezza stimata (dato DBTR non plausibile: ${(+c.h_scartata).toLocaleString("it-IT", { maximumFractionDigits: 1 })} m)`;
+      return `altezza stimata (dato DBTR non plausibile: ${EUGENIO_NUMERI.formato(c.h_scartata, 1, 0)} m)`;
     if (c.tettoStimato) return `${c.fonte_altezza}; ${c.falde && c.falde[0] ? c.falde[0].fonte : FONTE_STIMA_TETTO} (${c.tetto === "padiglione" ? "a padiglione" : c.tetto === "monofalda" ? "a una falda" : "a capanna"})`;
     if (c.fonteTetto === "piano" && !c.modificato && c.motivoPiano) return `${c.fonte_altezza}; tetto piano (${c.motivoPiano})`;
     if (c.fonteTetto === "piano" && !c.modificato) return `${c.fonte_altezza}; tetto piano`;
@@ -604,7 +604,7 @@
   // «Forma dei tetti» ha due scelte: «Scelti dall'utente» e «Tutti piani».
   const CHIAVE_TETTI = "eugenio-tetti-v1", INCLINAZIONE_TETTO = 22, INCLINAZIONE_MIN = 5, INCLINAZIONE_MAX = 60;
   const FONTE_TETTO_UTENTE = "tetto a falde scelto dall'utente";
-  const gradi = (v) => Number(v).toLocaleString("it-IT", { maximumFractionDigits: 1 });
+  const gradi = (v) => EUGENIO_NUMERI.formato(v, 1, 0);
   const SCELTE_TETTO = { utente: "Scelti dall'utente (tegola in «Coperture»)", piani: "Tutti piani" };
   const NOMI_SCELTA_TETTO = SCELTE_TETTO;
   const SELETTORE_TETTI = () => (VISTA !== "modelli" ? $("forma-tetti") : null);
@@ -1403,7 +1403,7 @@
     evidenzia2d("");
     mostraFacciate(); ridisegna();
     const osm = tutti.some((x) => (archivioDi(x) || {}).osm);
-    messaggio("messaggio", `3D della vista: ${tutti.length} corpi attorno al centro (raggio ${RAGGIO} m) e tutti gli edifici delle tessere sullo schermo. `
+    messaggio("messaggio", `3D della vista: ${EUGENIO_NUMERI.formato(tutti.length)} corpi attorno al centro (raggio ${RAGGIO} m) e tutti gli edifici delle tessere sullo schermo. `
       + "Fai clic su un volume per i suoi dati (corpi, superfici, volume); Maiuscolo + clic per sceglierne più d'uno e sommare i valori."
       + (osm ? ` ${avvisoOsm(tutti.find((x) => (archivioDi(x) || {}).osm).archivio).trim()}` : ""));
     return true;
@@ -1580,7 +1580,7 @@
     const per = new Map();
     for (const c of stato.corpi) { const l = livelloFonte(c); per.set(l, [...(per.get(l) || []), c.id]); }
     const parti = [...per.entries()].sort((a, b) => LIVELLI.indexOf(a[0]) - LIVELLI.indexOf(b[0]))
-      .map(([l, ids]) => `${l}: ${ids.length > 6 ? `${ids.length} corpi` : ids.join(", ")}`);
+      .map(([l, ids]) => `${l}: ${ids.length > 6 ? `${EUGENIO_NUMERI.formato(ids.length)} corpi` : ids.join(", ")}`);
     return `Fonte del 3D per corpo (dalla più affidabile): ${parti.join("; ")}. Il dettaglio (sagoma, altezza, licenza) è nella tabella «Corpi».`;
   }
   // tetti a falde scelti dall'utente (09/11/2026 c): forma, per la nota, l'immagine e il report
@@ -1894,9 +1894,9 @@
     ["passo-corpi", "passo-superfici", "passo-geometria", "passo-obblighi", "passo-ombre", "passo-facciate", "passo-fv", "passo-pvgis",
       "passo-consumi", "passo-report"].forEach((id) => { $(id).hidden = false; });
     $("aggiungi-priorita").disabled = false; $("calcola-pvgis").disabled = true;
-    messaggio("messaggio", (trovati.length > 1 ? `${trovati.length} edifici scelti insieme (${nomeScelta(trovati)}): ${corpi.length} corpi, ${stato.vicini.length} corpi vicini; `
+    messaggio("messaggio", (trovati.length > 1 ? `${EUGENIO_NUMERI.formato(trovati.length)} edifici scelti insieme (${nomeScelta(trovati)}): ${EUGENIO_NUMERI.formato(corpi.length)} corpi, ${EUGENIO_NUMERI.formato(stato.vicini.length)} corpi vicini; `
       + "volume, superfici e indicatori sono la somma degli edifici scelti (Maiuscolo + clic ne aggiunge o ne toglie)." + (persi.length ? ` Non trovati: ${persi.join(", ")}.` : "")
-      : `Edificio ${edificio}: ${corpi.length} ${corpi.length === 1 ? "corpo" : "corpi"}, ${stato.vicini.length} corpi vicini.${DUE_TEMPI ? " Maiuscolo + clic su altri edifici per sommarne i valori." : ""}`)
+      : `Edificio ${edificio}: ${EUGENIO_NUMERI.formato(corpi.length)} ${corpi.length === 1 ? "corpo" : "corpi"}, ${EUGENIO_NUMERI.formato(stato.vicini.length)} corpi vicini.${DUE_TEMPI ? " Maiuscolo + clic su altri edifici per sommarne i valori." : ""}`)
       + (stato.comune ? ` Comune: ${stato.comune.nome}.` : "") + (daOsm ? avvisoOsm(corpi[0].archivio) + (conQuota ? " Quote dei corpi dal terreno del server (DTM regionale o, dove manca, Copernicus DEM 90 m)." : " Quote del terreno non disponibili: edifici sullo stesso piano.") : ""));
     aggiorna();
     if (!DUE_TEMPI) stato.mappa.easeTo({ center: [lon, lat], zoom: 17.6, duration: 600 });
@@ -2025,7 +2025,7 @@
       r.appendChild(h("td", "fonte", f.fonte + (c.lidar && c.lidar.qualita ? ` · qualità ${c.lidar.qualita}` : "")));
     }));
     const sint = con.some((c) => c.lidar && c.lidar.sintetico), ts = testoTettiStimati();
-    messaggio("messaggio-falde", `${con.reduce((s, c) => s + c.falde.length, 0)} falde in ${con.length} ${con.length === 1 ? "corpo" : "corpi"}`
+    messaggio("messaggio-falde", `${EUGENIO_NUMERI.formato(con.reduce((s, c) => s + c.falde.length, 0))} falde in ${EUGENIO_NUMERI.formato(con.length)} ${con.length === 1 ? "corpo" : "corpi"}`
       + (sint ? " dal rilievo LiDAR sintetico di esempio (inventato)." : ".") + ` ${testoTetti()}` + (ts ? ` ${ts}` : "")
       + (note.length ? ` ${note.join("; ")}.` : ""), sint);
   }
@@ -3151,8 +3151,8 @@
     ["passo-corpi", "passo-superfici", "passo-geometria", "passo-obblighi", "passo-ombre", "passo-facciate", "passo-fv", "passo-pvgis",
       "passo-consumi", "passo-report"].forEach((id) => { $(id).hidden = false; });
     $("aggiungi-priorita").disabled = false; $("calcola-pvgis").disabled = true;
-    messaggio("messaggio", `Modello «${stato.modello}»: ${corpi.length} ${corpi.length === 1 ? "corpo" : "corpi"} (letto solo in questo browser), `
-      + `${stato.vicini.length} corpi vicini dall'archivio.` + (stato.comune ? ` Comune: ${stato.comune.nome}.` : ""));
+    messaggio("messaggio", `Modello «${stato.modello}»: ${EUGENIO_NUMERI.formato(corpi.length)} ${corpi.length === 1 ? "corpo" : "corpi"} (letto solo in questo browser), `
+      + `${EUGENIO_NUMERI.formato(stato.vicini.length)} corpi vicini dall'archivio.` + (stato.comune ? ` Comune: ${stato.comune.nome}.` : ""));
     aggiorna();
     if (stato.mappa && !DUE_TEMPI) stato.mappa.easeTo({ center: [lon, lat], zoom: 17.6, duration: 600 });
     apriVista();
@@ -3276,7 +3276,7 @@
       if (DUE_TEMPI && stato.locale) {
         const r = stato.locale.indice.riquadro;
         stato.mappa.fitBounds([[r[0], r[1]], [r[2], r[3]]], { padding: 30, duration: 0, maxZoom: 16 });
-        messaggio("messaggio", `Edifici del tuo file «${stato.locale.indice.nome}»: ${stato.locale.features.length.toLocaleString("it-IT")} corpi, letti solo in `
+        messaggio("messaggio", `Edifici del tuo file «${stato.locale.indice.nome}»: ${EUGENIO_NUMERI.formato(stato.locale.features.length)} corpi, letti solo in `
           + "questo browser. Avvicinati e fai clic su un edificio (o cercalo con l'indirizzo), poi «Genera il 3D»."
           + (stato.osmAttivo ? " Fuori dalla zona del file (tratteggiata) valgono gli archivi del server e il ripiego OpenStreetMap." : ""));
       } else if (DUE_TEMPI) {

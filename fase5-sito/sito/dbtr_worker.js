@@ -6,7 +6,7 @@
 //   → {azione: "impacchetta", files}                                   ← {tipo: "pacchetto", dati: Uint8Array (zip)}
 //   ← {tipo: "stato", testo} durante il lavoro
 const V = self.location.search || "";
-importScripts(`lib/fflate/fflate.js${V}`, `lib/proj4/proj4.js${V}`, `dbtr_lettore.js${V}`);
+importScripts(`lib/fflate/fflate.js${V}`, `lib/proj4/proj4.js${V}`, `numeri.js${V}`, `dbtr_lettore.js${V}`);
 const D = self.EUGENIO_DBTR;
 let SQL = null;
 

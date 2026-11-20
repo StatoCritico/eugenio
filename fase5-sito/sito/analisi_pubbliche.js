@@ -13,6 +13,8 @@
 //   leggiCer(testo)       → righe { ora, sede, cabina, prelievo, immissione } da un CSV in formato lungo (dal 20/11/2026 la
 //                           colonna cabina è facoltativa: nella pagina vale la cabina dell'elenco delle sedi, cer_sedi.js)
 (function (radice) {
+  // numeri col punto delle migliaia (numeri.js); in node (prove) lo si carica con require
+  const NUMERI = () => (typeof EUGENIO_NUMERI !== "undefined" ? EUGENIO_NUMERI : require("./numeri.js"));
   function tendenza(x, y) {
     const p = x.map((v, i) => [+v, +y[i]]).filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b));
     const n = p.length;
@@ -108,7 +110,7 @@
 
   // ------------------------------------------------------------------ pagine
   const $ = (id) => document.getElementById(id);
-  const fmt = (v, d = 0) => (Number.isFinite(+v) ? (+v).toLocaleString("it-IT", { maximumFractionDigits: d, minimumFractionDigits: d }) : "—");
+  const fmt = (v, d = 0) => (Number.isFinite(+v) ? NUMERI().formato(v, d) : "—");
   const segno = (v, d = 0) => (Number.isFinite(+v) ? (v > 0 ? "+" : "") + fmt(v, d) : "—");
   const h = (tag, cls, t) => { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; };
   const msg = (id, t, err = false) => { const m = $(id); if (m) { m.textContent = t; m.classList.toggle("errore", err); } };
@@ -236,7 +238,7 @@
       const es = condivisa(righe); st.esito = es;
       const ore = new Set(righe.map((r) => r.ora)).size, sedi = new Set(righe.map((r) => r.sede)).size;
       const dalElenco = new Set(righe.filter((r) => r._elenco).map((r) => r.sede)).size;
-      msg("messaggio-cer", `${nome}: ${righe.length} righe, ${sedi} sedi, ${ore} ore, ${es.length} ${es.length === 1 ? "cabina" : "cabine"}`
+      msg("messaggio-cer", `${nome}: ${NUMERI().formato(righe.length)} righe, ${NUMERI().formato(sedi)} sedi, ${NUMERI().formato(ore)} ore, ${NUMERI().formato(es.length)} ${es.length === 1 ? "cabina" : "cabine"}`
         + `${dalElenco ? ` (cabina dall'elenco delle sedi per ${dalElenco} ${dalElenco === 1 ? "sede" : "sedi"})` : ""}.`);
       const box = $("risultati-cer"); box.innerHTML = "";
       const t = h("table", "mensili"), r1 = t.createTHead().insertRow();

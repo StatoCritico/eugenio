@@ -16,6 +16,8 @@
   else radice.EUGENIO_DBTR = fabbrica();
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
+  // numeri col punto delle migliaia (numeri.js); in node (prove) lo si carica con require
+  const NUMERI = () => (typeof EUGENIO_NUMERI !== "undefined" ? EUGENIO_NUMERI : require("./numeri.js"));
 
   const LIMITI = { MAX_MB: 300, MAX_ESTRATTO: 3 * 1024 ** 3, MAX_VOCI: 2000, MAX_RAPPORTO: 200, MAX_CORPI: 400000 };
   class DbtrNonValido extends Error {}
@@ -701,7 +703,7 @@
         const colonne = new Set(); rr.slice(0, 50).forEach((r) => Object.keys(maiuscole(r.p)).forEach((k) => colonne.add(k)));
         const mancanti = ["ID_E", "EDI_ID_E", "H_UVL", "B_UVL"].filter((c) => !colonne.has(c));
         if (mancanti.length) throw err(`colonne mancanti in V_UVL_GPG: ${mancanti.join(", ")}`);
-        if (rr.length > LIMITI.MAX_CORPI) throw err(`troppi corpi (${rr.length}): nel browser al massimo ${LIMITI.MAX_CORPI}`);
+        if (rr.length > LIMITI.MAX_CORPI) throw err(`troppi corpi (${NUMERI().formato(rr.length)}): nel browser al massimo ${NUMERI().formato(LIMITI.MAX_CORPI)}`);
         const sEdi = tutti.find((s) => s.nome === "V_EDI_GPG"), sUso = tutti.find((s) => s.nome === "V_EDI_CT_USO_AVM");
         const edifici = new Map();
         if (sEdi) {
@@ -718,7 +720,7 @@
         personali = personali.concat(datiPersonali("V_UVL_GPG", rr.slice(0, 3000)));
         controllo = controllaUvl(rr.map((r) => r.p));
         const conv = controllo.convenzione;
-        stato(`Ricavo i corpi (${rr.length.toLocaleString("it-IT")} unità volumetriche, convenzione «${conv}»)…`);
+        stato(`Ricavo i corpi (${NUMERI().formato(rr.length)} unità volumetriche, convenzione «${conv}»)…`);
         for (const r of rr) {
           if (!r.g) continue;                                         // come _corpi_uvl: senza geometria, saltata
           const pol = piuGrande(r.g);
@@ -751,7 +753,7 @@
         if (!sorg.sistema) throw err("il file non dichiara il sistema di riferimento (manca il .prj?)");
         personali = personali.concat(datiPersonali(sorg.nome, migliore.rr.slice(0, 3000)));
         const verso = trasformatore(lib.proj4, sorg.sistema, zona);
-        stato(`Ricavo i corpi (${migliore.rr.length.toLocaleString("it-IT")} elementi)…`);
+        stato(`Ricavo i corpi (${NUMERI().formato(migliore.rr.length)} elementi)…`);
         for (const r0 of migliore.rr) {
           const p = nomiCompleti(r0.p);
           if (!r0.g) { conta("senza geometria"); continue; }
@@ -783,11 +785,11 @@
     if (oltre60 > Math.max(5, g.length * 0.001)) avvisi.push(`${oltre60} corpi oltre 60 m: controllare (quote non riconosciute?)`);
     // altezze non plausibili portate alla stima (plausibilita, 07/11/2026); i corpi piccoli e altissimi rimasti (campanili,
     // ciminiere, torri: tipi verticali) restano solo segnalati
-    if (stimate.length) avvisi.push(`${stimate.length} corpi con altezza del DB topografico non plausibile portati alla stima (es. ${stimate.slice(0, 3)
+    if (stimate.length) avvisi.push(`${NUMERI().formato(stimate.length)} corpi con altezza del DB topografico non plausibile portati alla stima (es. ${stimate.slice(0, 3)
       .map((x) => `${testoMetri(x.h_dbtr)} → ${testoMetri(x.stima)} m${x.foglio ? `, foglio ${x.foglio} numero ${x.numero}` : ""}`).join("; ")})`);
     const sospetti = features.filter((f) => f.properties.area < 30 && f.properties.gronda > 40 && f.properties.h_dbtr_scartata === undefined)
       .map((f) => ({ id: f.properties.id, area: f.properties.area, gronda: f.properties.gronda, foglio: f.properties.foglio || null, numero: f.properties.numero || null }));
-    if (sospetti.length) avvisi.push(`${sospetti.length} corpi sotto 30 m² e oltre 40 m di tipo verticale (campanili, torri, ciminiere): da guardare (es. ${sospetti.slice(0, 3)
+    if (sospetti.length) avvisi.push(`${NUMERI().formato(sospetti.length)} corpi sotto 30 m² e oltre 40 m di tipo verticale (campanili, torri, ciminiere): da guardare (es. ${sospetti.slice(0, 3)
       .map((x) => `${x.area} m², ${x.gronda} m${x.foglio ? `, foglio ${x.foglio} numero ${x.numero}` : ""}`).join("; ")})`);
     if (personali.length) avvisi.push(`possibili dati personali nel file: ${personali.slice(0, 3).join("; ")}`);
     const scartati = Object.values(scarti).reduce((s, x) => s + x, 0) - (scarti["geometria non valida (non riparata nel browser)"] || 0);

@@ -44,7 +44,7 @@
     return e;
   }
   const num = (x, d = 2) => x === null || x === undefined ? "—"
-    : x.toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d });
+    : EUGENIO_NUMERI.formato(x, d);
   const variazione = (prima, ora) => (prima && ora !== null && ora !== undefined && prima !== null) ? (ora - prima) / prima : null;
   const segno = (v) => v === null ? "" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${num(Math.abs(v * 100), 1)} %`;
 
@@ -325,7 +325,7 @@
         msg.textContent = "Lettura del file…";
         const l = await window.EUGENIO_TABELLE.leggi(f);
         consumi = leggiConsumi(l.testo, l.decimalePunto);
-        msg.textContent = `Letti ${Object.keys(consumi.kwh).length} mesi.${consumi.doppi ? ` ${consumi.doppi} mesi ripetuti: vale l'ultima riga.` : ""} ${l.nota || ""}`.trim();
+        msg.textContent = `Letti ${EUGENIO_NUMERI.formato(Object.keys(consumi.kwh).length)} mesi.${consumi.doppi ? ` ${consumi.doppi} mesi ripetuti: vale l'ultima riga.` : ""} ${l.nota || ""}`.trim();
         calcola();
       } catch (e) { msg.textContent = e.message || String(e); }
     });

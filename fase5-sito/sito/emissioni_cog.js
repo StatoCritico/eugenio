@@ -9,6 +9,8 @@
 //     → { co2_chp_t, co2_rete_t, co2_caldaia_t, co2_separata_t, evitata_t, evitata_pct, intensita_kg_mwh }
 //   daTaglia({ potenza_kwe, ore, rendimento_elettrico, rendimento_termico }) → { elettrica_mwh, calore_mwh, gas_mwh_pci }
 (function (radice) {
+  // numeri col punto delle migliaia (numeri.js); in node (prove) lo si carica con require
+  const NUMERI = () => (typeof EUGENIO_NUMERI !== "undefined" ? EUGENIO_NUMERI : require("./numeri.js"));
   const KWH_SMC = (8190 * 4.1868) / 3600;        // pci del gas di ISPRA: 8190 kcal/Sm³ ≈ 9,525 kWh/Sm³
   const TJ_MWH = 277.7778;                        // 1 TJ = 277,78 MWh
   const ETICHETTE = { termoelettrica_lorda_solo_fossili: "produzione termoelettrica lorda, solo fossili",
@@ -43,7 +45,7 @@
   // ------------------------------------------------------------------ pagina
   const $ = (id) => document.getElementById(id);
   if (!$("calcola-emissioni")) return;
-  const fmt = (v, d = 0) => (Number.isFinite(+v) ? (+v).toLocaleString("it-IT", { maximumFractionDigits: d, minimumFractionDigits: d }) : "—");
+  const fmt = (v, d = 0) => (Number.isFinite(+v) ? NUMERI().formato(v, d) : "—");
   const num = (s) => { const t = String(s == null ? "" : s).trim().replace(/\s/g, "").replace(/\./g, "").replace(",", "."); return t === "" ? NaN : Number(t); };
   const h = (tag, cls, t) => { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; };
   const G = window.EUGENIO_GRAFICI;

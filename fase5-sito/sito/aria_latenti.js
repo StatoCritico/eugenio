@@ -113,8 +113,7 @@
   const P = window.EUGENIO_PSICRO, GO = window.EUGENIO_GRUPPI_ORE, SA = window.EUGENIO_SCELTA_ARIA, GR = window.EUGENIO_GRAFICI;
   const $ = (id) => document.getElementById(id);
   // migliaia sempre col punto (it-IT non separa i numeri di 4 cifre: 1.607, non 1607)
-  const fmt = (v, d = 0) => (Number.isFinite(v)
-    ? Number(v).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" }) : "—");
+  const fmt = (v, d = 0) => (Number.isFinite(v) ? EUGENIO_NUMERI.formato(v, d) : "—");   // numeri.js
   const meno = (s) => String(s).replace(/^-/, "−");
   const fmtM = (v, d = 0) => meno(fmt(v, d));
   const num = (s) => { const v = Number(String(s).trim().replace(",", ".")); return Number.isFinite(v) ? v : NaN; };

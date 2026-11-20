@@ -884,3 +884,34 @@ def test_esempi_un_caso_per_ogni_pagina_del_menu():
     main = re.search(r"<main.*?</main>", (QUI / "sito" / "esempi.html").read_text(encoding="utf-8"), re.S).group(0)
     assert "carichi.html" in pagine and "elettricita.html" in pagine
     assert [p for p in pagine if f'href="{p}' not in main] == []
+
+
+def test_numeri_col_punto_delle_migliaia():
+    """(20/11/2026) numeri.js: punto delle migliaia anche a 4 cifre, nella testa di ogni pagina; nessuno script delle pagine
+    formatta i numeri con toLocaleString/Intl.NumberFormat (solo le date)."""
+    import shutil
+    import subprocess
+    for f in sorted((QUI / "sito").glob("*.html")):
+        s = f.read_text(encoding="utf-8")
+        if "<!-- testa -->" in s:
+            assert re.search(r'<script src="protezione\.js\?v=\w+"></script>\s*<script src="numeri\.js\?v=\w+"></script>', s), f.name
+    for f in sorted((QUI / "sito").glob("*.js")) + [QUI / "sito" / "interno" / "edifici.js"]:
+        if f.name == "numeri.js":
+            continue
+        for riga in f.read_text(encoding="utf-8").splitlines():
+            if "Intl.NumberFormat" in riga or ("toLocaleString(" in riga and not re.search(r"dateStyle|day:|month:", riga)):
+                raise AssertionError(f"{f.name}: {riga.strip()[:120]}")
+    assert "numeri.js" in (QUI / "sito" / "dbtr_worker.js").read_text(encoding="utf-8")
+    assert "Numeri sempre con il punto delle migliaia, anche a 4 cifre" in (QUI / "sito" / "README_stile.md").read_text(encoding="utf-8")
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node non disponibile")
+    prova = r"""
+const N = require(process.argv[1]);
+const casi = [[1234, 0], [1234.5, 1], [-12345.678, 2], [999, 0], [0.25, 2, 0], [3, 2, 0], [1e6, 0], [null, 0], ["", 0], [NaN, 1]];
+const out = casi.map((c) => N.formato(...c));
+out.push(N.raggruppa("-1234567,5"), N.raggruppa("12"));
+console.log(JSON.stringify(out));
+"""
+    out = subprocess.run([node, "-e", prova, str(QUI / "sito" / "numeri.js")], capture_output=True, text=True, encoding="utf-8", check=True).stdout
+    assert json.loads(out) == ["1.234", "1.234,5", "-12.345,68", "999", "0,25", "3", "1.000.000", "–", "–", "–", "-1.234.567,5", "12"]

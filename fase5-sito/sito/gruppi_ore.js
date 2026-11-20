@@ -146,7 +146,7 @@
 
   // ------------------------------------------------------------------ controllo nella pagina
   const MAX = 4;
-  const fmt = (n, d = 0) => Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" });   // 4.357 ore, non 4357
+  const fmt = (n, d = 0) => EUGENIO_NUMERI.formato(n, d);   // 4.357 ore, non 4357 (numeri.js)
   function h(tag, cls, testo) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;

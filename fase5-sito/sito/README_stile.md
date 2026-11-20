@@ -62,7 +62,7 @@ Valgono per **tutti** i grafici del sito, anche quelli futuri. Il modulo comune 
    previsione oraria) mostrano i valori: passando il mouse vicino a una barra o a un punto, la barra si evidenzia
    (classe `.evidenziata`), i punti delle curve prendono un cerchio, compare una linea guida verticale e un
    suggerimento con l'etichetta (mese, anno, stagione) e i valori **formattati all'italiana** (virgola decimale,
-   punto per le migliaia, unità: `toLocaleString("it-IT")`). Funziona nella pagina e nel riquadro, col tocco (si
+   punto per le migliaia anche a 4 cifre, unità: `EUGENIO_NUMERI.formato` di `numeri.js`, vedi «Numeri»). Funziona nella pagina e nel riquadro, col tocco (si
    tocca il grafico; un tocco fuori lo spegne) e con la tastiera (l'SVG prende il fuoco; frecce, Inizio e Fine; il
    valore è letto anche dai lettori di schermo). Non usare `<title>` sulle barre: il suggerimento lo sostituisce.
 3. **Pannelli ridimensionabili.** Nelle pagine dei servizi il confine tra la colonna di sinistra (`.mappa-area`) e il
@@ -534,6 +534,24 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
 - **Gruppi di ore** (`gruppi_ore.js`): un `fieldset.aria-gruppo` per gruppo con il bordo sinistro nel colore del gruppo,
   campione, nome (va in legenda), «Mostra», «Togli»; pulsanti dei preset piccoli; campi data «gg/mm», ore 0–24, giorni;
   conteggio delle ore sotto; «Aggiungi un gruppo» fino a 4.
+
+## Numeri (20/11/2026, regola per tutte le pagine)
+
+**Numeri sempre con il punto delle migliaia, anche a 4 cifre** (1.234, 8.760 ore, 2.250 GG; non 1234) e la virgola dei
+decimali. `Intl.NumberFormat("it-IT")` e `toLocaleString("it-IT")` raggruppano da soli solo da 5 cifre: non usarli
+direttamente per i numeri, ma il modulo comune **`numeri.js`** (`window.EUGENIO_NUMERI`), caricato nella testa di ogni
+pagina (`parti/testa.html`, prima degli script delle pagine):
+
+- `EUGENIO_NUMERI.formato(v, decimali = 0, minimi = decimali, vuoto = "–")`: al più `decimali` cifre decimali, almeno
+  `minimi` (`formato(1234.5, 1)` = «1.234,5», `formato(0.25, 2, 0)` = «0,25»); `vuoto` per null, "" e valori non finiti.
+  Usa `useGrouping: "always"` dove il browser lo conosce, altrimenti mette il punto a mano nella parte intera.
+- `EUGENIO_NUMERI.raggruppa(testo)`: il punto nella parte intera di un numero già scritto senza raggruppamento.
+- Nei moduli che girano anche in node (prove) o in un Web Worker: `const NUMERI = () => (typeof EUGENIO_NUMERI !==
+  "undefined" ? EUGENIO_NUMERI : require("./numeri.js"))` (il worker lo carica con `importScripts`, come `dbtr_worker.js`).
+- **Solo per il testo mostrato** (pagina, suggerimenti, riepiloghi, messaggi, assi, immagini e PDF). Mai nei file CSV,
+  Excel e ODS (lì i numeri restano numeri, o testo con la sola virgola decimale per Excel italiano), nei campi
+  modificabili, negli indirizzi e nei parametri, e mai per date, anni, codici (ISTAT, CAP, catastali), numeri di
+  versione e coordinate.
 
 ## Collegamento a questa simulazione (20/11/2026, regola per le pagine future)
 

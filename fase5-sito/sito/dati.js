@@ -30,7 +30,7 @@ function el(tag, attrs = {}, parent) {
   return e;
 }
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const num = (x) => Number(x).toLocaleString("it-IT");
+const num = (x, dec = 3) => EUGENIO_NUMERI.formato(x, dec, 0);
 const dataIt = (s) => s ? s.split("-").reverse().join("/") : "—";
 const normalizza = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 function messaggio(id, t, errore = false) { const m = $(id); m.textContent = t; m.classList.toggle("errore", errore); }
@@ -538,7 +538,7 @@ $("scarica").addEventListener("click", async () => {
       pezzi.push(value);
       ricevuti += value.length;
       if (attesi) riemp.style.width = `${Math.min(97, 3 + 94 * ricevuti / attesi)}%`;
-      messaggio("messaggio", `Scaricamento… ${(ricevuti / 1048576).toLocaleString("it-IT", { maximumFractionDigits: 1 })} MB`);
+      messaggio("messaggio", `Scaricamento… ${EUGENIO_NUMERI.formato(ricevuti / 1048576, 1, 0)} MB`);
     }
     const disp = risp.headers.get("Content-Disposition") || "";
     const nome = (disp.match(/filename="([^"]+)"/) || [])[1] || `eugenio_${r.dataset}.${formato}`;

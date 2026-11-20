@@ -153,7 +153,7 @@
   const GO = window.EUGENIO_GRUPPI_ORE, SA = window.EUGENIO_SCELTA_ARIA;
   const $ = (id) => document.getElementById(id);
   // migliaia sempre col punto (anche 2.485, come 14.633)
-  const fmt = (n, d = 0) => (Number.isFinite(n) ? Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" }) : "—");
+  const fmt = (n, d = 0) => (Number.isFinite(n) ? EUGENIO_NUMERI.formato(n, d) : "—");
   const meno = (s) => String(s).replace(/^-/, "−");
   const fmtS = (n, d = 0) => meno(fmt(n, d));
   function h(tag, cls, testo) {
@@ -714,7 +714,7 @@
     const idx = g.indici, da = Math.max(0, idx.length - MAX_RIGHE_CSV);
     const out = intestazione();
     out.push(["Gruppo", `${g.indice + 1} ${g.nome} (${descriviGruppo(g)})`]);
-    if (da) out.push(["Attenzione", `Il gruppo ha ${idx.length} ore: qui ci sono solo le ultime ${MAX_RIGHE_CSV}.`]);
+    if (da) out.push(["Attenzione", `Il gruppo ha ${EUGENIO_NUMERI.formato(idx.length)} ore: qui ci sono solo le ultime ${EUGENIO_NUMERI.formato(MAX_RIGHE_CSV)}.`]);
     out.push([], ["Ora UTC", "Data e ora locale", "T (°C)", "UR (%)", "x (g/kg)", "h (kJ/kg)", "Bulbo umido (°C)"]);
     const due = (v) => String(v).padStart(2, "0");
     for (let k = da; k < idx.length; k++) {

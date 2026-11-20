@@ -28,7 +28,7 @@ function h(tag, cls, testo) {
 }
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const num = (x, dec = 0) => (x === null || x === undefined || Number.isNaN(x)) ? "—"
-  : Number(x).toLocaleString("it-IT", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  : EUGENIO_NUMERI.formato(x, dec);
 function messaggio(t, errore = false) { const m = $("messaggio"); m.textContent = t; m.classList.toggle("errore", errore); }
 
 // ------------------------------------------------------------------ mappa e scelta del comune

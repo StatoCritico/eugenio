@@ -17,7 +17,7 @@
   const ORA = 3600000;
   const NS = "http://www.w3.org/2000/svg";
   const parametri = new URLSearchParams(location.search);
-  const fmt = (n, d = 0) => Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" });   // 8.760 ore
+  const fmt = (n, d = 0) => EUGENIO_NUMERI.formato(n, d);   // 8.760 ore
   const data = (ms) => new Date(ms).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Rome" });
   function h(tag, cls, testo) {
     const e = document.createElement(tag);
