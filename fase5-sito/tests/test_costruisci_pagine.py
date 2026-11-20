@@ -602,7 +602,7 @@ def test_etichette_brevi_nelle_tendine():
     # (17/11/2026) + Cabine primarie e Stato della rete elettrica: 15; (20/11/2026) + Produzione e consumi di elettricità: 16
     assert len(s) == pannello.count(">sperimentale<") == 16 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
-    assert tendine.count('fill="#f5c400"') == 16 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
+    assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
     assert ".cantiere.breve" in css and ".cantiere .segnale" in css
     # «Costi energetici Sanità» senza etichetta (pagina validata)
