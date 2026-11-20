@@ -271,6 +271,29 @@ def _ora_legale(t0: dt.datetime, n: int) -> list[list[int]]:
     return out
 
 
+def _ora_doppia(car: dict, ora_legale: list[list[int]]) -> None:
+    """Nel giorno del ritorno all'ora solare Terna ripete 02:00–02:45 senza dire quale valore è dell'ora legale: per ogni
+    zona si sceglie l'ordine dei due valori che fa tornare meglio la somma delle zone con l'Italia."""
+    zone = [z for z in car if z != "ITA"]
+    if "ITA" not in car or not zone or len(zone) > 10:
+        return
+    for (k, off), (k0, off0) in zip(ora_legale[1:], ora_legale):
+        if not (off < off0 and k >= 4):
+            continue
+        for j in range(4):
+            a, b = k - 4 + j, k + j
+            if b >= len(car["ITA"]) or any(car[z][a] is None or car[z][b] is None for z in car):
+                continue
+            def scarto(bits: int) -> float:
+                sa = sum(car[z][b] if bits >> i & 1 else car[z][a] for i, z in enumerate(zone))
+                sb = sum(car[z][a] if bits >> i & 1 else car[z][b] for i, z in enumerate(zone))
+                return abs(car["ITA"][a] - sa) + abs(car["ITA"][b] - sb)
+            migliore = min(range(1 << len(zone)), key=scarto)
+            for i, z in enumerate(zone):
+                if migliore >> i & 1:
+                    car[z][a], car[z][b] = car[z][b], car[z][a]
+
+
 def _interi(s: list) -> list:
     return [None if v is None else int(round(v)) for v in s]
 
@@ -322,6 +345,7 @@ def costruisci_carichi(archivio: Path, uscita: Path) -> dict:
             continue
         voce = {"mese": am, "inizio": t0.strftime("%Y-%m-%dT%H:%M:%SZ"), "n": n_dati, "completo": n_dati == n,
                 "ora_legale": _ora_legale(t0, n_dati), "passo_carico": passo_c, "fonti": False}
+        _ora_doppia(car, voce["ora_legale"])
         f = uscita / f"carico_{am}.json"
         f.write_text(json.dumps({"mese": am, "zone": {z: _interi(s[:n_dati]) for z, s in car.items()}}, separators=(",", ":")),
                      encoding="utf-8")
