@@ -109,6 +109,23 @@ di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occ
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
 
+## Numeri col punto delle migliaia ovunque (20/11/2026, richiesta di Paolo; versione da fissare alla pubblicazione)
+
+Modulo comune `sito/numeri.js` (`window.EUGENIO_NUMERI.formato(v, decimali, minimi, vuoto)` e `raggruppa(testo)`), nella
+testa di ogni pagina (`parti/testa.html`, subito dopo `protezione.js`), nel worker del DB topografico (`dbtr_worker.js`,
+`importScripts`) e nella pagina interna degli edifici; in node lo caricano con `require("./numeri.js")` i moduli provati
+anche lì (`analisi_pubbliche.js`, `emissioni_cog.js`, `dbtr_lettore.js`, `aria_trasformazioni.js`). Usa
+`Intl.NumberFormat("it-IT", { useGrouping: "always" })` dove c'è, altrimenti il ripiego col punto messo a mano che avevano
+`carichi.js` ed `elettricita.js` (che ora usano il modulo). Lo usano al posto di `toLocaleString`/`toFixed` tutti gli
+script che mostrano numeri: `aggiungi_dbtr.js`, `analisi_pubbliche.js`, `app.js` (anche la scala dei gradi giorno e i kB
+del file), `cerca_luogo.js`, `clima_storico.js`, `cti_legge10.js`, `dati.js`, `dbtr_lettore.js`, `edifici_pubblici.js`,
+`edificio3d.js`, `emissioni_cog.js`, `esporta_mappa.js`, `importa_modello.js`, `indicatori.js`, `indici_prezzi.js`,
+`legge10.js`, `patrimonio.js`, `rete.js` (numeri, non le date), `righello.js`, `valori_sedi.js`, `visure_patrimonio.js`, i
+moduli del Trattamento aria, `carichi.js`, `elettricita.js`; anche i conteggi lunghi nei messaggi (righe, ore, corpi,
+sedi). Restano senza punto date, anni, codici, coordinate, indirizzi, campi modificabili e i numeri dei file CSV/Excel/ODS.
+Regola in `README_stile.md` («Numeri»); prova `test_costruisci_pagine.py::test_numeri_col_punto_delle_migliaia` (nessun
+`toLocaleString`/`Intl.NumberFormat` per i numeri negli script, modulo in ogni pagina, casi in node).
+
 ## Collegamento a questa simulazione (20/11/2026, richiesta di Paolo; versione da fissare alla pubblicazione)
 
 «Per tutte le pagine che non richiedono il caricamento di un file CSV ma funzionano tramite selezioni, si generi un

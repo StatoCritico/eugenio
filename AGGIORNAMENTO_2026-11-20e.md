@@ -5,6 +5,12 @@ Codice del server (fase 4) e immagine con la fase 15: il worker acquisisce e tie
 `dati/elettricita/` e `dati/carichi/` quando i costruttori della fase 15 saranno pronti (fino ad allora il worker scarica e
 archivia, ma non pubblica nulla).
 
+> **Dopo l'unione dei rami (ramo `claude/2026-11-20-insieme`)** i due costruttori della fase 15 ci sono già:
+> `costruisci` (statistiche annuali) e `costruisci_carichi`, che legge direttamente l'archivio Parquet del worker
+> (`/srv/energia/dati/terna/serie/carico_totale`, `produzione`, `rinnovabili`). Quindi, con questo ramo, il worker
+> **pubblica** `dati/elettricita/` alla prima accensione e `dati/carichi/` dopo il primo `terna-api` riuscito; le due pagine
+> si vedono però solo quando Paolo pubblica il sito con la versione nuova.
+
 **Decisione di Paolo**: i dati di Terna si caricano sul server per le elaborazioni del sito ma non si scaricano dal sito e
 non vanno mai nel repository. Niente prezzi, corrispettivi o MSD di Terna (cataloghi Market e Fees esclusi).
 

@@ -596,3 +596,31 @@ def test_imcei_salta_i_mesi_vecchi_senza_dati(cartelle, monkeypatch):
     assert T.stato_leggi()["imcei"] == "2026-10"
     assert not (C.TERNA_DATI / "serie" / "imcei" / "2026-04.parquet").exists()
     assert (C.TERNA_DATI / "serie" / "imcei" / "2026-09.parquet").exists()
+
+
+def test_carichi_con_la_fase_15_vera_e_l_archivio_parquet(cartelle, email):
+    """(20/11/2026, dopo l'unione dei rami) il lavoro carichi con costruisci_carichi vero della fase 15 legge l'archivio
+    Parquet scritto da archivia (carico_totale, produzione) e pubblica i file di «Carichi elettrici»."""
+    K = pytest.importorskip("elettricita.carichi")
+    if not hasattr(K, "PARQUET"):
+        pytest.skip("fase 15 senza la lettura dell'archivio Parquet")
+    t0 = pd.Timestamp("2026-09-01 00:00", tz="Europe/Rome").tz_convert("UTC")
+    zone = {"North": 0.6, "Centre-North": 0.1, "Centre-South": 0.15, "South": 0.05, "Calabria": 0.02, "Sicily": 0.05, "Sardinia": 0.03}
+    carico, produzione = [], []
+    for i in range(96 * 2):                                   # due giorni, ogni 15 minuti
+        t = (t0 + pd.Timedelta(minutes=15 * i)).isoformat()
+        italia = 30000.0 + 10 * i
+        carico.append({"istante": t, "zona": "Italy", "carico_mw": italia, "origine": "dc"})
+        carico += [{"istante": t, "zona": z, "carico_mw": italia * q, "origine": "dc"} for z, q in zone.items()]
+        produzione += [{"istante": t, "fonte": f, "energia_gwh": v, "origine": "api"} for f, v in
+                       {"Thermal": 15.0, "Hydro": 4.0, "Wind": 2.0, "Geothermal": 0.6, "Photovoltaic": 3.0, "Self-consumption": 1.0}.items()]
+    assert T.archivia("carico_totale", carico) == len(carico) and T.archivia("produzione", produzione) == len(produzione)
+    esito = W.carichi()
+    assert esito["mesi"] == ["2026-09"] and email == []
+    uscita = C.SITO_DATI / "carichi"
+    indice = json.loads((uscita / "indice.json").read_text(encoding="utf-8"))
+    assert indice["mesi"][0]["n"] == 192 and indice["mesi"][0]["fonti"] is True
+    zone_out = json.loads((uscita / "carico_2026-09.json").read_text(encoding="utf-8"))["zone"]
+    assert zone_out["ITA"][:2] == [30000, 30010] and zone_out["NORD"][0] == 18000
+    voci = json.loads((uscita / "fonti_2026-09.json").read_text(encoding="utf-8"))["voci"]
+    assert voci["fv"][0] == 3000 and voci["termo"][0] == 16000          # termo = totale con gli autoconsumi − rinnovabili
