@@ -542,8 +542,10 @@ def _api_imcei(cli: ClienteAPI, stato: dict, oggi: dt.date, esito: dict, massimo
         a, mm = _mese(m)
         righe = normalizza_imcei(_elenco(cli.get(IMCEI["api"], {"year": a, "month": mm}), IMCEI["json"]), a, mm)
         if not righe:
-            log.info("Terna IMCEI: %s non ancora pubblicato", m)
-            break
+            if (oggi.year - a) * 12 + oggi.month - mm <= 3:
+                log.info("Terna IMCEI: %s non ancora pubblicato", m)
+                break
+            log.warning("Terna IMCEI: %s senza dati (mese vecchio: lo salto)", m)   # lo storico non si blocca
         esito["righe"]["imcei"] = esito["righe"].get("imcei", 0) + archivia("imcei", righe)
         m = _mese_dopo(m)
         stato["imcei"] = m
@@ -622,7 +624,21 @@ def _dc_mese_corrente(dc: ClienteDC, stato: dict, oggi: dt.date, esito: dict) ->
 
 def aggiorna(oggi: dt.date | None = None, api: ClienteAPI | None = None, dc: ClienteDC | None = None) -> dict:
     """Lavoro `terna-api`: API (giorno prima, IMCEI), storico dal Download Center, riserva. Restituisce l'esito;
-    "rimandato": True dopo un 429 o un 5xx (il worker riprova dopo TERNA_RIPROVA_MIN minuti)."""
+    "rimandato": True dopo un 429 o un 5xx (il worker riprova dopo TERNA_RIPROVA_MIN minuti). Un solo aggiornamento alla
+    volta (lucchetto TERNA_DATI/.aggiorna.lock): il ciclo del worker e un `docker compose run` a mano non si sovrappongono."""
+    import fcntl
+    C.TERNA_DATI.mkdir(parents=True, exist_ok=True)
+    with open(C.TERNA_DATI / ".aggiorna.lock", "w") as lucchetto:
+        try:
+            fcntl.flock(lucchetto, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            log.info("Terna: un altro aggiornamento è in corso, niente da fare")
+            return {"giorni_api": [], "mesi_dc": [], "righe": {}, "avvisi": [], "rimandato": False, "api": "",
+                    "saltato": "aggiornamento già in corso"}
+        return _aggiorna(oggi, api, dc)
+
+
+def _aggiorna(oggi: dt.date | None, api: ClienteAPI | None, dc: ClienteDC | None) -> dict:
     oggi = oggi or dt.datetime.now(ROMA).date()
     ieri = oggi - dt.timedelta(days=1)
     C.TERNA_DATI.mkdir(parents=True, exist_ok=True)

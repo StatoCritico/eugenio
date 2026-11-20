@@ -568,3 +568,31 @@ def test_nessun_catalogo_di_mercato_o_di_prezzo():
     for vietato in ("market/v", "fees/v", "/prices", "msd"):
         assert vietato not in testo.lower()
     assert all(S["api"].split("/")[0] in ("load", "generation") for S in T.SERIE.values())
+
+
+def test_un_aggiornamento_alla_volta(cartelle):
+    import fcntl
+    C.TERNA_DATI.mkdir(parents=True)
+    with open(C.TERNA_DATI / ".aggiorna.lock", "w") as f:
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        dc = DCFinto()
+        assert T.aggiorna(oggi=dt.date(2021, 6, 10), dc=dc)["saltato"] == "aggiornamento già in corso"
+        assert dc.chiamate == []
+
+
+def test_imcei_salta_i_mesi_vecchi_senza_dati(cartelle, monkeypatch):
+    """Un mese vecchio vuoto non blocca il recupero; il primo mese recente vuoto lo ferma («non ancora pubblicato»)."""
+    monkeypatch.setattr(C, "TERNA_STORICO_MESI", 0)
+    T.stato_scrivi({"api_giorno": "2026-11-19", "imcei": "2026-03", "dc": {s: "2026-11" for s in T.SERIE}})
+    cli, chiamate = api_finta(C.TERNA_DATI)
+    vero = cli.get
+
+    def get(percorso, params):
+        if percorso.startswith("load/v2.0/monthly") and params["month"] == 4:
+            return {"monthly_index_industrial_electrical_consumption": []}
+        return vero(percorso, params)
+    monkeypatch.setattr(cli, "get", get)
+    T.aggiorna(oggi=dt.date(2026, 11, 20), api=cli, dc=DCFinto())
+    assert T.stato_leggi()["imcei"] == "2026-10"
+    assert not (C.TERNA_DATI / "serie" / "imcei" / "2026-04.parquet").exists()
+    assert (C.TERNA_DATI / "serie" / "imcei" / "2026-09.parquet").exists()
