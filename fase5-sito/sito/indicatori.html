@@ -180,13 +180,13 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <select id="ente"><option value="">Caricamento…</option></select>
       <p class="aiuto" id="nota-ente"></p>
       <label for="componente">Spesa considerata</label>
-      <select id="componente">
+      <select id="componente" data-collegamento="comp">
         <option value="totale" selected>Totale energia e utenze</option>
         <option value="riscaldamento">Solo riscaldamento</option>
         <option value="elettricita">Solo energia elettrica</option>
         <option value="altre">Solo altre utenze (gas, acqua)</option>
       </select>
-      <div class="spunte"><label><input type="checkbox" id="mostra-componenti"> mostra le tre componenti nel grafico e nella tabella</label></div>
+      <div class="spunte"><label><input type="checkbox" id="mostra-componenti" data-collegamento="componenti"> mostra le tre componenti nel grafico e nella tabella</label></div>
       <div class="messaggio" id="messaggio" role="status" aria-live="polite"></div>
     </div>
 
@@ -208,7 +208,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <h2><span class="n">1</span><span id="titolo-ente">Ente</span></h2>
       <p class="aiuto" id="sottotitolo-ente"></p>
       <div class="riga ind-anno">
-        <div><label for="anno">Anno del confronto</label><select id="anno"></select></div>
+        <div><label for="anno">Anno del confronto</label><select id="anno" data-collegamento></select></div>
       </div>
       <div class="tabella-scorre"><table class="mensili ind-confronto" id="confronto"></table></div>
       <p class="aiuto" id="nota-confronto"></p>
@@ -254,6 +254,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <!-- /piede -->
 </footer>
 <script src="aspetto.js?v=20261120d"></script>
+<script src="collegamento.js?v=20261120d"></script>
 <script src="grafici.js?v=20261120d"></script>
 <script src="divisore.js?v=20261120d"></script>
 <script src="minimappa.js?v=20261120d"></script>

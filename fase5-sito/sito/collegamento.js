@@ -19,6 +19,8 @@
 //          leggi: () => ({ comune: stato.istat, vista: stato.vista }),   // valore null, undefined o "" = parametro tolto;
 //                                                // leggi() che restituisce null = pagina non pronta, parametri lasciati
 //          applica: async (p) => { … },          // p: URLSearchParams dell'indirizzo aperto
+//          pronto: () => stato.dati !== null,    // facoltativo: si aspetta prima di rimettere controlli e scelte
+//          primaDeiControlli: true,              // facoltativo: applica prima dei controlli data-collegamento
 //        });
 //      e, dopo una scelta che non passa da un evento input/change/click, EUGENIO_COLLEGAMENTO.aggiorna().
 //   I parametri che la pagina scrive già da sé (?regione=, ?comune=, ?vista=italia, ?prova=1…) restano: il modulo
@@ -254,6 +256,8 @@
     const p = new URLSearchParams(location.search);
     const dalCollegamento = [...p.keys()].length > 0;
     if (dalCollegamento) {
+      // pagine che si preparano in modo asincrono (dati, ascoltatori dei controlli): si aspetta che siano pronte
+      for (const r of registrazioni.filter((x) => x.pronto)) await quando(r.pronto);
       for (const r of registrazioni.filter((x) => x.primaDeiControlli)) await applicaRegistrazione(r, p);
       await applicaControlli(p);
       for (const r of registrazioni.filter((x) => !x.primaDeiControlli)) await applicaRegistrazione(r, p);

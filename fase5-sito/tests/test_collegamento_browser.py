@@ -25,7 +25,7 @@ PROVE = Path("/home/claude/wt_collegamento_prove")      # screenshot, solo se la
 # (pagina, classe) – classe «a»: a sole scelte, collegamento completo; «b»: con file, solo le scelte che non dipendono
 # dal file. Le pagine che non sono qui non hanno il collegamento (testo, segnaposto, moduli, solo file).
 PAGINE = {
-    "legge10.html": "a", "dati.html": "a",
+    "legge10.html": "a", "dati.html": "a", "indicatori.html": "a",
 }
 TESTO = ["faq.html", "metodo.html", "licenza.html", "privacy.html", "sitografia.html", "mirror.html", "novita.html",
          "contatti.html", "esempi.html", "contributi.html", "fv-leed.html", "cog-car.html", "lidar.html"]
@@ -206,3 +206,29 @@ def test_dati(browser, base):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, "dati")
+
+
+# ---------------------------------------------------------------------------------------------- Costi energetici Sanità
+def test_indicatori(browser, base):
+    ctx, pg, errori = _apri(browser, base + "indicatori.html")
+    pg.wait_for_function("document.getElementById('ente').options.length > 2")
+    pg.select_option("#regione", "05")
+    pg.wait_for_function("document.getElementById('ente').value.startsWith('050')")
+    ente = pg.eval_on_selector("#ente", "s => s.options[s.options.length - 1].value")
+    pg.select_option("#ente", ente)
+    pg.select_option("#componente", "elettricita")
+    pg.check("#mostra-componenti")
+    anno = pg.eval_on_selector("#anno", "s => s.options[s.options.length - 1].value")
+    pg.select_option("#anno", anno)
+    link = _collegamento(pg)
+    assert "regione=05" in link and f"ente={ente}" in link and "comp=elettricita" in link and "componenti=1" in link
+    _foto(pg, "indicatori_1400.png")
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link)
+    assert pg.input_value("#regione") == "05" and pg.input_value("#ente") == ente
+    assert pg.input_value("#componente") == "elettricita" and pg.is_checked("#mostra-componenti")
+    assert pg.input_value("#anno") == anno
+    assert pg.input_value("#collegamento-indirizzo") == link
+    ctx.close()
+    assert not errori and not errori2
+    _stretta(browser, link, "indicatori")
