@@ -117,6 +117,12 @@ GUIDA = [
 ("P", "Le iterazioni sono scritte come colonne successive nel foglio «Calcoli» (nessuna macro, nessun calcolo iterativo, nessun riferimento circolare). "
       "Le formule sono le stesse della libreria psychrolib (ASHRAE 2017, unità SI)."),
 
+("P", "Il diagramma T–x del foglio «psicro» ha la grafica del diagramma originale (psicro_finale.xls): fondo bianco, griglia nera (continua ogni 5, tratteggiata ogni 1), "
+      "curve nere – saturazione spessa, umidità relativa 10…90 %, isoentalpiche in kcal/kg continue (0…30) che finiscono sull'asse obliquo delle entalpie, isoentalpiche in kJ/kg tratteggiate (10…95) "
+      "nella fascia tra le due rette d'asse, isocore 0,78…0,95 m³/kg a trattini –, etichette dell'asse x a destra, ESTATE in rosso e INVERNO in blu. "
+      "Il goniometro ha due semicerchi centrati nel punto ⊗ (0 °C; 30 g/kg): sul semicerchio interno (raggio 7, rombi) le direzioni del fattore termico R = 1; 0,9; … 0; −0,1 … −1000 e 1000 … 1,2; "
+      "su quello esterno (raggio 9, quadrati) le direzioni del rapporto Δh/Δx = 100; 20; 10 … −10 kJ/g, fino a ∞ a destra. I due segmenti spessi dal centro sono le direzioni A → I di progetto (rosso estate, blu inverno): "
+      "una trasformazione con lo stesso R è parallela al segmento. Le scritte sono quelle dell'originale e nelle stesse posizioni: valori delle isoentalpiche in kcal e in kJ, «h[kcal]» e «h[kJ]», volumi 0,8…0,95 in basso e a destra, umidità relativa 10…90 %, R e Δh/Δx sul goniometro, «x(g/Kg)» e «T (C°)»; quelle del volume e dell'umidità relativa si spostano con la curva quando la pressione del comune è diversa da 101325 Pa. Unica differenza voluta: l'unità della scala Δh/Δx è scritta «kJ/g» (nell'originale «kcal/kgh2o», ma i valori sono in kJ per grammo d'acqua). Le curve e le scritte sono calcolate con le formule di questo foglio e la pressione di calcolo (le tabelle sono nel foglio «Calcoli»)."),
 ("H", "9. Il diagramma di Mollier (foglio «Mollier»)"),
 ("P", "Il foglio «Mollier» mostra le STESSE trasformazioni del foglio «psicro» nel diagramma h–x di Mollier (forma usata nei testi europei e italiani). "
       "Gli stati sono gli stessi del foglio UTA: si cambia solo il sistema di coordinate, nessun calcolo è duplicato."),
@@ -127,13 +133,13 @@ GUIDA = [
       "Isoentalpiche: Y = (h − 2,501·x[g/kg])/1,006 → rette oblique, −2,486 °C per g/kg\n"
       "Scala di bordo: q = Δh/Δx [kJ/kg]; direzione ΔY/Δx = (q − 2501)/1006 °C per g/kg\n"
       "Fattore termico: R ≈ 1 − 2501/q"),
-("P", "Come si legge: un riscaldamento o raffreddamento sensibile è una retta VERTICALE (x costante); l'umidificazione adiabatica segue le rette blu di entalpia costante; "
+("P", "Come si legge: un riscaldamento o raffreddamento sensibile è una retta VERTICALE (x costante); l'umidificazione adiabatica segue le isoentalpiche (kcal continue, kJ tratteggiate); "
       "l'umidificazione a vapore è quasi parallela alle isoterme; la miscela di due arie sta esattamente sul segmento che le congiunge (in h–x la regola della leva è esatta); "
       "la batteria fredda porta l'aria vicino alla curva di saturazione."),
 ("P", "Scala di bordo Δh/Δx: al posto del goniometro, sul bordo del grafico ci sono tacche con i valori del rapporto q = Δh/Δx [kJ/kg]. "
       "La direzione di una trasformazione con rapporto q è parallela alla retta che congiunge il POLO (punto x = 0, Y = 20 sull'asse sinistro) con la tacca q. "
       "q = 2501 è orizzontale, q = 0 è parallela alle isoentalpiche, q → ±∞ è verticale. "
-      "I due raggi tratteggiati (blu = estate, rosso = inverno) partono dal polo con il rapporto Δh/Δx della retta ambiente A → I; la loro etichetta riporta anche il fattore termico R "
+      "I due raggi tratteggiati (rosso = estate, blu = inverno, come nel diagramma originale) partono dal polo con il rapporto Δh/Δx della retta ambiente A → I; la loro etichetta riporta anche il fattore termico R "
       "(R ≈ 1 − 2501/q). Si mostra q sulla scala e R nell'etichetta dei raggi perché un secondo goniometro in R, nel sistema obliquo, sarebbe meno leggibile."),
 ("H", "10. Valori tipici di progetto"),
 ("P", "• Esterno estate: Milano 32 °C / 50 %, Roma 33 °C / 45 %, Napoli 33 °C / 50 %, Palermo 34 °C / 50 %.\n"
@@ -152,7 +158,7 @@ GUIDA = [
       "• Batteria fredda con retta ingresso–ADP nel piano T–x (modello del fattore di bypass); l'entalpia della condensa è trascurata.\n"
       "• Umidificazione adiabatica a entalpia costante (differisce di meno di 0,1 K dalla trasformazione a bulbo umido costante).\n"
       "• Vicino a 0 °C l'equazione ASHRAE del bulbo umido ha una piccola discontinuità: la T di bulbo umido può differire di qualche decimo di grado da altri programmi in quella zona.\n"
-      "• Il goniometro (foglio «psicro») presuppone un rapporto larghezza/altezza dell'area del grafico ≈ 1,6; ridimensionando il grafico le direzioni restano parallele ma il semicerchio si deforma.\n"
+      "• Il goniometro (foglio «psicro») è disegnato nelle unità del grafico (semicerchi di raggio 7 e 9 in °C e in g/kg, centro in T = 0 °C, x = 30 g/kg), come nell'originale: le direzioni sono esatte con qualunque dimensione del grafico.\n"
       "• La stima stagionale è solo indicativa (vedi nota sotto la tabella)."),
 
 ("H", "12. Correzioni rispetto al file originale (psicro.xls)"),
@@ -174,10 +180,15 @@ GUIDA = [
       "• «UTA»: A4 orizzontale, 2 pagine (pagina 1 = dati generali + ESTATE con riepilogo; pagina 2 = INVERNO + stima stagionale), scala fissa 55 %. "
       "Si usa una scala fissa invece di «Adatta a 1 pagina di larghezza» perché con «Adatta a» Excel ignora le interruzioni di pagina manuali. "
       "La copia ridotta del diagramma (a destra delle tabelle) NON si stampa: per la stampa usare i fogli «psicro» e «Mollier». Per testi più grandi si può scegliere A3 (scala circa 75 %).\n"
-      "• «psicro» e «Mollier»: una pagina A4 orizzontale ciascuno (grafico, legenda e tabella dei punti).\n"
+      "• «psicro» e «Mollier»: carta A3 orizzontale, come il diagramma originale: pagina 1 = il diagramma grande (35,2 × 23,2 cm); pagina 2 = legenda e tabella dei punti.\n"
       "• «Guida»: A4 verticale, larghezza adattata alla pagina.\n"
       "• «Calcoli»: una pagina A4 orizzontale con costanti, prime colonne del motore degli stati e grandezze di stagione (le colonne di iterazione non si stampano). «Liste» è nascosto."),
 ("H", "14. Registro delle modifiche"),
+("P", "v2.3 (19/11/2026) – Fogli «psicro» e «Mollier» con la grafica del diagramma originale (richiesta dell'autore): fondo bianco e griglia nera, curve nere, assi senza titolo con i numeri dell'asse verticale a destra, "
+      "ESTATE rossa e INVERNO blu spesse 3 pt, carta A3 orizzontale con il diagramma grande in una pagina e legenda nella seconda; nel diagramma T–x tornano le famiglie di curve dell'originale "
+      "(isoentalpiche in kcal/kg e in kJ/kg con l'asse obliquo delle entalpie, isocore 0,78…0,95) e il goniometro a due semicerchi con il centro ⊗ e il segno ∞. "
+      "Le trasformazioni restano rettilinee (l'originale le smussava e la curva passava oltre la saturazione). Tutte le scritte dell'originale nelle stesse posizioni, anche nel Mollier (portate nelle sue coordinate), dove le famiglie di curve sono le stesse del T–x. La copia ridotta del diagramma nel foglio UTA resta a colori (estate blu, inverno rosso, come le tabelle). "
+      "Nessuna cella di UTA cambia; il foglio «Calcoli» ha in fondo le tabelle delle nuove curve."),
 ("P", "v2.2 (16/11/2026) – Citazione obbligatoria della licenza CC BY 4.0 «Fonte: EuGEnio – eugenio.statocritico.it» in cima a ogni foglio, sotto ogni grafico e nel piè di pagina di ogni pagina stampata: chi usa il foglio o ne riporta grafici e valori deve mantenerla."),
 ("P", "v2.1 (14/11/2026) – Nuovo foglio «Mollier» (diagramma h–x con isoterme, UR, entalpia, volume specifico, scala di bordo Δh/Δx con R, stesse trasformazioni del diagramma T–x); "
       "foglio «Diagramma» rinominato «psicro»; colori delle stagioni invertiti (ESTATE azzurro/blu, INVERNO rosso) in tabelle e grafici, spezzate più spesse; "
