@@ -118,25 +118,26 @@
     k.strokeStyle = "#222"; k.lineWidth = 1; k.beginPath(); k.moveTo(0, y0 + 0.5); k.lineTo(W, y0 + 0.5); k.stroke();
     return { c, ancora: neg ? [0, (Ht / 2 - y0) / Ht] : null };
   }
-  // (21/11/2026 notte, Paolo) burden sharing verticale come gli altri istogrammi: colonna «obiettivo 2030» (rettangolo
-  // arancione vuoto, alto quanto l'obiettivo), dentro la colonna delle rinnovabili in più dal 2020 impilate per fonte
-  // (solo le parti positive: i valori negativi, per esempio le bioenergie dismesse, restano nel riquadretto) e il segno
-  // dell'obiettivo dell'anno scelto come linea orizzontale; sotto, la linea di base (lo zero). Le province non hanno
-  // obiettivi: solo la colonna delle rinnovabili.
+  // (21/11/2026 notte, Paolo) burden sharing verticale come gli altri istogrammi: colonna delle rinnovabili in più dal
+  // 2020 impilata per fonte (solo le parti positive: i valori negativi, per esempio le bioenergie dismesse, restano nel
+  // riquadretto) con la linea di base (lo zero). (22/11/2026, 00:18) il rettangolo arancione vuoto dell'obiettivo 2030 e
+  // la linea nera dell'obiettivo dell'anno scelto sono un'immagine a parte, della stessa misura, che compare solo sulla
+  // regione sotto il mouse (o toccata): strato «el-obiettivi» filtrato sul codice. La scala comprende sempre gli
+  // obiettivi 2030, così quando l'obiettivo compare la colonna non cambia. Le province non hanno obiettivi.
   const ARANCIO = "#f08a24";
-  function barreBurden(parti, ob2030, obAnno, max, alto) {
-    const lo = st.regione ? 20 : 16, li = st.regione ? 12 : 10, W = lo + 8, Ht = alto + 4, y0 = alto + 2, x0 = 4;
-    const [c, k] = tela(W, Ht), sc = (v) => Math.max(0, v) / max * alto;
-    // rinnovabili in più dal 2020, impilate dal basso
+  function misureBurden(alto) { const lo = st.regione ? 20 : 16; return { lo, li: st.regione ? 12 : 10, W: lo + 8, Ht: alto + 4, y0: alto + 2, x0: 4 }; }
+  function barreBurden(parti, max, alto) {
+    const { lo, li, W, Ht, y0, x0 } = misureBurden(alto), [c, k] = tela(W, Ht), sc = (v) => Math.max(0, v) / max * alto;
     let y = y0;
     for (const p of parti) { if (!(p.v > 0)) continue; const hh = sc(p.v); k.fillStyle = colore("capacita", p.id); k.fillRect(x0 + (lo - li) / 2, y - hh, li, hh); y -= hh; }
     if (y < y0) { k.strokeStyle = "rgba(0,0,0,0.55)"; k.lineWidth = 0.6; k.strokeRect(x0 + (lo - li) / 2 + 0.3, y + 0.3, li - 0.6, y0 - y - 0.6); }
-    // obiettivo 2030: rettangolo arancione vuoto
-    if (ob2030 > 0) { const hh = sc(ob2030); k.strokeStyle = ARANCIO; k.lineWidth = 1.6; k.strokeRect(x0 + 0.8, y0 - hh + 0.8, lo - 1.6, hh - 0.8); }
-    // obiettivo dell'anno scelto: linea orizzontale scura, un po' più larga della colonna
-    if (obAnno !== null && obAnno > 0) { k.fillStyle = "#111"; k.fillRect(x0 - 3, y0 - sc(obAnno) - 0.8, lo + 6, 1.6); }
-    // base (lo zero)
     k.strokeStyle = "#222"; k.lineWidth = 1; k.beginPath(); k.moveTo(0, y0 + 0.5); k.lineTo(W, y0 + 0.5); k.stroke();
+    return { c };
+  }
+  function obiettivoBurden(ob2030, obAnno, max, alto) {
+    const { lo, W, Ht, y0, x0 } = misureBurden(alto), [c, k] = tela(W, Ht), sc = (v) => Math.max(0, v) / max * alto;
+    const hh = sc(ob2030); k.strokeStyle = ARANCIO; k.lineWidth = 1.6; k.strokeRect(x0 + 0.8, y0 - hh + 0.8, lo - 1.6, hh - 0.8);
+    if (obAnno !== null && obAnno > 0) { k.fillStyle = "#111"; k.fillRect(x0 - 3, y0 - sc(obAnno) - 0.8, lo + 6, 1.6); }
     return { c };
   }
   // anello (torta con il buco): produzione per fonte, in senso orario da mezzogiorno; nel buco un testo (fattore medio)
@@ -153,15 +154,27 @@
     });
     k.beginPath(); k.arc(cx, cx, r, 0, 2 * Math.PI); k.strokeStyle = "#222"; k.lineWidth = 0.9; k.stroke();
     k.beginPath(); k.arc(cx, cx, ri, 0, 2 * Math.PI); k.fillStyle = "rgba(255,255,255,0.92)"; k.fill(); k.strokeStyle = "#222"; k.lineWidth = 0.7; k.stroke();
-    if (testo && ri >= 8) {
-      const fs = Math.min(12, Math.max(8, ri * 0.8));
+    // testo nel buco solo se il buco è largo almeno 18 px sulla mappa (misure qui in unità di disegno, × DOPPIO)
+    if (testo && ri * DOPPIO >= 9) {
+      const fs = Math.min(6.5, Math.max(4.5, ri * 0.75));
       k.font = `700 ${fs}px system-ui, sans-serif`; k.textAlign = "center"; k.textBaseline = "middle"; k.fillStyle = "#111";
       k.fillText(testo, cx, cx + 0.5, 2 * ri - 2);
     }
     return { c };
   }
   // raggio dell'anello: area = area minima + parte proporzionale alla produzione (scala comune a tutte le unità e gli anni)
-  const raggio = (tot, max) => { const r0 = st.regione ? 11 : 13, r1 = 34; return Math.sqrt(r0 * r0 + (r1 * r1 - r0 * r0) * Math.max(0, tot) / max); };
+  // (22/11/2026, 00:18, Paolo) anelli più piccoli, che nella vista dell'Italia e delle province non si sovrappongono:
+  // raggio in pixel sulla mappa da 9 a 24 (regioni) o da 7 a 20 (province), diviso per DOPPIO perché la tela lo ingrandisce
+  // Nella vista dell'Italia i raggi seguono lo zoom dell'inquadratura (mappa più piccola = Italia più piccola = anelli
+  // più piccoli; riferimento: zoom 4,5 con la mappa di 800 × 640 px), mai più grandi del riferimento.
+  const RAGGI = { regioni: [8, 21], province: [7, 20] };
+  function scalaAnelli() {
+    if (st.regione || !st.mappa) return 1;
+    const cam = st.mappa.cameraForBounds([[C.ITALIA[0], C.ITALIA[1]], [C.ITALIA[2], C.ITALIA[3]]], { padding: margini(10) });
+    return cam && Number.isFinite(cam.zoom) ? Math.max(0.5, Math.min(1, 2 ** (cam.zoom - 4.5))) : 1;
+  }
+  const raggio = (tot, max, k = 1) => { const [r0, r1] = RAGGI[st.regione ? "province" : "regioni"];
+    return k * Math.sqrt(r0 * r0 + (r1 * r1 - r0 * r0) * Math.max(0, tot) / max) / DOPPIO; };
 
   function immagine(id, disegno) {
     const m = st.mappa, k = disegno.c.getContext("2d"), dati = k.getImageData(0, 0, disegno.c.width, disegno.c.height);
@@ -195,19 +208,20 @@
       unitaMappa = p.province;
     }
     const modo = st.modo, g = MODI[modo].grandezza, a = st.anno;
-    const max = massimo(unitaMappa, modo), features = [];
+    const max = massimo(unitaMappa, modo), features = [], kAnelli = modo === "emissioni" ? scalaAnelli() : 1;
     const alto = st.regione ? 90 : 70;
     const neg = g === "richiesta";
     for (const x of unitaMappa) {
       const id = `el-${x.cod || x.nome}`.replace(/[^\w-]/g, "_");
-      let dis = null;
+      let dis = null, conOb = "", rAnello = 0;
       if (modo === "burden") {
         const ag = aggiunta(x, a);
-        if (ag) dis = barreBurden(ag.parti, x.obiettivi ? x.obiettivi[x.obiettivi.length - 1] : 0, obiettivo(x, a), max, alto);
+        if (ag) dis = barreBurden(ag.parti, max, alto);
+        if (ag && x.obiettivi) { immagine(`${id}-ob`, obiettivoBurden(x.obiettivi[x.obiettivi.length - 1], obiettivo(x, a), max, alto)); conOb = `${id}-ob`; }
       } else if (modo === "emissioni") {
         const v = valori(x, g, a), ind = st.regione ? null : indicatoriDi(x, a);
-        if (v && somma(v.filter((y) => y > 0)) > 0) dis = anello(v, voci(g).map((q) => q.colore), raggio(somma(v.filter((y) => y > 0)), max),
-          ind && ind[IND.medio] !== null ? num(ind[IND.medio], 2) : null);
+        if (v && somma(v.filter((y) => y > 0)) > 0) { rAnello = raggio(somma(v.filter((y) => y > 0)), max, kAnelli) * DOPPIO;
+          dis = anello(v, voci(g).map((q) => q.colore), rAnello / DOPPIO, ind && ind[IND.medio] !== null ? num(ind[IND.medio], 2) : null); }
       } else {
         const v = valori(x, g, a);
         if (v && somma(v.map(Math.abs)) > 0) dis = barreVerticali(v, voci(g).map((q) => q.colore), max, alto, neg);
@@ -215,7 +229,7 @@
       if (!dis) continue;
       immagine(id, dis);
       features.push({ type: "Feature", geometry: { type: "Point", coordinates: [x.lon, x.lat] },
-        properties: { img: id, nome: x.nome, cod: x.cod || "", storica: !!x.storica, burden: modo === "burden", neg, anello: modo === "emissioni" } });
+        properties: { img: id, imgOb: conOb, r: rAnello, nome: x.nome, cod: x.cod || "", storica: !!x.storica, burden: modo === "burden", neg, anello: modo === "emissioni" } });
     }
     // regione con la richiesta solo regionale: le province non hanno dati
     if (st.regione && g === "richiesta") messaggio("messaggio-mappa", "Terna pubblica la richiesta di energia solo per regione: le province non hanno barre.");
@@ -224,6 +238,8 @@
     st.barre = features.length;
     st.anelli = features.filter((f) => f.properties.anello).length;   // per le prove
     m.setLayoutProperty("el-barre", "icon-anchor", modo === "emissioni" || neg ? "center" : "bottom");
+    st.cerchi = modo === "emissioni" ? features.map((f) => ({ cod: f.properties.cod, nome: f.properties.nome, c: f.geometry.coordinates, r: f.properties.r })) : null;   // per le prove
+    mostraObiettivo(st.obiettivoSu);
     legenda();
     chiudiAttribuzione();
   }
@@ -244,7 +260,8 @@
       canvasContextAttributes: { preserveDrawingBuffer: true },
       style: { version: 8, sources: {}, layers: [{ id: "sfondo", type: "background", paint: { "background-color": css("--carta", "#f4f4f4") } }] } });
     st.mappa = m;
-    window.EUGENIO_ELETTRICITA = { stato: st, scegliRegione, togliRegione, cambiaModo, DOPPIO };   // per le prove
+    window.EUGENIO_ELETTRICITA = { stato: st, scegliRegione, togliRegione, cambiaModo, DOPPIO, mostraObiettivo,   // per le prove
+      cerchi: () => (st.cerchi || []).map((q) => { const p = m.project(q.c); return { cod: q.cod, nome: q.nome, x: p.x, y: p.y, r: q.r }; }) };
     m.addControl(new window.maplibregl.NavigationControl({ showCompass: false }), "top-right");
     m.addControl(new window.maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
     m.addControl(new window.maplibregl.AttributionControl({ compact: true }), "bottom-right");
@@ -260,6 +277,21 @@
     m.addSource("el-barre", { type: "geojson", data: vuota(), attribution: "Terna S.p.A. (dati statistici); elaborazione EuGEnio" });
     m.addLayer({ id: "el-barre", type: "symbol", source: "el-barre", layout: { "icon-image": ["get", "img"], "icon-allow-overlap": true,
       "icon-ignore-placement": true, "icon-anchor": "bottom" } });
+    // (22/11/2026) obiettivo 2030 del burden sharing: solo sulla regione sotto il mouse (filtro sul codice)
+    m.addLayer({ id: "el-obiettivi", type: "symbol", source: "el-barre", filter: ["==", ["get", "cod"], "-"],
+      layout: { "icon-image": ["get", "imgOb"], "icon-allow-overlap": true, "icon-ignore-placement": true, "icon-anchor": "bottom" } });
+    // tipo dell'ultimo puntatore: dopo un tocco il browser manda anche mousemove e click «di compatibilità», che qui
+    // non devono contare come mouse
+    const tipo = (e) => { st.puntatore = e.pointerType || "mouse"; };
+    m.getCanvasContainer().addEventListener("pointerdown", tipo, true);
+    m.getCanvasContainer().addEventListener("pointermove", tipo, true);
+    m.on("mousemove", (e) => {
+      if (st.puntatore === "touch") return;
+      if (st.modo !== "burden" || st.regione) return mostraObiettivo(null);
+      const f = m.queryRenderedFeatures(e.point, { layers: ["el-barre", "confini-regioni-clic"].filter((id) => m.getLayer(id)) })[0];
+      mostraObiettivo(f ? f.properties.cod : null);
+    });
+    m.on("mouseout", () => { if (st.puntatore !== "touch") mostraObiettivo(null); });
     if (m.getLayer("confini-regioni-clic")) m.setLayerZoomRange("confini-regioni-clic", 0, 24);
     if (R && R.suggerimento) st.sugg = R.suggerimento(m, () => ["el-barre", "el-province-clic", "confini-regioni-clic"], suggerimento);
     m.on("click", clic);
@@ -273,6 +305,8 @@
       if (E.evidenziaPiccola) E.evidenziaPiccola(null);
     }
     strati();
+    // (22/11/2026) margine in alto per le colonne più alte (Lombardia): l'Italia intera sta sotto
+    m.fitBounds([[C.ITALIA[0], C.ITALIA[1]], [C.ITALIA[2], C.ITALIA[3]]], { padding: margini(10), duration: 0 });
     const q = new URLSearchParams(location.search);
     if (q.get("modo") && MODI[q.get("modo")]) cambiaModo(q.get("modo"), false);
     if (/^\d\d$/.test(q.get("regione") || "") && q.get("vista") !== "italia" && D().regioni.some((r) => r.cod === q.get("regione"))) await scegliRegione(q.get("regione"));
@@ -281,9 +315,20 @@
     document.addEventListener("eugenio:aspetto", () => { m.setPaintProperty("sfondo", "background-color", css("--carta", "#f4f4f4")); pannello(); });
   }
 
+  // margini dell'inquadratura: in alto l'altezza delle colonne più alte (al più il 40 % della mappa), altrove p
+  function margini(p) {
+    const alto = Math.round((st.regione ? 90 : 70) * DOPPIO * 0.85), H = box.clientHeight || 600;
+    return { top: Math.max(p, Math.min(alto, Math.round(H * 0.4))), bottom: p, left: p, right: p };
+  }
+  // rettangolo dell'obiettivo 2030 della regione cod (null = nessuno); solo con il burden sharing e la vista dell'Italia
+  function mostraObiettivo(cod) {
+    st.obiettivoSu = st.modo === "burden" && !st.regione && cod ? cod : null;
+    if (st.mappa && st.mappa.getLayer("el-obiettivi")) st.mappa.setFilter("el-obiettivi", ["==", ["get", "cod"], st.obiettivoSu || "-"]);
+  }
   function strati() {
     const m = st.mappa, vis = (id, on) => { if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", on ? "visible" : "none"); };
     vis("el-barre", $("strato-barre").checked);
+    vis("el-obiettivi", $("strato-barre").checked);
     vis("el-fondo", $("strato-fondo").checked);
     ["contesto", "ortofoto"].forEach((id) => vis(id, $("strato-ortofoto").checked));
     if ($("strato-ortofoto").checked && orto.fonti.length) sceltaOrto();
@@ -296,6 +341,10 @@
     const r = m.queryRenderedFeatures(e.point, { layers: ["confini-regioni-clic"].filter((id) => m.getLayer(id)) })[0];
     const cod = r ? r.properties.cod : null;
     if (!cod) return;
+    // (22/11/2026) burden sharing col dito: il primo tocco su una regione mostra il suo obiettivo (e il riquadretto),
+    // il secondo apre le province
+    const tocco = st.puntatore === "touch" || (e.originalEvent && e.originalEvent.pointerType === "touch");
+    if (tocco && st.modo === "burden" && !st.regione && st.obiettivoSu !== cod) { mostraObiettivo(cod); return; }
     if (st.regione === cod) togliRegione(); else scegliRegione(cod);
   }
 
@@ -306,7 +355,7 @@
     const m = st.mappa;
     if (m.getLayer("confini-regione-scelta")) m.setFilter("confini-regione-scelta", ["==", ["get", "cod"], cod]);
     const b = await C.riquadroRegione(cod);
-    if (b && st.regione === cod) m.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 30, duration: 600 });
+    if (b && st.regione === cod) m.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: margini(30), duration: 600 });
     try { m.getSource("el-province").setData(await C.provinceRegione(cod)); } catch { m.getSource("el-province").setData(vuota()); }
     aggiornaIndirizzo();
     await disegnaBarre();
@@ -318,7 +367,7 @@
     const m = st.mappa;
     if (m.getLayer("confini-regione-scelta")) m.setFilter("confini-regione-scelta", ["==", ["get", "cod"], ""]);
     m.getSource("el-province").setData(vuota());
-    m.fitBounds([[C.ITALIA[0], C.ITALIA[1]], [C.ITALIA[2], C.ITALIA[3]]], { padding: 10, duration: 600 });
+    m.fitBounds([[C.ITALIA[0], C.ITALIA[1]], [C.ITALIA[2], C.ITALIA[3]]], { padding: margini(10), duration: 600 });
     aggiornaIndirizzo();
     await disegnaBarre();
     pannello();
@@ -425,7 +474,7 @@
       sp.append(i, "obiettivo 2030 (DM 21/6/2024, Tabella A)"); L.appendChild(sp);
       voceLegenda(L, "#111", `linea: obiettivo del ${st.anno}`);
       D().fer.forEach((id) => voceLegenda(L, colore("capacita", id), `${voci("capacita").find((v) => v.id === id).nome} in più dal 2020`));
-      L.appendChild(h("span", "legenda-nota", "Colonne in scala con l'obiettivo 2030 più grande, sopra la linea di base; i valori negativi (potenza dismessa) non si disegnano ma sono nel riquadretto. La potenza in più è una stima: variazione della potenza efficiente lorda rinnovabile di Terna rispetto al 2020."));
+      L.appendChild(h("span", "legenda-nota", "Il rettangolo dell'obiettivo 2030 e la linea dell'obiettivo dell'anno compaiono sulla regione sotto il mouse (col dito: primo tocco; il secondo apre le province). Colonne in scala con l'obiettivo 2030 più grande, sopra la linea di base; i valori negativi (potenza dismessa) non si disegnano ma sono nel riquadretto. La potenza in più è una stima: variazione della potenza efficiente lorda rinnovabile di Terna rispetto al 2020."));
       return;
     }
     const g = MODI[st.modo].grandezza;
@@ -445,7 +494,7 @@
     const leg = st.modo === "emissioni"
       ? `Anelli: produzione lorda per fonte (${voci(g).map((v) => v.nome.toLowerCase()).join(", ")}); l'area cresce in proporzione alla produzione, con un anello minimo; ${st.regione ? "fattori di emissione solo regionali" : "nel buco il fattore di emissione medio della regione (tCO₂/MWh: emissioni di CO₂ del termoelettrico / produzione lorda senza pompaggi e accumuli)"}.`
       : st.modo === "burden"
-      ? `Rettangolo arancione: obiettivo 2030 di potenza rinnovabile aggiuntiva rispetto al 2020 (${D().obiettivi_fonte}); linea nera: obiettivo del ${st.anno}; colonna colorata: potenza rinnovabile in più rispetto al 2020 per fonte, solo le parti positive (${D().fer.map((id) => voci("capacita").find((v) => v.id === id).nome.toLowerCase()).join(", ")}), stima EuGEnio dalla potenza efficiente lorda di Terna.`
+      ? `${st.obiettivoSu ? `Rettangolo arancione (${D().regioni.find((r) => r.cod === st.obiettivoSu).nome}): ` : "Rettangolo arancione (solo sulla regione indicata col mouse): "}obiettivo 2030 di potenza rinnovabile aggiuntiva rispetto al 2020 (${D().obiettivi_fonte}); linea nera: obiettivo del ${st.anno}; colonna colorata: potenza rinnovabile in più rispetto al 2020 per fonte, solo le parti positive (${D().fer.map((id) => voci("capacita").find((v) => v.id === id).nome.toLowerCase()).join(", ")}), stima EuGEnio dalla potenza efficiente lorda di Terna.`
       : `Barre (${unita(g)}), da sinistra: ${voci(g).map((v) => v.nome.toLowerCase()).join(", ")}; scala comune a ${st.regione ? "tutte le province della regione" : "tutte le regioni"} e a tutti gli anni.`;
     const righe = [leg, `Dati: ${D().fonte}.`, ...ro, C.ATTRIBUZIONE];
     const nome = `elettricita_${st.modo}_${st.anno}_${nomeReg.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;

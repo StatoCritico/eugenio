@@ -186,7 +186,8 @@ def _immagine(pg, id_):
 
 
 def test_istogrammi_doppi(browser, base, dati):
-    """(21/11/2026, Paolo) istogrammi, barre del burden sharing e anelli grandi il doppio di prima."""
+    """(21/11/2026, Paolo) istogrammi e colonne del burden sharing grandi il doppio di prima; (22/11/2026) anelli delle
+    emissioni più piccoli, che non si sovrappongono né fra le regioni né fra le province."""
     pg, errori = _pagina(browser, base, dati)
     assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.DOPPIO") == 2
     n = pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.it.voci.capacita.length")
@@ -194,9 +195,20 @@ def test_istogrammi_doppi(browser, base, dati):
     pg.click('[data-modo="burden"]'); pg.wait_for_timeout(1200)
     assert _immagine(pg, "el-08") == [2 * 24, 2 * 74]                    # colonna verticale: 24 × 74 px, ora il doppio
     pg.click('[data-modo="emissioni"]'); pg.wait_for_timeout(1200)
-    w = _immagine(pg, "el-08")[0]
-    assert w >= 2 * (2 * 13 + 4)                                         # anello minimo: raggio 13 px, ora 26
+    assert _immagine(pg, "el-08")[0] <= 2 * 21 + 8                       # raggio al più 21 px
+    assert _sovrapposti(pg) == []
+    pg.evaluate("() => window.EUGENIO_ELETTRICITA.scegliRegione('08')")
+    pg.wait_for_function("() => document.getElementById('titolo-vista').textContent === 'Emilia-Romagna'", timeout=10000)
+    pg.wait_for_timeout(1500)
+    assert len(pg.evaluate("() => window.EUGENIO_ELETTRICITA.cerchi()")) >= 1 and _sovrapposti(pg) == []
     assert errori == []
+
+
+def _sovrapposti(pg):
+    return pg.evaluate("""() => { const c = window.EUGENIO_ELETTRICITA.cerchi(), out = [];
+      for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++)
+        if (Math.hypot(c[i].x - c[j].x, c[i].y - c[j].y) < c[i].r + c[j].r) out.push(c[i].nome + '/' + c[j].nome);
+      return out; }""")
 
 
 def test_burden_suggerimento_obiettivo(browser, base, dati):
@@ -213,14 +225,22 @@ def test_burden_suggerimento_obiettivo(browser, base, dati):
     tocca = pg.evaluate("""([x, y]) => { const m = window.EUGENIO_ELETTRICITA.stato.mappa, b = m.getCanvas().getBoundingClientRect();
       return m.queryRenderedFeatures([x - b.x, y - b.y], { layers: ['el-barre'] }).map((f) => f.properties.cod); }""", xy)
     assert tocca == ["08"]
+    # (22/11/2026) prima del mouse nessun rettangolo dell'obiettivo; sulla regione compare solo il suo
+    assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.obiettivoSu") is None
     pg.mouse.move(*xy)
     pg.wait_for_timeout(500)
+    assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.obiettivoSu") == "08"
+    assert pg.evaluate("""() => { const m = window.EUGENIO_ELETTRICITA.stato.mappa; return m.getFilter('el-obiettivi'); }""") == ["==", ["get", "cod"], "08"]
+    assert _immagine(pg, "el-08-ob") == _immagine(pg, "el-08")          # stessa misura: la colonna non si sposta
     et = pg.locator("#mappa-elettricita .etichetta-mappa:not(.righello-etichetta)")
     assert et.is_visible()
     testo = et.inner_text()
     righe = testo.split("\n")
     assert righe[0] == "Emilia-Romagna – 2021" and righe[1] == "Obiettivo 2030: 6.330 MW", righe
     assert re.match(r"Raggiunto: \d+ % \([\d.]+ MW in più dal 2020\)$", righe[2]) and re.match(r"Mancano: [\d.]+ MW$", righe[3]), righe
+    # mouse fuori dalla mappa: il rettangolo sparisce
+    pg.mouse.move(5, 5); pg.wait_for_timeout(300)
+    assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.obiettivoSu") is None
     # grafico a destra: riquadro dell'anno scelto, in alto (sopra le barre)
     svg = pg.locator("#grafico-andamento svg[role=img]")
     svg.scroll_into_view_if_needed()
@@ -240,3 +260,26 @@ def test_burden_suggerimento_obiettivo(browser, base, dati):
     pg.wait_for_timeout(1500)
     assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.barre") >= 1
     assert errori == []
+
+
+def test_burden_tocco(browser, base, dati):
+    """(22/11/2026) col dito: il primo tocco su una regione mostra il suo obiettivo, il secondo apre le province."""
+    ctx = browser.new_context(viewport={"width": 1400, "height": 950}, has_touch=True)
+    pg = ctx.new_page()
+    errori = []
+    pg.on("pageerror", lambda e: errori.append(str(e)))
+    pg.route("**/api/**", lambda r: r.fulfill(status=404, body="no"))
+    pg.route("**/dati/elettricita/**", lambda r: r.fulfill(path=str(dati / r.request.url.split("/dati/elettricita/")[1].split("?")[0])))
+    pg.goto(f"{base}/elettricita.html?vista=italia&modo=burden")
+    pg.wait_for_function("() => window.EUGENIO_ELETTRICITA && window.EUGENIO_ELETTRICITA.stato.pronto", timeout=20000)
+    pg.wait_for_timeout(1500)
+    xy = pg.evaluate("""() => { const S = window.EUGENIO_ELETTRICITA.stato, m = S.mappa, r = S.it.regioni.find((x) => x.cod === '08');
+      const q = m.project([r.lon + 0.3, r.lat - 0.2]), b = m.getCanvas().getBoundingClientRect(); return [q.x + b.x, q.y + b.y]; }""")
+    pg.touchscreen.tap(*xy)
+    pg.wait_for_timeout(600)
+    assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.obiettivoSu") == "08"
+    assert pg.locator("#titolo-vista").inner_text() == "Italia"
+    pg.touchscreen.tap(*xy)
+    pg.wait_for_function("() => document.getElementById('titolo-vista').textContent === 'Emilia-Romagna'", timeout=10000)
+    assert errori == []
+    ctx.close()
