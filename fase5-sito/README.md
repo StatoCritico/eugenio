@@ -232,10 +232,9 @@ divisione in due metà.
 - Fonti e licenze nel piè, sezione `metodo.html#carichi`, «Come leggere i grafici» in fondo alla pagina.
 - Prove: `tests/test_carichi_browser.py` (Playwright, dati inventati dalla fase 15).
 
-## Produzione e consumi di elettricità: grandezza «Emissioni» (21/11/2026, richiesta di Paolo; non ancora pubblicata)
+## Produzione e consumi di elettricità: grandezza «Emissioni» (21/11/2026, richiesta di Paolo; pubblicata con la versione 20261121b)
 
-Ramo `claude/2026-11-21-emissioni` (worktree `wt_emissioni`): nessun cambio di `?v=` né novità, li fa Paolo alla
-pubblicazione.
+Pubblicata nella release `v2026.11.21b` (voce delle novità del 21/11 b; procedura in `AGGIORNAMENTO_2026-11-21b.md`).
 - **Selettore**: pulsante «Emissioni» (`data-modo="emissioni"`, `?modo=emissioni` nell'indirizzo e nel collegamento
   salvabile). Si nasconde se `italia.json` non ha la parte `emissioni` (file costruiti prima del 21/11/2026). Anni: quelli
   di GrossVsCO2Emissions con la produzione (2000–2025).

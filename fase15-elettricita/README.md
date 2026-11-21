@@ -15,7 +15,7 @@ Prove: `cd fase15-elettricita && python -m pytest -q` (solo dati inventati, nien
 
 ## Produzione e consumi di elettricità (`terna_dc.py`, `costruisci.py`)
 
-Stato al 21/11/2026: scaricatore e costruttore funzionanti (grandezza «Emissioni» nel ramo `claude/2026-11-21-emissioni`, non ancora pubblicata); pagina «Produzione e consumi di elettricità»
+Stato al 21/11/2026: scaricatore e costruttore funzionanti (grandezza «Emissioni» pubblicata con la versione del sito 20261121b, release `v2026.11.21b`); pagina «Produzione e consumi di elettricità»
 (`fase5-sito/sito/elettricita.html`, `elettricita.js`) pubblicata il 21/11/2026 (`?v=20261121a`, sperimentale), come «Carichi elettrici».
 
 I dati di Terna **non vanno nel repository** e **non si scaricano dal sito** (decisione di Paolo): la cartella
@@ -36,7 +36,7 @@ rm -rf ../fase5-sito/sito/dati/elettricita && cp -r /tmp/el ../fase5-sito/sito/d
 python3 -m pytest -q      # prove (niente rete)
 ```
 
-### Grandezza «Emissioni» (21/11/2026, richiesta di Paolo; ramo `claude/2026-11-21-emissioni`, non ancora pubblicata)
+### Grandezza «Emissioni» (21/11/2026, richiesta di Paolo; pubblicata con la versione 20261121b)
 
 `costruisci.py` legge `GrossVsCO2Emissions` (`leggi_emissioni`) e scrive in `italia.json`:
 - per regione `emissioni[anno] = [[GWh × 5], [kt CO2 × 5], [tep × 5]]` per combustibile (`EMISSIONI_VOCI`: gas, solidi,
