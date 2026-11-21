@@ -200,6 +200,7 @@
     else messaggio("messaggio-mappa", "");
     m.getSource("el-barre").setData({ type: "FeatureCollection", features });
     st.barre = features.length;
+    st.anelli = features.filter((f) => f.properties.anello).length;   // per le prove
     m.setLayoutProperty("el-barre", "icon-anchor", modo === "burden" || modo === "emissioni" || neg ? "center" : "bottom");
     legenda();
     chiudiAttribuzione();
