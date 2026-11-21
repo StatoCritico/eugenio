@@ -172,7 +172,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `dati-per-email.html`, `contatti.html` | dati_per_email.js, contatti.js | c (moduli) | niente: moduli con email e dati personali, non simulazioni |
 | `faq.html`, `metodo.html`, `licenza.html`, `privacy.html`, `sitografia.html`, `mirror.html`, `novita.html`, `esempi.html`, `contributi.html`, `dbtr-istruzioni.html`, `fv-leed.html`, `link.html` | – | c (testo) | niente |
 | `cog-car.html`, `cog-confronto.html`, `cog-rischio.html`, `cog-simulazione.html`, `cog-spark-spread.html`, `edificio-conto-termico.html`, `edificio-ecobonus.html`, `edificio-fabbisogno.html`, `edificio-impianti.html`, `edificio-involucro.html`, `fv-mercato.html`, `lidar.html`, `visure.html` | – | c (segnaposto) | niente (da aggiungere quando diventano pagine con scelte) |
-| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026) |
+| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026; dal 21/11/2026 `passo` solo con le ore, `passo=60`) |
 
 - Moduli comuni toccati: `strati_gl.js` (caselle particelle e contorni con `data-collegamento`), `scelta_aria.js` (anni e
   livello dall'indirizzo, più forti della memoria del browser), `gruppi_ore.js` (gruppi dall'indirizzo), `diagramma_aria.js`
@@ -209,8 +209,8 @@ divisione in due metà.
   Basilicata), Calabria, Sicilia, Sardegna.
 - **Periodo**: due date modificabili, predefinito gli ultimi 12 mesi fino all'ultimo dato; pulsante «Ultimi 12 mesi».
   **Passo**: casella «Quarti d'ora» (predefinita); senza, ore = media dei quarti d'ora dell'ora.
-- **Indirizzo**: `?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60` (`history.replaceState` a ogni scelta; senza
-  `zona` = Italia). Dopo l'unione (20/11/2026) la pagina carica `collegamento.js` e si registra con queste quattro chiavi
+- **Indirizzo**: `?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=60` (`history.replaceState` a ogni scelta; senza
+  `zona` = Italia, senza `passo` = quarti d'ora; i collegamenti vecchi con `passo=15` valgono ancora). Dopo l'unione (20/11/2026) la pagina carica `collegamento.js` e si registra con queste quattro chiavi
   (`regione: false`, `pronto` alla fine dell'avvio): riquadro «Collegamento a questa simulazione» in fondo alla pagina;
   prova in `test_collegamento_browser.py::test_carichi`.
 - **Grafici** (tutti con la freccina del riquadro): valori del periodo (energia, potenza massima e minima con l'istante,
@@ -228,9 +228,35 @@ divisione in due metà.
 - **Dati**: `dati/carichi/indice.json`, `carico_AAAA-MM.json`, `fonti_AAAA-MM.json`, costruiti dal worker con
   `fase15-elettricita/elettricita/carichi.py` (formato nel README della fase 15); si caricano solo i mesi del periodo.
   Fuori dal repository (`.gitignore`) e **non scaricabili** (decisione di Paolo): nessun CSV né JSON da scaricare.
-  Senza `indice.json` la pagina dice che i dati non ci sono ancora.
+  Senza `indice.json` (o senza mesi) la pagina dice che i dati non ci sono ancora e nasconde comandi, piccola mappa e
+  sezioni (dal 21/11/2026: niente titoli di sezioni vuote, resta solo il messaggio).
 - Fonti e licenze nel piè, sezione `metodo.html#carichi`, «Come leggere i grafici» in fondo alla pagina.
 - Prove: `tests/test_carichi_browser.py` (Playwright, dati inventati dalla fase 15).
+
+## Segnalazioni di Paolo sulla v2026.11.21 (21–22/11/2026, nella versione 20261121b, pull request #17)
+
+- **Elettricità, istogrammi doppi**: in `elettricita.js` `DOPPIO = 2` ingrandisce la tela di tutti i disegni sulla mappa
+  (barre di capacità, produzione, carichi, consumi; colonne del burden sharing; anelli delle emissioni): si disegna con
+  le misure di prima e la tela ha `PR × DOPPIO` pixel per unità, quindi resta nitida (non è `icon-size`).
+- **Burden sharing verticale** (00:05 del 22/11): come gli altri istogrammi, ancorato in basso sul punto della regione:
+  rettangolo **arancione vuoto** (`#f08a24`) alto quanto l'obiettivo 2030 della Tabella A, dentro la colonna delle
+  rinnovabili in più dal 2020 impilata per fonte (**solo le parti positive**: i negativi, per esempio le bioenergie
+  dismesse, stanno solo nel riquadretto), linea nera orizzontale dell'obiettivo dell'anno scelto, **linea di base** (lo
+  zero). Scala comune: l'obiettivo 2030 più grande fra le regioni (o le rinnovabili, se più alte). Province: solo la
+  colonna (non hanno obiettivi).
+- **Riquadretto dell'obiettivo**: sulla mappa (tutta l'immagine del simbolo, quindi anche la parte vuota del rettangolo)
+  le prime righe sono «Obiettivo 2030», «Raggiunto: x % (y MW in più dal 2020)» e «Mancano: z MW» (0 se raggiunto);
+  per una provincia sono quelli della sua regione (`verso2030()`). Le stesse righe nel riquadretto del grafico «anno per
+  anno» (anche sul riquadro arancione dell'anno scelto) e la colonna «Mancano al 2030 (MW)» nella tabella. Unità: MW,
+  come nel resto della pagina.
+- **Carichi elettrici**: «Quarti d'ora» acceso già nell'HTML; all'apertura le caselle Dal/al hanno gli ultimi 12 mesi
+  che finiscono all'ultimo giorno con i dati; il passo predefinito non va nell'indirizzo; senza dati solo il messaggio.
+- **Novità**: sotto il titolo di ogni voce, in piccolo, «21/11/2026 · versione 20261121b» (`p.novita-versione`,
+  `costruisci_pagine.py`). Cambia la decisione dell'08/11/2026 solo per la pagina: le ancore e il feed restano senza
+  versione (richiesta di Paolo: la procedura di pubblicazione dice di controllare la versione nelle Novità).
+- Prove: `test_elettricita_browser.py::test_istogrammi_doppi`, `::test_burden_suggerimento_obiettivo`;
+  `test_carichi_browser.py` (predefiniti, `passo=15` dei collegamenti vecchi, senza dati);
+  `test_collegamento_browser.py::test_carichi_predefiniti`; `test_costruisci_pagine.py::test_novita_versione_feed_e_menu`.
 
 ## Produzione e consumi di elettricità: grandezza «Emissioni» (21/11/2026, richiesta di Paolo; pubblicata con la versione 20261121b)
 
@@ -241,7 +267,7 @@ Pubblicata nella release `v2026.11.21b` (voce delle novità del 21/11 b; procedu
 - **Mappa**: in ogni regione (o provincia della regione scelta) un **anello** con la produzione lorda per fonte, colori di
   `VOCI["produzione"]`, disegnato su canvas e aggiunto con `addImage` allo strato di simboli `el-barre` (finisce
   nell'immagine scaricata). Area = area minima + parte proporzionale alla produzione (raggio
-  `sqrt(r0² + (34² − r0²)·P/Pmax)`, r0 13 px per le regioni, 11 per le province; Pmax su tutte le unità e tutti gli
+  `sqrt(r0² + (34² − r0²)·P/Pmax)`, r0 13 px per le regioni, 11 per le province, tutto per `DOPPIO` = 2 dal 21/11/2026; Pmax su tutte le unità e tutti gli
   anni): proporzionale alla produzione, ma le regioni piccole restano leggibili. Nel buco il fattore medio della regione;
   per le province nessun testo (i fattori sono solo regionali).
 - **Pannello**: tre riquadri `.cifra` (`#riquadri-emissioni`, `data-cifra` tep/medio/termo) con i valori nazionali
@@ -1139,7 +1165,8 @@ in ODT. Sul server i due formati sono spenti (rispondono 410, variabile `REPORT_
   qui** (test con `index.html`, tag della release): pagina, feed, newsletter e testo della release mostrano solo data,
   titolo e gruppi; ancore e identificativi del feed per data (`#d20261107`, `#d20261107-2` per la seconda voce dello
   stesso giorno). Mai dati GME/EEX, fase 2 o `uni_privato`.
-- `python costruisci_pagine.py` genera `sito/novita.html` (pagina di testo con l'indice laterale per versione) e
+- `python costruisci_pagine.py` genera `sito/novita.html` (pagina di testo con l'indice laterale per versione; dal
+  21/11/2026 sotto ogni titolo, in piccolo, «gg/mm/aaaa · versione …») e
   `sito/novita.xml` (feed Atom con indirizzi assoluti); `--controlla` li confronta come le altre pagine. La testata ha
   «Novità» tra Mirror e Contattaci (computer e telefono) con `data-ultima` = versione dell'ultima voce; la testa comune ha
   il `<link rel="alternate" type="application/atom+xml">`; `aspetto.js` mette un pallino sul collegamento se l'ultima

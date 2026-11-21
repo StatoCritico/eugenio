@@ -55,7 +55,7 @@ Promemoria di cosa è stato fatto a mano; **non va rifatto**.
 ## Passi per questa release (v2026.11.21b)
 
 - **AS1** – Merge della [pull request #17](https://github.com/StatoCritico/eugenio/pull/17) su GitHub.
-- **AS2** – Release `v2026.11.21b` ([collegamento della release](https://github.com/StatoCritico/eugenio/releases/new?tag=v2026.11.21b&target=main&title=v2026.11.21b+%E2%80%93+Elettricit%C3%A0%3A+emissioni+ed+energia+primaria+per+regione&body=%2A%2AElettricit%C3%A0%3A+emissioni+ed+energia+primaria+per+regione%2A%2A+%2821%2F11%2F2026%2C+versione+20261121b%29%0A%0AMigliorato%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+nuova+scelta+%C2%ABEmissioni%C2%BB%3A+anelli+con+la+produzione+per+fonte+in+ogni+regione+e+provincia.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABEmissioni%C2%BB%3A+il+fattore+di+emissione+medio+e+quello+del+termoelettrico%2C+e+l%27energia+primaria+del+termoelettrico%2C+per+regione%2C+per+zona+di+mercato+e+per+l%27Italia%2C+anno+per+anno+dal+2000.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABEmissioni%C2%BB%3A+il+confronto+con+i+valori+di+ISPRA+e+con+il+coefficiente+di+0%2C187+tep%2FMWh.%0A%0APagina%3A+https%3A%2F%2Feugenio.statocritico.it%2Felettricita.html%3Fmodo%3Demissioni)), con il testo della voce delle novità del 21/11 b.
+- **AS2** – Release `v2026.11.21b` ([collegamento della release](https://github.com/StatoCritico/eugenio/releases/new?tag=v2026.11.21b&target=main&title=v2026.11.21b+%E2%80%93+Elettricit%C3%A0%3A+emissioni+ed+energia+primaria+per+regione&body=%2A%2AElettricit%C3%A0%3A+emissioni+ed+energia+primaria+per+regione%2A%2A+%2821%2F11%2F2026%2C+versione+20261121b%29%0A%0AMigliorato%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+nuova+scelta+%C2%ABEmissioni%C2%BB%3A+anelli+con+la+produzione+per+fonte+in+ogni+regione+e+provincia.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABEmissioni%C2%BB%3A+il+fattore+di+emissione+medio+e+quello+del+termoelettrico%2C+e+l%27energia+primaria+del+termoelettrico%2C+per+regione%2C+per+zona+di+mercato+e+per+l%27Italia%2C+anno+per+anno+dal+2000.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABEmissioni%C2%BB%3A+il+confronto+con+i+valori+di+ISPRA+e+con+il+coefficiente+di+0%2C187+tep%2FMWh.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%3A+gli+istogrammi+e+gli+anelli+sulla+mappa+sono+grandi+il+doppio.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABBurden+sharing%C2%BB%3A+colonne+verticali+come+nelle+altre+scelte%2C+con+il+rettangolo+arancione+dell%27obiettivo+2030%2C+la+linea+dell%27obiettivo+dell%27anno+e+la+linea+di+base%3B+passando+sopra+il+rettangolo%2C+anche+dove+%C3%A8+vuoto%2C+compaiono+l%27obiettivo+2030+della+regione%2C+la+percentuale+raggiunta+e+i+MW+che+mancano.+Gli+stessi+valori+sono+nel+grafico+e+nella+tabella.%0A-+Statistiche+%E2%80%BA+Carichi+elettrici%3A+si+apre+sull%27ultimo+anno+con+i+dati%2C+a+quarti+d%27ora%2C+con+le+date+gi%C3%A0+scritte%3B+se+i+dati+non+ci+sono+ancora%2C+compare+solo+il+messaggio%2C+senza+sezioni+vuote.%0A-+Novit%C3%A0%3A+accanto+alla+data+di+ogni+voce+c%27%C3%A8+il+numero+di+versione+del+sito.%0A%0APagine%3A+https%3A%2F%2Feugenio.statocritico.it%2Felettricita.html%3Fmodo%3Demissioni+%C2%B7+https%3A%2F%2Feugenio.statocritico.it%2Fcarichi.html)), con il testo della voce delle novità del 21/11 b.
 - **AS3** – Installazione con lo **script nuovo preso dal clone** (lo script installato in `~/energia` è ancora quello
   vecchio; vedi la sezione «Quando questa correzione sarà in una release» più sotto):
   ```bash
@@ -84,7 +84,20 @@ Promemoria di cosa è stato fatto a mano; **non va rifatto**.
 - **AS4** – Controllo nel browser: https://eugenio.statocritico.it/elettricita.html?modo=emissioni (se serve, ricarica
   forzata con Ctrl+F5): pulsante «Emissioni» acceso, anelli per fonte sulle regioni (e sulle province ingrandendo),
   riquadri con il fattore di emissione medio, quello del termoelettrico e l'energia primaria, confronto con ISPRA e con
-  0,187 tep/MWh; in fondo alla pagina «Novità» la voce del 21/11 b.
+  0,187 tep/MWh; in fondo alla pagina «Novità» la voce del 21/11 b. Poi (segnalazioni di Paolo del 21–22/11):
+  - in https://eugenio.statocritico.it/elettricita.html, scelta «Capacità»: istogrammi grandi il doppio di prima (barre
+    alte circa 140 px nella vista dell'Italia), con la linea di base sotto ogni gruppo; anche le altre scelte e gli
+    anelli di «Emissioni» sono il doppio;
+  - scelta «Burden sharing»: in ogni regione una colonna verticale, rettangolo arancione vuoto = obiettivo 2030, dentro
+    le rinnovabili in più dal 2020 impilate per fonte, linea nera = obiettivo dell'anno, linea di base; nessun pezzo
+    sotto la base. Passando il mouse nella parte vuota del rettangolo arancione compare il riquadretto con «Obiettivo
+    2030: … MW», «Raggiunto: … %» e «Mancano: … MW»; le stesse righe nel grafico a destra e la colonna «Mancano al 2030
+    (MW)» nella tabella;
+  - https://eugenio.statocritico.it/carichi.html: caselle Dal/al già compilate con gli ultimi 12 mesi fino all'ultimo
+    giorno con i dati, «Quarti d'ora» spuntato, nell'indirizzo niente `passo=`; se i dati di Terna non ci sono ancora,
+    solo il messaggio, senza titoli di sezioni vuote;
+  - https://eugenio.statocritico.it/novita.html: sotto il titolo della prima voce, in piccolo, «21/11/2026 · versione
+    20261121b».
 - **AS5** – Da qui in poi l'aggiornamento automatico notturno funziona con lo script nuovo (installato in `~/energia` dal
   passo AS3). Controlla che la riga ci sia ancora:
   ```bash

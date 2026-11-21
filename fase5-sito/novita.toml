@@ -29,7 +29,7 @@ migliorato = [
   "Statistiche › Produzione e consumi di elettricità, scelta «Emissioni»: il fattore di emissione medio e quello del termoelettrico, e l'energia primaria del termoelettrico, per regione, per zona di mercato e per l'Italia, anno per anno dal 2000.",
   "Statistiche › Produzione e consumi di elettricità, scelta «Emissioni»: il confronto con i valori di ISPRA e con il coefficiente di 0,187 tep/MWh.",
   "Statistiche › Produzione e consumi di elettricità: gli istogrammi e gli anelli sulla mappa sono grandi il doppio.",
-  "Statistiche › Produzione e consumi di elettricità, scelta «Burden sharing»: passando sopra la barra dell'obiettivo, anche dove è vuota, compaiono l'obiettivo 2030 della regione, la percentuale raggiunta e i MW che mancano; gli stessi valori sono nel grafico e nella tabella.",
+  "Statistiche › Produzione e consumi di elettricità, scelta «Burden sharing»: colonne verticali come nelle altre scelte, con il rettangolo arancione dell'obiettivo 2030, la linea dell'obiettivo dell'anno e la linea di base; passando sopra il rettangolo, anche dove è vuoto, compaiono l'obiettivo 2030 della regione, la percentuale raggiunta e i MW che mancano. Gli stessi valori sono nel grafico e nella tabella.",
   "Statistiche › Carichi elettrici: si apre sull'ultimo anno con i dati, a quarti d'ora, con le date già scritte; se i dati non ci sono ancora, compare solo il messaggio, senza sezioni vuote.",
   "Novità: accanto alla data di ogni voce c'è il numero di versione del sito.",
 ]
