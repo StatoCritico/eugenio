@@ -1431,6 +1431,28 @@ all'amministratore); sito in `/srv/energia/sito` (senza cancellare; `dati/indica
 `~/aggiorna_da_github.log`; un solo aggiornamento alla volta (`flock`). Lo script si riavvia da una copia temporanea, così
 può aggiornare anche se stesso.
 
+### Correzioni del 21/11/2026 (aggiornamento a v2026.11.21 fallito, `../AGGIORNAMENTO_2026-11-21b.md`)
+
+Il 21/11 alle 9:22 lo script di v2026.11.20d ha installato v2026.11.21 senza copiare `fase15-elettricita` (non la
+conosceva) e la build è fallita; il ritorno indietro ha poi fatto `rm -rf ~/energia` verso una copia che la pulizia aveva
+appena cancellato (`cp -a` conserva la data della cartella, e `ls -t` la vedeva come la più vecchia). Ora:
+
+| Punto | Comportamento |
+|---|---|
+| **Script della release** | dopo il checkout del tag nel clone, se `~/eugenio-git/fase4-server/aggiorna_da_github.sh` è diverso da quello in esecuzione, lo script **rilancia quello della release** (`exec`) con gli stessi argomenti e la release già scelta; `EUGENIO_RILANCIATO=1` impedisce un secondo rilancio. Ogni release si installa con la procedura provata insieme a lei (cartelle, esclusioni, controlli, passi nuovi), non solo con l'elenco delle cartelle aggiornato. Il rilancio avviene prima di qualunque copia o modifica. |
+| **Copia del `.env`** | prima di tutto, `~/energia/fase4-server/.env` va in `~/.eugenio_env_backup/env_AAAA-MM-GG` (cartella 700, file 600; se il file del giorno c'è già e il `.env` è diverso, `env_AAAA-MM-GG_HHMMSS`; se è uguale all'ultima copia, niente). Si tengono le ultime 10, in ordine di nome. Le copie fatte a mano con lo stesso nome (es. `env_2026-11-21` di Paolo) non si sovrascrivono mai. |
+| **Controlli iniziali** | se `~/energia` non ha `fase4-server/docker-compose.yml` o il `.env`, lo script si ferma senza toccare niente (avviso). La copia di sicurezza appena fatta deve avere gli stessi due file, altrimenti ci si ferma. |
+| **Copie di sicurezza** | dentro ogni copia `~/energia_prima_<release>` c'è il file `.eugenio_copia` (secondi, versione contenuta, release); la pulizia ordina su quello (le copie senza file, quelle di prima del 21/11, sono le più vecchie, in ordine di release) e tiene le ultime 3. **Mai** cancellate: la copia appena fatta e quelle della versione installata. Con `--forza` su una release che ha già la sua copia, quella non si sovrascrive: la nuova si chiama `~/energia_prima_<release>_<AAAAMMGG-HHMMSS>`. |
+| **Controllo dei `COPY`** | dopo la copia del codice e prima della build, ogni percorso dei `COPY` di `api/Dockerfile` (anche su più righe e con `*`) deve esistere in `~/energia`. Se manca qualcosa: messaggio con l'elenco, codice di prima rimesso dalla copia, **container non toccati**, avviso. Con `--prova` lo stesso controllo si fa sul codice della release e scrive solo «ATTENZIONE». |
+| **Ritorno indietro** | non fa mai `rm -rf ~/energia`. Controlla che la copia esista e abbia `docker-compose.yml` e il `.env`; la copia in `~/energia.ripristino_<data>`, sposta `~/energia` in `~/energia.fallita_<data>` (se ne tengono 3) e mette la copia al suo posto, poi rifà build e avvio. Se la copia manca o è incompleta **non tocca niente**: `~/energia` resta con il codice nuovo, i container di prima restano accesi, errore nel registro («ERRORE GRAVE») ed email. |
+
+Variabili in più per le prove: `EUGENIO_ENV_BACKUP` (`~/.eugenio_env_backup`), `EUGENIO_ATTESA` (5 secondi tra i
+controlli di `/api/salute`). Prove: `tests/test_aggiorna_da_github.py` (repository «origin» locale, `~/energia` finta,
+`docker` finto nel PATH; servono `bash`, `git`, `rsync`, `flock`).
+
+**Attenzione**: il rilancio lo fa solo uno script che lo conosce. Le release fino a v2026.11.21 hanno lo script vecchio:
+la prima volta lo script nuovo va lanciato **dal clone** (procedura in `../AGGIORNAMENTO_2026-11-21b.md`).
+
 **Cosa non fa**: i «passi a mano» delle procedure `AGGIORNAMENTO_*.md` cambiate tra le due release (righe nuove del
 `.env`, archivi grandi, crontab, servizi nuovi come `edifici`) li **elenca** alla fine e nel registro, non li esegue; i
 dati di terzi fuori da git (`mercati_energia/dati/`, `uni_privato`, fase 2) arrivano ancora dal PC. Le procedure nuove
