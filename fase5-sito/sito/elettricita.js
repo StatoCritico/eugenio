@@ -6,8 +6,9 @@
 // province; un secondo clic torna all'Italia. Sotto la mappa il selettore (capacità, produzione, richiesta, consumi,
 // burden sharing) e il cursore dell'anno. A destra il grafico cumulato (Italia o regione, anno per anno), le barre delle
 // province nell'anno scelto e la tabella dei valori con i totali.
-// Burden sharing: per ogni regione due barre orizzontali, l'obiettivo 2030 del DM 21/6/2024 (Tabella A, con il segno
-// dell'obiettivo dell'anno scelto) e la potenza rinnovabile in più rispetto al 2020, colorata per fonte.
+// Burden sharing (verticale dal 21/11/2026): per ogni regione la colonna dell'obiettivo 2030 del DM 21/6/2024 (Tabella A,
+// rettangolo arancione vuoto, con la linea dell'obiettivo dell'anno scelto) e dentro la potenza rinnovabile in più
+// rispetto al 2020, impilata per fonte; sotto la linea di base.
 // Dati: dati/elettricita/italia.json e RR.json (fase 15, costruiti dal worker con le statistiche di Terna).
 // Decisione di Paolo (20/11/2026): i dati non si scaricano; si scarica solo l'immagine della mappa (esporta_mappa.js).
 // Gli istogrammi sono immagini della mappa (addImage + strato di simboli), così finiscono anche nell'immagine scaricata.
@@ -91,7 +92,7 @@
     if (!ob30 || !ag) return null;
     return { ob30, netto: ag.netto, pct: 100 * ag.netto / ob30, mancano: Math.max(0, ob30 - ag.netto), di: r === x ? "" : ` (${r.nome})` };
   }
-  const righe2030 = (v) => [["#d9d9d9", `Obiettivo 2030${v.di}: ${num(v.ob30)} MW`],
+  const righe2030 = (v) => [[ARANCIO, `Obiettivo 2030${v.di}: ${num(v.ob30)} MW`],
     [null, `Raggiunto: ${num(v.pct)} % (${num(v.netto)} MW in più dal 2020)`], [null, `Mancano: ${num(v.mancano)} MW`]];
 
   // ------------------------------------------------------------------ istogrammi come immagini della mappa
@@ -117,17 +118,25 @@
     k.strokeStyle = "#222"; k.lineWidth = 1; k.beginPath(); k.moveTo(0, y0 + 0.5); k.lineTo(W, y0 + 0.5); k.stroke();
     return { c, ancora: neg ? [0, (Ht / 2 - y0) / Ht] : null };
   }
-  function barreBurden(parti, ob2030, obAnno, max, largo) {
-    const W = largo + 4, Ht = 18, [c, k] = tela(W, Ht), sc = (v) => Math.max(0, v) / max * largo;
-    // obiettivo 2030: barra grigia chiara con il bordo
-    k.fillStyle = "#d9d9d9"; k.fillRect(2, 2, sc(ob2030), 6);
-    k.strokeStyle = "#555"; k.lineWidth = 0.8; k.strokeRect(2.4, 2.4, Math.max(0, sc(ob2030) - 0.8), 5.2);
-    if (obAnno !== null) { k.fillStyle = "#111"; k.fillRect(2 + sc(obAnno) - 0.8, 0.5, 1.6, 9); }
-    // installato dal 2021, per fonte
-    let x = 2;
-    for (const p of parti) { if (p.v <= 0) continue; const w = sc(p.v); k.fillStyle = colore("capacita", p.id); k.fillRect(x, 10, w, 6); x += w; }
-    k.strokeStyle = "#333"; k.lineWidth = 0.6; k.strokeRect(2.3, 10.3, Math.max(0, x - 2.6), 5.4);
-    if (obAnno !== null) { k.fillStyle = "#111"; k.fillRect(2 + sc(obAnno) - 0.8, 9, 1.6, 8.5); }
+  // (21/11/2026 notte, Paolo) burden sharing verticale come gli altri istogrammi: colonna «obiettivo 2030» (rettangolo
+  // arancione vuoto, alto quanto l'obiettivo), dentro la colonna delle rinnovabili in più dal 2020 impilate per fonte
+  // (solo le parti positive: i valori negativi, per esempio le bioenergie dismesse, restano nel riquadretto) e il segno
+  // dell'obiettivo dell'anno scelto come linea orizzontale; sotto, la linea di base (lo zero). Le province non hanno
+  // obiettivi: solo la colonna delle rinnovabili.
+  const ARANCIO = "#f08a24";
+  function barreBurden(parti, ob2030, obAnno, max, alto) {
+    const lo = st.regione ? 20 : 16, li = st.regione ? 12 : 10, W = lo + 8, Ht = alto + 4, y0 = alto + 2, x0 = 4;
+    const [c, k] = tela(W, Ht), sc = (v) => Math.max(0, v) / max * alto;
+    // rinnovabili in più dal 2020, impilate dal basso
+    let y = y0;
+    for (const p of parti) { if (!(p.v > 0)) continue; const hh = sc(p.v); k.fillStyle = colore("capacita", p.id); k.fillRect(x0 + (lo - li) / 2, y - hh, li, hh); y -= hh; }
+    if (y < y0) { k.strokeStyle = "rgba(0,0,0,0.55)"; k.lineWidth = 0.6; k.strokeRect(x0 + (lo - li) / 2 + 0.3, y + 0.3, li - 0.6, y0 - y - 0.6); }
+    // obiettivo 2030: rettangolo arancione vuoto
+    if (ob2030 > 0) { const hh = sc(ob2030); k.strokeStyle = ARANCIO; k.lineWidth = 1.6; k.strokeRect(x0 + 0.8, y0 - hh + 0.8, lo - 1.6, hh - 0.8); }
+    // obiettivo dell'anno scelto: linea orizzontale scura, un po' più larga della colonna
+    if (obAnno !== null && obAnno > 0) { k.fillStyle = "#111"; k.fillRect(x0 - 3, y0 - sc(obAnno) - 0.8, lo + 6, 1.6); }
+    // base (lo zero)
+    k.strokeStyle = "#222"; k.lineWidth = 1; k.beginPath(); k.moveTo(0, y0 + 0.5); k.lineTo(W, y0 + 0.5); k.stroke();
     return { c };
   }
   // anello (torta con il buco): produzione per fonte, in senso orario da mezzogiorno; nel buco un testo (fattore medio)
@@ -194,7 +203,7 @@
       let dis = null;
       if (modo === "burden") {
         const ag = aggiunta(x, a);
-        if (ag) dis = barreBurden(ag.parti, x.obiettivi ? x.obiettivi[x.obiettivi.length - 1] : 0, obiettivo(x, a), max, st.regione ? 110 : 80);
+        if (ag) dis = barreBurden(ag.parti, x.obiettivi ? x.obiettivi[x.obiettivi.length - 1] : 0, obiettivo(x, a), max, alto);
       } else if (modo === "emissioni") {
         const v = valori(x, g, a), ind = st.regione ? null : indicatoriDi(x, a);
         if (v && somma(v.filter((y) => y > 0)) > 0) dis = anello(v, voci(g).map((q) => q.colore), raggio(somma(v.filter((y) => y > 0)), max),
@@ -214,7 +223,7 @@
     m.getSource("el-barre").setData({ type: "FeatureCollection", features });
     st.barre = features.length;
     st.anelli = features.filter((f) => f.properties.anello).length;   // per le prove
-    m.setLayoutProperty("el-barre", "icon-anchor", modo === "burden" || modo === "emissioni" || neg ? "center" : "bottom");
+    m.setLayoutProperty("el-barre", "icon-anchor", modo === "emissioni" || neg ? "center" : "bottom");
     legenda();
     chiudiAttribuzione();
   }
@@ -412,10 +421,11 @@
     const L = $("legenda-elettricita"); if (!L || !D()) return;
     L.innerHTML = "";
     if (st.modo === "burden") {
-      voceLegenda(L, "#d9d9d9", "obiettivo 2030 (DM 21/6/2024, Tabella A)", true);
-      voceLegenda(L, "#111", `segno: obiettivo del ${st.anno}`);
+      const sp = h("span"), i = h("i"); i.style.background = "transparent"; i.style.outline = `2px solid ${ARANCIO}`; i.style.outlineOffset = "-2px";
+      sp.append(i, "obiettivo 2030 (DM 21/6/2024, Tabella A)"); L.appendChild(sp);
+      voceLegenda(L, "#111", `linea: obiettivo del ${st.anno}`);
       D().fer.forEach((id) => voceLegenda(L, colore("capacita", id), `${voci("capacita").find((v) => v.id === id).nome} in più dal 2020`));
-      L.appendChild(h("span", "legenda-nota", "Barre in scala con l'obiettivo 2030 più grande. La potenza in più è una stima: variazione della potenza efficiente lorda rinnovabile di Terna rispetto al 2020."));
+      L.appendChild(h("span", "legenda-nota", "Colonne in scala con l'obiettivo 2030 più grande, sopra la linea di base; i valori negativi (potenza dismessa) non si disegnano ma sono nel riquadretto. La potenza in più è una stima: variazione della potenza efficiente lorda rinnovabile di Terna rispetto al 2020."));
       return;
     }
     const g = MODI[st.modo].grandezza;
@@ -435,7 +445,7 @@
     const leg = st.modo === "emissioni"
       ? `Anelli: produzione lorda per fonte (${voci(g).map((v) => v.nome.toLowerCase()).join(", ")}); l'area cresce in proporzione alla produzione, con un anello minimo; ${st.regione ? "fattori di emissione solo regionali" : "nel buco il fattore di emissione medio della regione (tCO₂/MWh: emissioni di CO₂ del termoelettrico / produzione lorda senza pompaggi e accumuli)"}.`
       : st.modo === "burden"
-      ? `Barra grigia: obiettivo 2030 di potenza rinnovabile aggiuntiva rispetto al 2020 (${D().obiettivi_fonte}); segno nero: obiettivo del ${st.anno}; barra colorata: potenza rinnovabile in più rispetto al 2020 per fonte (${D().fer.map((id) => voci("capacita").find((v) => v.id === id).nome.toLowerCase()).join(", ")}), stima EuGEnio dalla potenza efficiente lorda di Terna.`
+      ? `Rettangolo arancione: obiettivo 2030 di potenza rinnovabile aggiuntiva rispetto al 2020 (${D().obiettivi_fonte}); linea nera: obiettivo del ${st.anno}; colonna colorata: potenza rinnovabile in più rispetto al 2020 per fonte, solo le parti positive (${D().fer.map((id) => voci("capacita").find((v) => v.id === id).nome.toLowerCase()).join(", ")}), stima EuGEnio dalla potenza efficiente lorda di Terna.`
       : `Barre (${unita(g)}), da sinistra: ${voci(g).map((v) => v.nome.toLowerCase()).join(", ")}; scala comune a ${st.regione ? "tutte le province della regione" : "tutte le regioni"} e a tutti gli anni.`;
     const righe = [leg, `Dati: ${D().fonte}.`, ...ro, C.ATTRIBUZIONE];
     const nome = `elettricita_${st.modo}_${st.anno}_${nomeReg.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;

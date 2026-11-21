@@ -719,6 +719,27 @@ def test_carichi(browser, base, dati_carichi):
     _stretta(browser, link, "carichi", rotte)
 
 
+def test_carichi_predefiniti(browser, base, dati_carichi):
+    """(21/11/2026, Paolo) all'apertura ultimi 12 mesi e quarti d'ora; il predefinito «quarti d'ora» non va
+    nell'indirizzo né nel collegamento, e il collegamento riapre lo stesso periodo a quarti d'ora."""
+    rotte = [("**/dati/carichi/**", lambda r: r.fulfill(path=str(dati_carichi / r.request.url.split("/dati/carichi/")[1].split("?")[0])))]
+    pronta = "() => document.getElementById('stato-carichi').textContent.startsWith('Dati')"
+    ctx, pg, errori = _apri(browser, base + "carichi.html", rotte=rotte)
+    pg.wait_for_function(pronta, timeout=20000)
+    assert pg.is_checked("#carichi-quarti")
+    assert pg.input_value("#carichi-da") == "2026-09-01" and pg.input_value("#carichi-a") == "2026-10-31"
+    pg.wait_for_timeout(1000)
+    link = _collegamento(pg)
+    assert "passo=" not in link and "da=2026-09-01" in link and "a=2026-10-31" in link, link
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=rotte)
+    pg.wait_for_function(pronta, timeout=20000)
+    assert pg.is_checked("#carichi-quarti") and pg.evaluate("() => window.EUGENIO_CARICHI.stato.passo") == 15
+    assert pg.input_value("#carichi-da") == "2026-09-01" and pg.input_value("#carichi-a") == "2026-10-31"
+    ctx.close()
+    assert not errori and not errori2
+
+
 # ---------------------------------------------------------------------------------------------- Comunità energetiche (con file)
 def test_edificio_cer(browser, base):
     pronta = "() => window.EUGENIO_CER_SEDI && window.EUGENIO_CER_SEDI.st.pronto"

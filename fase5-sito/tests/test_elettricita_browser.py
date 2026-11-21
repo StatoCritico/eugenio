@@ -177,3 +177,66 @@ def test_emissioni_telefono(browser, base, dati):
     assert pg.evaluate("document.documentElement.scrollWidth") <= 376
     assert pg.locator("#riquadri-emissioni .cifra").count() == 3
     assert errori == []
+
+
+def _immagine(pg, id_):
+    """Misura sulla mappa (px CSS) dell'immagine di un istogramma o di un anello."""
+    return pg.evaluate(f"""() => {{ const i = window.EUGENIO_ELETTRICITA.stato.mappa.getImage('{id_}');
+      return i ? [i.data.width / i.pixelRatio, i.data.height / i.pixelRatio] : null; }}""")
+
+
+def test_istogrammi_doppi(browser, base, dati):
+    """(21/11/2026, Paolo) istogrammi, barre del burden sharing e anelli grandi il doppio di prima."""
+    pg, errori = _pagina(browser, base, dati)
+    assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.DOPPIO") == 2
+    n = pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.it.voci.capacita.length")
+    assert _immagine(pg, "el-08") == [2 * (n * 7 + 3), 2 * 72]          # prima: barre larghe 6 px, alte 70 px
+    pg.click('[data-modo="burden"]'); pg.wait_for_timeout(1200)
+    assert _immagine(pg, "el-08") == [2 * 24, 2 * 74]                    # colonna verticale: 24 × 74 px, ora il doppio
+    pg.click('[data-modo="emissioni"]'); pg.wait_for_timeout(1200)
+    w = _immagine(pg, "el-08")[0]
+    assert w >= 2 * (2 * 13 + 4)                                         # anello minimo: raggio 13 px, ora 26
+    assert errori == []
+
+
+def test_burden_suggerimento_obiettivo(browser, base, dati):
+    """(21/11/2026, Paolo) burden sharing verticale: col mouse sulla parte vuota del rettangolo arancione dell'obiettivo
+    2030 (sopra la potenza già installata) compaiono obiettivo 2030 della regione, percentuale raggiunta e MW che mancano; gli stessi valori nel
+    grafico a destra (anche sul riquadro dell'anno scelto) e nella tabella."""
+    pg, errori = _pagina(browser, base, dati, query="vista=italia&modo=burden")
+    # punto al 90 % dell'altezza del rettangolo dell'obiettivo 2030 dell'Emilia-Romagna, sopra la potenza installata
+    # (scala: obiettivo 2030 più grande fra le regioni = 70 px, ora 140; base 4 px sopra il punto della regione)
+    xy = pg.evaluate("""() => { const S = window.EUGENIO_ELETTRICITA.stato, m = S.mappa, r = S.it.regioni.find((x) => x.cod === '08');
+      const mx = Math.max(...S.it.regioni.filter((x) => x.obiettivi).map((x) => x.obiettivi[x.obiettivi.length - 1]));
+      const q = m.project([r.lon, r.lat]), b = m.getCanvas().getBoundingClientRect();
+      return [q.x + b.x, q.y + b.y - 4 - 0.9 * 140 * 6330 / mx]; }""")
+    tocca = pg.evaluate("""([x, y]) => { const m = window.EUGENIO_ELETTRICITA.stato.mappa, b = m.getCanvas().getBoundingClientRect();
+      return m.queryRenderedFeatures([x - b.x, y - b.y], { layers: ['el-barre'] }).map((f) => f.properties.cod); }""", xy)
+    assert tocca == ["08"]
+    pg.mouse.move(*xy)
+    pg.wait_for_timeout(500)
+    et = pg.locator("#mappa-elettricita .etichetta-mappa:not(.righello-etichetta)")
+    assert et.is_visible()
+    testo = et.inner_text()
+    righe = testo.split("\n")
+    assert righe[0] == "Emilia-Romagna – 2021" and righe[1] == "Obiettivo 2030: 6.330 MW", righe
+    assert re.match(r"Raggiunto: \d+ % \([\d.]+ MW in più dal 2020\)$", righe[2]) and re.match(r"Mancano: [\d.]+ MW$", righe[3]), righe
+    # grafico a destra: riquadro dell'anno scelto, in alto (sopra le barre)
+    svg = pg.locator("#grafico-andamento svg[role=img]")
+    svg.scroll_into_view_if_needed()
+    r = pg.evaluate("""() => { const t = [...document.querySelectorAll('#grafico-andamento svg[role=img] rect')].find((x) => x.style.stroke);
+      const b = t.getBoundingClientRect(); return [b.x + b.width / 2, b.y + 12]; }""")
+    pg.mouse.move(*r)
+    pg.wait_for_timeout(300)
+    s = pg.locator(".grafico-suggerimento").first
+    assert s.is_visible() and s.inner_text().startswith("2021") and "Obiettivo 2030: 80.002 MW" in s.inner_text()
+    assert "Obiettivo 2030: " in s.inner_text() and "Mancano: " in s.inner_text() and "Raggiunto: " in s.inner_text()
+    # tabella: colonna dei MW che mancano al 2030
+    assert "obiettivo 2030" in pg.locator("#legenda-elettricita").inner_text() and "valori negativi" in pg.locator("#legenda-elettricita").inner_text()
+    assert "Mancano al 2030 (MW)" in pg.locator("#tabella-elettricita thead").inner_text()
+    # provincia: valori della sua regione
+    pg.evaluate("() => window.EUGENIO_ELETTRICITA.scegliRegione('08')")
+    pg.wait_for_function("() => document.getElementById('titolo-vista').textContent === 'Emilia-Romagna'", timeout=10000)
+    pg.wait_for_timeout(1500)
+    assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.barre") >= 1
+    assert errori == []
