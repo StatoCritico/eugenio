@@ -27,7 +27,7 @@
     return z;
   }
   const num = (x, dec = 0) => (x === null || x === undefined || Number.isNaN(x)) ? "—"
-    : Number(x).toLocaleString("it-IT", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    : EUGENIO_NUMERI.formato(x, dec);
   const segno = (x, dec = 0) => (x === null || x === undefined) ? "—" : `${x > 0 ? "+" : ""}${num(x, dec)}`;
   function el(tag, attrs = {}, parent) {
     const e = document.createElementNS(NS, tag);

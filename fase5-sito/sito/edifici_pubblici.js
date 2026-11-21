@@ -29,7 +29,7 @@
   const colore = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
   function h(tag, cls, t) { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; }
   function messaggio(id, t, errore = false) { const m = $(id); if (!m) return; m.textContent = t; m.classList.toggle("errore", errore); }
-  const num = (v, dec = 0) => (v === undefined || v === null || v === "" ? "" : Number(v).toLocaleString("it-IT", { maximumFractionDigits: dec }));
+  const num = (v, dec = 0) => (v === undefined || v === null || v === "" ? "" : EUGENIO_NUMERI.formato(v, dec, 0, ""));
   const copre = (f, [lon, lat]) => !Array.isArray(f.riquadro) || (lon >= f.riquadro[0] && lon <= f.riquadro[2] && lat >= f.riquadro[1] && lat <= f.riquadro[3]);
 
   // ------------------------------------------------------------------ filtri delle tessere
@@ -176,7 +176,7 @@
       if (!r.ok) throw new Error(r.status === 503 ? "dati non ancora sul server" : r.status === 429 ? "troppe richieste: riprova tra poco" : r.status === 400 ? "ricerca non valida" : `errore ${r.status}`);
       const d = await r.json();
       if (!d.risultati.length) { messaggio("messaggio-cerca", "Nessun immobile trovato: prova con meno parole o con parole diverse."); return; }
-      messaggio("messaggio-cerca", `${d.risultati.length}${d.altri ? " (e altri: aggiungi parole per restringere)" : ""} risultati: un clic porta la mappa sull'immobile e apre la scheda.`);
+      messaggio("messaggio-cerca", `${EUGENIO_NUMERI.formato(d.risultati.length)}${d.altri ? " (e altri: aggiungi parole per restringere)" : ""} risultati: un clic porta la mappa sull'immobile e apre la scheda.`);
       d.risultati.forEach((b) => {
         const li = h("li"), bt = h("button", "risultato-pubblico");
         bt.type = "button";
@@ -365,7 +365,38 @@
     if (window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-pubblici"), m, opzioniImmagine, $("messaggio-immagine"));
     if (q.get("ref")) apri(q.get("ref").toUpperCase(), !conPunto);
     else if (/^\d+$/.test(q.get("bene") || "")) apri(`b${q.get("bene")}`, !conPunto);
-  })();
+  })().finally(() => {
+    stato.pronto = true;
+    if (stato.mappa && window.EUGENIO_COLLEGAMENTO) stato.mappa.on("moveend", () => window.EUGENIO_COLLEGAMENTO.aggiorna());
+  });
+
+  // collegamento a questa simulazione (20/11/2026): vista (lat, lon, z) e scheda aperta (ref o bene: la scrive già apri())
+  // le legge la pagina all'apertura; qui anche tipi e gruppi di enti accesi (codici, vuoto = nessuno; tutti = parametro
+  // assente); ortofoto, fonte, particelle e contorni sono controlli data-collegamento
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    regione: false,
+    chiavi: ["lat", "lon", "z", "tipi", "enti"],
+    pronto: () => stato.pronto,
+    leggi() {
+      const m = stato.mappa;
+      if (!m || !stato.pronto) return null;
+      const c = m.getCenter(), tutti = [...$("gruppi-pubblici").querySelectorAll("input")];
+      const accesi = (box) => [...box.querySelectorAll("input:checked")].map((x) => x.value).join(",");
+      return { lat: c.lat.toFixed(6), lon: c.lng.toFixed(6), z: m.getZoom().toFixed(2),
+        tipi: stato.tipi.size === 3 ? null : accesi($("tipi-pubblici")) || "nessuno",
+        enti: tutti.every((x) => x.checked) ? null : accesi($("gruppi-pubblici")) || "nessuno" };
+    },
+    applica(p) {
+      const metti = (box, v) => {
+        if (v === null) return;
+        const si = new Set(v.split(","));
+        box.querySelectorAll("input[type=checkbox]").forEach((x) => { x.checked = si.has(x.value); });
+        box.dispatchEvent(new Event("change", { bubbles: true }));
+      };
+      metti($("tipi-pubblici"), p.get("tipi"));
+      metti($("gruppi-pubblici"), p.get("enti"));
+    },
+  });
 
   $("cerca-pubblici").addEventListener("submit", cerca);
   if (window.EUGENIO_CERCA) {

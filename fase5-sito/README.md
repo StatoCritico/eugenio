@@ -92,6 +92,8 @@ sito/
                     (unico indirizzo del servizio nel sito), CSV/PDF/Excel/ODS (sezione «Rete elettrica» qui sotto)
   edificio-cer.html Fotovoltaico › Comunità energetiche (in lavorazione): cer_sedi.js (sedi, aree convenzionali del GSE
                     dal vivo, cabine del comune, mappa) e analisi_pubbliche.js (energia condivisa)
+  collegamento.js   «Collegamento a questa simulazione» (20/11/2026): scelte della pagina nella query string, riquadro con
+                    l'indirizzo e «Copia» in fondo al pannello; inventario delle pagine qui sotto, regole in README_stile.md
 costruisci_dpr412.py  rigenera dati/dpr412.* (Normattiva + elenchi ISTAT di comuni, soppressi e variazioni)
 abbinamento_dpr412.md scelte e casi dell'abbinamento al codice ISTAT attuale (refusi, fusioni, cambi di nome)
 costruisci_mappa.py  genera dati/mappa/ dai confini Gramscii (versione bloccata) e da comuni.parquet nazionale
@@ -106,6 +108,129 @@ Menu di tutte le pagine (il gruppo Patrimonio si chiama Territorio dal 17/11/202
 di listmonk). Piede: Contattaci · Licenza. Le pagine di testo (`.articolo`) occupano tutta la larghezza dello schermo
 (27/10/2026). ANNCSU (anncsu.open.agenziaentrate.gov.it), Agenzia delle Entrate, ISTAT e Zornade sono sempre
 collegati nel testo delle pagine (non nei titoli delle F.A.Q., dove il clic apre la risposta).
+
+## Numeri col punto delle migliaia ovunque (20/11/2026, richiesta di Paolo; `?v=20261121a`)
+
+Modulo comune `sito/numeri.js` (`window.EUGENIO_NUMERI.formato(v, decimali, minimi, vuoto)` e `raggruppa(testo)`), nella
+testa di ogni pagina (`parti/testa.html`, subito dopo `protezione.js`), nel worker del DB topografico (`dbtr_worker.js`,
+`importScripts`) e nella pagina interna degli edifici; in node lo caricano con `require("./numeri.js")` i moduli provati
+anche lì (`analisi_pubbliche.js`, `emissioni_cog.js`, `dbtr_lettore.js`, `aria_trasformazioni.js`). Usa
+`Intl.NumberFormat("it-IT", { useGrouping: "always" })` dove c'è, altrimenti il ripiego col punto messo a mano che avevano
+`carichi.js` ed `elettricita.js` (che ora usano il modulo). Lo usano al posto di `toLocaleString`/`toFixed` tutti gli
+script che mostrano numeri: `aggiungi_dbtr.js`, `analisi_pubbliche.js`, `app.js` (anche la scala dei gradi giorno e i kB
+del file), `cerca_luogo.js`, `clima_storico.js`, `cti_legge10.js`, `dati.js`, `dbtr_lettore.js`, `edifici_pubblici.js`,
+`edificio3d.js`, `emissioni_cog.js`, `esporta_mappa.js`, `importa_modello.js`, `indicatori.js`, `indici_prezzi.js`,
+`legge10.js`, `patrimonio.js`, `rete.js` (numeri, non le date), `righello.js`, `valori_sedi.js`, `visure_patrimonio.js`, i
+moduli del Trattamento aria, `carichi.js`, `elettricita.js`; anche i conteggi lunghi nei messaggi (righe, ore, corpi,
+sedi). Restano senza punto date, anni, codici, coordinate, indirizzi, campi modificabili e i numeri dei file CSV/Excel/ODS.
+Regola in `README_stile.md` («Numeri»); prova `test_costruisci_pagine.py::test_numeri_col_punto_delle_migliaia` (nessun
+`toLocaleString`/`Intl.NumberFormat` per i numeri negli script, modulo in ogni pagina, casi in node).
+
+## Collegamento a questa simulazione (20/11/2026, richiesta di Paolo; `?v=20261121a`)
+
+«Per tutte le pagine che non richiedono il caricamento di un file CSV ma funzionano tramite selezioni, si generi un
+collegamento che l'utente può salvare e reincollare nel browser per ripartire con la stessa simulazione, cioè con la stessa
+selezione, senza rifarla. In fondo alla pagina deve apparire il collegamento, con un pulsante per copiarlo negli appunti, che
+si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamente dallo stesso punto.»
+
+- Modulo comune `sito/collegamento.js` (`window.EUGENIO_COLLEGAMENTO`: `registra`, `aggiorna`, `quando`, `indirizzo`) e stile
+  `.collegamento-simulazione` in `stile.css`; regole e istruzioni per le pagine nuove in `sito/README_stile.md` § «Collegamento
+  a questa simulazione». Il riquadro sta in fondo al pannello di destra (in fondo all'articolo nelle pagine a una colonna;
+  in tutte e due prima di «Nello stesso gruppo», se c'è); lo script è incluso pagina per pagina, subito dopo `aspetto.js` (non nella testa comune:
+  le pagine di testo non lo caricano).
+- Lo stato è nella query string con nomi brevi in italiano, riscritto con `history.replaceState` a ogni modifica (350 ms di
+  ritardo); i parametri che le pagine usavano già restano quelli. All'apertura il modulo rimette i controlli
+  `data-collegamento` nell'ordine della pagina (aspettando i menu caricati dopo) e poi chiama `applica` delle registrazioni;
+  la regione nell'indirizzo vale più di quella ricordata dalla piccola mappa. Oltre 2.000 caratteri restano le scelte
+  principali, con un avviso. Mai file caricati, nomi o dati personali, segreti; niente al server.
+- Inventario delle pagine (`sito/*.html`). Classe **a** = a sole scelte, collegamento completo; **b** = con il caricamento
+  di un file: collegamento per le sole scelte che non dipendono dal file; **c** = pagina di testo, modulo o segnaposto:
+  niente collegamento.
+
+| Pagina | Script | Classe | Cosa va nell'indirizzo |
+|---|---|---|---|
+| `legge10.html` | legge10.js | a | regione, comune (già della pagina), anni |
+| `dati.html` | dati.js | a | regione, dataset (già), var, tip, tass, freq, dal, al, stagioni, fino, cop, area, prov, comuni (codici ISTAT, anche di altre regioni), capoluoghi, formato |
+| `indicatori.html` | indicatori.js | a | regione, ente (già), comp, componenti, anno |
+| `elettricita.html` | elettricita.js | a | regione o vista=italia, modo (già), anno, barre, fondo, ortofoto |
+| `rete-elettrica.html` | rete_elettrica.js | a | regione, comune (già), criticita, altri, cabine, interruzioni, ortofoto; prova=1 resta |
+| `ortofoto.html` | ortofoto.js | a | lat, lon, z, fonte (già), archivio, particelle, contorni (lo spostamento manuale della foto resta nella scheda) |
+| `edifici-pubblici.html` | edifici_pubblici.js | a | lat, lon, z, ref o bene (già), tipi, enti, ortofoto, fonte, particelle, contorni |
+| `aria-trasformazioni.html` | aria_trasformazioni.js | a | comune (già), anni, inverno, estate, diagramma, uta (dati e sequenze diversi dai predefiniti, JSON compatto) |
+| `aria-ore.html` | aria_ore.js | a | comune, anni, inverno, estate, diagramma, gruppi, nuvola, raggio, trasp, comfort, vedi_comfort, vedi_progetto, tabella (non le condizioni di progetto corrette a mano) |
+| `aria-latenti.html` | aria_latenti.js | a | comune, anni, inverno, estate, diagramma, obiettivo_estate, obiettivo_inverno, portata, riferimento, gruppi-estate, gruppi-inverno |
+| `aria-freecooling.html` | aria_freecooling.js | a | comune, anni, inverno, estate, diagramma, gruppi, tutti i campi dell'UTA (V, riferimento, quotaMinima, estateT…, epsS, epsL…), gruppo_diagramma (non le condizioni di progetto corrette a mano) |
+| `cog-emissioni.html` | emissioni_cog.js | a | modo, elettrica, calore, gas, unita_gas, potenza, ore, eta_e, eta_t, anno, rete, eta_caldaia, calcolato (il calcolo si rifà da solo) |
+| `edificio-clima.html` | analisi_pubbliche.js | a | istat (già), dal, base, pendenza |
+| `index.html` (Previsioni) | app.js | b | regione, comune, cosa, tipo, modalita, orizzonte, verifica, cov, calcolato (solo «Solo il clima»); il file dei consumi va ricaricato |
+| `indici-prezzi.html` | indici_prezzi.js | b | scelte (lotto e fascia di ogni indice), lotto_consip; il file dei consumi per fascia va ricaricato |
+| `fv-cabine.html` | fv_cabine.js | b | centro, punti (solo coordinate dei punti segnati o cercati), fonte scelta a mano, particelle, contorni; non i punti dell'elenco caricato |
+| `edificio-cer.html` | cer_sedi.js, analisi_pubbliche.js | b | centro, sedi (coordinate e cabina scelta a mano, non i nomi), fonte, aree_gse, particelle, contorni; non le sedi del file né il file orario |
+| `modelli3d.html`, `edificio-geometria.html`, `edificio-consumi.html`, `edificio-obblighi.html`, `fv-dlgs199.html`, `fv-irradiazione.html`, `fv-ombre.html`, `fv-producibilita.html`, `fv-pvgis.html` | edificio3d.js | b | edificio, lat, lon (edificio in 3D, altrimenti il punto in 2D; già letti all'apertura), archivio=demo resta, ortofoto, fonte, particelle, contorni, inclinazione, tetti, uso, dati dell'edificio (piani, superfici, anno), intervento, pubblico, giorno, ora, modulo_w, modulo_lati, fascia, vettore, unita, consumi (secondario), costo; niente con un modello importato, il DB topografico letto nel browser o una sede del Patrimonio |
+| `patrimonio.html` | patrimonio.js e altri | c (b senza scelte utili) | niente: tutto dipende dal file degli edifici (e dai file delle visure e dei valori); la regione è già in `?regione=` |
+| `importa-dxf-ifc.html`, `aggiungi-dbtr.html` | importa_modello.js, aggiungi_dbtr.js | c (solo file) | niente: senza il file non c'è niente da ripetere |
+| `dati-per-email.html`, `contatti.html` | dati_per_email.js, contatti.js | c (moduli) | niente: moduli con email e dati personali, non simulazioni |
+| `faq.html`, `metodo.html`, `licenza.html`, `privacy.html`, `sitografia.html`, `mirror.html`, `novita.html`, `esempi.html`, `contributi.html`, `dbtr-istruzioni.html`, `fv-leed.html`, `link.html` | – | c (testo) | niente |
+| `cog-car.html`, `cog-confronto.html`, `cog-rischio.html`, `cog-simulazione.html`, `cog-spark-spread.html`, `edificio-conto-termico.html`, `edificio-ecobonus.html`, `edificio-fabbisogno.html`, `edificio-impianti.html`, `edificio-involucro.html`, `fv-mercato.html`, `lidar.html`, `visure.html` | – | c (segnaposto) | niente (da aggiungere quando diventano pagine con scelte) |
+| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026) |
+
+- Moduli comuni toccati: `strati_gl.js` (caselle particelle e contorni con `data-collegamento`), `scelta_aria.js` (anni e
+  livello dall'indirizzo, più forti della memoria del browser), `gruppi_ore.js` (gruppi dall'indirizzo), `diagramma_aria.js`
+  (`diagramma=mollier`). In Ore di funzionamento gli anni del collegamento valgono come scelti a mano (non si alzano da soli).
+- Trovati con le prove a 375 px e corretti: in Emissioni la tabella dei totali e quella di sensibilità, in Cambiamento
+  climatico la tabella dei risultati allargavano la pagina sul telefono (ora scorrono dentro di sé).
+- Prove: `tests/test_collegamento_browser.py` (una per pagina delle classi a e b, più le nove pagine 3D sulla demo
+  sintetica in Modelli 3D e Ombre): scelte, collegamento letto dal riquadro, pagina nuova con quell'indirizzo in un contesto
+  nuovo (senza memoria del browser), stesse scelte, campo uguale all'indirizzo, 375 px senza scorrimento orizzontale,
+  nessun errore JavaScript; screenshot (1400 e 375 px) se esiste `/home/claude/wt_collegamento_prove/`.
+
+## Comunità energetiche: strato delle aree acceso in partenza (20/11/2026, 18:40, richiesta di Paolo; `?v=20261121a`)
+
+«Modifica la pagina per iniziare con il layer aree convenzionali attivo; anche se è spento, quando l'utente aggiunge un punto
+della mappa si accende.» La casella «Aree convenzionali (GSE)» è `checked` nell'HTML e `strato()` la legge alla fine di
+`creaMappa()`; `aggiungi()` chiama `accendiStrato()` per ogni sede con le coordinate (clic, ricerca, coordinate, elenco), che
+la riaccende se l'utente l'aveva spenta (ma non quando le sedi tornano da un collegamento con `aree_gse=0`: `applica`
+la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (all'apertura la
+mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
+quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
+
+## Statistiche › Carichi elettrici (20/11/2026, richiesta di Paolo; sperimentale, `?v=20261121a`)
+
+Pagina `carichi.html` + `carichi.js`, voce «Carichi elettrici» (sperimentale) nel gruppo Statistiche dopo «Produzione e
+consumi di elettricità». **Pagina unica a tutta larghezza** (`main.articolo.pagina-carichi`), senza mappa grande e senza
+divisione in due metà.
+
+- **Zona**: solo dalla piccola mappa accanto al titolo, grande come nelle altre pagine ma con le **zone di mercato**
+  (`dati/mappa/zone.json`, costruito da `costruisci_zone.py` unendo le regioni di `italia.json` con shapely; colori
+  `--reg-RR` di una regione della zona; zoom `+ − ⟲` con `EUGENIO.zoomabile` di `minimappa.js`, che qui non disegna
+  la sua mappa delle regioni perché manca `.mappa-area`). Clic = zona; secondo clic o «Tutta Italia» = Italia.
+  Zone dal 1° gennaio 2021 (ARERA 103/2019; GME, «Zone geografiche», 18/10/2023), le stesse dei dati di Terna del
+  2026: Nord, Centro-Nord (Toscana, Marche), Centro-Sud (Umbria, Lazio, Abruzzo, Campania), Sud (Molise, Puglia,
+  Basilicata), Calabria, Sicilia, Sardegna.
+- **Periodo**: due date modificabili, predefinito gli ultimi 12 mesi fino all'ultimo dato; pulsante «Ultimi 12 mesi».
+  **Passo**: casella «Quarti d'ora» (predefinita); senza, ore = media dei quarti d'ora dell'ora.
+- **Indirizzo**: `?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60` (`history.replaceState` a ogni scelta; senza
+  `zona` = Italia). Dopo l'unione (20/11/2026) la pagina carica `collegamento.js` e si registra con queste quattro chiavi
+  (`regione: false`, `pronto` alla fine dell'avvio): riquadro «Collegamento a questa simulazione» in fondo alla pagina;
+  prova in `test_collegamento_browser.py::test_carichi`.
+- **Grafici** (tutti con la freccina del riquadro): valori del periodo (energia, potenza massima e minima con l'istante,
+  media, quota rinnovabile per l'Italia, quarti d'ora senza dati); profilo giornaliero (fascia minimo–massimo e media
+  per quarto d'ora o ora del giorno, ora italiana); curva di durata (potenze in ordine decrescente, ascissa in ore);
+  fonti (barre al 100 % per quarto d'ora o ora, colori di `fase15-elettricita/elettricita/costruisci.py`, solo Italia:
+  con una zona scelta compare la nota «Terna pubblica la produzione per fonte solo per tutta l'Italia»).
+- **Zoom proprio**: rotella = zoom dell'asse orizzontale attorno al puntatore, trascinamento = spostamento, due dita =
+  zoom, doppio clic = vista iniziale, tastiera (frecce, `+ − 0`). Il grafico si **ridisegna con i dati della vista**
+  (percorsi aggregati per pixel: le barre delle fonti sono una colonna per pixel che somma i quarti d'ora coperti, o una
+  barra per quarto d'ora quando c'è posto; la curva di durata un punto per pixel). Con il grafico ingrandito l'asse
+  verticale si adatta ai valori visibili. La vista è comune alla pagina e al riquadro. `grafici.js` passa all'SVG
+  con `svg.__zoomProprio = { zoom(fattore, clientX), vistaIniziale() }` i tasti `+ − 0` e «Vista iniziale» del
+  riquadro e gli lascia rotella, trascinamento e doppio clic (regola in `README_stile.md`, «Grafici»).
+- **Dati**: `dati/carichi/indice.json`, `carico_AAAA-MM.json`, `fonti_AAAA-MM.json`, costruiti dal worker con
+  `fase15-elettricita/elettricita/carichi.py` (formato nel README della fase 15); si caricano solo i mesi del periodo.
+  Fuori dal repository (`.gitignore`) e **non scaricabili** (decisione di Paolo): nessun CSV né JSON da scaricare.
+  Senza `indice.json` la pagina dice che i dati non ci sono ancora.
+- Fonti e licenze nel piè, sezione `metodo.html#carichi`, «Come leggere i grafici» in fondo alla pagina.
+- Prove: `tests/test_carichi_browser.py` (Playwright, dati inventati dalla fase 15).
 
 ## Comunità energetiche: confini delle aree delle sedi a qualsiasi zoom (20/11/2026, 14:08, `?v=20261120d`, richiesta di Paolo)
 

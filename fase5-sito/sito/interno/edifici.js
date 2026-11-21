@@ -4,7 +4,7 @@
 // 07/11/2026 anche la coda «Aggiungi DBTR» (/api/interno/dbtr/coda) con anteprima sull'ortofoto, Approva e Rifiuta.
 (function () {
   const $ = (id) => document.getElementById(id);
-  const fmt = (v, d = 0) => (v === null || v === undefined || !Number.isFinite(+v) ? "—" : (+v).toLocaleString("it-IT", { maximumFractionDigits: d, minimumFractionDigits: d }));
+  const fmt = (v, d = 0) => (v === null || v === undefined || !Number.isFinite(+v) ? "—" : EUGENIO_NUMERI.formato(v, d));
   const data = (s) => { if (!s) return "—"; const d = new Date(s); return Number.isNaN(+d) ? String(s) : d.toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" }); };
   function h(tag, cls, testo) { const e = document.createElement(tag); if (cls) e.className = cls; if (testo !== undefined && testo !== null) e.textContent = String(testo); return e; }
   function tabella(intest, righe, numeriche = []) {

@@ -188,10 +188,10 @@
     riga.fonte_testo = [fonte === ATTR.Zornade ? `${fonte} (zornade.com)` : fonte,
       luogo && x.luogo_fonte ? `${x.luogo_tipo === "particella" ? "particella: " : ""}${x.luogo_fonte}` : ""].filter(Boolean).join("; ");
     const dove = [riga.indirizzo_trovato, x.comune_catasto].filter(Boolean).join(", ");
-    const part = luogo && pa ? `particella foglio ${pa.foglio}, ${pa.mappale}${pa.area_m2 ? ` (${Math.round(pa.area_m2).toLocaleString("it-IT")} m²)` : ""}`
+    const part = luogo && pa ? `particella foglio ${pa.foglio}, ${pa.mappale}${pa.area_m2 ? ` (${EUGENIO_NUMERI.formato(pa.area_m2)} m²)` : ""}`
       + (x.luogo_regola === "particella_piu_grande_del_civico" ? ", la più grande fra quelle degli accessi del civico" : "")
       : x.mappale ? `particella ${x.foglio_catasto ? `foglio ${x.foglio_catasto}, ` : ""}${x.mappale}` : "";
-    const meta = luogo && via ? `metà della via${via.lunghezza_m ? ` (${via.lunghezza_m >= 1000 ? `${(via.lunghezza_m / 1000).toFixed(1).replace(".", ",")} km` : `${via.lunghezza_m} m`})` : ""}` : "";
+    const meta = luogo && via ? `metà della via${via.lunghezza_m ? ` (${via.lunghezza_m >= 1000 ? `${EUGENIO_NUMERI.formato(via.lunghezza_m / 1000, 1)} km` : `${EUGENIO_NUMERI.formato(via.lunghezza_m)} m`})` : ""}` : "";
     // con la via scelta, la nota «civico non indicato: usato il …» del civico centrale non vale più
     const nota = luogo && via ? "" : x.nota;
     if (msg) {

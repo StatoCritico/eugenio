@@ -183,7 +183,7 @@
     // archivi di /edifici3d/archivi.json (dal 07/11/2026 un archivio DBTR per comune), altrimenti il DBTR dell'ER
     let basi = ["/edifici3d/cc-by/er/prodotti/"];
     try {
-      const r = await fetch("/edifici3d/archivi.json?v=20261120d", { cache: "no-cache" });
+      const r = await fetch("/edifici3d/archivi.json?v=20261121a", { cache: "no-cache" });
       if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) {
         const l = ((await r.json()).archivi || []).map((x) => x && x.base)
           .filter((b) => typeof b === "string" && /^\/edifici3d\/[\w-]+(\/[\w-]+)*\/$/.test(b) && !b.includes(".."));
@@ -337,7 +337,25 @@
     m.on("error", (e) => { if (e && (e.sourceId === "ortofoto" || e.sourceId === "contesto")) messaggio("Alcune tessere non sono arrivate (fonte lenta o fuori zona).", true); });
     if (window.EUGENIO_RIGHELLO) window.EUGENIO_RIGHELLO.aggiungi(m);      // righello per distanze e aree (19/11/2026)
     if (window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-ortofoto"), m, opzioniImmagine, $("messaggio-immagine"));
-  })();
+  })().finally(() => {
+    stato.pronto = true;
+    if (stato.mappa && window.EUGENIO_COLLEGAMENTO) stato.mappa.on("moveend", () => window.EUGENIO_COLLEGAMENTO.aggiorna());
+  });
+
+  // collegamento a questa simulazione (20/11/2026): vista (lat, lon, z; all'apertura le legge già la pagina), fonte (la
+  // scrive scegli()), caselle «edifici», «particelle» e «contorni» (data-collegamento). Lo spostamento manuale della foto
+  // resta nella scheda (sessionStorage), il punto cercato non si ripete: la vista sì.
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    regione: false,
+    chiavi: ["lat", "lon", "z"],
+    pronto: () => stato.pronto,
+    leggi() {
+      const m = stato.mappa;
+      if (!m || !stato.pronto) return null;
+      const c = m.getCenter();
+      return { lat: c.lat.toFixed(6), lon: c.lng.toFixed(6), z: m.getZoom().toFixed(2) };
+    },
+  });
 
   // ricerca per indirizzo o per dati catastali: la mappa va sul punto, con il segnaposto
   if (window.EUGENIO_CERCA) {

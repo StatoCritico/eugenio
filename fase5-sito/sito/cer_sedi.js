@@ -60,8 +60,9 @@
     if (st.sedi.length >= MASSIMO) { messaggio("messaggio-sedi", `Al massimo ${MASSIMO} sedi: togline qualcuna.`, true); return null; }
     const s = { k: ++st.seq, nome: String(d.nome || "").trim() || `Sede ${st.seq}`, lat: d.lat === undefined ? NaN : +d.lat, lon: d.lon === undefined ? NaN : +d.lon,
       istat: /^\d{6}$/.test(String(d.istat || "")) ? String(d.istat) : "", comune: "", prov: "",
-      cabina: String(d.cabina || "").trim(), origine: d.cabina ? "file" : "", gse: null, giro: 0 };
+      cabina: String(d.cabina || "").trim(), origine: d.cabina ? "file" : "", gse: null, giro: 0, daFile: !!d.daFile };
     st.sedi.push(s);
+    if (coordinate(s)) accendiStrato();
     analizza(s);
     return s;
   }
@@ -121,16 +122,16 @@
   async function confiniSede(s) {
     const a = areaSede(s);
     if (!a) { ricomponiConfini(); return; }
-    if (st.poligoni.size >= MASSIMO_AREE) { messaggio("messaggio-aree-gse", `Ci sono già ${st.poligoni.size} aree a video: togli qualche sede per vederne altre.`, true); return; }
+    if (st.poligoni.size >= MASSIMO_AREE) { messaggio("messaggio-sedi", `Ci sono già ${st.poligoni.size} aree a video: togli qualche sede per vederne altre.`, true); return; }
     try {
       const codici = await vicineDi(s, a);
       await poligoniDi(codici);
       if (!st.sedi.includes(s)) return;
       ricomponiConfini();
       const n = codici.filter((c) => c !== a.COD_AC && st.poligoni.has(c)).length;
-      messaggio("messaggio-aree-gse", `Confini letti dal GSE: area ${a.COD_AC} di «${s.nome}» (bordo spesso) e ${n} ${n === 1 ? "area confinante" : "aree confinanti"}; si vedono a qualsiasi zoom e restano solo a video.`);
+      messaggio("messaggio-sedi", `Confini letti dal GSE: area ${a.COD_AC} di «${s.nome}» (bordo spesso) e ${n} ${n === 1 ? "area confinante" : "aree confinanti"}; si vedono a qualsiasi zoom e restano solo a video.`);
     } catch (e) {
-      messaggio("messaggio-aree-gse", `Confini dell'area di «${s.nome}» non letti: ${e.message}. Il servizio del GSE potrebbe essere lento o non raggiungibile.`, true);
+      messaggio("messaggio-sedi", `Confini dell'area di «${s.nome}» non letti: ${e.message}. Il servizio del GSE potrebbe essere lento o non raggiungibile.`, true);
     }
   }
   function ricomponiConfini() {
@@ -342,7 +343,7 @@
       const lat = T.numero(val(r, iLat), { decimalePunto: letto.decimalePunto }), lon = T.numero(val(r, iLon), { decimalePunto: letto.decimalePunto });
       const ok = lat !== null && lon !== null && inItalia(lat, lon), grezzo = val(r, iIstat), istat = /^\d{4,6}$/.test(grezzo) ? grezzo.padStart(6, "0") : "";
       if (!ok && !/^\d{6}$/.test(istat)) { scarti++; continue; }
-      if (aggiungi({ nome: val(r, iNome), lat: ok ? lat : NaN, lon: ok ? lon : NaN, istat: ok ? "" : istat, cabina: val(r, iCab) })) { if (ok) con++; else senza++; }
+      if (aggiungi({ nome: val(r, iNome), lat: ok ? lat : NaN, lon: ok ? lon : NaN, istat: ok ? "" : istat, cabina: val(r, iCab), daFile: true })) { if (ok) con++; else senza++; }
     }
     inquadra();
     messaggio("messaggio-sedi", [`${con + senza} sedi aggiunte (${con} con le coordinate, chieste al GSE ${R.GSE.INSIEME} alla volta)${scarti ? `; ${scarti} righe senza coordinate né codice ISTAT scartate` : ""}.`, letto.nota].filter(Boolean).join(" "));
@@ -470,6 +471,7 @@
     await ortofoto(m);
     if (window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-mappa-cer"), m, opzioniImmagine, $("messaggio-mappa-cer"));
     disegnaSedi(); disegnaCabine(); inquadra();
+    strato();                                   // casella accesa in partenza (20/11/2026, 18:40)
   }
   function vediItalia(m, durata = 600) {
     if (!C || !C.ITALIA) return;
@@ -662,12 +664,20 @@
     if (st.popup) st.popup.remove();
     st.popup = new ml.Popup({ closeButton: true, maxWidth: "18rem" }).setLngLat(e.lngLat).setDOMContent(box).addTo(m);
   }
-  $("strato-aree-gse").addEventListener("change", (e) => {
-    st.acceso = e.target.checked;
+  function strato() {
+    st.acceso = $("strato-aree-gse").checked;
     if (!st.acceso) { clearTimeout(st.attesa); st.giro++; datiStrato(null); if (st.popup) st.popup.remove(); messaggio("messaggio-aree-gse", ""); }
     visibilitaStrato();
     aggiornaStrato();
-  });
+  }
+  $("strato-aree-gse").addEventListener("change", strato);
+  // (20/11/2026, 18:40, Paolo) lo strato parte acceso; se l'utente l'ha spento, aggiungere una sede lo riaccende.
+  // Le domande al GSE partono comunque solo da zoom 10 o con una sede (un'azione dell'utente).
+  function accendiStrato() {
+    if ($("strato-aree-gse").checked) return;
+    $("strato-aree-gse").checked = true;
+    strato();
+  }
 
   // ---- immagini: strato del GSE spento (punto C)
   function opzioniImmagine() {
@@ -742,6 +752,51 @@
   // ================================================================== avvio
   tabella(); disegnaLegenda();
   R.pulsantiDati($("scarica-cer"), datiFile, $("messaggio-scarica-cer"), ["csv", "xlsx", "ods", "pdf"]);
-  creaMappa().catch((e) => messaggio("messaggio-mappa-cer", `Mappa non disponibile: ${e.message}`, true));
+  creaMappa().catch((e) => messaggio("messaggio-mappa-cer", `Mappa non disponibile: ${e.message}`, true))
+    .finally(() => {
+      st.pronto = true;
+      if (st.mappa && window.EUGENIO_COLLEGAMENTO) st.mappa.on("moveend", () => window.EUGENIO_COLLEGAMENTO.aggiorna());
+    });
+
+  // collegamento a questa simulazione (20/11/2026): vista (centro=lat*lon*zoom), sedi segnate sulla mappa, cercate o scritte
+  // a mano (sedi=lat*lon*cabina_…: coordinate e cabina scelta dal menu o scritta; i nomi no), fonte dell'ortofoto scelta a
+  // mano; aree del GSE, particelle e contorni sono controlli data-collegamento. Le sedi del file e il file orario no.
+  const sei = (x) => Number(x).toFixed(6);
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    regione: false,
+    chiavi: ["centro", "sedi", "fonte"],
+    principali: ["centro", "fonte"],
+    pronto: () => st.pronto,
+    leggi() {
+      const m = st.mappa;
+      if (!m || !st.pronto) return null;
+      const c = m.getCenter();
+      const sedi = st.sedi.filter((x) => !x.daFile && coordinate(x))
+        .map((x) => [sei(x.lat), sei(x.lon), ["menu", "mano"].includes(x.origine) ? x.cabina.replace(/[*_]/g, "") : ""].join("*").replace(/\*$/, ""));
+      return { centro: [sei(c.lat), sei(c.lng), m.getZoom().toFixed(2)].join("*"), sedi: sedi.join("_") || null,
+        fonte: st.manuale ? (st.fonte ? st.fonte.id : "nessuna") : null };
+    },
+    async applica(p) {
+      const m = st.mappa;
+      if (!m) return;
+      for (const voce of (p.get("sedi") || "").split("_")) {
+        const [lat, lon, cabina] = voce.split("*");
+        if (!Number.isFinite(+lat) || !Number.isFinite(+lon) || lat === "" || lon === "") continue;
+        const x = aggiungi({ lat: +lat, lon: +lon });
+        if (x && cabina) { x.cabina = cabina; x.origine = "mano"; }
+      }
+      tabella(); disegnaSedi(); disegnaCabine(); cambiate();
+      // aggiungi() riaccende lo strato delle aree (casella accesa in partenza): se il collegamento l'aveva spento, resta spento
+      if (["0", "false", "no"].includes(p.get("aree_gse")) && $("strato-aree-gse").checked) { $("strato-aree-gse").checked = false; strato(); }
+      const [lat, lon, z] = (p.get("centro") || "").split("*").map(Number);
+      if ([lat, lon, z].every(Number.isFinite)) m.jumpTo({ center: [lon, lat], zoom: z });
+      if (p.has("fonte")) {
+        st.manuale = true;
+        const id = p.get("fonte") === "nessuna" ? "" : p.get("fonte");
+        if (!id || st.fonti.some((f) => f.id === id)) scegliFonte(id);
+        await elencoFonti();
+      }
+    },
+  });
   window.EUGENIO_CER_SEDI = { st, aggiungi, cabinaDi, datiFile, opzioniImmagine, inquadra };
 })();

@@ -26,7 +26,7 @@
     isoterme5: "#7F7F7F", griglia: "#BFBFBF", grigliaMinore: "#E7E6E6", inchiostro: "#000000" };
   const SCURO = { estate: "#4DA3FF", inverno: "#FF6B6B", entalpia: "#6EA8DE", volume: "#8CC46A" };
   const COLORI = { estate: EXCEL.estate, inverno: EXCEL.inverno };
-  const fmt = (n, d = 0) => (Number.isFinite(n) ? Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" }) : "—");
+  const fmt = (n, d = 0) => (Number.isFinite(n) ? EUGENIO_NUMERI.formato(n, d) : "—");
   const meno = (s) => String(s).replace(/^-/, "−");
   function h(tag, cls, testo) {
     const e = document.createElement(tag);
@@ -506,6 +506,9 @@
   function crea(box, opz = {}) {
     if (!box) return null;
     const id = `diagramma-aria-${++numero}`;
+    // (20/11/2026) collegamento a questa simulazione: ?diagramma=mollier nell'indirizzo (solo il primo diagramma della pagina)
+    const linkModo = numero === 1 && typeof location !== "undefined" ? new URLSearchParams(location.search).get("diagramma") : null;
+    if (linkModo === "mollier" || linkModo === "psicrometrico") opz = { ...opz, modo: linkModo };
     const st = { modo: opz.modo === "mollier" ? "mollier" : "psicrometrico", p: opz.pressione || 101325, strati: new Map(), ordine: 0,
       titolo: opz.titolo || "Diagramma dell'aria umida", attesa: 0, g: null, ascolta: { modo: [] }, evidenzia: null };
     box.classList.add("aria-diagramma");
@@ -905,6 +908,9 @@
     document.addEventListener("eugenio:aspetto", () => { legendaOra(); ridisegna(); });
     document.addEventListener("eugenio:ridimensiona", ridisegna);
     disegnaOra();
+    if (window.EUGENIO_COLLEGAMENTO && id === "diagramma-aria-1") {
+      window.EUGENIO_COLLEGAMENTO.registra({ chiavi: ["diagramma"], leggi: () => ({ diagramma: st.modo === "mollier" ? "mollier" : null }) });
+    }
     return api;
   }
 

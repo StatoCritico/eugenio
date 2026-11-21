@@ -7,6 +7,11 @@
   mercati (GME, TTF)     ogni notte alle ORA_MERCATI (ora italiana), con la sorveglianza delle fonti delle
                          convenzioni (email solo quando cambia qualcosa), i listini delle convenzioni e, subito dopo,
                          gli indici dei prezzi pubblicabili per il sito (prezzi: /sito/dati/prezzi/indici.json)
+  mercato del giorno    ogni notte alle ORA_MERCATO_MGP (04:15, ora italiana; 20/11/2026): MGP del GME, cioè liquidità,
+  prima (mercato-mgp)    transiti, fabbisogno, curve aggregate di domanda e offerta e offerte pubbliche (tutte, pubblicate
+                         dopo 7 giorni; un Parquet al giorno in /dati/mercati/mgp_offerte), storico all'indietro qualche
+                         giorno per notte. SOLO USO INTERNO: niente sul sito, nessuna rotta, nessuna esportazione. Email
+                         solo per credenziali GME rifiutate, fonte ferma da giorni, disco quasi pieno (fase6 mgp_notturno)
   newsletter dei dati    mensile, il giorno NOTIZIARIO_GIORNO (listmonk; dal 14/11/2026 un messaggio per iscritto con
                          le sue regioni)
   previsioni per email   ogni settimana, giorno SETTIMANALE_GIORNO dalle SETTIMANALE_ORA: la settimana dopo per i comuni
@@ -24,13 +29,21 @@
   aree GSE               una volta al mese, il giorno GSE_CONTROLLO_GIORNO (3) dalle GSE_CONTROLLO_ORA (7, ora italiana):
                          il servizio del GSE delle aree convenzionali risponde? Una richiesta ?f=json, nessun dato salvato,
                          email solo se non risponde (20/11/2026; le aree le legge solo il browser)
+  dati di Terna          (20/11/2026, servizio/terna.py) ogni giorno dalle TERNA_API_ORA (06:30): il giorno prima dall'API
+                         ufficiale (chiavi TERNA_CLIENT_ID/SECRET nel .env, 1 richiesta al secondo, tetto TERNA_API_TETTO
+                         al giorno), l'IMCEI del mese, TERNA_STORICO_MESI mesi di storico dal Download Center (senza
+                         chiave) e subito dopo i file di «Carichi elettrici» (carichi: /sito/dati/carichi/); dopo un 429
+                         o un 5xx si riprova dopo TERNA_RIPROVA_MIN minuti
+  statistiche Terna      il giorno ELETTRICITA_GIORNO (5) dalle ELETTRICITA_ORA (05:00), subito se l'archivio è vuoto:
+                         statistiche annuali dal Download Center e file di «Produzione e consumi di elettricità»
+                         (elettricita: /sito/dati/elettricita/, fase 15)
 I file del sito (indicatori, clima) si scrivono in una cartella nuova e si scambiano con quella pubblicata solo a
 lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
 
   python -m servizio.worker                 ciclo continuo
-  python -m servizio.worker previsioni|storico|psicro|mercati|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
-                            |rete-interruzioni|rete-saturazione|gse-aree
+  python -m servizio.worker previsioni|storico|psicro|mercati|mercato-mgp|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
+                            |rete-interruzioni|rete-saturazione|gse-aree|terna-api|elettricita|carichi
                                             una sola esecuzione (anche con docker compose run --rm worker …)
 """
 from __future__ import annotations
@@ -93,6 +106,21 @@ def mercati() -> None:
     if s.get("da_segnalare"):
         from mercati_energia.sorveglianza import riepilogo
         avvisi.invia("convenzioni e fonti: novità", riepilogo(s))
+
+
+def mercato_mgp() -> dict:
+    """(20/11/2026) Mercato del giorno prima del GME, solo uso interno (fase 6, mercati_energia/mgp_notturno.py): serie
+    aggiuntive, curve aggregate e offerte pubbliche in /dati/mercati. Email solo per i motivi in esito["da_segnalare"]
+    (credenziali rifiutate, fonte ferma da giorni, disco quasi pieno, 3 notti fallite di fila), una volta per episodio."""
+    if not Path(C.MERCATI_CONFIG).exists():
+        log.info("Mercato del giorno prima: configurazione dei mercati assente (%s)", C.MERCATI_CONFIG)
+        return {}
+    from mercati_energia import mgp_notturno
+    from mercati_energia.config import carica
+    esito = mgp_notturno.esegui(carica(C.MERCATI_CONFIG))
+    if esito.get("da_segnalare"):
+        avvisi.invia("mercato del giorno prima (GME): da controllare", "\n\n".join(esito["da_segnalare"]))
+    return esito
 
 
 def prezzi() -> None:
@@ -260,6 +288,127 @@ def gse_aree() -> dict:
     return esito
 
 
+# ---------------------------------------------------------------------------------------------- dati di Terna (20/11/2026)
+def terna_api() -> dict:
+    """Serie di Terna (servizio/terna.py): giorno prima e IMCEI dall'API ufficiale, storico dal Download Center, riserva
+    reciproca. Senza chiavi nel .env la parte dell'API non parte (riga nel registro, nessuna email). Dopo un
+    aggiornamento riuscito rifà i file di «Carichi elettrici» (lavoro carichi). Esito con "rimandato": True dopo un 429 o
+    un 5xx: il ciclo riprova dopo TERNA_RIPROVA_MIN minuti."""
+    from . import terna
+    esito = terna.aggiorna()
+    if any(esito["righe"].values()):
+        try:
+            esito["carichi"] = carichi()
+        except Exception as e:
+            log.exception("Errore nei file di «Carichi elettrici»")
+            avvisi.invia("errore nei file di «Carichi elettrici»", f"{type(e).__name__}: {e}")
+            esito["carichi"] = {"errore": f"{type(e).__name__}: {e}"}
+    return esito
+
+
+def _costruisci_carichi():
+    """costruisci_carichi(archivio, uscita) della fase 15, se c'è (la scrive un'altra sessione): None altrimenti."""
+    import importlib
+    for modulo in ("elettricita.carichi", "elettricita.costruisci_carichi", "elettricita.costruisci"):
+        try:
+            f = getattr(importlib.import_module(modulo), "costruisci_carichi", None)
+        except ImportError:
+            continue
+        if callable(f):
+            return f
+    return None
+
+
+def _controlla_cartella(nuova: Path, finale: Path, indice: str | None, nome: str) -> None:
+    n_nuovi, n_vecchi = _conta_json(nuova), _conta_json(finale)
+    if n_nuovi == 0 or (indice and not (nuova / indice).exists()) or n_nuovi < 0.9 * n_vecchi:
+        raise RuntimeError(f"{nome}: file nuovi incompleti ({n_nuovi} contro {n_vecchi}), restano quelli di prima")
+
+
+def carichi() -> dict:
+    """File del sito per «Carichi elettrici» (fase 15, costruisci_carichi) dall'archivio TERNA_DATI/serie, pubblicati in
+    /sito/dati/carichi con _pubblica solo se il controllo passa (almeno un file, non meno del 90 % di prima)."""
+    from . import terna
+    f = _costruisci_carichi()
+    if f is None:
+        log.info("Carichi elettrici: costruisci_carichi della fase 15 non ancora disponibile, niente da pubblicare")
+        return {"saltato": "costruisci_carichi assente"}
+    finale, nuova = C.SITO_DATI / "carichi", C.SITO_DATI / ".carichi_nuova"
+    shutil.rmtree(nuova, ignore_errors=True)
+    try:
+        esito = f(terna.cartella_serie(), nuova)
+    except NotImplementedError as e:
+        shutil.rmtree(nuova, ignore_errors=True)
+        log.warning("Carichi elettrici: costruisci_carichi non è ancora pronto (%s), niente pubblicato", e)
+        return {"saltato": "costruisci_carichi non pronto"}
+    try:
+        _controlla_cartella(nuova, finale, None, "carichi")
+    except RuntimeError:
+        shutil.rmtree(nuova, ignore_errors=True)
+        raise
+    _pubblica(nuova, finale)
+    log.info("Carichi elettrici: %d file pubblicati", _conta_json(finale))
+    return esito if isinstance(esito, dict) else {"pubblicati": _conta_json(finale)}
+
+
+def _archivio_elettricita_vuoto() -> bool:
+    raw = C.TERNA_DATI / "statistiche"
+    return not raw.is_dir() or not any(raw.glob("*.json"))
+
+
+def elettricita() -> dict:
+    """Statistiche annuali di Terna (fase 15): terna_dc.scarica (Download Center, nessuna chiave, nessuna quota; anni
+    mancanti più gli ultimi 2, che passano da provvisori a consolidati) e costruisci → /sito/dati/elettricita, pubblicata
+    con _pubblica solo se il controllo passa (italia.json presente, non meno del 90 % dei file di prima).
+    Email all'amministratore solo per errori veri: Terna non risponde in due mesi diversi di fila, file incompleti.
+    Se costruisci non è ancora pronto (NotImplementedError): avviso nel registro, niente pubblicato, nessuna email."""
+    from elettricita import terna_dc
+    from elettricita.costruisci import costruisci
+    raw = C.TERNA_DATI / "statistiche"
+    fstato = C.TERNA_DATI / "elettricita_stato.json"
+    try:
+        stato = json.loads(fstato.read_text())
+    except Exception:
+        stato = {}
+    mese = dt.datetime.now(ROMA).strftime("%Y-%m")
+    try:
+        scaricati = terna_dc.scarica(raw, ultimi=2)
+    except Exception as e:
+        mesi = stato.setdefault("mesi_falliti", [])
+        if mese not in mesi:
+            mesi.append(mese)
+        log.warning("Statistiche di Terna: Download Center non disponibile (%s: %s), mesi falliti di fila: %s",
+                    type(e).__name__, e, mesi)
+        if len(mesi) >= 2 and not stato.get("avvisato"):
+            stato["avvisato"] = True
+            avvisi.invia("statistiche di Terna: il Download Center non risponde da due mesi",
+                         f"terna_dc.scarica non riuscito nei mesi {', '.join(mesi)}. Ultimo errore: {type(e).__name__}: {e}"
+                         "\nLa pagina «Produzione e consumi di elettricità» mostra ancora i file di prima.")
+        fstato.parent.mkdir(parents=True, exist_ok=True)
+        fstato.write_text(json.dumps(stato))
+        return {"errore": f"{type(e).__name__}: {e}"}
+    fstato.parent.mkdir(parents=True, exist_ok=True)
+    fstato.write_text(json.dumps({"ultimo_ok": mese}))
+    finale, nuova = C.SITO_DATI / "elettricita", C.SITO_DATI / ".elettricita_nuova"
+    shutil.rmtree(nuova, ignore_errors=True)
+    try:
+        esito = costruisci(raw, nuova)
+    except NotImplementedError as e:
+        shutil.rmtree(nuova, ignore_errors=True)
+        log.warning("Statistiche di Terna: costruisci della fase 15 non è ancora pronto (%s), niente pubblicato", e)
+        return {"scaricati": scaricati, "saltato": "costruisci non pronto"}
+    try:
+        _controlla_cartella(nuova, finale, "italia.json", "elettricita")
+    except RuntimeError as e:
+        shutil.rmtree(nuova, ignore_errors=True)
+        log.warning("Statistiche di Terna: %s", e)
+        avvisi.invia("statistiche di Terna: file incompleti", f"{e}\nScaricati: {json.dumps(scaricati)}")
+        return {"scaricati": scaricati, "errore": str(e)}
+    _pubblica(nuova, finale)
+    log.info("Statistiche di Terna: %d file pubblicati in %s", _conta_json(finale), finale)
+    return {"scaricati": scaricati, "costruisci": esito, "pubblicati": _conta_json(finale)}
+
+
 class _Errori:
     """Letture delle interruzioni fallite (decisione di Paolo del 17/11/2026): un'email SOLO quando non si leggono da più
     di RETE_AVVISO_ORE ore consecutive (dall'ultima lettura riuscita, presa dal database all'avvio), una per episodio;
@@ -337,6 +486,9 @@ def ciclo() -> None:
         ultimo_prev = time.time()
     hm, mm = map(int, C.ORA_MERCATI_LOCALE.split(":"))
     hr, mr = map(int, C.RETE_SATURAZIONE_ORA.split(":"))
+    ht, mt = map(int, C.TERNA_API_ORA.split(":"))
+    he, me = map(int, C.ELETTRICITA_ORA.split(":"))
+    terna_riprova, terna_tentativi = 0.0, 0   # dopo un 429 o un 5xx di Terna: quando riprovare, tentativi di oggi
     if C.RETE_ATTIVA:
         threading.Thread(target=ciclo_interruzioni, daemon=True, name="interruzioni").start()
     while True:
@@ -356,6 +508,12 @@ def ciclo() -> None:
         if (loc.hour, loc.minute) >= (hm, mm) and fatti.get("mercati") != oggi:
             _sicuro(mercati, "mercati")
             fatti["mercati"] = oggi
+        if (loc.hour, loc.minute) >= tuple(map(int, C.ORA_MERCATO_MGP.split(":"))) and fatti.get("mercato_mgp") != oggi:
+            try:                        # niente _sicuro: le email le decide mgp_notturno (da_segnalare)
+                mercato_mgp()
+            except Exception:
+                log.exception("Errore nel mercato del giorno prima")
+            fatti["mercato_mgp"] = oggi
         if loc.day == C.NOTIZIARIO_GIORNO and loc.hour >= 9 and fatti.get("mensile") != oggi:
             _sicuro(mensile, "newsletter mensile")
             fatti["mensile"] = oggi
@@ -391,6 +549,28 @@ def ciclo() -> None:
             except Exception:
                 log.exception("Errore nel controllo del servizio del GSE")
             fatti["gse_aree"] = oggi
+        # (20/11/2026) dati di Terna: una volta al giorno; dopo un 429 o un 5xx si riprova più tardi (al più
+        # TERNA_RIPROVA_MAX volte), poi domani. Email solo da terna.py (archivio fermo da giorni) e per i carichi.
+        if (loc.hour, loc.minute) >= (ht, mt) and fatti.get("terna_api") != oggi and time.time() >= terna_riprova:
+            esito = None
+            try:
+                esito = terna_api()
+            except Exception as e:
+                log.exception("Errore nei dati di Terna")
+                avvisi.invia("errore nei dati di Terna", f"{type(e).__name__}: {e}")
+            if esito and esito.get("rimandato") and terna_tentativi < C.TERNA_RIPROVA_MAX:
+                terna_tentativi += 1
+                terna_riprova = time.time() + C.TERNA_RIPROVA_MIN * 60
+            else:
+                fatti["terna_api"], terna_tentativi, terna_riprova = oggi, 0, 0.0
+        if fatti.get("elettricita") != oggi and (
+                (loc.day == C.ELETTRICITA_GIORNO and (loc.hour, loc.minute) >= (he, me)) or _archivio_elettricita_vuoto()):
+            try:                        # una volta al giorno anche se fallisce; le email le decide elettricita()
+                elettricita()
+            except Exception as e:
+                log.exception("Errore nelle statistiche di Terna")
+                avvisi.invia("errore nelle statistiche di Terna", f"{type(e).__name__}: {e}")
+            fatti["elettricita"] = oggi
         _stato_scrivi(fatti)
         time.sleep(300)
 
@@ -398,6 +578,7 @@ def ciclo() -> None:
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "ciclo"
     {"ciclo": ciclo, "previsioni": meteo.aggiorna_previsioni, "storico": meteo.aggiorna_storico, "psicro": psicro,
-     "mercati": mercati, "prezzi": prezzi, "mensile": mensile, "settimanale": settimanale, "avvisi": avvisi_meteo, "territorio": territorio, "anncsu": anncsu,
+     "mercati": mercati, "mercato-mgp": mercato_mgp, "prezzi": prezzi, "mensile": mensile, "settimanale": settimanale, "avvisi": avvisi_meteo, "territorio": territorio, "anncsu": anncsu,
      "indicatori": indicatori, "clima": clima, "rete-interruzioni": rete_interruzioni,
-     "rete-saturazione": rete_saturazione, "gse-aree": gse_aree}[cmd]()
+     "rete-saturazione": rete_saturazione, "gse-aree": gse_aree, "terna-api": terna_api, "elettricita": elettricita,
+     "carichi": carichi}[cmd]()

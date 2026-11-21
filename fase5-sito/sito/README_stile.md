@@ -62,7 +62,7 @@ Valgono per **tutti** i grafici del sito, anche quelli futuri. Il modulo comune 
    previsione oraria) mostrano i valori: passando il mouse vicino a una barra o a un punto, la barra si evidenzia
    (classe `.evidenziata`), i punti delle curve prendono un cerchio, compare una linea guida verticale e un
    suggerimento con l'etichetta (mese, anno, stagione) e i valori **formattati all'italiana** (virgola decimale,
-   punto per le migliaia, unità: `toLocaleString("it-IT")`). Funziona nella pagina e nel riquadro, col tocco (si
+   punto per le migliaia anche a 4 cifre, unità: `EUGENIO_NUMERI.formato` di `numeri.js`, vedi «Numeri»). Funziona nella pagina e nel riquadro, col tocco (si
    tocca il grafico; un tocco fuori lo spegne) e con la tastiera (l'SVG prende il fuoco; frecce, Inizio e Fine; il
    valore è letto anche dai lettori di schermo). Non usare `<title>` sulle barre: il suggerimento lo sostituisce.
 3. **Pannelli ridimensionabili.** Nelle pagine dei servizi il confine tra la colonna di sinistra (`.mappa-area`) e il
@@ -118,6 +118,11 @@ G.registra(document.getElementById("grafico-consumi"), (dest, misure) => disegna
   cerchi sulle curve) ed `elementi` (le barre da evidenziare). Si chiama alla fine del disegno.
 - I colori calcolati (non `var(--…)`) vanno rifatti all'evento `eugenio:aspetto`, come già scritto sopra: il riquadro
   aperto ridisegna comunque il suo grafico a ogni cambio di tema o di vestito.
+- **Grafici con molti punti e zoom nella pagina** (20/11/2026, Carichi elettrici, `carichi.js`): con decine di
+  migliaia di valori il grafico non si ingrandisce col viewBox ma si ridisegna con i dati della vista (percorsi
+  aggregati per pixel). L'SVG ha la classe `zoom-proprio` (cursore a mano, `touch-action: pan-y`) e
+  `svg.__zoomProprio = { zoom(fattore, clientX), vistaIniziale() }`: nel riquadro `grafici.js` non tocca rotella,
+  trascinamento e doppio clic (li gestisce l'SVG) e manda `+ − 0` e «Vista iniziale» a queste due funzioni.
 
 ## Mappe (regole dal 29/10/2026)
 
@@ -529,3 +534,83 @@ I report (PDF, Excel e ODS) non cambiano con il vestito. Usano:
 - **Gruppi di ore** (`gruppi_ore.js`): un `fieldset.aria-gruppo` per gruppo con il bordo sinistro nel colore del gruppo,
   campione, nome (va in legenda), «Mostra», «Togli»; pulsanti dei preset piccoli; campi data «gg/mm», ore 0–24, giorni;
   conteggio delle ore sotto; «Aggiungi un gruppo» fino a 4.
+
+## Numeri (20/11/2026, regola per tutte le pagine)
+
+**Numeri sempre con il punto delle migliaia, anche a 4 cifre** (1.234, 8.760 ore, 2.250 GG; non 1234) e la virgola dei
+decimali. `Intl.NumberFormat("it-IT")` e `toLocaleString("it-IT")` raggruppano da soli solo da 5 cifre: non usarli
+direttamente per i numeri, ma il modulo comune **`numeri.js`** (`window.EUGENIO_NUMERI`), caricato nella testa di ogni
+pagina (`parti/testa.html`, prima degli script delle pagine):
+
+- `EUGENIO_NUMERI.formato(v, decimali = 0, minimi = decimali, vuoto = "–")`: al più `decimali` cifre decimali, almeno
+  `minimi` (`formato(1234.5, 1)` = «1.234,5», `formato(0.25, 2, 0)` = «0,25»); `vuoto` per null, "" e valori non finiti.
+  Usa `useGrouping: "always"` dove il browser lo conosce, altrimenti mette il punto a mano nella parte intera.
+- `EUGENIO_NUMERI.raggruppa(testo)`: il punto nella parte intera di un numero già scritto senza raggruppamento.
+- Nei moduli che girano anche in node (prove) o in un Web Worker: `const NUMERI = () => (typeof EUGENIO_NUMERI !==
+  "undefined" ? EUGENIO_NUMERI : require("./numeri.js"))` (il worker lo carica con `importScripts`, come `dbtr_worker.js`).
+- **Solo per il testo mostrato** (pagina, suggerimenti, riepiloghi, messaggi, assi, immagini e PDF). Mai nei file CSV,
+  Excel e ODS (lì i numeri restano numeri, o testo con la sola virgola decimale per Excel italiano), nei campi
+  modificabili, negli indirizzi e nei parametri, e mai per date, anni, codici (ISTAT, CAP, catastali), numeri di
+  versione e coordinate.
+
+## Collegamento a questa simulazione (20/11/2026, regola per le pagine future)
+
+Richiesta di Paolo: nelle pagine che funzionano a scelte (non con un file caricato) l'utente salva un indirizzo e,
+riaprendolo, riparte esattamente dalle stesse scelte. Modulo comune `collegamento.js` (`window.EUGENIO_COLLEGAMENTO`),
+stile `.collegamento-simulazione` in `stile.css`; inventario delle pagine nel README della fase 5 (§ «Collegamento a questa
+simulazione»), prove in `tests/test_collegamento_browser.py`.
+
+- **Riquadro** «Collegamento a questa simulazione» creato dal modulo **in fondo al pannello di destra** (`main > .pannello`)
+  o, nelle pagine a una colonna (`main.articolo`), in fondo a `main`; in tutte e due, se c'è, subito prima di «Nello stesso
+  gruppo» (titolo `#stesso-gruppo`). Un elemento `#collegamento-simulazione` nella pagina, se c'è, lo ospita al posto di
+  questi. Dentro: titolo
+  (h2 `.collegamento-titolo`, `--c-l`), campo di sola lettura con l'indirizzo completo (carattere a spaziatura fissa, fondo
+  `--rialzo`, si seleziona tutto al fuoco), pulsante «Copia» (`.bottone.secondario`; Clipboard API, ripiego su selezione +
+  `document.execCommand("copy")`; esito «Copiato» in `--successo`, `role="status"`), la riga di aiuto «Salvalo o mandalo:
+  riaprendolo la pagina riparte con le stesse scelte; non contiene file caricati.» e, se serve, l'avviso dell'indirizzo
+  troppo lungo (bordo sinistro `--attenzione`). Nel pannello niente riga sopra (c'è già quella dei passi). A 375 px il campo
+  si restringe e il pulsante va a capo se serve: nessuno scorrimento orizzontale.
+- **Stato nella query string**, con parametri leggibili e nomi brevi in italiano (`comune`, `anni`, `regione`, `modo`,
+  `lat`, `lon`, `z`, `fonte`…); liste separate da virgole (`var=t_media,pioggia`), valori composti con `*` e voci con `_`
+  (`punti=44.139412*12.243101_44.06*12.56`, `gruppi=Estate*1*10*0106*3009*0*24*t`): caratteri che l'indirizzo non trasforma
+  in `%..`. Il modulo riscrive l'indirizzo con `history.replaceState` dopo ogni `input`, `change` o clic (350 ms di ritardo,
+  non a ogni tasto) e anche quando la pagina lo cambia da sé (avvolge `history.replaceState`): il campo segue sempre
+  l'indirizzo. All'apertura senza parametri l'indirizzo non si tocca finché l'utente non cambia qualcosa.
+- **Parametri che le pagine usavano già** (`?regione=`, `?comune=`, `?vista=italia`, `?modo=`, `?lat=&lon=&z=`, `?dataset=`,
+  `?ente=`, `?edificio=`, `?istat=`, `?prova=1`…): restano com'erano e sono la base del collegamento; il modulo aggiunge e
+  toglie solo i suoi. La regione della piccola mappa (`minimappa.js`) va nell'indirizzo, così vale più di quella ricordata
+  nel browser; le pagine in cui la regione è solo un'evidenziazione (MapLibre) la escludono con `regione: false`.
+- **Limiti**: niente dati di file caricati (CSV, Excel, DXF/IFC, DBTR, visure, sedi o punti di un elenco), niente nomi né
+  dati personali (email, nomi delle sedi), niente segreti; tutto nel browser, niente al server. Oltre 2.000 caratteri il
+  collegamento tiene solo le scelte principali (`principali` della registrazione; i controlli con
+  `data-collegamento-secondario` cadono per primi) e lo dice.
+
+### Come aggiungere il collegamento a una pagina nuova
+
+1. `<script src="collegamento.js?v=…"></script>` subito dopo `aspetto.js` e **prima** dello script della pagina (la
+   versione la tiene allineata `costruisci_pagine.py`).
+2. **Controlli semplici** (`input`, `select`, `textarea` con un `id`): attributo `data-collegamento` (vuoto = l'id come
+   nome del parametro, altrimenti il nome breve: `data-collegamento="anno"`); i radio con lo stesso `name` hanno tutti
+   `data-collegamento="nome"`. Anche quelli creati dallo script (`campo.dataset.collegamento = "…"`). Il modulo li legge
+   (caselle `1`/`0`) e all'apertura li rimette **nell'ordine della pagina**, aspettando le opzioni dei menu che arrivano
+   dopo (regione → comune → ente…), con gli eventi `input` e `change`: la pagina reagisce come a una scelta a mano.
+   Mai sui campi di file, password ed email (il modulo li salta comunque).
+3. **Scelte che non sono controlli** (clic sulla mappa, pulsanti, elenchi, vista della mappa) con una registrazione:
+   ```js
+   if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+     chiavi: ["anno", "punti"],                 // parametri gestiti (tolti quando la scelta sparisce)
+     principali: ["anno"],                      // restano anche con un indirizzo troppo lungo
+     pronto: () => stato.pronto,                // facoltativo: si aspetta prima di rimettere controlli e scelte
+     leggi: () => (stato.pronto ? { anno: stato.anno, punti: … } : null),   // null = non ancora pronta, parametri lasciati
+     applica: async (p) => { … },               // p = URLSearchParams dell'indirizzo aperto; dopo i controlli semplici
+   });
+   ```
+   Se l'apertura della pagina legge già i parametri (come `?lat=&lon=&z=` delle mappe), basta `leggi`. Dopo una scelta che
+   non passa da un evento (per esempio la fine di uno spostamento della mappa) si chiama `EUGENIO_COLLEGAMENTO.aggiorna()`.
+   Una pagina che si prepara in modo asincrono mette un `stato.pronto = true` alla fine dell'avvio (anche in caso di errore,
+   con `.finally`) e lo passa in `pronto`.
+4. Un risultato che si ottiene con un pulsante («Calcola») e senza file si rifà da solo: parametro `calcolato=1` scritto
+   solo con il risultato in vista e `applica` che richiama il calcolo (Emissioni, Previsioni «Solo il clima»).
+5. Una riga nella tabella del README della fase 5 e una prova in `tests/test_collegamento_browser.py`: scelte, collegamento,
+   pagina nuova (contesto nuovo, senza la memoria del browser) con quell'indirizzo, stesse scelte, campo uguale
+   all'indirizzo, 375 px senza scorrimento orizzontale.

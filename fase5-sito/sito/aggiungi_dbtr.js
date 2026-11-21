@@ -10,7 +10,7 @@
   const $ = (id) => document.getElementById(id);
   const V = (document.currentScript && /[?&]v=([\w-]+)/.exec(document.currentScript.src) || [])[1] || "";
   const conV = (u) => (V ? `${u}?v=${V}` : u);
-  const fmt = (v, d = 0) => (v === null || v === undefined || !Number.isFinite(+v) ? "—" : (+v).toLocaleString("it-IT", { maximumFractionDigits: d, minimumFractionDigits: d }));
+  const fmt = (v, d = 0) => (v === null || v === undefined || !Number.isFinite(+v) ? "—" : EUGENIO_NUMERI.formato(v, d));
   const colore = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
   function h(tag, cls, testo) { const e = document.createElement(tag); if (cls) e.className = cls; if (testo !== undefined && testo !== null) e.textContent = String(testo); return e; }
   function messaggio(id, t, tipo) { const m = $(id); if (!m) return; m.textContent = t || ""; m.classList.toggle("errore", tipo === "errore"); m.classList.toggle("ok", tipo === "ok"); }

@@ -30,7 +30,7 @@ function el(tag, attrs = {}, parent) {
   return e;
 }
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const num = (x) => Number(x).toLocaleString("it-IT");
+const num = (x, dec = 3) => EUGENIO_NUMERI.formato(x, dec, 0);
 const dataIt = (s) => s ? s.split("-").reverse().join("/") : "—";
 const normalizza = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 function messaggio(id, t, errore = false) { const m = $(id); m.textContent = t; m.classList.toggle("errore", errore); }
@@ -538,7 +538,7 @@ $("scarica").addEventListener("click", async () => {
       pezzi.push(value);
       ricevuti += value.length;
       if (attesi) riemp.style.width = `${Math.min(97, 3 + 94 * ricevuti / attesi)}%`;
-      messaggio("messaggio", `Scaricamento… ${(ricevuti / 1048576).toLocaleString("it-IT", { maximumFractionDigits: 1 })} MB`);
+      messaggio("messaggio", `Scaricamento… ${EUGENIO_NUMERI.formato(ricevuti / 1048576, 1, 0)} MB`);
     }
     const disp = risp.headers.get("Content-Disposition") || "";
     const nome = (disp.match(/filename="([^"]+)"/) || [])[1] || `eugenio_${r.dataset}.${formato}`;
@@ -557,6 +557,85 @@ $("scarica").addEventListener("click", async () => {
     b.disabled = !(stato.stima && stato.stima.consentito);
     setTimeout(() => { barra.hidden = true; riemp.style.width = "0"; }, 1500);
   }
+});
+
+// ------------------------------------------------------------------ collegamento a questa simulazione (20/11/2026)
+// Parametri: dataset (lo scrive già scegliDataset), var, tip, tass, freq, dal, al, stagioni, fino, cop, area, prov,
+// comuni (codici ISTAT separati da virgole, anche di altre regioni), capoluoghi, formato; la regione la porta minimappa.js.
+async function nomiComuni(codici) {
+  const out = new Map();
+  stato.comuniRegione.forEach((c) => { if (codici.includes(c.istat)) out.set(c.istat, { nome: c.nome, prov: c.prov }); });
+  const regioni = ["01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20"];
+  for (const r of regioni) {
+    if (codici.every((c) => out.has(c))) break;
+    if (r === stato.regione) continue;
+    try {
+      const m = await (await fetch(`dati/mappa/${r}.json`)).json();
+      m.comuni.forEach((c) => { if (codici.includes(c.istat)) out.set(c.istat, { nome: c.nome, prov: c.prov }); });
+    } catch { /* regione non disponibile */ }
+  }
+  return out;
+}
+function spuntaValori(nome, elenco) {
+  const v = new Set(elenco.split(",").filter(Boolean));
+  document.querySelectorAll(`input[name="${nome}"]`).forEach((i) => { i.checked = v.has(i.value); });
+}
+function scegliRadio(nome, v) {
+  const i = v && document.querySelector(`input[name="${nome}"][value="${CSS.escape(v)}"]`);
+  if (i) i.checked = true;
+}
+if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+  chiavi: ["var", "tip", "tass", "freq", "dal", "al", "stagioni", "fino", "cop", "area", "prov", "comuni", "capoluoghi", "formato"],
+  principali: ["var", "tip", "tass", "freq", "dal", "al", "stagioni", "fino", "cop", "area", "prov", "capoluoghi", "formato"],
+  leggi() {
+    const ds = stato.ds;
+    if (!ds) return null;
+    const area = ds.area ? radio("area") : null;
+    return {
+      var: ds.id !== "legge10" && ds.id !== "comuni" && ds.id !== "dpr412" ? valori("variabile").join(",") : null,
+      tip: ds.id === "legge10" ? radio("tipologia") : null,
+      tass: ds.id === "eurostat_pmi" ? valori("tassazione").join(",") : null,
+      freq: ds.frequenze.length ? radio("frequenza") : null,
+      dal: ds.periodo === "date" || ds.periodo === "semestri" ? $("dal").value : null,
+      al: ds.periodo === "date" || ds.periodo === "semestri" ? $("al").value : null,
+      stagioni: ds.periodo === "stagioni" ? $("stagioni").value : null,
+      fino: ds.periodo === "stagioni" ? $("fino-al").value : null,
+      cop: $("blocco-copertura").hidden ? null : $("copertura").value,
+      area,
+      prov: area === "provincia" ? $("provincia").value : null,
+      comuni: area === "comuni" ? [...stato.scelti.keys()].join(",") : null,
+      capoluoghi: ds.area && $("capoluoghi").checked ? "1" : null,
+      formato: radio("formato"),
+    };
+  },
+  async applica(p) {
+    const C = window.EUGENIO_COLLEGAMENTO;
+    if (!(await C.quando(() => stato.ds && stato.comuniRegione.length))) return;
+    if (p.has("var")) spuntaValori("variabile", p.get("var"));
+    if (p.has("tip")) scegliRadio("tipologia", p.get("tip"));
+    if (p.has("tass")) spuntaValori("tassazione", p.get("tass"));
+    if (p.has("freq")) { scegliRadio("frequenza", p.get("freq")); copertura(); }
+    if (p.has("dal") || p.has("al")) {
+      if (p.get("dal")) $("dal").value = p.get("dal");
+      if (p.get("al")) $("al").value = p.get("al");
+      document.querySelectorAll("#periodi-rapidi .filtro").forEach((b) => b.setAttribute("aria-pressed", "false"));
+      $("nota-periodo").hidden = true;
+    }
+    if (p.has("stagioni")) $("stagioni").value = p.get("stagioni");
+    if (p.get("fino")) $("fino-al").value = p.get("fino");
+    if (p.has("cop")) $("copertura").value = p.get("cop");
+    if (p.has("area")) scegliRadio("area", p.get("area"));
+    if (p.has("prov")) $("provincia").value = p.get("prov");
+    const codici = (p.get("comuni") || "").split(",").filter((c) => /^\d{6}$/.test(c));
+    if (codici.length) {
+      const nomi = await nomiComuni(codici);
+      stato.scelti.clear();
+      codici.forEach((c) => stato.scelti.set(c, nomi.get(c) || { nome: c, prov: "?" }));
+    }
+    $("capoluoghi").checked = p.get("capoluoghi") === "1";
+    if (p.has("formato")) scegliRadio("formato", p.get("formato"));
+    areaTesti(); colora(); notaStagioni(); aggiornaStima();
+  },
 });
 
 // ------------------------------------------------------------------ avvio

@@ -165,6 +165,31 @@ def test_mercati_senza_credenziali_gme_non_manda_email(monkeypatch):
     assert inviati == ["dati di mercato: aggiornamento incompleto"]
 
 
+def test_mercato_mgp_email_solo_se_da_segnalare(monkeypatch, tmp_path):
+    """(20/11/2026) Lavoro mercato-mgp: email solo per i motivi decisi da mgp_notturno; senza configurazione nulla."""
+    import sys, types
+    from servizio import worker as W
+    inviati = []
+    monkeypatch.setattr(W.avvisi, "invia", lambda o, t, *a, **k: inviati.append((o, t)) or True)
+    monkeypatch.setattr(W.C, "MERCATI_CONFIG", str(tmp_path / "manca.toml"))
+    assert W.mercato_mgp() == {}
+    (tmp_path / "config.toml").write_text("")
+    monkeypatch.setattr(W.C, "MERCATI_CONFIG", str(tmp_path / "config.toml"))
+    esiti = [{"errori": ["mgp_offerte 2025-11-01: rete"], "da_segnalare": []},
+             {"errori": [], "da_segnalare": ["Autenticazione GME fallita: password scaduta"]}]
+    mgp_notturno = types.SimpleNamespace(esegui=lambda cfg: esiti.pop(0))
+    pacchetto = types.ModuleType("mercati_energia"); pacchetto.mgp_notturno = mgp_notturno
+    config = types.ModuleType("mercati_energia.config"); config.carica = lambda p: {}
+    monkeypatch.setitem(sys.modules, "mercati_energia", pacchetto)
+    monkeypatch.setitem(sys.modules, "mercati_energia.mgp_notturno", mgp_notturno)
+    monkeypatch.setitem(sys.modules, "mercati_energia.config", config)
+    W.mercato_mgp()
+    assert inviati == []
+    W.mercato_mgp()
+    assert len(inviati) == 1 and "password scaduta" in inviati[0][1]
+    assert ":" in W.C.ORA_MERCATO_MGP and "mercato-mgp" in W.__doc__
+
+
 # ---------------------------------------------------------------------------------------------- rete elettrica (17/11/2026)
 def test_rete_prossima_lettura_ogni_15_minuti():
     base = 1_700_000_000 // 900 * 900          # un quarto d'ora esatto

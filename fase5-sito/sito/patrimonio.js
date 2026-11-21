@@ -161,7 +161,7 @@ async function geolocalizza(testo, nome, { avvisa, barra }) {
       (d.fonti || []).forEach((f) => fonti.add(f));
     } catch (e) {
       if (!righe.length) throw e;
-      interrotto = `Interrotto dopo ${righe.length} righe su ${n}: ${e.message}. Il risultato è parziale.`;
+      interrotto = `Interrotto dopo ${EUGENIO_NUMERI.formato(righe.length)} righe su ${EUGENIO_NUMERI.formato(n)}: ${e.message}. Il risultato è parziale.`;
       break;
     }
   }
@@ -219,7 +219,7 @@ function mostra() {
   box.innerHTML = "";
   for (const [k, etichetta] of [["ok", "trovati"], ["verificare", "da verificare"], ["non_trovato", "non trovati"]]) {
     const d = h("div", `conteggio ${k}`);
-    d.append(h("b", null, c[k].toLocaleString("it-IT")), h("span", null, etichetta));
+    d.append(h("b", null, EUGENIO_NUMERI.formato(c[k], 3, 0)), h("span", null, etichetta));
     box.appendChild(d);
   }
   if (c.errore) {
@@ -257,7 +257,7 @@ function elenco() {
     else if (cercato) art.appendChild(h("p", null, cercato));
     if (r.mappale) {
       const parti = [r.comune_catasto, r.foglio_catasto ? `foglio ${r.foglio_catasto}` : "", `mappale ${r.mappale}`,
-        r.area_m2 ? `${Math.round(r.area_m2).toLocaleString("it-IT")} m²` : "", r.tipo_particella].filter(Boolean);
+        r.area_m2 ? `${EUGENIO_NUMERI.formato(r.area_m2)} m²` : "", r.tipo_particella].filter(Boolean);
       art.appendChild(h("p", "catasto", `Catasto: ${parti.join(", ")}`));
     }
     if (r.nota) art.appendChild(h("p", "nota", r.nota));
@@ -357,7 +357,7 @@ if (window.EUGENIO_REPORT) window.EUGENIO_REPORT.pulsanti($("report"), {
 // ------------------------------------------------------------------ file
 function impostaFile(f) {
   stato.file = f || null;
-  $("nome-file").textContent = f ? `${f.name} · ${(f.size / 1024).toFixed(0)} kB` : "Scegli il file o trascinalo qui";
+  $("nome-file").textContent = f ? `${f.name} · ${EUGENIO_NUMERI.formato(f.size / 1024)} kB` : "Scegli il file o trascinalo qui";
   $("zona-file").classList.toggle("pieno", !!f);
   $("calcola").disabled = !f;
   messaggio("");

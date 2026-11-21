@@ -44,7 +44,7 @@ function el(tag, attrs = {}, parent) {
 }
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const num = (x, dec = 0) => (x === null || x === undefined || !Number.isFinite(x)) ? "n.d."
-  : Number(x).toLocaleString("it-IT", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  : EUGENIO_NUMERI.formato(x, dec);
 function messaggio(t, errore = false) { const m = $("messaggio"); m.textContent = t; m.classList.toggle("errore", errore); }
 function valore(ind, x) {
   const d = INDICATORI[ind];
@@ -589,3 +589,7 @@ function fonti() {
 // i grafici si adattano da soli alla larghezza del loro box (finestra o divisore delle colonne): grafici.js
 
 carica().catch((e) => messaggio(`Indicatori non disponibili: ${e.message}`, true));
+
+// collegamento a questa simulazione (20/11/2026): regione ed ente li scrive già la pagina; componente, «mostra le tre
+// componenti» e anno sono controlli data-collegamento (comp, componenti, anno), rimessi quando gli enti sono caricati
+if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({ pronto: () => stato.dati && stato.chiave });

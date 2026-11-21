@@ -810,6 +810,44 @@
   elencoPunti(); elencoCabine();
   R.pulsantiDati($("scarica-dati"), datiFile, $("messaggio-dati"));
   mappaDettaglio().then(() => { visibilita(); disegnaPunti(); disegnaCabine(); })
-    .catch((e) => messaggio("messaggio-dettaglio", `Mappa non disponibile: ${e.message}`, true));
+    .catch((e) => messaggio("messaggio-dettaglio", `Mappa non disponibile: ${e.message}`, true))
+    .finally(() => {
+      st.pronto = true;
+      if (st.det && window.EUGENIO_COLLEGAMENTO) st.det.on("moveend", () => window.EUGENIO_COLLEGAMENTO.aggiorna());
+    });
+
+  // collegamento a questa simulazione (20/11/2026): vista (centro=lat*lon*zoom), punti segnati sulla mappa o trovati con la
+  // ricerca (punti=lat*lon_lat*lon…, solo le coordinate), fonte dell'ortofoto scelta a mano; particelle e contorni sono
+  // controlli data-collegamento (strati_gl.js). I punti dell'elenco caricato da file non vanno nell'indirizzo.
+  const daFile = (p) => /^elenco/.test(p.origine);
+  const sei = (x) => Number(x).toFixed(6);
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    regione: false,
+    chiavi: ["centro", "punti", "fonte"],
+    principali: ["centro", "fonte"],
+    pronto: () => st.pronto,
+    leggi() {
+      const m = st.det;
+      if (!m || !st.pronto) return null;
+      const c = m.getCenter();
+      return { centro: [sei(c.lat), sei(c.lng), m.getZoom().toFixed(2)].join("*"),
+        punti: st.punti.filter((p) => !daFile(p)).map((p) => `${sei(p.lat)}*${sei(p.lon)}`).join("_") || null,
+        fonte: st.manuale ? (st.fonte ? st.fonte.id : "nessuna") : null };
+    },
+    async applica(p) {
+      const m = st.det;
+      if (!m) return;
+      const punti = (p.get("punti") || "").split("_").map((x) => x.split("*").map(Number)).filter((x) => x.length === 2 && x.every(Number.isFinite));
+      punti.forEach(([lat, lon], i) => aggiungiPunto({ lat, lon, origine: "collegamento", nome: `Punto ${st.seq + 1}` }, { attiva: i === punti.length - 1 }));
+      const [lat, lon, z] = (p.get("centro") || "").split("*").map(Number);
+      if ([lat, lon, z].every(Number.isFinite)) m.jumpTo({ center: [lon, lat], zoom: z });
+      if (p.has("fonte")) {
+        st.manuale = true;
+        const id = p.get("fonte") === "nessuna" ? "" : p.get("fonte");
+        if (!id || st.fonti.some((f) => f.id === id)) scegliFonte(id);
+        await elencoFonti();
+      }
+    },
+  });
   window.EUGENIO_CABINE = { st, aggiungiPunto, attiva, datiFile, opzioniImmagine, aggiornaCabine, modo };
 })();

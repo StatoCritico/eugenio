@@ -153,7 +153,7 @@
   const GO = window.EUGENIO_GRUPPI_ORE, SA = window.EUGENIO_SCELTA_ARIA;
   const $ = (id) => document.getElementById(id);
   // migliaia sempre col punto (anche 2.485, come 14.633)
-  const fmt = (n, d = 0) => (Number.isFinite(n) ? Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" }) : "—");
+  const fmt = (n, d = 0) => (Number.isFinite(n) ? EUGENIO_NUMERI.formato(n, d) : "—");
   const meno = (s) => String(s).replace(/^-/, "−");
   const fmtS = (n, d = 0) => meno(fmt(n, d));
   function h(tag, cls, testo) {
@@ -185,6 +185,30 @@
     ris: null, attesa: 0, vista: "confronto", nuvole: [],
   };
   const cache = { stat: new Map(), prog: new Map(), serie: null };
+  // (20/11/2026) collegamento a questa simulazione: aspetto della nuvola, zona di comfort, punti di progetto e tabella delle
+  // classi dall'indirizzo (comune, anni, livello, gruppi e diagramma li leggono i moduli comuni). Non vanno nell'indirizzo
+  // le condizioni di progetto corrette a mano (tornano quelle dei dati).
+  {
+    const q = new URLSearchParams(location.search);
+    if (q.get("nuvola") === "densita") st.modo = "densita";
+    if (RAGGI.some(([, v]) => String(v) === q.get("raggio"))) st.raggio = Number(q.get("raggio"));
+    if (/^\d$/.test(q.get("trasp") || "") && +q.get("trasp") < TRASP.length) st.trasp = Number(q.get("trasp"));
+    const z = (q.get("comfort") || "").split("*").map((x) => Number(x.replace(",", ".")));
+    if (z.length === 4 && z.every(Number.isFinite)) st.zona = { tMin: z[0], tMax: z[1], urMin: z[2], urMax: z[3] };
+    if (q.has("vedi_comfort")) st.mostraZona = q.get("vedi_comfort") !== "0";
+    if (q.has("vedi_progetto")) st.mostraProgetto = q.get("vedi_progetto") !== "0";
+    if (/^(confronto|g\d+)$/.test(q.get("tabella") || "")) st.vista = q.get("tabella");
+  }
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    chiavi: ["nuvola", "raggio", "trasp", "comfort", "vedi_comfort", "vedi_progetto", "tabella"],
+    principali: [],
+    leggi: () => ({
+      nuvola: st.modo === "densita" ? "densita" : null, raggio: st.raggio === 1 ? null : st.raggio, trasp: st.trasp === 2 ? null : st.trasp,
+      comfort: [st.zona.tMin, st.zona.tMax, st.zona.urMin, st.zona.urMax].join("*"),
+      vedi_comfort: st.mostraZona ? null : "0", vedi_progetto: st.mostraProgetto ? null : "0",
+      tabella: st.vista === "confronto" ? null : st.vista,
+    }),
+  });
 
   // ---------------------------------------------------------------- moduli comuni
   const D = window.EUGENIO_DIAGRAMMA_ARIA.crea($("diagramma-aria"), {
@@ -197,9 +221,12 @@
   const G = GO.crea($("aria-gruppi"), { iniziali: INIZIALI });
   // la serie del passo 1 deve coprire gli anni dei gruppi visibili: la porto subito al massimo che serve (prima che parta il
   // primo caricamento, così non si scarica due volte)
+  // (20/11/2026) aperta da un collegamento con ?anni=: gli anni scelti valgono come scelti a mano (non si alzano da soli)
+  const anniDalLink = new URLSearchParams(location.search).has("anni");
+  if (anniDalLink) { st.manuale = true; G.gruppi().forEach((g) => st.prima.set(g.id, { anni: g.anni, mostra: g.mostra })); }
   {
     const serve = anniNecessari(G.visibili());
-    if (serve && rango(serve) > rango(S.anni())) S.anni(serve);
+    if (!anniDalLink && serve && rango(serve) > rango(S.anni())) S.anni(serve);
   }
   const L = SA.livelloProgetto("#aria-livello", { titolo: "Livello delle condizioni di progetto" });
 
@@ -687,7 +714,7 @@
     const idx = g.indici, da = Math.max(0, idx.length - MAX_RIGHE_CSV);
     const out = intestazione();
     out.push(["Gruppo", `${g.indice + 1} ${g.nome} (${descriviGruppo(g)})`]);
-    if (da) out.push(["Attenzione", `Il gruppo ha ${idx.length} ore: qui ci sono solo le ultime ${MAX_RIGHE_CSV}.`]);
+    if (da) out.push(["Attenzione", `Il gruppo ha ${EUGENIO_NUMERI.formato(idx.length)} ore: qui ci sono solo le ultime ${EUGENIO_NUMERI.formato(MAX_RIGHE_CSV)}.`]);
     out.push([], ["Ora UTC", "Data e ora locale", "T (°C)", "UR (%)", "x (g/kg)", "h (kJ/kg)", "Bulbo umido (°C)"]);
     const due = (v) => String(v).padStart(2, "0");
     for (let k = da; k < idx.length; k++) {

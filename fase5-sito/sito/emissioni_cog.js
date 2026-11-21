@@ -9,6 +9,8 @@
 //     → { co2_chp_t, co2_rete_t, co2_caldaia_t, co2_separata_t, evitata_t, evitata_pct, intensita_kg_mwh }
 //   daTaglia({ potenza_kwe, ore, rendimento_elettrico, rendimento_termico }) → { elettrica_mwh, calore_mwh, gas_mwh_pci }
 (function (radice) {
+  // numeri col punto delle migliaia (numeri.js); in node (prove) lo si carica con require
+  const NUMERI = () => (typeof EUGENIO_NUMERI !== "undefined" ? EUGENIO_NUMERI : require("./numeri.js"));
   const KWH_SMC = (8190 * 4.1868) / 3600;        // pci del gas di ISPRA: 8190 kcal/Sm³ ≈ 9,525 kWh/Sm³
   const TJ_MWH = 277.7778;                        // 1 TJ = 277,78 MWh
   const ETICHETTE = { termoelettrica_lorda_solo_fossili: "produzione termoelettrica lorda, solo fossili",
@@ -43,7 +45,7 @@
   // ------------------------------------------------------------------ pagina
   const $ = (id) => document.getElementById(id);
   if (!$("calcola-emissioni")) return;
-  const fmt = (v, d = 0) => (Number.isFinite(+v) ? (+v).toLocaleString("it-IT", { maximumFractionDigits: d, minimumFractionDigits: d }) : "—");
+  const fmt = (v, d = 0) => (Number.isFinite(+v) ? NUMERI().formato(v, d) : "—");
   const num = (s) => { const t = String(s == null ? "" : s).trim().replace(/\s/g, "").replace(/\./g, "").replace(",", "."); return t === "" ? NaN : Number(t); };
   const h = (tag, cls, t) => { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; };
   const G = window.EUGENIO_GRAFICI;
@@ -101,7 +103,8 @@
       ["CO₂ evitata (+) o aggiunta (−)", `${fmt(r.evitata_t, 1)} t (${fmt(r.evitata_pct, 1)} %)`],
       ["Fattore della rete di pareggio", r.soglia_rete_g_kwh !== null ? `${fmt(r.soglia_rete_g_kwh, 0)} g/kWh: con una rete più pulita il cogeneratore emette di più` : "—"]]
       .forEach(([k, v]) => { const tr = b.insertRow(); tr.appendChild(h("th", null, k)); tr.appendChild(h("td", "num", v)); });
-    box.appendChild(t);
+    // (20/11/2026) dentro .tabella-scorre: sul telefono la tabella scorre da sola e la pagina non si allarga
+    const scorre = h("div", "tabella-scorre"); scorre.appendChild(t); box.appendChild(scorre);
     // sensibilità: tutti i fattori della rete dell'anno scelto
     const ts = h("table", "mensili"), r1 = ts.createTHead().insertRow();
     ["Fattore della rete (ISPRA, " + f.anno + ")", "g CO₂/kWh", "CO₂ evitata (t)", "%"].forEach((x) => r1.appendChild(h("th", null, x)));
@@ -139,6 +142,15 @@
     { area: [sx, 20, W - 10, H - 20], guida: false });
   }
   $("calcola-emissioni").addEventListener("click", esegui);
+  // collegamento a questa simulazione (20/11/2026): i campi sono controlli data-collegamento (modo, elettrica, calore, gas,
+  // unita_gas, potenza, ore, eta_e, eta_t, anno, rete, eta_caldaia); calcolato=1 se il risultato era in vista, così
+  // riaprendo il collegamento il calcolo si rifà da solo
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    chiavi: ["calcolato"],
+    pronto: () => !!stato.dati,
+    leggi: () => ({ calcolato: $("passo-risultati").hidden ? null : "1" }),
+    applica: (p) => { if (p.get("calcolato") === "1") esegui(); },
+  });
   $("scarica-emissioni").addEventListener("click", () => {
     if (!stato.ultimo) return;
     const { d, f, r, eta, scelto } = stato.ultimo, q = (x) => (x === null || x === undefined ? "" : String(x).replace(".", ","));

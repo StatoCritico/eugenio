@@ -11,20 +11,21 @@ try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
 var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|aria|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261120d";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261120d"></script>
-<link rel="stylesheet" href="stile.css?v=20261120d">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261120d">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261120d">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261121a";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261121a"></script>
+<script src="numeri.js?v=20261121a"></script>
+<link rel="stylesheet" href="stile.css?v=20261121a">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261121a">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261121a">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
-<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261120d">
+<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261121a">
 </head>
 <body>
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261120d" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261121a" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -32,7 +33,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261120d">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261121a">Novità</a>
       <a href="esempi.html">Esempi</a>
       <a href="contributi.html">Contributi</a>
       <a href="contatti.html">Contattaci</a>
@@ -60,10 +61,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="fv-cabine.html">Cabine primarie <span class="cantiere prova">sperimentale</span></a></li><li><span class="voce-gme voce-corso" data-pagina="fv-ombre.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Ombre e percorso del sole</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-irradiazione.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Sole e irradiazione su tetti e facciate</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-producibilita.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Producibilità con le ombre</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-pvgis.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Confronto con PVGIS</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-dlgs199.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">D.Lgs. 199/2021, Allegato III</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-leed.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Prefattibilità LEED</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-cer.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Comunità energetiche</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme" data-pagina="fv-mercato.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Prezzo catturato, accumuli e mercato</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li></ul>
         </details>
         <details class="pannello-gruppo" data-gruppo="statistiche"><summary>Statistiche</summary>
-          <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li><li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale</span></a></li></ul>
+          <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li><li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale</span></a></li><li><a href="elettricita.html">Produzione e consumi di elettricità <span class="cantiere prova">sperimentale</span></a></li><li><a href="carichi.html">Carichi elettrici <span class="cantiere prova">sperimentale</span></a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261120d">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261121a">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -146,6 +147,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
             <li><a href="indici-prezzi.html">Indici dei prezzi</a></li>
             <li><a href="indicatori.html">Costi energetici Sanità</a></li>
             <li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="elettricita.html">Produzione e consumi di elettricità <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="carichi.html">Carichi elettrici <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
           </ul></details></li>
       </ul>
     </nav>
@@ -231,7 +234,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         verificate prima di usarle in un progetto.</p>
       </div>
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261120d" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261121a" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL con <a href="licenza.html#attribuzione">termini aggiuntivi</a>, dati <a href="licenza.html#dati">CC BY 4.0</a>). <span class="piede-attribuzione">EuGEnio © 2026 Paolo Bianco – Stato Critico – <a href="https://eugenio.statocritico.it">https://eugenio.statocritico.it</a></span></p>
   <!-- /piede -->
     </footer>
@@ -261,8 +264,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <p class="aiuto">Sotto gli edifici puoi mettere l'ortofoto (scegli la fonte) e, da vicino, i confini delle particelle
         catastali e i contorni degli edifici. Legenda e fonti compaiono sotto la mappa ed entrano nell'immagine scaricata.</p>
       <div class="riga-campi sfondo-3d">
-        <label class="casella-strato"><input id="strato-ortofoto" type="checkbox" checked> Ortofoto</label>
-        <label>fonte <select id="sfondo-ortofoto"><option value="">nessuna ortofoto</option></select></label>
+        <label class="casella-strato"><input id="strato-ortofoto" type="checkbox" checked data-collegamento="ortofoto"> Ortofoto</label>
+        <label>fonte <select id="sfondo-ortofoto" data-collegamento="fonte"><option value="">nessuna ortofoto</option></select></label>
       </div>
       <div class="caselle-strati" id="caselle-strati"></div>
     </div>
@@ -302,7 +305,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         tabella dei corpi («tetto a falde scelto dall'utente»).</p>
       <div class="riga-campi coperture-comandi">
         <button class="bottone secondario tegola" id="tegola" type="button" aria-pressed="false" title="Tetto a falde: clic su un edificio per cambiarlo" aria-label="Tetto a falde: clic su un edificio per cambiarlo"><svg class="icona-tegola" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M2.6 11.6 12 6.2l9.4 5.4L12 17z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M2.6 11.6v2.6L12 19.6l9.4-5.4v-2.6M12 17v2.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.3 9.5l9.4 5.4M9.4 7.7l9.4 5.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span>Tegola</span></button>
-        <label class="inclinazione-tetti">Inclinazione <input id="inclinazione-tetti" type="number" min="5" max="60" step="1" value="22" inputmode="decimal"> °</label>
+        <label class="inclinazione-tetti">Inclinazione <input id="inclinazione-tetti" data-collegamento="inclinazione" type="number" min="5" max="60" step="1" value="22" inputmode="decimal"> °</label>
       </div>
       <div class="riga-campi coperture-comandi">
         <button class="bottone secondario" id="reset-piani" type="button" disabled>Reset piani</button>
@@ -345,17 +348,17 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <p class="aiuto">I valori che scrivi qui (o che arrivano dal file del Patrimonio, colonne facoltative) hanno la
         precedenza sulle stime: file → visura → stima dall'altezza. Accanto a ogni numero c'è la sua fonte.</p>
       <div class="riga-campi">
-        <label>Uso <select id="uso">
+        <label>Uso <select id="uso" data-collegamento>
           <option value="">dalla sagoma</option><option value="residenziale">residenziale (3,0 m)</option>
           <option value="uffici">uffici (3,4 m)</option><option value="scuola">scuola (3,5 m)</option>
           <option value="ospedale">ospedale (4,0 m)</option><option value="commerciale">commerciale (4,0 m)</option>
           <option value="capannone">capannone o palestra (un piano)</option><option value="altro">altro (3,2 m)</option></select></label>
-        <label>Piani fuori terra <input id="csv-piani_fuori_terra" type="number" min="1" step="1"></label>
-        <label>Piani interrati <input id="csv-piani_interrati" type="number" min="0" step="1"></label>
-        <label>Superficie lorda (m²) <input id="csv-superficie_lorda" type="number" min="0"></label>
-        <label>Superficie netta (m²) <input id="csv-superficie_netta" type="number" min="0"></label>
-        <label>Superficie catastale (m²) <input id="csv-superficie_catastale" type="number" min="0"></label>
-        <label>Anno di costruzione <input id="csv-anno_costruzione" type="number" min="1000" max="2100"></label>
+        <label>Piani fuori terra <input id="csv-piani_fuori_terra" data-collegamento="piani_fuori_terra" type="number" min="1" step="1"></label>
+        <label>Piani interrati <input id="csv-piani_interrati" data-collegamento="piani_interrati" type="number" min="0" step="1"></label>
+        <label>Superficie lorda (m²) <input id="csv-superficie_lorda" data-collegamento="superficie_lorda" type="number" min="0"></label>
+        <label>Superficie netta (m²) <input id="csv-superficie_netta" data-collegamento="superficie_netta" type="number" min="0"></label>
+        <label>Superficie catastale (m²) <input id="csv-superficie_catastale" data-collegamento="superficie_catastale" type="number" min="0"></label>
+        <label>Anno di costruzione <input id="csv-anno_costruzione" data-collegamento="anno_costruzione" type="number" min="1000" max="2100"></label>
       </div>
       <div id="superfici" data-riquadro-tabella data-titolo="Piani e superfici"></div>
       <p class="aiuto" id="nota-sede" hidden></p>
@@ -379,12 +382,12 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         ristrutturazioni importanti di primo livello (dipende dalla quota di superfici vetrate: se non la scrivi, EuGEnio la
         stima dall'uso dell'edificio).</p>
       <div class="riga-campi">
-        <label>Intervento <select id="intervento-199">
+        <label>Intervento <select id="intervento-199" data-collegamento="intervento">
           <option value="nuovo">nuova costruzione</option>
           <option value="primo" selected>ristrutturazione importante di primo livello</option>
           <option value="secondo">ristrutturazione importante di secondo livello</option>
           <option value="impianto">ristrutturazione dell'impianto termico</option></select></label>
-        <label class="casella"><input id="pubblico-199" type="checkbox"> edificio pubblico</label>
+        <label class="casella"><input id="pubblico-199" type="checkbox" data-collegamento="pubblico"> edificio pubblico</label>
         <label>Superfici vetrate (% dell'involucro, prima dell'intervento) <input id="quota-vetrata" type="number" min="0"
           max="100" step="0.5" placeholder="stima"></label>
       </div>
@@ -398,8 +401,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         Dove c'è il rilievo LiDAR anche gli alberi (in verde, dal modello delle superfici) fanno ombra, sul terreno e nei
         calcoli del fotovoltaico e delle facciate.</p>
       <div class="riga-campi">
-        <label>Giorno <input id="giorno" type="date"></label>
-        <label>Ora <input id="ora" type="range" min="0" max="1439" step="15"></label>
+        <label>Giorno <input id="giorno" type="date" data-collegamento></label>
+        <label>Ora <input id="ora" data-collegamento type="range" min="0" max="1439" step="15"></label>
         <button class="bottone secondario" id="anima" type="button" aria-pressed="false">▶ Ciclo del giorno</button>
       </div>
       <p class="sole" id="sole" aria-live="polite"></p>
@@ -428,9 +431,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <button class="bottone" id="calcola-fv" type="button" disabled>Calcola la producibilità</button>
       </div>
       <div class="riga-campi">
-        <label>Modulo (W) <input id="modulo-w" type="number" value="430" min="100" max="800"></label>
-        <label>Lati del modulo (m) <input id="modulo-lati" type="text" value="1,13 × 1,72"></label>
-        <label>Fascia di rispetto (m) <input id="fascia" type="number" value="0.5" min="0" step="0.1"></label>
+        <label>Modulo (W) <input id="modulo-w" data-collegamento="modulo_w" type="number" value="430" min="100" max="800"></label>
+        <label>Lati del modulo (m) <input id="modulo-lati" data-collegamento="modulo_lati" type="text" value="1,13 × 1,72"></label>
+        <label>Fascia di rispetto (m) <input id="fascia" data-collegamento type="number" value="0.5" min="0" step="0.1"></label>
       </div>
       <div class="tabella-scorre"><table class="aree-fv" id="tabella-fv"></table></div>
       <div class="messaggio" id="messaggio-fv" role="status" aria-live="polite"></div>
@@ -457,12 +460,12 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <code>mese</code> e <code>consumo</code>. Li confrontiamo con i gradi giorno reali del comune (base 20 °C,
         archivio meteo di EuGEnio) e li dividiamo per superficie e volume.</p>
       <div class="riga-campi">
-        <label>Vettore <select id="vettore"><option value="gas">gas</option><option value="termica">energia termica</option>
+        <label>Vettore <select id="vettore" data-collegamento><option value="gas">gas</option><option value="termica">energia termica</option>
           <option value="elettricita">energia elettrica</option></select></label>
-        <label>Unità <input id="unita-consumi" type="text" value="Smc"></label>
+        <label>Unità <input id="unita-consumi" data-collegamento="unita" type="text" value="Smc"></label>
       </div>
       <label for="consumi">Consumi mensili</label>
-      <textarea id="consumi" rows="6" placeholder="2025-01;4170"></textarea>
+      <textarea id="consumi" data-collegamento data-collegamento-secondario rows="6" placeholder="2025-01;4170"></textarea>
       <div class="scarica">
         <button class="bottone" id="calcola-firma" type="button">Calcola la firma</button>
         <button class="bottone secondario" id="esempio-consumi" type="button">Consumi di esempio (sintetici)</button>
@@ -490,7 +493,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <code>fv_kwh</code> (kWh/anno possibili), <code>sensibilita</code> (kWh per grado giorno), <code>base</code> (quota
         del carico di base, 0–1). Il gas si converte con il potere calorifico superiore convenzionale (0,03852 GJ/Smc ≈ 10,70 kWh/Smc).</p>
       <div class="riga-campi">
-        <label>Costo annuo dell'energia di questo edificio (€) <input id="costo-edificio" type="number" min="0" step="100"></label>
+        <label>Costo annuo dell'energia di questo edificio (€) <input id="costo-edificio" data-collegamento="costo" type="number" min="0" step="100"></label>
       </div>
       <p class="aiuto">Il costo lo scrivi tu (bollette, o il prezzo della tua convenzione regionale per i consumi): EuGEnio non
         lo calcola dai prezzi di borsa, che usa solo per uso interno.</p>
@@ -511,24 +514,25 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   </section>
 </main>
 
-<script src="aspetto.js?v=20261120d"></script>
-<script src="grafici.js?v=20261120d"></script>
-<script src="divisore.js?v=20261120d"></script>
-<script src="report.js?v=20261120d"></script>
-<script src="tabelle.js?v=20261120d"></script>
-<script src="lib/maplibre-gl/maplibre-gl.js?v=20261120d"></script>
-<script src="lib/pmtiles/pmtiles.js?v=20261120d"></script>
-<script src="edifici_calcoli.js?v=20261120d"></script>
-<script src="minimappa.js?v=20261120d"></script>
-<script src="confini_gl.js?v=20261120d"></script>
-<script src="esporta_mappa.js?v=20261120d"></script>
-<script src="cerca_luogo.js?v=20261120d"></script>
-<script src="strati_gl.js?v=20261120d"></script>
-<script src="dbtr_locale.js?v=20261120d"></script>
-<script src="sposta_ortofoto.js?v=20261120d"></script>
-<script src="retino.js?v=20261120d"></script>
-<script src="pubblici_mappa.js?v=20261120d"></script>
-<script src="righello.js?v=20261120d"></script>
-<script src="edificio3d.js?v=20261120d"></script>
+<script src="aspetto.js?v=20261121a"></script>
+<script src="collegamento.js?v=20261121a"></script>
+<script src="grafici.js?v=20261121a"></script>
+<script src="divisore.js?v=20261121a"></script>
+<script src="report.js?v=20261121a"></script>
+<script src="tabelle.js?v=20261121a"></script>
+<script src="lib/maplibre-gl/maplibre-gl.js?v=20261121a"></script>
+<script src="lib/pmtiles/pmtiles.js?v=20261121a"></script>
+<script src="edifici_calcoli.js?v=20261121a"></script>
+<script src="minimappa.js?v=20261121a"></script>
+<script src="confini_gl.js?v=20261121a"></script>
+<script src="esporta_mappa.js?v=20261121a"></script>
+<script src="cerca_luogo.js?v=20261121a"></script>
+<script src="strati_gl.js?v=20261121a"></script>
+<script src="dbtr_locale.js?v=20261121a"></script>
+<script src="sposta_ortofoto.js?v=20261121a"></script>
+<script src="retino.js?v=20261121a"></script>
+<script src="pubblici_mappa.js?v=20261121a"></script>
+<script src="righello.js?v=20261121a"></script>
+<script src="edificio3d.js?v=20261121a"></script>
 </body>
 </html>

@@ -12,6 +12,19 @@
   const COLORE = { elettricita: "var(--prezzi-ele)", gas: "var(--prezzi-gas)" };
   const $ = (id) => document.getElementById(id);
   const scelte = {};      // id dell'indice → { lotto, variante }
+  // (20/11/2026) collegamento a questa simulazione: ?scelte=id*lotto*variante_id*lotto*variante… (lotto e fascia di ogni
+  // indice, come si vedono) e ?lotto_consip= (controllo data-collegamento del confronto). Il file dei consumi no: resta nel
+  // browser e va ricaricato.
+  for (const voce of (new URLSearchParams(location.search).get("scelte") || "").split("_")) {
+    const [id, lotto, variante] = voce.split("*");
+    if (id) scelte[id] = { lotto: lotto || null, variante: variante || null };
+  }
+  let pronti = false;
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    chiavi: ["scelte"],
+    pronto: () => pronti,
+    leggi: () => (pronti ? { scelte: Object.entries(scelte).map(([id, sc]) => [id, sc.lotto || "", sc.variante || ""].join("*")).join("_") || null } : null),
+  });
   const decimali = (ind) => Number.isInteger(ind.decimali) ? ind.decimali : ind.unita === "€/Smc" ? 4 : 2;   // PSV e PFOR: 4
   const nomeVariante = (v) => v === "F0" ? "Monoraria" : /^F\d$/.test(v) ? `Fascia ${v}` : v;
 
@@ -31,7 +44,7 @@
     return e;
   }
   const num = (x, d = 2) => x === null || x === undefined ? "—"
-    : x.toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d });
+    : EUGENIO_NUMERI.formato(x, d);
   const variazione = (prima, ora) => (prima && ora !== null && ora !== undefined && prima !== null) ? (ora - prima) / prima : null;
   const segno = (v) => v === null ? "" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${num(Math.abs(v * 100), 1)} %`;
 
@@ -220,7 +233,7 @@
     const inp = h("input"); inp.type = "file"; inp.id = "file-consumi"; inp.accept = window.EUGENIO_TABELLE ? window.EUGENIO_TABELLE.ACCETTA : ".csv";
     d1.append(l1, inp);
     const d2 = h("div"); const l2 = h("label", null, "Lotto Consip"); l2.htmlFor = "lotto-confronto";
-    const sel = h("select"); sel.id = "lotto-confronto";
+    const sel = h("select"); sel.id = "lotto-confronto"; sel.dataset.collegamento = "lotto_consip";
     Object.keys(cs.lotti).forEach((k) => { const o = h("option", null, cs.lotti[k].nome); o.value = k; o.selected = k === cs.lotto_predefinito; sel.appendChild(o); });
     d2.append(l2, sel);
     riga.append(d1, d2);
@@ -312,7 +325,7 @@
         msg.textContent = "Lettura del file…";
         const l = await window.EUGENIO_TABELLE.leggi(f);
         consumi = leggiConsumi(l.testo, l.decimalePunto);
-        msg.textContent = `Letti ${Object.keys(consumi.kwh).length} mesi.${consumi.doppi ? ` ${consumi.doppi} mesi ripetuti: vale l'ultima riga.` : ""} ${l.nota || ""}`.trim();
+        msg.textContent = `Letti ${EUGENIO_NUMERI.formato(Object.keys(consumi.kwh).length)} mesi.${consumi.doppi ? ` ${consumi.doppi} mesi ripetuti: vale l'ultima riga.` : ""} ${l.nota || ""}`.trim();
         calcola();
       } catch (e) { msg.textContent = e.message || String(e); }
     });
@@ -350,7 +363,9 @@
   fetch("dati/prezzi/indici.json", { cache: "no-cache" })
     .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
     .then(mostra)
+    .then(() => { pronti = true; })
     .catch(() => {
+      pronti = true;
       $("indici-prezzi").innerHTML = "";
       $("indici-prezzi").appendChild(h("p", "aiuto", "I valori non sono ancora pronti: tornano dopo il prossimo aggiornamento notturno."));
     });

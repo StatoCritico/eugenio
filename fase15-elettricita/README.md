@@ -1,0 +1,248 @@
+# Fase 15 – Statistiche dell'elettricità (Terna)
+
+Modulo `elettricita` per due pagine della sezione Statistiche del sito (sperimentali):
+
+| Modulo | Pagina | Dati di Terna |
+|---|---|---|
+| `terna_dc.py`, `costruisci.py` | «Produzione e consumi di elettricità» (`elettricita.html`) | statistiche annuali per regione e provincia |
+| `carichi.py` | «Carichi elettrici» (`carichi.html`, 20/11/2026) | fabbisogno ogni 15 minuti per zona di mercato, produzione per fonte (Italia) |
+
+**Decisione di Paolo (20/11/2026):** i dati di Terna si caricano sul sito per le elaborazioni ma **non si scaricano**
+(nessun CSV, Excel o JSON da scaricare; al più immagini delle elaborazioni). I file costruiti stanno solo sul server:
+`fase5-sito/sito/dati/elettricita/` e `fase5-sito/sito/dati/carichi/` sono in `.gitignore`.
+
+Prove: `cd fase15-elettricita && python -m pytest -q` (solo dati inventati, niente rete).
+
+## Produzione e consumi di elettricità (`terna_dc.py`, `costruisci.py`)
+
+Stato al 21/11/2026: scaricatore e costruttore funzionanti; pagina «Produzione e consumi di elettricità»
+(`fase5-sito/sito/elettricita.html`, `elettricita.js`) pubblicata il 21/11/2026 (`?v=20261121a`, sperimentale), come «Carichi elettrici».
+
+I dati di Terna **non vanno nel repository** e **non si scaricano dal sito** (decisione di Paolo): la cartella
+`raw/` e `fase5-sito/sito/dati/elettricita/` sono nel `.gitignore`.
+
+### Uso
+
+```sh
+# scarico (una richiesta al secondo; salta gli anni già presenti, --ultimi N riscarica gli ultimi N anni)
+cd /home/claude/terna
+PYTHONPATH=/home/claude/eugenio/fase15-elettricita python3 -m elettricita.terna_dc raw [--dataset A,B] [--ultimi N]
+
+# file della pagina
+cd fase15-elettricita
+python3 -m elettricita.costruisci /home/claude/terna/raw /tmp/el ../fase5-sito/sito/dati/mappa
+rm -rf ../fase5-sito/sito/dati/elettricita && cp -r /tmp/el ../fase5-sito/sito/dati/elettricita
+
+python3 -m pytest -q      # prove (niente rete)
+```
+
+### Lo scaricatore (`elettricita/terna_dc.py`)
+
+Usa l'interfaccia della pagina https://dati.terna.it/download-center (POST JSON su
+`/api/sitecore/dati/downloadcenter/recordsv2`, nessuna chiave, non consuma la quota dell'API ufficiale). Ogni anno
+di ogni dataset va in `raw/<dataset>_<anno>.json` = `{"Columns": {...}, "Count": n, "Data": [[...], ...]}`.
+
+**Paginazione** (20/11/2026): il servizio restituisce al massimo 50 000 righe per richiesta. Gli anni più grandi
+(Market, ElectricalEnergy, Total, IndustrialSector, ServiceSector del 2019 e del 2020: 46 000–114 000 righe) si
+leggono a pagine (`pageIndex` 0, 1, 2… con `pageSize` 50000, una richiesta al secondo) finché le righe arrivano a
+`Count`; alla fine si controlla che siano esattamente `Count`, altrimenti `RuntimeError`. Verificato sul 2019 che
+l'ordine crescente e quello decrescente danno le stesse righe (le pagine non si sovrappongono e non saltano righe
+anche con valori uguali). Prove in `tests/test_terna_dc.py`.
+
+Attenzione: `ElectricalEnergy` 2019 e 2020 erano stati scaricati prima di questo controllo con le sole prime 50 000
+righe (metà dei consumi); riscaricati il 20/11/2026. Per controllare una cartella `raw` vecchia: ogni file deve avere
+`Count == len(Data)`.
+
+### Dataset
+
+Unità: energia in GWh, potenza in MW. Livello territoriale: regione e provincia (107 province, nomi di Terna:
+alcuni da riparare, vedi `ripara()` in `costruisci.py`; «Valle D'Aosta» nei consumi, «Valle d'Aosta» nella
+produzione). Anni: quelli che restituisce il servizio al 20/11/2026.
+
+#### Già usati dalla pagina
+
+| Dataset | Anni | Colonne | Contenuto |
+|---|---|---|---|
+| GenerationPlants | 2000–2025 | Anno, Tipo capacità (Lorda/Netta), Regione, Provincia, Fonte, Potenza efficiente (MW) | potenza per fonte: Termoelettrico, Idrico, Eolico, Fotovoltaico, Geotermoelettrico, Accumulo stand alone |
+| CapacityRenewableSources | 2000–2025 | … Fonti, Potenza efficiente (MW) | rinnovabili con le bioenergie |
+| CapacityThermal | 2000–2025 | … Categoria, Sottocategoria, Potenza efficiente (MW) | termoelettrico per categoria e sottocategoria (come ProductionThermal) |
+| ElectricityBySource | 2000–2025 | Anno, Tipo produzione (Lorda/Netta), Regione, Provincia, Fonte, Produzione (GWh) | produzione per fonte |
+| ProductionRenewableSources | 2000–2025 | … Fonte rinnovabile, Produzione (GWh) | rinnovabili con le bioenergie |
+| Total | 2000–2024 | Anno, Regione, Provincia, Settore, Attività, Classe, Consumo (GWh) | consumi per settore (Industria, Servizi, Domestico, Agricoltura), sommando attività e classi |
+| ElectricalEnergy | 2000–2024 | Anno, Regione, Provincia, Settore, Consumo (GWh) | solo riserva per gli anni senza Total e per il confronto (vedi «Problemi noti») |
+| ConsumptionBySource | 2005–2024 | Anno, Regione, Fonte, Copertura (GWh) | copertura della richiesta per fonte, solo regione |
+| ElectricityByType | 2005–2024 | Anno, Regione, Tipologia, Domanda (GWh) | rinnovabili, tradizionali, saldo import/export, solo regione |
+
+#### Nuovi (20/11/2026, per analisi future; la pagina non li usa ancora)
+
+**ThermalHeat** – calore prodotto dagli impianti cogenerativi. 2000–2025, regione e provincia.
+Colonne: Anno, Regione, Provincia, Impianto cogenerativo, Calore prodotto (GWh). Tipi di impianto:
+Ciclo combinato con cogenerazione (CCC), Combustione interna con cogenerazione (CIC), Condensazione e spillamento
+(CSC), Contropressione (CPC), Turbine a gas con cogenerazione (TGC), Celle combustibili con cogenerazione (CEC).
+La stessa chiave (provincia, tipo) compare più volte con valori diversi (una dimensione nascosta, probabilmente
+l'impianto o la sezione; nel 2025 le righe raddoppiano, 993 contro ~530): **si sommano**. Totale Italia:
+54,3 TWh (2005), 61,1 (2017), 51,7 (2024), 53,1 (2025); nel 2024 CCC 20,1, CIC 14,2, TGC 8,5, CSC 5,5, CPC 3,4 TWh.
+
+**ProductionThermal** – produzione termoelettrica per categoria e sottocategoria. 2000–2025, regione e provincia.
+Colonne: Anno, Regione, Provincia, Categoria (Cogenerative / Non cogenerative), Sottocategoria, Produzione (GWh).
+Sottocategorie cogenerative: Ciclo Combinato Con Produzione Di Calore, Combustione Interna Con Produzione Di Calore,
+Turbine A Gas Con Produzione Di Calore, Condensazione e spillamento, Contropressione, Celle combustibili con
+cogenerazione; non cogenerative: Ciclo combinato, Combustione interna, Turbine a gas, Condensazione, Turbo
+espansione, Celle combustibili / Celle A Combustibile, Combustione Esterna, Altro genere (nomi non uniformi negli
+anni). **Manca la colonna Lorda/Netta**: ogni chiave compare due volte, il valore maggiore è la produzione lorda,
+il minore la netta (somma dei maggiori = Termoelettrico lordo di ElectricityBySource: 162 588 GWh nel 2023; somma
+dei minori = netto, 156 156). Sommare tutto conta la produzione due volte. Cogenerativa lorda: 94 TWh (2005),
+110 (2017), 96 (2023), 91 (2024), 95 (2025).
+
+**GrossVsCO2Emissions** – produzione termoelettrica lorda ed emissioni di CO2 per combustibile. 2000–2025, **solo
+regione**. Colonne: Anno, Combustibile (Solidi, Gas naturale / «Gas Naturale» dal 2021, Petroliferi, Bioenergie,
+Altri), Produzione (GWh, lorda: il totale coincide con il termoelettrico lordo), Regione, Emissioni (milioni di
+tonnellate di CO2, comprese quelle delle bioenergie). Alcuni valori sono vuoti (`null`). Italia: 141,5 Mt (2005),
+67,5 (2023), 56,4 (2024), 58,3 (2025).
+
+**Market** – consumi per mercato. 2000–2024, regione e provincia. Colonne: Anno, Regione, Provincia, Mercato
+(Autoconsumo, Mercato libero, Mercato tutelato), Consumo (GWh). Dal 2021 una riga per provincia e mercato; fino al
+2020 più righe per chiave (dimensione nascosta, nel 2019–2020 fino a ~650 righe per provincia e mercato): si
+sommano. Vedi sotto il significato dell'autoconsumo.
+
+**IndustrialSector**, **ServiceSector**, **Total** – consumi per attività economica e classe, regione e provincia.
+Colonne: Anno, Regione, Provincia, [Settore, solo Total], Attività, Classe, Consumo (GWh). IndustrialSector e Total
+2000–2024, ServiceSector solo 2019–2024 (il servizio non ha anni precedenti; i servizi 2000–2018 per classe sono in
+Total). **La classificazione cambia nel 2019**: 2000–2018 classi merceologiche di Terna (industria 17 classi, p.es.
+«Energia ed acqua / Elettricità e gas», «Manifatturiera di base / Cartaria»; servizi 9 classi, p.es. «Commercio»,
+«Trasporti», «Illuminazione pubblica»; agricoltura una sola voce); dal 2019 divisioni Ateco (industria 38 classi in 6
+attività, servizi 50 classi in 18 attività, agricoltura 13 classi). Righe ripetute per chiave fino al 2020: si
+sommano. In IndustrialSector c'è un'attività vuota con classe vuota (107 righe, sempre 0 GWh). La somma di Total per
+settore coincide con ElectricalEnergy (salvo 2019–2020, vedi sotto) e con IndustrialSector / ServiceSector.
+Dal 20/11/2026 la pagina prende i consumi per settore da Total (vedi la tabella sopra).
+
+### Autoconsumo (dataset Market)
+
+Che cosa comprende, verificato sui dati scaricati il 20/11/2026:
+
+- **Fa parte dei consumi**: Autoconsumo + Mercato libero + Mercato tutelato = consumi totali di ElectricalEnergy e di
+  Total in ogni anno (per esempio 2024: 34 310 + 244 097 + 8 518 = 286 925 GWh). È quindi l'energia consumata dagli
+  autoproduttori con la propria produzione, senza prelievo dalla rete, ed è già dentro i consumi per settore; il
+  mercato libero e il tutelato sono i prelievi dalla rete secondo il contratto di fornitura.
+- **È soprattutto industriale e termoelettrico**: valeva già 21–24 TWh nel 2000–2007, quando il fotovoltaico non
+  c'era (4–7 GWh). Le province con più autoconsumo nel 2023 sono quelle dei grandi autoproduttori industriali:
+  Taranto 2 939 GWh (acciaieria, quasi il 90 % dei consumi industriali della provincia), Cuneo 1 303, Bergamo 1 200,
+  Lucca 1 096 (cartiere), Siracusa 1 055 (raffinerie e petrolchimico), Milano 1 039, Modena 953. In nessuna
+  provincia supera i consumi dell'industria. Tra le province (2023) è più legato al calore cogenerativo (ThermalHeat,
+  correlazione 0,65) e ai consumi industriali (0,64) che alla produzione cogenerativa (0,42) o fotovoltaica (0,37).
+- **È una parte della produzione degli autoproduttori, non tutta**: 30,9 TWh nel 2023 contro 96 TWh di produzione
+  termoelettrica cogenerativa lorda (che comprende però anche le centrali di produttori non autoproduttori) e 30,7 TWh
+  di fotovoltaico lordo. L'energia prodotta dagli autoproduttori e immessa in rete non è autoconsumo. Terna non
+  pubblica nel Download Center la produzione degli autoproduttori per provincia, quindi il confronto diretto non è
+  possibile con questi dati.
+- **Comprende anche l'autoconsumo fotovoltaico**, almeno in parte: dal 2023 al 2024 cresce di 3,4 TWh (30,9 → 34,3),
+  in 100 province su 107, con gli aumenti maggiori dove cresce anche il fotovoltaico (Brescia +230, Udine +207,
+  Bergamo +129, Milano +127 GWh), mentre cala nei poli industriali termoelettrici (Taranto −363, Chieti −53, Siracusa
+  −50). La correlazione tra le variazioni provinciali di autoconsumo e di fotovoltaico è però debole (0,16): il dato
+  non permette di separare la quota fotovoltaica da quella termoelettrica.
+- Serie Italia (GWh): 23 819 (2000), 20 169 (2006), 17 530 (2009), 21 103 (2010), 24 995 (2014), 29 125 (2018),
+  28 468 (2020), 30 745 (2021), 30 866 (2023), 34 310 (2024).
+
+### Problemi noti nei dati di Terna
+
+- **ElectricalEnergy 2019 e 2020: mancano ~7 e ~5,5 TWh di industria** rispetto a Total, Market e IndustrialSector
+  (2019: 121 978 contro 128 940 GWh; 2020: 119 952 contro 125 417), concentrati a Brescia (2019: 4 606 contro 8 535)
+  e Taranto (796 contro 3 828), cioè metallurgia e autoconsumo. Gli altri settori e gli altri anni coincidono.
+  **Risolto il 20/11/2026**: il costruttore prende i consumi da Total (somma per anno, provincia e settore) e usa
+  ElectricalEnergy solo per gli anni in cui Total manca. `confronta_consumi()` confronta i due per provincia e anno e
+  scrive nel log (stderr) e nel campo `note` di `italia.json` (non usato da `elettricita.js`) le differenze sopra il
+  5 %: con i dati del 20/11/2026 sono solo Brescia 2019 (12 738 contro 8 809 GWh, −31 %) e 2020 (11 727 contro
+  8 804, −25 %), Taranto 2019 (5 199 contro 2 167, −58 %) e 2020 (4 617 contro 2 076, −55 %). Totale Italia dei
+  consumi: 2019 296 254 GWh (prima 289 290), 2020 279 171 (prima 273 705); 2015 +41 GWh (servizi di alcune grandi
+  province, sotto la soglia); gli altri anni invariati.
+- **ElectricityBySource 2017**: produzione lorda uguale alla netta per tutte le fonti e fotovoltaico Italia 193 GWh
+  (contro 22 104 nel 2016 e 22 654 nel 2018). Il costruttore prende già il massimo con ProductionRenewableSources.
+- Righe doppie con la stessa chiave in GenerationPlants (2017, +16 GW di termoelettrico), ThermalHeat (tutti gli anni,
+  da sommare), ProductionThermal (lorda e netta senza colonna), Market/consumi fino al 2020 (da sommare).
+- Nomi non uniformi: «Valle D'Aosta» / «Valle d'Aosta», «Gas naturale» / «Gas Naturale», sottocategorie
+  termoelettriche con maiuscole diverse, province con caratteri sbagliati (`ripara()`).
+- Anni diversi tra dataset: produzione e potenza fino al 2025, consumi fino al 2024, ServiceSector solo dal 2019.
+
+## Carichi elettrici (`elettricita/carichi.py`)
+
+### Fonte: Terna e non il GME
+
+Paolo aveva chiesto la «potenza richiesta ricalcolata dall'energia scambiata in borsa». I dati del **GME** sono però
+solo per uso interno e non si mostrano sul sito: la pagina usa il **fabbisogno di Terna** («Fabbisogno Italia»,
+dataset `TotalLoad` del Download Center: carico effettivo in MW medi ogni 15 minuti, per zona di mercato e Italia;
+comprende perdite e autoconsumi). Il punto unico per cambiare fonte è `FONTE_CARICO` in `carichi.py` (dataset
+dell'archivio, colonne, scala, testo della fonte): se arrivasse la licenza del GME basta scrivere nell'archivio un
+dataset con le stesse colonne e cambiare lì.
+
+La produzione per fonte di Terna (`ActualGeneration`, `RenewableGeneration`) è **solo nazionale**: il grafico delle
+fonti è sempre dell'Italia; con una zona scelta la pagina lo dice (nessuna ripartizione per zona inventata).
+
+### Archivio (ingresso)
+
+Due formati (vedi anche «Aggancio al worker» sotto per il Parquet del server). Sul PC: una cartella con un file per
+dataset e mese: `<archivio>/<Dataset>_<AAAA>-<MM>.json` =
+`{"Columns": {nome: tipo, …}, "Data": [[…], …]}`, cioè la risposta del Download Center così com'è.
+
+| Dataset | Colonne usate | Unità |
+|---|---|---|
+| `TotalLoad` (obbligatorio) | `Date`, `Total Load [MW]`, `Bidding Zone` (Italy, North, Centre-North, Centre-South, South, Calabria, Sicily, Sardinia) | MW |
+| `ActualGeneration` | `Date`, `Actual Generation`, `Primary Source` (Thermal, Hydro, Wind, Geothermal, Photovoltaic, Self-consumption) | GW medi |
+| `RenewableGeneration` | `Date`, `Renewable Generation`, `Energy Source` (Biomass, Hydro, Wind, Geothermal, Photovoltaic) | GW medi |
+
+`Date`: millisecondi dal 1/1/0001 in ora locale italiana (come il Download Center), oppure ISO `AAAA-MM-GGTHH:MM[:SS]`
+in ora locale, oppure ISO con il fuso. Nel giorno del ritorno all'ora solare le 02:00–02:45 compaiono due volte senza
+indicazione: la prima occorrenza vale come ora legale, la seconda come solare, e per ogni zona si sceglie poi l'ordine
+che fa tornare la somma delle zone con l'Italia (`_ora_doppia`). I dati orari (la generazione fino al 2024) valgono per
+i quattro quarti d'ora dell'ora. Una zona sconosciuta ferma la costruzione (configurazione zonale cambiata: aggiornare
+`ZONE` e `fase5-sito/costruisci_zone.py`).
+
+Scaricamento (una richiesta al secondo, pagine da 50.000 righe con `pageIndex` se `Count` le supera):
+
+```
+python -m elettricita.carichi scarica <archivio> --da 2025-11 [--a 2026-11] [--rifai-ultimo]
+```
+
+### File della pagina (uscita)
+
+```
+python -m elettricita.carichi costruisci <archivio> <uscita>      # costruisci_carichi(archivio, uscita)
+```
+
+- `indice.json`: fonti, data di costruzione, zone (`ITA`, `NORD`, `CNOR`, `CSUD`, `SUD`, `CALA`, `SICI`, `SARD`),
+  voci con i colori (gli stessi di `costruisci.py`: termo #8a8f99, bio #f0912a, idro #7cc7e0, geo #d4561c,
+  eol #a9c641, fv #f7cb15, saldo #c7a0c0) e i mesi: `inizio` (primo quarto d'ora, UTC = mezzanotte italiana del
+  primo del mese), `n` (quarti d'ora con dati: il mese in corso è tagliato all'ultimo), `ora_legale` (`[[indice,
+  minuti dall'UTC], …]` a ogni cambio), `passo_carico`, `fonti`, `passo_fonti` (15 o 60), `rinnovabili`.
+- `carico_AAAA-MM.json`: `{"mese", "zone": {ITA: [MW interi o null] × n, …}}` (≈ 120 kB al mese).
+- `fonti_AAAA-MM.json`: `{"mese", "voci": {termo, bio, idro, geo, eol, fv, saldo: [MW interi o null] × n}}`
+  (≈ 100 kB al mese): fv, eol, geo, idro (con i pompaggi), bio dalla produzione rinnovabile (autoconsumi compresi);
+  termo = produzione totale con gli autoconsumi meno le rinnovabili (senza `RenewableGeneration`: le rinnovabili di
+  `ActualGeneration` e bio = 0); saldo = potenza richiesta dell'Italia − produzione (estero meno pompaggi e accumuli,
+  può essere negativo).
+
+La pagina scarica solo i mesi del periodo scelto (12 mesi ≈ 2,6 MB non compressi, molto meno con la compressione del
+server).
+
+### Aggancio al worker (fase 4, unito il 20/11/2026)
+
+Il lavoro `carichi` del worker (`fase4-server/servizio/worker.py`, README della fase 4 § «Dati di Terna») gira subito
+dopo `terna-api` se l'archivio è cambiato: chiama `costruisci_carichi(TERNA_DATI/serie, sito/dati/.carichi_nuova)` e
+pubblica la cartella in `sito/dati/carichi/` con `_pubblica` se il controllo passa. Il worker **non** usa `scarica` di
+questo modulo: l'archivio lo tiene `servizio/terna.py` (API ufficiale per il giorno prima, Download Center per lo
+storico dal 2021), in **Parquet**, una cartella per serie e un file per mese:
+
+| Dataset di questo modulo | Serie dell'archivio del worker | Colonne lette |
+|---|---|---|
+| `TotalLoad` | `carico_totale/AAAA-MM.parquet` | `istante` (UTC), `zona`, `carico_mw` |
+| `ActualGeneration` | `produzione/AAAA-MM.parquet` | `istante`, `fonte`, `energia_gwh` (GW medi al passo di 15 minuti) |
+| `RenewableGeneration` | `rinnovabili/AAAA-MM.parquet` | `istante`, `fonte`, `energia_gwh` |
+
+`costruisci_carichi` riconosce da sé i due formati (cartella `carico_totale/` con dei `.parquet` = archivio del worker,
+altrimenti i JSON del Download Center sopra); i file della pagina sono identici (prova `test_archivio_parquet_del_worker`).
+L'ora ripetuta di ottobre nel Parquet è già risolta da `terna.py`; `_ora_doppia` la ricontrolla con la somma delle zone.
+`scarica` e `python -m elettricita.carichi scarica` restano per le prove sul PC. Il server deve comprimere i `.json`
+(gzip/brotli) e può tenerli in cache per un giorno.
+
+Prova con i dati veri (20/11/2026): 13 mesi (novembre 2025 – 19 novembre 2026), 39 richieste in circa 2 minuti,
+costruzione in 5 secondi, nessun quarto d'ora mancante tranne il 14–15 gennaio 2026 (192, assenti anche nei dati di
+Terna); somma delle zone = Italia (scarto massimo 2 MW, arrotondamenti).

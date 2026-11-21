@@ -76,7 +76,7 @@ GRUPPI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "d
           "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
                          "dbtr-istruzioni.html", "visure.html"],
           "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
-               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html"]}   # (11/11/2026) Indici dei prezzi prima;
+               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html"]}   # (11/11/2026) Indici dei prezzi prima;
 #                                                    (17/11/2026) Stato della rete elettrica in fondo
 VIETATI = ("PUN Index GME =", "€/MWh", "Prezzo medio")   # nessun valore nelle pagine in attesa della licenza GME
 
@@ -599,8 +599,9 @@ def test_etichette_brevi_nelle_tendine():
     # «in sviluppo» cliccabili (LiDAR, Visure), 16 voci in lavorazione con il triangolo e non cliccabili, 6 GME;
     # (09/11/2026 f) + 3 «S» (Edifici: Obblighi di legge, Geometria e luce naturale, Consumi): 8 «S», 13 in lavorazione
     # (14/11/2026) + 4 «S» del Trattamento aria: 12; (17/11/2026) + «S» di Territorio › Edifici pubblici: 13;
-    # (17/11/2026) + Cabine primarie e Stato della rete elettrica: 15
-    assert len(s) == pannello.count(">sperimentale<") == 15 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    # (17/11/2026) + Cabine primarie e Stato della rete elettrica: 15; (20/11/2026) + Produzione e consumi di elettricità: 16;
+    # (20/11/2026) + Carichi elettrici: 17
+    assert len(s) == pannello.count(">sperimentale<") == 17 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
     assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
@@ -742,7 +743,7 @@ ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html
                "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
                "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
-               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html"]}   # (11/11/2026) Indici dei prezzi prima;
+               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html"]}   # (11/11/2026) Indici dei prezzi prima;
 #                                                    (17/11/2026) Stato della rete elettrica in fondo
 
 
@@ -873,3 +874,44 @@ def test_attribuzione_agpl_in_tutte_le_pagine():
         assert ATTRIBUZIONE in t and 'href="licenza.html#attribuzione"' in t, f.name
     assert 'id="attribuzione"' in (QUI / "sito" / "licenza.html").read_text(encoding="utf-8")
     assert ATTRIBUZIONE in (QUI.parent / "TERMINI_AGGIUNTIVI.md").read_text(encoding="utf-8")
+
+
+def test_esempi_un_caso_per_ogni_pagina_del_menu():
+    """(20/11/2026) Esempi: ogni pagina cliccabile delle tendine del menu ha almeno un caso d'uso con il suo collegamento."""
+    t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
+    tendine = "".join(re.findall(r'<ul class="tendina">.*?</ul>', t, re.S))
+    pagine = sorted(set(re.findall(r'href="([^"#]+\.html)"', tendine)))
+    main = re.search(r"<main.*?</main>", (QUI / "sito" / "esempi.html").read_text(encoding="utf-8"), re.S).group(0)
+    assert "carichi.html" in pagine and "elettricita.html" in pagine
+    assert [p for p in pagine if f'href="{p}' not in main] == []
+
+
+def test_numeri_col_punto_delle_migliaia():
+    """(20/11/2026) numeri.js: punto delle migliaia anche a 4 cifre, nella testa di ogni pagina; nessuno script delle pagine
+    formatta i numeri con toLocaleString/Intl.NumberFormat (solo le date)."""
+    import shutil
+    import subprocess
+    for f in sorted((QUI / "sito").glob("*.html")):
+        s = f.read_text(encoding="utf-8")
+        if "<!-- testa -->" in s:
+            assert re.search(r'<script src="protezione\.js\?v=\w+"></script>\s*<script src="numeri\.js\?v=\w+"></script>', s), f.name
+    for f in sorted((QUI / "sito").glob("*.js")) + [QUI / "sito" / "interno" / "edifici.js"]:
+        if f.name == "numeri.js":
+            continue
+        for riga in f.read_text(encoding="utf-8").splitlines():
+            if "Intl.NumberFormat" in riga or ("toLocaleString(" in riga and not re.search(r"dateStyle|day:|month:", riga)):
+                raise AssertionError(f"{f.name}: {riga.strip()[:120]}")
+    assert "numeri.js" in (QUI / "sito" / "dbtr_worker.js").read_text(encoding="utf-8")
+    assert "Numeri sempre con il punto delle migliaia, anche a 4 cifre" in (QUI / "sito" / "README_stile.md").read_text(encoding="utf-8")
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node non disponibile")
+    prova = r"""
+const N = require(process.argv[1]);
+const casi = [[1234, 0], [1234.5, 1], [-12345.678, 2], [999, 0], [0.25, 2, 0], [3, 2, 0], [1e6, 0], [null, 0], ["", 0], [NaN, 1]];
+const out = casi.map((c) => N.formato(...c));
+out.push(N.raggruppa("-1234567,5"), N.raggruppa("12"));
+console.log(JSON.stringify(out));
+"""
+    out = subprocess.run([node, "-e", prova, str(QUI / "sito" / "numeri.js")], capture_output=True, text=True, encoding="utf-8", check=True).stdout
+    assert json.loads(out) == ["1.234", "1.234,5", "-12.345,68", "999", "0,25", "3", "1.000.000", "–", "–", "–", "-1.234.567,5", "12"]

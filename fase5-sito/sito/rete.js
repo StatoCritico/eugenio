@@ -71,7 +71,7 @@
   };
 
   const num = (n, dec = 0) => (n === null || n === undefined || !Number.isFinite(+n) ? "–"
-    : (+n).toLocaleString("it-IT", { minimumFractionDigits: dec, maximumFractionDigits: dec }));
+    : EUGENIO_NUMERI.formato(n, dec));
   function dataIt(iso) {
     if (!iso) return "–";
     const d = new Date(iso);

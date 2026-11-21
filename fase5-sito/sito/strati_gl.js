@@ -43,6 +43,8 @@
     };
     const cP = casella("strato-particelle", "Confini delle particelle catastali", !!particelle);
     const cE = casella("strato-edifici", "Contorni degli edifici", !!(edificiRegionali.length || osm));
+    // collegamento a questa simulazione (collegamento.js, 20/11/2026): le due caselle vanno nell'indirizzo
+    cP.dataset.collegamento = "particelle"; cE.dataset.collegamento = "contorni";
     // (18/11/2026, segnalazione di Paolo su Edifici pubblici) accanto alla casella accesa, se la mappa è troppo lontana:
     // «si vede dallo zoom 16: avvicinati» (prima l'avviso c'era solo nella legenda sotto la mappa e non si notava)
     const avviso = (c) => { const s = h("span", "aiuto-breve avviso-zoom-strato"); s.hidden = true; c.parentNode.append(s); return s; };

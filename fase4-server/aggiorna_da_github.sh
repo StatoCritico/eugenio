@@ -12,12 +12,13 @@
 #
 # Passi (gli stessi delle procedure AGGIORNAMENTO_*.md):
 #   1. copia di sicurezza di ~/energia (si tengono le ultime 3) e delle convenzioni del server;
-#   2. codice delle fasi 3, 4, 6, 7, 8, 9, 10 e fase5-sito/novita.toml in ~/energia (rsync senza cancellare: restano
+#   2. codice delle fasi 3, 4, 6, 7, 8, 9, 10, 15 e fase5-sito/novita.toml in ~/energia (rsync senza cancellare: restano
 #      .env, fase 2, uni_privato, mercati_energia/dati e tutto ciò che non è nel repository);
 #   3. convenzioni (*.toml e fonti/) in /srv/energia/dati/mercati/convenzioni, con l'elenco di quelle cambiate;
 #   4. docker compose build api, up -d --force-recreate api worker, attesa dell'api «healthy»; se non lo diventa entro
 #      3 minuti si torna da soli alla copia di sicurezza e si esce con errore;
-#   5. sito in /srv/energia/sito (rsync senza cancellare; dati/indicatori e dati/prezzi non si toccano), controllo della
+#   5. sito in /srv/energia/sito (rsync senza cancellare; dati/indicatori, dati/prezzi, dati/elettricita e dati/carichi,
+#      scritti dal worker, non si toccano), controllo della
 #      versione ?v= di index.html;
 #   6. file degli indici dei prezzi (worker «prezzi»);
 #   7. Purge Everything su Cloudflare, se nel .env ci sono CF_ZONE_ID e CF_PURGE_TOKEN (token con il solo permesso
@@ -45,7 +46,8 @@ SITO="${EUGENIO_SITO:-/srv/energia/sito}"
 CONV="${EUGENIO_CONVENZIONI:-/srv/energia/dati/mercati/convenzioni}"
 STATO="${EUGENIO_STATO:-$HOME/.eugenio_versione}"
 REGISTRO="${EUGENIO_REGISTRO:-$HOME/aggiorna_da_github.log}"
-CARTELLE=(fase3-storico fase4-server fase6-mercati fase7-territorio fase8-indicatori fase9-clima-storico fase10-edifici3d)
+CARTELLE=(fase3-storico fase4-server fase6-mercati fase7-territorio fase8-indicatori fase9-clima-storico fase10-edifici3d
+          fase15-elettricita)
 ESCLUSI=(--exclude=.env --exclude=.venv --exclude=__pycache__ --exclude=.pytest_cache --exclude=uni_privato
          --exclude=fase2-gradi-giorno --exclude=mercati_energia/dati/ --exclude=node_modules)
 
@@ -55,7 +57,7 @@ for a in "$@"; do
     --prova) PROVA=1 ;;
     --forza) FORZA=1 ;;
     --notte) NOTTE=1 ;;
-    -h|--help) sed -n 2,29p "$0"; exit 0 ;;
+    -h|--help) sed -n 2,30p "$0"; exit 0 ;;
     v*) TAG="$a" ;;
     *) echo "Argomento sconosciuto: $a" >&2; exit 2 ;;
   esac
@@ -165,7 +167,7 @@ else
 fi
 
 # ------------------------------------------------------------------ 5. sito
-S=(rsync -a -i --exclude=dati/indicatori/ --exclude=dati/prezzi/)
+S=(rsync -a -i --exclude=dati/indicatori/ --exclude=dati/prezzi/ --exclude=dati/elettricita/ --exclude=dati/carichi/)
 [ "$PROVA" = 1 ] && S+=(-n)
 "${S[@]}" "$SORG/fase5-sito/sito/" "$SITO/" >"$ELENCO"
 registra "Sito: $(grep -c '^>f' "$ELENCO" || true) file nuovi o cambiati in $SITO"

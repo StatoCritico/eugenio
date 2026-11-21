@@ -146,7 +146,7 @@
 
   // ------------------------------------------------------------------ controllo nella pagina
   const MAX = 4;
-  const fmt = (n, d = 0) => Number(n).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" });   // 4.357 ore, non 4357
+  const fmt = (n, d = 0) => EUGENIO_NUMERI.formato(n, d);   // 4.357 ore, non 4357 (numeri.js)
   function h(tag, cls, testo) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -322,7 +322,26 @@
     aggiungi.addEventListener("click", () => { const g = nuovo({ preset: "anno" }); if (g) { g.vista.nome.focus(); avvisa(); } });
     zonaCasella.addEventListener("change", () => avvisa());
 
-    (opz.iniziali && opz.iniziali.length ? opz.iniziali : [{ preset: "anno" }]).forEach((d) => nuovo(d));
+    // (20/11/2026) collegamento a questa simulazione: i gruppi nell'indirizzo, separati da «_», campi separati da «*»
+    // (caratteri che l'indirizzo non trasforma in %..):
+    // nome*mostra(1/0)*anni*da(ggmm)*a(ggmm)*ora da*ora a*giorni(t = tutti, f = feriali). Nome del parametro: l'id del box
+    // senza «aria-» (gruppi, gruppi-estate, gruppi-inverno…) o opz.collegamento
+    const chiaveLink = opz.collegamento || (box.id ? box.id.replace(/^aria-/, "") : "gruppi");
+    const testoLink = () => gruppi.map((g) => { const d = g.def; return [String(d.nome || "").replace(/[*_]/g, " ").trim(), d.mostra === false ? 0 : 1,
+      d.anni, d.da.replace("/", ""), d.a.replace("/", ""), d.oraDa, d.oraA, d.giorni === "feriali" ? "f" : "t"].join("*"); }).join("_");
+    const daLink = (testo) => String(testo || "").split("_").filter(Boolean).slice(0, massimo).map((r) => {
+      const [nome, mostra, anni, da, a, oraDa, oraA, giorni] = r.split("*");
+      const dm = (x, pred) => (/^\d{4}$/.test(x || "") ? `${x.slice(0, 2)}/${x.slice(2)}` : pred);
+      const ora = (x, pred) => (Number.isFinite(+x) && x !== "" ? Math.max(0, Math.min(24, Math.round(+x))) : pred);
+      return { nome: nome || "Gruppo", mostra: mostra !== "0", anni: ANNI.includes(+anni) ? +anni : PREDEFINITO.anni,
+        da: dm(da, PREDEFINITO.da), a: dm(a, PREDEFINITO.a), oraDa: ora(oraDa, 0), oraA: ora(oraA, 24), giorni: giorni === "f" ? "feriali" : "tutti" };
+    });
+    const parametroLink = typeof location !== "undefined" ? new URLSearchParams(location.search).get(chiaveLink) : null;
+    const dalCollegamento = parametroLink ? daLink(parametroLink) : [];
+    (dalCollegamento.length ? dalCollegamento : opz.iniziali && opz.iniziali.length ? opz.iniziali : [{ preset: "anno" }]).forEach((d) => nuovo(d));
+    if (typeof window !== "undefined" && window.EUGENIO_COLLEGAMENTO) {
+      window.EUGENIO_COLLEGAMENTO.registra({ chiavi: [chiaveLink], leggi: () => ({ [chiaveLink]: testoLink() }) });
+    }
     ricalcola();
     document.addEventListener("eugenio:aspetto", () => avvisa());
 

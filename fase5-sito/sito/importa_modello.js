@@ -23,7 +23,7 @@
     m.classList.toggle("errore", tipo === "errore"); m.classList.toggle("successo", tipo === "ok"); m.classList.toggle("attenzione", tipo === "attenzione");
   }
   const num = (s) => { const t = String(s == null ? "" : s).trim().replace(/\s/g, "").replace(",", "."); return t === "" ? NaN : Number(t); };
-  const fmt = (v, n = 2) => (Number.isFinite(+v) ? (+v).toLocaleString("it-IT", { maximumFractionDigits: n }) : "—");
+  const fmt = (v, n = 2) => (Number.isFinite(+v) ? EUGENIO_NUMERI.formato(v, n, 0) : "—");
 
   // ------------------------------------------------------------------ worker
   function nuovoWorker() {
@@ -80,7 +80,7 @@
         const d = JSON.parse(await f.text());
         if (!d || d.type !== "FeatureCollection" || d.formato !== MOD.FORMATO || !Array.isArray(d.features))
           throw new Error("non è un modello di EuGEnio (serve il .geojson prodotto da questa pagina o da «importa-modello»)");
-        messaggio("messaggio", `Modello già convertito: ${d.features.length} corpi.`, "ok");
+        messaggio("messaggio", `Modello già convertito: ${EUGENIO_NUMERI.formato(d.features.length)} corpi.`, "ok");
         mostraModello(d, false);
         return;
       }

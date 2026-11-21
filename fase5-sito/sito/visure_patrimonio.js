@@ -20,7 +20,7 @@
     return e;
   }
   function messaggio(t, errore = false) { const m = $("messaggio-visure"); if (!m) return; m.textContent = t; m.classList.toggle("errore", errore); }
-  const fmt = (n) => (n === null || n === undefined || n === "" ? "" : Number(V.numero(n)).toLocaleString("it-IT"));
+  const fmt = (n) => (n === null || n === undefined || n === "" ? "" : EUGENIO_NUMERI.formato(V.numero(n), 3, 0, ""));
 
   // ------------------------------------------------------------------ abbinamento alle righe della geolocalizzazione
   // un edificio già riassunto (edifici_visure.csv, patrimonio_con_visure.csv) come «unità» fittizia per coincide()
@@ -74,7 +74,7 @@
     az.hidden = !stato.visure;
     if (!stato.visure) return;
     const vis = stato.visure;
-    const n = vis.tipo === "unita" ? `${vis.unita.length.toLocaleString("it-IT")} unità immobiliari` : `${vis.edifici.length.toLocaleString("it-IT")} edifici con le visure`;
+    const n = vis.tipo === "unita" ? `${EUGENIO_NUMERI.formato(vis.unita.length)} unità immobiliari` : `${EUGENIO_NUMERI.formato(vis.edifici.length)} edifici con le visure`;
     box.appendChild(h("p", null, `File: ${vis.nome} – ${n}.`));
     // .bottone ha un display proprio: si nasconde con lo stile, non con l'attributo hidden
     $("usa-visure").style.display = righe.length ? "none" : "";
@@ -88,13 +88,13 @@
     const conteggi = h("div", "conteggi");
     for (const [k, et] of [["ok", "con la visura"], ["verificare", "da verificare"], ["nessuna_visura", "senza visura"]]) {
       const d = h("div", `conteggio ${k === "ok" ? "ok" : k === "verificare" ? "verificare" : "non_trovato"}`);
-      d.append(h("b", null, (c[k] || 0).toLocaleString("it-IT")), h("span", null, et));
+      d.append(h("b", null, EUGENIO_NUMERI.formato(c[k] || 0, 3, 0)), h("span", null, et));
       conteggi.appendChild(d);
     }
     box.appendChild(conteggi);
     if (stato.nonAbbinate.length) {
       const det = h("details", "non-abbinate");
-      det.appendChild(h("summary", null, `${stato.nonAbbinate.length} ${vis.tipo === "unita" ? "unità" : "edifici"} delle visure senza un edificio corrispondente`));
+      det.appendChild(h("summary", null, `${EUGENIO_NUMERI.formato(stato.nonAbbinate.length)} ${vis.tipo === "unita" ? "unità" : "edifici"} delle visure senza un edificio corrispondente`));
       const ul = h("ul", "aiuto elenco");
       stato.nonAbbinate.slice(0, 100).forEach((u) => ul.appendChild(h("li", null,
         [u.comune, u.foglio ? `foglio ${u.foglio}` : "", u.particella ? `particella ${u.particella}` : "", u.subalterno ? `sub ${u.subalterno}` : "", u.categoria || u.qualita || ""].filter(Boolean).join(", "))));
@@ -106,7 +106,7 @@
   // ------------------------------------------------------------------ lettura del file
   async function carica(f) {
     if (!f) return;
-    $("nome-visure").textContent = `${f.name} · ${(f.size / 1024).toFixed(0)} kB`;
+    $("nome-visure").textContent = `${f.name} · ${EUGENIO_NUMERI.formato(f.size / 1024)} kB`;
     $("zona-visure").classList.add("pieno");
     if (/\.(xlsx|ods|xls)$/i.test(f.name)) { messaggio("Per le visure servono i file CSV o JSON di EuGEnio Visure (un foglio di calcolo andrebbe convertito dal server).", true); return; }
     try {

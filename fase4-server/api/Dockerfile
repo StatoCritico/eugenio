@@ -20,6 +20,9 @@ COPY fase7-territorio/territorio /app/territorio
 # lavori periodici del worker: indicatori della sanità (fase 8) e clima dal 1940 (fase 9, script lanciati a parte)
 COPY fase8-indicatori/indicatori_ssn /app/indicatori_ssn
 COPY fase9-clima-storico/*.py /app/clima_storico/
+# (20/11/2026) dati di Terna (fase 15): scaricatore delle statistiche annuali e costruttori dei file delle pagine
+# «Produzione e consumi di elettricità» e «Carichi elettrici», chiamati dal worker (elettricita, carichi)
+COPY fase15-elettricita/elettricita /app/elettricita
 # fonti delle ortofoto (fase 10, Fase B): un TOML per regione, letti da servizio/ortofoto.py
 COPY fase10-edifici3d/ortofoto /app/ortofoto_fonti
 # analisi 5 e 7–13 (Fase E): solo l'aggancio pubblico; il modulo privato uni_privato NON entra nell'immagine (si monta

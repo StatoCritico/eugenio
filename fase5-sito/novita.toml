@@ -21,6 +21,25 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
+data = "2026-11-21"
+versione = "20261121a"
+titolo = "Elettricità in Italia: produzione, consumi e carichi"
+nuovo = [
+  "Statistiche › Produzione e consumi di elettricità (sperimentale): istogrammi per regione e per provincia della potenza installata, della produzione, dei carichi e dei consumi per settore, con gli obiettivi regionali al 2030 (burden sharing). Dati di Terna dal 2000. Si scarica solo l'immagine.",
+  "Statistiche › Carichi elettrici (sperimentale): il carico elettrico di una zona di mercato o di tutta Italia nel periodo che scegli, a ore o a quarti d'ora. Mostra il profilo del giorno con minimo e massimo, la curva di durata e le fonti di produzione al 100 %.",
+  "Collegamento a questa simulazione: in fondo alle pagine che funzionano con delle scelte c'è un collegamento, con il pulsante per copiarlo, che si aggiorna da solo. Salvalo e incollalo nel browser per ripartire dalle stesse scelte, senza rifarle.",
+]
+migliorato = [
+  "Tutte le pagine: i numeri hanno sempre il punto delle migliaia (per esempio 12.345).",
+  "Fotovoltaico › Comunità energetiche (ancora in anteprima): le aree convenzionali del GSE sono accese già all'apertura e si riaccendono da sole quando aggiungi una sede.",
+  "Clima e meteo › Cambiamento climatico: sul telefono la tabella dei risultati non allarga più la pagina, scorre al suo interno.",
+]
+collegamenti = [
+  { testo = "Produzione e consumi di elettricità", indirizzo = "elettricita.html" },
+  { testo = "Carichi elettrici", indirizzo = "carichi.html" },
+]
+
+[[voce]]
 data = "2026-11-20"
 versione = "20261120d"
 titolo = "Comunità energetiche: confini delle aree delle sedi"

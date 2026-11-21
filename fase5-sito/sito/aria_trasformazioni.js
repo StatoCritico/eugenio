@@ -9,6 +9,8 @@
 // Parte pura (stima stagionale, celle del foglio, scrittura dell'xlsx) esportata anche per node: test in
 // fase14-trattamento-aria/tests/test_trasformazioni.py e fase5-sito/tests/test_aria_trasformazioni*.py.
 (function (radice) {
+  // numeri col punto delle migliaia (numeri.js); in node (prove) lo si carica con require
+  const NUMERI = () => (typeof EUGENIO_NUMERI !== "undefined" ? EUGENIO_NUMERI : require("./numeri.js"));
   const P = radice.EUGENIO_PSICRO || (typeof require === "function" ? require("./psicro.js") : null);
   const fin = Number.isFinite;
   const MAX_RIGHE = 10, RIGHE_FOGLIO = 6, CHIAVE = "eugenio-aria-trasf-v1";
@@ -145,7 +147,7 @@
     if (!fin(v)) return "—";
     const f = Math.pow(10, d), r = Math.round(v * f) / f;
     // migliaia sempre col punto (5.592 kg/h) e segno meno tipografico (−1,7 °C), come le altre pagine
-    return (r === 0 ? 0 : r).toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: "always" }).replace(/^-/, "−");
+    return NUMERI().formato(r === 0 ? 0 : r, d).replace(/^-/, "−");
   }
   const fmtCampo = (v, d = 1) => (fin(v) ? String(Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).replace(".", ",") : "");
   const dataIt = (s) => (/^\d{4}-\d{2}-\d{2}/.test(String(s || "")) ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : String(s || ""));
@@ -154,9 +156,11 @@
 
   // ---- stato (ricordato nel browser)
   function leggiStato() {
+    try { return daOggetto(JSON.parse(localStorage.getItem(CHIAVE) || "null")); } catch (e) { return predefiniti(); }
+  }
+  function daOggetto(j) {
     const pred = predefiniti();
     try {
-      const j = JSON.parse(localStorage.getItem(CHIAVE) || "null");
       if (!j || j.versione !== 1) return pred;
       const unisci = (a, b) => { const o = { ...a }; for (const k of Object.keys(a)) if (b && b[k] !== undefined) o[k] = a[k] && typeof a[k] === "object" && !Array.isArray(a[k]) ? unisci(a[k], b[k]) : b[k]; return o; };
       const s = unisci(pred, j);
@@ -167,7 +171,36 @@
       return s;
     } catch (e) { return pred; }
   }
-  let stato = leggiStato();
+  // (20/11/2026) collegamento a questa simulazione: i dati e le sequenze che differiscono dai predefiniti vanno
+  // nell'indirizzo come JSON compatto (?uta=…; «predefiniti» se non cambia niente); aprendolo valgono quelli e non la
+  // memoria del browser. Comune, anni, livello e diagramma li portano i moduli comuni.
+  function differenze(a, b) {
+    if (JSON.stringify(a) === JSON.stringify(b)) return undefined;
+    if (a && b && typeof a === "object" && typeof b === "object" && !Array.isArray(a) && !Array.isArray(b)) {
+      const o = {};
+      for (const k of Object.keys(b)) { const d = differenze(a[k], b[k]); if (d !== undefined) o[k] = d; }
+      return Object.keys(o).length ? o : undefined;
+    }
+    return b;
+  }
+  function statoDalCollegamento() {
+    const q = new URLSearchParams(location.search), t = q.get("uta");
+    if (!t) return null;
+    let j = {};
+    if (t !== "predefiniti") { try { j = JSON.parse(t); } catch (e) { return null; } }
+    const s = daOggetto({ ...j, versione: 1 });
+    s.istat = q.get("comune") || null;
+    return s;
+  }
+  let stato = statoDalCollegamento() || leggiStato();
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
+    chiavi: ["uta"],
+    principali: [],
+    leggi: () => {
+      const d = differenze(predefiniti(), { ...stato, istat: null, versione: 1 });
+      return { uta: d ? JSON.stringify(d) : "predefiniti" };
+    },
+  });
   function salvaStato() { try { localStorage.setItem(CHIAVE, JSON.stringify(stato)); } catch (e) { /* memoria piena o vietata */ } }
 
   // ---- moduli comuni: diagramma, passo 1, livello
@@ -692,7 +725,7 @@
     const s = serie();
     if (!stato.nuvola || !s) { D.togli("ore"); return; }
     const V = P.vettori(s.t, s.ur, s.p);
-    D.nuvola("ore", "#8c8c8c", { t: s.t, x: V.x }, { etichetta: "ore della serie", nota: `(${(s.n - s.mancanti).toLocaleString("it-IT", { useGrouping: "always" })} ore, contesto)` });
+    D.nuvola("ore", "#8c8c8c", { t: s.t, x: V.x }, { etichetta: "ore della serie", nota: `(${NUMERI().formato(s.n - s.mancanti)} ore, contesto)` });
   }
   const uguali = (a, b) => Math.abs(a.t - b.t) < 0.005 && Math.abs(a.x - b.x) < 2e-6;
   function disegna(r) {

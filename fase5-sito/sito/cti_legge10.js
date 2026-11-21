@@ -10,7 +10,7 @@
 // CC BY 4.0: si possono solo citare, finché il CTI non risponde alla richiesta di autorizzazione.
 // Uso: EUGENIO_CTI.mostra(contenitore, { istat, regione, dpr }) -> Promise<boolean> (false se il comune non c'è)
 (function () {
-  const V = "20261120d";
+  const V = "20261121a";
   const MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
   const FAQ = "faq.html#cti-elaborazioni";
   const CTI = "https://try.cti2000.it/";
@@ -19,7 +19,7 @@
     ["h_glob", "Irradiazione globale", "MJ/m² giorno", 2], ["h_dif", "di cui diffusa", "MJ/m² giorno", 2],
     ["pv", "Pressione del vapore", "Pa", 0], ["ur", "Umidità relativa", "%", 0], ["vento", "Vento", "m/s", 1]];
   const num = (x, dec = 0) => (x === null || x === undefined || Number.isNaN(x)) ? "—"
-    : Number(x).toLocaleString("it-IT", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    : EUGENIO_NUMERI.formato(x, dec);
   const segno = (x, dec = 0) => (x === null || x === undefined) ? "—" : `${x > 0 ? "+" : ""}${num(x, dec)}`;
   function h(tag, cls, testo) {
     const e = document.createElement(tag);

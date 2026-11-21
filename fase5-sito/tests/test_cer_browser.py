@@ -44,7 +44,9 @@ def test_pagina_in_lavorazione_e_script():
     assert 'href="edificio-cer.html"' not in t and t.count('<span class="voce-gme voce-corso" data-pagina="edificio-cer.html"') == 2
     s = (SITO / "edificio-cer.html").read_text(encoding="utf-8")
     assert re.search(r'<script src="rete\.js\?v=\w+"></script>\s*<script src="cer_sedi\.js\?v=\w+"></script>\s*<script src="analisi_pubbliche\.js\?v=', s)
-    assert 'id="strato-aree-gse" type="checkbox">' in s and "checked" not in re.search(r'<input id="strato-aree-gse"[^>]*>', s).group(0)
+    # (20/11/2026, 18:40) casella delle aree accesa in partenza, salvata nel collegamento
+    assert "checked" in re.search(r'<input id="strato-aree-gse"[^>]*>', s).group(0)
+    assert 'data-collegamento="aree_gse"' in re.search(r'<input id="strato-aree-gse"[^>]*>', s).group(0)
     piatto = re.sub(r"\s+", " ", s)
     assert "CC BY-NC-SA 3.0 IT" in piatto and "mappa-interattiva-delle-cabine-primarie" in s and NOTA_FILE in piatto
     assert C.main(["--controlla"]) == 0
@@ -164,11 +166,11 @@ def test_sedi_aree_del_gse_e_cabine_del_comune(base, browser, tmp_path):
     pg.goto(base + "edificio-cer.html")
     _aspetta(pg, f"() => window.EUGENIO_CER_SEDI && {S}.mappa && {S}.mappa.loaded()")
     assert pg.chiamate == []                                  # nessuna richiesta al GSE senza un'azione dell'utente
-    assert not pg.is_checked("#strato-aree-gse") and pg.locator("#attribuzione-aree-gse").is_hidden()
+    assert pg.is_checked("#strato-aree-gse") and pg.locator("#attribuzione-aree-gse").is_visible()   # accesa in partenza, ma a zoom < 10 nessuna domanda
     # caso normale: COD_AC precompilato, richiesta con 50 m di margine e senza geometria
     _sede(pg, "Scuola A", "44,4949", "11,3426")
     _aspetta(pg, f"() => {S}.sedi[0].gse && {S}.sedi[0].gse.stato === 'ok' && document.querySelector('#tabella-sedi-cer tr[data-k=\"1\"] select')")
-    q = pg.chiamate[0]
+    q = [c for c in pg.chiamate if c.get("geometryType") == "esriGeometryPoint"][0]
     assert q["geometry"] == "11.3426,44.4949" and q["geometryType"] == "esriGeometryPoint" and q["inSR"] == "4326"
     assert q["distance"] == "50" and q["units"] == "esriSRUnit_Meter" and q["returnGeometry"] == "false" and q["outFields"] == "COD_AC,RAG_SOC,COD_CONSEG"
     # una sola area: nessuna seconda richiesta sul punto (le altre sono i confini dell'area e delle confinanti, 20/11 14:08)
@@ -341,8 +343,10 @@ def test_confini_delle_sedi_a_ogni_zoom_e_area_sotto_il_mouse(base, browser):
     ctx, pg = _pagina(browser)
     pg.goto(base + "edificio-cer.html")
     _aspetta(pg, f"() => window.EUGENIO_CER_SEDI && {S}.mappa && {S}.mappa.loaded()")
-    assert pg.evaluate(f"{S}.mappa.getZoom()") < 7 and not pg.is_checked("#strato-aree-gse")
+    assert pg.evaluate(f"{S}.mappa.getZoom()") < 7 and pg.is_checked("#strato-aree-gse")
+    pg.uncheck("#strato-aree-gse")                            # spenta dall'utente: aggiungere una sede la riaccende
     _sede(pg, "Scuola A", "44,4949", "11,3426")
+    _aspetta(pg, "() => document.getElementById('strato-aree-gse').checked")
     _aspetta(pg, f"() => {S}.confini && {S}.confini.features.length === 2")
     cen = pg.evaluate(f"{S}.confini.features.map((f) => [f.properties.COD_AC, f.properties._centrale])")
     assert sorted(cen) == [["AC001E00693", True], ["AC001E00694", False]]
@@ -350,7 +354,7 @@ def test_confini_delle_sedi_a_ogni_zoom_e_area_sotto_il_mouse(base, browser):
     pg.evaluate(f"{S}.mappa.jumpTo({{ center: [11.38, 44.495], zoom: 5 }})")   # niente zoom minimo per i confini delle sedi
     pg.wait_for_timeout(300)
     assert pg.evaluate(f"{S}.mappa.getLayoutProperty('cer-confini-linea', 'visibility')") == "visible"
-    assert "Confini letti dal GSE" in pg.inner_text("#messaggio-aree-gse")
+    assert "Confini letti dal GSE" in pg.inner_text("#messaggio-sedi")
     assert pg.locator("#attribuzione-aree-gse").is_visible()
     # mouse sopra l'area della sede: feature-state «sopra»
     pg.evaluate(f"{S}.mappa.jumpTo({{ center: [11.38, 44.495], zoom: 11 }})")

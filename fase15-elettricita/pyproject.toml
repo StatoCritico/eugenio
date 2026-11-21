@@ -1,0 +1,9 @@
+[project]
+name = "elettricita"
+version = "0.1.0"
+description = "EuGEnio – statistiche di produzione e consumi di elettricità (Terna)"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.setuptools]
+packages = ["elettricita"]

@@ -150,9 +150,14 @@
     }
     const q = new URLSearchParams(location.search);
     await vaiRegione((E && E.regione) || "08", true, q.get("comune"));
+    st.pronto = true;
     // aggiornamento automatico delle interruzioni (il servizio le legge ogni 15 minuti)
     setInterval(() => { caricaStato(); caricaInterruzioni(); }, 5 * 60 * 1000);
   }
+
+  // collegamento a questa simulazione (20/11/2026): regione e comune li scrive già la pagina; le caselle dei livelli sono
+  // controlli data-collegamento (criticita, altri, cabine, interruzioni, ortofoto), rimessi quando la mappa è pronta
+  if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({ pronto: () => st.pronto });
 
   function strati() {
     const m = st.mappa;

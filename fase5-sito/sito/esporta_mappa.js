@@ -193,7 +193,7 @@
     return { ...v, ...(await salva(file, nome, maniglia)) };
   }
 
-  const mb = (n) => (n >= 1e6 ? `${(n / 1e6).toLocaleString("it-IT", { maximumFractionDigits: 1 })} MB` : `${Math.max(1, Math.round(n / 1e3))} kB`);
+  const mb = (n) => (n >= 1e6 ? `${EUGENIO_NUMERI.formato(n / 1e6, 1, 0)} MB` : `${Math.max(1, Math.round(n / 1e3))} kB`);
   // finestra «Salva con nome» del sistema, se il browser ce l'ha (va chiesta subito, durante il clic)
   function chiediManiglia(nome, formato) {
     if (typeof window.showSaveFilePicker !== "function" || window.EUGENIO_ESPORTA_SENZA_FINESTRA) return null;
