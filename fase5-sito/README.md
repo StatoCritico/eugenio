@@ -236,14 +236,23 @@ divisione in due metà.
 ## Segnalazioni di Paolo sulla v2026.11.21 (21–22/11/2026, nella versione 20261121b, pull request #17)
 
 - **Elettricità, istogrammi doppi**: in `elettricita.js` `DOPPIO = 2` ingrandisce la tela di tutti i disegni sulla mappa
-  (barre di capacità, produzione, carichi, consumi; colonne del burden sharing; anelli delle emissioni): si disegna con
-  le misure di prima e la tela ha `PR × DOPPIO` pixel per unità, quindi resta nitida (non è `icon-size`).
+  (barre di capacità, produzione, carichi, consumi; colonne del burden sharing): si disegna con le misure di prima e la
+  tela ha `PR × DOPPIO` pixel per unità, quindi resta nitida (non è `icon-size`). Inquadratura con un **margine in
+  alto** pari alle colonne più alte (`margini()`, al più il 40 % della mappa), così la Lombardia non esce dal bordo.
+- **Anelli delle emissioni più piccoli** (22/11, 00:18): raggio sulla mappa da 8 a 21 px per le regioni e da 7 a 20 per
+  le province (`RAGGI`, già comprensivo del raddoppio); nella vista dell'Italia scala con lo zoom dell'inquadratura
+  (`scalaAnelli()`, riferimento zoom 4,5 per una mappa di 800 × 640 px, mai sopra 1, mai sotto 0,5), così non si
+  sovrappongono neppure con la mappa piccola. Il fattore medio nel buco solo se il buco è largo almeno 18 px (altrimenti
+  è nel riquadretto). Controllo: `EUGENIO_ELETTRICITA.cerchi()` (centri e raggi in pixel) nelle prove.
 - **Burden sharing verticale** (00:05 del 22/11): come gli altri istogrammi, ancorato in basso sul punto della regione:
-  rettangolo **arancione vuoto** (`#f08a24`) alto quanto l'obiettivo 2030 della Tabella A, dentro la colonna delle
-  rinnovabili in più dal 2020 impilata per fonte (**solo le parti positive**: i negativi, per esempio le bioenergie
-  dismesse, stanno solo nel riquadretto), linea nera orizzontale dell'obiettivo dell'anno scelto, **linea di base** (lo
-  zero). Scala comune: l'obiettivo 2030 più grande fra le regioni (o le rinnovabili, se più alte). Province: solo la
-  colonna (non hanno obiettivi).
+  colonna delle rinnovabili in più dal 2020 impilata per fonte (**solo le parti positive**: i negativi, per esempio le
+  bioenergie dismesse, stanno solo nel riquadretto) e **linea di base** (lo zero). Il rettangolo **arancione vuoto**
+  (`#f08a24`) alto quanto l'obiettivo 2030 della Tabella A e la linea nera dell'obiettivo dell'anno scelto sono
+  un'immagine a parte (`el-RR-ob`, stessa misura) nello strato `el-obiettivi`, filtrato sul codice della regione **sotto
+  il mouse** (00:18 del 22/11; `mostraObiettivo()`, `stato.obiettivoSu`); col dito il primo tocco mostra l'obiettivo e
+  il riquadretto, il secondo apre le province (tipo del puntatore letto da `pointerdown`/`pointermove`, perché dopo un
+  tocco il browser manda anche mousemove e click di compatibilità). Scala comune che comprende gli obiettivi 2030: quando
+  il rettangolo compare la colonna non cambia. Province: solo la colonna (non hanno obiettivi).
 - **Riquadretto dell'obiettivo**: sulla mappa (tutta l'immagine del simbolo, quindi anche la parte vuota del rettangolo)
   le prime righe sono «Obiettivo 2030», «Raggiunto: x % (y MW in più dal 2020)» e «Mancano: z MW» (0 se raggiunto);
   per una provincia sono quelli della sua regione (`verso2030()`). Le stesse righe nel riquadretto del grafico «anno per
@@ -254,7 +263,8 @@ divisione in due metà.
 - **Novità**: sotto il titolo di ogni voce, in piccolo, «21/11/2026 · versione 20261121b» (`p.novita-versione`,
   `costruisci_pagine.py`). Cambia la decisione dell'08/11/2026 solo per la pagina: le ancore e il feed restano senza
   versione (richiesta di Paolo: la procedura di pubblicazione dice di controllare la versione nelle Novità).
-- Prove: `test_elettricita_browser.py::test_istogrammi_doppi`, `::test_burden_suggerimento_obiettivo`;
+- Prove: `test_elettricita_browser.py::test_istogrammi_doppi` (anche anelli senza sovrapposizioni),
+  `::test_burden_suggerimento_obiettivo` (rettangolo solo sulla regione sotto il mouse), `::test_burden_tocco`;
   `test_carichi_browser.py` (predefiniti, `passo=15` dei collegamenti vecchi, senza dati);
   `test_collegamento_browser.py::test_carichi_predefiniti`; `test_costruisci_pagine.py::test_novita_versione_feed_e_menu`.
 
@@ -267,7 +277,7 @@ Pubblicata nella release `v2026.11.21b` (voce delle novità del 21/11 b; procedu
 - **Mappa**: in ogni regione (o provincia della regione scelta) un **anello** con la produzione lorda per fonte, colori di
   `VOCI["produzione"]`, disegnato su canvas e aggiunto con `addImage` allo strato di simboli `el-barre` (finisce
   nell'immagine scaricata). Area = area minima + parte proporzionale alla produzione (raggio
-  `sqrt(r0² + (34² − r0²)·P/Pmax)`, r0 13 px per le regioni, 11 per le province, tutto per `DOPPIO` = 2 dal 21/11/2026; Pmax su tutte le unità e tutti gli
+  `sqrt(r0² + (r1² − r0²)·P/Pmax)`, dal 22/11/2026 r0–r1 8–21 px per le regioni e 7–20 per le province (vedi sopra); Pmax su tutte le unità e tutti gli
   anni): proporzionale alla produzione, ma le regioni piccole restano leggibili. Nel buco il fattore medio della regione;
   per le province nessun testo (i fattori sono solo regionali).
 - **Pannello**: tre riquadri `.cifra` (`#riquadri-emissioni`, `data-cifra` tep/medio/termo) con i valori nazionali
