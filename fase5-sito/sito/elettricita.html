@@ -174,7 +174,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <p class="gruppo-servizio">Statistiche</p>
     <h1>Produzione e consumi di elettricità</h1>
     <p class="sotto">Quanta potenza elettrica è installata, quanta energia si produce e da quali fonti, quanta ne chiede ogni
-      regione e quanta ne consumano i settori, anno per anno: in ogni regione un istogramma. Scegli la grandezza e l'anno
+      regione e quanta ne consumano i settori, anno per anno: in ogni regione un istogramma (con «Emissioni» un anello della
+      produzione per fonte e i fattori di emissione di CO₂). Scegli la grandezza e l'anno
       sotto la mappa; un clic su una regione (anche nella piccola mappa) mostra le sue province, un secondo clic torna
       all'Italia.</p>
     <div class="mappa mappa-gl" id="mappa-elettricita" role="region" aria-label="Mappa con gli istogrammi per regione o provincia"></div>
@@ -185,6 +186,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <button class="bottone secondario" type="button" data-modo="richiesta" aria-pressed="false">Carichi</button>
         <button class="bottone secondario" type="button" data-modo="consumi" aria-pressed="false">Consumi</button>
         <button class="bottone secondario" type="button" data-modo="burden" aria-pressed="false">Burden sharing</button>
+        <button class="bottone secondario" type="button" data-modo="emissioni" aria-pressed="false">Emissioni</button>
       </div>
       <label class="cursore-anno" for="anno-elettricita">Anno <b id="anno-scelto">–</b>
         <span class="cursore-riga"><span id="anno-min"></span><input id="anno-elettricita" type="range" min="0" max="0" step="1" value="0"><span id="anno-max"></span></span>
@@ -251,6 +253,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 
     <div class="passo" id="passo-tabella">
       <h2><span class="n">2</span>Valori</h2>
+      <div id="riquadri-emissioni" hidden></div>
       <h3 id="titolo-tabella">Valori</h3>
       <div id="tabella-elettricita"></div>
     </div>
