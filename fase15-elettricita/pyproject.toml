@@ -7,3 +7,6 @@ dependencies = []
 
 [tool.setuptools]
 packages = ["elettricita"]
+
+[tool.setuptools.package-data]
+elettricita = ["*.json"]
