@@ -231,8 +231,8 @@ def leggi_novita(file: Path = NOVITA) -> list[dict]:
 
 
 def ancora(v: dict, voci: list[dict] | None = None) -> str:
-    """Ancora e identificativo stabile della voce, **senza la versione** (08/11/2026, Paolo: la versione del sito resta
-    solo in novita.toml): d<aaaammgg>, e per la seconda, terza… voce dello stesso giorno d<aaaammgg>-2, -3 (contate dalla
+    """Ancora e identificativo stabile della voce, **senza la versione** (08/11/2026, Paolo: la versione del sito non va
+    nelle ancore né nel feed; dal 21/11/2026 la pagina la mostra in piccolo sotto il titolo della voce): d<aaaammgg>, e per la seconda, terza… voce dello stesso giorno d<aaaammgg>-2, -3 (contate dalla
     più vecchia, così non cambiano quando se ne aggiunge una sopra)."""
     base = "d" + str(v["data"]).replace("-", "")
     if not voci:
@@ -268,9 +268,13 @@ def pagina_novita(voci: list[dict]) -> str:
     e = html.escape
     sezioni = []
     for v in voci:
-        # (08/11/2026) nessuna versione del sito in pagina: data, titolo e gruppi
+        # (08/11/2026) titolo con data e nome; (21/11/2026, Paolo) sotto, in piccolo, la data e la versione del sito
+        # («21/11/2026 · versione 20261121b»: la procedura di pubblicazione dice di controllarla qui). L'ancora resta
+        # senza versione.
+        g = dt.date.fromisoformat(v["data"])
+        riga = f'{g.day:02d}/{g.month:02d}/{g.year}' + (f' · versione {e(str(v["versione"]))}' if v.get("versione") else "")
         sezioni.append(f'  <h2 id="{ancora(v, voci)}">{data_italiana(v["data"])} – {e(v["titolo"])}</h2>\n'
-                       f'  <div class="novita-voce">\n    '
+                       f'  <div class="novita-voce">\n    <p class="novita-versione">{riga}</p>\n    '
                        + _corpo_voce(v).replace("\n", "\n    ") + "\n  </div>")
     return f"""<!doctype html>
 <html lang="it">

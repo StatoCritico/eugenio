@@ -701,12 +701,19 @@ def test_novita_versione_feed_e_menu():
         f = Path(__import__("tempfile").mkdtemp()) / "n.toml"
         f.write_text('[[voce]]\ndata = "2026-10-26"\ntitolo = "X"\nnuovo = ["a"]\n', encoding="utf-8")
         CP.leggi_novita(f)
-    # (08/11/2026, Paolo) la versione del sito resta solo in novita.toml: né in pagina né nel feed (ancore per data)
+    # (08/11/2026, Paolo) la versione del sito non va nel feed né nei titoli e nelle ancore (ancore per data);
+    # (21/11/2026, Paolo) in pagina sì, in piccolo sotto il titolo di ogni voce: «21/11/2026 · versione 20261121b»
     corpo_pag = pag[pag.index('<main class="articolo novita"'):pag.index("</main>")]
     corpo_pag = re.sub(r'^<main[^>]*>', "", corpo_pag)
-    for v in voci:
+    righe_versione = re.findall(r'<p class="novita-versione">([^<]+)</p>', corpo_pag)
+    assert len(righe_versione) == len(voci)
+    for v, r in zip(voci, righe_versione):
+        g = v["data"].split("-")
+        assert r == f"{g[2]}/{g[1]}/{g[0]}" + (f" · versione {v['versione']}" if v.get("versione") else ""), r
         if v.get("versione"):
-            assert v["versione"] not in corpo_pag and v["versione"] not in xml, v["versione"]
+            assert v["versione"] not in xml, v["versione"]
+            assert v["versione"] not in "".join(re.findall(r"<h2[^>]*>.*?</h2>", corpo_pag)), v["versione"]
+    assert righe_versione[0] == f"21/11/2026 · versione {voci[0]['versione']}" or voci[0]["data"] != "2026-11-21"
     assert "Versione del sito" not in pag and "Versione del sito" not in xml
     assert 'id="d20261107"' in pag and 'id="d20261107-2"' in pag             # due voci lo stesso giorno: ancore stabili
     # (08/11/2026, Paolo) solo funzioni per gli utenti: gruppi Nuovo / Migliorato / Verificato, niente modifiche interne

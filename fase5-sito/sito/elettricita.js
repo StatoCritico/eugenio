@@ -83,10 +83,23 @@
   }
   const obiettivo = (x, a) => { const o = x && x.obiettivi; if (!o) return null; const i = D().obiettivi_anni.indexOf(a); return i >= 0 ? o[i] : null; };
   const colore = (g, id) => (voci(g).find((v) => v.id === id) || {}).colore || "#999";
+  // (21/11/2026, Paolo) quanto manca all'obiettivo 2030 nell'anno a: della regione (o del totale Italia); per una
+  // provincia, della sua regione (le province non hanno obiettivi). { ob30, netto, pct, mancano, di } oppure null
+  function verso2030(x, a) {
+    const r = x && x.obiettivi ? x : (st.regione ? D().regioni.find((q) => q.cod === st.regione) : null);
+    const ob30 = r && r.obiettivi ? r.obiettivi[r.obiettivi.length - 1] : null, ag = r ? aggiunta(r, a) : null;
+    if (!ob30 || !ag) return null;
+    return { ob30, netto: ag.netto, pct: 100 * ag.netto / ob30, mancano: Math.max(0, ob30 - ag.netto), di: r === x ? "" : ` (${r.nome})` };
+  }
+  const righe2030 = (v) => [["#d9d9d9", `Obiettivo 2030${v.di}: ${num(v.ob30)} MW`],
+    [null, `Raggiunto: ${num(v.pct)} % (${num(v.netto)} MW in più dal 2020)`], [null, `Mancano: ${num(v.mancano)} MW`]];
 
   // ------------------------------------------------------------------ istogrammi come immagini della mappa
   const PR = Math.min(2, window.devicePixelRatio || 1);
-  function tela(w, hgt) { const c = document.createElement("canvas"); c.width = Math.round(w * PR); c.height = Math.round(hgt * PR); const k = c.getContext("2d"); k.scale(PR, PR); return [c, k]; }
+  // (21/11/2026, Paolo) istogrammi e anelli grandi il doppio: si disegna con le misure di prima e la tela è ingrandita
+  // di DOPPIO (resta nitida, non è un'immagine stirata dalla mappa)
+  const DOPPIO = 2;
+  function tela(w, hgt) { const f = PR * DOPPIO, c = document.createElement("canvas"); c.width = Math.round(w * f); c.height = Math.round(hgt * f); const k = c.getContext("2d"); k.scale(f, f); return [c, k]; }
   function barreVerticali(vals, colori, max, alto, neg) {
     // barre affiancate: base in basso (o al centro per i valori negativi della richiesta), contorno scuro sottile
     const n = vals.length, lb = st.regione ? 8 : 6, gap = 1, W = n * (lb + gap) + 3, Hneg = neg ? Math.round(alto * 0.3) : 0, Ht = alto + Hneg + 2;
@@ -144,7 +157,7 @@
   function immagine(id, disegno) {
     const m = st.mappa, k = disegno.c.getContext("2d"), dati = k.getImageData(0, 0, disegno.c.width, disegno.c.height);
     if (m.hasImage(id)) m.removeImage(id);
-    m.addImage(id, { width: disegno.c.width, height: disegno.c.height, data: dati.data }, { pixelRatio: PR });
+    m.addImage(id, { width: disegno.c.width, height: disegno.c.height, data: dati.data }, { pixelRatio: PR });   // misura sulla mappa = DOPPIO × disegno
     st.img.add(id);
   }
 
@@ -222,7 +235,7 @@
       canvasContextAttributes: { preserveDrawingBuffer: true },
       style: { version: 8, sources: {}, layers: [{ id: "sfondo", type: "background", paint: { "background-color": css("--carta", "#f4f4f4") } }] } });
     st.mappa = m;
-    window.EUGENIO_ELETTRICITA = { stato: st, scegliRegione, togliRegione, cambiaModo };   // per le prove
+    window.EUGENIO_ELETTRICITA = { stato: st, scegliRegione, togliRegione, cambiaModo, DOPPIO };   // per le prove
     m.addControl(new window.maplibregl.NavigationControl({ showCompass: false }), "top-right");
     m.addControl(new window.maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
     m.addControl(new window.maplibregl.AttributionControl({ compact: true }), "bottom-right");
@@ -326,10 +339,10 @@
   function righeValori(x) {
     const a = st.anno;
     if (st.modo === "burden") {
-      const ag = aggiunta(x, a), ob = obiettivo(x, a), ob30 = x.obiettivi ? x.obiettivi[x.obiettivi.length - 1] : null;
+      const ag = aggiunta(x, a), ob = obiettivo(x, a), v30 = verso2030(x, a);
       if (!ag) return ["nessun dato"];
-      const r = [];
-      if (ob30 !== null) r.push(["#d9d9d9", `obiettivo 2030: ${num(ob30)} MW`]);
+      // (21/11/2026) in cima obiettivo 2030, percentuale raggiunta e potenza che manca: anche sull'area vuota della barra
+      const r = v30 ? righe2030(v30) : [];
       if (ob !== null) r.push(["#111", `obiettivo ${a}: ${num(ob)} MW`]);
       r.push([null, `rinnovabili in più dal 2020: ${num(ag.netto)} MW${ob ? ` (${num(100 * ag.netto / ob)} % dell'obiettivo ${a})` : ""}`]);
       ag.parti.forEach((q) => r.push([colore("capacita", q.id), `${voci("capacita").find((v) => v.id === q.id).nome}: ${num(q.v, dec(q.v))} MW`]));
@@ -557,6 +570,8 @@
         });
         righe.unshift([null, `In più dal 2020: ${num(ag.netto)} MW`]);
       }
+      const v30 = ag ? verso2030(x, a) : null;
+      if (v30) righe.push(...righe2030(v30));
       const ob = x.obiettivi ? x.obiettivi[i] : null;
       if (ob !== null) { linea.push([cx, Y(ob)]); righe.unshift(["#111", `Obiettivo: ${num(ob)} MW${ag ? ` (raggiunto ${num(100 * ag.netto / ob)} %)` : ""}`]); }
       const t = s("text", { x: cx, y: H - 6, "text-anchor": "middle", "font-size": 11, fill: a === st.anno ? "var(--inchiostro)" : "var(--tenue)", "font-weight": a === st.anno ? 700 : 400 }, svg);
@@ -717,7 +732,7 @@
     const t = h("table", "tabella-valori tabella-elettricita"), th = h("thead"), tb = h("tbody"), tf = h("tfoot");
     const trh = h("tr"); trh.appendChild(h("th", null, tipo === "province" ? "Provincia" : "Regione"));
     let colonne;
-    if (st.modo === "burden") colonne = [`Obiettivo ${a} (MW)`, "Obiettivo 2030 (MW)", ...D().fer.map((id) => `${voci("capacita").find((v) => v.id === id).nome} (MW)`), "In più dal 2020 (MW)", `% obiettivo ${a}`, "% obiettivo 2030"];
+    if (st.modo === "burden") colonne = [`Obiettivo ${a} (MW)`, "Obiettivo 2030 (MW)", ...D().fer.map((id) => `${voci("capacita").find((v) => v.id === id).nome} (MW)`), "In più dal 2020 (MW)", "Mancano al 2030 (MW)", `% obiettivo ${a}`, "% obiettivo 2030"];
     else colonne = [...voci(g).map((v) => `${v.nome} (${unita(g)})`), `Totale (${unita(g)})`];
     colonne.forEach((c) => trh.appendChild(h("th", null, c)));
     th.appendChild(trh);
@@ -726,7 +741,7 @@
       let celle;
       if (st.modo === "burden") {
         const ag = aggiunta(x, a), ob = obiettivo(x, a), ob30 = x.obiettivi ? x.obiettivi[x.obiettivi.length - 1] : null;
-        celle = [ob, ob30, ...(ag ? ag.parti.map((p) => p.v) : D().fer.map(() => null)), ag ? ag.netto : null,
+        celle = [ob, ob30, ...(ag ? ag.parti.map((p) => p.v) : D().fer.map(() => null)), ag ? ag.netto : null, ag && ob30 ? Math.max(0, ob30 - ag.netto) : null,
           ag && ob ? 100 * ag.netto / ob : null, ag && ob30 ? 100 * ag.netto / ob30 : null];
         celle = celle.map((v, i) => num(v, i >= celle.length - 2 ? 0 : dec(v || 0)) + (i >= celle.length - 2 && v !== null ? " %" : ""));
       } else {
