@@ -572,7 +572,7 @@
   }
   // ------------------------------------------------------------------ emissioni: riquadri, grafico e tabella
   const COL_EM = () => ({ medio: css("--serie-2", "#1f6fb4"), ftermo: css("--serie-1", "#c43c12"), tep: css("--serie-5", "#4f7f22") });
-  const scarto = (v, rif) => (v === null || !rif ? "" : ` (EuGEnio ${v >= rif ? "+" : ""}${num(100 * (v / rif - 1), 0)} %)`);
+  const scarto = (v, rif) => { if (v === null || !rif) return ""; const d = Math.round(100 * (v / rif - 1)); return ` (EuGEnio ${d > 0 ? "+" : ""}${num(d === 0 ? 0 : d, 0)} %)`; };
   function riquadri(reg) {
     const dove = $("riquadri-emissioni"), a = st.anno, ind = indItalia(a), rif = EM().riferimenti, mef = rif.mef;
     dove.innerHTML = "";

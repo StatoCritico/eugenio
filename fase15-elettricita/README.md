@@ -15,7 +15,7 @@ Prove: `cd fase15-elettricita && python -m pytest -q` (solo dati inventati, nien
 
 ## Produzione e consumi di elettricità (`terna_dc.py`, `costruisci.py`)
 
-Stato al 21/11/2026: scaricatore e costruttore funzionanti; pagina «Produzione e consumi di elettricità»
+Stato al 21/11/2026: scaricatore e costruttore funzionanti (grandezza «Emissioni» nel ramo `claude/2026-11-21-emissioni`, non ancora pubblicata); pagina «Produzione e consumi di elettricità»
 (`fase5-sito/sito/elettricita.html`, `elettricita.js`) pubblicata il 21/11/2026 (`?v=20261121a`, sperimentale), come «Carichi elettrici».
 
 I dati di Terna **non vanno nel repository** e **non si scaricano dal sito** (decisione di Paolo): la cartella
@@ -35,6 +35,58 @@ rm -rf ../fase5-sito/sito/dati/elettricita && cp -r /tmp/el ../fase5-sito/sito/d
 
 python3 -m pytest -q      # prove (niente rete)
 ```
+
+### Grandezza «Emissioni» (21/11/2026, richiesta di Paolo; ramo `claude/2026-11-21-emissioni`, non ancora pubblicata)
+
+`costruisci.py` legge `GrossVsCO2Emissions` (`leggi_emissioni`) e scrive in `italia.json`:
+- per regione `emissioni[anno] = [[GWh × 5], [kt CO2 × 5], [tep × 5]]` per combustibile (`EMISSIONI_VOCI`: gas, solidi,
+  petroliferi, altri, bio) e `indicatori[anno]` = `[termoelettrico GWh, rinnovabili GWh, totale GWh senza pompaggi e
+  accumuli, CO2 kt, tep, fattore medio tCO2/MWh, fattore del termoelettrico tCO2/MWh, tep/MWh]` (`indicatori()`);
+- `zone` (zone di mercato dal 2021, `ZONE`, controllate con `sito/dati/mappa/zone.json`: errore se diverse) con gli
+  indicatori sommati prima dei rapporti; `emissioni.italia` per l'Italia;
+- `emissioni.riferimenti`: copia di `elettricita/riferimenti_emissioni.json` (MEF, ISPRA, metodo dell'energia primaria,
+  data di lettura). Il file è nei `package-data` del pacchetto.
+
+**Cosa c'è nei dati.** Ci sono i dati regionali di tutti gli anni 2000–2025 per tutte e 20 le regioni: non serve
+ripiegare sulle zone di mercato (Terna non pubblica le emissioni per zona né per provincia). Nei file l'ordine vero delle
+colonne è Anno, Combustibile, Produzione, Regione, Emissioni. «Gas naturale» diventa «Gas Naturale» dal 2021. La voce
+**Bioenergie** ha emissioni non nulle (7,5 Mt nel 2023): è la voce «altri combustibili» di Terna, con la parte fossile dei
+rifiuti, i gas di sintesi e i gas residui (Sardegna, Sarroch: ~4 TWh e 1,8 Mt nel 2023); la CO2 biogenica è contata zero
+come nell'inventario. **Altri** sono soprattutto i gas siderurgici (Puglia) e recuperi senza emissioni (Lombardia,
+Toscana, Sardegna). Il totale nazionale coincide con ISPRA (Rapporto 430/2026, Tabella 1.16, solo elettricità) nel 2005
+(−2 %), 2010 e 2021–2025 (sotto l'1 %), ma è più alto dell'8–12 % nel 2015–2020 (p. es. 2020: 82,5 contro 73,5 Mt):
+Terna non ha ricalcolato quegli anni come l'inventario; i fattori di quegli anni sono quindi più alti di quelli ISPRA.
+
+**Fattori.** Medio = CO2 / produzione lorda totale senza pompaggi e accumuli; del termoelettrico = CO2 / produzione
+termoelettrica lorda con le bioenergie (stessa definizione di ISPRA, Tabella 1.7, colonna 1: nel 2022–2024 coincidono
+alla quarta cifra).
+
+**Energia primaria** (`energia_primaria()`). Il Download Center (i 15 dataset scaricati da `terna_dc.py`) non ha i
+consumi di combustibile; ISPRA li pubblica solo per l'Italia (Excel del Rapporto 430/2026, foglio «23», «Consumo di
+energia per la produzione elettrica», dati di Terna). Stima per regione: gas naturale, solidi, petroliferi = emissioni /
+fattore tCO2/tep (ISPRA 430/2026, Tabella 1.4: gas naturale, carbone da vapore, olio combustibile; 2022–2024, fuori
+intervallo l'anno più vicino); bioenergie e altri (e combustibili con produzione ma senza emissioni) = GWh × 1000 ×
+0,086 / 0,35 (rendimento convenzionale dal Reg. delegato (UE) 2023/2104, Allegato I). Controllo con ISPRA (somma delle
+regioni / consumo ISPRA): 2005 +0,5 %, 2010 −0,7 %, 2015 +2,2 %, 2020 +0,9 %, 2022 +3,2 %, 2023 +3,1 %, 2024 +3,5 %,
+2025 +1,2 %. Il petroliferi con l'olio combustibile è l'approssimazione più debole (dentro ci sono anche gas di raffineria
+e coke di petrolio), ma pesa poco (1–2 % della produzione termoelettrica).
+
+**Riferimenti** (`riferimenti_emissioni.json`, letti il 21/11/2026):
+- MEF/MASE **0,187 tep/MWh**: delibera AEEG EEN 3/08 del 28/3/2008, art. 2.1, usata nei certificati bianchi (Guida
+  operativa GSE). Non abbiamo trovato atti che la sostituiscano: il DM MASE 21/7/2025 (GU n. 211 dell'11/9/2025) non indica
+  un altro fattore nel testo. Non è un dato annuale ma una previsione del 2008.
+- **ISPRA, Rapporto 430/2026** «Settore elettrico: emissioni di CO2 e altri impatti. Edizione 2026» (giugno 2026; sostituisce
+  i rapporti «Fattori di emissione atmosferica di gas a effetto serra nel settore elettrico nazionale e nei principali Paesi
+  europei» e «Le emissioni di CO2 nel settore elettrico nazionale e regionale») e il suo Excel
+  `FE_energia_elettrica_2025-V2.xlsx` (7/7/2026): foglio «9» = Tabella 1.7 per tutti gli anni 1990–2025 (termoelettrico
+  solo fossili, termoelettrico con bioenergie, produzione lorda, consumi; 2025 preliminare; convertiti da gCO2/kWh a
+  tCO2/MWh), foglio «23» = consumo di energia per la produzione elettrica (ktep) e rendimento equivalente 2005–2025;
+  Tabella 2.2 = fattori regionali 2024. Licenza CC BY 4.0 con citazione.
+- Ultimo anno (2025, Italia): fattore medio 0,213 tCO2/MWh (ISPRA 0,214), termoelettrico 0,368 (ISPRA 0,367; solo fossili
+  0,413), energia primaria 0,166 tep/MWh (ISPRA 0,164; MEF 0,187, −11 %).
+
+Per aggiornare i riferimenti ogni anno (ISPRA pubblica entro il 30 giugno, DM 224/2023): nuove righe in
+`riferimenti_emissioni.json` (serie, Tabella 1.4, foglio «23») e nuova data in `letto`.
 
 ### Lo scaricatore (`elettricita/terna_dc.py`)
 
@@ -95,7 +147,7 @@ dei minori = netto, 156 156). Sommare tutto conta la produzione due volte. Cogen
 110 (2017), 96 (2023), 91 (2024), 95 (2025).
 
 **GrossVsCO2Emissions** – produzione termoelettrica lorda ed emissioni di CO2 per combustibile. 2000–2025, **solo
-regione**. Colonne: Anno, Combustibile (Solidi, Gas naturale / «Gas Naturale» dal 2021, Petroliferi, Bioenergie,
+regione** (dal 21/11/2026 lo usa la grandezza «Emissioni», vedi sotto). Colonne: Anno, Combustibile (Solidi, Gas naturale / «Gas Naturale» dal 2021, Petroliferi, Bioenergie,
 Altri), Produzione (GWh, lorda: il totale coincide con il termoelettrico lordo), Regione, Emissioni (milioni di
 tonnellate di CO2, comprese quelle delle bioenergie). Alcuni valori sono vuoti (`null`). Italia: 141,5 Mt (2005),
 67,5 (2023), 56,4 (2024), 58,3 (2025).
