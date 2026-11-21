@@ -22,6 +22,19 @@
 
 [[voce]]
 data = "2026-11-21"
+versione = "20261121b"
+titolo = "Elettricità: emissioni ed energia primaria per regione"
+migliorato = [
+  "Statistiche › Produzione e consumi di elettricità, nuova scelta «Emissioni»: anelli con la produzione per fonte in ogni regione e provincia.",
+  "Statistiche › Produzione e consumi di elettricità, scelta «Emissioni»: il fattore di emissione medio e quello del termoelettrico, e l'energia primaria del termoelettrico, per regione, per zona di mercato e per l'Italia, anno per anno dal 2000.",
+  "Statistiche › Produzione e consumi di elettricità, scelta «Emissioni»: il confronto con i valori di ISPRA e con il coefficiente di 0,187 tep/MWh.",
+]
+collegamenti = [
+  { testo = "Emissioni della produzione di elettricità", indirizzo = "elettricita.html?modo=emissioni" },
+]
+
+[[voce]]
+data = "2026-11-21"
 versione = "20261121a"
 titolo = "Elettricità in Italia: produzione, consumi e carichi"
 nuovo = [
