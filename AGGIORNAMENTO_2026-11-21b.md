@@ -54,8 +54,8 @@ Promemoria di cosa è stato fatto a mano; **non va rifatto**.
 
 ## Passi per questa release (v2026.11.21b)
 
-- **AS1** – Merge della [pull request](…) su GitHub.
-- **AS2** – Release `v2026.11.21b` ([collegamento della release](…)), con il testo della voce delle novità del 21/11 b.
+- **AS1** – Merge della [pull request #17](https://github.com/StatoCritico/eugenio/pull/17) su GitHub.
+- **AS2** – Release `v2026.11.21b` ([collegamento della release](https://github.com/StatoCritico/eugenio/releases/new?tag=v2026.11.21b&target=main&title=v2026.11.21b+%E2%80%93+Elettricit%C3%A0%3A+emissioni+ed+energia+primaria+per+regione&body=%2A%2AElettricit%C3%A0%3A+emissioni+ed+energia+primaria+per+regione%2A%2A+%2821%2F11%2F2026%2C+versione+20261121b%29%0A%0AMigliorato%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+nuova+scelta+%C2%ABEmissioni%C2%BB%3A+anelli+con+la+produzione+per+fonte+in+ogni+regione+e+provincia.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABEmissioni%C2%BB%3A+il+fattore+di+emissione+medio+e+quello+del+termoelettrico%2C+e+l%27energia+primaria+del+termoelettrico%2C+per+regione%2C+per+zona+di+mercato+e+per+l%27Italia%2C+anno+per+anno+dal+2000.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABEmissioni%C2%BB%3A+il+confronto+con+i+valori+di+ISPRA+e+con+il+coefficiente+di+0%2C187+tep%2FMWh.%0A%0APagina%3A+https%3A%2F%2Feugenio.statocritico.it%2Felettricita.html%3Fmodo%3Demissioni)), con il testo della voce delle novità del 21/11 b.
 - **AS3** – Installazione con lo **script nuovo preso dal clone** (lo script installato in `~/energia` è ancora quello
   vecchio; vedi la sezione «Quando questa correzione sarà in una release» più sotto):
   ```bash
