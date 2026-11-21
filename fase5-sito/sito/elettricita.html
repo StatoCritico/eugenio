@@ -174,7 +174,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <p class="gruppo-servizio">Statistiche</p>
     <h1>Produzione e consumi di elettricità</h1>
     <p class="sotto">Quanta potenza elettrica è installata, quanta energia si produce e da quali fonti, quanta ne chiede ogni
-      regione e quanta ne consumano i settori, anno per anno: in ogni regione un istogramma. Scegli la grandezza e l'anno
+      regione e quanta ne consumano i settori, anno per anno: in ogni regione un istogramma (con «Emissioni» un anello della
+      produzione per fonte e i fattori di emissione di CO₂). Scegli la grandezza e l'anno
       sotto la mappa; un clic su una regione (anche nella piccola mappa) mostra le sue province, un secondo clic torna
       all'Italia.</p>
     <div class="mappa mappa-gl" id="mappa-elettricita" role="region" aria-label="Mappa con gli istogrammi per regione o provincia"></div>
@@ -185,6 +186,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <button class="bottone secondario" type="button" data-modo="richiesta" aria-pressed="false">Carichi</button>
         <button class="bottone secondario" type="button" data-modo="consumi" aria-pressed="false">Consumi</button>
         <button class="bottone secondario" type="button" data-modo="burden" aria-pressed="false">Burden sharing</button>
+        <button class="bottone secondario" type="button" data-modo="emissioni" aria-pressed="false">Emissioni</button>
       </div>
       <label class="cursore-anno" for="anno-elettricita">Anno <b id="anno-scelto">–</b>
         <span class="cursore-riga"><span id="anno-min"></span><input id="anno-elettricita" type="range" min="0" max="0" step="1" value="0"><span id="anno-max"></span></span>
@@ -210,7 +212,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         Italia</a> (Download Center del portale dati.terna.it), citati come fonte; elaborazione di EuGEnio. I dati di Terna
         si usano qui solo per le elaborazioni della pagina e non si scaricano: si scarica solo l'immagine della mappa.
         Obiettivi regionali: <a href="https://www.gazzettaufficiale.it/eli/id/2024/07/02/24A03360/sg">DM del Ministero
-        dell'ambiente e della sicurezza energetica 21 giugno 2024</a> (aree idonee), art. 2, Tabella A. Confini: <a
+        dell'ambiente e della sicurezza energetica 21 giugno 2024</a> (aree idonee), art. 2, Tabella A. Emissioni: riferimenti
+        <a href="https://www.isprambiente.gov.it/it/pubblicazioni/rapporti/settore-elettrico-emissioni-di-co2-e-altri-impatti-edizione-2026">ISPRA,
+        Rapporto 430/2026</a> (CC BY 4.0 con citazione) e <a href="https://www.arera.it/atti-e-provvedimenti/dettaglio/08/003-08een">delibera
+        AEEG EEN 3/08</a> (0,187 tep/MWh). Confini: <a
         href="https://www.istat.it/">ISTAT</a>, unità amministrative a fini statistici (generalizzati, CC BY 4.0). Ortofoto,
         se accesa: licenza e citazione sotto la mappa. Mappa: <a href="https://maplibre.org/">MapLibre GL JS</a> (BSD-3),
         ospitata su questo sito.</p>
@@ -251,6 +256,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 
     <div class="passo" id="passo-tabella">
       <h2><span class="n">2</span>Valori</h2>
+      <div id="riquadri-emissioni" hidden></div>
       <h3 id="titolo-tabella">Valori</h3>
       <div id="tabella-elettricita"></div>
     </div>
@@ -272,6 +278,12 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <b>stima di EuGEnio</b>: la variazione della potenza efficiente lorda rinnovabile di Terna rispetto al 2020. Il
           decreto conta invece la potenza nominale degli impianti nuovi e dei potenziamenti entrati in esercizio dal 2021,
           senza togliere quelli dismessi.</li>
+        <li><b>Emissioni</b>: emissioni di CO₂ e produzione termoelettrica lorda per combustibile che Terna pubblica solo
+          per regione (dal 2000). Fattore medio = emissioni / produzione lorda totale senza pompaggi e accumuli; fattore del
+          termoelettrico = emissioni / produzione termoelettrica (comprese le bioenergie, come Terna e ISPRA); energia
+          primaria del termoelettrico: <b>stima di EuGEnio</b> dalle emissioni per combustibile e dai fattori ISPRA per unità
+          di energia. Confronto con il fattore MEF/MASE 0,187 tep/MWh e con i fattori annuali ISPRA (Rapporto 430/2026).
+          Con una regione scelta gli anelli passano alle province, ma i fattori restano regionali.</li>
         <li>I dati dell'ultimo anno possono essere provvisori finché Terna non pubblica l'annuario statistico; la pagina si
           aggiorna da sola una volta al mese. In Sardegna le province sono cambiate più volte: compaiono quelle usate da
           Terna in ogni anno.</li>

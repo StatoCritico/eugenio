@@ -19,6 +19,10 @@ Grandezze (tutte lorde, come le pubblica Terna; valori per provincia sommati per
   consumi     consumi [GWh] per settore, per regione e provincia (dal 2000), da «Total» (consumi per attività)
               sommato per settore; «ElectricalEnergy» solo per gli anni senza Total. Le differenze tra i due sopra il
               5 % per provincia e anno vanno nel log e nel campo «note» di italia.json.
+  emissioni   (21/11/2026) solo per regione, dal 2000, da «GrossVsCO2Emissions»: per combustibile (EMISSIONI_VOCI)
+              produzione termoelettrica lorda [GWh], emissioni di CO2 [kt] ed energia primaria stimata [tep] (metodo e
+              riferimenti MEF/ISPRA in riferimenti_emissioni.json, copiati in italia.json; vedi energia_primaria()).
+              Con le zone di mercato (ZONE, come fase5-sito/costruisci_zone.py) la pagina fa i subtotali per zona.
 Le fonti separano il termoelettrico tradizionale dalle bioenergie (termoelettrico − bioenergie) e i pompaggi
 dall'idrico rinnovabile (idrico − idrico rinnovabile), come fa Terna nella copertura della domanda.
 
@@ -85,6 +89,26 @@ VOCI = {
 }
 UNITA = {"capacita": "MW", "produzione": "GWh", "richiesta": "GWh", "consumi": "GWh"}
 FER = ["bio", "idro", "geo", "eol", "fv"]          # fonti rinnovabili per il burden sharing
+
+# (21/11/2026) emissioni: combustibili di GrossVsCO2Emissions (nomi di Terna in minuscolo → voce)
+EMISSIONI_VOCI = [
+    ("gas", "Gas naturale", "gas naturale"),
+    ("solidi", "Solidi", "solidi"),
+    ("petroliferi", "Petroliferi", "petroliferi"),
+    ("altri", "Altri (gas siderurgici e recuperi)", "altri"),
+    ("bio", "Bioenergie e altri combustibili", "bioenergie"),
+]
+RIFERIMENTI = Path(__file__).resolve().parent / "riferimenti_emissioni.json"
+# zone di mercato in vigore dal 1/1/2021 (ARERA 103/2019), come fase5-sito/costruisci_zone.py e sito/dati/mappa/zone.json
+ZONE = [
+    ("NORD", "Nord", ["01", "02", "03", "04", "05", "06", "07", "08"]),
+    ("CNOR", "Centro-Nord", ["09", "11"]),
+    ("CSUD", "Centro-Sud", ["10", "12", "13", "15"]),
+    ("SUD", "Sud", ["14", "16", "17"]),
+    ("CALA", "Calabria", ["18"]),
+    ("SICI", "Sicilia", ["19"]),
+    ("SARD", "Sardegna", ["20"]),
+]
 
 # DM 21/6/2024, Tabella A: obiettivi di potenza aggiuntiva [MW] 2021…2030 (cumulati rispetto al 31/12/2020)
 TABELLA_A = {
@@ -286,6 +310,80 @@ def leggi(raw: Path) -> dict:
     return T
 
 
+def leggi_emissioni(raw: Path) -> dict:
+    """{regione Terna: {anno: {voce: [GWh, Mt CO2]}}} da GrossVsCO2Emissions (solo regione; valori vuoti = 0).
+    Attenzione: in questi file l'ordine delle colonne in «Columns» è quello dei dati (Anno, Combustibile, Produzione,
+    Regione, Emissioni); si leggono per nome. Righe ripetute per chiave: si tiene il valore più alto, come per le altre."""
+    voce_di = {t: k for k, _, t in EMISSIONI_VOCI}
+    out: dict = defaultdict(lambda: defaultdict(dict))
+    for r in _righe(raw, "GrossVsCO2Emissions"):
+        voce = voce_di.get((r.get("Combustibile") or "").strip().lower())
+        if not voce:
+            continue
+        em = next((r[k] for k in r if k.lower().startswith("emissioni")), None)
+        p = float(r["Produzione"]) if isinstance(r.get("Produzione"), (int, float)) else 0.0
+        e = float(em) if isinstance(em, (int, float)) else 0.0
+        prima = out[ripara(r["Regione"])][int(r["Anno"])].get(voce, [0.0, 0.0])
+        out[ripara(r["Regione"])][int(r["Anno"])][voce] = [max(prima[0], p), max(prima[1], e)]
+    return out
+
+
+def riferimenti() -> dict:
+    return json.loads(RIFERIMENTI.read_text(encoding="utf-8"))
+
+
+def _fattore_anno(anni: dict, anno: int) -> float:
+    """Fattore dell'anno; prima del primo anno pubblicato il primo, dopo l'ultimo l'ultimo."""
+    ks = sorted(int(a) for a in anni)
+    a = min(max(anno, ks[0]), ks[-1])
+    return float(anni[str(a)])
+
+
+def energia_primaria(voce: str, anno: int, gwh: float, mt: float, rif: dict) -> float:
+    """Energia primaria [tep] del combustibile: gas, solidi e petroliferi = emissioni / fattore per contenuto di energia
+    primaria (ISPRA 430/2026, Tabella 1.4, tCO2/tep); altri e bioenergie (e i combustibili senza emissioni dichiarate) =
+    produzione × 0,086 tep/MWh / rendimento convenzionale (Reg. delegato UE 2023/2104)."""
+    ep = rif["energia_primaria"]
+    fatt = ep["fattori_tco2_tep"].get(voce)
+    if fatt and mt > 0:
+        return mt * 1e6 / _fattore_anno(fatt["anni"], anno)
+    eta = ep["rendimenti"].get(voce, ep["rendimenti"]["altri"])["valore"]
+    return gwh * 1000 * ep["tep_mwh"] / eta
+
+
+INDICATORI = ["termo_gwh", "fer_gwh", "totale_gwh", "co2_kt", "tep", "fattore_medio", "fattore_termo", "tep_mwh"]
+
+
+def indicatori(prod: list | None, em: list | None) -> list | None:
+    """Indicatori di un'unità (regione, zona, Italia) in un anno, con le somme già fatte:
+    prod = produzione per voce (VOCI["produzione"]) o None; em = [[GWh], [kt CO2], [tep]] per combustibile.
+    → [termoelettrico GWh, rinnovabili GWh, totale GWh (senza pompaggi e accumuli), CO2 kt, tep,
+       fattore medio tCO2/MWh (CO2 / totale), fattore del termoelettrico tCO2/MWh (CO2 / termoelettrico),
+       contenuto di energia primaria del termoelettrico tep/MWh]  (None dove manca il denominatore)."""
+    if not em:
+        return None
+    ids = [k for k, _, _ in VOCI["produzione"]]
+    termo, co2, tep = sum(em[0]), sum(em[1]), sum(em[2])
+    fer = tot = None
+    if prod:
+        fer = sum(v for k, v in zip(ids, prod) if k in FER)
+        tot = sum(v for k, v in zip(ids, prod) if k not in ("pomp", "acc"))
+    medio = co2 / tot if tot else None                 # kt / GWh = t / MWh
+    f_termo = co2 / termo if termo else None
+    tep_mwh = tep / (termo * 1000) if termo else None
+    r = lambda x, d: None if x is None else round(x, d)
+    return [r(termo, 1), r(fer, 1), r(tot, 1), r(co2, 1), r(tep, 0), r(medio, 4), r(f_termo, 4), r(tep_mwh, 4)]
+
+
+def _somma(liste: list) -> list | None:
+    liste = [x for x in liste if x]
+    if not liste:
+        return None
+    if isinstance(liste[0][0], list):
+        return [[sum(v) for v in zip(*[x[i] for x in liste])] for i in range(len(liste[0]))]
+    return [sum(v) for v in zip(*liste)]
+
+
 def _consumi(raw: Path, ds: str, mappa_set: dict) -> dict:
     """{(regione, provincia, anno, voce): GWh} sommando le righe di dettaglio (attività, classe)."""
     out: dict = defaultdict(float)
@@ -387,11 +485,49 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None) -> dict:
         voce["obiettivi"] = obiettivi.get(cod)
         regioni_out.append(voce)
 
+    # emissioni per regione (solo regione: Terna non le pubblica per provincia)
+    rif = riferimenti()
+    em = leggi_emissioni(raw)
+    em_reg: dict = defaultdict(dict)
+    for reg, serie in em.items():
+        rp = regioni_pos.get(norm(reg))
+        if not rp:
+            raise ValueError(f"regione di Terna non riconosciuta nelle emissioni: {reg}")
+        for anno, v in serie.items():
+            p = [v.get(k, [0.0, 0.0])[0] for k, _, _ in EMISSIONI_VOCI]
+            e = [v.get(k, [0.0, 0.0])[1] for k, _, _ in EMISSIONI_VOCI]
+            t = [energia_primaria(k, anno, p[i], e[i], rif) for i, (k, _, _) in enumerate(EMISSIONI_VOCI)]
+            em_reg[rp["cod"]][str(anno)] = [[round(x, 1) for x in p], [round(x * 1000, 2) for x in e], [round(x) for x in t]]
+    anni["emissioni"] = sorted({int(a) for s_ in em_reg.values() for a in s_})
+    for voce in regioni_out:
+        voce["emissioni"] = dict(sorted(em_reg.get(voce["cod"], {}).items()))
+    zone = _zone(mappa, {r["cod"] for r in regioni_out})
+    # indicatori per regione, zona di mercato e Italia (somme prima dei rapporti)
+    per_cod = {r["cod"]: r for r in regioni_out}
+    for voce in regioni_out:
+        voce["indicatori"] = {a: indicatori(voce["produzione"].get(a), voce["emissioni"].get(a)) for a in voce["emissioni"]}
+    def aggrega(codici):
+        out = {}
+        for a in map(str, anni["emissioni"]):
+            em_ = _somma([per_cod[c]["emissioni"].get(a) for c in codici])
+            pr_ = _somma([per_cod[c]["produzione"].get(a) for c in codici])
+            out[a] = indicatori(pr_, em_)
+        return out
+    for z in zone:
+        z["indicatori"] = aggrega(z["regioni"])
+    italia_ind = aggrega(list(per_cod))
+
     voci_out = {g: [{"id": k, "nome": n, "colore": c} for k, n, c in VOCI[g]] for g in VOCI}
     comune = {"fonte": FONTE, "unita": UNITA, "voci": voci_out, "fer": FER, "anni": anni,
               "obiettivi_anni": ANNI_OBIETTIVI, "obiettivi_base": 2020,
               "obiettivi_fonte": "DM MASE 21 giugno 2024 (aree idonee), art. 2, Tabella A (GU n. 153 del 2/7/2024)"}
-    (uscita / "italia.json").write_text(json.dumps({**comune, "note": note, "regioni": regioni_out}, ensure_ascii=False,
+    em_out = {"voci": [{"id": k, "nome": n} for k, n, _ in EMISSIONI_VOCI],
+              "campi": ["produzione termoelettrica lorda [GWh]", "emissioni di CO2 [kt]", "energia primaria stimata [tep]"],
+              "indicatori": INDICATORI, "italia": italia_ind,
+              "riferimenti": {"mef": rif["mef"], "ispra": rif["ispra"], "energia_primaria": rif["energia_primaria"],
+                              "letto": rif["letto"]}}
+    (uscita / "italia.json").write_text(json.dumps({**comune, "note": note, "emissioni": em_out, "zone": zone,
+                                                    "regioni": regioni_out}, ensure_ascii=False,
                                                    separators=(",", ":")), encoding="utf-8")
 
     # province per regione
@@ -440,6 +576,20 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None) -> dict:
         raise ValueError(f"province di Terna senza posizione: {sorted(non_trovate)}")
     dimensioni["italia.json"] = (uscita / "italia.json").stat().st_size
     return {"anni": anni, "dimensioni": dimensioni, "note": note}
+
+
+def _zone(mappa: Path, codici: set) -> list:
+    """Zone di mercato con le regioni; se c'è dati/mappa/zone.json deve dire lo stesso (altrimenti errore)."""
+    zone = [{"id": i, "nome": n, "regioni": r} for i, n, r in ZONE]
+    f = mappa / "zone.json"
+    if f.exists():
+        sito = [{"id": z["id"], "nome": z["nome"], "regioni": z["regioni"]} for z in json.loads(f.read_text(encoding="utf-8"))["zone"]]
+        if sito != zone:
+            raise ValueError("zone di mercato diverse da quelle di dati/mappa/zone.json")
+    tutte = [c for z in zone for c in z["regioni"]]
+    if sorted(tutte) != sorted(codici) or len(set(tutte)) != len(tutte):
+        raise ValueError("le zone di mercato non coprono ogni regione una volta sola")
+    return zone
 
 
 def main() -> None:

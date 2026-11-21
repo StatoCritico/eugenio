@@ -579,6 +579,47 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       per tutte le province della regione scelta) e per tutti gli anni. Le province della Sardegna sono quelle usate da
       Terna in ogni anno; quelle soppresse hanno una posizione indicativa.</li>
   </ul>
+  <h3 id="elettricita-emissioni">Emissioni ed energia primaria del termoelettrico</h3>
+  <ul>
+    <li><strong>Dati.</strong> Dataset «GrossVsCO2Emissions» di Terna: per regione (non per provincia), anno (dal 2000) e
+      combustibile (gas naturale, solidi, petroliferi, bioenergie, altri) la produzione termoelettrica lorda (GWh) e le
+      emissioni di CO₂ (milioni di tonnellate). Ci sono i dati regionali per tutti gli anni, quindi non serve ripiegare
+      sulle zone di mercato: le zone (Nord, Centro-Nord, Centro-Sud, Sud, Calabria, Sicilia, Sardegna, in vigore dal 2021)
+      sono somme delle regioni, anche per gli anni precedenti. Terna attribuisce emissioni anche alla voce «Bioenergie»:
+      dentro ci sono la parte fossile dei rifiuti e altri combustibili come i gas di sintesi delle raffinerie (in Sardegna
+      quasi 4 TWh); la CO₂ delle biomasse è contata zero, come nell'inventario nazionale. Il totale nazionale coincide con
+      ISPRA nel 2005, nel 2010 e dal 2021 (scarto sotto l'1 %); dal 2015 al 2020 Terna ha l'8–12 % in più delle serie ISPRA
+      ricalcolate, e così i fattori di quegli anni.</li>
+    <li><strong>Fattori.</strong> Fattore medio = emissioni / produzione lorda totale senza pompaggi e accumuli (come la
+      «produzione elettrica lorda» di ISPRA); fattore del termoelettrico («marginale») = emissioni / produzione
+      termoelettrica lorda, bioenergie comprese (come la «produzione termoelettrica lorda» di ISPRA); per le zone e per
+      l'Italia si sommano emissioni e produzioni prima di dividere.</li>
+    <li><strong>Energia primaria.</strong> Terna non pubblica nel Download Center il consumo di combustibile delle centrali;
+      ISPRA lo pubblica (dai dati di Terna) solo per l'Italia. Per regione EuGEnio lo stima: per gas naturale, solidi e
+      petroliferi emissioni / fattore di emissione per unità di energia primaria (ISPRA, Rapporto 430/2026, Tabella 1.4:
+      gas naturale 2,474, carbone da vapore 3,861, olio combustibile 3,202 tCO₂/tep nel 2024; prima del 2022 i valori del
+      2022, dopo il 2024 quelli del 2024); per bioenergie e altri (gas siderurgici, recuperi), dove la CO₂ non dice quanto
+      combustibile si è bruciato, produzione × 0,086 tep/MWh / 0,35 (rendimento convenzionale scelto con i valori di
+      riferimento del Regolamento delegato (UE) 2023/2104, Allegato I: biomasse 30–37 %, rifiuti 25 %, biogas 42 %,
+      bioliquidi e gas di sintesi 44,2 %, gas d'altoforno e di cokeria 35 %). 1 tep = 41,868 GJ. La somma nazionale delle
+      stime differisce dal consumo ISPRA di −1/+4 % (2005–2025: per esempio 25,7 contro 24,8 Mtep nel 2024).</li>
+    <li><strong>Riferimenti.</strong> Fattore di conversione dell'elettricità in energia primaria 0,187 tep/MWh: <a
+      href="https://www.arera.it/atti-e-provvedimenti/dettaglio/08/003-08een">delibera AEEG EEN 3/08</a> (28/3/2008), usato
+      nei certificati bianchi e nella Guida operativa del GSE; non abbiamo trovato atti che lo sostituiscano (il DM MASE 21
+      luglio 2025 sui certificati bianchi non ne indica un altro). È una previsione del 2008 del rendimento medio del parco
+      termoelettrico: oggi il termoelettrico consuma meno (circa 0,16–0,17 tep/MWh). Fattori di emissione nazionali per
+      anno: <a href="https://www.isprambiente.gov.it/it/pubblicazioni/rapporti/settore-elettrico-emissioni-di-co2-e-altri-impatti-edizione-2026">ISPRA,
+      «Settore elettrico: emissioni di CO2 e altri impatti», edizione 2026 (Rapporto 430/2026)</a>, che sostituisce i
+      rapporti «Fattori di emissione atmosferica…», e il suo file Excel (FE_energia_elettrica_2025-V2, 7/7/2026; 2025
+      preliminare): produzione termoelettrica lorda, produzione elettrica lorda, consumi elettrici, consumo di energia del
+      parco termoelettrico. Valori in gCO₂/kWh convertiti in tCO₂/MWh. I riferimenti sono nel file
+      <code>riferimenti_emissioni.json</code> della fase 15, con fonte e data di lettura.</li>
+    <li><strong>Mappa.</strong> In ogni regione un anello con la produzione lorda per fonte (stessi colori della
+      Produzione); l'area dell'anello è un'area minima più una parte proporzionale alla produzione, nella stessa scala per
+      tutte le regioni (o le province della regione) e tutti gli anni, così le regioni piccole restano leggibili e le grandi
+      si vedono grandi. Nel buco il fattore medio della regione. Con una regione scelta gli anelli sono per provincia, i
+      fattori restano regionali.</li>
+  </ul>
 
   <h2 id="carichi">Carichi elettrici</h2>
   <p>La pagina <a href="carichi.html">Carichi elettrici</a> (Statistiche, sperimentale) mostra la potenza elettrica richiesta

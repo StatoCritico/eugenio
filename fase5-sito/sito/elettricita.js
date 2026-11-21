@@ -11,6 +11,12 @@
 // Dati: dati/elettricita/italia.json e RR.json (fase 15, costruiti dal worker con le statistiche di Terna).
 // Decisione di Paolo (20/11/2026): i dati non si scaricano; si scarica solo l'immagine della mappa (esporta_mappa.js).
 // Gli istogrammi sono immagini della mappa (addImage + strato di simboli), così finiscono anche nell'immagine scaricata.
+// Emissioni (21/11/2026, richiesta di Paolo): in ogni regione (o provincia della regione scelta) un anello con la
+// produzione per fonte (stessi colori della Produzione); l'area dell'anello cresce in proporzione alla produzione, a
+// partire da un anello minimo, e nel buco c'è il fattore di emissione medio della regione. A destra tre riquadri con i
+// valori nazionali confrontati con il fattore MEF (0,187 tep/MWh) e con i fattori ISPRA, il grafico dei tre fattori anno
+// per anno e la tabella per regione con i subtotali per zona di mercato e il totale Italia. Indicatori e riferimenti li
+// calcola il costruttore (fase 15, indicatori() e riferimenti_emissioni.json): qui non c'è nessun numero scritto a mano.
 (function () {
   const $ = (id) => document.getElementById(id);
   const box = $("mappa-elettricita");
@@ -42,12 +48,23 @@
     richiesta: { nome: "Carichi (richiesta per regione)", breve: "richiesta", grandezza: "richiesta" },
     consumi: { nome: "Consumi per settore", breve: "consumi", grandezza: "consumi" },
     burden: { nome: "Burden sharing 2030", breve: "burden sharing", grandezza: "capacita" },
+    emissioni: { nome: "Emissioni", breve: "emissioni", grandezza: "produzione" },
   };
   const st = { mappa: null, it: null, prov: new Map(), modo: "capacita", anno: null, regione: null, giro: 0, img: new Set(), sugg: null };
   const D = () => st.it;
   const voci = (g) => D().voci[g];
   const unita = (g) => D().unita[g];
-  const anniDi = (modo) => (modo === "burden" ? D().anni.capacita.filter((a) => a >= 2021) : D().anni[MODI[modo].grandezza]);
+  const anniDi = (modo) => (modo === "burden" ? D().anni.capacita.filter((a) => a >= 2021)
+    : modo === "emissioni" ? (D().anni.emissioni || []).filter((a) => D().anni.produzione.includes(a)) : D().anni[MODI[modo].grandezza]);
+  // emissioni: indicatori [termo GWh, rinnovabili GWh, totale GWh, CO2 kt, tep, fattore medio, fattore termo, tep/MWh]
+  const EM = () => D().emissioni;
+  const IND = { termo: 0, fer: 1, tot: 2, co2: 3, tep: 4, medio: 5, ftermo: 6, tepmwh: 7 };
+  const indicatoriDi = (x, a) => (x && x.indicatori && x.indicatori[String(a)]) || null;
+  const indItalia = (a) => (EM() && EM().italia[String(a)]) || null;
+  // ISPRA: energia primaria per la produzione elettrica (nazionale, ktep) diviso la produzione termoelettrica di Terna
+  const ispraTep = (a) => { const e = EM().riferimenti.ispra.energia_primaria, k = e && e.anni_ktep[String(a)], i = indItalia(a);
+    return k !== undefined && k !== null && i && i[IND.termo] ? { ktep: k, tepmwh: k / i[IND.termo] } : null; };
+  const ispra = (serie, a) => { const v = EM().riferimenti.ispra.serie[serie]; return v && v.anni[String(a)] !== undefined ? v.anni[String(a)] : null; };
   const valori = (x, g, a) => (x && x[g] && x[g][String(a)]) || null;
   const somma = (arr) => (arr || []).reduce((t, v) => t + v, 0);
 
@@ -100,6 +117,30 @@
     if (obAnno !== null) { k.fillStyle = "#111"; k.fillRect(2 + sc(obAnno) - 0.8, 9, 1.6, 8.5); }
     return { c };
   }
+  // anello (torta con il buco): produzione per fonte, in senso orario da mezzogiorno; nel buco un testo (fattore medio)
+  function anello(vals, colori, r, testo) {
+    const W = 2 * r + 4, [c, k] = tela(W, W), cx = W / 2, ri = r * 0.55, tot = somma(vals.map((v) => Math.max(0, v)));
+    let a0 = -Math.PI / 2;
+    vals.forEach((v, i) => {
+      if (!(v > 0)) return;
+      const a1 = a0 + 2 * Math.PI * v / tot;
+      k.beginPath(); k.arc(cx, cx, r, a0, a1); k.arc(cx, cx, ri, a1, a0, true); k.closePath();
+      k.fillStyle = colori[i]; k.fill();
+      k.strokeStyle = "rgba(0,0,0,0.45)"; k.lineWidth = 0.5; k.stroke();
+      a0 = a1;
+    });
+    k.beginPath(); k.arc(cx, cx, r, 0, 2 * Math.PI); k.strokeStyle = "#222"; k.lineWidth = 0.9; k.stroke();
+    k.beginPath(); k.arc(cx, cx, ri, 0, 2 * Math.PI); k.fillStyle = "rgba(255,255,255,0.92)"; k.fill(); k.strokeStyle = "#222"; k.lineWidth = 0.7; k.stroke();
+    if (testo && ri >= 8) {
+      const fs = Math.min(12, Math.max(8, ri * 0.8));
+      k.font = `700 ${fs}px system-ui, sans-serif`; k.textAlign = "center"; k.textBaseline = "middle"; k.fillStyle = "#111";
+      k.fillText(testo, cx, cx + 0.5, 2 * ri - 2);
+    }
+    return { c };
+  }
+  // raggio dell'anello: area = area minima + parte proporzionale alla produzione (scala comune a tutte le unità e gli anni)
+  const raggio = (tot, max) => { const r0 = st.regione ? 11 : 13, r1 = 34; return Math.sqrt(r0 * r0 + (r1 * r1 - r0 * r0) * Math.max(0, tot) / max); };
+
   function immagine(id, disegno) {
     const m = st.mappa, k = disegno.c.getContext("2d"), dati = k.getImageData(0, 0, disegno.c.width, disegno.c.height);
     if (m.hasImage(id)) m.removeImage(id);
@@ -118,6 +159,7 @@
       return mx || 1;
     }
     const g = MODI[modo].grandezza;
+    if (modo === "emissioni") { for (const x of unita) for (const v of Object.values(x[g] || {})) mx = Math.max(mx, somma(v.filter((y) => y > 0))); return mx || 1; }
     for (const x of unita) for (const v of Object.values(x[g] || {})) for (const y of v) mx = Math.max(mx, Math.abs(y));
     return mx || 1;
   }
@@ -140,6 +182,10 @@
       if (modo === "burden") {
         const ag = aggiunta(x, a);
         if (ag) dis = barreBurden(ag.parti, x.obiettivi ? x.obiettivi[x.obiettivi.length - 1] : 0, obiettivo(x, a), max, st.regione ? 110 : 80);
+      } else if (modo === "emissioni") {
+        const v = valori(x, g, a), ind = st.regione ? null : indicatoriDi(x, a);
+        if (v && somma(v.filter((y) => y > 0)) > 0) dis = anello(v, voci(g).map((q) => q.colore), raggio(somma(v.filter((y) => y > 0)), max),
+          ind && ind[IND.medio] !== null ? num(ind[IND.medio], 2) : null);
       } else {
         const v = valori(x, g, a);
         if (v && somma(v.map(Math.abs)) > 0) dis = barreVerticali(v, voci(g).map((q) => q.colore), max, alto, neg);
@@ -147,14 +193,15 @@
       if (!dis) continue;
       immagine(id, dis);
       features.push({ type: "Feature", geometry: { type: "Point", coordinates: [x.lon, x.lat] },
-        properties: { img: id, nome: x.nome, cod: x.cod || "", storica: !!x.storica, burden: modo === "burden", neg } });
+        properties: { img: id, nome: x.nome, cod: x.cod || "", storica: !!x.storica, burden: modo === "burden", neg, anello: modo === "emissioni" } });
     }
     // regione con la richiesta solo regionale: le province non hanno dati
     if (st.regione && g === "richiesta") messaggio("messaggio-mappa", "Terna pubblica la richiesta di energia solo per regione: le province non hanno barre.");
     else messaggio("messaggio-mappa", "");
     m.getSource("el-barre").setData({ type: "FeatureCollection", features });
     st.barre = features.length;
-    m.setLayoutProperty("el-barre", "icon-anchor", modo === "burden" ? "center" : neg ? "center" : "bottom");
+    st.anelli = features.filter((f) => f.properties.anello).length;   // per le prove
+    m.setLayoutProperty("el-barre", "icon-anchor", modo === "burden" || modo === "emissioni" || neg ? "center" : "bottom");
     legenda();
     chiudiAttribuzione();
   }
@@ -292,12 +339,22 @@
     if (!v) return ["nessun dato per quest'anno"];
     const r = voci(g).map((q, i) => [q.colore, `${q.nome}: ${num(v[i], dec(v[i]))} ${unita(g)}`]).filter((_, i) => v[i]);
     r.push([null, `Totale: ${num(somma(v), 0)} ${unita(g)}`]);
+    if (st.modo === "emissioni") {
+      // i fattori sono della regione (Terna pubblica le emissioni solo per regione)
+      const reg = x.indicatori ? x : D().regioni.find((q) => q.cod === st.regione), ind = indicatoriDi(reg, a);
+      if (ind) {
+        const di = x.indicatori ? "" : ` (${reg.nome})`;
+        r.push([null, `Fattore medio${di}: ${num(ind[IND.medio], 3)} tCO₂/MWh`], [null, `Fattore del termoelettrico${di}: ${num(ind[IND.ftermo], 3)} tCO₂/MWh`],
+          [null, `Energia primaria del termoelettrico${di}: ${num(ind[IND.tepmwh], 3)} tep/MWh`]);
+      }
+    }
     return r;
   }
 
   // ------------------------------------------------------------------ comandi
   function preparaComandi() {
     document.querySelectorAll("#modo-elettricita [data-modo]").forEach((b) => b.addEventListener("click", () => cambiaModo(b.dataset.modo, true)));
+    if (!EM() || !anniDi("emissioni").length) { const b = document.querySelector('#modo-elettricita [data-modo="emissioni"]'); if (b) b.hidden = true; delete MODI.emissioni; }
     const cur = $("anno-elettricita");
     cur.addEventListener("input", () => { st.anno = anniDi(st.modo)[+cur.value]; $("anno-scelto").textContent = String(st.anno); });
     cur.addEventListener("change", async () => { await disegnaBarre(); pannello(); });
@@ -350,6 +407,10 @@
     }
     const g = MODI[st.modo].grandezza;
     voci(g).forEach((v) => voceLegenda(L, v.colore, v.nome));
+    if (st.modo === "emissioni") {
+      L.appendChild(h("span", "legenda-nota", `Anelli: produzione lorda per fonte; l'area cresce in proporzione alla produzione (scala comune a ${st.regione ? "le province della regione" : "tutte le regioni"} e a tutti gli anni, con un anello minimo). ${st.regione ? "I fattori di emissione restano quelli della regione: Terna pubblica le emissioni solo per regione." : "Nel buco: fattore di emissione medio della regione (tCO₂/MWh)."}`));
+      return;
+    }
     L.appendChild(h("span", "legenda-nota", `Barre in ${unita(g)}, in scala con il valore più alto fra ${st.regione ? "le province della regione" : "tutte le regioni"} in tutti gli anni${g === "richiesta" ? "; sotto la linea i valori negativi (saldo esportato, pompaggi)" : ""}.`));
   }
   function opzioniImmagine() {
@@ -358,7 +419,9 @@
     if (ro === null) return `«${orto.fonte.nome}» è solo in consultazione dal vivo: per scaricare l'immagine spegni la casella «Ortofoto».`;
     const nomeReg = st.regione ? D().regioni.find((r) => r.cod === st.regione).nome : "Italia";
     const g = MODI[st.modo].grandezza;
-    const leg = st.modo === "burden"
+    const leg = st.modo === "emissioni"
+      ? `Anelli: produzione lorda per fonte (${voci(g).map((v) => v.nome.toLowerCase()).join(", ")}); l'area cresce in proporzione alla produzione, con un anello minimo; ${st.regione ? "fattori di emissione solo regionali" : "nel buco il fattore di emissione medio della regione (tCO₂/MWh: emissioni di CO₂ del termoelettrico / produzione lorda senza pompaggi e accumuli)"}.`
+      : st.modo === "burden"
       ? `Barra grigia: obiettivo 2030 di potenza rinnovabile aggiuntiva rispetto al 2020 (${D().obiettivi_fonte}); segno nero: obiettivo del ${st.anno}; barra colorata: potenza rinnovabile in più rispetto al 2020 per fonte (${D().fer.map((id) => voci("capacita").find((v) => v.id === id).nome.toLowerCase()).join(", ")}), stima EuGEnio dalla potenza efficiente lorda di Terna.`
       : `Barre (${unita(g)}), da sinistra: ${voci(g).map((v) => v.nome.toLowerCase()).join(", ")}; scala comune a ${st.regione ? "tutte le province della regione" : "tutte le regioni"} e a tutti gli anni.`;
     const righe = [leg, `Dati: ${D().fonte}.`, ...ro, C.ATTRIBUZIONE];
@@ -372,12 +435,16 @@
     const g = MODI[st.modo].grandezza, reg = st.regione ? D().regioni.find((r) => r.cod === st.regione) : null;
     $("titolo-vista").textContent = reg ? reg.nome : "Italia";
     $("torna-italia").style.display = reg ? "" : "none";
+    const emi = st.modo === "emissioni";
     $("titolo-andamento").textContent = st.modo === "burden" ? `Rinnovabili in più rispetto al 2020 e obiettivi – ${reg ? reg.nome : "Italia"}`
+      : emi ? `Fattori di emissione ed energia primaria – ${reg ? reg.nome : "Italia"}, anno per anno`
       : `${MODI[st.modo].nome} – ${reg ? reg.nome : "Italia"}, anno per anno`;
     // serie dell'unità scelta: Italia = somma delle regioni
     const tot = reg || totaleItalia();
-    G.registra($("grafico-andamento"), (dest, mis) => (st.modo === "burden" ? graficoBurden(dest, mis, tot) : graficoAndamento(dest, mis, tot, g)),
+    G.registra($("grafico-andamento"), (dest, mis) => (st.modo === "burden" ? graficoBurden(dest, mis, tot) : emi ? graficoEmissioni(dest, mis, reg) : graficoAndamento(dest, mis, tot, g)),
       { titolo: $("titolo-andamento").textContent, adatta: true });
+    $("riquadri-emissioni").hidden = !emi;
+    if (emi) riquadri(reg);
     let elenco = D().regioni, totale = totaleItalia(), tipo = "regioni";
     const scheda = $("blocco-province");
     if (reg) {
@@ -388,12 +455,13 @@
     const senzaProv = reg && g === "richiesta";
     scheda.hidden = !reg || senzaProv;
     if (reg && !senzaProv) {
-      $("titolo-province").textContent = st.modo === "burden" ? `Rinnovabili in più rispetto al 2020 per provincia – ${st.anno}` : `${MODI[st.modo].nome} per provincia – ${st.anno}`;
+      $("titolo-province").textContent = st.modo === "burden" ? `Rinnovabili in più rispetto al 2020 per provincia – ${st.anno}`
+        : emi ? `Produzione per provincia – ${st.anno} (le emissioni sono solo regionali)` : `${MODI[st.modo].nome} per provincia – ${st.anno}`;
       G.registra($("grafico-province"), (dest, mis) => graficoUnita(dest, mis, elenco.filter((x) => (st.modo === "burden" ? aggiunta(x, st.anno) : valori(x, g, st.anno))), g),
         { titolo: $("titolo-province").textContent, adatta: true });
     }
     $("nota-province").hidden = !senzaProv;
-    tabella(senzaProv ? [] : elenco, totale, tipo, reg);
+    if (emi) tabellaEmissioni(reg); else tabella(senzaProv ? [] : elenco, totale, tipo, reg);
   }
   function totaleItalia() {
     const out = { nome: "Italia", obiettivi: null };
@@ -418,9 +486,11 @@
   function asseY(svg, sx, su, gi, W, H, min, max, unitaTesto) {
     const Y = (v) => su + (H - su - gi) * (max - v) / (max - min || 1);
     const { passo } = scala(Math.max(Math.abs(max), Math.abs(min)));
-    for (let v = Math.ceil(min / passo) * passo; v <= max + 1e-9; v += passo) {
+    const cifre = passo >= 1 ? 0 : Math.min(3, (String(+passo.toFixed(6)).split(".")[1] || "").length);
+    for (let i = Math.ceil(min / passo - 1e-9); i * passo <= max + 1e-9; i++) {
+      const v = +(i * passo).toFixed(6);
       s("line", { x1: sx, x2: W - 6, y1: Y(v), y2: Y(v), stroke: v === 0 ? "var(--inchiostro)" : "var(--linea)", "stroke-width": v === 0 ? 1 : 0.6 }, svg);
-      const t = s("text", { x: sx - 4, y: Y(v) + 4, "text-anchor": "end", "font-size": 11, fill: "var(--tenue)" }, svg); t.textContent = num(v);
+      const t = s("text", { x: sx - 4, y: Y(v) + 4, "text-anchor": "end", "font-size": 11, fill: "var(--tenue)" }, svg); t.textContent = num(v, v === 0 ? 0 : cifre);
     }
     const t = s("text", { x: 4, y: 11, "font-size": 11, fill: "var(--tenue)" }, svg); t.textContent = unitaTesto;
     return Y;
@@ -500,6 +570,120 @@
     legendaHtml(dest, [[css("--inchiostro", "#111"), x.obiettivi ? "obiettivo (DM 21/6/2024, Tabella A)" : "nessun obiettivo per le province"],
       ...D().fer.map((id) => [colore("capacita", id), voci("capacita").find((v) => v.id === id).nome])]);
   }
+  // ------------------------------------------------------------------ emissioni: riquadri, grafico e tabella
+  const COL_EM = () => ({ medio: css("--serie-2", "#1f6fb4"), ftermo: css("--serie-1", "#c43c12"), tep: css("--serie-5", "#4f7f22") });
+  const scarto = (v, rif) => { if (v === null || !rif) return ""; const d = Math.round(100 * (v / rif - 1)); return ` (EuGEnio ${d > 0 ? "+" : ""}${num(d === 0 ? 0 : d, 0)} %)`; };
+  function riquadri(reg) {
+    const dove = $("riquadri-emissioni"), a = st.anno, ind = indItalia(a), rif = EM().riferimenti, mef = rif.mef;
+    dove.innerHTML = "";
+    dove.appendChild(h("h3", null, `Valori nazionali – ${a}`));
+    if (!ind) { dove.appendChild(h("p", "aiuto", `Nessun dato di emissione per il ${a}.`)); return; }
+    const box = h("div", "cifre cifre-emissioni"), pre = rif.ispra.preliminari.includes(String(a)) ? " (preliminare)" : "";
+    const indR = reg ? indicatoriDi(reg, a) : null;
+    const cifra = (chiave, v, d, u, testo, note) => {
+      const c = h("div", "cifra"); c.dataset.cifra = chiave;
+      const b = h("b", null, v === null ? "–" : num(v, d)); b.appendChild(h("small", null, ` ${u}`)); c.append(b, h("span", null, testo));
+      note.filter(Boolean).forEach((n) => c.appendChild(h("small", null, n)));
+      box.appendChild(c);
+    };
+    const isp = (serie, nome) => { const v = ispra(serie, a); return v === null ? `ISPRA: nessun valore ${nome} per il ${a}` : `ISPRA ${a}${pre}, ${nome}: ${num(v, 3)} tCO₂/MWh`; };
+    cifra("tep", ind[IND.tepmwh], 3, "tep/MWh", "Energia primaria del termoelettrico (stima EuGEnio)", [
+      `MEF/MASE: ${num(mef.valore, 3)} tep/MWh${scarto(ind[IND.tepmwh], mef.valore)}`,
+      ispraTep(a) ? `ISPRA ${a}${pre}: ${num(ispraTep(a).tepmwh, 3)} tep/MWh (${num(ispraTep(a).ktep / 1000, 2)} Mtep)${scarto(ind[IND.tepmwh], ispraTep(a).tepmwh)}` : `ISPRA: nessun consumo di energia per il ${a}`,
+      `Stima EuGEnio: ${num(ind[IND.tep] / 1e6, 2)} Mtep`,
+      indR && `${reg.nome}: ${num(indR[IND.tepmwh], 3)} tep/MWh`]);
+    cifra("medio", ind[IND.medio], 3, "tCO₂/MWh", "Fattore di emissione medio (produzione lorda)", [
+      isp("produzione", "produzione lorda") + scarto(ind[IND.medio], ispra("produzione", a)),
+      ispra("consumi", a) !== null && `ISPRA ${a}${pre}, consumi elettrici: ${num(ispra("consumi", a), 3)} tCO₂/MWh`,
+      indR && `${reg.nome}: ${num(indR[IND.medio], 3)} tCO₂/MWh`]);
+    cifra("termo", ind[IND.ftermo], 3, "tCO₂/MWh", "Fattore di emissione del termoelettrico (marginale)", [
+      isp("termoelettrica", "termoelettrico con le bioenergie") + scarto(ind[IND.ftermo], ispra("termoelettrica", a)),
+      ispra("termoelettrica_fossili", a) !== null && `ISPRA ${a}${pre}, solo fossili: ${num(ispra("termoelettrica_fossili", a), 3)} tCO₂/MWh`,
+      indR && `${reg.nome}: ${num(indR[IND.ftermo], 3)} tCO₂/MWh`]);
+    dove.appendChild(box);
+    const f = h("p", "aiuto fonti-riquadri");
+    const link = (t, u) => { const l = h("a", null, t); l.href = u; return l; };
+    f.append("Riferimenti: ", link(`MEF/MASE ${num(mef.valore, 3)} tep/MWh`, mef.url), ` – ${mef.fonte}. `, link(rif.ispra.fonte, rif.ispra.url),
+      ` e file `, link(rif.ispra.excel.nome, rif.ispra.excel.url), ` (fogli «9»: fattori di emissione, Tabella 1.7 del rapporto; «23»: consumo di energia del parco termoelettrico; gCO₂/kWh convertiti in tCO₂/MWh; 2025 preliminare). Letti il ${rif.letto.split("-").reverse().join("/")}.`);
+    dove.appendChild(f);
+  }
+  function graficoEmissioni(dest, mis, reg) {
+    const W = mis && mis.larghezza ? mis.larghezza : 560, H = mis && mis.riquadro ? mis.altezza : 260;
+    const anni = anniDi("emissioni"), di = (a) => (reg ? indicatoriDi(reg, a) : indItalia(a)), col = COL_EM(), mef = EM().riferimenti.mef.valore;
+    const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": $("titolo-andamento").textContent }, dest);
+    const sx = 48, gi = 22, su = 16;
+    let max = mef;
+    for (const a of anni) { const v = di(a); if (v) [IND.medio, IND.ftermo, IND.tepmwh].forEach((j) => { if (v[j] !== null) max = Math.max(max, v[j]); });
+      if (!reg) ["produzione", "termoelettrica"].forEach((k) => { const r = ispra(k, a); if (r !== null) max = Math.max(max, r); }); }
+    const Y = asseY(svg, sx, su, gi, W, H, 0, scala(max).top, "t/MWh");
+    const passo = (W - sx - 8) / Math.max(1, anni.length), X = (i) => sx + passo * (i + 0.5);
+    // MEF: costante
+    s("line", { x1: sx, x2: W - 8, y1: Y(mef), y2: Y(mef), stroke: col.tep, "stroke-width": 1.4, "stroke-dasharray": "6 4" }, svg);
+    const serie = [["medio", IND.medio], ["ftermo", IND.ftermo], ["tep", IND.tepmwh]];
+    for (const [k, j] of serie) {
+      const pts = anni.map((a, i) => { const v = di(a); return v && v[j] !== null ? `${X(i)},${Y(v[j])}` : null; }).filter(Boolean);
+      if (pts.length) s("polyline", { points: pts.join(" "), fill: "none", stroke: col[k], "stroke-width": 2 }, svg);
+    }
+    // ISPRA (solo per l'Italia): punti vuoti sugli anni pubblicati
+    if (!reg) for (const [k, c] of [["produzione", col.medio], ["termoelettrica", col.ftermo], ["tep", col.tep]])
+      anni.forEach((a, i) => { const r = k === "tep" ? (ispraTep(a) || {}).tepmwh : ispra(k, a);
+        if (r !== null && r !== undefined) s("circle", { cx: X(i), cy: Y(r), r: 3.2, fill: "var(--foglio)", stroke: c, "stroke-width": 1.6 }, svg); });
+    const ogni = anni.length <= 14 ? 1 : Math.ceil(anni.length / 12);
+    const punti = anni.map((a, i) => {
+      const v = di(a), cx = X(i);
+      if (a === st.anno || ((i % ogni === 0) && Math.abs(a - st.anno) >= ogni)) {
+        const t = s("text", { x: cx, y: H - 6, "text-anchor": "middle", "font-size": 11, fill: a === st.anno ? "var(--inchiostro)" : "var(--tenue)", "font-weight": a === st.anno ? 700 : 400 }, svg);
+        t.textContent = String(a);
+      }
+      if (a === st.anno) s("rect", { x: cx - passo / 2, y: su, width: passo, height: H - su - gi, fill: "none", stroke: "var(--primario)", "stroke-width": 1.2 }, svg);
+      const righe = [], segni = [];
+      if (v) {
+        righe.push([col.medio, `Fattore medio: ${num(v[IND.medio], 3)} tCO₂/MWh`], [col.ftermo, `Fattore del termoelettrico: ${num(v[IND.ftermo], 3)} tCO₂/MWh`],
+          [col.tep, `Energia primaria del termoelettrico: ${num(v[IND.tepmwh], 3)} tep/MWh`]);
+        serie.forEach(([k, j]) => { if (v[j] !== null) segni.push([cx, Y(v[j]), col[k]]); });
+      }
+      if (!reg) {
+        const rp = ispra("produzione", a), rt = ispra("termoelettrica", a);
+        if (rp !== null) righe.push([null, `ISPRA, produzione lorda: ${num(rp, 3)} tCO₂/MWh`]);
+        if (rt !== null) righe.push([null, `ISPRA, termoelettrico: ${num(rt, 3)} tCO₂/MWh`]);
+        if (ispraTep(a)) righe.push([null, `ISPRA, energia primaria: ${num(ispraTep(a).tepmwh, 3)} tep/MWh`]);
+      }
+      righe.push([null, `MEF/MASE: ${num(mef, 3)} tep/MWh`]);
+      return { x: cx, titolo: String(a), righe, segni };
+    });
+    G.osserva(svg, punti, { area: [sx, su, W - 8, H - gi], guida: true });
+    legendaHtml(dest, [[col.medio, "fattore medio (tCO₂/MWh)"], [col.ftermo, "fattore del termoelettrico (tCO₂/MWh)"], [col.tep, "energia primaria del termoelettrico (tep/MWh)"],
+      [col.tep, `MEF/MASE ${num(mef, 3)} tep/MWh (tratteggio)`], ...(reg ? [] : [[css("--tenue", "#888"), "ISPRA 430/2026 (cerchi vuoti, colore della serie)"]])]);
+  }
+  function tabellaEmissioni(reg) {
+    const dove = $("tabella-elettricita"), a = st.anno; dove.innerHTML = "";
+    $("titolo-tabella").textContent = `Emissioni – ${a} – regioni e zone di mercato`;
+    const t = h("table", "tabella-valori tabella-elettricita tabella-emissioni"), th = h("thead"), tb = h("tbody"), tf = h("tfoot");
+    const trh = h("tr");
+    ["Regione / zona", "Termoelettrico (GWh)", "Rinnovabili (GWh)", "Energia primaria del termoelettrico (tep)", "Emissioni (kt CO₂)",
+      "Fattore medio (tCO₂/MWh)", "Fattore del termoelettrico (tCO₂/MWh)", "Energia primaria (tep/MWh)"].forEach((c) => trh.appendChild(h("th", null, c)));
+    th.appendChild(trh);
+    const riga = (dove2, nome, ind, cls) => {
+      const tr = h("tr", cls || null); tr.appendChild(h("th", null, nome));
+      const c = ind ? [num(ind[IND.termo]), num(ind[IND.fer]), num(ind[IND.tep]), num(ind[IND.co2], dec(ind[IND.co2] || 0)),
+        num(ind[IND.medio], 3), num(ind[IND.ftermo], 3), num(ind[IND.tepmwh], 3)] : Array(7).fill("–");
+      c.forEach((x) => tr.appendChild(h("td", null, x === "" || x === null ? "–" : x)));
+      dove2.appendChild(tr); return tr;
+    };
+    for (const z of D().zone) {
+      const regs = z.regioni.map((c) => D().regioni.find((r) => r.cod === c)).sort((p, q) => p.nome.localeCompare(q.nome, "it"));
+      if (regs.length > 1) regs.forEach((r) => riga(tb, r.nome, indicatoriDi(r, a), r.cod === (reg && reg.cod) ? "scelta" : ""));
+      const tr = riga(tb, regs.length > 1 ? `Zona ${z.nome}` : `${z.nome} (regione e zona)`, z.indicatori[String(a)] || null,
+        `riga-zona${regs.length === 1 && reg && regs[0].cod === reg.cod ? " scelta" : ""}`);
+      tr.dataset.zona = z.id;
+    }
+    riga(tf, "Italia", indItalia(a));
+    t.append(th, tb, tf);
+    const sc = h("div", "tabella-scorre"); sc.dataset.titolo = $("titolo-tabella").textContent; sc.appendChild(t);
+    dove.appendChild(sc);
+    dove.appendChild(h("p", "aiuto", "Termoelettrico: produzione lorda delle centrali a combustibile di Terna, comprese le bioenergie (che quindi compaiono anche fra le rinnovabili). Fattore medio = emissioni / produzione lorda totale senza pompaggi e accumuli; fattore del termoelettrico = emissioni / produzione termoelettrica. Energia primaria: stima di EuGEnio dalle emissioni per combustibile (vedi «Come funziona»). Le zone di mercato sono quelle in vigore dal 2021, anche per gli anni precedenti."));
+  }
+
   // barre impilate per provincia nell'anno scelto
   function graficoUnita(dest, mis, elenco, g) {
     const W = mis && mis.larghezza ? mis.larghezza : 560, H = mis && mis.riquadro ? mis.altezza : 240, a = st.anno;

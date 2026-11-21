@@ -152,7 +152,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `legge10.html` | legge10.js | a | regione, comune (già della pagina), anni |
 | `dati.html` | dati.js | a | regione, dataset (già), var, tip, tass, freq, dal, al, stagioni, fino, cop, area, prov, comuni (codici ISTAT, anche di altre regioni), capoluoghi, formato |
 | `indicatori.html` | indicatori.js | a | regione, ente (già), comp, componenti, anno |
-| `elettricita.html` | elettricita.js | a | regione o vista=italia, modo (già), anno, barre, fondo, ortofoto |
+| `elettricita.html` | elettricita.js | a | regione o vista=italia, modo (già; dal 21/11/2026 anche `emissioni`), anno, barre, fondo, ortofoto |
 | `rete-elettrica.html` | rete_elettrica.js | a | regione, comune (già), criticita, altri, cabine, interruzioni, ortofoto; prova=1 resta |
 | `ortofoto.html` | ortofoto.js | a | lat, lon, z, fonte (già), archivio, particelle, contorni (lo spostamento manuale della foto resta nella scheda) |
 | `edifici-pubblici.html` | edifici_pubblici.js | a | lat, lon, z, ref o bene (già), tipi, enti, ortofoto, fonte, particelle, contorni |
@@ -231,6 +231,32 @@ divisione in due metà.
   Senza `indice.json` la pagina dice che i dati non ci sono ancora.
 - Fonti e licenze nel piè, sezione `metodo.html#carichi`, «Come leggere i grafici» in fondo alla pagina.
 - Prove: `tests/test_carichi_browser.py` (Playwright, dati inventati dalla fase 15).
+
+## Produzione e consumi di elettricità: grandezza «Emissioni» (21/11/2026, richiesta di Paolo; non ancora pubblicata)
+
+Ramo `claude/2026-11-21-emissioni` (worktree `wt_emissioni`): nessun cambio di `?v=` né novità, li fa Paolo alla
+pubblicazione.
+- **Selettore**: pulsante «Emissioni» (`data-modo="emissioni"`, `?modo=emissioni` nell'indirizzo e nel collegamento
+  salvabile). Si nasconde se `italia.json` non ha la parte `emissioni` (file costruiti prima del 21/11/2026). Anni: quelli
+  di GrossVsCO2Emissions con la produzione (2000–2025).
+- **Mappa**: in ogni regione (o provincia della regione scelta) un **anello** con la produzione lorda per fonte, colori di
+  `VOCI["produzione"]`, disegnato su canvas e aggiunto con `addImage` allo strato di simboli `el-barre` (finisce
+  nell'immagine scaricata). Area = area minima + parte proporzionale alla produzione (raggio
+  `sqrt(r0² + (34² − r0²)·P/Pmax)`, r0 13 px per le regioni, 11 per le province; Pmax su tutte le unità e tutti gli
+  anni): proporzionale alla produzione, ma le regioni piccole restano leggibili. Nel buco il fattore medio della regione;
+  per le province nessun testo (i fattori sono solo regionali).
+- **Pannello**: tre riquadri `.cifra` (`#riquadri-emissioni`, `data-cifra` tep/medio/termo) con i valori nazionali
+  dell'anno, il confronto con MEF/MASE 0,187 tep/MWh e con ISPRA (fattore della produzione lorda, dei consumi, del
+  termoelettrico con e senza bioenergie, consumo di energia del parco termoelettrico) e lo scarto percentuale; con una
+  regione scelta anche il valore della regione. Grafico «anno per anno»: le tre serie (Italia o regione) con la linea
+  tratteggiata MEF e i cerchi vuoti ISPRA (solo Italia). Tabella: regioni raggruppate per zona di mercato con la riga di
+  zona (`tr.riga-zona`, `data-zona`; per Calabria, Sicilia e Sardegna una sola riga «regione e zona»), totale Italia nel
+  piede, riga della regione scelta `tr.scelta`.
+- **Numeri**: tutti con `EUGENIO_NUMERI.formato`; l'asse verticale dei grafici della pagina ora mette i decimali quando
+  il passo è sotto 1. Indicatori e riferimenti vengono da `italia.json` (fase 15, `indicatori()` e
+  `riferimenti_emissioni.json`): nel JavaScript non ci sono valori di riferimento scritti a mano.
+- Metodo in `metodo.html#elettricita-emissioni`; prove in `tests/test_elettricita_browser.py::test_emissioni` e
+  `test_emissioni_telefono`.
 
 ## Comunità energetiche: confini delle aree delle sedi a qualsiasi zoom (20/11/2026, 14:08, `?v=20261120d`, richiesta di Paolo)
 

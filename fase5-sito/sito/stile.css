@@ -1770,6 +1770,13 @@ table.sedi-cer .origine-cabina { font-style: italic; }
 .tabella-elettricita tfoot th, .tabella-elettricita tfoot td { font-weight: 700; border-top: 2px solid var(--linea); }
 .tabella-elettricita thead th { font-size: var(--c-xs); vertical-align: bottom; }
 #passo-vista h3, #passo-tabella h3 { font: 600 var(--c-m)/1.25 var(--titoli); margin: var(--s4) 0 var(--s1); }
+/* Emissioni (21/11/2026): tre riquadri con i valori nazionali e i riferimenti MEF/ISPRA; righe delle zone di mercato */
+.cifre-emissioni { grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); margin-top: var(--s1); }
+.cifre-emissioni .cifra small { overflow-wrap: anywhere; }
+.fonti-riquadri { font-size: var(--c-xs); margin-top: var(--s2); }
+.tabella-emissioni tr.riga-zona > * { font-weight: 700; background: var(--rialzo); }
+.tabella-emissioni tr.scelta > th { color: var(--primario); }
+.tabella-emissioni tr.scelta > th::before { content: "▸ "; }
 /* Carichi elettrici (20/11/2026): pagina unica a tutta larghezza, senza mappa grande; la zona di mercato si sceglie nella
    piccola mappa accanto al titolo (zone al posto delle regioni); grafici con lo zoom proprio (carichi.js) */
 .pagina-carichi h1 { margin: var(--s2) 0 0; }
