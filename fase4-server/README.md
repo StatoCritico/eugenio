@@ -1486,7 +1486,7 @@ all'amministratore); sito in `/srv/energia/sito` (senza cancellare; `dati/indica
 `~/aggiorna_da_github.log`; un solo aggiornamento alla volta (`flock`). Lo script si riavvia da una copia temporanea, così
 può aggiornare anche se stesso.
 
-### Correzioni del 21/11/2026 (aggiornamento a v2026.11.21 fallito, `../AGGIORNAMENTO_2026-11-21b.md`)
+### Correzioni del 21/11/2026 (aggiornamento a v2026.11.21 fallito, `../AGGIORNAMENTO_2026-11-22.md`)
 
 Il 21/11 alle 9:22 lo script di v2026.11.20d ha installato v2026.11.21 senza copiare `fase15-elettricita` (non la
 conosceva) e la build è fallita; il ritorno indietro ha poi fatto `rm -rf ~/energia` verso una copia che la pulizia aveva
@@ -1506,7 +1506,7 @@ controlli di `/api/salute`). Prove: `tests/test_aggiorna_da_github.py` (reposito
 `docker` finto nel PATH; servono `bash`, `git`, `rsync`, `flock`).
 
 **Attenzione**: il rilancio lo fa solo uno script che lo conosce. Le release fino a v2026.11.21 hanno lo script vecchio:
-la prima volta lo script nuovo va lanciato **dal clone** (procedura in `../AGGIORNAMENTO_2026-11-21b.md`).
+la prima volta lo script nuovo va lanciato **dal clone** (procedura in `../AGGIORNAMENTO_2026-11-22.md`).
 
 **Cosa non fa**: i «passi a mano» delle procedure `AGGIORNAMENTO_*.md` cambiate tra le due release (righe nuove del
 `.env`, archivi grandi, crontab, servizi nuovi come `edifici`) li **elenca** alla fine e nel registro, non li esegue; i

@@ -2,8 +2,8 @@
 
 Modulo `suolo` per la pagina sperimentale **Statistiche › «Suolo e aree agricole»** (`fase5-sito/sito/suolo.html`,
 `suolo.js`), sul modello della fase 15 (elettricità). Stato al 22/11/2026: scaricatore, incrocio agricolo, costruttore,
-lavoro del worker e pagina pronti e provati sul ramo `claude/2026-11-22-suolo`; **non ancora pubblicati** (release solo
-al via di Paolo).
+lavoro del worker e pagina pronti e provati; uniti nella pull request #17 e pubblicati con la release `v2026.11.22` (versione del sito
+20261122a; primo giro del worker: passo AT4 di `AGGIORNAMENTO_2026-11-22.md`).
 
 | File | Che cosa fa |
 |---|---|

@@ -33,7 +33,7 @@
 # alla versione di prima, errore imprevisto con --notte, Purge o indici dei prezzi non riusciti); se va tutto bene, niente.
 # I segreti restano nel .env del server: lo script li legge solo per il Purge e non li stampa mai.
 #
-# Correzioni del 21/11/2026 (aggiornamento a v2026.11.21 fallito e ~/energia cancellata, AGGIORNAMENTO_2026-11-21b.md):
+# Correzioni del 21/11/2026 (aggiornamento a v2026.11.21 fallito e ~/energia cancellata, AGGIORNAMENTO_2026-11-22.md):
 # - Script vecchio contro release nuova. Prima girava lo script della versione INSTALLATA, che non conosce le cartelle e i
 #   passi della release nuova (v2026.11.20d non copiava fase15-elettricita, che il Dockerfile di v2026.11.21 usa). Ora,
 #   subito dopo il checkout del tag nel clone, se $CLONE/fase4-server/aggiorna_da_github.sh è diverso da quello in

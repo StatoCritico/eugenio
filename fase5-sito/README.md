@@ -195,7 +195,7 @@ la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
 
-## Statistiche › Suolo e aree agricole (22/11/2026, richiesta di Paolo; sperimentale, non ancora pubblicata)
+## Statistiche › Suolo e aree agricole (22/11/2026, richiesta di Paolo; sperimentale, release `v2026.11.22`, versione 20261122a)
 
 Pagina `suolo.html` + `suolo.js`, voce «Suolo e aree agricole» (sperimentale, «S») nel gruppo Statistiche dopo «Carichi
 elettrici». Stessa struttura e stile di «Produzione e consumi di elettricità» (`main.pagina-elettricita.pagina-suolo`, classi
@@ -330,9 +330,9 @@ divisione in due metà.
   dell'Italia come rapporto delle somme, collegamento), `test_collegamento_browser.py::test_elettricita` (periodo nel
   collegamento e `anno=` vecchio), `test_suolo_browser.py` (componente comune).
 
-## Produzione e consumi di elettricità: grandezza «Emissioni» (21/11/2026, richiesta di Paolo; pubblicata con la versione 20261121b)
+## Produzione e consumi di elettricità: grandezza «Emissioni» (21/11/2026, richiesta di Paolo; pubblicata con la versione 20261122a)
 
-Pubblicata nella release `v2026.11.21b` (voce delle novità del 21/11 b; procedura in `AGGIORNAMENTO_2026-11-21b.md`).
+Pubblicata nella release `v2026.11.22` (voce delle novità del 22/11, versione 20261122a, che comprende quella del 21/11 b mai pubblicata; procedura in `AGGIORNAMENTO_2026-11-22.md`).
 - **Selettore**: pulsante «Emissioni» (`data-modo="emissioni"`, `?modo=emissioni` nell'indirizzo e nel collegamento
   salvabile). Si nasconde se `italia.json` non ha la parte `emissioni` (file costruiti prima del 21/11/2026). Anni: quelli
   di GrossVsCO2Emissions con la produzione (2000–2025).
