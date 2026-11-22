@@ -23,6 +23,11 @@ Grandezze (tutte lorde, come le pubblica Terna; valori per provincia sommati per
               produzione termoelettrica lorda [GWh], emissioni di CO2 [kt] ed energia primaria stimata [tep] (metodo e
               riferimenti MEF/ISPRA in riferimenti_emissioni.json, copiati in italia.json; vedi energia_primaria()).
               Con le zone di mercato (ZONE, come fase5-sito/costruisci_zone.py) la pagina fa i subtotali per zona.
+Anni copiati (22/11/2026): trova_copie() riconosce gli anni di un dataset uguali a un altro anno; non si usano.
+Produzione e capacità di quegli anni si ricostruiscono dalle altre tabelle di Terna dello stesso anno
+(ricostruisci_produzione, ricostruisci_capacita) o restano vuote; controlla_salti() segnala i totali nazionali che si
+scostano di più del 15 % dalla media dell'anno prima e dopo. Tutto nel campo «note» di italia.json, su stderr e in
+esito["controlli"].
 Le fonti separano il termoelettrico tradizionale dalle bioenergie (termoelettrico − bioenergie) e i pompaggi
 dall'idrico rinnovabile (idrico − idrico rinnovabile), come fa Terna nella copertura della domanda.
 
@@ -231,9 +236,88 @@ def posizioni(mappa: Path) -> tuple[dict, dict]:
     return regioni, province
 
 
-# ---- lettura dei file di Terna ----
-def _righe(raw: Path, ds: str):
+# ---- anni copiati da un altro anno nel Download Center (22/11/2026) ----
+# Nei file di Terna alcuni anni sono la copia di un altro anno con l'anno cambiato: ElectricityBySource 2017 = 2008
+# (Italia 319 130 GWh invece di ~295 800), 2006 = 2004, 2007 = valori del 2005 su altre province; GenerationPlants
+# 2005 = 2002, 2006 = 2004, 2017 = tutte le righe del 2012 più 113 righe; CapacityRenewableSources 2005 = 2004.
+# Tre casi: «identico» (stesse righe tolto l'anno), «contiene» (ha tutte le righe dell'altro anno, che sono almeno l'80 %
+# delle sue), «valori» (almeno il 95 % dei valori diversi da zero sono quelli dell'altro anno, su chiavi diverse).
+# Negli identici e nei «valori» la copia è l'anno più recente: in tutti i casi trovati l'anno più vecchio coincide con le
+# altre tabelle di Terna del suo anno (p. es. ElectricityBySource 2008 = 319 130 GWh, il dato 2008 di Terna).
+MIN_RIGHE_COPIA = 20          # sotto questo numero di righe con un valore non si confronta (file di prova, anni vuoti)
+QUOTA_CONTIENE = 0.8
+QUOTA_VALORI = 0.95
+
+
+def _file_anni(raw: Path, ds: str) -> dict:
+    out = {}
     for f in sorted(raw.glob(f"{ds}_*.json")):
+        m = re.fullmatch(re.escape(ds) + r"_(\d{4})\.json", f.name)
+        if m:
+            out[int(m.group(1))] = f
+    return out
+
+
+def _firma(f: Path, anno: int) -> tuple[frozenset, frozenset, int]:
+    """(righe senza la colonna dell'anno, valori diversi da zero arrotondati, righe con un valore diverso da zero)."""
+    d = json.loads(f.read_text(encoding="utf-8"))
+    cols = list(d["Columns"])
+    righe = d["Data"]
+    ia = next((i for i, c in enumerate(cols) if c.lower() == "anno"), None)
+    if ia is None or any(str(r[ia]) != str(anno) for r in righe if len(r) > ia):
+        ia = next((i for i in range(len(cols)) if righe and all(len(r) > i and str(r[i]) == str(anno) for r in righe)), None)
+    tuple_ = frozenset(json.dumps([x for j, x in enumerate(r) if j != ia], ensure_ascii=False) for r in righe)
+    numeri = [r[-1] for r in righe if r and isinstance(r[-1], (int, float)) and r[-1] != 0]
+    return tuple_, frozenset(round(float(x), 3) for x in numeri), len(numeri)
+
+
+def trova_copie(raw: Path, dataset: list[str] | None = None) -> dict:
+    """{dataset: {anno copiato: {"di": anno di origine, "tipo": identico|contiene|valori}}} per i file di `raw`."""
+    if dataset is None:
+        dataset = sorted({re.sub(r"_\d{4}\.json$", "", f.name) for f in raw.glob("*_*.json")})
+    out: dict = {}
+    for ds in dataset:
+        firme = {a: _firma(f, a) for a, f in _file_anni(raw, ds).items()}
+        firme = {a: v for a, v in firme.items() if v[2] >= MIN_RIGHE_COPIA}
+        trovate: dict = {}
+        for a, (ra, va, _n) in sorted(firme.items()):
+            scelta = None
+            for b, (rb, vb, _m) in sorted(firme.items()):
+                if b == a:
+                    continue
+                if ra == rb:
+                    if a > b:
+                        scelta = (b, "identico")
+                        break
+                    continue
+                if rb < ra and len(rb) >= QUOTA_CONTIENE * len(ra):
+                    scelta = scelta or (b, "contiene")
+                    continue
+                if ra < rb:                       # le sue righe sono tutte nell'altro anno: la copia è l'altro
+                    continue
+                qa, qb = len(va & vb) / len(va), len(va & vb) / len(vb)
+                if qa >= QUOTA_VALORI and (a > b or qb < QUOTA_VALORI) and not scelta:
+                    scelta = (b, "valori")
+            if scelta:
+                trovate[a] = {"di": scelta[0], "tipo": scelta[1]}
+        if trovate:
+            out[ds] = trovate
+    return out
+
+
+def descrivi_copia(ds: str, anno: int, c: dict) -> str:
+    come = {"identico": "stesse righe", "contiene": "contiene tutte le righe",
+            "valori": "stessi valori su province e fonti diverse"}[c["tipo"]]
+    return f"Terna, {ds} {anno}: copia del {c['di']} ({come}); i valori del {anno} non si usano"
+
+
+# ---- lettura dei file di Terna ----
+def _righe(raw: Path, ds: str, salta: dict | None = None):
+    """Righe dei file <ds>_<anno>.json; `salta` = {dataset: anni da non leggere} (anni copiati)."""
+    via = set((salta or {}).get(ds, ()))
+    for a, f in _file_anni(raw, ds).items():
+        if a in via:
+            continue
         d = json.loads(f.read_text(encoding="utf-8"))
         cols = list(d["Columns"])
         for r in d["Data"]:
@@ -254,13 +338,23 @@ def leggi(raw: Path) -> dict:
     def add(g, reg, prov, anno, voce, v):
         T[g][(ripara(reg), ripara(prov) if prov else None)][int(anno)][voce] += v
 
-    # Righe doppie: in alcuni anni Terna ripete la stessa chiave (regione, provincia, fonte) con due valori diversi (2017:
-    # +16 GW di termoelettrico rispetto al 2016 e al 2018) o con un valore e un vuoto. Per ogni chiave si tiene il valore
-    # più alto non vuoto; per il termoelettrico si prende il minore tra «Impianti di generazione» e la somma della
-    # «Termoelettrica» per categoria (che fino al 2024 conta anche il geotermico toscano e nel 2017 non ha i doppioni).
+    # Anni copiati da un altro anno (trova_copie): non si leggono; produzione e capacità si ricostruiscono dalle altre
+    # tabelle di Terna dello stesso anno (ricostruisci_produzione, ricostruisci_capacita) o restano vuote.
+    copie = trova_copie(raw)
+    salta = {ds: set(v) for ds, v in copie.items()}
+    note: list[str] = []
+    for ds, v in copie.items():
+        for anno, c in sorted(v.items()):
+            note.append(descrivi_copia(ds, anno, c))
+
+    # Righe doppie: in alcuni anni Terna ripete la stessa chiave (regione, provincia, fonte) con un valore e un vuoto, o
+    # con due valori vicini (CapacityRenewableSources 2017–2018). Per ogni chiave si tiene il valore più alto non vuoto;
+    # per il termoelettrico si prende il minore tra «Impianti di generazione» e la somma della «Termoelettrica» per
+    # categoria (che fino al 2022 conta anche il geotermico toscano). I «+16 GW di termoelettrico» di GenerationPlants
+    # 2017 non erano doppioni: il file del 2017 contiene tutte le righe del 2012 (vedi trova_copie).
     def unico(ds, filtro, chiave, campo):
         out: dict = {}
-        for r in _righe(raw, ds):
+        for r in _righe(raw, ds, salta):
             if not filtro(r):
                 continue
             k = chiave(r)
@@ -281,15 +375,30 @@ def leggi(raw: Path) -> dict:
         k = (reg, prov, anno, "termoelettrico")
         if k in gp:
             gp[k] = min(gp[k], v)
-    _fonti(T, "capacita", gp, crs, add)
+    gp, n, vuoti = ricostruisci_capacita(gp, crs, termo_ct, copie.get("GenerationPlants", {}),
+                                         copie.get("CapacityRenewableSources", {}), set(copie.get("CapacityThermal", {})))
+    note += n
+    _fonti(T, "capacita", gp, _togli_anni(crs, vuoti), add)
     ebs = unico("ElectricityBySource", lorda_p, lambda r: (r["Regione"], r["Provincia"], r["Anno"], r["Fonte"].lower()), "_v")
     prs = unico("ProductionRenewableSources", lorda_p, lambda r: (r["Regione"], r["Provincia"], r["Anno"], r["Fonte rinnovabile"].lower()), "_v")
-    _fonti(T, "produzione", ebs, prs, add)
+    # ProductionThermal: niente colonna Lorda/Netta, ogni chiave due volte: il valore maggiore è il lordo
+    pt_k = unico("ProductionThermal", lambda r: True, lambda r: (r["Regione"], r["Provincia"], r["Anno"], r["Categoria"], r["Sottocategoria"]), "_v")
+    pt: dict = defaultdict(float)
+    for (reg, prov, anno, _c, _s), v in pt_k.items():
+        pt[(reg, prov, int(anno))] += v
+    pomp_reg: dict = {}
+    for r in _righe(raw, "ConsumptionBySource", salta):
+        if (r.get("Fonte") or "").lower() == "idrico tradizionale" and isinstance(r.get("_v"), (int, float)):
+            pomp_reg[(norm(r["Regione"]), int(r["Anno"]))] = float(r["_v"])
+    ebs, n, vuoti = ricostruisci_produzione(ebs, prs, pt, pomp_reg, copie.get("ElectricityBySource", {}),
+                                            copie.get("ProductionRenewableSources", {}), set(copie.get("ProductionThermal", {})))
+    note += n
+    _fonti(T, "produzione", ebs, _togli_anni(prs, vuoti), add)
     # richiesta per regione: copertura della domanda per fonte
     mappa_cop = {"termoelettrico tradizionale": "termo", "bioenergie": "bio", "idrico rinnovabile": "idro",
                  "pompaggi": "pomp", "idrico tradizionale": "pomp", "geotermoelettrico": "geo", "eolico": "eol", "fotovoltaico": "fv",
                  "accumulo stand alone": "acc", "saldo import/export": "saldo"}
-    for r in _righe(raw, "ConsumptionBySource"):
+    for r in _righe(raw, "ConsumptionBySource", salta):
         voce = mappa_cop.get(r["Fonte"].lower())
         if voce:
             add("richiesta", r["Regione"], None, r["Anno"], voce, _val(r, "_v"))
@@ -298,25 +407,28 @@ def leggi(raw: Path) -> dict:
     # settore) solo per gli anni in cui Total manca: nel 2019 e nel 2020 ha ~7 e ~5,5 TWh di industria in meno (Brescia,
     # Taranto) rispetto a Total, Market e IndustrialSector.
     mappa_set = {"industria": "ind", "servizi": "ser", "domestico": "dom", "agricoltura": "agr"}
-    tot = _consumi(raw, "Total", mappa_set)
-    ee = _consumi(raw, "ElectricalEnergy", mappa_set)
+    tot = _consumi(raw, "Total", mappa_set, salta)
+    ee = _consumi(raw, "ElectricalEnergy", mappa_set, salta)
     anni_tot = {k[2] for k in tot}
     for (reg, prov, anno, voce), v in tot.items():
         add("consumi", reg, prov, anno, voce, v)
     for (reg, prov, anno, voce), v in ee.items():
         if anno not in anni_tot:
             add("consumi", reg, prov, anno, voce, v)
-    T["_note"] = confronta_consumi(tot, ee)
+    T["_note"] = note + confronta_consumi(tot, ee)
+    T["_copie"] = copie
+    for n in note:
+        print(n, file=sys.stderr)
     return T
 
 
-def leggi_emissioni(raw: Path) -> dict:
+def leggi_emissioni(raw: Path, salta: dict | None = None) -> dict:
     """{regione Terna: {anno: {voce: [GWh, Mt CO2]}}} da GrossVsCO2Emissions (solo regione; valori vuoti = 0).
     Attenzione: in questi file l'ordine delle colonne in «Columns» è quello dei dati (Anno, Combustibile, Produzione,
     Regione, Emissioni); si leggono per nome. Righe ripetute per chiave: si tiene il valore più alto, come per le altre."""
     voce_di = {t: k for k, _, t in EMISSIONI_VOCI}
     out: dict = defaultdict(lambda: defaultdict(dict))
-    for r in _righe(raw, "GrossVsCO2Emissions"):
+    for r in _righe(raw, "GrossVsCO2Emissions", salta):
         voce = voce_di.get((r.get("Combustibile") or "").strip().lower())
         if not voce:
             continue
@@ -384,10 +496,10 @@ def _somma(liste: list) -> list | None:
     return [sum(v) for v in zip(*liste)]
 
 
-def _consumi(raw: Path, ds: str, mappa_set: dict) -> dict:
+def _consumi(raw: Path, ds: str, mappa_set: dict, salta: dict | None = None) -> dict:
     """{(regione, provincia, anno, voce): GWh} sommando le righe di dettaglio (attività, classe)."""
     out: dict = defaultdict(float)
-    for r in _righe(raw, ds):
+    for r in _righe(raw, ds, salta):
         voce = mappa_set.get((r.get("Settore") or "").lower())
         if voce:
             out[(r["Regione"], r["Provincia"], int(r["Anno"]), voce)] += _val(r, "_v")
@@ -419,7 +531,198 @@ def confronta_consumi(tot: dict, ee: dict, soglia: float = SOGLIA_CONFRONTO) -> 
     for n in note:
         print(n, file=sys.stderr)
     return note
-    return T
+
+
+# ---- ricostruzione degli anni copiati (22/11/2026) ----
+def _per_anno(d: dict, fonte: str | None = None) -> dict:
+    """{(reg, prov, anno, fonte): v} → {anno: {(norm reg, norm prov): v}} (solo `fonte`, o già senza fonte)."""
+    out: dict = defaultdict(dict)
+    for k, v in d.items():
+        if fonte is not None and k[3] != fonte:
+            continue
+        out[int(k[2])][(norm(k[0]), norm(k[1] or ""))] = v
+    return out
+
+
+def _interpola(serie: dict, anno: int) -> tuple[dict, list[int]]:
+    """Media per provincia dell'anno valido prima e dopo `anno` (o di quello che c'è): ({chiave: v}, anni usati)."""
+    prima = [a for a in serie if a < anno]
+    dopo = [a for a in serie if a > anno]
+    usati = ([max(prima)] if prima else []) + ([min(dopo)] if dopo else [])
+    somma: dict = defaultdict(float)
+    conta: dict = defaultdict(int)
+    for a in usati:
+        for k, v in serie[a].items():
+            somma[k] += v
+            conta[k] += 1
+    return {k: somma[k] / conta[k] for k in somma}, usati
+
+
+def _n(x: float) -> str:
+    """Numero intero con il punto delle migliaia (319.130)."""
+    return f"{x:,.0f}".replace(",", ".")
+
+
+def _anni_testo(usati: list[int]) -> str:
+    return " e del ".join(map(str, usati)) if usati else "nessun anno"
+
+
+def _togli_anni(d: dict, anni: set) -> dict:
+    return defaultdict(float, {k: v for k, v in d.items() if int(k[2]) not in anni})
+
+
+def ricostruisci_produzione(ebs: dict, prs: dict, pt: dict, pomp_reg: dict, copie_ebs: dict, copie_prs: dict,
+                            copie_pt: set) -> tuple[dict, list[str], set]:
+    """Righe di ElectricityBySource per gli anni copiati, dalle altre tabelle di Terna dello stesso anno:
+    termoelettrico lordo = ProductionThermal (somma dei valori lordi per categoria); idrico rinnovabile, geotermico,
+    eolico, fotovoltaico = ProductionRenewableSources; pompaggi = ConsumptionBySource «Idrico tradizionale» per regione
+    (produzione degli impianti di pompaggio), divisa tra le province come la media dell'anno valido prima e dopo
+    (se manca il dato regionale, la media stessa). Se manca una delle due tabelle, l'anno resta vuoto.
+    → (ebs con gli anni ricostruiti, note, anni rimasti vuoti)."""
+    note: list[str] = []
+    vuoti: set = set()
+    ebs = _togli_anni(ebs, set(copie_prs))            # senza le rinnovabili dell'anno la produzione non si separa
+    for a in sorted(copie_prs):
+        if a not in copie_ebs:
+            note.append(f"Produzione {a}: dato di Terna non disponibile (ProductionRenewableSources {a} è una copia)")
+    anni_pt = {k[2] for k in pt}
+    anni_prs = {int(k[2]) for k in prs}
+    pomp_prov: dict = defaultdict(dict)               # pompaggi lordi per provincia negli anni validi
+    idro_e, idro_r = _per_anno(ebs, "idrico"), _per_anno(prs, "idrico")
+    for anno, d in idro_e.items():
+        for k, v in d.items():
+            pomp_prov[anno][k] = max(0.0, v - idro_r.get(anno, {}).get(k, 0.0))
+    for a in sorted(copie_ebs):
+        if a in copie_prs or a in copie_pt or a not in anni_pt or a not in anni_prs:
+            note.append(f"Produzione {a}: dato di Terna non disponibile (ElectricityBySource {a} è una copia e mancano "
+                        "ProductionThermal o ProductionRenewableSources dello stesso anno)")
+            vuoti.add(a)
+            continue
+        nomi: dict = {}                               # (norm reg, norm prov) → nomi di Terna dell'anno
+        for k in prs:
+            if int(k[2]) == a:
+                nomi.setdefault((norm(k[0]), norm(k[1] or "")), (k[0], k[1]))
+        for (reg, prov, anno), _v in pt.items():
+            if anno == a:
+                nomi.setdefault((norm(reg), norm(prov or "")), (reg, prov))
+        quote, usati = _interpola({y: v for y, v in pomp_prov.items() if y != a}, a)
+        righe: dict = {}
+        for (nr, np_), (reg, prov) in nomi.items():
+            r = lambda f: prs.get((reg, prov, a, f), 0.0)
+            righe[(reg, prov, a, "termoelettrico")] = sum(v for (rg, pv, an), v in pt.items()
+                                                         if an == a and (norm(rg), norm(pv or "")) == (nr, np_))
+            righe[(reg, prov, a, "idrico")] = r("idrico")
+            for f in ("geotermoelettrico", "eolico", "fotovoltaico"):
+                righe[(reg, prov, a, f)] = r(f)
+        regioni = {nr for nr, _ in nomi}
+        da_regione = 0
+        for nr in sorted(regioni):
+            pesi = {k: quote.get(k, 0.0) for k in nomi if k[0] == nr}
+            totale = pomp_reg.get((nr, a))
+            if totale is None:
+                totale = sum(pesi.values())
+            else:
+                da_regione += 1
+            totale = max(0.0, totale)
+            sp = sum(pesi.values())
+            if totale and not sp:
+                note.append(f"Produzione {a}: pompaggi di {nr} ({totale:.0f} GWh) non attribuibili alle province, esclusi")
+                continue
+            for k, w in pesi.items():
+                if w:
+                    reg, prov = nomi[k]
+                    righe[(reg, prov, a, "idrico")] += totale * w / sp
+        ebs.update(righe)
+        tot = sum(righe.values())
+        note.append(f"Produzione {a} ricostruita (ElectricityBySource {a} è una copia di {copie_ebs[a]['di']}): "
+                    f"termoelettrico lordo da ProductionThermal (per ogni chiave il valore maggiore, cioè il lordo), "
+                    f"idrico rinnovabile, geotermico, eolico e fotovoltaico da ProductionRenewableSources, pompaggi da "
+                    f"ConsumptionBySource «Idrico tradizionale» per regione ({da_regione} regioni) divisi tra le province "
+                    f"come la media del {_anni_testo(usati)}; Italia {_n(tot)} GWh")
+    return ebs, note, vuoti
+
+
+def ricostruisci_capacita(gp: dict, crs: dict, ct: dict, copie_gp: dict, copie_crs: dict,
+                          copie_ct: set) -> tuple[dict, list[str], set]:
+    """Righe di GenerationPlants per gli anni copiati: termoelettrico = CapacityThermal (meno il geotermico, se
+    nell'anno valido più vicino CapacityThermal lo comprende), rinnovabili = CapacityRenewableSources, pompaggio puro =
+    media per provincia dell'anno valido prima e dopo (GenerationPlants idrico − CapacityRenewableSources idrico).
+    Se manca una delle due tabelle dello stesso anno, l'anno resta vuoto.
+    → (gp con gli anni ricostruiti, note, anni rimasti vuoti)."""
+    note: list[str] = []
+    vuoti: set = set()
+    gp = _togli_anni(gp, set(copie_crs))
+    for a in sorted(copie_crs):
+        if a not in copie_gp:
+            note.append(f"Capacità {a}: dato di Terna non disponibile (CapacityRenewableSources {a} è una copia)")
+    anni_ct = {int(k[2]) for k in ct}
+    anni_crs = {int(k[2]) for k in crs}
+    anni_gp = sorted({int(k[2]) for k in gp})
+    termo_gp, geo_crs = _per_anno(gp, "termoelettrico"), _per_anno(crs, "geotermoelettrico")
+    ct_anno = _per_anno({(k[0], k[1], k[2], None): v for k, v in ct.items()})
+    pomp: dict = defaultdict(dict)
+    idro_g, idro_r = _per_anno(gp, "idrico"), _per_anno(crs, "idrico")
+    for anno, d in idro_g.items():
+        if anno in anni_crs:
+            for k, v in d.items():
+                pomp[anno][k] = max(0.0, v - idro_r.get(anno, {}).get(k, 0.0))
+    for a in sorted(copie_gp):
+        if a in copie_crs or a in copie_ct or a not in anni_ct or a not in anni_crs:
+            perche = [f"GenerationPlants {a} è una copia del {copie_gp[a]['di']}"]
+            if a in copie_crs:
+                perche.append(f"CapacityRenewableSources {a} del {copie_crs[a]['di']}")
+            note.append(f"Capacità {a}: dato di Terna non disponibile ({', '.join(perche)})")
+            vuoti.add(a)
+            continue
+        vicini = sorted((y for y in anni_gp if y in anni_ct and y in anni_crs), key=lambda y: (abs(y - a), y))
+        con_geo = False
+        if vicini:
+            y = vicini[0]
+            diff = sum(ct_anno[y].values()) - sum(termo_gp[y].values())
+            geo = sum(geo_crs.get(y, {}).values())
+            con_geo = geo > 0 and diff > 0.5 * geo
+        quote, usati = _interpola({y: v for y, v in pomp.items() if y != a}, a)
+        nomi: dict = {}
+        for k in crs:
+            if int(k[2]) == a:
+                nomi.setdefault((norm(k[0]), norm(k[1] or "")), (k[0], k[1]))
+        for (reg, prov, anno) in ct:
+            if int(anno) == a:
+                nomi.setdefault((norm(reg), norm(prov or "")), (reg, prov))
+        righe: dict = {}
+        for chiave, (reg, prov) in nomi.items():
+            r = lambda f: crs.get((reg, prov, a, f), 0.0)
+            termo = ct_anno[a].get(chiave, 0.0) - (geo_crs.get(a, {}).get(chiave, 0.0) if con_geo else 0.0)
+            righe[(reg, prov, a, "termoelettrico")] = max(0.0, termo)
+            righe[(reg, prov, a, "idrico")] = r("idrico") + quote.get(chiave, 0.0)
+            for f in ("geotermoelettrico", "eolico", "fotovoltaico"):
+                righe[(reg, prov, a, f)] = r(f)
+        persi = sum(v for k, v in quote.items() if k not in nomi)
+        if persi > 0.5:
+            note.append(f"Capacità {a}: {persi:.0f} MW di pompaggio puro in province senza dati nell'anno, esclusi")
+        gp.update(righe)
+        tot = sum(righe.values())
+        note.append(f"Capacità {a} ricostruita (GenerationPlants {a} è una copia del {copie_gp[a]['di']}): termoelettrico "
+                    f"da CapacityThermal{' meno il geotermico (compreso in CapacityThermal)' if con_geo else ''}, "
+                    f"rinnovabili da CapacityRenewableSources, pompaggio puro come media per provincia del "
+                    f"{_anni_testo(usati)}; Italia {_n(tot)} MW")
+    return gp, note, vuoti
+
+
+SOGLIA_SALTO = 0.15
+
+
+def controlla_salti(serie: dict, nome: str, unita: str, soglia: float = SOGLIA_SALTO) -> list[str]:
+    """Avvisi per gli anni in cui il totale nazionale cambia di più della soglia rispetto alla media dell'anno prima e
+    dell'anno dopo (serie = {anno: totale}; solo anni con entrambi i vicini)."""
+    note = []
+    for a in sorted(serie):
+        if a - 1 in serie and a + 1 in serie:
+            m = (serie[a - 1] + serie[a + 1]) / 2
+            if m and abs(serie[a] - m) / abs(m) > soglia:
+                note.append(f"Controllo salti: {nome} {a}, Italia {_n(serie[a])} {unita} contro {_n(m)} di media del "
+                            f"{a - 1} e del {a + 1} ({(serie[a] - m) / abs(m) * 100:+.0f} %)")
+    return note
 
 
 def _fonti(T, g, tutte, rinn, add):
@@ -449,6 +752,7 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None) -> dict:
     regioni_pos, province_pos = posizioni(mappa)
     T = leggi(raw)
     note = T.pop("_note", [])
+    copie = T.pop("_copie", {})
     uscita.mkdir(parents=True, exist_ok=True)
     anni = {g: sorted({a for serie in T[g].values() for a in serie}) for g in VOCI}
 
@@ -487,7 +791,7 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None) -> dict:
 
     # emissioni per regione (solo regione: Terna non le pubblica per provincia)
     rif = riferimenti()
-    em = leggi_emissioni(raw)
+    em = leggi_emissioni(raw, {ds: set(v) for ds, v in copie.items()})
     em_reg: dict = defaultdict(dict)
     for reg, serie in em.items():
         rp = regioni_pos.get(norm(reg))
@@ -516,6 +820,22 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None) -> dict:
     for z in zone:
         z["indicatori"] = aggrega(z["regioni"])
     italia_ind = aggrega(list(per_cod))
+
+    # controllo anti-salto sui totali nazionali (somma delle regioni)
+    nomi_g = {"capacita": "capacità", "produzione": "produzione", "richiesta": "richiesta", "consumi": "consumi"}
+    salti = []
+    for g in VOCI:
+        serie = {a: sum(sum(_arr(per_regione[g][c].get(a, {}), g)) for c in per_regione[g]) for a in anni[g]}
+        salti += controlla_salti(serie, nomi_g[g], UNITA[g])
+    for i, (campo, unita_em) in enumerate((("produzione termoelettrica", "GWh"), ("emissioni di CO2", "kt"))):
+        serie = {int(a): sum(sum(r["emissioni"][a][i]) for r in regioni_out if a in r["emissioni"])
+                 for a in map(str, anni["emissioni"])}
+        salti += controlla_salti(serie, campo, unita_em)
+    for n in salti:
+        print(n, file=sys.stderr)
+    note = note + salti
+    controlli = {"copie": [descrivi_copia(ds, a, c) for ds, v in sorted(copie.items()) for a, c in sorted(v.items())],
+                 "salti": salti}
 
     voci_out = {g: [{"id": k, "nome": n, "colore": c} for k, n, c in VOCI[g]] for g in VOCI}
     comune = {"fonte": FONTE, "unita": UNITA, "voci": voci_out, "fer": FER, "anni": anni,
@@ -575,7 +895,7 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None) -> dict:
     if non_trovate:
         raise ValueError(f"province di Terna senza posizione: {sorted(non_trovate)}")
     dimensioni["italia.json"] = (uscita / "italia.json").stat().st_size
-    return {"anni": anni, "dimensioni": dimensioni, "note": note}
+    return {"anni": anni, "dimensioni": dimensioni, "note": note, "controlli": controlli}
 
 
 def _zone(mappa: Path, codici: set) -> list:

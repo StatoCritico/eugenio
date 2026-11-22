@@ -150,7 +150,9 @@ def test_riserva_electricalenergy(tmp_path):
     it = json.loads((tmp_path / "out" / "italia.json").read_text(encoding="utf-8"))
     er = next(r for r in it["regioni"] if r["cod"] == "08")
     assert er["consumi"]["2022"][0] == 11 and er["consumi"]["2021"][0] == 15
-    assert it["anni"]["consumi"] == [2020, 2021, 2022] and len(it["note"]) == 1
+    # (22/11/2026) più l'avviso del controllo anti-salto (consumi 2021 +31 % sulla media del 2020 e del 2022)
+    assert it["anni"]["consumi"] == [2020, 2021, 2022] and len([n for n in it["note"] if n.startswith("Consumi")]) == 1
+    assert [n for n in it["note"] if n.startswith("Controllo salti: consumi 2021")]
 
 
 def test_confronta_consumi():

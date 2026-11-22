@@ -600,8 +600,19 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       pubblica. I valori regionali sono la somma delle province.</li>
     <li><strong>Correzioni dei dati.</strong> In alcuni anni Terna ripete la stessa riga (provincia e fonte) con due valori
       diversi o con un valore e un vuoto: si tiene il valore più alto. Per il termoelettrico si usa il minore tra il totale
-      degli impianti di generazione e la somma della capacità termoelettrica per categoria (nel 2017 il primo ha 16 GW in
-      più del 2016 e del 2018).</li>
+      degli impianti di generazione e la somma della capacità termoelettrica per categoria.</li>
+    <li><strong>Anni copiati</strong> (dal 22/11/2026). Nel Download Center alcuni anni sono la copia di un altro anno con
+      l'anno cambiato: la produzione per fonte del 2017 è quella del 2008 (Italia 319.130 GWh invece di circa 295.800), quella
+      del 2006 è il 2004 e quella del 2007 ha i valori del 2005; la capacità per fonte del 2005 è il 2002, quella del 2006 il
+      2004, quella del 2017 contiene tutte le righe del 2012; la capacità rinnovabile del 2005 è il 2004. Ogni mese il
+      server confronta tutti gli anni di ogni tabella e non usa gli anni copiati. La produzione del 2006, 2007 e 2017 è
+      ricostruita con le altre tabelle di Terna dello stesso anno: termoelettrico lordo dalla produzione termoelettrica per
+      categoria, idrico rinnovabile, geotermico, eolico e fotovoltaico dalle statistiche delle rinnovabili, pompaggi dalla
+      copertura della richiesta per regione, divisi tra le province come la media dell'anno prima e dopo (Italia 2017:
+      295.787 GWh). La capacità del 2006 e del 2017 è ricostruita allo stesso modo (termoelettrico dalla capacità per
+      categoria senza il geotermico, rinnovabili dalla tabella delle rinnovabili, pompaggio puro come media dell'anno prima
+      e dopo); la capacità del 2005 manca (dato di Terna non disponibile). Un controllo segnala inoltre ogni anno in cui il
+      totale nazionale di una grandezza si scosta di più del 15 % dalla media dell'anno prima e dopo.</li>
     <li><strong>Burden sharing.</strong> Obiettivi di potenza rinnovabile aggiuntiva rispetto al 31/12/2020 del DM 21
       giugno 2024 (aree idonee), art. 2, Tabella A, anno per anno fino al 2030 (80 GW in tutto; Trentino-Alto Adige =
       Bolzano + Trento). La potenza raggiunta è una stima: la variazione della potenza efficiente lorda rinnovabile di Terna

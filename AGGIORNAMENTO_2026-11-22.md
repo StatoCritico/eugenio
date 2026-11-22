@@ -92,6 +92,10 @@ Promemoria di cosa è stato fatto a mano; **non va rifatto**.
   Cosa deve comparire: `Statistiche di Terna: N file pubblicati in /sito/dati/elettricita` e un numero maggiore di 0.
   Finché `italia.json` non ha la parte `emissioni` il pulsante «Emissioni» resta nascosto. Il periodo a due indicatori
   non ha bisogno di file nuovi.
+  Anno 2017 (22/11/2026): il costruttore riconosce gli anni che nel Download Center sono la copia di un altro anno
+  (ElectricityBySource 2017 = 2008) e ricostruisce la produzione 2017 dalle altre tabelle di Terna: nel registro devono
+  comparire le righe «Terna, ElectricityBySource 2017: copia del 2008» e «Produzione 2017 ricostruita … Italia 295.787
+  GWh» (prima la pagina mostrava 360.854). Controllo: `grep -o 'Produzione 2017 ricostruita[^"]*' /srv/energia/sito/dati/elettricita/italia.json`.
 - **AT4** – [Server] Primo giro del worker **`suolo`** (il lavoro mensile parte da solo il 6 del mese alle 05:30, e subito se
   `/sito/dati/suolo/italia.json` manca; farlo a mano adesso evita di aspettare):
   ```bash

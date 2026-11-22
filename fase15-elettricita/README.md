@@ -15,7 +15,7 @@ Prove: `cd fase15-elettricita && python -m pytest -q` (solo dati inventati, nien
 
 ## Produzione e consumi di elettricità (`terna_dc.py`, `costruisci.py`)
 
-Stato al 21/11/2026: scaricatore e costruttore funzionanti (grandezza «Emissioni» pubblicata con la versione del sito 20261122a, release `v2026.11.22`; periodo a due indicatori nella pagina dal 22/11/2026); pagina «Produzione e consumi di elettricità»
+Stato al 21/11/2026: scaricatore e costruttore funzionanti (grandezza «Emissioni» pubblicata con la versione del sito 20261122a, release `v2026.11.22`; periodo a due indicatori nella pagina dal 22/11/2026; dal 22/11/2026 controllo degli anni copiati da un altro anno e ricostruzione della produzione 2006, 2007, 2017 e della capacità 2006, 2017, vedi «Problemi noti nei dati di Terna»); pagina «Produzione e consumi di elettricità»
 (`fase5-sito/sito/elettricita.html`, `elettricita.js`) pubblicata il 21/11/2026 (`?v=20261121a`, sperimentale), come «Carichi elettrici».
 
 I dati di Terna **non vanno nel repository** e **non si scaricano dal sito** (decisione di Paolo): la cartella
@@ -207,10 +207,52 @@ Che cosa comprende, verificato sui dati scaricati il 20/11/2026:
   8 804, −25 %), Taranto 2019 (5 199 contro 2 167, −58 %) e 2020 (4 617 contro 2 076, −55 %). Totale Italia dei
   consumi: 2019 296 254 GWh (prima 289 290), 2020 279 171 (prima 273 705); 2015 +41 GWh (servizi di alcune grandi
   province, sotto la soglia); gli altri anni invariati.
-- **ElectricityBySource 2017**: produzione lorda uguale alla netta per tutte le fonti e fotovoltaico Italia 193 GWh
-  (contro 22 104 nel 2016 e 22 654 nel 2018). Il costruttore prende già il massimo con ProductionRenewableSources.
-- Righe doppie con la stessa chiave in GenerationPlants (2017, +16 GW di termoelettrico), ThermalHeat (tutti gli anni,
-  da sommare), ProductionThermal (lorda e netta senza colonna), Market/consumi fino al 2020 (da sommare).
+- **Anni copiati da un altro anno** (trovato il 22/11/2026; segnalazione a Terna preparata). Alcuni file del Download
+  Center sono la copia di un altro anno con l'anno cambiato. Con i dati scaricati al 22/11/2026 (`trova_copie()` su
+  tutti i 354 file di `raw/`):
+
+  | Dataset | Anno | Copia di | Tipo |
+  |---|---|---|---|
+  | ElectricityBySource | 2017 | 2008 | stesse 684 righe (Italia 319 130 GWh, il dato 2008, invece di ~295 800) |
+  | ElectricityBySource | 2006 | 2004 | stesse righe (più 59 righe ripetute) |
+  | ElectricityBySource | 2007 | 2005 | stessi valori (96 %) su province e fonti diverse; stessi totali per fonte |
+  | GenerationPlants | 2005 | 2002 | stesse righe |
+  | GenerationPlants | 2006 | 2004 | stesse righe |
+  | GenerationPlants | 2017 | 2012 | contiene tutte le 800 righe del 2012 più 113 righe diverse (930 righe con le ripetute): erano questi i «+16 GW di termoelettrico» che prima si correggevano col minore tra GenerationPlants e CapacityThermal |
+  | CapacityRenewableSources | 2005 | 2004 | stesse righe |
+
+  Nessuna copia in ProductionRenewableSources, ProductionThermal, CapacityThermal, ElectricityByType,
+  GrossVsCO2Emissions, ConsumptionBySource, Total, ElectricalEnergy, Market, IndustrialSector, ServiceSector,
+  ThermalHeat. Regole (`trova_copie`, solo file con almeno 20 righe con un valore): «identico» = stesse righe tolto
+  l'anno; «contiene» = ha tutte le righe dell'altro anno, che sono almeno l'80 % delle sue; «valori» = almeno il 95 %
+  dei valori diversi da zero sono quelli dell'altro anno. Negli identici e nei «valori» la copia è l'anno più recente
+  (in tutti i casi l'anno più vecchio coincide con le altre tabelle del suo anno). **Gli anni copiati non si leggono**
+  (`_righe(..., salta)`), per ogni dataset; nota in `italia.json` → `note`, su stderr e in `esito["controlli"]["copie"]`.
+  - **Produzione** (`ricostruisci_produzione`): termoelettrico lordo = ProductionThermal (per ogni chiave il valore
+    maggiore = lordo; somma = termoelettrico lordo di ElectricityBySource negli anni buoni, p. es. 199 430 GWh nel 2016,
+    192 730 nel 2018), idrico rinnovabile, geotermico, eolico, fotovoltaico = ProductionRenewableSources, pompaggi =
+    ConsumptionBySource «Idrico tradizionale» per regione (negli anni buoni circa il 2 % sotto il lordo) divisi tra le
+    province come la media dell'anno valido prima e dopo. Italia: 2017 **295 787 GWh** (prima 360 854; dato Terna
+    295 832), 2006 314 000 (prima 305 248), 2007 313 948 (prima 307 452). Se manca ProductionThermal o
+    ProductionRenewableSources dell'anno, l'anno resta vuoto con la nota «dato di Terna non disponibile».
+  - **Capacità** (`ricostruisci_capacita`): termoelettrico = CapacityThermal meno il geotermico (CapacityThermal lo
+    comprende fino al 2022: si decide confrontando con GenerationPlants nell'anno valido più vicino), rinnovabili =
+    CapacityRenewableSources, pompaggio puro = media per provincia dell'anno valido prima e dopo. Italia: 2017
+    117 178 MW (prima 117 816), 2006 92 098 (prima 83 556). **2005 vuoto** (anche CapacityRenewableSources 2005 è una
+    copia): dato di Terna non disponibile.
+  - **Controllo anti-salto** (`controlla_salti`): nota se il totale nazionale di capacità, produzione, richiesta,
+    consumi, produzione termoelettrica o CO2 di un anno si scosta di più del 15 % dalla media dell'anno prima e dopo.
+    Con i dati del 22/11/2026 resta solo «emissioni di CO2 2022, 86 689 kt contro 72 984 (+19 %)» (dato di Terna, da
+    verificare).
+  - **Da verificare** (non corretto): la capacità 2005–2009 sembra in parte spostata di un anno (GenerationPlants 2009
+    ha 7 MW di fotovoltaico e il termoelettrico di CapacityThermal 2006; CapacityRenewableSources 2006 e 2007 hanno
+    l'eolico che Terna dà per il 2005 e il 2006). Non sono copie esatte e il controllo non le riconosce.
+- **ElectricityBySource 2017**: era la copia del 2008 (sopra); la «produzione lorda uguale alla netta» e il fotovoltaico
+  di 193 GWh venivano da lì. Prima del 22/11/2026 il costruttore prendeva il massimo con ProductionRenewableSources e
+  l'Italia 2017 risultava 360 854 GWh.
+- Righe doppie con la stessa chiave in CapacityRenewableSources (2017–2018, valori vicini: si tiene il maggiore),
+  ThermalHeat (tutti gli anni, da sommare), ProductionThermal (lorda e netta senza colonna), Market/consumi fino al 2020
+  (da sommare).
 - Nomi non uniformi: «Valle D'Aosta» / «Valle d'Aosta», «Gas naturale» / «Gas Naturale», sottocategorie
   termoelettriche con maiuscole diverse, province con caratteri sbagliati (`ripara()`).
 - Anni diversi tra dataset: produzione e potenza fino al 2025, consumi fino al 2024, ServiceSector solo dal 2019.
