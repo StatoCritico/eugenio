@@ -1,9 +1,13 @@
 "use strict";
 // Statistiche › «Carichi elettrici» (carichi.html, 20/11/2026, richiesta di Paolo; sperimentale).
-// Pagina unica a tutta larghezza, senza mappa grande: la zona di mercato si sceglie solo nella piccola mappa accanto al
-// titolo (zone al posto delle regioni; dati/mappa/zone.json, costruito da costruisci_zone.py). Clic su una zona = i suoi
-// valori; secondo clic (o «Tutta Italia») = Italia. Sotto: periodo (due date, predefinito gli ultimi 12 mesi) e casella
-// «Quarti d'ora» (senza: ore, media dei quattro quarti d'ora).
+// Pagina a tutta larghezza, senza mappa grande. (22/11/2026 b, Paolo) Sotto il titolo la pagina è divisa in due metà
+// (divisore.js, ognuna con la sua barra di scorrimento) con le stesse scelte e gli stessi grafici, per confrontare due zone
+// o due periodi: creaLato(0) e creaLato(1); la metà destra la copia copiaMeta() dalla sinistra (identificativi «-2»).
+// Zona: casella a discesa di ogni metà (Italia e le sette zone) o piccola mappa accanto al titolo, una sola (zone al posto
+// delle regioni; dati/mappa/zone.json, costruito da costruisci_zone.py): il clic su una zona la sceglie in tutte e due le
+// metà, un secondo clic torna all'Italia; le zone delle due metà sono evidenziate con due stili spiegati sotto la mappa.
+// Periodo: due date (predefinito gli ultimi 12 mesi), «Ultimi 12 mesi», anno intero (menu e «‹ ›»); casella «Quarti
+// d'ora» (senza: ore, media dei quattro quarti d'ora).
 // Grafici (SVG disegnato a ogni vista, con percorsi aggregati per pixel: decine di migliaia di quarti d'ora restano
 // leggeri):
 //   1. profilo giornaliero: per ogni quarto d'ora (o ora) del giorno minimo, media e massimo della potenza richiesta;
@@ -12,13 +16,15 @@
 //      zona), con le caselle per accendere e spegnere le fonti (22/11/2026);
 //   4. fonti: barre al 100 % per quarto d'ora (o ora), solo Italia; le fonti spente restano al loro posto, color sfondo.
 // I grafici 3 e 4 hanno la stessa vista (gruppo st.finestra): pulsanti «Ieri» … «Ultimo anno», «Tutto il periodo» e
-// cursore «Sposta di un mese» sopra il grafico 3 (22/11/2026, richiesta di Paolo).
+// cursore «Sposta di un mese» sopra il grafico 3 (22/11/2026, richiesta di Paolo), su tutto l'archivio (22/11/2026 b):
+// quando la finestra esce dal periodo, il periodo si sposta. I tratti senza dati sono tratteggiati («dati mancanti»).
 // Ogni grafico si ingrandisce con la rotella e si sposta trascinando (asse orizzontale) nella pagina e nel riquadro
 // grande di grafici.js (svg.__zoomProprio: grafici.js gli passa rotella, tasti e «Vista iniziale").
 // Dati: dati/carichi/indice.json, carico_AAAA-MM.json, fonti_AAAA-MM.json (fase 15, elettricita/carichi.py, costruiti
 // dal worker con i dati di Terna). Decisione di Paolo (20/11/2026): i dati non si scaricano.
 // Le scelte stanno nell'indirizzo: ?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=60&finestra=AAAA-MM-GG_AAAA-MM-GG&spente=fv,eol
-// (history.replaceState; finestra e spente dal 22/11/2026, solo se diverse dal predefinito); il riquadro
+// e per la metà destra gli stessi con «2» (zona2, da2, …) (history.replaceState; finestra e spente dal 22/11/2026, solo se
+// diverse dal predefinito); il riquadro
 // «Collegamento a questa simulazione» in fondo alla pagina lo mostra e lo copia (collegamento.js).
 // (21/11/2026, Paolo) all'apertura: ultimi 12 mesi che finiscono all'ultimo giorno con i dati, già scritti nelle caselle
 // Dal/al, e quarti d'ora accesi. I valori predefiniti non vanno nell'indirizzo (Italia = niente zona, quarti d'ora =

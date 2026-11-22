@@ -307,7 +307,10 @@ python -m elettricita.carichi costruisci <archivio> <uscita>      # costruisci_c
   eol #a9c641, fv #f7cb15, saldo #c7a0c0) e i mesi: `inizio` (primo quarto d'ora, UTC = mezzanotte italiana del
   primo del mese), `n` (quarti d'ora con dati: il mese in corso è tagliato all'ultimo), `ora_legale` (`[[indice,
   minuti dall'UTC], …]` a ogni cambio), `passo_carico`, `fonti`, `passo_fonti` (15 o 60), `rinnovabili`.
-- `carico_AAAA-MM.json`: `{"mese", "zone": {ITA: [MW interi o null] × n, …}}` (≈ 120 kB al mese).
+- `carico_AAAA-MM.json`: `{"mese", "zone": {ITA: [MW interi o null] × n, …}}` (≈ 120 kB al mese). Dal 22/11/2026
+  (richiesta di Paolo) `ITA` è la **somma degli interi delle sette zone** quarto d'ora per quarto d'ora (dove manca una
+  zona resta «Italy» di Terna); l'indice ha per ogni mese `scarto_italia_mw`, lo scarto massimo tra «Italy» di Terna e la
+  somma delle zone prima dell'arrotondamento (avviso nel registro sopra 1 MW).
 - `fonti_AAAA-MM.json`: `{"mese", "voci": {termo, bio, idro, geo, eol, fv, saldo: [MW interi o null] × n}}`
   (≈ 100 kB al mese): fv, eol, geo, idro (con i pompaggi), bio dalla produzione rinnovabile (autoconsumi compresi);
   termo = produzione totale con gli autoconsumi meno le rinnovabili (senza `RenewableGeneration`: le rinnovabili di
@@ -339,4 +342,7 @@ L'ora ripetuta di ottobre nel Parquet è già risolta da `terna.py`; `_ora_doppi
 
 Prova con i dati veri (20/11/2026): 13 mesi (novembre 2025 – 19 novembre 2026), 39 richieste in circa 2 minuti,
 costruzione in 5 secondi, nessun quarto d'ora mancante tranne il 14–15 gennaio 2026 (192, assenti anche nei dati di
-Terna); somma delle zone = Italia (scarto massimo 2 MW, arrotondamenti).
+Terna); somma delle zone = Italia (scarto massimo 2 MW, arrotondamenti). Ricontrollato il 22/11/2026 sui dati grezzi:
+«Italy» e la somma delle zone coincidono a 7·10⁻¹² MW in tutti i 36.672 quarti d'ora con tutte le zone (dopo
+`_ora_doppia`); lo scarto di 1–3 MW veniva solo dall'arrotondamento di ogni serie, e ora non c'è più (Italia = somma degli
+interi). I giorni mancanti li riprova il worker (fase 4, § «Dati di Terna», «Giorni mancanti»).

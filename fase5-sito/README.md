@@ -172,7 +172,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `dati-per-email.html`, `contatti.html` | dati_per_email.js, contatti.js | c (moduli) | niente: moduli con email e dati personali, non simulazioni |
 | `faq.html`, `metodo.html`, `licenza.html`, `privacy.html`, `sitografia.html`, `mirror.html`, `novita.html`, `esempi.html`, `contributi.html`, `dbtr-istruzioni.html`, `fv-leed.html`, `link.html` | – | c (testo) | niente |
 | `cog-car.html`, `cog-confronto.html`, `cog-rischio.html`, `cog-simulazione.html`, `cog-spark-spread.html`, `edificio-conto-termico.html`, `edificio-ecobonus.html`, `edificio-fabbisogno.html`, `edificio-impianti.html`, `edificio-involucro.html`, `fv-mercato.html`, `lidar.html`, `visure.html` | – | c (segnaposto) | niente (da aggiungere quando diventano pagine con scelte) |
-| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026; dal 21/11/2026 `passo` solo con le ore, `passo=60`); dal 22/11/2026 finestra (`finestra=AAAA-MM-GG_AAAA-MM-GG`, solo se non è tutto il periodo) e spente (`spente=fv,eol`, solo con fonti spente) |
+| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026; dal 21/11/2026 `passo` solo con le ore, `passo=60`); dal 22/11/2026 finestra (`finestra=AAAA-MM-GG_AAAA-MM-GG`, solo se non è tutto il periodo) e spente (`spente=fv,eol`, solo con fonti spente); dal 22/11/2026 b gli stessi sei con «2» per la metà destra (`zona2`, `da2`, `a2`, `passo2`, `finestra2`, `spente2`) |
 | `suolo.html` | suolo.js | a | regione o vista=italia, provincia, modo (scritti dalla pagina), inizio, fine, unita (solo se non ha), barre, fondo, ortofoto (22/11/2026) |
 
 - Moduli comuni toccati: `strati_gl.js` (caselle particelle e contorni con `data-collegamento`), `scelta_aria.js` (anni e
@@ -301,6 +301,43 @@ divisione in due metà.
   dell'asse dei tempi ogni 64 px (prima 80), così una settimana a 375 px ha le date.
 - Prove: `test_carichi_browser.py::test_potenza_per_fonte_e_finestra`, `::test_fonti_spente` (colore dello sfondo nel
   tema scuro, nel chiaro e nel riquadro), `::test_telefono_fonti`; `test_collegamento_browser.py::test_carichi_finestra_e_fonti`.
+
+### Due metà, zona a discesa, anni, Italia = somma delle zone, dati mancanti (22/11/2026 b, richiesta di Paolo delle 09:54)
+
+- **Due metà** sotto il titolo e l'avviso: `div.strumento.carichi-meta[data-divisore]` con `section.carichi-lato`
+  `data-lato="0"` (`data-divisore-sinistra`, identificativi di sempre) e `data-lato="1"` (`data-divisore-destra`). La
+  destra la riempie `copiaMeta()` copiando la sinistra e aggiungendo «-2» a `id`, `for`, `aria-labelledby`,
+  `aria-describedby`, `aria-controls`. `divisore.js` ora accetta anche `.strumento[data-divisore]` dentro la pagina con le
+  due metà segnate da `data-divisore-sinistra` / `data-divisore-destra` (stesso comportamento: trascinamento, frecce,
+  doppio clic, larghezza ricordata). Dagli 861 px ogni metà è alta quanto la finestra sotto la testata e scorre da sola
+  (la barra della sinistra a sinistra, `direction: rtl`); col telefono una sotto l'altra. Il JavaScript ha lo stato di
+  ogni metà in `creaLato(k)` (zona, periodo, passo, grafici, finestra, fonti spente) e i dati comuni in `D` (indice,
+  mesi, file letti una volta sola per le due metà). `window.EUGENIO_CARICHI.stato` è la metà sinistra, `.destra` la destra.
+- **Zona**: casella a discesa `#carichi-zona` (e `-2`) con «Italia (tutte le zone)» e le sette zone, al posto di «Zona
+  Italia / Tutta Italia». La **piccola mappa** resta una sola, sopra: il clic su una zona la sceglie in **tutte e due**
+  le metà; se è già in tutte e due, torna all'Italia. Evidenza (`evidenzia()`): le zone non scelte più chiare, zona della
+  sinistra `.meta-sx` (bordo pieno scuro, spesso), della destra `.meta-dx` (bordo tratteggiato color primario), la stessa
+  in tutte e due `.meta-tutte` (bordo pieno color primario); spiegazione in `#minimappa-legenda` sotto la mappa
+  («Sinistra: Nord», «Destra: Sicilia» o «Tutte e due le metà: …»).
+- **Anni e archivio**: menu `#carichi-anno` (anni dell'archivio) e «‹ ›» (`#anno-prima`, `#anno-dopo`: anno precedente e
+  successivo; con un periodo che non è un anno intero «‹» va all'anno prima di quello della data finale e «›» a
+  quello della data finale) che scrivono Dal/al (anno tagliato ai limiti dell'archivio). Pulsanti della finestra e
+  cursore «Sposta di un mese» ora vanno su **tutto l'archivio** (`posizioni()` dalla fine dell'archivio indietro di un
+  mese per scatto, `finestraDi()` dall'ultimo giorno con le fonti dell'archivio): se la finestra esce dal periodo Dal/al
+  (`vaiA()`), il periodo si sposta con la stessa lunghezza in giorni (più lungo se la finestra non ci sta), si ricalcola
+  e la finestra si rimette dopo il calcolo. Con tutto il periodo visibile il cursore sposta il periodo intero, un mese a
+  scatto.
+- **Italia = somma delle zone** (fase 15, `carichi.py`): l'Italia scritta è la somma degli interi delle zone, quarto
+  d'ora per quarto d'ora (dove manca una zona resta «Italy» di Terna); `scarto_italia_mw` nell'indice di ogni mese.
+  Scarto misurato su nov 2025 – nov 2026 tra «Italy» e la somma: 7·10⁻¹² MW (cioè nessuno); 1–3 MW solo per gli
+  arrotondamenti delle singole zone, ora spariti. La produzione per fonte è solo nazionale.
+- **Dati mancanti**: `scriviMancanti()` elenca sotto lo stato di ogni metà (`#carichi-mancanti`, nascosto se non ce ne
+  sono) i tratti senza potenza richiesta della zona e senza produzione per fonte; `tratteggia()` disegna nei due grafici
+  delle fonti un rettangolo tratteggiato (`rect.carichi-mancanti-area`, motivo SVG) con «dati mancanti» se è largo almeno
+  96 px; il riquadretto lo dice. Il worker riprova i giorni mancanti (fase 4, § «Dati di Terna», «Giorni mancanti»).
+- Prove: `test_carichi_browser.py::test_due_meta_zone_e_mappa`, `::test_anni_e_archivio`, `::test_dati_mancanti` (dati
+  scritti a mano: dicembre 2025 e gennaio 2026 col buco del 14–15 gennaio); `test_collegamento_browser.py::test_carichi_due_meta`;
+  fase 15 `test_carichi.py::test_italia_somma_delle_zone`; fase 4 `test_terna.py::test_giorni_mancanti_*`.
 
 ## Segnalazioni di Paolo sulla v2026.11.21 (21–22/11/2026, nella versione 20261121b, pull request #17)
 

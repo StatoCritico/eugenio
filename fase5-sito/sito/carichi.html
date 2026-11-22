@@ -289,7 +289,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         due. Passando sopra (o toccando) si leggono i valori. La freccina in alto a destra apre il grafico in un riquadro
         grande, con gli stessi comandi.</li>
       <li><b>Potenza richiesta.</b> È il fabbisogno di Terna («Total Load»): la potenza media del quarto d'ora chiesta
-        alla rete, perdite e autoconsumi compresi, nella zona di mercato scelta o in tutta Italia (somma delle zone). Con
+        alla rete, perdite e autoconsumi compresi, nella zona di mercato scelta o in tutta Italia (somma delle sette zone, quarto
+        d'ora per quarto d'ora). Con
         le ore, ogni valore è la media dei quattro quarti d'ora dell'ora.</li>
       <li><b>Profilo giornaliero.</b> Le ore sono quelle italiane (ora legale d'estate): nel giorno del cambio dell'ora un
         quarto d'ora manca o conta due volte.</li>
@@ -300,11 +301,19 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         (potenza richiesta meno produzione) è l'energia arrivata dall'estero meno quella assorbita da pompaggi e accumuli:
         entra nelle barre quando è positivo, compare nel riquadretto anche quando è negativo. Fino al 2024 Terna pubblica
         la produzione ora per ora: allora i quattro quarti d'ora dell'ora hanno gli stessi valori.</li>
+      <li><b>Due metà.</b> La pagina è divisa in due metà con le loro scelte e i loro grafici, per confrontare due zone o
+        due periodi; il divisore tra le due si trascina (o si sposta con le frecce). La piccola mappa è una sola: un clic su
+        una zona la sceglie in tutte e due le metà, un secondo clic torna all'Italia; con la casella «Zona» ogni metà può
+        avere la sua. Sulla mappa la zona della metà sinistra ha il bordo pieno scuro, quella della destra il bordo
+        tratteggiato colorato, la stessa zona in tutte e due il bordo pieno colorato.</li>
+      <li><b>Anni.</b> Il menu dell'anno e le frecce «‹ ›» scelgono un anno intero (Dal/al); l'archivio va dal 2021.</li>
+      <li><b>Dati mancanti.</b> I tratti che Terna non ha pubblicato (per esempio il 14 e il 15 gennaio 2026) sono elencati
+        sotto lo stato e tratteggiati nei grafici delle fonti; il server riprova a scaricarli ogni giorno.</li>
       <li><b>Potenza per fonte e finestra.</b> I due grafici delle fonti mostrano sempre lo stesso tratto di tempo: zoom e
         trascinamento in uno spostano anche l'altro. I pulsanti «Ieri», «Ultima settimana», «Ultimo mese», «Ultimi 3 mesi»
         e «Ultimo anno» contano all'indietro dall'ultimo giorno con i dati delle fonti; il cursore «Sposta di un mese» porta
-        la finestra, con la stessa larghezza, un mese avanti o indietro a ogni scatto (si usa quando la finestra è più corta
-        del periodo). Quando una colonna del grafico copre più quarti d'ora, la sua altezza è la loro media. Spegnendo una
+        la finestra, con la stessa larghezza, un mese avanti o indietro a ogni scatto, su tutto l'archivio: se la finestra
+        esce dal periodo Dal/al, il periodo si sposta con lei (stessa lunghezza). Quando una colonna del grafico copre più quarti d'ora, la sua altezza è la loro media. Spegnendo una
         fonte il grafico della potenza la toglie dalla pila; in quello in percentuale resta al suo posto, del colore dello
         sfondo.</li>
       <li><b>Dati.</b> Terna aggiorna i dati ogni giorno; il server li legge una volta al giorno. I dati di Terna si usano
