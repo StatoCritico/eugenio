@@ -2031,3 +2031,34 @@ svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-off
 .legenda .legenda-pioggia-mancante i.tratteggio { width: 18px; height: 10px; border: 0; border-radius: 2px;
   background: repeating-linear-gradient(45deg, #808080 0 2px, transparent 2px 5px); }
 #scheda-punto h3 { margin: var(--s3) 0 var(--s1); }
+
+/* ------------------------------------------------------------------------------- pagina iniziale (22/11/2026) */
+.home { max-width: 82rem; margin: 0 auto; }
+.home .home-apertura { padding: var(--s5) 0 var(--s4); border-bottom: 1px solid var(--linea); }
+.home .home-apertura h1 { max-width: 22ch; margin-bottom: var(--s4); }
+.home .home-sotto { font-size: var(--c-l); color: var(--inchiostro); max-width: 64ch; margin: 0 0 var(--s5); }
+.home-azioni { display: flex; flex-wrap: wrap; gap: var(--s3); margin: 0 0 var(--s4); }
+.home-azioni .home-secondario { background: transparent; color: var(--inchiostro); border-color: var(--bordo); }
+.home-azioni .home-secondario:hover { background: var(--rialzo); color: var(--inchiostro); border-color: var(--inchiostro); }
+.home .home-nota { color: var(--tenue); font-size: var(--c-s); }
+.home .cantiere { display: inline-block; font: 500 .72rem/1 var(--testo); color: var(--tenue); border: 1px solid var(--linea);
+  border-radius: var(--r-tondo); padding: .15rem .45rem; vertical-align: .1em; white-space: nowrap; }
+.home .cantiere.prova { color: var(--primario); border-color: var(--primario); }
+.home-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); gap: var(--s4); margin-top: var(--s4); }
+.home-tema { background: var(--foglio); border: 1px solid var(--linea); border-radius: var(--r-l); padding: var(--s4) var(--s5) var(--s5); }
+.articolo .home-tema h3 { margin: 0 0 var(--s1); font-size: var(--c-xl); }
+.articolo .home-tema > p { color: var(--tenue); margin: 0 0 var(--s3); }
+.articolo .home-tema ul { list-style: none; padding: 0; margin: 0; }
+.articolo .home-tema li { margin: 0; padding: .55rem 0; border-top: 1px solid var(--linea); color: var(--tenue); font-size: var(--c-s); }
+.articolo .home-tema li a { font: 600 var(--c-m)/1.3 var(--testo); }
+.articolo .home-tema .home-anche { margin: var(--s3) 0 0; font-size: var(--c-s); }
+.home-principi ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--s3) var(--s5); padding: 0; list-style: none; }
+.articolo .home-principi li { margin: 0; max-width: none; padding-left: var(--s3); border-left: 3px solid var(--primario); }
+.home-principi strong { display: block; font: 700 var(--c-m)/1.3 var(--titoli); margin-bottom: .2rem; }
+.articolo .home-elenco-novita { list-style: none; padding: 0; }
+.articolo .home-elenco-novita li { margin: 0; padding: .45rem 0; border-bottom: 1px solid var(--linea); }
+.home-data { color: var(--tenue); font-size: var(--c-s); white-space: nowrap; }
+@media (max-width: 600px) {
+  .home-azioni .bottone { flex: 1 1 100%; }
+  .home-tema { padding: var(--s3) var(--s4) var(--s4); }
+}

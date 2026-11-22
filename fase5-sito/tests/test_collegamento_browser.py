@@ -32,7 +32,7 @@ PAGINE = {
     "edifici-pubblici.html": "a",
     "aria-trasformazioni.html": "a", "aria-ore.html": "a", "aria-latenti.html": "a", "aria-freecooling.html": "a",
     "cog-emissioni.html": "a", "edificio-clima.html": "a",
-    "indici-prezzi.html": "b", "index.html": "b",
+    "indici-prezzi.html": "b", "previsioni.html": "b",
     "fv-cabine.html": "b", "edificio-cer.html": "b",
     **{f"{n}.html": "b" for n in ("modelli3d", "edificio-geometria", "edificio-consumi", "edificio-obblighi", "fv-dlgs199",
                                   "fv-irradiazione", "fv-ombre", "fv-producibilita", "fv-pvgis")},
@@ -620,7 +620,7 @@ def test_indici_prezzi(browser, base):
 
 # ---------------------------------------------------------------------------------------------- Previsioni (con file)
 def test_previsioni(browser, base):
-    ctx, pg, errori = _apri(browser, base + "index.html?regione=08")
+    ctx, pg, errori = _apri(browser, base + "previsioni.html?regione=08")
     pg.wait_for_selector("#comune option[value='040007']", state="attached")       # Cesena
     pg.select_option("#comune", "040007")
     pg.check("input[name='cosa'][value='clima']")

@@ -4,8 +4,11 @@ Sito statico (HTML, CSS e JavaScript senza librerie esterne), servito da Caddy n
 
 ```
 sito/
-  index.html        mappa dei comuni colorata con i gradi giorno previsti a 7 giorni, ricerca indirizzo
-                    (Zornade), caricamento CSV, scelta della modalità, grafico con le fasce di probabilità
+  index.html        pagina iniziale (22/11/2026): cosa fa EuGEnio, le pagine raggruppate per «cosa vuoi fare», come
+                    lavora, ultime tre novità (scritte da costruisci_pagine.py); i vecchi indirizzi con le scelte
+                    (/?comune=…, #…) passano a previsioni.html
+  previsioni.html   (fino al 22/11/2026 era index.html) mappa dei comuni colorata con i gradi giorno previsti a 7 giorni,
+                    ricerca indirizzo, caricamento CSV, scelta della modalità, grafico con le fasce di probabilità
   patrimonio.html   elenco di edifici (CSV) → punto e particella catastale, mappa dei punti, esiti, download; dal
                     04/11/2026 passo «Visure catastali» con i file di EuGEnio Visure (visure_abbina.js,
                     visure_patrimonio.js), abbinati solo nel browser
@@ -165,7 +168,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `aria-freecooling.html` | aria_freecooling.js | a | comune, anni, inverno, estate, diagramma, gruppi, tutti i campi dell'UTA (V, riferimento, quotaMinima, estateT…, epsS, epsL…), gruppo_diagramma (non le condizioni di progetto corrette a mano) |
 | `cog-emissioni.html` | emissioni_cog.js | a | modo, elettrica, calore, gas, unita_gas, potenza, ore, eta_e, eta_t, anno, rete, eta_caldaia, calcolato (il calcolo si rifà da solo) |
 | `edificio-clima.html` | analisi_pubbliche.js | a | istat (già), dal, base, pendenza |
-| `index.html` (Previsioni) | app.js | b | regione, comune, cosa, tipo, modalita, orizzonte, verifica, cov, calcolato (solo «Solo il clima»); il file dei consumi va ricaricato |
+| `previsioni.html` (Previsioni; fino al 22/11/2026 `index.html`) | app.js | b | regione, comune, cosa, tipo, modalita, orizzonte, verifica, cov, calcolato (solo «Solo il clima»); il file dei consumi va ricaricato |
 | `indici-prezzi.html` | indici_prezzi.js | b | scelte (lotto e fascia di ogni indice), lotto_consip; il file dei consumi per fascia va ricaricato |
 | `fv-cabine.html` | fv_cabine.js | b | centro, punti (solo coordinate dei punti segnati o cercati), fonte scelta a mano, particelle, contorni; non i punti dell'elenco caricato |
 | `edificio-cer.html` | cer_sedi.js, analisi_pubbliche.js | b | centro, sedi (coordinate e cabina scelta a mano, non i nomi), fonte, aree_gse, particelle, contorni; non le sedi del file né il file orario |
@@ -197,6 +200,22 @@ la riaccende se l'utente l'aveva spenta (ma non quando le sedi tornano da un col
 la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (all'apertura la
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
+
+## Pagina iniziale (22/11/2026, richiesta di Paolo: «ci vuole una home page che aiuti l'utente a capire cosa fa eugenio senza rimanere disorientato»)
+
+- `index.html` non è più Previsioni: è una pagina di testo (`main.articolo.home`) con apertura (titolo, cosa fa EuGEnio, tre
+  pulsanti: Il clima del tuo comune → `legge10.html`, Prevedi i consumi → `previsioni.html`, Esempi), «Cosa vuoi fare?» in
+  sei riquadri per obiettivo (clima del comune, consumi, edifici e territorio, impianti, numeri dell'energia, restare
+  aggiornati) con tutte le pagine accessibili del menu e una riga ciascuna, «Come lavora EuGEnio» (fonti citate, file non
+  salvati, risultati da controllare, licenze) e le ultime tre novità.
+- Previsioni sta in `previsioni.html` (menu e collegamenti aggiornati). Uno script in testa a `index.html` manda a
+  `previsioni.html` ogni indirizzo con parametri (tranne `utm_…`) o con un'ancora, così i collegamenti salvati e quelli
+  delle email continuano a funzionare.
+- `costruisci_pagine.py` riempie il blocco `<!-- ultime-novita -->` con le prime tre voci di `novita.toml` (funzione
+  `ultime_novita`, parametro `blocchi` di `costruisci`): la pagina non va toccata a ogni pubblicazione. I riquadri invece
+  sono scritti a mano: quando una pagina entra nel menu va aggiunta anche qui (la prova `test_pagina_iniziale` lo
+  controlla).
+- Stile: blocco «pagina iniziale» in fondo a `stile.css` (griglia `auto-fill` da 22rem, una colonna sul telefono).
 
 ## Clima e meteo › Dati pluviometrici (22/11/2026, richiesta di Paolo; sperimentale, release `v2026.11.22b`, versione 20261122b)
 

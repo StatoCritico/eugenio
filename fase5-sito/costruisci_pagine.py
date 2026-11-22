@@ -180,8 +180,12 @@ def applica_gruppi(s: str, pagina: str, testata: str) -> str:
     return s
 
 
-def costruisci(pagina: Path, parti: dict[str, str], versione: str) -> str:
+def costruisci(pagina: Path, parti: dict[str, str], versione: str, blocchi: dict[str, str] | None = None) -> str:
     s = applica_gruppi(pagina.read_text(encoding="utf-8"), pagina.name, parti["testata"])
+    for nome, testo in (blocchi or {}).items():    # (22/11/2026) blocchi facoltativi, solo nelle pagine che li marcano
+        rx = marcati(nome)
+        if rx.search(s):
+            s = rx.sub(lambda m: m.group(1) + testo.rstrip("\n") + m.group(3), s, count=1)
     for nome, testo in parti.items():
         if nome == "testata":
             testo = segna_voce(testo, pagina.name)
@@ -196,6 +200,16 @@ def costruisci(pagina: Path, parti: dict[str, str], versione: str) -> str:
             rientro = "  " if nome == "piede" else ""
             s = s[:m.start()] + f"{rientro}<!-- {nome} -->\n{testo}\n{rientro}<!-- /{nome} -->" + s[m.end():]
     return VERS.sub(versione, s)
+
+
+def ultime_novita(voci: list[dict], quante: int = 3) -> str:
+    """(22/11/2026) Le ultime voci delle novità per la pagina iniziale (blocco <!-- ultime-novita --> di index.html):
+    data e titolo, con il collegamento alla voce nella pagina delle novità."""
+    righe = []
+    for v in voci[:quante]:
+        righe.append(f'      <li><a href="novita.html#{ancora(v, voci)}">{html.escape(str(v["titolo"]))}</a> '
+                     f'<span class="home-data">{data_italiana(str(v["data"]))}</span></li>')
+    return "    <ul class=\"home-elenco-novita\">\n" + "\n".join(righe) + "\n    </ul>"
 
 
 def _senza_parti(s: str) -> str:
@@ -377,7 +391,7 @@ def main(argv=None) -> int:
     for pagina in sorted(sito.glob("*.html")):
         if pagina.name in ESCLUSE:
             continue
-        nuovo = costruisci(pagina, parti, versione)
+        nuovo = costruisci(pagina, parti, versione, {"ultime-novita": ultime_novita(voci)} if voci else None)
         if nuovo != pagina.read_text(encoding="utf-8"):
             if pagina.name not in diverse:
                 diverse.append(pagina.name)
