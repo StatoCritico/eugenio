@@ -535,12 +535,39 @@ sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i c
   - **Mappa**: per ogni ente una sorgente GeoJSON dai punti di `/api/immobili-pa/ente/{chiave}/punti` (filtrati nel browser
     per ruolo e natura, una feature per particella con `n` beni), pallini fino allo zoom delle particelle (13) con raggio
     che cresce con √n, raggruppati (`cluster`, senza numeri: la mappa non ha glifi) oltre 3.000 punti; dallo zoom 13 restano
-    i pallini dei soli beni senza particella e compaiono i livelli `pa-enti-terreni`, `pa-enti-edifici` (retino
-    `retino-ente-<n>` nel colore dell'ente) e `pa-enti-linea` sulla sorgente `pa` delle tessere, filtrati con la proprietà
-    `e` (`["in", ",<id>p,", ["get", "e"]]`); se una particella è di più enti scelti vale il colore del primo. I livelli
+    i pallini dei soli beni senza particella e compaiono i livelli dei contorni sulla sorgente `pa` delle tessere, filtrati
+    con la proprietà `e` (`["in", ",<id>p,", ["get", "e"]]`); se una particella è di più enti scelti vale il colore del
+    primo. I livelli
     normali si **attenuano** (opacità ~0,1) e la loro legenda si schiarisce; sotto la mappa la legenda degli enti.
     Clic e passaggio del mouse passano prima da `EUGENIO_PUBBLICI_ENTI.suClic/suMovimento` (nomi degli enti scelti nella
     particella; clic su un gruppo di pallini → zoom).
+  - **Stili proprietà / uso / terreni** (22/11/2026 sera, richiesta di Paolo), sempre nel colore dell'ente:
+    - **in proprietà**: colore pieno e acceso (pallino pieno con bordo bianco; particella piena, opacità 0,72, con
+      contorno continuo: livelli `pa-enti-edifici`, `pa-enti-terreni`, `pa-enti-linea`);
+    - **in uso** (detenzione): stesso colore trasparente (pallino ad anello, interno a opacità 0,22 e bordo nel colore;
+      particella a opacità 0,22 con contorno tratteggiato: `pa-enti-uso-edifici`, `pa-enti-uso-terreni`,
+      `pa-enti-uso-linea`, sotto quelli della proprietà, filtrati con `,<id>u,` e senza `,<id>p,` degli enti scelti);
+    - **terreni**: righe oblique «\» chiare e scure nel colore dell'ente (immagini `terreno-ente-<n>` per il riempimento e
+      `pallino-terreno-<n>-p|u` per i pallini, livelli `symbol` `pe-<chiave>-righe` e `-senza-righe` con `icon-size`
+      proporzionale al raggio); **fabbricati senza righe** (il retino magenta resta il segno degli immobili pubblici nella
+      vista normale).
+    Un pallino o una particella con beni in proprietà e in uso prende lo stile della proprietà; con fabbricati e terreni
+    quello dei fabbricati. La legenda sotto la mappa spiega i tre stili con campioni disegnati come sulla mappa (pallino e
+    riquadro nel colore del primo ente, `campioneStile`); le righe dell'immagine scaricata li descrivono a parole e la mappa
+    nell'immagine è la stessa.
+  - **Scheda in sovraimpressione** (22/11/2026 sera): nella modalità per ente un clic su un pallino, una particella o una
+    riga della tabella apre la scheda completa in un riquadro **sopra la mappa** (`#scheda-sopra`, `role="dialog"` non
+    modale, in alto a sinistra: la posizione la scrive `edifici_pubblici.js` dal contenitore della mappa, lasciando liberi
+    i pulsanti di zoom a destra e attribuzione, righello e livelli sotto), chiusa con **×**, **Esc** o un **clic fuori**
+    (non con uno spostamento della mappa); sotto i 860 px è a **tutta larghezza in basso** (al massimo 62 % dell'altezza).
+    Contiene tutti i campi pubblicabili restituiti da `/particella/{ref}` e `/bene/{id}`, per **ogni dichiarazione**
+    (proprietario e chi lo ha in uso), con prima i beni degli enti scelti e il campione del loro colore e ruolo: ente,
+    tipo, settore e macrocategoria, sede dell'ente, ruolo, titolo e quota, detenzione dell'intera unità, natura,
+    indirizzo, comune con codice catastale, regione, identificativo e sistema catastale, superficie dichiarata e di
+    riferimento, cubatura, pertinenze, epoca, canone, utilizzo e finalità, dati a terzi, vincolo, natura giuridica,
+    compendio, punto del censimento con la sua fonte, aggancio, identificativo del bene. Mai soggetto cedente né codici
+    fiscali. La stessa scheda resta anche nel passo «Scheda» del pannello; passando a «Cerca un immobile» il riquadro si
+    chiude.
   - **Passo «Edifici degli enti selezionati»** (numeri dei passi rifatti): per ogni ente i totali (`/api/immobili-pa/ente/
     {chiavi}`, una richiesta per tutti) con superficie dichiarata dei fabbricati in m², dei terreni in ettari, percentuali
     con un decimale; con più enti la riga «Insieme» sui beni distinti. Elenco con `tabella_ordinabile.js` (una riga per
@@ -549,7 +576,8 @@ sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i c
     600 px): fino a 200 righe tutte insieme e ordinate nel browser, oltre si parte dai **comuni** (tabella ordinabile dei
     comuni, clic → particelle del comune) o, con un solo comune, dalle **pagine da 100 righe ordinate dal server**.
     L'ordinamento scelto vale per tutti gli enti e va nel collegamento. Clic (o Invio) su una riga → la mappa vola sulla
-    particella, la riga e il contorno si evidenziano e si apre la Scheda. Nessuna esportazione della tabella.
+    particella, la riga e il contorno si evidenziano e si apre la scheda sopra la mappa (con Invio il fuoco va al
+    riquadro e torna alla riga quando si chiude). Nessuna esportazione della tabella.
   - **Immagine** (`opzioniImmagine`): nella fascia sotto la mappa una riga per ente con il colore scritto («blu: Comune di
     Cesena (FC) – 2.718 beni, 551 particelle»), i filtri e la spiegazione dei segni.
   - Con un `indice.json` senza `enti` (dati preparati prima del 22/11/2026) la scheda dice che la ricerca per ente non è

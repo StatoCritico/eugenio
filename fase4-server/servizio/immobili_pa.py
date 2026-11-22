@@ -14,6 +14,9 @@ Rotte (limite per IP «immobili_pa»):
   GET /api/immobili-pa/bene/{id}                  un bene (anche senza particella): «bene» è la prima dichiarazione,
                                                   «dichiarazioni» tutte (lo stesso bene può essere dichiarato da più enti,
                                                   di solito proprietario e detentore; prima del 22/11/2026 se ne vedeva una)
+Ogni bene (in /particella, /bene e /cerca) ha i campi pubblicabili dell'indice (CAMPI_BENE: dal 22/11/2026 sera anche
+superficie di riferimento, detenzione dell'intera unità, sistema catastale e ruolo P/U); con l'indice per ente anche
+`ente_chiave`, `ente_settore`, `ente_macrocategoria` ed `ente_sede` (comune, provincia, regione) dell'ente dichiarante.
 
 Ricerca per ente (22/11/2026; limite per IP «immobili_pa_ente» più un tetto orario per tutto il sito,
 IMMOBILI_PA_ENTE_TETTO_ORA). L'ente si indica con la sua chiave (10 caratteri esadecimali derivati dal codice fiscale
@@ -54,7 +57,9 @@ CAMPI_BENE = ("id_bene", "ref_ade", "aggancio", "natura", "tipologia", "amminist
               "regione", "provincia", "comune", "comune_cod", "indirizzo", "civico", "id_catastale", "lat", "lon",
               "geo_fonte", "superficie_mq", "cubatura_mc", "sup_pertinenze_mq", "epoca", "vincolo", "natura_giuridica",
               "titolo_proprieta", "quota_proprieta", "titolo_detenzione", "canone_annuo", "utilizzo", "finalita",
-              "altra_finalita", "compendio", "tipologia_compendio", "a_terzi_intera", "a_terzi_parziale")
+              "altra_finalita", "compendio", "tipologia_compendio", "a_terzi_intera", "a_terzi_parziale",
+              # dal 22/11/2026 sera (scheda in sovraimpressione): già nell'indice rifatto il 22/11, prima non restituiti
+              "sup_riferimento_mq", "detenzione_intera", "sistema_catastale", "ruolo")
 RE_REF = re.compile(r"^[A-Z0-9_]{11}\.[A-Z0-9]{1,8}$")
 RE_CHIAVE = re.compile(r"^[0-9a-f]{10}$")
 ESCLUSE = ("amm_cf", "cedente", "cedente_cf")
@@ -97,10 +102,13 @@ def _ha_enti(db: sqlite3.Connection) -> bool:
 
 
 def _chiavi_enti(db: sqlite3.Connection, ids) -> dict:
+    """id dell'ente → dati pubblici dell'ente per la scheda (chiave, settore, macrocategoria, sede; mai il CF)."""
     ids = sorted({i for i in ids if isinstance(i, int)})
     if not ids or not _ha_enti(db):
         return {}
-    return dict(db.execute(f"SELECT id, chiave FROM enti WHERE id IN ({','.join('?' * len(ids))})", ids).fetchall())
+    righe = db.execute("SELECT id, chiave, settore, macrocategoria, sede_regione, sede_provincia, sede_comune FROM enti "
+                       f"WHERE id IN ({','.join('?' * len(ids))})", ids).fetchall()
+    return {r["id"]: r for r in righe}
 
 
 def _colonne(db: sqlite3.Connection) -> list[str]:
@@ -111,7 +119,15 @@ def _colonne(db: sqlite3.Connection) -> list[str]:
 def _bene(r: sqlite3.Row, col: list[str], chiavi: dict | None = None) -> dict:
     out = {c: r[c] for c in col if r[c] not in (None, "") and c not in ESCLUSE}
     if chiavi and "ente" in r.keys() and r["ente"] in chiavi:
-        out["ente_chiave"] = chiavi[r["ente"]]
+        e = chiavi[r["ente"]]
+        out["ente_chiave"] = e["chiave"]
+        # classificazione e sede dell'ente dichiarante (campi MEF pubblicati, nella tabella enti: 22/11/2026 sera)
+        for k, v in (("ente_settore", e["settore"]), ("ente_macrocategoria", e["macrocategoria"])):
+            if v not in (None, ""):
+                out[k] = v
+        sede = {k: e[f"sede_{k}"] for k in ("comune", "provincia", "regione") if e[f"sede_{k}"] not in (None, "")}
+        if sede:
+            out["ente_sede"] = sede
     return out
 
 

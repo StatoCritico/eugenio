@@ -1704,6 +1704,41 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .testa-elenco { align-items: center; gap: var(--s2); margin: var(--s1) 0; }
 .paginazione { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); font-size: var(--c-s); margin: var(--s1) 0 var(--s2); }
 .tabella-enti { max-height: 26rem; overflow: auto; }
+#togli-enti[hidden] { display: none; }
+/* scheda in sovraimpressione sulla mappa (22/11/2026 sera, edifici_pubblici.js): in alto a sinistra sopra la mappa (la
+   posizione la scrive la pagina: a destra restano liberi i comandi della mappa, sotto attribuzione, righello e livelli);
+   sul telefono a tutta larghezza in basso */
+.scheda-sopra { position: absolute; z-index: 15; width: min(380px, 70%); max-height: 70vh; display: flex; flex-direction: column;
+  background: var(--foglio); color: var(--inchiostro); border: 1px solid var(--bordo); border-radius: var(--r-l, 10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35); overflow: hidden; }
+.scheda-sopra[hidden] { display: none; }
+.scheda-sopra .testa-sopra { display: flex; align-items: center; gap: var(--s2); padding: .45rem .5rem .45rem .8rem;
+  border-bottom: 1px solid var(--linea); background: var(--rialzo); }
+.scheda-sopra h2 { flex: 1 1 auto; margin: 0; font: 700 var(--c-m, 1rem)/1.25 var(--titoli); min-width: 0; overflow-wrap: anywhere; }
+.scheda-sopra h2:focus-visible { outline: 3px solid var(--primario); outline-offset: 2px; }
+.chiudi-sopra { flex: none; min-width: 2.25rem; min-height: 2.25rem; border: 1px solid var(--linea); border-radius: var(--r-tondo, 999px);
+  background: var(--foglio); color: inherit; font-size: 1.3rem; line-height: 1; cursor: pointer; }
+.chiudi-sopra:hover, .chiudi-sopra:focus-visible { background: var(--tinta); }
+.scheda-sopra .corpo-sopra { overflow-y: auto; overscroll-behavior: contain; padding: .6rem .8rem .8rem; font-size: var(--c-s); }
+.scheda-sopra .bene-pubblico:first-of-type { margin-top: var(--s2); }
+.scheda-sopra .collegamenti-scheda .bottone { min-height: 2.25rem; padding: .3rem .7rem; font-size: var(--c-s); }
+@media (max-width: 860px) {
+  .scheda-sopra { position: fixed; left: 0 !important; right: 0; bottom: 0; top: auto !important; width: auto !important;
+    max-height: 62vh !important; z-index: 60; border-radius: var(--r-l, 10px) var(--r-l, 10px) 0 0; border-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0); }
+  .scheda-sopra .scheda-bene { grid-template-columns: minmax(6.5rem, 38%) 1fr; }
+}
+/* ruolo del bene nella scheda: campione nel colore dell'ente, pieno (proprietà) o trasparente con bordo (in uso) */
+.ruolo-bene { display: flex; align-items: center; gap: .4rem; margin: 0 0 var(--s1); font-size: var(--c-s); font-weight: 600; }
+.campione-ruolo { display: inline-block; flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--colore-ente, var(--bordo));
+  border: 2px solid #fff; box-shadow: 0 0 0 1px #1a1a1a; }
+.ruolo-bene canvas.campione-ruolo-pallino { width: 16px; height: 16px; flex: none; }
+.ruolo-bene.in-uso .campione-ruolo { background: color-mix(in srgb, var(--colore-ente, #888) 30%, transparent); border-color: var(--colore-ente, #888); }
+/* legenda degli stili per ente: proprietà, uso, terreni (campioni disegnati da pubblici_enti.js) */
+.legenda-enti .stili-enti { display: flex; flex-wrap: wrap; gap: .3rem var(--s3); flex-basis: 100%; font-size: var(--c-xs); }
+.legenda-enti .stili-enti span { display: inline-flex; align-items: center; gap: .35rem; }
+.legenda-enti canvas.campione-stile { width: 26px; height: 14px; flex: none; }
+.legenda-enti canvas.campione-pallino { width: 16px; height: 16px; flex: none; }
 /* tabella ordinabile (tabella_ordinabile.js; regole in README_stile.md, «Tabelle ordinabili») */
 table.tabella-ordinabile { width: 100%; border-collapse: collapse; font-size: var(--c-s); font-variant-numeric: tabular-nums; }
 table.tabella-ordinabile th, table.tabella-ordinabile td { padding: .4rem .55rem; border-bottom: 1px solid var(--linea); text-align: left; vertical-align: top; }

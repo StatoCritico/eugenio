@@ -1157,6 +1157,13 @@ preparato dalla fase 7 (`python -m territorio immobili-pa-sito`): nessun dato in
 | `GET /api/immobili-pa/cerca?q=…&gruppo=…&limite=…` | ricerca a parole (FTS5, ogni parola come prefisso, tutte obbligatorie, al massimo 50 risultati) |
 | `GET /api/immobili-pa/particella/{ref}` | particella (centro, riquadro, area) e beni (al massimo 500) |
 | `GET /api/immobili-pa/bene/{id_bene}` | un bene, anche senza particella: `bene` (la prima dichiarazione) e, dal 22/11/2026, `dichiarazioni` (tutte: lo stesso `id_bene` può essere dichiarato dal proprietario e da chi lo ha in uso; prima si vedeva solo una riga) |
+
+Ogni bene (in `/cerca`, `/particella` e `/bene`) ha i campi pubblicabili dell'indice elencati in `CAMPI_BENE`. Dal
+22/11/2026 sera (scheda in sovraimpressione della ricerca per ente) anche `sup_riferimento_mq`, `detenzione_intera`,
+`sistema_catastale` e `ruolo` (P proprietà, U uso), già nell'indice rifatto il 22/11; con l'indice per ente `/particella` e
+`/bene` aggiungono `ente_chiave`, `ente_settore`, `ente_macrocategoria` ed `ente_sede` (`comune`, `provincia`, `regione`)
+dell'ente dichiarante, letti dalla tabella `enti`. Non serve rifare l'indice. Mai `amm_cf`, `cedente`, `cedente_cf`
+(`ESCLUSE`, controllato nei test).
 | `GET /api/immobili-pa/ente/{chiavi}?ruolo=proprieta,uso&natura=E,T` | (22/11/2026) uno o più enti, chiavi separate da virgole (al massimo 8): dati dell'ente, `totali_dichiarati` (tabella `enti`), `totali` con i filtri (dai beni), `riquadro`, `comuni` (particelle, righe, beni e superficie per comune); con più enti `insieme`, calcolato sui **beni distinti** (un bene dichiarato da due enti scelti conta una volta, «in uso» solo se nessuno degli enti scelti lo ha in proprietà) |
 | `GET /api/immobili-pa/ente/{chiave}/punti` | (22/11/2026) centri delle particelle e dei beni senza particella con punto affidabile, compatti: `{"campi": ["lon","lat","n","natura","ruolo","ref"], "righe": […]}` (5 decimali); `ETag` legato al file dell'indice, `Cache-Control: public, max-age=86400`, 304 con `If-None-Match` |
 | `GET /api/immobili-pa/ente/{chiave}/beni?ruolo=&natura=&regione=&provincia=&comune=&ordina=&verso=&pagina=&per_pagina=` | (22/11/2026) elenco per particella (righe di `ente_particelle` raggruppate per `ref`), al massimo **200 righe per pagina**, ordinamento solo sulle colonne di `ORDINAMENTI` (vuoti in fondo; senza `ordina`: regione, comune, indirizzo), `totale` e `pagine` |

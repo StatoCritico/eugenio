@@ -5,7 +5,8 @@ tabella, regola delle tabelle ordinabili in README_stile.md. In Chromium (si sal
 con l'elenco degli enti e le rotte /api/immobili-pa/ente/… simulate (nessuna rete): schede del passo 1, autocompletamento
 da tastiera, enti scelti con il colore, limite di 8, totali e tabella per ente, ordinamento crescente → decrescente → non
 ordinato con aria-sort, clic su una riga (scheda), ente grande per comune, collegamento riaperto con gli stessi enti e
-colori, 375 px senza scorrimento orizzontale, nessun errore JavaScript."""
+colori, 375 px senza scorrimento orizzontale, nessun errore JavaScript; scheda in sovraimpressione sulla mappa e stili
+proprietà / uso / terreni (22/11/2026 sera)."""
 from __future__ import annotations
 
 import functools
@@ -104,7 +105,8 @@ def _gestore(chiamate):
                 return route.fulfill(status=404, json={"detail": "Ente non trovato"})
             e = per[chiavi[0]]
             if m.group(2) == "/punti":
-                righe = [[r["lon"], r["lat"], r["n_beni"], "E", r["ruoli"], r["ref"]] for r in _righe(e[0], 6)]
+                # terreni ogni tre righe (stile a righe), l'ultima riga in uso (stile trasparente)
+                righe = [[r["lon"], r["lat"], r["n_beni"], "T" if i % 3 == 0 else "E", r["ruoli"], r["ref"]] for i, r in enumerate(_righe(e[0], 6))]
                 return route.fulfill(json={"disponibile": True, "chiave": e[1], "id": e[0], "campi": ["lon", "lat", "n", "natura", "ruolo", "ref"], "righe": righe})
             if m.group(2) == "/beni":
                 tutte = _righe(e[0], 300 if e[0] == 3 else 6)
@@ -125,7 +127,15 @@ def _gestore(chiamate):
             return route.fulfill(json={"particella": {"ref_ade": ref, "punto": [12.24, 44.13], "riquadro": [12.2, 44.1, 12.3, 44.2],
                                                       "area_m2": 900, "n_beni": 1},
                                        "beni": [{"id_bene": "1", "amministrazione": "COMUNE DI CESENA (FC)", "tipologia": "Edificio scolastico",
-                                                 "natura": "FABBRICATO", "ente_chiave": "aaaaaaaaa3"}]})
+                                                 "natura": "FABBRICATO", "ente_chiave": "aaaaaaaaa3", "ruolo": "P",
+                                                 "titolo_proprieta": "Proprietà", "superficie_mq": 1200, "sup_riferimento_mq": 1300},
+                                                {"id_bene": "1", "amministrazione": "AZIENDA USL DELLA ROMAGNA", "tipologia": "Edificio scolastico",
+                                                 "natura": "FABBRICATO", "ente_chiave": "aaaaaaaaa2", "ruolo": "U",
+                                                 "titolo_detenzione": "in uso gratuito", "detenzione_intera": "Sì",
+                                                 "ente_settore": "AMMINISTRAZIONI S13", "ente_macrocategoria": "Amministrazioni Locali",
+                                                 "ente_sede": {"comune": "RAVENNA", "provincia": "RA", "regione": "EMILIA ROMAGNA"},
+                                                 "sistema_catastale": "Ordinario", "geo_fonte": "IDENTIFICATIVI_CATASTALI",
+                                                 "lat": 44.13, "lon": 12.24}]})
         return route.fulfill(status=404, json={"detail": "non simulata"})
     return gestisci
 
@@ -311,6 +321,73 @@ def test_telefono(browser, base):
     if PROVE.is_dir():
         pg.locator("#passo-cerca").scroll_into_view_if_needed()
         pg.screenshot(path=str(PROVE / "enti_telefono.png"))
+    ctx.close()
+    assert not errori, errori
+
+
+def test_scheda_sopra_e_stili(browser, base):
+    """Scheda in sovraimpressione (22/11/2026 sera): clic su una riga → riquadro sopra la mappa con tutti i dati (prima i
+    beni degli enti scelti), chiuso con Esc, clic fuori e ×; stili proprietà / uso / terreni nei pallini, nella legenda e
+    nelle righe dell'immagine; sul telefono il riquadro è a tutta larghezza in basso."""
+    url = base + "edifici-pubblici.html?modo=enti&sel=aaaaaaaaa2&ruolo=proprieta,uso&natura=E,T"
+    ctx, pg, errori, _ = _apri(browser, url)
+    pg.wait_for_selector(".gruppo-ente tbody tr")
+    assert pg.is_hidden("#scheda-sopra")
+    riga = pg.locator(".gruppo-ente tbody tr").nth(1)
+    riga.click()
+    pg.wait_for_selector("#scheda-sopra:not([hidden]) .bene-pubblico")
+    testo = pg.inner_text("#scheda-sopra")
+    assert pg.inner_text("#titolo-scheda-sopra").startswith("Particella ")
+    # tutti i campi pubblicabili, con il bene dell'ente scelto per primo; mai cedente né codici fiscali
+    primo = pg.locator("#scheda-sopra .bene-pubblico").first.inner_text()
+    assert "Azienda USL della Romagna" in primo and "in uso (detenzione)" in primo and "colore blu" in primo
+    for t in ("Settore e macrocategoria", "Amministrazioni S13", "Sede dell'ente", "Ravenna (RA) – Emilia Romagna",
+              "Detenzione dell'intera unità", "Sistema catastale", "dagli identificativi catastali", "Superficie di riferimento",
+              "1.300 m²", "Identificativo del bene"):
+        assert t in testo, t
+    assert "cedente" not in testo.lower()
+    # il riquadro sta sopra la mappa, in alto a sinistra, e lascia liberi i comandi a destra
+    sopra, mappa = pg.locator("#scheda-sopra").bounding_box(), pg.locator("#mappa-pubblici").bounding_box()
+    assert abs(sopra["x"] - mappa["x"] - 10) < 2 and sopra["x"] + sopra["width"] < mappa["x"] + mappa["width"] - 60
+    assert sopra["y"] + sopra["height"] < mappa["y"] + mappa["height"] - 40
+    # Esc chiude e il fuoco torna alla riga
+    pg.keyboard.press("Escape")
+    assert pg.is_hidden("#scheda-sopra")
+    riga.click(); pg.wait_for_selector("#scheda-sopra:not([hidden]) .bene-pubblico")
+    pg.click("h1"); pg.wait_for_timeout(200)                     # clic fuori
+    assert pg.is_hidden("#scheda-sopra")
+    riga.click(); pg.wait_for_selector("#scheda-sopra:not([hidden]) .bene-pubblico")
+    pg.click("#chiudi-scheda-sopra")
+    assert pg.is_hidden("#scheda-sopra")
+    # stili dei pallini: proprietà pieni, uso ad anello, terreni a righe (icone)
+    stili = pg.evaluate("""() => { const m = EUGENIO_PUBBLICI.stato.mappa, id = 'pe-aaaaaaaaa2';
+      const d = m.getSource(id).serialize().data.features.map(f => f.properties);
+      return { uso: d.filter(p => p.u === 1).length, terreni: d.filter(p => p.ter === 1).length,
+        icona: JSON.stringify(m.getLayoutProperty(id + '-righe', 'icon-image')), opacita: JSON.stringify(m.getPaintProperty(id + '-pallini', 'circle-opacity')),
+        immagini: ['pallino-terreno-0-p', 'pallino-terreno-0-u', 'terreno-ente-0'].every(n => m.hasImage(n)) }; }""")
+    assert stili["uso"] >= 1 and stili["terreni"] >= 1 and stili["immagini"], stili
+    assert "pallino-terreno-0-u" in stili["icona"] and "case" in stili["opacita"]
+    # legenda con i tre stili e righe dell'immagine
+    assert pg.locator("#legenda-enti [data-stile]").count() == 3
+    assert pg.locator("#legenda-enti [data-stile] canvas").count() == 6
+    righe = " ".join(pg.evaluate("() => EUGENIO_PUBBLICI.opzioniImmagine().righe"))
+    assert "colore pieno: in proprietà" in righe and "trasparente" in righe and "righe chiare e scure: terreni" in righe
+    # passando a «Cerca un immobile» il riquadro si chiude
+    riga.click(); pg.wait_for_selector("#scheda-sopra:not([hidden]) .bene-pubblico")
+    pg.click("#scheda-immobile")
+    assert pg.is_hidden("#scheda-sopra")
+    if PROVE.is_dir():
+        pg.screenshot(path=str(PROVE / "enti2_test_scheda.png"))
+    ctx.close()
+    assert not errori, errori
+    # telefono: a tutta larghezza in basso, senza scorrimento orizzontale
+    ctx, pg, errori, _ = _apri(browser, url, 375, 800)
+    pg.wait_for_selector(".gruppo-ente tbody tr")
+    pg.locator(".gruppo-ente tbody tr").nth(1).click()
+    pg.wait_for_selector("#scheda-sopra:not([hidden]) .bene-pubblico")
+    r = pg.evaluate("() => { const r = document.getElementById('scheda-sopra').getBoundingClientRect(); return [r.left, r.right, r.bottom, r.height]; }")
+    assert r[0] == 0 and r[1] == 375 and abs(r[2] - 800) < 1 and r[3] <= 0.63 * 800, r
+    assert pg.evaluate("document.documentElement.scrollWidth") <= 376
     ctx.close()
     assert not errori, errori
 
