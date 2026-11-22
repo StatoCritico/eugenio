@@ -32,10 +32,12 @@ migliorato = [
   "Statistiche › Produzione e consumi di elettricità, scelta «Burden sharing»: colonne verticali come nelle altre scelte, con la linea di base; passando sopra una regione (sul telefono, al primo tocco) compaiono il rettangolo arancione dell'obiettivo 2030 con la linea dell'obiettivo dell'anno e un riquadretto con l'obiettivo 2030 della regione, la percentuale raggiunta e i MW che mancano. Gli stessi valori sono nel grafico e nella tabella.",
   "Statistiche › Carichi elettrici: si apre sull'ultimo anno con i dati, a quarti d'ora, con le date già scritte; se i dati non ci sono ancora, compare solo il messaggio, senza sezioni vuote.",
   "Novità: accanto alla data di ogni voce c'è il numero di versione del sito.",
+  "Territorio › Edifici pubblici: i filtri «Province e Città metropolitane» e «Università» ora mostrano i loro immobili (prima erano vuoti e finivano in «Altri enti»), e c'è una voce nuova «Unioni di Comuni e Comunità montane», anche nel filtro della ricerca.",
 ]
 collegamenti = [
   { testo = "Emissioni della produzione di elettricità", indirizzo = "elettricita.html?modo=emissioni" },
   { testo = "Carichi elettrici", indirizzo = "carichi.html" },
+  { testo = "Edifici pubblici", indirizzo = "edifici-pubblici.html" },
 ]
 
 [[voce]]
