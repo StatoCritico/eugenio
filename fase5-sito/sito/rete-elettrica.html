@@ -43,7 +43,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <nav class="menu-pannello" aria-label="Menu completo">
         <h2>Servizi</h2>
         <details class="pannello-gruppo" data-gruppo="clima"><summary>Clima e meteo</summary>
-          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
+          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="pluviometria.html">Dati pluviometrici <span class="cantiere prova">sperimentale</span></a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
         </details>
         <details class="pannello-gruppo" data-gruppo="patrimonio"><summary>Territorio</summary>
           <ul><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="edifici-pubblici.html">Edifici pubblici <span class="cantiere prova">sperimentale</span></a></li><li><a href="ortofoto.html">Ortofoto <span class="cantiere prova">sperimentale</span></a></li><li><a href="lidar.html">LiDAR <span class="cantiere">in sviluppo</span></a></li><li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova">sperimentale</span></a></li><li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova">sperimentale</span></a></li><li><a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico) <span class="cantiere prova">sperimentale</span></a></li><li><a href="dbtr-istruzioni.html">Scaricare i DB topografici</a></li><li><a href="visure.html">Visure <span class="cantiere">in sviluppo</span></a></li></ul>
@@ -86,6 +86,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul class="tendina">
             <li><a href="dati.html">Dati climatici</a></li>
             <li><a href="legge10.html">Legge 10</a></li>
+            <li><a href="pluviometria.html">Dati pluviometrici <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="./">Previsioni</a></li>
             <li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="dati-per-email.html">Newsletter e avvisi</a></li>
@@ -183,6 +184,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <label class="casella-strato"><input id="strato-non-concessionari" type="checkbox" checked data-collegamento="altri"> Comuni con un altro distributore</label>
       <label class="casella-strato"><input id="strato-cabine" type="checkbox" checked data-collegamento="cabine"> Cabine primarie</label>
       <label class="casella-strato"><input id="strato-interruzioni" type="checkbox" checked data-collegamento="interruzioni"> Interruzioni in corso</label>
+      <label class="casella-strato"><input id="strato-pioggia" type="checkbox" data-collegamento="pioggia"> Pioggia misurata (ultime 3 ore)</label>
       <label class="casella-strato"><input id="strato-ortofoto" type="checkbox" checked data-collegamento="ortofoto"> Ortofoto</label>
     </div>
     <div class="legenda legenda-rete" id="legenda-rete" aria-live="polite"></div>
@@ -204,7 +206,9 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         attuali). Posizioni delle cabine primarie: © <a href="https://www.openstreetmap.org/copyright">contributori
         OpenStreetMap</a> (ODbL 1.0). Codici delle aree convenzionali (COD_AC): <a
         href="https://www.gse.it/servizi-per-te/autoconsumo/mappa-interattiva-delle-cabine-primarie">GSE – Mappa interattiva
-        delle cabine primarie</a>. Criticità dei comuni: classificazione di EuGEnio. Ortofoto: licenza e citazione sotto la
+        delle cabine primarie</a>. Criticità dei comuni: classificazione di EuGEnio. Pioggia misurata (casella spenta in
+        partenza): <a href="pluviometria.html">Dati pluviometrici</a>, «Merging» radar-pluviometri del <a
+        href="https://radar.protezionecivile.gov.it/">Dipartimento della Protezione Civile</a> (CC BY-SA 4.0). Ortofoto: licenza e citazione sotto la
         mappa, secondo la fonte della zona. Confini: <a
         href="https://www.istat.it/">ISTAT</a>, unità amministrative a fini statistici (generalizzati, CC BY 4.0). Mappa: <a
         href="https://maplibre.org/">MapLibre GL JS</a> (BSD-3), ospitata su questo sito.</p>
@@ -272,6 +276,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           non ha dati di saturazione né di interruzioni.</li>
         <li><b>Interruzioni</b>: lette ogni 15 minuti dalla mappa pubblica di e-distribuzione. La durata è stimata: dall'inizio
           dichiarato all'ultima lettura in cui l'interruzione compare (al massimo 15 minuti di errore).</li>
+        <li><b>Pioggia misurata</b> (casella spenta in partenza): la pioggia delle ultime 3 ore del «Merging» della Protezione
+          Civile (radar corretto con i pluviometri), per confrontare guasti e maltempo; l'animazione fino a 7 giorni indietro,
+          con le interruzioni di ogni passo, è nella pagina <a href="pluviometria.html">Dati pluviometrici</a>. Dati a fini
+          statistici, non di allerta.</li>
       </ul>
     </div>
   </section>
@@ -288,6 +296,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 <script src="esporta_mappa.js?v=20261122a"></script>
 <script src="righello.js?v=20261122a"></script>
 <script src="rete.js?v=20261122a"></script>
+<script src="pioggia_gl.js?v=20261122a"></script>
 <script src="rete_elettrica.js?v=20261122a"></script>
 </body>
 </html>

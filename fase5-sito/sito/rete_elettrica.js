@@ -9,6 +9,9 @@
 // 19/11/2026 (richiesta di Paolo): ortofoto sotto tutti gli strati, con la sua casella (contesto Sentinel-2 da lontano, la
 // fonte migliore della zona da vicino, come in Cabine primarie: /api/ortofoto/fonti e confini_gl.js), citazione sotto la
 // mappa e nell'immagine; cabine primarie grandi come i punti blu delle interruzioni; righello (righello.js).
+// 22/11/2026 (richiesta di Paolo): casella «Pioggia misurata (ultime 3 ore)», spenta in partenza: l'ultima immagine CUM3 del
+// «Merging» della Protezione Civile (pioggia_gl.js, CC BY-SA 4.0) sopra i comuni e sotto cabine e interruzioni; l'animazione
+// con le interruzioni passo per passo è in «Dati pluviometrici».
 (function () {
   const $ = (id) => document.getElementById(id);
   const box = $("mappa-rete");
@@ -27,8 +30,11 @@
     cabine: ["rete-cabine-punti"],
     interruzioni: ["rete-interruzioni"],
     ortofoto: ["contesto", "ortofoto"],
+    pioggia: ["pioggia"],
   };
-  const CASELLE = { criticita: "strato-criticita", nonConc: "strato-non-concessionari", cabine: "strato-cabine", interruzioni: "strato-interruzioni", ortofoto: "strato-ortofoto" };
+  const CASELLE = { criticita: "strato-criticita", nonConc: "strato-non-concessionari", cabine: "strato-cabine", interruzioni: "strato-interruzioni", ortofoto: "strato-ortofoto", pioggia: "strato-pioggia" };
+  const G = window.EUGENIO_PIOGGIA;
+  const pioggia = { strato: null, ind: null, nome: "" };     // (22/11/2026) ultima pioggia di 3 ore
   const acceso = (k) => { const i = CASELLE[k]; return !$(i) || $(i).checked; };
   // (19/11/2026) cabine grandi come le interruzioni: stesso raggio per i due strati di punti
   const RAGGIO_PUNTI = ["interpolate", ["linear"], ["zoom"], 5, 4, 10, 6, 14, 8];
@@ -135,6 +141,10 @@
       m.setPaintProperty("rete-in-parte", "line-color", colore("--inchiostro"));
       m.setPaintProperty("rete-comune-scelto", "line-color", colore("--primario"));
     });
+    if (G) {                            // (22/11/2026) pioggia misurata sotto cabine e interruzioni
+      pioggia.strato = G.strato(m, { id: "pioggia", prima: "rete-cabine-punti", opacita: 0.8 });
+      pioggia.strato.pronto.then(() => { strati(); caricaPioggia(); }).catch(() => { pioggia.strato = null; });
+    }
     R.suggerimento(m, () => ["rete-interruzioni", "rete-cabine-punti", "rete-comuni-clic"], contenutoSuggerimento);
     m.on("click", clic);
     for (const id of Object.values(CASELLE)) if ($(id)) $(id).addEventListener("change", strati);
@@ -152,7 +162,17 @@
     await vaiRegione((E && E.regione) || "08", true, q.get("comune"));
     st.pronto = true;
     // aggiornamento automatico delle interruzioni (il servizio le legge ogni 15 minuti)
-    setInterval(() => { caricaStato(); caricaInterruzioni(); }, 5 * 60 * 1000);
+    setInterval(() => { caricaStato(); caricaInterruzioni(); caricaPioggia(); }, 5 * 60 * 1000);
+  }
+
+  // ------------------------------------------------------------------ pioggia misurata (22/11/2026)
+  async function caricaPioggia() {
+    if (!pioggia.strato || !acceso("pioggia")) return;
+    try { pioggia.ind = await G.indice(); } catch { pioggia.ind = null; }
+    const fr = (pioggia.ind && pioggia.ind.prodotti.CUM3 && pioggia.ind.prodotti.CUM3.frame) || [];
+    pioggia.nome = fr.length ? fr[fr.length - 1] : "";
+    await pioggia.strato.mostra("CUM3", pioggia.nome || null);
+    legenda();
   }
 
   // collegamento a questa simulazione (20/11/2026): regione e comune li scrive già la pagina; le caselle dei livelli sono
@@ -162,6 +182,7 @@
   function strati() {
     const m = st.mappa;
     for (const [k, ids] of Object.entries(STRATI)) ids.forEach((id) => { if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", acceso(k) ? "visible" : "none"); });
+    if (acceso("pioggia") && pioggia.strato && !pioggia.nome) caricaPioggia();
     if (acceso("ortofoto") && orto.fonti.length) sceltaOrto();
     attribuzioneOrto();
     legenda();
@@ -258,6 +279,12 @@
       voce(R.campione("cabina", "GRIGIO"), "altro distributore o senza dato");
     }
     if (acceso("interruzioni")) voce(R.campione("punto", "#2f6fdb"), "interruzione in corso");
+    if (acceso("pioggia") && G) {
+      if (pioggia.ind && pioggia.nome) {
+        G.legenda(L, pioggia.ind, { titolo: "Pioggia caduta (mm)" });
+        L.appendChild(h("span", "legenda-nota", `${G.testoFrame("CUM3", pioggia.nome)[0].toUpperCase()}${G.testoFrame("CUM3", pioggia.nome).slice(1)}. ${G.ATTRIBUZIONE}. Dati a fini statistici, non di allerta.`));
+      } else L.appendChild(h("span", "legenda-nota", "Pioggia misurata: dati non ancora disponibili."));
+    }
     if (acceso("ortofoto") && orto.fonti.length) L.appendChild(h("span", "legenda-nota", "Sotto: ortofoto (da lontano il contesto satellitare); fonte e licenza sotto la mappa."));
   }
 
@@ -516,6 +543,7 @@
     if (acceso("nonConc")) righe.push("Retino: comuni serviti da un distributore diverso da e-distribuzione.");
     if (acceso("cabine")) righe.push("Cabine primarie (punti bordati di nero): livello peggiore dei trasformatori (bianco = verde, giallo, arancione, rosso); grigio = altro distributore o senza dato. " + R.ATTR.osm + ".");
     if (acceso("interruzioni")) righe.push("Punti blu: interruzioni in corso (e-distribuzione).");
+    if (acceso("pioggia") && G && pioggia.nome) righe.push(`${G.testoFrame("CUM3", pioggia.nome)[0].toUpperCase()}${G.testoFrame("CUM3", pioggia.nome).slice(1)}: ${G.ATTRIBUZIONE}; questa immagine ha la stessa licenza (CC BY-SA 4.0).`);
     righe.push(...righeAttribuzione().filter((x) => x !== R.ATTR.osm || !acceso("cabine")));
     const nome = `rete_elettrica_${st.nomeRegione.toLowerCase().replace(/[^a-z0-9]+/g, "_")}_${new Date().toISOString().slice(0, 10)}`;
     return { titolo: `Stato della rete elettrica – ${st.nomeRegione}${st.dettaglio ? ` – ${st.dettaglio.nome}` : ""}`, righe, nome };

@@ -42,7 +42,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <nav class="menu-pannello" aria-label="Menu completo">
         <h2>Servizi</h2>
         <details class="pannello-gruppo" data-gruppo="clima"><summary>Clima e meteo</summary>
-          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
+          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="pluviometria.html">Dati pluviometrici <span class="cantiere prova">sperimentale</span></a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
         </details>
         <details class="pannello-gruppo" data-gruppo="patrimonio"><summary>Territorio</summary>
           <ul><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="edifici-pubblici.html">Edifici pubblici <span class="cantiere prova">sperimentale</span></a></li><li><a href="ortofoto.html">Ortofoto <span class="cantiere prova">sperimentale</span></a></li><li><a href="lidar.html">LiDAR <span class="cantiere">in sviluppo</span></a></li><li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova">sperimentale</span></a></li><li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova">sperimentale</span></a></li><li><a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico) <span class="cantiere prova">sperimentale</span></a></li><li><a href="dbtr-istruzioni.html">Scaricare i DB topografici</a></li><li><a href="visure.html">Visure <span class="cantiere">in sviluppo</span></a></li></ul>
@@ -85,6 +85,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul class="tendina">
             <li><a href="dati.html">Dati climatici</a></li>
             <li><a href="legge10.html">Legge 10</a></li>
+            <li><a href="pluviometria.html">Dati pluviometrici <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="./">Previsioni</a></li>
             <li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="dati-per-email.html">Newsletter e avvisi</a></li>
@@ -231,6 +232,13 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       «Dati elaborati da Zornade» a zornade.com insieme alle fonti originali (per esempio OpenStreetMap, ODbL), e non
       si possono rivendere come dati grezzi. Non sostituiscono visure ed estratti catastali ufficiali e non vanno usati
       per re-identificare persone.</li>
+    <li id="pioggia"><strong>I dati pluviometrici</strong> (pagina <a href="pluviometria.html">Dati pluviometrici</a>, la casella
+      «Pioggia misurata» della rete elettrica e le sezioni di pioggia della newsletter) vengono dal «Merging» del
+      <a href="https://radar.protezionecivile.gov.it/">Dipartimento della Protezione Civile</a>, che li pubblica con la
+      licenza <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.it">CC BY-SA 4.0</a>: le nostre elaborazioni su
+      questi dati (immagini, valori per comune, file) hanno <strong>la stessa licenza CC BY-SA 4.0</strong>. Chi li riusa
+      cita il Dipartimento della Protezione Civile ed EuGEnio e condivide i lavori derivati con la stessa licenza. È
+      scritto accanto ai dati, nei file e nelle email. Sono dati a fini statistici, non di allerta.</li>
     <li><strong>I testi normativi.</strong> I gradi giorno e le zone climatiche del DPR 412/93 sono un atto pubblico,
       libero dal diritto d'autore: la citazione riguarda la nostra raccolta e l'abbinamento ai codici ISTAT attuali,
       non la legge.</li>

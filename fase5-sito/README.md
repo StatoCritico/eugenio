@@ -87,6 +87,8 @@ sito/
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
   rete-elettrica.html  Statistiche › Stato della rete elettrica (17/11/2026, sperimentale): rete_elettrica.js
   fv-cabine.html    Fotovoltaico › Cabine primarie (17/11/2026, sperimentale): fv_cabine.js
+  pluviometria.html Clima e meteo › Dati pluviometrici (22/11/2026, sperimentale): pluviometria.js e pioggia_gl.js
+                    (indice, immagini e legenda della pioggia, usato anche da rete_elettrica.js)
   rete.js           parte comune delle pagine della rete (e di Comunità energetiche): API /api/rete/…, dati sintetici
                     con ?prova=1, colori e regola della criticità, strisce e retino, cabine, riquadretti, GSE dal browser
                     (unico indirizzo del servizio nel sito), CSV/PDF/Excel/ODS (sezione «Rete elettrica» qui sotto)
@@ -154,6 +156,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `indicatori.html` | indicatori.js | a | regione, ente (già), comp, componenti, anno |
 | `elettricita.html` | elettricita.js | a | regione o vista=italia, modo (già; dal 21/11/2026 anche `emissioni`), inizio e fine (dal 22/11/2026; `anno` dei collegamenti vecchi = un anno solo), barre, fondo, ortofoto |
 | `rete-elettrica.html` | rete_elettrica.js | a | regione, comune (già), criticita, altri, cabine, interruzioni, ortofoto; prova=1 resta |
+| `pluviometria.html` | pluviometria.js | a | durata, passo, secondi, fine (null = ultimo dato), lat, lon, pioggia, interruzioni, ortofoto (22/11/2026) |
 | `ortofoto.html` | ortofoto.js | a | lat, lon, z, fonte (già), archivio, particelle, contorni (lo spostamento manuale della foto resta nella scheda) |
 | `edifici-pubblici.html` | edifici_pubblici.js, pubblici_enti.js | a | lat, lon, z, ref o bene (già), tipi, enti, ortofoto, fonte, particelle, contorni; dal 22/11/2026 modo (`enti`), sel (chiavi degli enti nell'ordine dei colori), ruolo, natura, ordina (`colonna:asc|desc`), tipo_ente, regione_ente (secondari) |
 | `aria-trasformazioni.html` | aria_trasformazioni.js | a | comune (già), anni, inverno, estate, diagramma, uta (dati e sequenze diversi dai predefiniti, JSON compatto) |
@@ -194,6 +197,27 @@ la riaccende se l'utente l'aveva spenta (ma non quando le sedi tornano da un col
 la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (all'apertura la
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
+
+## Clima e meteo › Dati pluviometrici (22/11/2026, richiesta di Paolo; sperimentale, non ancora in una release)
+
+Pagina `pluviometria.html` + `pluviometria.js` + `pioggia_gl.js`, voce «Dati pluviometrici» (sperimentale) nel gruppo
+Clima e meteo **prima di Previsioni**. Decisioni di Paolo: solo il «Merging» del DPC ogni 30 minuti (niente radar puro),
+fini statistici e non di allerta, licenza CC BY-SA 4.0 scritta accanto ai dati.
+- Mappa MapLibre con l'immagine della pioggia (sorgente `image`, `updateImage`; nessuna `attribution` nella sorgente: la
+  citazione sta nell'`AttributionControl` con `customAttribution`), strati «Pioggia», «Interruzioni» (del periodo, da
+  `/api/rete/interruzioni/periodo`) e «Ortofoto» come in Stato della rete elettrica, righello.
+- Animazione: `#durata` 3/6/12/24/168 ore (predefinito 24), `#passo` 3/6/12/24 ore automatico (durata ≤ 24 ore → 3 ore,
+  7 giorni → 24 ore; i passi più lunghi della durata sono disabilitati; l'utente lo può cambiare), `#secondi` (0,7), «Play»
+  e cursore `#fine` sulla fine del periodo; ogni immagine = pioggia caduta nel passo che finisce a quell'ora (CUM3, CUM6,
+  CUM12 o CUM24); immagini precaricate; indice in `dati/radar/indice.json` scritto dal worker.
+- Clic: `/api/radar/punto` (ultimi 3/6/12/24 ore) e comune (`C.comuneNelPunto`) → `/api/radar/comune/{istat}`: grafico
+  SVG (`EUGENIO_GRAFICI`) dei 30 giorni misurati con la prevista, tabella, file CSV/PDF/Excel con `licenza: "CC BY-SA 4.0"`.
+  «–» = nessuna misura, mai zero.
+- In `rete-elettrica.html` la casella `#strato-pioggia` «Pioggia misurata (ultime 3 ore)», spenta in partenza: ultimo
+  CUM3 sotto le cabine, legenda, aggiornata ogni 5 minuti.
+- Stile: blocco «dati pluviometrici» in `stile.css`; 375 px senza scorrimento orizzontale. Prove:
+  `test_pluviometria_browser.py` (con `page.route` sulle rotte e immagini finte), `test_rete_browser.py`,
+  `test_costruisci_pagine.py`.
 
 ## Statistiche › Suolo e aree agricole (22/11/2026, richiesta di Paolo; sperimentale, release `v2026.11.22`, versione 20261122a)
 

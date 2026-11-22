@@ -261,6 +261,9 @@ class Fonte(_Base):
 
 class Documento(_Base):
     titolo: Annotated[str, StringConstraints(min_length=1, max_length=300)]
+    # (22/11/2026) licenza dei dati del documento: CC BY-SA 4.0 per i file con dati «share alike» (dati pluviometrici del
+    # DPC): cambia i testi della licenza in avvertenze e piè di pagina (_lic)
+    licenza: Literal["CC BY 4.0", "CC BY-SA 4.0"] = "CC BY 4.0"
     sottotitolo: Breve | None = None
     data: dt.date | dt.datetime | None = None          # vuota = oggi
     nome_file: Annotated[str, StringConstraints(max_length=120)] | None = None   # senza estensione
@@ -357,6 +360,19 @@ def _colonne_numeriche(t: Tabella) -> list[bool]:
 
 def _dec(t: Tabella, j: int) -> int | None:
     return t.decimali[j] if t.decimali else None
+
+
+def _lic(doc: Documento, testo: str) -> str:
+    """Testo di licenza adattato al documento: con CC BY-SA 4.0 (dati pluviometrici del DPC, 22/11/2026) la licenza, il suo
+    nome, il collegamento e l'obbligo di condividere i lavori derivati con la stessa licenza."""
+    if getattr(doc, "licenza", "CC BY 4.0") != "CC BY-SA 4.0":
+        return testo
+    return (testo.replace("CC BY 4.0", "CC BY-SA 4.0")
+            .replace("Attribuzione 4.0 Internazionale", "Attribuzione – Condividi allo stesso modo 4.0 Internazionale")
+            .replace("licenses/by/4.0", "licenses/by-sa/4.0")
+            .replace("a condizione di citare EuGEnio come fonte nei documenti che li usano",
+                     "a condizione di citare EuGEnio come fonte nei documenti che li usano, di distribuire i lavori "
+                     "derivati con la stessa licenza CC BY-SA 4.0"))
 
 
 def nome_file(doc: Documento, formato: str) -> str:
@@ -577,7 +593,7 @@ def _docx(doc: Documento) -> bytes:
 
     # avvertenze complete, una volta in fondo al documento
     d.add_heading(TITOLO_AVVERTENZE, 1)
-    for testo in AVVERTENZE:
+    for testo in (_lic(doc, x) for x in AVVERTENZE):
         p = d.add_paragraph()
         r = p.add_run(testo)
         r.font.size = Pt(8.5)
@@ -605,7 +621,7 @@ def _docx(doc: Documento) -> bytes:
     pp.alignment = WD_ALIGN_PARAGRAPH.CENTER
     pp.add_run("Prodotto da EuGEnio – ")
     collegamento(pp, "eugenio.statocritico.it", SITO, dim=6.5)
-    pp.add_run(". " + PIE_AVVERTENZA)
+    pp.add_run(". " + _lic(doc, PIE_AVVERTENZA))
     pn = sez.footer.add_paragraph()
     pn.alignment = WD_ALIGN_PARAGRAPH.CENTER
     pn.add_run("Pagina ")
@@ -718,7 +734,7 @@ def _pdf(doc: Documento) -> bytes:
 
         def footer(self):
             # sulle pagine verticali "Prodotto da EuGEnio" apre il piè, di seguito all'avvertenza (senza andare a capo)
-            testo = PIE_AVVERTENZA if self.w > self.h else f"{INTESTAZIONE}. {PIE_AVVERTENZA}"
+            testo = _lic(doc, PIE_AVVERTENZA if self.w > self.h else f"{INTESTAZIONE}. {PIE_AVVERTENZA}")
             self.set_y(-17)
             self.set_font(famiglia, "", 6)
             self.set_text_color(0, 0, 0)
@@ -882,7 +898,7 @@ def _pdf(doc: Documento) -> bytes:
     # avvertenze complete, una volta in fondo al documento
     titolo(TITOLO_AVVERTENZE, 11)
     pdf.set_font(famiglia, "", 8)
-    for testo in AVVERTENZE:
+    for testo in (_lic(doc, x) for x in AVVERTENZE):
         pdf.multi_cell(0, 4, t(testo), align="L", new_x="LMARGIN", new_y="NEXT")
         pdf.ln(1)
     return bytes(pdf.output())
@@ -1047,7 +1063,7 @@ def _xlsx(doc: Documento) -> bytes:
         r += 1
     info.cell(row=r, column=1, value=TITOLO_AVVERTENZE).font = Font(bold=True, size=12)
     r += 1
-    for testo in AVVERTENZE:
+    for testo in (_lic(doc, x) for x in AVVERTENZE):
         c = info.cell(row=r, column=1, value=testo)
         c.alignment = Alignment(wrap_text=True, vertical="top")
         c.font = Font(size=9, color="000000")
@@ -1068,7 +1084,7 @@ def _xlsx(doc: Documento) -> bytes:
         ws.oddHeader.left.size = 9
         ws.oddHeader.center.text = doc.titolo[:120]
         ws.oddHeader.center.size = 9
-        ws.oddFooter.left.text = PIE_LICENZA_XLSX.format(citazione=citazione)   # citazione in apertura
+        ws.oddFooter.left.text = _lic(doc, PIE_LICENZA_XLSX.format(citazione=citazione))   # citazione in apertura
         ws.oddFooter.left.size = 6
         ws.oddFooter.right.text = "Pagina &P di &N"
         ws.oddFooter.right.size = 7
@@ -1230,7 +1246,7 @@ def _odt(doc: Documento) -> bytes:
     a = A(href=SITO, type="simple")
     a.addElement(Span(stylename=link, text="eugenio.statocritico.it"))
     pp1.addElement(a)
-    pp1.addText(". " + PIE_AVVERTENZA)
+    pp1.addText(". " + _lic(doc, PIE_AVVERTENZA))
     pie.addElement(pp1)
     pp2 = P(stylename=piede_n)
     pp2.addText("Pagina ")
@@ -1368,7 +1384,7 @@ def _odt(doc: Documento) -> bytes:
         elenco(doc.fonti, fonti=True)
 
     od.text.addElement(H(outlinelevel=1, stylename=h1, text=TITOLO_AVVERTENZE))
-    for testo in AVVERTENZE:
+    for testo in (_lic(doc, x) for x in AVVERTENZE):
         od.text.addElement(P(stylename=piccolo, text=testo))
 
     out = io.BytesIO()
@@ -1430,7 +1446,7 @@ def _ods(doc: Documento) -> bytes:
     pc.addElement(Span(stylename=cit, text=citazione))
     ft.addElement(pc)
     pf = P()
-    pf.addElement(Span(stylename=pic, text=PIE_AVVERTENZA_XLSX))
+    pf.addElement(Span(stylename=pic, text=_lic(doc, PIE_AVVERTENZA_XLSX)))
     ft.addElement(pf)
     pn = P(text="Pagina ")
     pn.addElement(PageNumber(selectpage="current"))
@@ -1643,7 +1659,7 @@ def _ods(doc: Documento) -> bytes:
             riga(info, cella(f.testo), cella(f.url, url=f.url) if f.url else cella())
         riga(info, cella())
     riga(info, cella(TITOLO_AVVERTENZE, stile=s_sez))
-    for testo in AVVERTENZE:
+    for testo in (_lic(doc, x) for x in AVVERTENZE):
         riga(info, cella(testo, stile=s_piccolo, span=4))
     riga(info, cella(CONTATTI, url=CONTATTI))
 

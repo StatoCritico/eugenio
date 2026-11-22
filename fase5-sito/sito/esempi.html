@@ -42,7 +42,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <nav class="menu-pannello" aria-label="Menu completo">
         <h2>Servizi</h2>
         <details class="pannello-gruppo" data-gruppo="clima"><summary>Clima e meteo</summary>
-          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
+          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="pluviometria.html">Dati pluviometrici <span class="cantiere prova">sperimentale</span></a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
         </details>
         <details class="pannello-gruppo" data-gruppo="patrimonio"><summary>Territorio</summary>
           <ul><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="edifici-pubblici.html">Edifici pubblici <span class="cantiere prova">sperimentale</span></a></li><li><a href="ortofoto.html">Ortofoto <span class="cantiere prova">sperimentale</span></a></li><li><a href="lidar.html">LiDAR <span class="cantiere">in sviluppo</span></a></li><li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova">sperimentale</span></a></li><li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova">sperimentale</span></a></li><li><a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico) <span class="cantiere prova">sperimentale</span></a></li><li><a href="dbtr-istruzioni.html">Scaricare i DB topografici</a></li><li><a href="visure.html">Visure <span class="cantiere">in sviluppo</span></a></li></ul>
@@ -85,6 +85,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul class="tendina">
             <li><a href="dati.html">Dati climatici</a></li>
             <li><a href="legge10.html">Legge 10</a></li>
+            <li><a href="pluviometria.html">Dati pluviometrici <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="./">Previsioni</a></li>
             <li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="dati-per-email.html">Newsletter e avvisi</a></li>
@@ -217,6 +218,16 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <li>Una studentessa per la tesi ha bisogno della temperatura ora per ora dei capoluoghi di provincia di una regione: in
       <a href="dati.html">Dati climatici</a> sceglie il meteo orario, la regione e «solo i capoluoghi di provincia», e
       scarica un CSV.</li>
+  </ul>
+
+  <h3>Dati pluviometrici <span class="cantiere prova">sperimentale</span></h3>
+  <ul class="esempi-casi">
+    <li>Un energy manager vuole capire se il picco di consumi di una pompa di sollevamento a Cesena coincide con le piogge della
+      settimana: apre <a href="pluviometria.html">Dati pluviometrici</a>, sceglie 7 giorni con passo di 1 giorno, guarda
+      l'animazione e, con un clic sul comune, scarica in Excel la pioggia di ogni giorno degli ultimi 30.</li>
+    <li>Un tecnico vuole vedere se i guasti alla rete elettrica di una notte di maltempo in Romagna sono arrivati con la
+      pioggia: in <a href="pluviometria.html">Dati pluviometrici</a> accende le interruzioni, sceglie 24 ore con passo di 3 ore
+      e avvia l'animazione. I dati servono a fini statistici, non come allerta.</li>
   </ul>
 
   <h3>Cambiamento climatico <span class="cantiere prova">sperimentale</span></h3>

@@ -72,7 +72,7 @@ def test_modifica_del_modello_arriva_in_tutte_le_pagine(sito, monkeypatch, tmp_p
 
 
 # ---------------------------------------------------------------- menu a gruppi e pagine segnaposto (03/11/2026)
-GRUPPI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "dati-per-email.html"],   # (08/11/2026) Cambiamento climatico, ultima
+GRUPPI = {"clima": ["dati.html", "legge10.html", "pluviometria.html", "./", "edificio-clima.html", "dati-per-email.html"],   # (08/11/2026) Cambiamento climatico, ultima
           "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
                          "dbtr-istruzioni.html", "visure.html"],
           "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
@@ -602,7 +602,7 @@ def test_etichette_brevi_nelle_tendine():
     # (14/11/2026) + 4 «S» del Trattamento aria: 12; (17/11/2026) + «S» di Territorio › Edifici pubblici: 13;
     # (17/11/2026) + Cabine primarie e Stato della rete elettrica: 15; (20/11/2026) + Produzione e consumi di elettricità: 16;
     # (20/11/2026) + Carichi elettrici: 17; (22/11/2026) + Suolo e aree agricole: 18
-    assert len(s) == pannello.count(">sperimentale<") == 18 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    assert len(s) == pannello.count(">sperimentale<") == 19 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
     assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
@@ -747,7 +747,7 @@ PAGINE_IN_CORSO = ["edificio-fabbisogno.html",
                    "edificio-involucro.html", "edificio-impianti.html", "edificio-ecobonus.html", "edificio-conto-termico.html",
                    "cog-emissioni.html", "fv-ombre.html", "fv-irradiazione.html", "fv-producibilita.html", "fv-pvgis.html",
                    "fv-dlgs199.html", "fv-leed.html", "edificio-cer.html"]
-ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "dati-per-email.html"],
+ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "pluviometria.html", "./", "edificio-clima.html", "dati-per-email.html"],
                "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
                "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
@@ -822,7 +822,7 @@ def test_stesso_gruppo_ed_etichetta_dal_menu(sito):
     assert '<p class="gruppo-servizio">Clima e meteo</p>' in s and "<h1>Cambiamento climatico</h1>" in s
     assert "<title>EuGEnio – Cambiamento climatico</title>" in s and "Clima che cambia" not in s
     blocco = re.search(r'<ul class="stesso-gruppo">(.*?)</ul>', s, re.S).group(1)
-    assert re.findall(r'href="([^"]+)"', blocco) == ["dati.html", "legge10.html", "./", "edificio-clima.html", "dati-per-email.html"]
+    assert re.findall(r'href="([^"]+)"', blocco) == ["dati.html", "legge10.html", "pluviometria.html", "./", "edificio-clima.html", "dati-per-email.html"]
     s = (sito / "edificio-cer.html").read_text(encoding="utf-8")
     assert '<p class="gruppo-servizio">Fotovoltaico</p>' in s
     blocco = re.search(r'<ul class="stesso-gruppo">(.*?)</ul>', s, re.S).group(1)

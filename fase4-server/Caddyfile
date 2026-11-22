@@ -122,6 +122,12 @@
 		# registro delle versioni (07/11/2026): feed Atom della pagina Novità
 		@atom path /novita.xml
 		header @atom Content-Type "application/atom+xml; charset=utf-8"
+		# (22/11/2026) «Dati pluviometrici»: l'indice dei frame cambia ogni 30 minuti (mai vecchio),
+		# le immagini dei frame hanno nomi con data e ora e non cambiano più (una settimana di cache)
+		@radar_indice path /dati/radar/indice.json
+		header @radar_indice Cache-Control "no-cache"
+		@radar_frame path_regexp ^/dati/radar/(CUM3|CUM6|CUM12|CUM24)/\d{8}T\d{4}Z\.png$
+		header @radar_frame Cache-Control "public, max-age=604800, immutable"
 		file_server
 	}
 

@@ -42,7 +42,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <nav class="menu-pannello" aria-label="Menu completo">
         <h2>Servizi</h2>
         <details class="pannello-gruppo" data-gruppo="clima"><summary>Clima e meteo</summary>
-          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
+          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="pluviometria.html">Dati pluviometrici <span class="cantiere prova">sperimentale</span></a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
         </details>
         <details class="pannello-gruppo" data-gruppo="patrimonio"><summary>Territorio</summary>
           <ul><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="edifici-pubblici.html">Edifici pubblici <span class="cantiere prova">sperimentale</span></a></li><li><a href="ortofoto.html">Ortofoto <span class="cantiere prova">sperimentale</span></a></li><li><a href="lidar.html">LiDAR <span class="cantiere">in sviluppo</span></a></li><li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova">sperimentale</span></a></li><li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova">sperimentale</span></a></li><li><a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico) <span class="cantiere prova">sperimentale</span></a></li><li><a href="dbtr-istruzioni.html">Scaricare i DB topografici</a></li><li><a href="visure.html">Visure <span class="cantiere">in sviluppo</span></a></li></ul>
@@ -85,6 +85,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul class="tendina">
             <li><a href="dati.html">Dati climatici</a></li>
             <li><a href="legge10.html">Legge 10</a></li>
+            <li><a href="pluviometria.html">Dati pluviometrici <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="./">Previsioni</a></li>
             <li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="dati-per-email.html">Newsletter e avvisi</a></li>
@@ -268,6 +269,12 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <details class="gruppo" open>
     <summary><h3>Norme e dati climatici</h3></summary>
   <ul class="servizi">
+    <li><a class="nome" href="https://radar.protezionecivile.gov.it/">Dipartimento della Protezione Civile – piattaforma radar</a><span class="licenza">CC BY-SA 4.0</span>
+      <p>I prodotti «Merging» (radar meteorologici corretti con i pluviometri, pioggia delle ultime 3, 6, 12 e 24 ore su
+        quadretti di circa 1 km, un dato ogni 30 minuti) della pagina <a href="pluviometria.html">Dati pluviometrici</a>.
+        Le nostre elaborazioni su questi dati hanno la stessa licenza CC BY-SA 4.0. Li leggiamo con la libreria aperta
+        <a href="https://github.com/agent-engineering-studio/dpc-radar">dpc-radar</a> (Apache-2.0) di Agent Engineering
+        Studio, raccontata nell'articolo «La pioggia d'Italia, ogni cinque minuti» di Giuseppe Zileni.</p></li>
     <li><a class="nome" href="https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.del.presidente.della.repubblica:1993-08-26;412!vig=">Normattiva</a><span class="licenza">legge, uso libero</span>
       <p>Il portale della legge vigente: qui c'è il DPR 412/93 con l'Allegato A (gradi giorno, zona climatica e altitudine
         di ogni comune), che la pagina <a href="legge10.html">Legge 10</a> confronta con il clima calcolato.</p></li>

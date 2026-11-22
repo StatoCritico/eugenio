@@ -42,6 +42,11 @@
                          superfici coltivate e censimento ISTAT (SDMX), con SUOLO_CARTE anche le carte raster per
                          l'incrocio del suolo agricolo; ricostruisce solo se qualcosa è cambiato
                          (suolo: /sito/dati/suolo/, fase 16)
+  dati pluviometrici     (22/11/2026, servizio/radar.py) ogni RADAR_MIN minuti (30), in un thread a parte come le
+                         interruzioni: solo il «Merging» del DPC (radar corretto con i pluviometri, CC BY-SA 4.0) con la
+                         libreria dpc-radar, immagini della mappa (radar: /sito/dati/radar/), archivio delle mappe CUM3 e
+                         CUM24 (10 anni) e valori per comune (per sempre) in /dati/radar, recupero all'indietro fino a ~5
+                         mesi; email solo se nessun giro riesce da più di RADAR_AVVISO_ORE ore
 I file del sito (indicatori, clima) si scrivono in una cartella nuova e si scambiano con quella pubblicata solo a
 lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
@@ -49,6 +54,7 @@ Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE)
   python -m servizio.worker                 ciclo continuo
   python -m servizio.worker previsioni|storico|psicro|mercati|mercato-mgp|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
                             |rete-interruzioni|rete-saturazione|gse-aree|terna-api|elettricita|carichi|suolo|suolo-forza
+                            |radar
                                             una sola esecuzione (anche con docker compose run --rm worker …)
 """
 from __future__ import annotations
@@ -539,6 +545,12 @@ def ciclo_interruzioni(fermo: threading.Event | None = None) -> None:
         fermo.wait(max(5.0, prossima_lettura(time.time(), C.RETE_INTERRUZIONI_MIN) - time.time()))
 
 
+def radar() -> dict:
+    """Un giro del lavoro dei dati pluviometrici (22/11/2026, servizio/radar.py)."""
+    from . import radar as RD
+    return RD.giro()
+
+
 def _stato_leggi() -> dict:
     p = C.DATI / "worker_stato.json"
     try:
@@ -574,6 +586,9 @@ def ciclo() -> None:
     terna_riprova, terna_tentativi = 0.0, 0   # dopo un 429 o un 5xx di Terna: quando riprovare, tentativi di oggi
     if C.RETE_ATTIVA:
         threading.Thread(target=ciclo_interruzioni, daemon=True, name="interruzioni").start()
+    if C.RADAR_ATTIVO:                  # (22/11/2026) dati pluviometrici, ogni RADAR_MIN minuti
+        from . import radar as RD
+        threading.Thread(target=RD.ciclo, daemon=True, name="radar").start()
     while True:
         utc = dt.datetime.now(dt.timezone.utc)
         loc = utc.astimezone(ROMA)
@@ -674,4 +689,4 @@ if __name__ == "__main__":
      "mercati": mercati, "mercato-mgp": mercato_mgp, "prezzi": prezzi, "mensile": mensile, "settimanale": settimanale, "avvisi": avvisi_meteo, "territorio": territorio, "anncsu": anncsu,
      "indicatori": indicatori, "clima": clima, "rete-interruzioni": rete_interruzioni,
      "rete-saturazione": rete_saturazione, "gse-aree": gse_aree, "terna-api": terna_api, "elettricita": elettricita,
-     "carichi": carichi, "suolo": suolo, "suolo-forza": lambda: suolo(forza=True)}[cmd]()
+     "carichi": carichi, "suolo": suolo, "suolo-forza": lambda: suolo(forza=True), "radar": radar}[cmd]()

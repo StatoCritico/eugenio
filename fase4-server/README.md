@@ -67,6 +67,24 @@ Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, v
   `SUOLO_ORA` (05:30), `SUOLO_CARTE` (1: scarica anche le carte raster, ~800 MB, e fa l'incrocio agricolo; 0 per saltarlo).
   Nessuna modifica al Caddyfile né ai volumi: la pagina legge `dati/suolo/` nella cartella del sito, già montata nel worker.
 
+## Aggiunte del 22/11/2026 b (dati pluviometrici; non ancora in una release)
+
+- Modulo nuovo `servizio/radar.py`: lavoro del worker in un thread a parte (`radar`, ogni 30 minuti) e rotte
+  `/api/radar/stato`, `/api/radar/punto`, `/api/radar/comune/{istat}` (limite `RADAR_ORA`); dettagli nel § «Dati
+  pluviometrici». Solo il «Merging» del DPC (CUM3/6/12/24), fini statistici, niente allerta (decisioni di Paolo).
+- Dipendenza nuova `dpc-radar==0.3.0` (Apache-2.0) in `api/requirements.txt`: richiede solo httpx, numpy e rasterio, già
+  nell'immagine. Nessun COPY nuovo nel Dockerfile (il modulo sta in `servizio/`).
+- `rete.py`: rotta nuova `/api/rete/interruzioni/periodo?da=…&a=…` (al più 8 giorni) per l'animazione della pagina.
+- `report.py`: campo `licenza` del documento (`"CC BY 4.0"` predefinito, `"CC BY-SA 4.0"` per i file con i dati del DPC),
+  che adatta i testi della licenza nelle avvertenze e nei piè di pagina (`_lic`).
+- `notiziario.py`: sezione «La pioggia di <mese>» nel mensile per regione e «Pioggia misurata» nel settimanale (con la
+  previsione di una settimana prima, salvata da `settimanale()`); nessun avviso.
+- Caddyfile: `dati/radar/indice.json` senza cache, immagini dei frame in cache una settimana.
+- Variabili nuove nel `.env`, tutte facoltative: `RADAR_ATTIVO`, `RADAR_DATI` (`/dati/radar`), `RADAR_SITO`
+  (`/sito/dati/radar`), `RADAR_MIN` (30), `RADAR_GIORNI_MAPPA` (7), `RADAR_ARCHIVIO_ANNI` (10), `RADAR_RECUPERO_GIORNI` (150),
+  `RADAR_SCARICHI` (60), `RADAR_SPAZIO_MIN_GB` (5), `RADAR_AVVISO_ORE` (12), `RADAR_ORA` (1200). Nessun volume nuovo: il
+  worker scrive in `/dati/radar` e `/sito/dati/radar`, già montate.
+
 ## Ortofoto AGEA 2022-2024 per tutta Italia (17/11/2026, segnalazione di Paolo)
 
 > **19/11/2026 sera (segnalazione di Paolo, scacchiere nella vista 3D)**: l'`exportImage` del Geoportale AGEA risponde 200
@@ -772,6 +790,56 @@ Center, storico che riprende dallo stato, Download Center fermo, email dopo 3 gi
 429 con riserva, primo avvio con 7 giorni, riserva dello storico dall'API, `elettricita` che non pubblica se `costruisci`
 non è pronto o i file sono pochi (o manca `italia.json`), email dopo due mesi senza risposta, `carichi` assente/non
 pronto/pubblicato, lavori nel ciclo e nei comandi, nessun catalogo di mercato, un aggiornamento alla volta, mesi vecchi dell'IMCEI senza dati saltati.
+
+## Dati pluviometrici (22/11/2026)
+
+Dati della pagina Clima e meteo › «Dati pluviometrici» (`pluviometria.html`, sperimentale), della casella «Pioggia
+misurata» di «Stato della rete elettrica» e delle sezioni di pioggia della newsletter. Decisioni di Paolo del 22/11/2026:
+**solo il «Merging»** del Dipartimento della Protezione Civile (radar corretto con i pluviometri: il radar da solo è poco
+affidabile), **un dato ogni 30 minuti**, **fini statistici e non di allerta** (niente intensità istantanea, niente
+bollettini di criticità, niente avvisi per email), libreria `dpc-radar`, archivio delle mappe per **10 anni** e valori per
+comune **per sempre**, licenza **CC BY-SA 4.0** scritta accanto ai dati (pagina, immagini, file, email).
+
+Fonte: API aperta `https://radar-api.protezionecivile.it` (senza account; sono le chiamate del visualizzatore del DPC, non
+documentate: se cambiano, il worker manda un'email dopo `RADAR_AVVISO_ORE` ore senza giri riusciti e si aggiorna la
+libreria). Il DPC tiene i frame circa 5 mesi: per questo EuGEnio si fa l'archivio.
+
+| prodotto | cosa | griglia | usato per |
+|---|---|---|---|
+| `CUM3`, `CUM6`, `CUM12`, `CUM24` | pioggia delle 3/6/12/24 ore precedenti, mm | 0,01° (EPSG:4326) | ultimo dato (ogni 30 minuti), immagini della mappa, archivio (CUM3 e CUM24), valori per comune (CUM3 e CUM24) |
+
+Giro del worker (`radar.giro`, ogni `RADAR_MIN` minuti, 4 minuti dopo il :00 e il :30):
+1. ultimo frame di ogni prodotto: controllo di qualità della libreria (`RainGrid.quality`) contro il frame di 30 minuti
+   prima (salti impossibili; tra il 9/10 e il 3/11/2026 il DPC ha pubblicato CUM24 alle :30 con valori fino a 20.584 mm),
+   valori oltre i record italiani e pixel isolati; un frame scartato non sostituisce il precedente (`ultimi/ultimi.json`
+   tiene il verdetto);
+2. immagini PNG mancanti degli ultimi `RADAR_GIORNI_MAPPA` giorni, alle ore locali multiple del passo (CUM3 ogni 3 ore,
+   CUM6 ogni 6, CUM12 a mezzanotte e mezzogiorno, CUM24 a mezzanotte), riproiettate su una griglia fissa in Web Mercator
+   (1 km, Italia lon 5,5–19,5, lat 35–48); scala in mm con 14 classi, tratteggio grigio dove non c'è misura;
+3. archivio CUM3 (ogni 3 ore) e CUM24 (mezzanotte) come GeoTIFF compressi in decimi di mm (30–110 KB l'uno, ~250 MB
+   l'anno), e valori per comune (mediana 3×3 al punto di `comuni.parquet`, NaN = nessuna misura) in Parquet mensili;
+   recupero all'indietro fino a `RADAR_RECUPERO_GIORNI` giorni, al più `RADAR_SCARICHI` frame per giro (prima messa in
+   servizio: ~1.350 frame, circa un giorno); i frame che il DPC non ha più vanno in `assenti.json`;
+4. pulizia (immagini oltre la finestra, mappe oltre `RADAR_ARCHIVIO_ANNI` anni), `indice.json` per la pagina e una copia
+   per l'api; a inizio giornata la pioggia prevista dal sito (`previsioni/ultima.parquet`) in `previsto/<anno>.parquet`.
+
+Sotto `RADAR_SPAZIO_MIN_GB` GB liberi l'archivio delle mappe si ferma (un'email); immagini e valori continuano.
+
+| sul server | nel container | cosa |
+|---|---|---|
+| `/srv/energia/dati/radar/` | `/dati/radar/` (`RADAR_DATI`) | `archivio/<prodotto>/<anno>/*.tif`, `valori/<prodotto>/<AAAA-MM>.parquet`, `ultimi/`, `previsto/`, `previsto_email.parquet`, `indice.json`, `stato.json`, `assenti.json` |
+| `/srv/energia/sito/dati/radar/` | `/sito/dati/radar/` (`RADAR_SITO`) | `indice.json` e `<prodotto>/<AAAAMMGGTHHMMZ>.png` (7 giorni, pochi MB), scritti solo dal worker |
+
+Rotte: `/api/radar/stato`; `/api/radar/punto?lat=…&lon=…` (ultimi valori CUM3/6/12/24 nel punto e comune più vicino);
+`/api/radar/comune/<istat>?giorni=30` (pioggia di ogni giorno italiano dal CUM24 della mezzanotte dopo, previsione del sito
+registrata a inizio giornata, CUM3 degli ultimi 7 giorni). Newsletter: `notiziario.tabella_pioggia_regioni` (mensile per
+regione: per provincia la media dei comuni misurati tutti i giorni e il comune più piovoso, i cinque comuni più piovosi) e
+`notiziario.righe_pioggia_settimana` (settimanale: gli ultimi 7 giorni interi, misurata e prevista). Prove:
+`tests/test_radar.py` (nessuna chiamata al DPC: frame sintetici e client finto).
+
+Prima messa in servizio (dopo la release che contiene questa parte): `docker compose run --rm worker python -m
+servizio.worker radar` (un giro di prova, ~1 minuto), poi il thread del worker continua da solo; controllare
+`https://eugenio.statocritico.it/pluviometria.html`.
 
 ## Archivio psicrometrico per «Trattamento aria» (14/11/2026)
 

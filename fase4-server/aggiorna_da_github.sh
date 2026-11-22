@@ -21,8 +21,8 @@
 #   4. controllo dei COPY di api/Dockerfile (ogni percorso deve esistere in ~/energia: se manca qualcosa si rimette il codice
 #      di prima e ci si ferma SENZA toccare i container); docker compose build api, up -d --force-recreate api worker,
 #      attesa dell'api «healthy»; se non lo diventa entro 3 minuti si torna da soli alla copia di sicurezza;
-#   5. sito in /srv/energia/sito (rsync senza cancellare; dati/indicatori, dati/prezzi, dati/elettricita e dati/carichi,
-#      scritti dal worker, non si toccano), controllo della
+#   5. sito in /srv/energia/sito (rsync senza cancellare; dati/indicatori, dati/prezzi, dati/elettricita, dati/carichi,
+#      dati/suolo e (22/11/2026) dati/radar, scritti dal worker, non si toccano), controllo della
 #      versione ?v= di index.html;
 #   6. file degli indici dei prezzi (worker «prezzi»);
 #   7. Purge Everything su Cloudflare, se nel .env ci sono CF_ZONE_ID e CF_PURGE_TOKEN (token con il solo permesso
@@ -327,7 +327,7 @@ fi
 
 # ------------------------------------------------------------------ 5. sito
 S=(rsync -a -i --exclude=dati/indicatori/ --exclude=dati/prezzi/ --exclude=dati/elettricita/ --exclude=dati/carichi/
-   --exclude=dati/suolo/)
+   --exclude=dati/suolo/ --exclude=dati/radar/)
 [ "$PROVA" = 1 ] && S+=(-n)
 "${S[@]}" "$SORG/fase5-sito/sito/" "$SITO/" >"$ELENCO"
 registra "Sito: $(grep -c '^>f' "$ELENCO" || true) file nuovi o cambiati in $SITO"

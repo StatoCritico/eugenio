@@ -86,6 +86,11 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
   (censimento 2020), consumo di suolo per causa con la parte su suolo agricolo (stima EuGEnio, 2024–2025) e superfici
   coltivate per famiglia; comuni colorati per % consumato. Dati ISPRA/SNPA, ISTAT, Copernicus (CC BY 4.0) in
   /dati/suolo/italia.json e /dati/suolo/RR.json; citare «Elaborazione EuGEnio su dati ISPRA/SNPA, ISTAT e Copernicus».
+- Dati pluviometrici (sperimentale, dal 22/11/2026): pluviometria.html (?durata=3|6|12|24|168, &passo=3|6|12|24,
+  &fine=AAAAMMGGTHHMMZ, &lat=…&lon=…): pioggia misurata dal «Merging» del Dipartimento della Protezione Civile (radar
+  corretto con i pluviometri, un dato ogni 30 minuti), mappa animata fino a 7 giorni, valori nel punto
+  (/api/radar/punto) e pioggia giornaliera del comune con la prevista (/api/radar/comune/{istat}). Dati CC BY-SA 4.0,
+  le elaborazioni hanno la stessa licenza; a fini statistici, non di allerta; «nessuna misura» non è zero.
 - Collegamento a questa simulazione (dal 20/11/2026): nelle pagine a scelte tutte le scelte stanno nell'indirizzo, mostrato
   in fondo alla pagina con il pulsante per copiarlo; riaprirlo rimette le stesse scelte (mai file caricati né dati personali).
 - Edifici pubblici per ente (dal 22/11/2026): edifici-pubblici.html?modo=enti&sel=<chiavi> (fino a 8 enti, colori nell'ordine;

@@ -43,5 +43,7 @@ fase5-sito/sito/dati/carichi/
 # (22/11/2026) Suolo e aree agricole (fase 16): file costruiti dal worker (ISPRA/SNPA, ISTAT, Copernicus) e dati scaricati;
 # solo sul server, mai nel repository (come per l'elettricità)
 fase5-sito/sito/dati/suolo/
+# (22/11/2026) dati pluviometrici: immagini e indice scritti dal worker sul server (CC BY-SA 4.0, mai nel repository)
+fase5-sito/sito/dati/radar/
 fase16-suolo/raw/
 fase16-suolo/carte/

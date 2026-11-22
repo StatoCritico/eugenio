@@ -1915,3 +1915,21 @@ svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-off
 /* Emissioni della cogenerazione e Cambiamento climatico: le tabelle dei risultati scorrono da sole sul telefono, la pagina
    non si allarga (20/11/2026, trovato con le prove del collegamento a 375 px) */
 #sensibilita, #risultati-clima { overflow-x: auto; max-width: 100%; }
+
+/* ------------------------------------------------------------------------------------------- dati pluviometrici */
+/* (22/11/2026) Clima e meteo › «Dati pluviometrici» (pluviometria.html) e casella «Pioggia misurata» della rete elettrica */
+.strati-pioggia { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin-top: var(--s2); }
+.animazione-pioggia { margin-top: var(--s3); padding: var(--s2) var(--s3); border: 1px solid var(--linea); border-radius: var(--r); background: var(--foglio); }
+.animazione-pioggia .riga-campi { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s2) var(--s4); }
+.animazione-pioggia input[type=number] { width: 5.5rem; }
+.animazione-pioggia #avvia { min-width: 7.5rem; }
+.cursore-periodo { display: flex; flex-direction: column; gap: .3rem; margin-top: var(--s2); }
+.cursore-periodo input[type=range] { width: 100%; accent-color: var(--primario); }
+.frame-pioggia { margin: var(--s1) 0 0; font-weight: 600; font-variant-numeric: tabular-nums; min-height: 1.5em; }
+.legenda-pioggia { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .25rem .6rem; }
+.legenda-pioggia-titolo { font-weight: 600; color: var(--inchiostro); }
+.legenda .legenda-pioggia-classe { gap: .25rem; font-variant-numeric: tabular-nums; }
+.legenda .legenda-pioggia-classe i { width: 14px; height: 10px; border-radius: 2px; }
+.legenda .legenda-pioggia-mancante i.tratteggio { width: 18px; height: 10px; border: 0; border-radius: 2px;
+  background: repeating-linear-gradient(45deg, #808080 0 2px, transparent 2px 5px); }
+#scheda-punto h3 { margin: var(--s3) 0 var(--s1); }

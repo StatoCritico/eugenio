@@ -93,6 +93,7 @@ Stime per l'Emilia-Romagna (330 comuni); misurate dove indicato.
 | Istanza Open-Meteo propria (facoltativa, cache) | +20 GB (configurabile) | — |
 | Tutta Italia invece della sola ER (meteo sul server) | +4 GB | +1 GB |
 | Archivio psicrometrico dal 1940, tutta Italia (T e UR orarie, 14/11/2026, `/srv/energia/dati/psicro`) | +~9 GB | ~+0,1 GB |
+| Dati pluviometrici (22/11/2026, `/srv/energia/dati/radar`): mappe CUM3 e CUM24 per 10 anni (misurato: 30–110 KB l'una) e valori per comune di tutta Italia | ~0,1 GB (recupero di 5 mesi) | ~+0,25 GB (mappe) + ~0,05 GB (valori); al più ~2,5 GB dopo 10 anni |
 
 Il disco gratuito è 200 GB in tutto: un volume di avvio da **100 GB** basta con ampio margine e lascia
 spazio ai backup. Sul PC, l'archivio meteo completo dell'ER occupa ~2 GB (Italia ~50 GB).
@@ -133,7 +134,10 @@ da `.gitignore`.
   I future trimestrali TTF si leggono dal sito EEX, che li mostra a scopo informativo, solo per
   calcolare il PFOR.
 - **Licenza GME per le analisi delle fasi 12 e 13**: serve una licenza scritta; fino ad allora le pagine restano
-  segnaposto. Tariffe ARERA in CC BY-SA 4.0, fattori ISPRA in CC BY 4.0 (in una cartella separata con la loro
+  segnaposto. **Dati pluviometrici** (22/11/2026): «Merging» del Dipartimento della Protezione Civile in **CC BY-SA 4.0**:
+  le immagini, i valori per comune, i file (campo `licenza` del documento) e le sezioni della newsletter che li usano hanno la
+  stessa licenza, scritta accanto ai dati; fini statistici, non di allerta; libreria `dpc-radar` (Apache-2.0).
+  Tariffe ARERA in CC BY-SA 4.0, fattori ISPRA in CC BY 4.0 (in una cartella separata con la loro
   licenza, se entrano nel repository); nessun contenuto GSE (CC BY-NC-SA 3.0 IT) e nessun estratto di norme UNI.
 - **Norme UNI**: coefficienti e prospetti in un modulo privato fuori dal repository (`fase10-edifici3d/uni_privato/`,
   in `.gitignore`, fuori dallo zip pubblico e, con il `.dockerignore`, dalle immagini Docker; consegnato a parte). Senza
