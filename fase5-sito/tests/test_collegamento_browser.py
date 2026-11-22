@@ -291,25 +291,34 @@ def test_elettricita(browser, base, dati_el):
     pg.wait_for_function(pronta, timeout=20000)
     pg.evaluate("() => window.EUGENIO_ELETTRICITA.scegliRegione('08')")
     pg.wait_for_function("() => document.getElementById('titolo-vista').textContent === 'Emilia-Romagna'", timeout=10000)
-    # i dati inventati hanno due anni di capacità (2020, 2021): si sceglie il primo, non predefinito
-    pg.eval_on_selector("#anno-elettricita", "c => { c.value = 0; c.dispatchEvent(new Event('input', {bubbles: true})); c.dispatchEvent(new Event('change', {bubbles: true})); }")
-    anno = pg.inner_text("#anno-scelto")
+    # i dati inventati hanno due anni di capacità (2020, 2021): (22/11/2026) periodo 2020–2021 con l'indicatore iniziale
+    pg.eval_on_selector("#anno-inizio", "c => { c.value = 0; c.dispatchEvent(new Event('input', {bubbles: true})); c.dispatchEvent(new Event('change', {bubbles: true})); }")
+    periodo = pg.inner_text("#periodo-scelto")
+    assert periodo == "2020–2021"
     pg.uncheck("#strato-fondo")
     pg.check("#strato-ortofoto")
     link = _collegamento(pg)
-    for parte in ("regione=08", "modo=capacita", "anno=2020", "fondo=0", "ortofoto=1", "barre=1"):
+    for parte in ("regione=08", "modo=capacita", "inizio=2020", "fine=2021", "fondo=0", "ortofoto=1", "barre=1"):
         assert parte in link, parte
+    assert "anno=" not in link
     _foto(pg, "elettricita_1400.png")
     ctx.close()
     ctx, pg, errori2 = _apri(browser, link, rotte=dati_el)
     assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.regione") == "08"
     assert pg.get_attribute('[data-modo="capacita"]', "aria-pressed") == "true"
-    assert pg.inner_text("#anno-scelto") == anno and pg.evaluate("() => String(window.EUGENIO_ELETTRICITA.stato.anno)") == anno
+    pg.wait_for_function("() => document.getElementById('periodo-scelto').textContent === '2020–2021'", timeout=10000)
+    assert pg.evaluate("() => [window.EUGENIO_ELETTRICITA.stato.inizio, window.EUGENIO_ELETTRICITA.stato.fine]") == [2020, 2021]
     assert not pg.is_checked("#strato-fondo") and pg.is_checked("#strato-ortofoto") and pg.is_checked("#strato-barre")
     pg.wait_for_timeout(800)
     assert pg.input_value("#collegamento-indirizzo") == link
     ctx.close()
-    assert not errori and not errori2
+    # i collegamenti di prima con un solo anno (anno=2020) continuano a funzionare: periodo 2020–2020
+    ctx, pg, errori3 = _apri(browser, base + "elettricita.html?vista=italia&modo=capacita&anno=2020", rotte=dati_el)
+    pg.wait_for_function(pronta, timeout=20000)
+    pg.wait_for_function("() => document.getElementById('periodo-scelto').textContent === '2020'", timeout=10000)
+    assert pg.evaluate("() => [window.EUGENIO_ELETTRICITA.stato.inizio, window.EUGENIO_ELETTRICITA.stato.fine]") == [2020, 2020]
+    ctx.close()
+    assert not errori and not errori2 and not errori3
     _stretta(browser, link, "elettricita", dati_el)
 
 

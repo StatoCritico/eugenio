@@ -176,8 +176,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <h1>Produzione e consumi di elettricità</h1>
     <p class="sotto">Quanta potenza elettrica è installata, quanta energia si produce e da quali fonti, quanta ne chiede ogni
       regione e quanta ne consumano i settori, anno per anno: in ogni regione un istogramma (con «Emissioni» un anello della
-      produzione per fonte e i fattori di emissione di CO₂). Scegli la grandezza e l'anno
-      sotto la mappa; un clic su una regione (anche nella piccola mappa) mostra le sue province, un secondo clic torna
+      produzione per fonte e i fattori di emissione di CO₂). Scegli la grandezza e il periodo
+      sotto la mappa (con i due indicatori sullo stesso anno vedi un anno solo); un clic su una regione (anche nella piccola mappa) mostra le sue province, un secondo clic torna
       all'Italia.</p>
     <div class="mappa mappa-gl" id="mappa-elettricita" role="region" aria-label="Mappa con gli istogrammi per regione o provincia"></div>
     <div class="comandi-elettricita">
@@ -189,9 +189,15 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <button class="bottone secondario" type="button" data-modo="burden" aria-pressed="false">Burden sharing</button>
         <button class="bottone secondario" type="button" data-modo="emissioni" aria-pressed="false">Emissioni</button>
       </div>
-      <label class="cursore-anno" for="anno-elettricita">Anno <b id="anno-scelto">–</b>
-        <span class="cursore-riga"><span id="anno-min"></span><input id="anno-elettricita" type="range" min="0" max="0" step="1" value="0"><span id="anno-max"></span></span>
-      </label>
+      <div class="cursore-anno cursore-periodo" role="group" aria-labelledby="periodo-etichetta">
+        <span id="periodo-etichetta">Periodo <b id="periodo-scelto">–</b></span>
+        <span class="cursore-riga"><span id="anno-min"></span>
+          <span class="cursore-doppio" id="cursore-doppio">
+            <input id="anno-inizio" type="range" min="0" max="0" step="1" value="0" aria-label="Anno iniziale del periodo">
+            <input id="anno-fine" type="range" min="0" max="0" step="1" value="0" aria-label="Anno finale del periodo">
+          </span>
+          <span id="anno-max"></span></span>
+      </div>
     </div>
     <div class="caselle-strati strati-rete" id="strati-elettricita" role="group" aria-label="Strati della mappa">
       <label class="casella-strato"><input id="strato-barre" type="checkbox" checked data-collegamento="barre"> Istogrammi</label>
@@ -201,7 +207,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <div class="legenda legenda-rete" id="legenda-elettricita" aria-live="polite"></div>
     <p class="aiuto attribuzione-ortofoto" id="attribuzione-ortofoto" aria-live="polite" hidden></p>
     <p class="aiuto">Trascina per spostare, rotella o due dita per ingrandire. Passando sopra un istogramma o una regione
-      compaiono i valori dell'anno scelto. Le barre di ogni istogramma sono affiancate, una per fonte o per settore, e hanno
+      compaiono i valori del periodo scelto. Le barre di ogni istogramma sono affiancate, una per fonte o per settore, e hanno
       la stessa scala in tutte le regioni (o in tutte le province della regione) e in tutti gli anni, così si confrontano
       anche spostando il cursore. Il righello accanto alle caselle misura distanze e aree.</p>
     <p class="aiuto" id="messaggio-mappa" aria-live="polite"></p>
@@ -285,6 +291,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           primaria del termoelettrico: <b>stima di EuGEnio</b> dalle emissioni per combustibile e dai fattori ISPRA per unità
           di energia. Confronto con il fattore MEF/MASE 0,187 tep/MWh e con i fattori annuali ISPRA (Rapporto 430/2026).
           Con una regione scelta gli anelli passano alle province, ma i fattori restano regionali.</li>
+        <li><b>Periodo</b>: all'apertura i due indicatori sono sull'ultimo anno. Con un periodo, produzione, carichi,
+          consumi ed emissioni sono la <b>somma</b> degli anni del periodo e i fattori (tCO₂/MWh, tep/MWh) sono ricalcolati
+          come rapporto delle somme (non la media dei fattori annuali); capacità e burden sharing sono quelli dell'anno
+          finale, con la variazione rispetto all'anno iniziale nel riquadretto e nella tabella e, sull'istogramma, un
+          trattino nero al valore dell'anno iniziale. Nel grafico a destra gli anni del periodo sono evidenziati.</li>
         <li>I dati dell'ultimo anno possono essere provvisori finché Terna non pubblica l'annuario statistico; la pagina si
           aggiorna da sola una volta al mese. In Sardegna le province sono cambiate più volte: compaiono quelle usate da
           Terna in ogni anno.</li>
@@ -304,6 +315,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 <script src="esporta_mappa.js?v=20261121b"></script>
 <script src="righello.js?v=20261121b"></script>
 <script src="rete.js?v=20261121b"></script>
+<script src="cursore_periodo.js?v=20261121b"></script>
 <script src="elettricita.js?v=20261121b"></script>
 </body>
 </html>

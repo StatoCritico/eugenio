@@ -35,7 +35,8 @@ def test_menu_e_pagina():
     s = (SITO / "elettricita.html").read_text(encoding="utf-8")
     assert '<p class="gruppo-servizio">Statistiche</p>' in s and "Servizio sperimentale non ancora verificato" in s
     assert s.count('aria-current="page"') == 2 and "dati.terna.it" in s and "21 giugno 2024" in s
-    assert re.search(r'<script src="rete\.js\?v=\d{8}[a-z]"></script>\s*<script src="elettricita\.js\?v=', s)
+    assert re.search(r'<script src="rete\.js\?v=\d{8}[a-z]"></script>\s*<script src="cursore_periodo\.js\?v=\d{8}[a-z]"></script>\s*<script src="elettricita\.js\?v=', s)
+    assert 'id="anno-inizio"' in s and 'id="anno-fine"' in s and 'aria-label="Anno finale del periodo"' in s
     js = (SITO / "elettricita.js").read_text(encoding="utf-8")
     for vietato in ("PUN", "TTF", "€/MWh", "pulsantiDati", ".csv", "xlsx"):
         assert vietato not in s + js, vietato
@@ -119,7 +120,7 @@ def test_pagina(browser, base, dati):
     pg.wait_for_timeout(1500)
     testo = pg.locator("#tabella-elettricita").inner_text()
     assert "Obiettivo 2030" in testo and "6.330" in testo and "6330" not in testo     # punto delle migliaia anche a 4 cifre
-    assert pg.locator("#anno-scelto").inner_text() == "2021"
+    assert pg.locator("#periodo-scelto").inner_text() == "2021"
     assert errori == []
 
 
@@ -158,17 +159,18 @@ def test_emissioni(browser, base, dati):
     assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.barre") >= 1
     assert "Emilia-Romagna:" in rq.inner_text() and tab.locator("tr.scelta").count() == 1
     assert "solo per regione" in pg.locator("#legenda-elettricita").inner_text()
-    # collegamento: la scelta «emissioni» e l'anno vanno nell'indirizzo e si ripristinano
-    pg.eval_on_selector("#anno-elettricita", "c => { c.value = 0; c.dispatchEvent(new Event('input', {bubbles: true})); c.dispatchEvent(new Event('change', {bubbles: true})); }")
+    # collegamento: la scelta «emissioni» e il periodo vanno nell'indirizzo e si ripristinano (indicatore finale sul primo
+    # anno: spinge con sé l'iniziale, periodo 2020–2020)
+    pg.eval_on_selector("#anno-fine", "c => { c.value = 0; c.dispatchEvent(new Event('input', {bubbles: true})); c.dispatchEvent(new Event('change', {bubbles: true})); }")
     pg.wait_for_timeout(900)
     link = pg.url
-    assert "modo=emissioni" in link and "anno=2020" in link and "regione=08" in link
+    assert "modo=emissioni" in link and "inizio=2020" in link and "fine=2020" in link and "regione=08" in link
     assert errori == []
     pg2, errori2 = _pagina(browser, base, dati, query=link.split("?", 1)[1])
     pg2.wait_for_function("() => window.EUGENIO_ELETTRICITA.stato.pronto", timeout=20000)
     pg2.wait_for_timeout(1000)
     assert pg2.get_attribute('[data-modo="emissioni"]', "aria-pressed") == "true"
-    assert pg2.inner_text("#anno-scelto") == "2020" and "Valori nazionali – 2020" in pg2.locator("#riquadri-emissioni").inner_text()
+    assert pg2.inner_text("#periodo-scelto") == "2020" and "Valori nazionali – 2020" in pg2.locator("#riquadri-emissioni").inner_text()
     assert errori2 == []
 
 
@@ -286,3 +288,76 @@ def test_burden_tocco(browser, base, dati):
     pg.wait_for_function("() => document.getElementById('titolo-vista').textContent === 'Emilia-Romagna'", timeout=10000)
     assert errori == []
     ctx.close()
+
+
+def test_periodo(browser, base, dati):
+    """(22/11/2026, Paolo) periodo a due indicatori (componente comune cursore_periodo.js, come in Suolo e aree agricole):
+    all'apertura tutti e due sull'ultimo anno; flussi sommati sul periodo, fattori come rapporto delle somme; stati
+    all'anno finale con la variazione dall'iniziale (riquadretto, tabella, trattino); anni del periodo evidenziati nel
+    grafico a destra; tastiera; collegamento con inizio e fine."""
+    pg, errori = _pagina(browser, base, dati)
+    S = "window.EUGENIO_ELETTRICITA.stato"
+    anni = pg.evaluate(f"() => {S}.it.anni.capacita")
+    primo, ultimo = anni[0], anni[-1]
+    assert primo < ultimo
+    assert pg.evaluate(f"() => [{S}.inizio, {S}.fine, {S}.anno]") == [ultimo, ultimo, ultimo]
+    assert pg.inner_text("#periodo-scelto") == str(ultimo)
+    assert "Variazione" not in pg.locator("#tabella-elettricita thead").inner_text()
+    # tastiera: Inizio sull'indicatore iniziale → periodo dal primo all'ultimo anno
+    pg.focus("#anno-inizio")
+    pg.keyboard.press("Home")
+    pg.wait_for_timeout(1200)
+    assert pg.evaluate(f"() => [{S}.inizio, {S}.fine]") == [primo, ultimo]
+    assert pg.inner_text("#periodo-scelto") == f"{primo}–{ultimo}"
+    assert pg.get_attribute("#anno-inizio", "aria-valuetext") == str(primo)
+    # capacità (stato): valori dell'anno finale, variazione dal primo anno nella tabella, trattino nella legenda
+    testa = pg.locator("#tabella-elettricita thead").inner_text()
+    assert f"Variazione del totale dal {primo}" in testa
+    assert pg.locator("#tabella-elettricita small.variazione").count() >= 1
+    assert f"trattino: valore del {primo}" in pg.locator("#legenda-elettricita").inner_text()
+    tot = pg.evaluate(f"""() => {{ let t = 0; for (const r of {S}.it.regioni) {{ const v = r.capacita[String({ultimo})]; if (v) t += v.reduce((a, b) => a + b, 0); }} return Math.round(t); }}""")
+    piede = pg.locator("#tabella-elettricita tfoot td").all_inner_texts()
+    assert EUGENIO_NUMERO(tot) in [c.split("\n")[0] for c in piede], (tot, piede)
+    # grafico a destra: riquadro del periodo largo quanto gli anni scelti
+    w = pg.evaluate("() => { const r = document.querySelector('#grafico-andamento rect.periodo-scelto'); return r ? +r.getAttribute('width') : 0; }")
+    w1 = pg.evaluate("""() => { const b = [...document.querySelectorAll('#grafico-andamento svg[role=img] rect')].filter((x) => !x.classList.contains('periodo-scelto'));
+      return b.length ? +b[0].getAttribute('width') / 0.72 : 0; }""")
+    assert w > 1.5 * w1 > 0
+    # produzione (flusso): somma degli anni del periodo nella tabella
+    pg.click('[data-modo="produzione"]')
+    pg.wait_for_timeout(1200)
+    assert pg.evaluate(f"() => [{S}.inizio, {S}.fine]") == [primo, ultimo]
+    somma = pg.evaluate(f"""() => {{ let t = 0; for (const r of {S}.it.regioni) for (const a of [{primo}, {ultimo}]) {{ const v = r.produzione[String(a)]; if (v) t += v.reduce((x, y) => x + y, 0); }} return Math.round(t); }}""")
+    assert EUGENIO_NUMERO(somma) in pg.locator("#tabella-elettricita tfoot").inner_text()
+    assert f"Valori del periodo {primo}–{ultimo}: somma degli anni" in pg.locator("#tabella-elettricita").inner_text()
+    # emissioni: fattore medio dell'Italia = somma delle emissioni / somma della produzione
+    pg.click('[data-modo="emissioni"]')
+    pg.wait_for_timeout(1200)
+    a0, a1 = pg.evaluate(f"() => [{S}.inizio, {S}.fine]")
+    atteso = pg.evaluate(f"""() => {{ const E = {S}.it.emissioni.italia; let c = 0, t = 0;
+      for (const [a, v] of Object.entries(E)) if (+a >= {a0} && +a <= {a1}) {{ c += v[3]; t += v[2]; }} return c / t; }}""")
+    if a0 < a1:
+        assert f"Valori nazionali – {a0}–{a1}" in pg.locator("#riquadri-emissioni").inner_text()
+    assert pg.locator('[data-cifra="medio"] b').inner_text().startswith(EUGENIO_NUMERO(atteso, 3))
+    # tastiera: Fine sull'indicatore iniziale lo porta all'ultimo anno (un anno solo)
+    pg.focus("#anno-inizio")
+    pg.keyboard.press("End")
+    pg.wait_for_timeout(900)
+    assert pg.evaluate(f"() => [{S}.inizio, {S}.fine]") == [a1, a1]
+    # collegamento con inizio e fine
+    pg.focus("#anno-fine")
+    pg.keyboard.press("Home")
+    pg.wait_for_timeout(900)
+    assert pg.evaluate(f"() => [{S}.inizio, {S}.fine]")[0] == pg.evaluate(f"() => {S}.fine")
+    pg.evaluate("() => window.EUGENIO_ELETTRICITA.periodo(%d, %d)" % (primo, ultimo))
+    pg.evaluate("() => window.EUGENIO_COLLEGAMENTO && window.EUGENIO_COLLEGAMENTO.aggiorna()")
+    pg.wait_for_timeout(900)
+    i, f = pg.evaluate(f"() => [{S}.inizio, {S}.fine]")
+    assert i < f and f"inizio={i}" in pg.url and f"fine={f}" in pg.url and "anno=" not in pg.url
+    assert errori == []
+
+
+def EUGENIO_NUMERO(v, d=0):
+    """Numero all'italiana come numeri.js (punto delle migliaia, virgola dei decimali)."""
+    t = f"{v:,.{d}f}".replace(",", "§").replace(".", ",").replace("§", ".")
+    return t

@@ -424,42 +424,17 @@
   function preparaComandi() {
     document.querySelectorAll("#modo-suolo [data-modo]").forEach((b) => b.addEventListener("click", () => cambiaModo(b.dataset.modo, true)));
     document.querySelectorAll("#unita-suolo [data-unita]").forEach((b) => b.addEventListener("click", () => scegliUnita(b.dataset.unita, true)));
-    const i0 = $("anno-inizio"), i1 = $("anno-fine");
-    const muovi = (chi) => {
-      let a = +i0.value, b = +i1.value;
-      if (a > b) { if (chi === i0) b = a; else a = b; i0.value = a; i1.value = b; }
-      const anni = anniDi(st.modo); st.inizio = anni[a]; st.fine = anni[b]; scriviPeriodo();
-    };
-    for (const el of [i0, i1]) {
-      el.addEventListener("input", () => muovi(el));
-      el.addEventListener("change", async () => { muovi(el); await disegnaBarre(); pannello(); });
-    }
+    // cursore del periodo: componente comune cursore_periodo.js (anche in Produzione e consumi di elettricità)
+    st.cursore = window.EUGENIO_PERIODO.crea({ inizio: $("anno-inizio"), fine: $("anno-fine"), doppio: $("cursore-doppio"),
+      min: $("anno-min"), max: $("anno-max"), etichetta: $("periodo-scelto"),
+      testo: () => (st.modo === "consumi" ? `${testoPeriodo()} (consumi ${testoFlussi(flussiDelPeriodo(st.inizio, st.fine))})` : testoPeriodo()),
+      cambia: async (a, b, finale) => { st.inizio = a; st.fine = b; if (finale) { await disegnaBarre(); pannello(); } } });
     $("torna-italia").addEventListener("click", () => togliRegione());
     $("provincia-suolo").addEventListener("change", (e) => scegliProvincia(e.target.value));
     cambiaModo("suolo", false);
   }
-  // posizione dei cursori e testo del periodo; il cursore più in alto è quello che si prende per primo vicino all'altro
-  function scriviPeriodo() {
-    const anni = anniDi(st.modo), i0 = $("anno-inizio"), i1 = $("anno-fine"), n = Math.max(1, anni.length - 1);
-    i0.value = anni.indexOf(st.inizio); i1.value = anni.indexOf(st.fine);
-    $("cursore-doppio").style.setProperty("--da", `${100 * i0.value / n}%`);
-    $("cursore-doppio").style.setProperty("--a", `${100 * i1.value / n}%`);
-    i0.style.zIndex = +i0.value === n ? 3 : 1; i1.style.zIndex = 2;
-    i0.setAttribute("aria-valuetext", String(st.inizio)); i1.setAttribute("aria-valuetext", String(st.fine));
-    $("periodo-scelto").textContent = st.modo === "consumi" ? `${testoPeriodo()} (consumi ${testoFlussi(flussiDelPeriodo(st.inizio, st.fine))})` : testoPeriodo();
-  }
   // periodo valido per la grandezza: anni della lista, inizio ≤ fine; predefinito l'ultimo anno per tutti e due
-  function applicaPeriodo(a, b) {
-    const anni = anniDi(st.modo), ult = anni[anni.length - 1];
-    const vicino = (x) => (anni.includes(x) ? x : anni.reduce((p, q) => (Math.abs(q - x) < Math.abs(p - x) ? q : p), ult));
-    b = b ? vicino(b) : ult; a = a ? vicino(a) : b;
-    if (a > b) a = b;
-    st.inizio = a; st.fine = b;
-    const i0 = $("anno-inizio"), i1 = $("anno-fine");
-    i0.min = i1.min = 0; i0.max = i1.max = anni.length - 1;
-    $("anno-min").textContent = anni[0]; $("anno-max").textContent = ult;
-    scriviPeriodo();
-  }
+  function applicaPeriodo(a, b) { [st.inizio, st.fine] = st.cursore.imposta(anniDi(st.modo), a, b); }
   async function periodo(a, b) { applicaPeriodo(a, b); await disegnaBarre(); pannello(); }   // per le prove
   function cambiaModo(modo, ridisegna) {
     st.modo = modo;

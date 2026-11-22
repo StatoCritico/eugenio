@@ -1824,6 +1824,8 @@ table.sedi-cer .origine-cabina { font-style: italic; }
 .tabella-elettricita td { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tabella-elettricita tfoot th, .tabella-elettricita tfoot td { font-weight: 700; border-top: 2px solid var(--linea); }
 .tabella-elettricita thead th { font-size: var(--c-xs); vertical-align: bottom; }
+/* (22/11/2026) con un periodo, capacità e burden sharing: sotto il valore dell'anno finale la variazione dall'iniziale */
+.tabella-elettricita td small.variazione { color: var(--tenue); font-size: var(--c-xs); white-space: nowrap; }
 #passo-vista h3, #passo-tabella h3 { font: 600 var(--c-m)/1.25 var(--titoli); margin: var(--s4) 0 var(--s1); }
 /* Suolo e aree agricole (22/11/2026): come Produzione e consumi di elettricità, con l'interruttore delle unità e il cursore
    del periodo a due indicatori (due input range sovrapposti: si muovono con il mouse, il dito e la tastiera; la parte
