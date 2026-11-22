@@ -176,9 +176,13 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <h1>Carichi elettrici</h1>
       <p class="sotto">Quanta potenza elettrica chiede l'Italia, quarto d'ora per quarto d'ora: il profilo della giornata con
         il minimo, la media e il massimo del periodo, la curva di durata e le fonti che la coprono. Scegli una zona di
-        mercato nella piccola mappa (un secondo clic torna all'Italia), il periodo e il passo.</p>
+        mercato nella piccola mappa (vale per tutte e due le metà della pagina; un secondo clic torna all'Italia) o nella
+        casella «Zona» di ogni metà, il periodo e il passo.</p>
     </div>
-    <div class="minimappa minimappa-zone" id="minimappa-zone" aria-label="Zone di mercato"></div>
+    <div class="minimappa-con-legenda">
+      <div class="minimappa minimappa-zone" id="minimappa-zone" aria-label="Zone di mercato"></div>
+      <p class="minimappa-legenda" id="minimappa-legenda" aria-live="polite"></p>
+    </div>
   </div>
 
   <!-- sperimentale -->
@@ -192,20 +196,31 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     </div>
     <!-- /sperimentale -->
 
-  <div class="comandi-carichi" role="group" aria-label="Scelte della pagina">
+  <p class="aiuto carichi-due-meta-nota">La pagina è divisa in due metà, ognuna con le sue scelte e i suoi grafici, per
+    confrontare due zone o due periodi: trascina il divisore tra le due per cambiarne la larghezza.</p>
+
+  <div class="strumento carichi-meta" id="carichi-meta" data-divisore>
+  <section class="carichi-lato" id="carichi-lato" data-lato="0" data-divisore-sinistra aria-label="Metà sinistra">
+  <div class="comandi-carichi" role="group" aria-label="Scelte della metà sinistra">
     <div class="carichi-zona">
-      <span class="carichi-etichetta">Zona</span>
-      <b id="zona-scelta">Italia</b>
-      <button class="bottone secondario" id="torna-italia" type="button" hidden>Tutta Italia</button>
+      <label class="carichi-etichetta" for="carichi-zona">Zona</label>
+      <select id="carichi-zona"><option value="ITA">Italia</option></select>
     </div>
     <div class="carichi-periodo">
       <label for="carichi-da">Dal</label><input type="date" id="carichi-da">
       <label for="carichi-a">al</label><input type="date" id="carichi-a">
       <button class="bottone secondario" id="ultimi-12" type="button">Ultimi 12 mesi</button>
     </div>
+    <div class="carichi-anno" role="group" aria-label="Anno intero">
+      <button class="bottone secondario" id="anno-prima" type="button" aria-label="Anno precedente" title="Anno precedente">‹</button>
+      <label class="solo-lettori" for="carichi-anno">Anno</label>
+      <select id="carichi-anno"><option value="">Anno…</option></select>
+      <button class="bottone secondario" id="anno-dopo" type="button" aria-label="Anno successivo" title="Anno successivo">›</button>
+    </div>
     <label class="casella-strato carichi-passo"><input type="checkbox" id="carichi-quarti" checked> Quarti d'ora <span class="aiuto">(senza: ore)</span></label>
   </div>
-  <p class="aiuto" id="stato-carichi" role="status" aria-live="polite">Caricamento…</p>
+  <p class="aiuto stato-carichi" id="stato-carichi" role="status" aria-live="polite">Caricamento…</p>
+  <p class="messaggio attenzione carichi-mancanti" id="carichi-mancanti" role="note" hidden></p>
 
   <section class="carichi-sezione" aria-labelledby="titolo-riepilogo">
     <h2 id="titolo-riepilogo">Valori del periodo</h2>
@@ -230,7 +245,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <h2 id="titolo-assoluti">Potenza per fonte</h2>
     <p class="aiuto" id="nota-assoluti">Per ogni quarto d'ora (o ora) del periodo, la potenza prodotta da ogni fonte, una
       sopra l'altra (MW medi del quarto d'ora o dell'ora). Le caselle sotto il grafico accendono e spengono le fonti; accanto
-      a ogni fonte, l'energia prodotta nella finestra visibile.</p>
+      a ogni fonte, l'energia prodotta nella finestra visibile. I tratti senza dati sono tratteggiati.</p>
     <p class="messaggio attenzione nota-zona-fonti" id="nota-zona-fonti" role="note" hidden>Terna pubblica la produzione per
       fonte solo per tutta l'Italia, non per zona di mercato: questi due grafici restano dell'Italia anche con una zona scelta
       (nessuna ripartizione per zona è stimata).</p>
@@ -261,6 +276,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       posto, del colore dello sfondo.</p>
     <div class="grafico grafico-carichi" id="grafico-fonti"></div>
   </section>
+  </section>
+  <!-- la metà destra (data-lato="1", identificativi con «-2») la costruisce carichi.js copiando la sinistra -->
+  <section class="carichi-lato" id="carichi-lato-2" data-lato="1" data-divisore-destra aria-label="Metà destra"></section>
+  </div>
 
   <section class="carichi-sezione carichi-regole" aria-labelledby="titolo-regole">
     <h2 id="titolo-regole">Come leggere i grafici</h2>
@@ -311,6 +330,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </footer>
 
 <script src="aspetto.js?v=20261122a"></script>
+<script src="divisore.js?v=20261122a"></script>
 <script src="collegamento.js?v=20261122a"></script>
 <script src="grafici.js?v=20261122a"></script>
 <script src="minimappa.js?v=20261122a"></script>

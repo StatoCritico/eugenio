@@ -1874,7 +1874,6 @@ table.sedi-cer .origine-cabina { font-style: italic; }
 .carichi-etichetta { font-size: var(--c-s); color: var(--tenue); }
 .carichi-zona b { font: 700 var(--c-l)/1.2 var(--titoli); }
 .carichi-zona .bottone, .carichi-periodo .bottone { min-height: 2.25rem; padding: .3rem .7rem; }
-.carichi-zona .bottone[hidden] { display: none; }            /* (22/11/2026) «Tutta Italia» solo con una zona scelta */
 .carichi-periodo { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .5rem; }
 .carichi-periodo label { margin: 0; font-weight: 400; color: var(--tenue); }
 .carichi-periodo input[type="date"] { width: auto; min-height: 2.25rem; padding: .25rem .5rem; }
@@ -1917,6 +1916,46 @@ svg.zoom-proprio.trascina { cursor: grabbing; }
 .riquadro-finestra .legenda .spenta { color: var(--tenue); text-decoration: line-through; }
 .riquadro-finestra { --sfondo-grafico: var(--foglio); }
 svg .carichi-vuoto { fill: var(--tenue); font-size: 14px; }
+/* (22/11/2026 b, Paolo) pagina divisa in due metà con le loro scelte e i loro grafici (divisore.js su
+   .strumento[data-divisore]); ognuna scorre da sola, alta quanto la finestra sotto la testata (la barra di sinistra a
+   sinistra, per non confondersi con il divisore); col telefono una sotto l'altra */
+.strumento.carichi-meta { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin-top: var(--s3); border-top: 1px solid var(--linea); }
+.carichi-lato { min-width: 0; padding: 0 var(--s4) var(--s5); }
+.carichi-lato[data-lato="1"] { border-left: 1px solid var(--linea); }
+.carichi-lato .comandi-carichi { margin-top: var(--s3); }
+@media (min-width: 861px) {
+  .strumento.carichi-meta { height: calc(100vh - var(--alto-testata)); overflow: hidden; }
+  .strumento.carichi-meta.ridimensionato { grid-template-columns: minmax(0, 1fr) var(--larghezza-pannello, 50%); }
+  .carichi-lato { height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; }
+  .carichi-lato[data-lato="0"] { direction: rtl; padding-left: var(--s3); }
+  .carichi-lato[data-lato="0"] > * { direction: ltr; margin-right: auto; }   /* a sinistra anche se più stretti */
+}
+@media (max-width: 860px) { .carichi-lato { padding: 0; } .carichi-lato[data-lato="1"] { border-left: 0; border-top: 2px solid var(--linea); margin-top: var(--s5); } }
+.pagina-carichi .carichi-meta[hidden], .pagina-carichi .carichi-due-meta-nota[hidden], .pagina-carichi .minimappa-con-legenda[hidden] { display: none; }
+.carichi-due-meta-nota { margin: var(--s3) 0 0; max-width: 90ch; }
+.carichi-zona select, .carichi-anno select { width: auto; min-height: 2.25rem; padding: .25rem 1.8rem .25rem .5rem; }
+.carichi-anno select { min-width: 6.5rem; }
+.carichi-anno { display: flex; align-items: center; gap: .3rem; }
+.carichi-anno .bottone { min-height: 2.25rem; min-width: 2.25rem; padding: .2rem .6rem; font-size: 1.1rem; line-height: 1; }
+.carichi-anno .bottone:disabled { opacity: .4; cursor: default; }
+.carichi-mancanti { margin: var(--s2) 0; max-width: 90ch; font-size: var(--c-s); }
+.carichi-mancanti[hidden] { display: none; }
+svg .carichi-mancanti-testo { fill: var(--inchiostro); font-size: 12px; font-weight: 700; paint-order: stroke; stroke: var(--sfondo-grafico, var(--carta)); stroke-width: 4px; }
+/* zone delle due metà nella piccola mappa: sinistra bordo pieno scuro, destra bordo tratteggiato colorato, la stessa in
+   tutte e due bordo pieno colorato; le altre zone più chiare */
+.minimappa-con-legenda { display: flex; flex-direction: column; align-items: flex-end; gap: var(--s1); }
+.minimappa.con-scelta path:not(.attiva) { fill-opacity: .28; }
+:root:not([data-theme="light"]) .minimappa.con-scelta path:not(.attiva) { fill-opacity: .3; }
+.minimappa path.meta-sx { stroke: var(--inchiostro); stroke-width: calc(var(--tratto-mm, 1.2) * 3.2); fill-opacity: 1; }
+.minimappa path.meta-dx { stroke: var(--primario); stroke-width: calc(var(--tratto-mm, 1.2) * 3.2); stroke-dasharray: calc(var(--tratto-mm, 1.2) * 4) calc(var(--tratto-mm, 1.2) * 2.5); fill-opacity: 1; }
+.minimappa path.meta-tutte { stroke: var(--primario); stroke-width: calc(var(--tratto-mm, 1.2) * 3.6); fill-opacity: 1; }
+.minimappa-legenda { margin: 0; display: flex; flex-direction: column; gap: .15rem; font-size: var(--c-xs); color: var(--tenue); max-width: 15rem; text-align: right; }
+.minimappa-legenda .voce-meta { display: inline-flex; align-items: center; justify-content: flex-end; gap: .35rem; }
+.minimappa-legenda i { display: inline-block; width: 1.4rem; height: .7rem; border-radius: 2px; flex: none; }
+.minimappa-legenda i.meta-sx { border: 3px solid var(--inchiostro); }
+.minimappa-legenda i.meta-dx { border: 3px dashed var(--primario); }
+.minimappa-legenda i.meta-tutte { border: 3px solid var(--primario); }
+.minimappa-legenda i.meta-italia { border: 1px solid var(--bordo); background: var(--rialzo); }
 svg.zoom-proprio:focus { outline: none; }
 svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-offset: 2px; }
 

@@ -109,8 +109,8 @@ def test_pagina(browser, base, dati):
     # date già scritte nelle caselle, quarti d'ora e Italia non scritti nell'indirizzo
     assert "da=2026-09-01" in pg.url and "a=2026-10-31" in pg.url and "passo=" not in pg.url and "zona=" not in pg.url
     assert pg.input_value("#carichi-da") == "2026-09-01" and pg.input_value("#carichi-a") == "2026-10-31"
-    assert pg.locator("#carichi-quarti").is_checked() and pg.locator("#zona-scelta").inner_text() == "Italia"
-    assert pg.locator(".comandi-carichi").is_visible() and pg.locator(".carichi-sezione").first.is_visible()
+    assert pg.locator("#carichi-quarti").is_checked() and pg.input_value("#carichi-zona") == "ITA"
+    assert pg.locator(".comandi-carichi").first.is_visible() and pg.locator(".carichi-sezione").first.is_visible()
     for g in ("#grafico-profilo", "#grafico-durata", "#grafico-fonti"):
         assert pg.locator(f"{g} svg.zoom-proprio").count() == 1 and pg.locator(f"{g} .grafico-apri").count() == 1
     assert pg.locator("#grafico-fonti svg.zoom-proprio path[fill='#f7cb15']").count() == 1     # fotovoltaico
@@ -121,13 +121,14 @@ def test_pagina(browser, base, dati):
     assert "1.000 h" in assi and "1000 h" not in assi                                    # anche sull'asse delle ore
     # zona dalla piccola mappa, secondo clic → Italia
     pg.locator('#minimappa-zone path[data-zona="SICI"]').click()
-    pg.wait_for_function("() => document.getElementById('zona-scelta').textContent === 'Sicilia'")
+    pg.wait_for_function("() => document.getElementById('carichi-zona').value === 'SICI'")
     pg.wait_for_function(PRONTO)
     assert "zona=SICI" in pg.url and pg.locator("#nota-zona-fonti").is_visible()
-    assert pg.locator('#minimappa-zone path[data-zona="SICI"]').get_attribute("class") == "attiva"
+    assert pg.locator('#minimappa-zone path[data-zona="SICI"]').get_attribute("class").split() == ["attiva", "meta-tutte"]
+    assert "zona2=SICI" in pg.url and pg.input_value("#carichi-zona-2") == "SICI"          # la mappa vale per le due metà
     assert pg.locator("#titolo-profilo").inner_text() == "Profilo giornaliero – Sicilia"
     pg.locator('#minimappa-zone path[data-zona="SICI"]').click()
-    pg.wait_for_function("() => document.getElementById('zona-scelta').textContent === 'Italia'")
+    pg.wait_for_function("() => document.getElementById('carichi-zona').value === 'ITA'")
     assert "zona=" not in pg.url
     # ore: la metà… un quarto dei punti; periodo a mano
     pg.locator("#carichi-quarti").uncheck()
@@ -172,7 +173,7 @@ def test_pagina(browser, base, dati):
 
 def test_indirizzo(browser, base, dati):
     pg, errori = _pagina(browser, base, dati, "?zona=nord&da=2026-10-01&a=2026-10-10&passo=60")
-    assert pg.locator("#zona-scelta").inner_text() == "Nord" and not pg.locator("#carichi-quarti").is_checked()
+    assert pg.input_value("#carichi-zona") == "NORD" and not pg.locator("#carichi-quarti").is_checked()
     assert pg.input_value("#carichi-da") == "2026-10-01" and pg.input_value("#carichi-a") == "2026-10-10"
     assert pg.evaluate("() => window.EUGENIO_CARICHI.stato.serie.T.length") == 10 * 24
     assert errori == []
@@ -225,7 +226,8 @@ def test_potenza_per_fonte_e_finestra(browser, base, dati):
     assert pg.locator("#grafico-assoluti .grafico-apri").count() == 1
     assi = pg.evaluate("() => [...document.querySelectorAll('#grafico-assoluti svg text')].map((t) => t.textContent)")
     assert "MW" in assi
-    assert _premuto(pg) == ["tutto"] and pg.locator("#carichi-scorri").is_disabled() and "finestra=" not in pg.url
+    # tutto il periodo (qui = tutto l'archivio di prova, due mesi): anche «Ultimi 3 mesi» e «Ultimo anno» coincidono
+    assert _premuto(pg) == ["trimestre", "anno", "tutto"] and pg.locator("#carichi-scorri").is_disabled() and "finestra=" not in pg.url
     # Ultimo mese: dal 1° al 31 ottobre (ultimo giorno con i dati), uguale nei due grafici
     pg.click("[data-finestra=mese]")
     pg.wait_for_function("() => location.search.includes('finestra=')")
@@ -351,4 +353,151 @@ def test_telefono_fonti(browser, base, dati):
     assert pg.evaluate("document.documentElement.scrollWidth") <= 376
     assi = pg.evaluate("() => [...document.querySelectorAll('#grafico-assoluti svg text')].map((t) => t.textContent)")
     assert sum(1 for t in assi if re.fullmatch(r"\d+ ott", t)) >= 3                   # date sull'asse anche a 375 px
+    assert errori == []
+
+
+# ---------------------------------------------------------------------------------------------- due metà, anni, buchi (22/11/2026 b)
+@pytest.fixture(scope="module")
+def dati_anni(tmp_path_factory):
+    """File della pagina scritti a mano: dicembre 2025 e gennaio 2026 a quarti d'ora, con il 14 e il 15 gennaio 2026
+    senza dati (il buco visto durante lo scaricamento)."""
+    import math
+    out = tmp_path_factory.mktemp("car_anni")
+    zone = {"NORD": .58, "CNOR": .08, "CSUD": .15, "SUD": .07, "CALA": .02, "SICI": .06, "SARD": .04}
+    voci = [("termo", "Termoelettrico tradizionale", "#8a8f99"), ("bio", "Bioenergie", "#f0912a"),
+            ("idro", "Idroelettrico (con i pompaggi)", "#7cc7e0"), ("geo", "Geotermico", "#d4561c"), ("eol", "Eolico", "#a9c641"),
+            ("fv", "Fotovoltaico", "#f7cb15"), ("saldo", "Saldo con l'estero, pompaggi e accumuli (per differenza)", "#c7a0c0")]
+    mesi = []
+    for mese, inizio in (("2025-12", "2025-11-30T23:00:00Z"), ("2026-01", "2025-12-31T23:00:00Z")):
+        n = 31 * 96
+        car = {z: [] for z in ["ITA", *zone]}
+        fon = {k: [] for k, _, _ in voci}
+        for i in range(n):
+            buco = mese == "2026-01" and 13 * 96 <= i < 15 * 96
+            it = 30000 + 6000 * math.sin(i / 96 * 2 * math.pi)
+            parti = {z: None if buco else int(it * q) for z, q in zone.items()}
+            car["ITA"].append(None if buco else sum(parti.values()))
+            for z, v in parti.items():
+                car[z].append(v)
+            fv = max(0, int(8000 * math.sin((i % 96 - 28) / 48 * math.pi)))
+            valori = {"termo": 14000, "bio": 1500, "idro": 4000, "geo": 600, "eol": 3000, "fv": fv, "saldo": 3000}
+            for k in fon:
+                fon[k].append(None if buco else valori[k])
+        (out / f"carico_{mese}.json").write_text(json.dumps({"mese": mese, "zone": car}), encoding="utf-8")
+        (out / f"fonti_{mese}.json").write_text(json.dumps({"mese": mese, "voci": fon}), encoding="utf-8")
+        mesi.append({"mese": mese, "inizio": inizio, "n": n, "completo": True, "ora_legale": [[0, 60]], "passo_carico": 15,
+                     "fonti": True, "passo_fonti": 15, "rinnovabili": True, "scarto_italia_mw": 0})
+    indice = {"fonte": "Terna (prova)", "fonte_generazione": "Terna (prova)", "aggiornato": "2026-02-01T06:00:00Z", "passo": 15,
+              "zone": [{"id": "ITA", "nome": "Italia"}] + [{"id": z, "nome": n} for z, n in (
+                  ("NORD", "Nord"), ("CNOR", "Centro-Nord"), ("CSUD", "Centro-Sud"), ("SUD", "Sud"), ("CALA", "Calabria"),
+                  ("SICI", "Sicilia"), ("SARD", "Sardegna"))],
+              "voci": [{"id": k, "nome": n, "colore": c} for k, n, c in voci], "mesi": mesi}
+    (out / "indice.json").write_text(json.dumps(indice), encoding="utf-8")
+    return out
+
+
+ENTRAMBE = ("() => ['stato-carichi', 'stato-carichi-2'].every((id) => document.getElementById(id).textContent.startsWith('Dati'))")
+
+
+def _due(browser, base, dati, query="", larghezza=1400, altezza=950):
+    pg, errori = _pagina(browser, base, dati, query, larghezza, altezza)
+    pg.wait_for_function(ENTRAMBE, timeout=20000)
+    return pg, errori
+
+
+def test_due_meta_zone_e_mappa(browser, base, dati):
+    """(22/11/2026 b, Paolo) due metà con divisore e barre di scorrimento separate; zona da una casella a discesa per
+    ogni metà; la piccola mappa sceglie la zona per tutte e due ed evidenzia le zone delle due metà con due stili."""
+    pg, errori = _due(browser, base, dati)
+    meta = pg.locator("#carichi-meta")
+    assert meta.locator(":scope > .divisore[role=separator]").count() == 1
+    for sel in ("#carichi-lato", "#carichi-lato-2"):
+        assert pg.eval_on_selector(sel, "(e) => getComputedStyle(e).overflowY") == "auto"
+    for id_ in ("carichi-zona", "carichi-da", "carichi-anno", "carichi-scorri", "grafico-profilo", "grafico-assoluti", "grafico-fonti"):
+        assert pg.locator(f"#{id_}-2").count() == 1, id_
+    assert pg.locator("#carichi-lato-2 label[for='carichi-da-2']").count() == 1
+    assert pg.locator("#grafico-fonti-2 svg.zoom-proprio").count() == 1
+    opzioni = pg.eval_on_selector("#carichi-zona", "(s) => [...s.options].map((o) => o.value)")
+    assert opzioni == ["ITA", "NORD", "CNOR", "CSUD", "SUD", "CALA", "SICI", "SARD"]
+    # zone diverse dalle caselle: due stili sulla mappa, spiegati sotto
+    pg.select_option("#carichi-zona-2", "CALA")
+    pg.wait_for_function("() => location.search.includes('zona2=CALA')")
+    pg.select_option("#carichi-zona", "NORD")
+    pg.wait_for_function("() => location.search.includes('zona=NORD')")
+    pg.wait_for_function(ENTRAMBE)
+    classe = lambda z: (pg.locator(f'#minimappa-zone path[data-zona="{z}"]').get_attribute("class") or "").split()
+    assert "meta-sx" in classe("NORD") and "meta-dx" in classe("CALA") and "attiva" not in classe("SICI")
+    leg = pg.locator("#minimappa-legenda").inner_text()
+    assert "Sinistra: Nord" in leg and "Destra: Calabria" in leg
+    assert pg.locator("#titolo-profilo").inner_text() == "Profilo giornaliero – Nord"
+    assert pg.locator("#titolo-profilo-2").inner_text() == "Profilo giornaliero – Calabria"
+    assert pg.eval_on_selector('#minimappa-zone path[data-zona="CALA"]', "(p) => getComputedStyle(p).strokeDasharray") != "none"
+    # clic sulla mappa: la zona in tutte e due; secondo clic: Italia in tutte e due
+    pg.locator('#minimappa-zone path[data-zona="SARD"]').click()
+    pg.wait_for_function("() => location.search.includes('zona=SARD') && location.search.includes('zona2=SARD')")
+    assert classe("SARD") == ["attiva", "meta-tutte"] and "Tutte e due le metà: Sardegna" in pg.locator("#minimappa-legenda").inner_text()
+    pg.locator('#minimappa-zone path[data-zona="SARD"]').click()
+    pg.wait_for_function("() => !location.search.includes('zona')")
+    assert pg.input_value("#carichi-zona") == "ITA" and pg.input_value("#carichi-zona-2") == "ITA"
+    # periodi diversi: la metà destra non tocca la sinistra
+    pg.fill("#carichi-da-2", "2026-10-01"); pg.dispatch_event("#carichi-da-2", "change")
+    pg.wait_for_function("() => location.search.includes('da2=2026-10-01')")
+    assert pg.input_value("#carichi-da") == "2026-09-01"
+    # divisore dalla tastiera
+    prima = pg.eval_on_selector("#carichi-lato-2", "(e) => e.offsetWidth")
+    pg.focus("#carichi-meta > .divisore"); pg.keyboard.press("ArrowLeft"); pg.keyboard.press("ArrowLeft")
+    assert pg.eval_on_selector("#carichi-lato-2", "(e) => e.offsetWidth") > prima
+    assert errori == []
+
+
+def test_anni_e_archivio(browser, base, dati_anni):
+    """(22/11/2026 b, Paolo) anno intero col menu e con «‹ ›»; pulsanti e cursore scorrono su tutto l'archivio e spostano
+    il periodo Dal/al quando la finestra ne esce."""
+    pg, errori = _due(browser, base, dati_anni)
+    assert pg.input_value("#carichi-da") == "2025-12-01" and pg.input_value("#carichi-a") == "2026-01-31"
+    assert pg.eval_on_selector("#carichi-anno", "(s) => [...s.options].map((o) => o.value)") == ["", "2025", "2026"]
+    assert pg.input_value("#carichi-anno") == ""
+    pg.click("#anno-prima")
+    pg.wait_for_function("() => location.search.includes('a=2025-12-31')")
+    assert pg.input_value("#carichi-da") == "2025-12-01" and pg.input_value("#carichi-anno") == "2025"
+    assert pg.locator("#anno-prima").is_disabled() and pg.locator("#anno-dopo").is_enabled()
+    pg.wait_for_function(PRONTO)
+    # cursore su tutto l'archivio: con dicembre scelto si va a gennaio (il periodo si sposta di un mese)
+    assert pg.locator("#carichi-scorri").is_enabled() and pg.input_value("#carichi-scorri") == "0"
+    pg.focus("#carichi-scorri"); pg.keyboard.press("ArrowRight")
+    pg.wait_for_function("() => location.search.includes('a=2026-01-31')")
+    assert pg.input_value("#carichi-da") == "2026-01-01"
+    pg.select_option("#carichi-anno", "2025")
+    pg.wait_for_function("() => location.search.includes('a=2025-12-31')")
+    pg.wait_for_function(PRONTO)
+    # «Ieri» con dicembre scelto: il periodo va all'ultimo giorno con i dati, con la stessa lunghezza
+    pg.click("[data-finestra=giorno]")
+    pg.wait_for_function("() => location.search.includes('finestra=2026-01-31_2026-01-31')")
+    assert pg.input_value("#carichi-a") == "2026-01-31" and pg.input_value("#carichi-da") == "2026-01-01"
+    assert pg.get_attribute("[data-finestra=giorno]", "aria-pressed") == "true"
+    # metà destra indipendente: anno da menu
+    pg.select_option("#carichi-anno-2", "2026")
+    pg.wait_for_function("() => location.search.includes('da2=2026-01-01')")
+    assert errori == []
+
+
+def test_dati_mancanti(browser, base, dati_anni):
+    """(22/11/2026 b, Paolo) il buco del 14–15 gennaio 2026: nota con i tratti mancanti, area tratteggiata con «dati
+    mancanti» nei due grafici delle fonti, riquadretto che lo dice."""
+    pg, errori = _due(browser, base, dati_anni, "?finestra=2026-01-10_2026-01-20")
+    nota = pg.locator("#carichi-mancanti")
+    assert nota.is_visible()
+    t = nota.inner_text()
+    assert "dal 14 gen 2026 al 15 gen 2026" in t and "potenza richiesta" in t and "produzione per fonte" in t
+    for g in ("#grafico-assoluti", "#grafico-fonti"):
+        assert pg.locator(f"{g} svg.zoom-proprio rect.carichi-mancanti-area").count() == 1, g
+        assert "dati mancanti" in pg.locator(f"{g} svg.zoom-proprio").text_content(), g
+    r = pg.locator("#grafico-assoluti svg.zoom-proprio rect.carichi-mancanti-area")
+    r.scroll_into_view_if_needed()
+    b = r.bounding_box()
+    pg.mouse.move(b["x"] + b["width"] / 2, b["y"] + 20)
+    assert "dati mancanti" in pg.locator(".grafico-suggerimento").first.inner_text()
+    # senza buchi nel periodo la nota sparisce
+    pg.select_option("#carichi-anno", "2025")
+    pg.wait_for_function("() => document.getElementById('carichi-mancanti').hidden")
     assert errori == []
