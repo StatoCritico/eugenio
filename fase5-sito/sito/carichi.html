@@ -226,13 +226,39 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <div class="grafico grafico-carichi" id="grafico-durata"></div>
   </section>
 
+  <section class="carichi-sezione" aria-labelledby="titolo-assoluti">
+    <h2 id="titolo-assoluti">Potenza per fonte</h2>
+    <p class="aiuto" id="nota-assoluti">Per ogni quarto d'ora (o ora) del periodo, la potenza prodotta da ogni fonte, una
+      sopra l'altra (MW medi del quarto d'ora o dell'ora). Le caselle sotto il grafico accendono e spengono le fonti; accanto
+      a ogni fonte, l'energia prodotta nella finestra visibile.</p>
+    <p class="messaggio attenzione nota-zona-fonti" id="nota-zona-fonti" role="note" hidden>Terna pubblica la produzione per
+      fonte solo per tutta l'Italia, non per zona di mercato: questi due grafici restano dell'Italia anche con una zona scelta
+      (nessuna ripartizione per zona è stimata).</p>
+    <div class="carichi-finestra" role="group" aria-labelledby="finestra-nome">
+      <span class="carichi-etichetta" id="finestra-nome">Finestra dei due grafici delle fonti</span>
+      <div class="filtri carichi-finestre" id="carichi-finestre">
+        <button class="filtro" type="button" data-finestra="giorno" aria-pressed="false">Ieri</button>
+        <button class="filtro" type="button" data-finestra="settimana" aria-pressed="false">Ultima settimana</button>
+        <button class="filtro" type="button" data-finestra="mese" aria-pressed="false">Ultimo mese</button>
+        <button class="filtro" type="button" data-finestra="trimestre" aria-pressed="false">Ultimi 3 mesi</button>
+        <button class="filtro" type="button" data-finestra="anno" aria-pressed="false">Ultimo anno</button>
+        <button class="filtro" type="button" data-finestra="tutto" aria-pressed="true">Tutto il periodo</button>
+      </div>
+      <div class="carichi-scorri">
+        <label for="carichi-scorri">Sposta di un mese</label>
+        <input type="range" id="carichi-scorri" min="0" max="0" step="1" value="0" disabled
+          aria-describedby="carichi-scorri-testo">
+        <output id="carichi-scorri-testo" for="carichi-scorri" aria-live="polite"></output>
+      </div>
+    </div>
+    <div class="grafico grafico-carichi" id="grafico-assoluti"></div>
+  </section>
+
   <section class="carichi-sezione" aria-labelledby="titolo-fonti">
     <h2 id="titolo-fonti">Fonti di produzione</h2>
     <p class="aiuto" id="nota-fonti">Per ogni quarto d'ora (o ora) del periodo, la parte della produzione coperta da ogni
-      fonte: barre tutte alte uguali (100 %).</p>
-    <p class="messaggio attenzione nota-zona-fonti" id="nota-zona-fonti" role="note" hidden>Terna pubblica la produzione per
-      fonte solo per tutta l'Italia, non per zona di mercato: questo grafico resta dell'Italia anche con una zona scelta
-      (nessuna ripartizione per zona è stimata).</p>
+      fonte: barre tutte alte uguali (100 %). Stessa finestra del grafico sopra; le fonti spente lì qui restano al loro
+      posto, del colore dello sfondo.</p>
     <div class="grafico grafico-carichi" id="grafico-fonti"></div>
   </section>
 
@@ -255,6 +281,13 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         (potenza richiesta meno produzione) è l'energia arrivata dall'estero meno quella assorbita da pompaggi e accumuli:
         entra nelle barre quando è positivo, compare nel riquadretto anche quando è negativo. Fino al 2024 Terna pubblica
         la produzione ora per ora: allora i quattro quarti d'ora dell'ora hanno gli stessi valori.</li>
+      <li><b>Potenza per fonte e finestra.</b> I due grafici delle fonti mostrano sempre lo stesso tratto di tempo: zoom e
+        trascinamento in uno spostano anche l'altro. I pulsanti «Ieri», «Ultima settimana», «Ultimo mese», «Ultimi 3 mesi»
+        e «Ultimo anno» contano all'indietro dall'ultimo giorno con i dati delle fonti; il cursore «Sposta di un mese» porta
+        la finestra, con la stessa larghezza, un mese avanti o indietro a ogni scatto (si usa quando la finestra è più corta
+        del periodo). Quando una colonna del grafico copre più quarti d'ora, la sua altezza è la loro media. Spegnendo una
+        fonte il grafico della potenza la toglie dalla pila; in quello in percentuale resta al suo posto, del colore dello
+        sfondo.</li>
       <li><b>Dati.</b> Terna aggiorna i dati ogni giorno; il server li legge una volta al giorno. I dati di Terna si usano
         solo per i grafici di questa pagina e non si scaricano.</li>
     </ul>
