@@ -403,11 +403,18 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <h3 id="edifici-pubblici-ente">Ricerca per ente</h3>
   <p>Con la scheda «Per ente» si scelgono fino a otto enti (Comuni, Unioni di Comuni, Province, Regioni, aziende sanitarie,
     università, enti per la casa, ministeri e altri): ognuno ha un colore e la mappa mostra i suoi immobili, da lontano come
-    pallini (uno per particella, più grande se contiene più beni) e da vicino con il contorno e le righe oblique nel colore
+    pallini (uno per particella, più grande se contiene più beni) e da vicino con il contorno della particella nel colore
     dell'ente. L'ente è quello che ha <b>dichiarato</b> il bene: può esserne proprietario (titolo di proprietà) oppure
     averlo in uso (titolo di detenzione: in gestione per conto di altri, in uso governativo, in locazione, in concessione…).
     All'inizio la pagina mostra solo i beni in proprietà e solo i fabbricati; «in uso» e i terreni si accendono con le
-    caselle.</p>
+    caselle. Le tre cose si riconoscono a colpo d'occhio, sempre nel colore dell'ente: i beni <b>in proprietà</b> hanno il
+    colore pieno; quelli <b>in uso</b> lo stesso colore trasparente, con un anello al posto del pallino pieno e il contorno
+    tratteggiato; i <b>terreni</b> sono a righe chiare e scure, i fabbricati senza righe. Se nella stessa particella ci sono
+    beni in proprietà e in uso vale lo stile della proprietà, se ci sono fabbricati e terreni quello dei fabbricati.</p>
+  <p>Un clic su un pallino, su una particella o su una riga dell'elenco apre sopra la mappa la scheda con tutti i dati
+    pubblicati dal MEF per quell'immobile (se lo dichiarano più enti, tutte le dichiarazioni): ente con tipo, settore e
+    sede, ruolo e titolo, indirizzo e dati catastali, superfici, epoca, utilizzo, vincolo e gli altri campi del censimento.
+    Si chiude con la ×, con Esc o con un clic fuori; sul telefono compare in basso.</p>
   <p>Per ogni ente ci sono i totali con le scelte fatte: beni dichiarati (le righe del censimento), fabbricati, terreni,
     particelle, superficie dei fabbricati in metri quadrati e dei terreni in ettari (sono superfici diverse e non si
     sommano: per i fabbricati è la superficie lorda dichiarata, per i terreni quella catastale; se manca si usa la
