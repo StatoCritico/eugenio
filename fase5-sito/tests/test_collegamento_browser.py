@@ -374,21 +374,28 @@ def test_edifici_pubblici(browser, base):
     pronta = "() => window.EUGENIO_PUBBLICI && window.EUGENIO_PUBBLICI.stato.pronto"
     ctx, pg, errori = _apri(browser, base + "edifici-pubblici.html?lat=44.1394&lon=12.2431&z=16")
     pg.wait_for_function(pronta, timeout=20000)
+    # 22/11/2026: Unioni di Comuni e Comunità montane hanno una casella propria (I), subito dopo i Comuni
+    caselle = pg.eval_on_selector_all("#gruppi-pubblici label", "ls => ls.map((l) => [l.querySelector('input').value, l.textContent.trim()])")
+    assert [c[0] for c in caselle][:3] == ["C", "I", "P"] and caselle[1][1] == "Unioni di Comuni e Comunità montane"
+    assert pg.eval_on_selector("#gruppo-cerca option[value='I']", "o => o.textContent") == "Unioni di Comuni e Comunità montane"
     pg.uncheck("#tipi-pubblici input[value='T']")
     pg.uncheck("#gruppi-pubblici input[value='U']")
+    pg.uncheck("#gruppi-pubblici input[value='I']")
     pg.wait_for_selector("#sfondo-ortofoto option[value='pcn2012']", state="attached")
     pg.select_option("#sfondo-ortofoto", "pcn2012")
     pg.uncheck("#strato-ortofoto")
     link = _collegamento(pg)
     for parte in ("lat=44.139400", "z=16.00", "tipi=E%2CS", "enti=", "fonte=pcn2012", "ortofoto=0"):
         assert parte in link, parte
-    assert "U" not in re.search(r"enti=([^&]*)", link).group(1).replace("%2C", ",").split(",")
+    enti = re.search(r"enti=([^&]*)", link).group(1).replace("%2C", ",").split(",")
+    assert "U" not in enti and "I" not in enti and "C" in enti
     _foto(pg, "edifici_pubblici_1400.png")
     ctx.close()
     ctx, pg, errori2 = _apri(browser, link)
     pg.wait_for_function(pronta, timeout=20000)
     assert pg.evaluate("() => [...window.EUGENIO_PUBBLICI.stato.tipi].sort().join()") == "E,S"
     assert not pg.evaluate("() => window.EUGENIO_PUBBLICI.stato.gruppi.has('U')")
+    assert not pg.evaluate("() => window.EUGENIO_PUBBLICI.stato.gruppi.has('I')") and not pg.is_checked("#gruppi-pubblici input[value='I']")
     assert pg.evaluate("() => window.EUGENIO_PUBBLICI.stato.gruppi.has('C')")
     assert pg.input_value("#sfondo-ortofoto") == "pcn2012" and not pg.is_checked("#strato-ortofoto")
     pg.wait_for_timeout(800)

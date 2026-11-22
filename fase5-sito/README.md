@@ -269,12 +269,13 @@ divisione in due metà.
 
 ## Segnalazioni di Paolo sulla v2026.11.21 (21–22/11/2026, nella versione 20261121b, pull request #17)
 
-- **Elettricità, istogrammi doppi**: in `elettricita.js` `DOPPIO = 2` ingrandisce la tela di tutti i disegni sulla mappa
-  (barre di capacità, produzione, carichi, consumi; colonne del burden sharing): si disegna con le misure di prima e la
-  tela ha `PR × DOPPIO` pixel per unità, quindi resta nitida (non è `icon-size`). Inquadratura con un **margine in
+- **Elettricità, istogrammi più grandi**: in `elettricita.js` `INGRANDISCI = 1.4` ingrandisce la tela di tutti i
+  disegni sulla mappa (barre di capacità, produzione, carichi, consumi; colonne del burden sharing): prima il doppio,
+  ridotto del 30 % il 22/11 (00:59, Paolo: «troppo grandi»). Si disegna con le misure di prima e la tela ha
+  `PR × INGRANDISCI` pixel per unità (gli anelli `ANELLI = 2`, con i raggi in pixel di `RAGGI`), quindi resta nitida (non è `icon-size`). Inquadratura con un **margine in
   alto** pari alle colonne più alte (`margini()`, al più il 40 % della mappa), così la Lombardia non esce dal bordo.
 - **Anelli delle emissioni più piccoli** (22/11, 00:18): raggio sulla mappa da 8 a 21 px per le regioni e da 7 a 20 per
-  le province (`RAGGI`, già comprensivo del raddoppio); nella vista dell'Italia scala con lo zoom dell'inquadratura
+  le province (`RAGGI`, in pixel sulla mappa, indipendenti da `INGRANDISCI`); nella vista dell'Italia scala con lo zoom dell'inquadratura
   (`scalaAnelli()`, riferimento zoom 4,5 per una mappa di 800 × 640 px, mai sopra 1, mai sotto 0,5), così non si
   sovrappongono neppure con la mappa piccola. Il fattore medio nel buco solo se il buco è largo almeno 18 px (altrimenti
   è nel riquadretto). Controllo: `EUGENIO_ELETTRICITA.cerchi()` (centri e raggi in pixel) nelle prove.
@@ -297,7 +298,7 @@ divisione in due metà.
 - **Novità**: sotto il titolo di ogni voce, in piccolo, «21/11/2026 · versione 20261121b» (`p.novita-versione`,
   `costruisci_pagine.py`). Cambia la decisione dell'08/11/2026 solo per la pagina: le ancore e il feed restano senza
   versione (richiesta di Paolo: la procedura di pubblicazione dice di controllare la versione nelle Novità).
-- Prove: `test_elettricita_browser.py::test_istogrammi_doppi` (anche anelli senza sovrapposizioni),
+- Prove: `test_elettricita_browser.py::test_istogrammi_ingranditi` (misure × 1,4; anelli senza sovrapposizioni),
   `::test_burden_suggerimento_obiettivo` (rettangolo solo sulla regione sotto il mouse), `::test_burden_tocco`;
   `test_carichi_browser.py` (predefiniti, `passo=15` dei collegamenti vecchi, senza dati);
   `test_collegamento_browser.py::test_carichi_predefiniti`; `test_costruisci_pagine.py::test_novita_versione_feed_e_menu`.
@@ -478,10 +479,11 @@ sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i c
   file restano gli stessi; `costruisci_pagine.py` rimette l'etichetta sopra il titolo delle pagine). Nuova voce
   **«Edifici pubblici»** (sperimentale, «S») dopo Patrimonio.
 - **`edifici-pubblici.html`** (`edifici_pubblici.js`, `main.strumento.pagina-ortofoto.pagina-pubblici`): mappa MapLibre con
-  le tessere `/edifici3d/immobili_pa/immobili_pa_<anno>.pmtiles` (descritte da `indice.json`, fase 7
+  le tessere `/edifici3d/immobili_pa/immobili_pa_<anno>_<versione>.pmtiles` (nome scritto in `indice.json`, fase 7
   `immobili-pa-sito`): particelle con edifici retinate a righe oblique, terreni in verde, edifici e terreni insieme in viola,
   beni senza particella come punti arancio; da lontano un punto per particella, dallo zoom 13 i confini. Livelli: Edifici,
-  Terreni, Beni senza particella, gruppi di enti (caselle, «Tutti», «Nessuno»), ortofoto con la fonte migliore della zona
+  Terreni, Beni senza particella, gruppi di enti (caselle, «Tutti», «Nessuno»; costruite da `indice.json` «gruppi»: dal
+  22/11/2026 anche «Unioni di Comuni e Comunità montane», codice `I`, e Province e Università non più vuote), ortofoto con la fonte migliore della zona
   scelta da sola (`EUGENIO_CONFINI.fontiNelPunto`) o a mano, contesto Sentinel-2 sotto, strati comuni (`strati_gl.js`).
   Ricerca a parole nell'indice (`/api/immobili-pa/cerca`, filtro per gruppo) e per indirizzo o foglio e particella
   (`cerca_luogo.js`); clic su punto o particella → scheda (`/api/immobili-pa/particella/{ref}` o `/bene/{id}`) con

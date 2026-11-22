@@ -97,10 +97,11 @@
 
   // ------------------------------------------------------------------ istogrammi come immagini della mappa
   const PR = Math.min(2, window.devicePixelRatio || 1);
-  // (21/11/2026, Paolo) istogrammi e anelli grandi il doppio: si disegna con le misure di prima e la tela è ingrandita
-  // di DOPPIO (resta nitida, non è un'immagine stirata dalla mappa)
-  const DOPPIO = 2;
-  function tela(w, hgt) { const f = PR * DOPPIO, c = document.createElement("canvas"); c.width = Math.round(w * f); c.height = Math.round(hgt * f); const k = c.getContext("2d"); k.scale(f, f); return [c, k]; }
+  // (21/11/2026, Paolo) istogrammi più grandi: si disegna con le misure di prima e la tela è ingrandita di INGRANDISCI
+  // (resta nitida, non è un'immagine stirata dalla mappa). Prima il doppio; il 22/11/2026 (00:59) Paolo: «troppo
+  // grandi, riducili del 30 %» → 1,4. Gli anelli delle emissioni hanno la loro misura (ANELLI, raggi in RAGGI).
+  const INGRANDISCI = 1.4, ANELLI = 2;
+  function tela(w, hgt, scala = INGRANDISCI) { const f = PR * scala, c = document.createElement("canvas"); c.width = Math.round(w * f); c.height = Math.round(hgt * f); const k = c.getContext("2d"); k.scale(f, f); return [c, k]; }
   function barreVerticali(vals, colori, max, alto, neg) {
     // barre affiancate: base in basso (o al centro per i valori negativi della richiesta), contorno scuro sottile
     const n = vals.length, lb = st.regione ? 8 : 6, gap = 1, W = n * (lb + gap) + 3, Hneg = neg ? Math.round(alto * 0.3) : 0, Ht = alto + Hneg + 2;
@@ -142,7 +143,7 @@
   }
   // anello (torta con il buco): produzione per fonte, in senso orario da mezzogiorno; nel buco un testo (fattore medio)
   function anello(vals, colori, r, testo) {
-    const W = 2 * r + 4, [c, k] = tela(W, W), cx = W / 2, ri = r * 0.55, tot = somma(vals.map((v) => Math.max(0, v)));
+    const W = 2 * r + 4, [c, k] = tela(W, W, ANELLI), cx = W / 2, ri = r * 0.55, tot = somma(vals.map((v) => Math.max(0, v)));
     let a0 = -Math.PI / 2;
     vals.forEach((v, i) => {
       if (!(v > 0)) return;
@@ -154,8 +155,8 @@
     });
     k.beginPath(); k.arc(cx, cx, r, 0, 2 * Math.PI); k.strokeStyle = "#222"; k.lineWidth = 0.9; k.stroke();
     k.beginPath(); k.arc(cx, cx, ri, 0, 2 * Math.PI); k.fillStyle = "rgba(255,255,255,0.92)"; k.fill(); k.strokeStyle = "#222"; k.lineWidth = 0.7; k.stroke();
-    // testo nel buco solo se il buco è largo almeno 18 px sulla mappa (misure qui in unità di disegno, × DOPPIO)
-    if (testo && ri * DOPPIO >= 9) {
+    // testo nel buco solo se il buco è largo almeno 18 px sulla mappa (misure qui in unità di disegno, × ANELLI)
+    if (testo && ri * ANELLI >= 9) {
       const fs = Math.min(6.5, Math.max(4.5, ri * 0.75));
       k.font = `700 ${fs}px system-ui, sans-serif`; k.textAlign = "center"; k.textBaseline = "middle"; k.fillStyle = "#111";
       k.fillText(testo, cx, cx + 0.5, 2 * ri - 2);
@@ -164,7 +165,7 @@
   }
   // raggio dell'anello: area = area minima + parte proporzionale alla produzione (scala comune a tutte le unità e gli anni)
   // (22/11/2026, 00:18, Paolo) anelli più piccoli, che nella vista dell'Italia e delle province non si sovrappongono:
-  // raggio in pixel sulla mappa da 9 a 24 (regioni) o da 7 a 20 (province), diviso per DOPPIO perché la tela lo ingrandisce
+  // raggio in pixel sulla mappa da 9 a 24 (regioni) o da 7 a 20 (province), diviso per ANELLI perché la tela lo ingrandisce
   // Nella vista dell'Italia i raggi seguono lo zoom dell'inquadratura (mappa più piccola = Italia più piccola = anelli
   // più piccoli; riferimento: zoom 4,5 con la mappa di 800 × 640 px), mai più grandi del riferimento.
   const RAGGI = { regioni: [8, 21], province: [7, 20] };
@@ -174,12 +175,12 @@
     return cam && Number.isFinite(cam.zoom) ? Math.max(0.5, Math.min(1, 2 ** (cam.zoom - 4.5))) : 1;
   }
   const raggio = (tot, max, k = 1) => { const [r0, r1] = RAGGI[st.regione ? "province" : "regioni"];
-    return k * Math.sqrt(r0 * r0 + (r1 * r1 - r0 * r0) * Math.max(0, tot) / max) / DOPPIO; };
+    return k * Math.sqrt(r0 * r0 + (r1 * r1 - r0 * r0) * Math.max(0, tot) / max) / ANELLI; };
 
   function immagine(id, disegno) {
     const m = st.mappa, k = disegno.c.getContext("2d"), dati = k.getImageData(0, 0, disegno.c.width, disegno.c.height);
     if (m.hasImage(id)) m.removeImage(id);
-    m.addImage(id, { width: disegno.c.width, height: disegno.c.height, data: dati.data }, { pixelRatio: PR });   // misura sulla mappa = DOPPIO × disegno
+    m.addImage(id, { width: disegno.c.width, height: disegno.c.height, data: dati.data }, { pixelRatio: PR });   // misura sulla mappa = INGRANDISCI (o ANELLI) × disegno
     st.img.add(id);
   }
 
@@ -220,8 +221,8 @@
         if (ag && x.obiettivi) { immagine(`${id}-ob`, obiettivoBurden(x.obiettivi[x.obiettivi.length - 1], obiettivo(x, a), max, alto)); conOb = `${id}-ob`; }
       } else if (modo === "emissioni") {
         const v = valori(x, g, a), ind = st.regione ? null : indicatoriDi(x, a);
-        if (v && somma(v.filter((y) => y > 0)) > 0) { rAnello = raggio(somma(v.filter((y) => y > 0)), max, kAnelli) * DOPPIO;
-          dis = anello(v, voci(g).map((q) => q.colore), rAnello / DOPPIO, ind && ind[IND.medio] !== null ? num(ind[IND.medio], 2) : null); }
+        if (v && somma(v.filter((y) => y > 0)) > 0) { rAnello = raggio(somma(v.filter((y) => y > 0)), max, kAnelli) * ANELLI;
+          dis = anello(v, voci(g).map((q) => q.colore), rAnello / ANELLI, ind && ind[IND.medio] !== null ? num(ind[IND.medio], 2) : null); }
       } else {
         const v = valori(x, g, a);
         if (v && somma(v.map(Math.abs)) > 0) dis = barreVerticali(v, voci(g).map((q) => q.colore), max, alto, neg);
@@ -260,7 +261,7 @@
       canvasContextAttributes: { preserveDrawingBuffer: true },
       style: { version: 8, sources: {}, layers: [{ id: "sfondo", type: "background", paint: { "background-color": css("--carta", "#f4f4f4") } }] } });
     st.mappa = m;
-    window.EUGENIO_ELETTRICITA = { stato: st, scegliRegione, togliRegione, cambiaModo, DOPPIO, mostraObiettivo,   // per le prove
+    window.EUGENIO_ELETTRICITA = { stato: st, scegliRegione, togliRegione, cambiaModo, INGRANDISCI, mostraObiettivo,   // per le prove
       cerchi: () => (st.cerchi || []).map((q) => { const p = m.project(q.c); return { cod: q.cod, nome: q.nome, x: p.x, y: p.y, r: q.r }; }) };
     m.addControl(new window.maplibregl.NavigationControl({ showCompass: false }), "top-right");
     m.addControl(new window.maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
@@ -317,7 +318,7 @@
 
   // margini dell'inquadratura: in alto l'altezza delle colonne più alte (al più il 40 % della mappa), altrove p
   function margini(p) {
-    const alto = Math.round((st.regione ? 90 : 70) * DOPPIO * 0.85), H = box.clientHeight || 600;
+    const alto = Math.round((st.regione ? 90 : 70) * INGRANDISCI * 0.85), H = box.clientHeight || 600;
     return { top: Math.max(p, Math.min(alto, Math.round(H * 0.4))), bottom: p, left: p, right: p };
   }
   // rettangolo dell'obiettivo 2030 della regione cod (null = nessuno); solo con il burden sharing e la vista dell'Italia

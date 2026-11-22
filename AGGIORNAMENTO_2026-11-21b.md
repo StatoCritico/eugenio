@@ -55,7 +55,7 @@ Promemoria di cosa è stato fatto a mano; **non va rifatto**.
 ## Passi per questa release (v2026.11.21b)
 
 - **AS1** – Merge della [pull request #17](https://github.com/StatoCritico/eugenio/pull/17) su GitHub.
-- **AS2** – Release `v2026.11.21b` ([collegamento della release](https://github.com/StatoCritico/eugenio/releases/new?tag=v2026.11.21b&target=main&title=v2026.11.21b+%E2%80%93+Elettricit%C3%A0%3A+emissioni+ed+energia+primaria+per+regione&body=%2A%2AElettricit%C3%A0%3A+emissioni+ed+energia+primaria+per+regione%2A%2A+%2821%2F11%2F2026%2C+versione+20261121b%29%0A%0AMigliorato%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+nuova+scelta+%C2%ABEmissioni%C2%BB%3A+anelli+con+la+produzione+per+fonte+in+ogni+regione+e+provincia.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABEmissioni%C2%BB%3A+il+fattore+di+emissione+medio+e+quello+del+termoelettrico%2C+e+l%27energia+primaria+del+termoelettrico%2C+per+regione%2C+per+zona+di+mercato+e+per+l%27Italia%2C+anno+per+anno+dal+2000.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABEmissioni%C2%BB%3A+il+confronto+con+i+valori+di+ISPRA+e+con+il+coefficiente+di+0%2C187+tep%2FMWh.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%3A+gli+istogrammi+sulla+mappa+sono+grandi+il+doppio%3B+con+%C2%ABEmissioni%C2%BB+gli+anelli+sono+pi%C3%B9+piccoli+e+non+si+coprono+pi%C3%B9+fra+regioni+vicine.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABBurden+sharing%C2%BB%3A+colonne+verticali+come+nelle+altre+scelte%2C+con+la+linea+di+base%3B+passando+sopra+una+regione+%28sul+telefono%2C+al+primo+tocco%29+compaiono+il+rettangolo+arancione+dell%27obiettivo+2030+con+la+linea+dell%27obiettivo+dell%27anno+e+un+riquadretto+con+l%27obiettivo+2030+della+regione%2C+la+percentuale+raggiunta+e+i+MW+che+mancano.+Gli+stessi+valori+sono+nel+grafico+e+nella+tabella.%0A-+Statistiche+%E2%80%BA+Carichi+elettrici%3A+si+apre+sull%27ultimo+anno+con+i+dati%2C+a+quarti+d%27ora%2C+con+le+date+gi%C3%A0+scritte%3B+se+i+dati+non+ci+sono+ancora%2C+compare+solo+il+messaggio%2C+senza+sezioni+vuote.%0A-+Novit%C3%A0%3A+accanto+alla+data+di+ogni+voce+c%27%C3%A8+il+numero+di+versione+del+sito.%0A%0APagine%3A+https%3A%2F%2Feugenio.statocritico.it%2Felettricita.html%3Fmodo%3Demissioni+%C2%B7+https%3A%2F%2Feugenio.statocritico.it%2Fcarichi.html)), con il testo della voce delle novità del 21/11 b.
+- **AS2** – Release `v2026.11.21b` ([collegamento della release](https://github.com/StatoCritico/eugenio/releases/new?tag=v2026.11.21b&target=main&title=v2026.11.21b+%E2%80%93+Elettricit%C3%A0%3A+emissioni+ed+energia+primaria+per+regione&body=%2A%2AElettricit%C3%A0%3A+emissioni+ed+energia+primaria+per+regione%2A%2A+%2821%2F11%2F2026%2C+versione+20261121b%29%0A%0AMigliorato%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+nuova+scelta+%C2%ABEmissioni%C2%BB%3A+anelli+con+la+produzione+per+fonte+in+ogni+regione+e+provincia.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABEmissioni%C2%BB%3A+il+fattore+di+emissione+medio+e+quello+del+termoelettrico%2C+e+l%27energia+primaria+del+termoelettrico%2C+per+regione%2C+per+zona+di+mercato+e+per+l%27Italia%2C+anno+per+anno+dal+2000.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABEmissioni%C2%BB%3A+il+confronto+con+i+valori+di+ISPRA+e+con+il+coefficiente+di+0%2C187+tep%2FMWh.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%3A+gli+istogrammi+sulla+mappa+sono+pi%C3%B9+grandi%3B+con+%C2%ABEmissioni%C2%BB+gli+anelli+sono+pi%C3%B9+piccoli+e+non+si+coprono+pi%C3%B9+fra+regioni+vicine.%0A-+Statistiche+%E2%80%BA+Produzione+e+consumi+di+elettricit%C3%A0%2C+scelta+%C2%ABBurden+sharing%C2%BB%3A+colonne+verticali+come+nelle+altre+scelte%2C+con+la+linea+di+base%3B+passando+sopra+una+regione+%28sul+telefono%2C+al+primo+tocco%29+compaiono+il+rettangolo+arancione+dell%27obiettivo+2030+con+la+linea+dell%27obiettivo+dell%27anno+e+un+riquadretto+con+l%27obiettivo+2030+della+regione%2C+la+percentuale+raggiunta+e+i+MW+che+mancano.+Gli+stessi+valori+sono+nel+grafico+e+nella+tabella.%0A-+Statistiche+%E2%80%BA+Carichi+elettrici%3A+si+apre+sull%27ultimo+anno+con+i+dati%2C+a+quarti+d%27ora%2C+con+le+date+gi%C3%A0+scritte%3B+se+i+dati+non+ci+sono+ancora%2C+compare+solo+il+messaggio%2C+senza+sezioni+vuote.%0A-+Novit%C3%A0%3A+accanto+alla+data+di+ogni+voce+c%27%C3%A8+il+numero+di+versione+del+sito.%0A-+Territorio+%E2%80%BA+Edifici+pubblici%3A+i+filtri+%C2%ABProvince+e+Citt%C3%A0+metropolitane%C2%BB+e+%C2%ABUniversit%C3%A0%C2%BB+ora+mostrano+i+loro+immobili+%28prima+erano+vuoti+e+finivano+in+%C2%ABAltri+enti%C2%BB%29%2C+e+c%27%C3%A8+una+voce+nuova+%C2%ABUnioni+di+Comuni+e+Comunit%C3%A0+montane%C2%BB%2C+anche+nel+filtro+della+ricerca.%0A%0APagine%3A+https%3A%2F%2Feugenio.statocritico.it%2Felettricita.html%3Fmodo%3Demissioni+%C2%B7+https%3A%2F%2Feugenio.statocritico.it%2Fcarichi.html+%C2%B7+https%3A%2F%2Feugenio.statocritico.it%2Fedifici-pubblici.html)), con il testo della voce delle novità del 21/11 b.
 - **AS3** – Installazione con lo **script nuovo preso dal clone** (lo script installato in `~/energia` è ancora quello
   vecchio; vedi la sezione «Quando questa correzione sarà in una release» più sotto):
   ```bash
@@ -81,12 +81,34 @@ Promemoria di cosa è stato fatto a mano; **non va rifatto**.
   ```
   Cosa deve comparire: `Statistiche di Terna: N file pubblicati in /sito/dati/elettricita` e un numero maggiore di 0.
   Finché `italia.json` non ha la parte `emissioni` il pulsante «Emissioni» resta nascosto.
+- **AS3b** – [Server] Rifare tessere e indice degli Edifici pubblici (gruppi corretti: Province, Università, Unioni di
+  Comuni). Circa 15–25 minuti, **il sito resta acceso**: indice e PMTiles si scrivono a parte e si sostituiscono alla fine.
+  Va fatto **dopo** AS3 (che ha copiato in `~/energia/fase7-territorio` il codice nuovo).
+  1. `tmux new -s immobili` (o `tmux attach -t immobili` se c'è già).
+  2. `df -h /srv/energia`: servono almeno **8 GB** liberi.
+  3. Lancia, sull'host, con il venv della fase 7 e tippecanoe:
+     ```bash
+     cd ~/energia/fase7-territorio && . .venv/bin/activate
+     python -m territorio immobili-pa-sito --dest /srv/energia/dati/immobili_pa \
+         --tessere /srv/energia/dati/edifici/immobili_pa --indice /srv/energia/dati/immobili_pa
+     ls -la /srv/energia/dati/edifici/immobili_pa /srv/energia/dati/immobili_pa/*.sqlite
+     ```
+     Alla fine un dizionario con `'pmtiles': '/edifici3d/immobili_pa/immobili_pa_2023_AAAAMMGGhhmm.pmtiles'` e, nei
+     `'gruppi'`, `'I': 'Unioni di Comuni e Comunità montane'`; nella cartella delle tessere il PMTiles nuovo, il vecchio
+     `immobili_pa_2023.pmtiles` (resta fino al prossimo rifacimento) e `indice.json`; nessun file `….nuovo` rimasto.
+  4. Controllo dell'indice:
+     ```bash
+     sqlite3 /srv/energia/dati/immobili_pa/immobili_pa_2023.sqlite "SELECT gruppo, COUNT(*) FROM beni GROUP BY gruppo"
+     ```
+     Atteso: A 125.061 · C 2.182.550 · E 458.139 · **I 73.157** · M 53.964 · N 28.288 · **P 64.324** · R 215.908 ·
+     S 43.217 · **U 12.436** (totale 3.257.044). Se mancano P, U e I il codice nuovo non è stato preso.
+  5. Niente riavvio dell'API e niente Purge: il PMTiles ha un nome nuovo e `indice.json` si riconvalida sempre.
 - **AS4** – Controllo nel browser: https://eugenio.statocritico.it/elettricita.html?modo=emissioni (se serve, ricarica
   forzata con Ctrl+F5): pulsante «Emissioni» acceso, anelli per fonte sulle regioni (e sulle province ingrandendo),
   riquadri con il fattore di emissione medio, quello del termoelettrico e l'energia primaria, confronto con ISPRA e con
   0,187 tep/MWh; in fondo alla pagina «Novità» la voce del 21/11 b. Poi (segnalazioni di Paolo del 21–22/11):
-  - in https://eugenio.statocritico.it/elettricita.html, scelta «Capacità»: istogrammi grandi il doppio di prima (barre
-    alte circa 140 px nella vista dell'Italia), con la linea di base sotto ogni gruppo; la Lombardia non esce dal bordo
+  - in https://eugenio.statocritico.it/elettricita.html, scelta «Capacità»: istogrammi più grandi di prima (1,4 volte: barre
+    alte al più circa 100 px nella vista dell'Italia), con la linea di base sotto ogni gruppo; la Lombardia non esce dal bordo
     alto della mappa;
   - scelta «Burden sharing»: in ogni regione solo la colonna delle rinnovabili in più dal 2020, impilata per fonte, con
     la linea di base e nessun pezzo sotto la base. Passando il mouse su una regione compaiono, solo su quella, il
@@ -99,6 +121,9 @@ Promemoria di cosa è stato fatto a mano; **non va rifatto**.
   - https://eugenio.statocritico.it/carichi.html: caselle Dal/al già compilate con gli ultimi 12 mesi fino all'ultimo
     giorno con i dati, «Quarti d'ora» spuntato, nell'indirizzo niente `passo=`; se i dati di Terna non ci sono ancora,
     solo il messaggio, senza titoli di sezioni vuote;
+  - https://eugenio.statocritico.it/edifici-pubblici.html (dopo AS3b): tra gli enti c'è la casella «Unioni di Comuni e
+    Comunità montane»; spegnendo tutto tranne «Province e Città metropolitane» (poi «Università») compaiono degli
+    immobili;
   - https://eugenio.statocritico.it/novita.html: sotto il titolo della prima voce, in piccolo, «21/11/2026 · versione
     20261121b».
 - **AS5** – Da qui in poi l'aggiornamento automatico notturno funziona con lo script nuovo (installato in `~/energia` dal

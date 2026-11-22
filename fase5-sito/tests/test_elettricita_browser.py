@@ -185,15 +185,18 @@ def _immagine(pg, id_):
       return i ? [i.data.width / i.pixelRatio, i.data.height / i.pixelRatio] : null; }}""")
 
 
-def test_istogrammi_doppi(browser, base, dati):
-    """(21/11/2026, Paolo) istogrammi e colonne del burden sharing grandi il doppio di prima; (22/11/2026) anelli delle
-    emissioni più piccoli, che non si sovrappongono né fra le regioni né fra le province."""
+def test_istogrammi_ingranditi(browser, base, dati):
+    """(21/11/2026, Paolo) istogrammi e colonne del burden sharing più grandi: il doppio, poi (22/11/2026, 00:59) ridotti
+    del 30 % → 1,4 volte le misure di prima; (22/11/2026) anelli delle emissioni più piccoli, che non si sovrappongono né
+    fra le regioni né fra le province (la loro misura non cambia con gli istogrammi)."""
     pg, errori = _pagina(browser, base, dati)
-    assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.DOPPIO") == 2
+    assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.INGRANDISCI") == 1.4
     n = pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.it.voci.capacita.length")
-    assert _immagine(pg, "el-08") == [2 * (n * 7 + 3), 2 * 72]          # prima: barre larghe 6 px, alte 70 px
+    w, h = _immagine(pg, "el-08")
+    assert abs(w - 1.4 * (n * 7 + 3)) <= 1 and abs(h - 1.4 * 72) <= 1   # prima: barre larghe 6 px, alte 70 px
     pg.click('[data-modo="burden"]'); pg.wait_for_timeout(1200)
-    assert _immagine(pg, "el-08") == [2 * 24, 2 * 74]                    # colonna verticale: 24 × 74 px, ora il doppio
+    w, h = _immagine(pg, "el-08")
+    assert abs(w - 1.4 * 24) <= 1 and abs(h - 1.4 * 74) <= 1            # colonna verticale: 24 × 74 unità, × 1,4
     pg.click('[data-modo="emissioni"]'); pg.wait_for_timeout(1200)
     assert _immagine(pg, "el-08")[0] <= 2 * 21 + 8                       # raggio al più 21 px
     assert _sovrapposti(pg) == []
@@ -217,11 +220,11 @@ def test_burden_suggerimento_obiettivo(browser, base, dati):
     grafico a destra (anche sul riquadro dell'anno scelto) e nella tabella."""
     pg, errori = _pagina(browser, base, dati, query="vista=italia&modo=burden")
     # punto al 90 % dell'altezza del rettangolo dell'obiettivo 2030 dell'Emilia-Romagna, sopra la potenza installata
-    # (scala: obiettivo 2030 più grande fra le regioni = 70 px, ora 140; base 4 px sopra il punto della regione)
+    # (scala: obiettivo 2030 più grande fra le regioni = 70 unità, × 1,4 = 98 px; base 2,8 px sopra il punto della regione)
     xy = pg.evaluate("""() => { const S = window.EUGENIO_ELETTRICITA.stato, m = S.mappa, r = S.it.regioni.find((x) => x.cod === '08');
       const mx = Math.max(...S.it.regioni.filter((x) => x.obiettivi).map((x) => x.obiettivi[x.obiettivi.length - 1]));
       const q = m.project([r.lon, r.lat]), b = m.getCanvas().getBoundingClientRect();
-      return [q.x + b.x, q.y + b.y - 4 - 0.9 * 140 * 6330 / mx]; }""")
+      return [q.x + b.x, q.y + b.y - 2.8 - 0.9 * 98 * 6330 / mx]; }""")
     tocca = pg.evaluate("""([x, y]) => { const m = window.EUGENIO_ELETTRICITA.stato.mappa, b = m.getCanvas().getBoundingClientRect();
       return m.queryRenderedFeatures([x - b.x, y - b.y], { layers: ['el-barre'] }).map((f) => f.properties.cod); }""", xy)
     assert tocca == ["08"]

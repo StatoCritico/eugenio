@@ -86,3 +86,22 @@ def test_limite_orario(client, monkeypatch):
 def test_domanda_fts():
     assert I.domanda_fts("Scuola  Via Roma, 3") == '"scuola"* AND "via"* AND "roma"*'
     assert I.domanda_fts("a ; ") is None
+
+
+def test_indice_sostituito_durante_il_servizio(client):
+    """22/11/2026: la fase 7 scrive `.immobili_pa_<anno>.sqlite.nuovo` e poi lo sostituisce con os.replace. L'API non vede
+    il provvisorio e, aprendo una connessione per richiesta (immutable=1), legge il file nuovo dalla richiesta dopo."""
+    import os
+    c, d = client
+    f = d / "immobili_pa_2023.sqlite"
+    _indice(f)
+    nuovo = d / ".immobili_pa_2023.sqlite.nuovo"
+    nuovo.write_bytes(b"a meta, non ancora un database")
+    assert I.indice() == f
+    assert c.get("/api/immobili-pa/cerca", params={"q": "perugia", "gruppo": "I"}).json()["risultati"] == []
+    nuovo.unlink(); _indice(nuovo)
+    db = sqlite3.connect(nuovo)        # nel nuovo indice l'università è un'Unione di Comuni (gruppo I, nuovo dal 22/11)
+    db.execute("UPDATE beni SET gruppo = 'I' WHERE id_bene = '2'"); db.commit(); db.close()
+    os.replace(nuovo, f)
+    r = c.get("/api/immobili-pa/cerca", params={"q": "perugia", "gruppo": "i"}).json()["risultati"]
+    assert [x["id_bene"] for x in r] == ["2"] and r[0]["gruppo"] == "I"
