@@ -404,11 +404,18 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <h3 id="edifici-pubblici-ente">Ricerca per ente</h3>
   <p>Con la scheda «Per ente» si scelgono fino a otto enti (Comuni, Unioni di Comuni, Province, Regioni, aziende sanitarie,
     università, enti per la casa, ministeri e altri): ognuno ha un colore e la mappa mostra i suoi immobili, da lontano come
-    pallini (uno per particella, più grande se contiene più beni) e da vicino con il contorno e le righe oblique nel colore
+    pallini (uno per particella, più grande se contiene più beni) e da vicino con il contorno della particella nel colore
     dell'ente. L'ente è quello che ha <b>dichiarato</b> il bene: può esserne proprietario (titolo di proprietà) oppure
     averlo in uso (titolo di detenzione: in gestione per conto di altri, in uso governativo, in locazione, in concessione…).
     All'inizio la pagina mostra solo i beni in proprietà e solo i fabbricati; «in uso» e i terreni si accendono con le
-    caselle.</p>
+    caselle. Le tre cose si riconoscono a colpo d'occhio, sempre nel colore dell'ente: i beni <b>in proprietà</b> hanno il
+    colore pieno; quelli <b>in uso</b> lo stesso colore trasparente, con un anello al posto del pallino pieno e il contorno
+    tratteggiato; i <b>terreni</b> sono a righe chiare e scure, i fabbricati senza righe. Se nella stessa particella ci sono
+    beni in proprietà e in uso vale lo stile della proprietà, se ci sono fabbricati e terreni quello dei fabbricati.</p>
+  <p>Un clic su un pallino, su una particella o su una riga dell'elenco apre sopra la mappa la scheda con tutti i dati
+    pubblicati dal MEF per quell'immobile (se lo dichiarano più enti, tutte le dichiarazioni): ente con tipo, settore e
+    sede, ruolo e titolo, indirizzo e dati catastali, superfici, epoca, utilizzo, vincolo e gli altri campi del censimento.
+    Si chiude con la ×, con Esc o con un clic fuori; sul telefono compare in basso.</p>
   <p>Per ogni ente ci sono i totali con le scelte fatte: beni dichiarati (le righe del censimento), fabbricati, terreni,
     particelle, superficie dei fabbricati in metri quadrati e dei terreni in ettari (sono superfici diverse e non si
     sommano: per i fabbricati è la superficie lorda dichiarata, per i terreni quella catastale; se manca si usa la
@@ -699,6 +706,43 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       saldo è la potenza richiesta meno la produzione: l'energia arrivata dall'estero meno quella assorbita da pompaggi e
       accumuli; nelle barre al 100 % entra solo quando è positivo. Fino al 2024 la produzione è oraria: i quattro quarti
       d'ora dell'ora hanno gli stessi valori.</li>
+    <li><strong>Potenza per fonte.</strong> Prima delle barre al 100 % la stessa scomposizione in valore assoluto: aree
+      impilate in MW medi del quarto d'ora (o dell'ora); il saldo entra quando è positivo. Quando una colonna del grafico
+      copre più quarti d'ora, l'altezza è la loro media. Accanto a ogni fonte, l'energia prodotta nella finestra visibile
+      (GWh, somma delle potenze per la durata del passo). Le caselle accendono e spengono le fonti: il grafico in MW
+      impila solo quelle accese; in quello al 100 % le spente restano al loro posto (la quota resta sul totale) e
+      prendono il colore dello sfondo.</li>
+    <li><strong>Finestra.</strong> I due grafici delle fonti mostrano sempre lo stesso tratto di tempo. «Ieri», «Ultima
+      settimana», «Ultimo mese», «Ultimi 3 mesi» e «Ultimo anno» finiscono all'ultimo giorno con i dati di tutte le fonti
+      (Terna li pubblica con un giorno o due di ritardo); «Sposta di un mese» porta la finestra, con la stessa larghezza,
+      un mese avanti o indietro a ogni scatto. Pulsanti e cursore vanno su tutto l'archivio (dal 2021): quando la
+      finestra esce dal periodo Dal/al, il periodo si sposta con lei, con la stessa lunghezza. Il menu dell'anno e le
+      frecce «‹ ›» scelgono un anno intero. Finestra e fonti spente stanno nell'indirizzo (<code>finestra=</code>,
+      <code>spente=</code>) solo quando non sono quelle predefinite.</li>
+    <li><strong>Italia = somma delle zone.</strong> La potenza richiesta dell'Italia è la somma delle sette zone di
+      mercato, quarto d'ora per quarto d'ora. La serie «Italy» di Terna coincide già con la somma: su novembre 2025 –
+      novembre 2026 lo scarto massimo è 0,000000000007 MW (arrotondamenti dei numeri), una volta rimesse in ordine le ore
+      ripetute del ritorno all'ora solare. Poiché ogni zona si scrive in MW interi, la somma degli interi poteva differire
+      dall'«Italy» arrotondata di 1–3 MW: dal 22/11/2026 l'Italia mostrata è proprio la somma degli interi delle zone
+      (dove manca una zona resta il valore di Terna). La produzione per fonte Terna la pubblica solo per l'Italia, quindi
+      non c'è una somma per zone da confrontare.</li>
+    <li><strong>Dati mancanti.</strong> Quando Terna non pubblica dei giorni (nel Download Center mancano il 14 e il 15
+      gennaio 2026, per il carico e per la produzione) quei quarti d'ora restano vuoti: non si stimano. La pagina li elenca
+      sotto lo stato di ogni metà e li tratteggia, con la scritta «dati mancanti», nei grafici delle fonti. Il server
+      riprova a scaricare i giorni mancanti una volta al giorno (per due settimane); se arrivano, i grafici si
+      completano da soli.</li>
+    <li><strong>Energia da fonti rinnovabili.</strong> Il riquadro di «Valori del periodo» somma, nei quarti d'ora con
+      tutte le fonti, bioenergie, idroelettrico, geotermico, eolico e fotovoltaico (autoconsumi compresi). L'idroelettrico è
+      quello della produzione rinnovabile di Terna, che comprende anche la parte da pompaggio: nei dati quartorari Terna
+      non la separa. Sono esclusi il termoelettrico tradizionale e il saldo con l'estero, i pompaggi e gli accumuli. La
+      percentuale principale è sulla produzione nazionale (rinnovabili più termoelettrico); c'è anche quella sulla potenza
+      richiesta dell'Italia. I valori sono sempre dell'Italia, anche con una zona scelta, e non dipendono dalle fonti
+      spente nei grafici.</li>
+    <li><strong>Due metà.</strong> La pagina è divisa in due metà, ognuna con la sua zona, il suo periodo, il suo passo, la
+      sua finestra e le sue fonti accese, per confrontare due selezioni. La piccola mappa è comune: un clic sceglie la
+      zona in tutte e due le metà; la casella «Zona» di ogni metà la sceglie solo lì. Il collegamento ricorda le due metà
+      (i parametri della destra finiscono con «2»: <code>zona2=</code>, <code>da2=</code>, …). «Riallinea le due metà» porta la
+      metà destra allo stesso grafico che si vede in alto a sinistra.</li>
     <li><strong>Grafici.</strong> Profilo giornaliero: minimo, media e massimo per quarto d'ora (o ora) del giorno nel
       periodo. Curva di durata: tutte le potenze del periodo in ordine decrescente. Fonti: una barra per quarto d'ora (o
       ora); quando le barre sono più dei pixel, ogni colonna somma i quarti d'ora che copre. La rotella ingrandisce l'asse

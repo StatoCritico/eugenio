@@ -1,19 +1,30 @@
 "use strict";
 // Statistiche › «Carichi elettrici» (carichi.html, 20/11/2026, richiesta di Paolo; sperimentale).
-// Pagina unica a tutta larghezza, senza mappa grande: la zona di mercato si sceglie solo nella piccola mappa accanto al
-// titolo (zone al posto delle regioni; dati/mappa/zone.json, costruito da costruisci_zone.py). Clic su una zona = i suoi
-// valori; secondo clic (o «Tutta Italia») = Italia. Sotto: periodo (due date, predefinito gli ultimi 12 mesi) e casella
-// «Quarti d'ora» (senza: ore, media dei quattro quarti d'ora).
+// Pagina a tutta larghezza, senza mappa grande. (22/11/2026 b, Paolo) Sotto il titolo la pagina è divisa in due metà
+// (divisore.js, ognuna con la sua barra di scorrimento) con le stesse scelte e gli stessi grafici, per confrontare due zone
+// o due periodi: creaLato(0) e creaLato(1); la metà destra la copia copiaMeta() dalla sinistra (identificativi «-2»).
+// Zona: casella a discesa di ogni metà (Italia e le sette zone) o piccola mappa accanto al titolo, una sola (zone al posto
+// delle regioni; dati/mappa/zone.json, costruito da costruisci_zone.py): il clic su una zona la sceglie in tutte e due le
+// metà, un secondo clic torna all'Italia; le zone delle due metà sono evidenziate con due stili spiegati sotto la mappa.
+// Periodo: due date (predefinito gli ultimi 12 mesi), «Ultimi 12 mesi», anno intero (menu e «‹ ›»); casella «Quarti
+// d'ora» (senza: ore, media dei quattro quarti d'ora).
 // Grafici (SVG disegnato a ogni vista, con percorsi aggregati per pixel: decine di migliaia di quarti d'ora restano
 // leggeri):
 //   1. profilo giornaliero: per ogni quarto d'ora (o ora) del giorno minimo, media e massimo della potenza richiesta;
 //   2. curva di durata: le potenze del periodo dalla più alta alla più bassa;
-//   3. fonti: barre al 100 % per quarto d'ora (o ora), solo Italia (Terna non pubblica la produzione per zona).
+//   3. potenza per fonte in MW, aree impilate per quarto d'ora (o ora), solo Italia (Terna non pubblica la produzione per
+//      zona), con le caselle per accendere e spegnere le fonti (22/11/2026);
+//   4. fonti: barre al 100 % per quarto d'ora (o ora), solo Italia; le fonti spente restano al loro posto, color sfondo.
+// I grafici 3 e 4 hanno la stessa vista (gruppo st.finestra): pulsanti «Ieri» … «Ultimo anno», «Tutto il periodo» e
+// cursore «Sposta di un mese» sopra il grafico 3 (22/11/2026, richiesta di Paolo), su tutto l'archivio (22/11/2026 b):
+// quando la finestra esce dal periodo, il periodo si sposta. I tratti senza dati sono tratteggiati («dati mancanti»).
 // Ogni grafico si ingrandisce con la rotella e si sposta trascinando (asse orizzontale) nella pagina e nel riquadro
 // grande di grafici.js (svg.__zoomProprio: grafici.js gli passa rotella, tasti e «Vista iniziale").
 // Dati: dati/carichi/indice.json, carico_AAAA-MM.json, fonti_AAAA-MM.json (fase 15, elettricita/carichi.py, costruiti
 // dal worker con i dati di Terna). Decisione di Paolo (20/11/2026): i dati non si scaricano.
-// Le scelte stanno nell'indirizzo: ?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=60 (history.replaceState); il riquadro
+// Le scelte stanno nell'indirizzo: ?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=60&finestra=AAAA-MM-GG_AAAA-MM-GG&spente=fv,eol
+// e per la metà destra gli stessi con «2» (zona2, da2, …) (history.replaceState; finestra e spente dal 22/11/2026, solo se
+// diverse dal predefinito); il riquadro
 // «Collegamento a questa simulazione» in fondo alla pagina lo mostra e lo copia (collegamento.js).
 // (21/11/2026, Paolo) all'apertura: ultimi 12 mesi che finiscono all'ultimo giorno con i dati, già scritti nelle caselle
 // Dal/al, e quarti d'ora accesi. I valori predefiniti non vanno nell'indirizzo (Italia = niente zona, quarti d'ora =
@@ -40,17 +51,17 @@
   const MW = (v) => `${num(v)} MW`;
   const pc = (v) => `${num(v, v < 10 ? 1 : 0)} %`;
   const limita = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
-  function stato(t, errore = false) { const m = $("stato-carichi"); m.textContent = t; m.classList.toggle("errore", errore); }
-  // dati non disponibili: via comandi, piccola mappa e sezioni (titoli senza grafici), resta il messaggio
-  function senzaDati(t) {
-    stato(t, true);
-    document.querySelectorAll(".comandi-carichi, .carichi-sezione, #minimappa-zone").forEach((e) => { e.hidden = true; });
-  }
-
-  // colori delle zone nella piccola mappa: quelli di una regione della zona (variabili --reg-RR di stile.css)
   const COLORE_ZONA = { NORD: "03", CNOR: "09", CSUD: "12", SUD: "16", CALA: "18", SICI: "19", SARD: "20" };
 
-  const st = { ix: null, mesi: [], zona: "ITA", da: null, a: null, passo: 15, file: new Map(), giro: 0, serie: null, grafici: {} };
+  // dati comuni alle due metà (indice, mesi, file già letti); ogni metà ha il suo stato (creaLato)
+  const D = { ix: null, mesi: [], file: new Map(), lati: [], pronto: false, percorsi: null };
+  // dati non disponibili: via comandi, piccola mappa e metà (titoli senza grafici), resta il messaggio
+  function senzaDati(t) {
+    const m = $("stato-carichi"); m.textContent = t; m.classList.add("errore");
+    const meta = $("carichi-meta");
+    if (meta) meta.after(m);
+    document.querySelectorAll(".comandi-carichi, .carichi-sezione, #minimappa-zone, .minimappa-con-legenda, #carichi-meta, .carichi-due-meta-nota").forEach((e) => { e.hidden = true; });
+  }
 
   // ------------------------------------------------------------------ tempo (ora italiana)
   // fuso di un istante (minuti dall'UTC) dai cambi d'ora scritti nell'indice; fuori dai mesi, con Intl
@@ -60,7 +71,7 @@
     return Math.round((Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute) - Math.floor(ms / 60000) * 60000) / 60000);
   }
   function fuso(ms) {
-    const M = st.mesi;
+    const M = D.mesi;
     let lo = 0, hi = M.length - 1;
     if (!M.length || ms < M[0].t0 || ms >= M[hi].t0 + M[hi].n * Q) return fusoIntl(ms);
     while (lo < hi) { const m = (lo + hi + 1) >> 1; if (M[m].t0 <= ms) lo = m; else hi = m - 1; }
@@ -86,85 +97,7 @@
 
   // ------------------------------------------------------------------ dati
   async function json(u) { const r = await fetch(conV(CARTELLA + u)); if (!r.ok) throw new Error(`${u}: ${r.status}`); return r.json(); }
-  function file(nome) { if (!st.file.has(nome)) st.file.set(nome, json(nome).catch((e) => { st.file.delete(nome); throw e; })); return st.file.get(nome); }
-
-  // serie del periodo: istanti, potenza della zona e fonti dell'Italia, al passo scelto
-  async function serie() {
-    const T0 = mezzanotte(st.da), T1 = mezzanotte(giornoDopo(st.a));
-    const mesi = st.mesi.filter((m) => m.t0 < T1 && m.t0 + m.n * Q > T0);
-    const caricati = await Promise.all(mesi.map((m) => Promise.all([file(`carico_${m.mese}.json`),
-      m.fonti ? file(`fonti_${m.mese}.json`).catch(() => null) : Promise.resolve(null)])));
-    const voci = st.ix.voci.map((v) => v.id);
-    let n = 0;
-    const pezzi = mesi.map((m, j) => {
-      const i0 = Math.max(0, Math.ceil((T0 - m.t0) / Q)), i1 = Math.min(m.n, Math.floor((T1 - m.t0) / Q));
-      n += Math.max(0, i1 - i0);
-      return { m, i0, i1, car: caricati[j][0].zone[st.zona] || [], carIt: caricati[j][0].zone.ITA || [], fon: caricati[j][1] && caricati[j][1].voci };
-    });
-    const T = new Float64Array(n), L = new Float32Array(n).fill(NaN), LI = new Float32Array(n).fill(NaN), F = {};
-    voci.forEach((k) => { F[k] = new Float32Array(n).fill(NaN); });
-    let p = 0;
-    for (const { m, i0, i1, car, carIt, fon } of pezzi) {
-      for (let i = i0; i < i1; i++, p++) {
-        T[p] = m.t0 + i * Q;
-        const v = car[i]; if (v !== null && v !== undefined) L[p] = v;
-        const w = carIt[i]; if (w !== null && w !== undefined) LI[p] = w;
-        if (fon) for (const k of voci) { const x = fon[k] && fon[k][i]; if (x !== null && x !== undefined) F[k][p] = x; }
-      }
-    }
-    return st.passo === 60 ? orarie(T, L, LI, F, voci) : { T, L, LI, F, passo: 15 };
-  }
-  // ore: media dei quarti d'ora con un valore (i mesi iniziano a mezzanotte italiana, cioè a un'ora piena UTC)
-  function orarie(T, L, LI, F, voci) {
-    const n = T.length, out = [];
-    for (let i = 0; i < n;) {
-      const ora = Math.floor(T[i] / ORA); let j = i;
-      while (j < n && Math.floor(T[j] / ORA) === ora) j++;
-      out.push([i, j]); i = j;
-    }
-    const m = out.length, T2 = new Float64Array(m), L2 = new Float32Array(m), LI2 = new Float32Array(m), F2 = {};
-    const media = (a, i, j) => { let t = 0, c = 0; for (let k = i; k < j; k++) if (!Number.isNaN(a[k])) { t += a[k]; c++; } return c ? t / c : NaN; };
-    voci.forEach((k) => { F2[k] = new Float32Array(m); });
-    out.forEach(([i, j], q) => {
-      T2[q] = Math.floor(T[i] / ORA) * ORA; L2[q] = media(L, i, j); LI2[q] = media(LI, i, j);
-      for (const k of voci) F2[k][q] = media(F[k], i, j);
-    });
-    return { T: T2, L: L2, LI: LI2, F: F2, passo: 60 };
-  }
-
-  // ------------------------------------------------------------------ elaborazioni
-  function profilo(S) {
-    const K = 1440 / S.passo, mn = new Array(K).fill(Infinity), mx = new Array(K).fill(-Infinity), tot = new Array(K).fill(0), c = new Array(K).fill(0);
-    const tmin = new Array(K).fill(null), tmax = new Array(K).fill(null);
-    for (let i = 0; i < S.T.length; i++) {
-      const v = S.L[i]; if (Number.isNaN(v)) continue;
-      const t = S.T[i], k = Math.floor((((t + fuso(t) * 60000) % GIORNO) + GIORNO) % GIORNO / (S.passo * 60000));
-      if (v < mn[k]) { mn[k] = v; tmin[k] = t; }
-      if (v > mx[k]) { mx[k] = v; tmax[k] = t; }
-      tot[k] += v; c[k]++;
-    }
-    return { K, passo: S.passo, mn, mx, media: tot.map((x, k) => (c[k] ? x / c[k] : NaN)), c, tmin, tmax };
-  }
-  function durata(S) {
-    const v = Array.from(S.L).filter((x) => !Number.isNaN(x));
-    return Float32Array.from(v.sort((a, b) => b - a));
-  }
-  function riepilogo(S) {
-    let mx = -Infinity, mn = Infinity, tmx = null, tmn = null, tot = 0, c = 0, ren = 0, cRen = 0, carRen = 0;
-    const R = ["bio", "idro", "geo", "eol", "fv"];
-    for (let i = 0; i < S.T.length; i++) {
-      const v = S.L[i]; if (Number.isNaN(v)) continue;
-      c++; tot += v;
-      if (v > mx) { mx = v; tmx = S.T[i]; }
-      if (v < mn) { mn = v; tmn = S.T[i]; }
-    }
-    if (st.zona === "ITA") for (let i = 0; i < S.T.length; i++) {
-      if (Number.isNaN(S.L[i]) || R.some((k) => Number.isNaN(S.F[k][i]))) continue;
-      ren += R.reduce((t, k) => t + S.F[k][i], 0); carRen += S.L[i]; cRen++;
-    }
-    return { c, n: S.T.length, mx, mn, tmx, tmn, media: c ? tot / c : NaN, energia: tot * S.passo / 60, quotaRen: cRen ? 100 * ren / carRen : null };
-  }
-
+  function file(nome) { if (!D.file.has(nome)) D.file.set(nome, json(nome).catch((e) => { D.file.delete(nome); throw e; })); return D.file.get(nome); }
   // ------------------------------------------------------------------ grafici con zoom proprio (asse orizzontale)
   // grafico(box, cfg): cfg.dominio() → [x0, x1]; cfg.disegna(g, v) disegna il contenuto della vista v = { x0, x1, X, Xi,
   // area, W, H }; cfg.punto(x, v) → { titolo, righe, segni: [[xSvg, ySvg, colore]] } per il suggerimento; cfg.legenda(dest).
@@ -187,8 +120,14 @@
   const nascondiSugg = () => { sugg.style.display = "none"; document.querySelectorAll(".carichi-cursore").forEach((g) => g.replaceChildren()); };
   addEventListener("scroll", nascondiSugg, { passive: true, capture: true });
 
+  // cfg.gruppo = { vista, grafici: [], suCambio() }: grafici con la stessa vista (i due delle fonti, 22/11/2026): zoom,
+  // trascinamento, tasti e doppio clic in uno spostano anche gli altri; suCambio() dopo ogni cambio della vista.
   function grafico(box, cfg) {
-    const gr = { cfg, vista: null, copie: new Set() };
+    const gr = { cfg, copie: new Set() };
+    const gruppo = cfg.gruppo || null;
+    let propria = null;
+    Object.defineProperty(gr, "vista", { get: () => (gruppo ? gruppo.vista : propria), set: (x) => { if (gruppo) gruppo.vista = x; else propria = x; } });
+    if (gruppo) gruppo.grafici.push(gr);
     gr.dominio = () => cfg.dominio();
     gr.reset = () => { gr.vista = null; aggiorna(); };
     function vista() { const d = gr.dominio(); return gr.vista || d; }
@@ -199,7 +138,12 @@
       gr.vista = Math.abs(w - (d1 - d0)) < 1e-9 && x0 === d0 ? null : [x0, x0 + w];
       aggiorna();
     }
-    function aggiorna() { for (const c of [...gr.copie]) { if (!c.svg.isConnected) gr.copie.delete(c); else c.disegna(); } }
+    gr.aggiornaCopie = () => { for (const c of [...gr.copie]) { if (!c.svg.isConnected) gr.copie.delete(c); else c.disegna(); } };
+    function aggiorna() {
+      for (const g of gruppo ? gruppo.grafici : [gr]) g.aggiornaCopie();
+      if (gruppo && gruppo.suCambio) gruppo.suCambio();
+    }
+    gr.imposta = imposta;
     gr.zoom = (f, xData) => { const [a, b] = vista(); const x = xData === undefined ? (a + b) / 2 : xData; imposta(x - (x - a) / f, x + (b - x) / f); };
     gr.monta = (dest, mis) => {
       const W = Math.max(280, (mis && mis.larghezza) || box.clientWidth || 720);
@@ -362,8 +306,8 @@
   }
   // tacche dell'asse dei tempi, in ora italiana
   function tackeTempo(x0, x1, largo) {
-    const max = Math.max(2, Math.floor(largo / 80)), span = x1 - x0;
-    const passi = [[15 * 60000, "m"], [30 * 60000, "m"], [ORA, "h"], [3 * ORA, "h"], [6 * ORA, "h"], [12 * ORA, "h"], [GIORNO, "g"], [2 * GIORNO, "g"],
+    const max = Math.max(2, Math.floor(largo / 56)), span = x1 - x0;   // (22/11/2026) 56 px: una settimana col telefono ha le date
+    const passi = [[15 * 60000, "m"], [30 * 60000, "m"], [ORA, "h"], [3 * ORA, "h"], [6 * ORA, "h"], [12 * ORA, "h"], [GIORNO, "g"], [2 * GIORNO, "g"], [3 * GIORNO, "g"],
       [7 * GIORNO, "g"], [14 * GIORNO, "g"], [1, "M"], [2, "M"], [3, "M"], [6, "M"], [12, "M"]];
     const [p, tipo] = passi.find(([q, t]) => (t === "M" ? span / (q * 30.4 * GIORNO) : span / q) <= max) || [12, "M"];
     const out = [];
@@ -397,6 +341,139 @@
     return out;
   }
 
+  function cerca(T, x) { let lo = 0, hi = T.length; while (lo < hi) { const m = (lo + hi) >> 1; if (T[m] < x) lo = m + 1; else hi = m; } return lo; }
+  const oraDelGiorno = (o) => { const m = Math.round(o * 60); return `${due(Math.floor(m / 60))}:${due(m % 60)}`; };
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
+  function voce(colore, testo, tipo) {
+    const sp = h("span"), i = h("i", tipo === "linea" || tipo === "linea tratto" ? `linea ${tipo === "linea tratto" ? "tratto" : ""}` : "");
+    if (tipo === "fascia") { i.style.background = colore; i.style.opacity = ".35"; } else if (tipo && tipo.startsWith("linea")) i.style.color = colore; else i.style.background = colore;
+    sp.append(i, testo); return sp;
+  }
+  // giorno AAAA-MM-GG spostato di k mesi indietro (giorno del mese tenuto, o l'ultimo del mese se non c'è; k < 0 = avanti)
+  function mesiIndietro(iso, k) {
+    const [y, m, d] = iso.split("-").map(Number), fine = new Date(Date.UTC(y, m - 1 - k + 1, 0)).getUTCDate();
+    return new Date(Date.UTC(y, m - 1 - k, Math.min(d, fine))).toISOString().slice(0, 10);
+  }
+  const giorniIndietro = (iso, k) => { const [y, m, d] = iso.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d - k)).toISOString().slice(0, 10); };
+  const giorniTra = (a, b) => Math.round((Date.UTC(...b.split("-").map((x, i) => +x - (i === 1))) - Date.UTC(...a.split("-").map((x, i) => +x - (i === 1)))) / GIORNO);
+  const aMezzanotte = (t) => { const d = locale(t); return d.getUTCHours() === 0 && d.getUTCMinutes() === 0; };
+  function testoFinestra(a, b) {
+    const ini = aMezzanotte(a) ? dataBreve(a) : `${dataBreve(a)}, ${oraBreve(a)}`;
+    const fin = aMezzanotte(b) ? dataBreve(b - 1) : `${dataBreve(b)}, ${oraBreve(b)}`;
+    return ini === fin ? ini : `dal ${ini} al ${fin}`;
+  }
+  function leggiFinestra(t) {
+    const m = /^(\d{4}-\d\d-\d\d)(?:T(\d\d)(\d\d))?_(\d{4}-\d\d-\d\d)(?:T(\d\d)(\d\d))?$/.exec(t || "");
+    if (!m) return null;
+    const a = mezzanotte(m[1]) + (m[2] ? (+m[2] * 60 + +m[3]) * 60000 : 0);
+    const b = m[5] ? mezzanotte(m[4]) + (+m[5] * 60 + +m[6]) * 60000 : mezzanotte(giornoDopo(m[4]));
+    return Number.isFinite(a) && Number.isFinite(b) && b > a ? [a, b] : null;
+  }
+  const SFONDO = "var(--sfondo-grafico, var(--carta))";
+  const rettangolo = (x, larg, y0, y1) => `M${x.toFixed(2)},${y1.toFixed(2)}h${larg.toFixed(2)}V${y0.toFixed(2)}h${(-larg).toFixed(2)}z`;
+  const nomeLegenda = (q) => (q.id === "saldo" ? "saldo con l'estero, pompaggi e accumuli (quando positivo)" : q.nome);
+
+
+  // ================================================================== una metà della pagina
+  // (22/11/2026, Paolo) la pagina è divisa in due metà con le loro scelte e i loro grafici: k = 0 (sinistra, identificativi
+  // di sempre, parametri ?zona=&da=…) e k = 1 (destra, identificativi con «-2», parametri ?zona2=&da2=…). Dentro, «st» è
+  // lo stato della metà (con ix, mesi, primo e ultimo giorno comuni) e «$» trova gli elementi della metà.
+  function creaLato(k) {
+    const suf = k ? "-2" : "", P = k ? "2" : "";
+    const $ = (id) => document.getElementById(id + suf);
+    const st = { k, P, zona: "ITA", da: null, a: null, passo: 15, giro: 0, serie: null, grafici: {}, spente: new Set(),
+      get ix() { return D.ix; }, get mesi() { return D.mesi; }, get primoGiorno() { return D.primoGiorno; },
+      get ultimoGiorno() { return D.ultimoGiorno; }, get passoFonti60() { return D.passoFonti60; }, get pronto() { return D.pronto; } };
+    const radice = $("carichi-lato");
+    function stato(t, errore = false) { const m = $("stato-carichi"); m.textContent = t; m.classList.toggle("errore", errore); }
+
+
+  // serie del periodo: istanti, potenza della zona e fonti dell'Italia, al passo scelto
+  async function serie() {
+    const T0 = mezzanotte(st.da), T1 = mezzanotte(giornoDopo(st.a));
+    const mesi = st.mesi.filter((m) => m.t0 < T1 && m.t0 + m.n * Q > T0);
+    const caricati = await Promise.all(mesi.map((m) => Promise.all([file(`carico_${m.mese}.json`),
+      m.fonti ? file(`fonti_${m.mese}.json`).catch(() => null) : Promise.resolve(null)])));
+    const voci = st.ix.voci.map((v) => v.id);
+    let n = 0;
+    const pezzi = mesi.map((m, j) => {
+      const i0 = Math.max(0, Math.ceil((T0 - m.t0) / Q)), i1 = Math.min(m.n, Math.floor((T1 - m.t0) / Q));
+      n += Math.max(0, i1 - i0);
+      return { m, i0, i1, car: caricati[j][0].zone[st.zona] || [], carIt: caricati[j][0].zone.ITA || [], fon: caricati[j][1] && caricati[j][1].voci };
+    });
+    const T = new Float64Array(n), L = new Float32Array(n).fill(NaN), LI = new Float32Array(n).fill(NaN), F = {};
+    voci.forEach((k) => { F[k] = new Float32Array(n).fill(NaN); });
+    let p = 0;
+    for (const { m, i0, i1, car, carIt, fon } of pezzi) {
+      for (let i = i0; i < i1; i++, p++) {
+        T[p] = m.t0 + i * Q;
+        const v = car[i]; if (v !== null && v !== undefined) L[p] = v;
+        const w = carIt[i]; if (w !== null && w !== undefined) LI[p] = w;
+        if (fon) for (const k of voci) { const x = fon[k] && fon[k][i]; if (x !== null && x !== undefined) F[k][p] = x; }
+      }
+    }
+    return st.passo === 60 ? orarie(T, L, LI, F, voci) : { T, L, LI, F, passo: 15 };
+  }
+  // ore: media dei quarti d'ora con un valore (i mesi iniziano a mezzanotte italiana, cioè a un'ora piena UTC)
+  function orarie(T, L, LI, F, voci) {
+    const n = T.length, out = [];
+    for (let i = 0; i < n;) {
+      const ora = Math.floor(T[i] / ORA); let j = i;
+      while (j < n && Math.floor(T[j] / ORA) === ora) j++;
+      out.push([i, j]); i = j;
+    }
+    const m = out.length, T2 = new Float64Array(m), L2 = new Float32Array(m), LI2 = new Float32Array(m), F2 = {};
+    const media = (a, i, j) => { let t = 0, c = 0; for (let k = i; k < j; k++) if (!Number.isNaN(a[k])) { t += a[k]; c++; } return c ? t / c : NaN; };
+    voci.forEach((k) => { F2[k] = new Float32Array(m); });
+    out.forEach(([i, j], q) => {
+      T2[q] = Math.floor(T[i] / ORA) * ORA; L2[q] = media(L, i, j); LI2[q] = media(LI, i, j);
+      for (const k of voci) F2[k][q] = media(F[k], i, j);
+    });
+    return { T: T2, L: L2, LI: LI2, F: F2, passo: 60 };
+  }
+
+  // ------------------------------------------------------------------ elaborazioni
+  function profilo(S) {
+    const K = 1440 / S.passo, mn = new Array(K).fill(Infinity), mx = new Array(K).fill(-Infinity), tot = new Array(K).fill(0), c = new Array(K).fill(0);
+    const tmin = new Array(K).fill(null), tmax = new Array(K).fill(null);
+    for (let i = 0; i < S.T.length; i++) {
+      const v = S.L[i]; if (Number.isNaN(v)) continue;
+      const t = S.T[i], k = Math.floor((((t + fuso(t) * 60000) % GIORNO) + GIORNO) % GIORNO / (S.passo * 60000));
+      if (v < mn[k]) { mn[k] = v; tmin[k] = t; }
+      if (v > mx[k]) { mx[k] = v; tmax[k] = t; }
+      tot[k] += v; c[k]++;
+    }
+    return { K, passo: S.passo, mn, mx, media: tot.map((x, k) => (c[k] ? x / c[k] : NaN)), c, tmin, tmax };
+  }
+  function durata(S) {
+    const v = Array.from(S.L).filter((x) => !Number.isNaN(x));
+    return Float32Array.from(v.sort((a, b) => b - a));
+  }
+  function riepilogo(S) {
+    let mx = -Infinity, mn = Infinity, tmx = null, tmn = null, tot = 0, c = 0, ren = 0, cRen = 0, carRen = 0;
+    const R = ["bio", "idro", "geo", "eol", "fv"];
+    for (let i = 0; i < S.T.length; i++) {
+      const v = S.L[i]; if (Number.isNaN(v)) continue;
+      c++; tot += v;
+      if (v > mx) { mx = v; tmx = S.T[i]; }
+      if (v < mn) { mn = v; tmn = S.T[i]; }
+    }
+    // (22/11/2026 c, Paolo) energia rinnovabile del periodo: sempre dell'Italia (Terna pubblica le fonti solo per l'Italia),
+    // per tutte le fonti (le caselle accese/spente non contano), solo nei quarti d'ora con tutte le fonti. Rinnovabili:
+    // bioenergie, idroelettrico (come lo pubblica Terna, pompaggi compresi: non li separa), geotermico, eolico,
+    // fotovoltaico; fuori: termoelettrico tradizionale e saldo (estero, pompaggi e accumuli). Denominatore: la produzione
+    // nazionale (rinnovabili + termoelettrico) negli stessi quarti d'ora; in più la quota sulla potenza richiesta dell'Italia.
+    let prod = 0, carIt = 0, cRenL = 0;
+    for (let i = 0; i < S.T.length; i++) {
+      if (R.some((k) => Number.isNaN(S.F[k][i])) || Number.isNaN(S.F.termo[i])) continue;
+      const r = R.reduce((t, k) => t + Math.max(0, S.F[k][i]), 0);
+      ren += r; prod += r + Math.max(0, S.F.termo[i]); cRen++;
+      if (!Number.isNaN(S.LI[i])) { carRen += r; carIt += S.LI[i]; cRenL++; }
+    }
+    const h = S.passo / 60;
+    return { c, n: S.T.length, mx, mn, tmx, tmn, media: c ? tot / c : NaN, energia: tot * h,
+      ren: cRen ? { energia: ren * h, suProduzione: prod ? 100 * ren / prod : null, suRichiesta: carIt ? 100 * carRen / carIt : null, quarti: cRen } : null };
+  }
   // ------------------------------------------------------------------ grafico 1: profilo giornaliero
   function cfgProfilo() {
     return {
@@ -443,14 +520,6 @@
       },
     };
   }
-  const oraDelGiorno = (o) => { const m = Math.round(o * 60); return `${due(Math.floor(m / 60))}:${due(m % 60)}`; };
-  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
-  function voce(colore, testo, tipo) {
-    const sp = h("span"), i = h("i", tipo === "linea" || tipo === "linea tratto" ? `linea ${tipo === "linea tratto" ? "tratto" : ""}` : "");
-    if (tipo === "fascia") { i.style.background = colore; i.style.opacity = ".35"; } else if (tipo && tipo.startsWith("linea")) i.style.color = colore; else i.style.background = colore;
-    sp.append(i, testo); return sp;
-  }
-
   // ------------------------------------------------------------------ grafico 2: curva di durata
   function cfgDurata() {
     return {
@@ -494,43 +563,139 @@
     };
   }
 
-  // ------------------------------------------------------------------ grafico 3: fonti, barre al 100 %
-  const POSITIVE = (k) => k !== "saldo";
+  // ------------------------------------------------------------------ grafici 3 e 4: fonti, in MW e al 100 %
+  // (22/11/2026, richiesta di Paolo) prima delle barre al 100 % la potenza per fonte in valore assoluto, stessa scomposizione
+  // e stessi colori; i due grafici hanno la stessa vista (st.finestra, gruppo di grafico()), i pulsanti della finestra e
+  // il cursore «Sposta di un mese». Le fonti spente (st.spente, caselle sotto il grafico in MW) escono dalla pila del grafico
+  // in MW; in quello al 100 % restano al loro posto, del colore dello sfondo (--sfondo-grafico: --carta nella pagina,
+  // --foglio nel riquadro grande).
+  const dominioFonti = () => (st.serieIt && st.serieIt.T.length ? [st.serieIt.T[0], st.serieIt.T[st.serieIt.T.length - 1] + st.passo * 60000] : [0, 1]);
+  function colonneFonti(S, v, fa) {
+    const voci = st.ix.voci, dt = st.passo * 60000;
+    const i0 = Math.max(0, cerca(S.T, v.x0 - dt)), i1 = Math.min(S.T.length, cerca(S.T, v.x1) + 1);
+    const largo = v.area[2] - v.area[0], perPx = (i1 - i0) / largo, perPixel = perPx > 0.5;
+    const passi = perPixel ? Math.ceil(largo) : i1 - i0;
+    for (let c = 0; c < passi; c++) {
+      let a, b, xa, xb;
+      if (perPixel) { xa = v.Xi(v.area[0] + c); xb = v.Xi(v.area[0] + c + 1); a = Math.max(i0, cerca(S.T, xa)); b = Math.min(i1, cerca(S.T, xb)); }
+      else { a = i0 + c; b = a + 1; xa = S.T[a]; xb = S.T[a] + dt; }
+      const tot = voci.map(() => 0); let n = 0;
+      for (let i = a; i < b; i++) {
+        if (voci.some((q) => Number.isNaN(S.F[q.id][i]))) continue;
+        voci.forEach((q, j) => { tot[j] += Math.max(0, S.F[q.id][i]); });
+        n++;
+      }
+      if (!n) continue;
+      const pxa = v.X(xa), pxb = v.X(xb);
+      fa(pxa, Math.max(0.6, pxb - pxa - (perPixel ? 0 : Math.min(1, (pxb - pxa) * 0.12))), tot.map((t) => t / n));
+    }
+  }
+  const passoNome = () => (st.passo === 15 ? "quarto d'ora" : "ora");
+
+  function cfgAssoluti() {
+    return {
+      gruppo: st.finestra,
+      titolo: () => `Potenza per fonte, MW medi per ${passoNome()} – Italia – ${periodoTesto()}`,
+      dominio: dominioFonti,
+      minimo: () => st.passo * 60000 * 6,
+      passoTasti: () => st.passo * 60000,
+      disegna(v) {
+        const S = st.serieIt; if (!S || !S.T.length) return;
+        const voci = st.ix.voci, accesa = voci.map((q) => !st.spente.has(q.id));
+        const col = [];
+        let max = 0;
+        colonneFonti(S, v, (x, larg, m) => {
+          const tot = m.reduce((t, y, j) => t + (accesa[j] ? y : 0), 0);
+          if (tot > max) max = tot;
+          col.push([x, larg, m]);
+        });
+        const Y = asseY(v, scala(max * 1.04 || 1000).top, "MW");
+        asseX(v, tackeTempo(v.x0, v.x1, v.area[2] - v.area[0]));
+        v.Y = Y;
+        if (!accesa.some(Boolean)) {
+          s("text", { x: (v.area[0] + v.area[2]) / 2, y: (v.area[1] + v.area[3]) / 2, "text-anchor": "middle", class: "carichi-vuoto" }, v.assi).textContent = "Nessuna fonte accesa";
+          return;
+        }
+        const d = voci.map(() => []);
+        for (const [x, larg, m] of col) {
+          let acc = 0;
+          voci.forEach((q, j) => {
+            if (!accesa[j] || !m[j]) return;
+            const y0 = Y(acc); acc += m[j];
+            d[j].push(rettangolo(x, larg, y0, Y(acc)));
+          });
+        }
+        voci.forEach((q, j) => { if (d[j].length) s("path", { d: d[j].join(""), fill: q.colore, "shape-rendering": "crispEdges", "data-fonte": q.id }, v.corpo); });
+        tratteggia(v, S, mancaFonti);
+      },
+      punto(x, v) {
+        const S = st.serieIt; if (!S || !S.T.length || !v.Y) return null;
+        const dt = st.passo * 60000, i = limita(cerca(S.T, x + 1) - 1, 0, S.T.length - 1);
+        const t = S.T[i], voci = st.ix.voci;
+        const titolo = `${dataBreve(t)}, ${oraBreve(t)}–${oraBreve(t + dt)}`;
+        if (voci.some((q) => Number.isNaN(S.F[q.id][i]))) return { x: t + dt / 2, titolo, righe: [[null, "dati mancanti: Terna non ha pubblicato la produzione per fonte"], [null, "(il server riprova a scaricarli ogni giorno)"]] };
+        const accese = voci.filter((q) => !st.spente.has(q.id));
+        const tot = accese.reduce((tt, q) => tt + Math.max(0, S.F[q.id][i]), 0);
+        const righe = voci.slice().reverse().map((q) => [st.spente.has(q.id) ? null : q.colore,
+          `${q.nome}: ${MW(S.F[q.id][i])}${st.spente.has(q.id) ? " (spenta)" : ""}`]);
+        righe.push([null, `fonti accese, in tutto: ${MW(tot)}`]);
+        if (!Number.isNaN(S.L[i])) righe.push([null, `potenza richiesta (Italia): ${MW(S.L[i])}`]);
+        if (S.passo === 15 && st.passoFonti60 && st.passoFonti60(t)) righe.push([null, "dati orari di Terna: uguali nei quattro quarti d'ora"]);
+        return { x: t + dt / 2, titolo, righe, segni: accese.length ? [[t + dt / 2, v.Y(tot), "var(--inchiostro)"]] : [] };
+      },
+      // caselle per fonte (anche nel riquadro grande: tutte le copie restano allineate), «Accendi tutte», «Spegni tutte»
+      legenda(dest) {
+        const L = h("div", "legenda legenda-grafico legenda-caselle");
+        L.setAttribute("role", "group"); L.setAttribute("aria-label", "Fonti accese nel grafico della potenza");
+        st.ix.voci.slice().reverse().forEach((q) => {
+          const lab = h("label", "casella-fonte"), c = h("input"), i = h("i"), e = h("small", "energia-fonte");
+          c.type = "checkbox"; c.dataset.fonte = q.id; c.dataset.lato = k; c.checked = !st.spente.has(q.id);
+          i.style.background = q.colore; e.dataset.energia = q.id; e.dataset.lato = k;
+          lab.append(c, i, nomeLegenda(q), e);
+          c.addEventListener("change", () => accendiFonti([q.id], c.checked));
+          L.appendChild(lab);
+        });
+        const b = h("div", "legenda-tutte");
+        for (const [t, si] of [["Accendi tutte", true], ["Spegni tutte", false]]) {
+          const x = h("button", "filtro", t); x.type = "button"; x.dataset.tutte = si ? "1" : "0";
+          x.addEventListener("click", () => accendiFonti(st.ix.voci.map((q) => q.id), si));
+          b.appendChild(x);
+        }
+        L.appendChild(b);
+        dest.appendChild(L);
+        scriviEnergie();
+      },
+    };
+  }
+
   function cfgFonti() {
     return {
-      titolo: () => `Fonti di produzione, quota per ${st.passo === 15 ? "quarto d'ora" : "ora"} – Italia – ${periodoTesto()}`,
-      dominio: () => (st.serieIt && st.serieIt.T.length ? [st.serieIt.T[0], st.serieIt.T[st.serieIt.T.length - 1] + st.passo * 60000] : [0, 1]),
+      gruppo: st.finestra,
+      titolo: () => `Fonti di produzione, quota per ${passoNome()} – Italia – ${periodoTesto()}`,
+      dominio: dominioFonti,
       minimo: () => st.passo * 60000 * 6,
       passoTasti: () => st.passo * 60000,
       disegna(v) {
         const S = st.serieIt; if (!S || !S.T.length) return;
         const Y = asseY(v, 100, "%", (y) => `${num(y)}`);
         asseX(v, tackeTempo(v.x0, v.x1, v.area[2] - v.area[0]));
-        const voci = st.ix.voci, dt = st.passo * 60000;
-        const i0 = Math.max(0, cerca(S.T, v.x0 - dt)), i1 = Math.min(S.T.length, cerca(S.T, v.x1) + 1);
-        const largo = v.area[2] - v.area[0], perPx = (i1 - i0) / largo;
-        // colonne: un quarto d'ora (o un'ora) ciascuna se c'è posto, altrimenti un pixel che somma i quarti d'ora che copre
-        const passi = perPx > 0.5 ? Math.ceil(largo) : i1 - i0;
-        const d = voci.map(() => []);
-        for (let c = 0; c < passi; c++) {
-          let a, b, xa, xb;
-          if (perPx > 0.5) { xa = v.Xi(v.area[0] + c); xb = v.Xi(v.area[0] + c + 1); a = Math.max(i0, cerca(S.T, xa)); b = Math.min(i1, cerca(S.T, xb)); }
-          else { a = i0 + c; b = a + 1; xa = S.T[a]; xb = S.T[a] + dt; }
-          const tot = voci.map(() => 0); let somma = 0;
-          for (let i = a; i < b; i++) {
-            if (voci.some((q) => Number.isNaN(S.F[q.id][i]))) continue;
-            voci.forEach((q, j) => { const x = Math.max(0, S.F[q.id][i]); tot[j] += x; somma += x; });
-          }
-          if (!somma) continue;
-          const pxa = v.X(xa), pxb = v.X(xb), larg = Math.max(0.6, pxb - pxa - (perPx > 0.5 ? 0 : Math.min(1, (pxb - pxa) * 0.12)));
+        const voci = st.ix.voci, d = voci.map(() => []);
+        colonneFonti(S, v, (x, larg, m) => {
+          const somma = m.reduce((t, y) => t + y, 0);
+          if (!somma) return;
           let acc = 0;
           voci.forEach((q, j) => {
-            if (!tot[j]) return;
-            const y0 = Y(100 * acc / somma); acc += tot[j]; const y1 = Y(100 * acc / somma);
-            d[j].push(`M${pxa.toFixed(2)},${y1.toFixed(2)}h${larg.toFixed(2)}V${y0.toFixed(2)}h${(-larg).toFixed(2)}z`);
+            if (!m[j]) return;
+            const y0 = Y(100 * acc / somma); acc += m[j];
+            d[j].push(rettangolo(x, larg, y0, Y(100 * acc / somma)));
           });
-        }
-        voci.forEach((q, j) => { if (d[j].length) s("path", { d: d[j].join(""), fill: q.colore, "shape-rendering": "crispEdges" }, v.corpo); });
+        });
+        voci.forEach((q, j) => {
+          if (!d[j].length) return;
+          const spenta = st.spente.has(q.id);
+          s("path", { d: d[j].join(""), fill: spenta ? SFONDO : q.colore, "shape-rendering": "crispEdges", "data-fonte": q.id, class: spenta ? "fonte-spenta" : "" }, v.corpo);
+        });
+        tratteggia(v, S, mancaFonti);
         v.Y = Y;
       },
       punto(x, v) {
@@ -538,22 +703,181 @@
         const dt = st.passo * 60000, i = limita(cerca(S.T, x + 1) - 1, 0, S.T.length - 1);
         const t = S.T[i], voci = st.ix.voci;
         const titolo = `${dataBreve(t)}, ${oraBreve(t)}–${oraBreve(t + dt)}`;
-        if (voci.some((q) => Number.isNaN(S.F[q.id][i]))) return { x: t + dt / 2, titolo, righe: [[null, "produzione per fonte non disponibile"]] };
+        if (voci.some((q) => Number.isNaN(S.F[q.id][i]))) return { x: t + dt / 2, titolo, righe: [[null, "dati mancanti: Terna non ha pubblicato la produzione per fonte"], [null, "(il server riprova a scaricarli ogni giorno)"]] };
         const pos = voci.reduce((tt, q) => tt + Math.max(0, S.F[q.id][i]), 0);
-        const righe = voci.slice().reverse().map((q) => [q.colore, `${q.nome}: ${MW(S.F[q.id][i])}${S.F[q.id][i] > 0 ? ` (${pc(100 * S.F[q.id][i] / pos)})` : ""}`]);
+        const righe = voci.slice().reverse().map((q) => [st.spente.has(q.id) ? null : q.colore,
+          `${q.nome}: ${MW(S.F[q.id][i])}${S.F[q.id][i] > 0 ? ` (${pc(100 * S.F[q.id][i] / pos)})` : ""}${st.spente.has(q.id) ? " (spenta)" : ""}`]);
         if (!Number.isNaN(S.L[i])) righe.push([null, `potenza richiesta (Italia): ${MW(S.L[i])}`]);
         if (S.passo === 15 && st.passoFonti60 && st.passoFonti60(t)) righe.push([null, "dati orari di Terna: uguali nei quattro quarti d'ora"]);
         return { x: t + dt / 2, titolo, righe };
       },
       legenda(dest) {
         const L = h("div", "legenda legenda-grafico");
-        st.ix.voci.slice().reverse().forEach((q) => L.append(voce(q.colore, q.id === "saldo" ? "saldo con l'estero, pompaggi e accumuli (quando positivo)" : q.nome)));
+        st.ix.voci.slice().reverse().forEach((q) => {
+          const v = voce(q.colore, nomeLegenda(q));
+          v.dataset.fonteLegenda = q.id; v.dataset.lato = k; v.classList.toggle("spenta", st.spente.has(q.id));
+          L.append(v);
+        });
         dest.appendChild(L);
       },
     };
   }
-  function cerca(T, x) { let lo = 0, hi = T.length; while (lo < hi) { const m = (lo + hi) >> 1; if (T[m] < x) lo = m + 1; else hi = m; } return lo; }
 
+  // ---- tratti senza dati (22/11/2026, Paolo: il buco del 14–15 gennaio 2026): rettangoli tratteggiati con la scritta
+  // «dati mancanti» al posto di un vuoto che non si capisce; elenco dei tratti nella nota sotto lo stato della metà
+  const mancaFonti = (i) => st.ix.voci.some((q) => Number.isNaN(st.serieIt.F[q.id][i]));
+  function tratti(S, manca) {
+    const out = [];
+    for (let i = 0; i < S.T.length;) {
+      if (!manca(i)) { i++; continue; }
+      let j = i; while (j < S.T.length && manca(j)) j++;
+      out.push([i, j]); i = j;
+    }
+    return out;
+  }
+  function tratteggia(v, S, manca) {
+    const dt = st.passo * 60000, i0 = Math.max(0, cerca(S.T, v.x0 - dt)), i1 = Math.min(S.T.length, cerca(S.T, v.x1) + 1);
+    let pid = null;
+    for (let i = i0; i < i1;) {
+      if (!manca(i)) { i++; continue; }
+      let j = i; while (j < i1 && manca(j)) j++;
+      if (!pid) {
+        pid = `tratteggio-${Math.random().toString(36).slice(2, 9)}`;
+        const pat = s("pattern", { id: pid, patternUnits: "userSpaceOnUse", width: 8, height: 8, patternTransform: "rotate(45)" }, s("defs", {}, v.corpo));
+        s("line", { x1: 0, y1: 0, x2: 0, y2: 8, stroke: "var(--tenue)", "stroke-width": 2.5 }, pat);
+      }
+      const xa = Math.max(v.area[0], v.X(S.T[i])), xb = Math.min(v.area[2], v.X(S.T[j - 1] + dt));
+      s("rect", { x: xa, y: v.area[1], width: Math.max(1.5, xb - xa), height: v.area[3] - v.area[1], fill: `url(#${pid})`, "fill-opacity": 0.6, class: "carichi-mancanti-area" }, v.corpo);
+      if (xb - xa > 96) s("text", { x: (xa + xb) / 2, y: (v.area[1] + v.area[3]) / 2, "text-anchor": "middle", class: "carichi-mancanti-testo" }, v.corpo).textContent = "dati mancanti";
+      i = j;
+    }
+  }
+  function scriviMancanti(S) {
+    const dt = st.passo * 60000, nota = $("carichi-mancanti");
+    const testo = (tt) => { const p = tt.slice(0, 4).map(([i, j]) => testoFinestra(S.T[i], S.T[j - 1] + dt)); if (tt.length > 4) p.push(`e altri ${num(tt.length - 4)} tratti`); return p.join("; "); };
+    const car = tratti(S, (i) => Number.isNaN(S.L[i])), fon = tratti(S, mancaFonti), righe = [];
+    if (car.length) righe.push(`potenza richiesta (${nomeZona()}): ${testo(car)}`);
+    if (fon.length) righe.push(`produzione per fonte: ${testo(fon)}`);
+    nota.hidden = !righe.length;
+    nota.textContent = righe.length ? `Dati mancanti nel periodo – ${righe.join("; ")}. Terna non li ha pubblicati: il server riprova a scaricarli ogni giorno e i grafici delle fonti li mostrano tratteggiati.` : "";
+  }
+
+  // ---- fonti accese e spente
+  function accendiFonti(ids, si) {
+    for (const id of ids) { if (si) st.spente.delete(id); else st.spente.add(id); }
+    document.querySelectorAll(`input[data-fonte][data-lato="${k}"]`).forEach((c) => { c.checked = !st.spente.has(c.dataset.fonte); });
+    document.querySelectorAll(`[data-fonte-legenda][data-lato="${k}"]`).forEach((e) => e.classList.toggle("spenta", st.spente.has(e.dataset.fonteLegenda)));
+    st.finestra.grafici.forEach((g) => g.aggiornaCopie());
+    const n = st.spente.size, tutte = st.ix.voci.length;
+    annuncio.textContent = n === 0 ? "Tutte le fonti accese" : n === tutte ? "Tutte le fonti spente" : `${num(tutte - n)} fonti accese su ${num(tutte)}`;
+    scriviPresto();
+  }
+  // energia di ogni fonte nella finestra visibile (quarti d'ora che cominciano dentro la finestra), accanto alle caselle
+  function scriviEnergie() {
+    const S = st.serieIt; if (!S || !S.T.length) return;
+    const [x0, x1] = st.finestra.vista || dominioFonti(), i0 = cerca(S.T, x0), i1 = cerca(S.T, x1), h0 = st.passo / 60;
+    for (const q of st.ix.voci) {
+      let e = 0, c = 0;
+      const a = S.F[q.id];
+      for (let i = i0; i < i1; i++) if (!Number.isNaN(a[i])) { e += a[i] * h0; c++; }
+      const g = e / 1000, t = c ? ` · ${num(g, Math.abs(g) >= 100 ? 0 : Math.abs(g) >= 10 ? 1 : 2)} GWh` : "";
+      document.querySelectorAll(`[data-energia="${q.id}"][data-lato="${k}"]`).forEach((x) => { x.textContent = t; });
+    }
+  }
+
+  // ---- finestra dei due grafici delle fonti: pulsanti e cursore «Sposta di un mese»
+  // giorno AAAA-MM-GG spostato di k mesi indietro (giorno del mese tenuto, o l'ultimo del mese se non c'è)
+  // ultimo giorno con i dati delle fonti nel periodo (tutte le fonti), altrimenti l'ultimo del periodo
+  // ultimo giorno con i dati di tutte le fonti: nella serie, se il periodo arriva in fondo all'archivio; altrimenti quello
+  // dell'archivio (dall'indice: ultimo mese con le fonti)
+  function ultimoGiornoFonti() {
+    const S = st.serieIt, voci = st.ix.voci;
+    if (S && S.T.length && st.a >= st.ultimoGiorno) {
+      for (let i = S.T.length - 1; i >= 0; i--) if (!voci.some((q) => Number.isNaN(S.F[q.id][i]))) return dataIso(S.T[i]);
+    }
+    return D.ultimoGiornoFonti || st.ultimoGiorno;
+  }
+  const FINESTRE = { giorno: (u) => u, settimana: (u) => giorniIndietro(u, 6), mese: (u) => mesiIndietro(giornoDopo(u), 1),
+    trimestre: (u) => mesiIndietro(giornoDopo(u), 3), anno: (u) => mesiIndietro(giornoDopo(u), 12) };
+  const archivio = () => [mezzanotte(st.primoGiorno), mezzanotte(giornoDopo(st.ultimoGiorno))];
+  // finestra di un pulsante, in tutto l'archivio (22/11/2026 b): dall'ultimo giorno con i dati delle fonti indietro
+  function finestraDi(tipo) {
+    if (tipo === "tutto" || !FINESTRE[tipo]) return dominioFonti();
+    const u = ultimoGiornoFonti();
+    return [Math.max(archivio()[0], mezzanotte(FINESTRE[tipo](u))), mezzanotte(giornoDopo(u))];
+  }
+  // finestra dentro il periodo scelto
+  function vaiFinestra(a, b) {
+    const g = st.finestra.grafici[0]; if (!g) return;
+    const [d0, d1] = dominioFonti();
+    if (b - a >= d1 - d0 - 1000) g.reset(); else g.imposta(a, b);
+  }
+  // (22/11/2026 b, Paolo: «tornare indietro a tutti gli anni») pulsanti e cursore scorrono su tutto l'archivio: se la
+  // finestra esce dal periodo Dal/al, il periodo si sposta con la stessa lunghezza in giorni (più lungo se la finestra non
+  // ci sta), si ricalcola e la finestra si rimette dopo il calcolo
+  function vaiA(a, b) {
+    const [d0, d1] = dominioFonti();
+    if (st.serieIt && st.serieIt.T.length && a >= d0 - 1000 && b <= d1 + 1000) { vaiFinestra(a, b); return; }
+    const n = giorniTra(st.da, st.a) + 1;
+    let fine = dataIso(b - 1), ini = giorniIndietro(fine, n - 1);
+    if (ini > dataIso(a)) ini = dataIso(a);
+    if (ini < st.primoGiorno) { ini = st.primoGiorno; const f = giorniIndietro(ini, -(n - 1)); if (f > fine) fine = f; }
+    if (fine > st.ultimoGiorno) fine = st.ultimoGiorno;
+    st.da = ini; st.a = fine; st.finestraIniziale = [a, b];
+    scriviDate(); indirizzo(); calcola();
+  }
+  const vistaFonti = () => st.finestra.vista || dominioFonti();
+  // posizioni del cursore in tutto l'archivio: la finestra con la larghezza di adesso (tutto il periodo, se non è
+  // ingrandita), che finisce alla fine dell'archivio e poi un mese prima a ogni scatto; l'ultima comincia all'inizio
+  // dell'archivio. Dalla più vecchia alla più recente.
+  function posizioni() {
+    const [A0, A1] = archivio(), [a, b] = vistaFonti(), w = b - a;
+    if (w >= A1 - A0 - 1000) return [];
+    const out = [];
+    for (let j = 0; j < 1200; j++) {
+      const e = j === 0 ? A1 : mezzanotte(mesiIndietro(dataIso(A1), j));
+      if (e - w <= A0) break;
+      out.push([e - w, e]);
+    }
+    out.push([A0, A0 + w]);
+    return out.reverse();
+  }
+  function scriviFinestra() {
+    if (!st.serieIt || !st.serieIt.T.length) return;
+    const [a, b] = vistaFonti(), cur = $("carichi-scorri"), out = $("carichi-scorri-testo");
+    $("carichi-finestre").querySelectorAll("[data-finestra]").forEach((x) => {
+      const [p, q] = finestraDi(x.dataset.finestra);
+      x.setAttribute("aria-pressed", String(x.dataset.finestra === "tutto" ? !st.finestra.vista : Math.abs(p - a) < 60000 && Math.abs(q - b) < 60000));
+    });
+    st.posizioni = posizioni();
+    const P = st.posizioni, testo = testoFinestra(a, b);
+    if (P.length < 2) {
+      cur.disabled = true; cur.max = "0"; cur.value = "0";
+      cur.setAttribute("aria-valuetext", `tutto l'archivio, ${testo}`);
+      out.textContent = testo;
+    } else {
+      let j = 0;
+      P.forEach(([, e], i) => { if (Math.abs(e - b) < Math.abs(P[j][1] - b)) j = i; });
+      cur.disabled = false; cur.max = String(P.length - 1); cur.value = String(j);
+      cur.setAttribute("aria-valuetext", testo);
+      out.textContent = testo;
+    }
+    scriviEnergie();
+  }
+  let timerIndirizzo = 0;
+  function scriviPresto() {
+    clearTimeout(timerIndirizzo);
+    timerIndirizzo = setTimeout(() => { if (st.pronto) { indirizzo(); if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.aggiorna(); } }, 300);
+  }
+  st.finestra = { vista: null, grafici: [], suCambio: () => { scriviFinestra(); scriviPresto(); } };
+  // finestra nell'indirizzo: finestra=AAAA-MM-GG_AAAA-MM-GG (giorni interi, fine compresa) o con l'ora, AAAA-MM-GGTHHMM
+  // (l'istante esatto, ora italiana); niente parametro = tutto il periodo
+  function finestraTesto() {
+    if (!st.finestra.vista) return null;
+    const [a, b] = st.finestra.vista.map((t) => Math.round(t / 60000) * 60000);
+    const ora = (t) => { const d = locale(t); return `T${due(d.getUTCHours())}${due(d.getUTCMinutes())}`; };
+    return `${dataIso(a)}${aMezzanotte(a) ? "" : ora(a)}_${aMezzanotte(b) ? dataIso(b - 1) : dataIso(b) + ora(b)}`;
+  }
   // ------------------------------------------------------------------ testo
   const nomeZona = () => (st.ix.zone.find((z) => z.id === st.zona) || { nome: "Italia" }).nome;
   const periodoTesto = () => `dal ${dataBreve(mezzanotte(st.da))} al ${dataBreve(mezzanotte(st.a))}`;
@@ -565,7 +889,17 @@
     riga("Potenza massima", MW(R.mx), R.tmx !== null ? `${dataBreve(R.tmx)}, ${oraBreve(R.tmx)}` : "");
     riga("Potenza minima", MW(R.mn), R.tmn !== null ? `${dataBreve(R.tmn)}, ${oraBreve(R.tmn)}` : "");
     riga("Potenza media", MW(R.media), Number.isFinite(R.mx) && R.mx ? `${pc(100 * R.media / R.mx)} della massima` : "");
-    if (R.quotaRen !== null) riga("Produzione rinnovabile", pc(R.quotaRen), "della potenza richiesta (Italia)");
+    const energiaTesto = (e) => (e >= 1e6 ? `${num(e / 1e6, 2)} TWh` : `${num(e / 1e3, 1)} GWh`);
+    if (R.ren) riga("Energia da fonti rinnovabili (Italia)", energiaTesto(R.ren.energia),
+      `${pc(R.ren.suProduzione)} della produzione nazionale${R.ren.suRichiesta !== null ? ` · ${pc(R.ren.suRichiesta)} della richiesta dell'Italia` : ""}`);
+    else riga("Energia da fonti rinnovabili (Italia)", "–", "produzione per fonte non disponibile nel periodo");
+    const nota = $("nota-rinnovabili");
+    nota.textContent = `Fonti rinnovabili: bioenergie, idroelettrico (come lo pubblica Terna nella produzione rinnovabile: comprende `
+      + `la parte da pompaggio, che Terna non separa), geotermico, eolico e fotovoltaico, autoconsumi compresi; esclusi il `
+      + `termoelettrico tradizionale e il saldo con l'estero, i pompaggi e gli accumuli. La percentuale è sulla produzione `
+      + `nazionale (rinnovabili più termoelettrico) negli stessi quarti d'ora; c'è anche quella sulla potenza richiesta `
+      + `dell'Italia. Sempre valori dell'Italia, anche con una zona scelta (Terna pubblica le fonti solo per l'Italia), e per tutte `
+      + `le fonti, anche quelle spente nei grafici.${R.ren && R.ren.quarti < R.n ? ` Contano i ${num(R.ren.quarti)} ${unita} con tutte le fonti.` : ""}`;
     riga(st.passo === 15 ? "Quarti d'ora" : "Ore", num(R.c), R.c < R.n ? `${num(R.n - R.c)} ${unita} senza dati` : "tutti con i dati");
   }
 
@@ -573,6 +907,7 @@
   async function calcola() {
     const mio = ++st.giro;
     stato("Calcolo…");
+    scriviAnno();
     try {
       const S = await serie();
       if (mio !== st.giro) return;
@@ -581,19 +916,27 @@
       scriviRiepilogo(riepilogo(S));
       $("titolo-profilo").textContent = `Profilo giornaliero – ${nomeZona()}`;
       $("titolo-durata").textContent = `Curva di durata – ${nomeZona()}`;
+      $("titolo-assoluti").textContent = "Potenza per fonte – Italia";
       $("titolo-fonti").textContent = "Fonti di produzione – Italia";
       $("nota-zona-fonti").hidden = st.zona === "ITA";
-      const g = st.grafici;
+      const g = st.grafici, periodo = `${st.da}|${st.a}`;
       if (!g.profilo) {
         g.profilo = grafico($("grafico-profilo"), cfgProfilo());
         g.durata = grafico($("grafico-durata"), cfgDurata());
+        g.assoluti = grafico($("grafico-assoluti"), cfgAssoluti());
         g.fonti = grafico($("grafico-fonti"), cfgFonti());
       } else {
         g.profilo.vista = g.profilo.vista && st.passoPrima === st.passo ? g.profilo.vista : null;
-        g.durata.vista = null; g.fonti.vista = null;
+        g.durata.vista = null;
+        // (22/11/2026) la finestra delle fonti (tempi, sempre dell'Italia) resta col cambio di zona o di passo
+        if (st.periodoPrima !== periodo) st.finestra.vista = null;
         Object.values(g).forEach((x) => x.ridisegna());
       }
-      st.passoPrima = st.passo;
+      // finestra dell'indirizzo o di un pulsante / del cursore fuori dal periodo di prima: dentro il periodo nuovo
+      if (st.finestraIniziale) { const [a, b] = st.finestraIniziale; st.finestraIniziale = null; vaiFinestra(a, b); }
+      st.passoPrima = st.passo; st.periodoPrima = periodo;
+      scriviFinestra();
+      scriviMancanti(S);
       const senza = S.T.length && Array.from(S.L).every(Number.isNaN);
       const ultimo = st.mesi[st.mesi.length - 1];
       stato(senza ? "Nessun dato nel periodo scelto." : `Dati di Terna fino al ${dataBreve(ultimo.t0 + (ultimo.n - 1) * Q)}, ${oraBreve(ultimo.t0 + (ultimo.n - 1) * Q)} (aggiornati il ${new Date(st.ix.aggiornato).toLocaleDateString("it-IT")}).`, !!senza);
@@ -602,68 +945,21 @@
     }
   }
 
-  function indirizzo() {
-    const u = new URL(location.href);
-    if (st.zona === "ITA") u.searchParams.delete("zona"); else u.searchParams.set("zona", st.zona);
-    u.searchParams.set("da", st.da); u.searchParams.set("a", st.a);
-    if (st.passo === 15) u.searchParams.delete("passo"); else u.searchParams.set("passo", String(st.passo));
-    history.replaceState(null, "", u);
+  const spenteTesto = () => (st.ix ? st.ix.voci.filter((q) => st.spente.has(q.id)).map((q) => q.id).join(",") : "") || null;
+  // parametri della metà nell'indirizzo (la destra con «2» in fondo: zona2, da2, …); i predefiniti no (Italia, quarti
+  // d'ora, tutto il periodo, tutte le fonti accese); prima dei grafici la finestra dell'indirizzo resta
+  function parametri() {
+    return { [`zona${P}`]: st.zona === "ITA" ? null : st.zona, [`da${P}`]: st.da, [`a${P}`]: st.a,
+      [`passo${P}`]: st.passo === 15 ? null : String(st.passo),
+      [`finestra${P}`]: st.grafici.assoluti ? finestraTesto() : undefined, [`spente${P}`]: spenteTesto() };
   }
-
-  // ------------------------------------------------------------------ piccola mappa delle zone
-  async function minimappa() {
-    const box = $("minimappa-zone");
-    let m;
-    try { const r = await fetch(conV("dati/mappa/zone.json")); if (!r.ok) throw new Error(String(r.status)); m = await r.json(); } catch { box.remove(); return; }
-    box.innerHTML = '<div class="minimappa-etichetta" role="status"></div>' +
-      '<div class="minimappa-comandi"><button type="button" data-z="1.6" title="Ingrandisci" aria-label="Ingrandisci la piccola mappa">+</button>' +
-      '<button type="button" data-z="0.625" title="Rimpicciolisci" aria-label="Rimpicciolisci la piccola mappa">−</button>' +
-      '<button type="button" data-z="0" title="Ripristina la vista" aria-label="Ripristina la vista della piccola mappa">⟲</button></div>';
-    const et = box.querySelector(".minimappa-etichetta");
-    const svg = s("svg", { viewBox: m.viewBox.join(" "), role: "group", "aria-label": "Scegli la zona di mercato" });
-    box.prepend(svg);
-    const g = s("g", {}, svg);
-    st.percorsi = new Map();
-    for (const z of m.zone) {
-      const p = s("path", { d: z.d, fill: `var(--reg-${COLORE_ZONA[z.id] || "08"})`, tabindex: "0", role: "button", "aria-label": `Zona ${z.nome}` }, g);
-      p.dataset.zona = z.id;
-      st.percorsi.set(z.id, p);
-      const nomeEt = () => (st.zona === z.id ? `${z.nome}: clic per tornare all'Italia` : `Zona ${z.nome}`);
-      p.addEventListener("mousemove", (e) => {
-        const b = box.getBoundingClientRect();
-        et.textContent = nomeEt(); et.style.display = "block";
-        et.style.left = `${Math.max(0, Math.min(e.clientX - b.left + 10, b.width - et.offsetWidth))}px`;
-        et.style.top = `${Math.max(0, e.clientY - b.top - 28)}px`;
-      });
-      p.addEventListener("mouseleave", () => { et.style.display = "none"; });
-      p.addEventListener("focus", () => { et.textContent = nomeEt(); et.style.display = "block"; et.style.left = "0"; et.style.top = "0"; });
-      p.addEventListener("blur", () => { et.style.display = "none"; });
-      p.addEventListener("click", () => scegliZona(st.zona === z.id ? "ITA" : z.id));
-      p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); scegliZona(st.zona === z.id ? "ITA" : z.id); } });
-    }
-    if (E && E.zoomabile) {
-      const vb = m.viewBox.map(Number);
-      const z = E.zoomabile(svg, { limiti: () => vb, ritorno: () => vb, minimo: 1 / 12,
-        suCambio: (f) => { svg.style.setProperty("--tratto-mm", (1.2 * f).toFixed(3)); box.classList.toggle("ingrandita", f < 0.999); } });
-      box.querySelectorAll(".minimappa-comandi button[data-z]").forEach((b) => b.addEventListener("click", () => z.zoom(+b.dataset.z)));
-    } else box.querySelector(".minimappa-comandi").remove();
-    evidenzia();
-  }
-  function evidenzia() {
-    if (!st.percorsi) return;
-    st.percorsi.forEach((p, id) => { p.classList.toggle("attiva", id === st.zona); p.setAttribute("aria-pressed", String(id === st.zona)); });
-    const p = st.percorsi.get(st.zona); if (p) p.parentNode.appendChild(p);
-    const box = $("minimappa-zone"); if (box) box.classList.toggle("tutta-italia", st.zona === "ITA");
-  }
-  function scegliZona(id) {
+  function scegliZona(id, perMappa = false) {
     if (!st.ix.zone.some((z) => z.id === id)) id = "ITA";
     st.zona = id;
-    $("zona-scelta").textContent = nomeZona();
-    $("torna-italia").hidden = id === "ITA";
-    evidenzia(); indirizzo(); calcola();
+    $("carichi-zona").value = id;
+    evidenzia(); if (!perMappa) indirizzo(); calcola();
   }
-
-  // ------------------------------------------------------------------ comandi e avvio
+  // ------------------------------------------------------------------ comandi
   function periodoValido(da, a) {
     const min = st.primoGiorno, max = st.ultimoGiorno;
     const ok = (x) => /^\d{4}-\d\d-\d\d$/.test(x || "");
@@ -678,48 +974,229 @@
   function ultimi12() { [st.da, st.a] = periodoValido(null, st.ultimoGiorno); scriviDate(); indirizzo(); calcola(); }
   function scriviDate() {
     for (const [id, v] of [["carichi-da", st.da], ["carichi-a", st.a]]) { const i = $(id); i.min = st.primoGiorno; i.max = st.ultimoGiorno; i.value = v; }
+    scriviAnno();
   }
-  async function avvio() {
-    try { st.ix = await json("indice.json"); } catch {
-      senzaDati("I dati di Terna non sono ancora disponibili su questo server (li prepara il worker una volta al giorno).");
-      return;
+  // (22/11/2026 b, Paolo) anno intero: menu dell'anno e «‹ ›» (anno precedente e successivo) che scrivono Dal/al
+  const anniArchivio = () => { const out = []; for (let y = +st.primoGiorno.slice(0, 4); y <= +st.ultimoGiorno.slice(0, 4); y++) out.push(y); return out; };
+  const limitiAnno = (y) => [`${y}-01-01` < st.primoGiorno ? st.primoGiorno : `${y}-01-01`, `${y}-12-31` > st.ultimoGiorno ? st.ultimoGiorno : `${y}-12-31`];
+  function annoScelto() {
+    const y = +st.da.slice(0, 4), [a, b] = limitiAnno(y);
+    return st.da === a && st.a === b ? y : null;
+  }
+  function scegliAnno(y) {
+    if (!anniArchivio().includes(y)) return;
+    [st.da, st.a] = limitiAnno(y); scriviDate(); indirizzo(); calcola();
+  }
+  const annoPrima = () => { const y = annoScelto(); return y !== null ? y - 1 : +st.a.slice(0, 4) - 1; };
+  const annoDopo = () => { const y = annoScelto(); return y !== null ? y + 1 : +st.a.slice(0, 4); };
+  function scriviAnno() {
+    if (!st.da || !D.ix) return;
+    const sel = $("carichi-anno"), y = annoScelto(), anni = anniArchivio();
+    if (sel.options.length !== anni.length + 1) {
+      sel.replaceChildren(new Option("Anno…", ""), ...anni.map((x) => new Option(String(x), String(x))));
     }
-    st.mesi = (st.ix.mesi || []).map((m) => ({ ...m, t0: Date.parse(m.inizio) }));
-    if (!st.mesi.length) { senzaDati("Nessun dato di Terna disponibile su questo server."); return; }
-    const ult = st.mesi[st.mesi.length - 1];
-    st.primoGiorno = dataIso(st.mesi[0].t0);
-    st.ultimoGiorno = dataIso(ult.t0 + (ult.n - 1) * Q);
-    st.passoFonti60 = (t) => { const m = st.mesi.find((x) => t >= x.t0 && t < x.t0 + x.n * Q); return m && m.passo_fonti === 60; };
-    const q = new URLSearchParams(location.search);
-    const z = (q.get("zona") || "").toUpperCase();
+    sel.value = y === null ? "" : String(y);
+    $("anno-prima").disabled = !anni.includes(annoPrima());
+    $("anno-dopo").disabled = !anni.includes(annoDopo()) || annoDopo() === y;
+  }
+
+  // ------------------------------------------------------------------ avvio della metà
+  function avvia(q) {
+    const z = (q.get(`zona${P}`) || "").toUpperCase();
     st.zona = st.ix.zone.some((x) => x.id === z) ? z : "ITA";
-    st.passo = q.get("passo") === "60" ? 60 : 15;
-    [st.da, st.a] = periodoValido(q.get("da"), q.get("a"));
+    st.passo = q.get(`passo${P}`) === "60" ? 60 : 15;
+    [st.da, st.a] = periodoValido(q.get(`da${P}`), q.get(`a${P}`));
+    (q.get(`spente${P}`) || "").split(",").forEach((id) => { if (st.ix.voci.some((v) => v.id === id)) st.spente.add(id); });
+    st.finestraIniziale = leggiFinestra(q.get(`finestra${P}`));
+    const sel = $("carichi-zona");
+    sel.replaceChildren(...st.ix.zone.map((x) => new Option(x.id === "ITA" ? "Italia (tutte le zone)" : x.nome, x.id)));
+    sel.value = st.zona;
+    sel.addEventListener("change", () => scegliZona(sel.value));
     $("carichi-quarti").checked = st.passo === 15;
-    $("zona-scelta").textContent = nomeZona();
-    $("torna-italia").hidden = st.zona === "ITA";
     scriviDate();
     const date = () => { [st.da, st.a] = periodoValido($("carichi-da").value || st.da, $("carichi-a").value || st.a); scriviDate(); indirizzo(); calcola(); };
     $("carichi-da").addEventListener("change", date);
     $("carichi-a").addEventListener("change", date);
     $("ultimi-12").addEventListener("click", ultimi12);
+    $("carichi-anno").addEventListener("change", (e) => { if (e.target.value) scegliAnno(+e.target.value); });
+    $("anno-prima").addEventListener("click", () => scegliAnno(annoPrima()));
+    $("anno-dopo").addEventListener("click", () => scegliAnno(annoDopo()));
     $("carichi-quarti").addEventListener("change", (e) => { st.passo = e.target.checked ? 15 : 60; indirizzo(); calcola(); });
-    $("torna-italia").addEventListener("click", () => scegliZona("ITA"));
-    window.EUGENIO_CARICHI = { stato: st, scegliZona, calcola };    // per le prove
+    $("carichi-finestre").querySelectorAll("[data-finestra]").forEach((b) => b.addEventListener("click", () => vaiA(...finestraDi(b.dataset.finestra))));
+    $("carichi-scorri").addEventListener("input", (e) => { const p = st.posizioni && st.posizioni[+e.target.value]; if (p) vaiA(p[0], p[1]); });
+  }
+  Object.assign(st, { calcola, avvia, parametri, scegliZona, finestraDi, finestraTesto, spenteTesto, nomeZona, stato,
+    posizioniCursore: () => st.posizioni, radice });
+  return st;
+  }   // fine di creaLato
+
+  // ================================================================== parti comuni alle due metà
+  function indirizzo() {
+    const u = new URL(location.href);
+    for (const L of D.lati) {
+      for (const [k, v] of Object.entries(L.parametri())) {
+        if (v === undefined) continue;                     // finestra prima dei grafici: resta com'è
+        if (v === null || v === "") u.searchParams.delete(k); else u.searchParams.set(k, v);
+      }
+    }
+    if (u.href !== location.href) history.replaceState(null, "", u);
+  }
+
+  // metà destra: copia della sinistra (comandi, sezioni, grafici vuoti) con gli identificativi e i riferimenti con «-2»
+  function copiaMeta() {
+    const sx = $("carichi-lato"), dx = $("carichi-lato-2");
+    if (!sx || !dx || dx.childElementCount) return;
+    const c = sx.cloneNode(true);
+    const rinomina = (v) => v.split(/\s+/).map((x) => (x ? `${x}-2` : x)).join(" ");
+    c.querySelectorAll("[id]").forEach((e) => { e.id += "-2"; });
+    for (const a of ["for", "aria-labelledby", "aria-describedby", "aria-controls"]) {
+      c.querySelectorAll(`[${a}]`).forEach((e) => e.setAttribute(a, rinomina(e.getAttribute(a))));
+    }
+    c.querySelector(".comandi-carichi").setAttribute("aria-label", "Scelte della metà destra");
+    dx.append(...c.childNodes);
+  }
+
+  // ------------------------------------------------------------------ piccola mappa delle zone (comune alle due metà)
+  // (22/11/2026 b, Paolo) il clic su una zona la sceglie in tutte e due le metà (un secondo clic, con la zona già in tutte
+  // e due, torna all'Italia); le zone delle due metà sono evidenziate con due stili (sinistra: bordo pieno scuro, destra:
+  // bordo tratteggiato colorato; la stessa zona in tutte e due: bordo pieno colorato e spesso) e spiegate sotto la mappa
+  async function minimappa() {
+    const box = $("minimappa-zone");
+    let m;
+    try { const r = await fetch(conV("dati/mappa/zone.json")); if (!r.ok) throw new Error(String(r.status)); m = await r.json(); } catch { box.remove(); return; }
+    box.innerHTML = '<div class="minimappa-etichetta" role="status"></div>' +
+      '<div class="minimappa-comandi"><button type="button" data-z="1.6" title="Ingrandisci" aria-label="Ingrandisci la piccola mappa">+</button>' +
+      '<button type="button" data-z="0.625" title="Rimpicciolisci" aria-label="Rimpicciolisci la piccola mappa">−</button>' +
+      '<button type="button" data-z="0" title="Ripristina la vista" aria-label="Ripristina la vista della piccola mappa">⟲</button></div>';
+    const et = box.querySelector(".minimappa-etichetta");
+    const svg = s("svg", { viewBox: m.viewBox.join(" "), role: "group", "aria-label": "Scegli la zona di mercato (per tutte e due le metà)" });
+    box.prepend(svg);
+    const g = s("g", {}, svg);
+    D.percorsi = new Map();
+    const tutte = (id) => D.lati.every((L) => L.zona === id);
+    const scegli = (id) => { const n = tutte(id) ? "ITA" : id; D.lati.forEach((L) => L.scegliZona(n, true)); indirizzo(); };
+    for (const z of m.zone) {
+      const p = s("path", { d: z.d, fill: `var(--reg-${COLORE_ZONA[z.id] || "08"})`, tabindex: "0", role: "button", "aria-label": `Zona ${z.nome}` }, g);
+      p.dataset.zona = z.id;
+      D.percorsi.set(z.id, p);
+      const nomeEt = () => (tutte(z.id) ? `${z.nome}: clic per tornare all'Italia` : `Zona ${z.nome}`);
+      p.addEventListener("mousemove", (e) => {
+        const b = box.getBoundingClientRect();
+        et.textContent = nomeEt(); et.style.display = "block";
+        et.style.left = `${Math.max(0, Math.min(e.clientX - b.left + 10, b.width - et.offsetWidth))}px`;
+        et.style.top = `${Math.max(0, e.clientY - b.top - 28)}px`;
+      });
+      p.addEventListener("mouseleave", () => { et.style.display = "none"; });
+      p.addEventListener("focus", () => { et.textContent = nomeEt(); et.style.display = "block"; et.style.left = "0"; et.style.top = "0"; });
+      p.addEventListener("blur", () => { et.style.display = "none"; });
+      p.addEventListener("click", () => scegli(z.id));
+      p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); scegli(z.id); } });
+    }
+    if (E && E.zoomabile) {
+      const vb = m.viewBox.map(Number);
+      const z = E.zoomabile(svg, { limiti: () => vb, ritorno: () => vb, minimo: 1 / 12,
+        suCambio: (f) => { svg.style.setProperty("--tratto-mm", (1.2 * f).toFixed(3)); box.classList.toggle("ingrandita", f < 0.999); } });
+      box.querySelectorAll(".minimappa-comandi button[data-z]").forEach((b) => b.addEventListener("click", () => z.zoom(+b.dataset.z)));
+    } else box.querySelector(".minimappa-comandi").remove();
+    evidenzia();
+  }
+  function evidenzia() {
+    const [s0, s1] = D.lati.map((L) => L.zona);
+    const leg = $("minimappa-legenda");
+    if (leg && D.lati.length === 2) {
+      const nome = (id) => (D.ix.zone.find((z) => z.id === id) || { nome: "Italia" }).nome;
+      const voceL = (cls, t) => { const sp = h("span", "voce-meta"); sp.append(h("i", cls), t); return sp; };
+      leg.replaceChildren();
+      if (s0 === s1) leg.append(voceL(s0 === "ITA" ? "meta-italia" : "meta-tutte", s0 === "ITA" ? "Tutte e due le metà: Italia (tutte le zone)" : `Tutte e due le metà: ${nome(s0)}`));
+      else leg.append(voceL(s0 === "ITA" ? "meta-italia" : "meta-sx", `Sinistra: ${s0 === "ITA" ? "Italia (tutte le zone)" : nome(s0)}`),
+        voceL(s1 === "ITA" ? "meta-italia" : "meta-dx", `Destra: ${s1 === "ITA" ? "Italia (tutte le zone)" : nome(s1)}`));
+    }
+    if (!D.percorsi) return;
+    D.percorsi.forEach((p, id) => {
+      const a = id === s0, b = id === s1;
+      p.classList.toggle("attiva", a || b);
+      p.classList.toggle("meta-sx", a && !b); p.classList.toggle("meta-dx", b && !a); p.classList.toggle("meta-tutte", a && b);
+      p.setAttribute("aria-pressed", String(a && b));
+      p.setAttribute("aria-label", `Zona ${(D.ix.zone.find((z) => z.id === id) || {}).nome || id}${a && b ? " (scelta in tutte e due le metà)" : a ? " (scelta nella metà sinistra)" : b ? " (scelta nella metà destra)" : ""}`);
+    });
+    for (const id of [s0, s1]) { const p = D.percorsi.get(id); if (p) p.parentNode.appendChild(p); }
+    const box = $("minimappa-zone");
+    if (box) { box.classList.toggle("tutta-italia", s0 === "ITA" && s1 === "ITA"); box.classList.toggle("con-scelta", s0 !== "ITA" || s1 !== "ITA"); }
+  }
+
+  // (22/11/2026 c, Paolo) «Riallinea le due metà»: la metà destra scorre fino allo stesso pezzo (scelte o sezione) che è in
+  // alto nella metà sinistra, alla stessa distanza dal bordo, anche se sopra i grafici le due metà sono alte in modo
+  // diverso. Col telefono (una metà sotto l'altra) la pagina salta dal pezzo in alto allo stesso pezzo dell'altra metà.
+  const una = window.matchMedia("(max-width: 860px)");
+  function riallinea() {
+    const sx = $("carichi-lato"), dx = $("carichi-lato-2");
+    if (!sx || !dx || !dx.childElementCount) return null;
+    const pezzi = (L) => [...L.querySelectorAll(":scope > .comandi-carichi, :scope > .carichi-sezione")].filter((e) => !e.hidden);
+    const a = pezzi(sx), b = pezzi(dx);
+    const nome = (e) => (e.querySelector("h2") ? e.querySelector("h2").textContent : "Scelte");
+    let i;
+    if (!una.matches) {
+      const cima = sx.getBoundingClientRect().top;
+      i = a.findIndex((e) => e.getBoundingClientRect().bottom > cima + 1);
+      if (i < 0 || !b[i]) return null;
+      const distanza = a[i].getBoundingClientRect().top - cima;
+      dx.scrollBy({ top: b[i].getBoundingClientRect().top - dx.getBoundingClientRect().top - distanza, behavior: "instant" });
+      annuncio.textContent = `Metà destra allineata a «${nome(a[i])}»`;
+      return nome(a[i]);
+    }
+    // una colonna: dalla metà in cui si è all'altra
+    const cima = document.querySelector(".testata") ? document.querySelector(".testata").getBoundingClientRect().bottom : 0;
+    const inDestra = dx.getBoundingClientRect().top <= cima + 1;
+    const [da, verso] = inDestra ? [b, a] : [a, b];
+    i = da.findIndex((e) => e.getBoundingClientRect().bottom > cima + 1);
+    if (i < 0 || !verso[i]) return null;
+    window.scrollBy({ top: verso[i].getBoundingClientRect().top - da[i].getBoundingClientRect().top, behavior: "instant" });
+    annuncio.textContent = `${inDestra ? "Metà sinistra" : "Metà destra"}: «${nome(verso[i])}»`;
+    return nome(verso[i]);
+  }
+
+  async function avvio() {
+    try { D.ix = await json("indice.json"); } catch {
+      senzaDati("I dati di Terna non sono ancora disponibili su questo server (li prepara il worker una volta al giorno).");
+      return;
+    }
+    D.mesi = (D.ix.mesi || []).map((m) => ({ ...m, t0: Date.parse(m.inizio) }));
+    if (!D.mesi.length) { senzaDati("Nessun dato di Terna disponibile su questo server."); return; }
+    const ult = D.mesi[D.mesi.length - 1], ultF = D.mesi.filter((m) => m.fonti).pop();
+    D.primoGiorno = dataIso(D.mesi[0].t0);
+    D.ultimoGiorno = dataIso(ult.t0 + (ult.n - 1) * Q);
+    D.ultimoGiornoFonti = ultF ? dataIso(ultF.t0 + (ultF.n - 1) * Q) : D.ultimoGiorno;
+    D.passoFonti60 = (t) => { const m = D.mesi.find((x) => t >= x.t0 && t < x.t0 + x.n * Q); return m && m.passo_fonti === 60; };
+    copiaMeta();
+    $("carichi-riallinea").addEventListener("click", riallinea);
+    const q = new URLSearchParams(location.search);
+    D.lati = [creaLato(0), creaLato(1)];
+    D.lati.forEach((L) => L.avvia(q));
+    window.EUGENIO_CARICHI = { stato: D.lati[0], destra: D.lati[1], lati: D.lati, dati: D, scegliZona: (id) => D.lati[0].scegliZona(id),
+      calcola: () => D.lati[0].calcola(), finestraDi: (t) => D.lati[0].finestraDi(t), posizioni: () => D.lati[0].posizioniCursore(), riallinea };   // per le prove
     indirizzo();
     minimappa();
-    await calcola();
+    evidenzia();
+    await Promise.all(D.lati.map((L) => L.calcola()));
+    indirizzo();                     // con la finestra dell'indirizzo, rimessa dopo il primo calcolo
   }
-  avvio().catch((e) => stato(`Errore: ${e.message}`, true)).finally(() => { st.pronto = true; });
+  avvio().catch((e) => { const m = $("stato-carichi"); m.textContent = `Errore: ${e.message}`; m.classList.add("errore"); })
+    .finally(() => { D.pronto = true; });
 
-  // collegamento a questa simulazione (20/11/2026, collegamento.js): l'avvio legge già ?zona=&da=&a=&passo= (Italia =
-  // niente zona), quindi basta dire al modulo quali sono i parametri e quando la pagina è pronta.
+  // collegamento a questa simulazione (20/11/2026, collegamento.js): l'avvio legge già i parametri delle due metà (dal
+  // 22/11/2026 b: zona, da, a, passo, finestra, spente e gli stessi con «2» per la metà destra), quindi basta dire al
+  // modulo quali sono e quando la pagina è pronta.
+  const CHIAVI = ["zona", "da", "a", "passo", "finestra", "spente"];
   if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.registra({
     regione: false,
-    chiavi: ["zona", "da", "a", "passo"],
-    principali: ["zona", "da", "a", "passo"],
-    pronto: () => st.pronto,
-    leggi: () => (st.pronto && st.ix && st.da
-      ? { zona: st.zona === "ITA" ? null : st.zona, da: st.da, a: st.a, passo: st.passo === 15 ? null : String(st.passo) } : null),
+    chiavi: [...CHIAVI, ...CHIAVI.map((c) => `${c}2`)],
+    principali: [...CHIAVI, ...CHIAVI.map((c) => `${c}2`)],
+    pronto: () => D.pronto,
+    leggi: () => {
+      if (!D.pronto || !D.ix || D.lati.length !== 2 || !D.lati[0].da) return null;
+      const out = {};
+      for (const L of D.lati) for (const [k, v] of Object.entries(L.parametri())) out[k] = v === undefined ? null : v;
+      return out;
+    },
   });
 })();

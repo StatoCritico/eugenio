@@ -262,6 +262,24 @@ def test_bene_con_piu_dichiarazioni_e_chiave_ente(con_enti):
     _niente_segreti(r.text)
 
 
+def test_scheda_con_tutti_i_campi_pubblicabili(con_enti):
+    """Scheda in sovraimpressione (22/11/2026 sera): ruolo, superficie di riferimento, sistema catastale e classificazione
+    e sede dell'ente dichiarante; mai CF né cedente."""
+    c, cesena, ausl = con_enti
+    r = c.get("/api/immobili-pa/bene/2")
+    _niente_segreti(r.text)
+    per = {x["ente_chiave"]: x for x in r.json()["dichiarazioni"]}
+    assert per[cesena]["ruolo"] == "P" and per[ausl]["ruolo"] == "U"
+    assert per[cesena]["sup_riferimento_mq"] == 200.0
+    assert per[cesena]["ente_settore"] == "S13" and per[cesena]["ente_macrocategoria"] == "Amministrazioni Locali"
+    assert per[ausl]["ente_sede"] == {"comune": "RAVENNA", "provincia": "RA", "regione": "EMILIA ROMAGNA"}
+    p = c.get("/api/immobili-pa/particella/C573_001000.1")
+    _niente_segreti(p.text)
+    assert {b["ruolo"] for b in p.json()["beni"]} == {"P", "U"}
+    assert all(b.get("ente_chiave") and b.get("ente_sede") for b in p.json()["beni"])
+    assert not set(I.CAMPI_BENE) & set(I.ESCLUSE)
+
+
 def test_ente_con_indice_vecchio(client):
     """Indice di prima del 22/11/2026 (senza tabella enti): le rotte nuove rispondono «non disponibile»."""
     c, d = client

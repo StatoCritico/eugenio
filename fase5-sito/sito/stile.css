@@ -1704,6 +1704,41 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .testa-elenco { align-items: center; gap: var(--s2); margin: var(--s1) 0; }
 .paginazione { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); font-size: var(--c-s); margin: var(--s1) 0 var(--s2); }
 .tabella-enti { max-height: 26rem; overflow: auto; }
+#togli-enti[hidden] { display: none; }
+/* scheda in sovraimpressione sulla mappa (22/11/2026 sera, edifici_pubblici.js): in alto a sinistra sopra la mappa (la
+   posizione la scrive la pagina: a destra restano liberi i comandi della mappa, sotto attribuzione, righello e livelli);
+   sul telefono a tutta larghezza in basso */
+.scheda-sopra { position: absolute; z-index: 15; width: min(380px, 70%); max-height: 70vh; display: flex; flex-direction: column;
+  background: var(--foglio); color: var(--inchiostro); border: 1px solid var(--bordo); border-radius: var(--r-l, 10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35); overflow: hidden; }
+.scheda-sopra[hidden] { display: none; }
+.scheda-sopra .testa-sopra { display: flex; align-items: center; gap: var(--s2); padding: .45rem .5rem .45rem .8rem;
+  border-bottom: 1px solid var(--linea); background: var(--rialzo); }
+.scheda-sopra h2 { flex: 1 1 auto; margin: 0; font: 700 var(--c-m, 1rem)/1.25 var(--titoli); min-width: 0; overflow-wrap: anywhere; }
+.scheda-sopra h2:focus-visible { outline: 3px solid var(--primario); outline-offset: 2px; }
+.chiudi-sopra { flex: none; min-width: 2.25rem; min-height: 2.25rem; border: 1px solid var(--linea); border-radius: var(--r-tondo, 999px);
+  background: var(--foglio); color: inherit; font-size: 1.3rem; line-height: 1; cursor: pointer; }
+.chiudi-sopra:hover, .chiudi-sopra:focus-visible { background: var(--tinta); }
+.scheda-sopra .corpo-sopra { overflow-y: auto; overscroll-behavior: contain; padding: .6rem .8rem .8rem; font-size: var(--c-s); }
+.scheda-sopra .bene-pubblico:first-of-type { margin-top: var(--s2); }
+.scheda-sopra .collegamenti-scheda .bottone { min-height: 2.25rem; padding: .3rem .7rem; font-size: var(--c-s); }
+@media (max-width: 860px) {
+  .scheda-sopra { position: fixed; left: 0 !important; right: 0; bottom: 0; top: auto !important; width: auto !important;
+    max-height: 62vh !important; z-index: 60; border-radius: var(--r-l, 10px) var(--r-l, 10px) 0 0; border-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0); }
+  .scheda-sopra .scheda-bene { grid-template-columns: minmax(6.5rem, 38%) 1fr; }
+}
+/* ruolo del bene nella scheda: campione nel colore dell'ente, pieno (proprietà) o trasparente con bordo (in uso) */
+.ruolo-bene { display: flex; align-items: center; gap: .4rem; margin: 0 0 var(--s1); font-size: var(--c-s); font-weight: 600; }
+.campione-ruolo { display: inline-block; flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--colore-ente, var(--bordo));
+  border: 2px solid #fff; box-shadow: 0 0 0 1px #1a1a1a; }
+.ruolo-bene canvas.campione-ruolo-pallino { width: 16px; height: 16px; flex: none; }
+.ruolo-bene.in-uso .campione-ruolo { background: color-mix(in srgb, var(--colore-ente, #888) 30%, transparent); border-color: var(--colore-ente, #888); }
+/* legenda degli stili per ente: proprietà, uso, terreni (campioni disegnati da pubblici_enti.js) */
+.legenda-enti .stili-enti { display: flex; flex-wrap: wrap; gap: .3rem var(--s3); flex-basis: 100%; font-size: var(--c-xs); }
+.legenda-enti .stili-enti span { display: inline-flex; align-items: center; gap: .35rem; }
+.legenda-enti canvas.campione-stile { width: 26px; height: 14px; flex: none; }
+.legenda-enti canvas.campione-pallino { width: 16px; height: 16px; flex: none; }
 /* tabella ordinabile (tabella_ordinabile.js; regole in README_stile.md, «Tabelle ordinabili») */
 table.tabella-ordinabile { width: 100%; border-collapse: collapse; font-size: var(--c-s); font-variant-numeric: tabular-nums; }
 table.tabella-ordinabile th, table.tabella-ordinabile td { padding: .4rem .55rem; border-bottom: 1px solid var(--linea); text-align: left; vertical-align: top; }
@@ -1895,6 +1930,69 @@ svg.zoom-proprio.trascina { cursor: grabbing; }
 .pagina-carichi .nota-zona-fonti { margin: var(--s2) 0; max-width: 90ch; }
 .pagina-carichi .legenda i.linea { background: none; }
 .pagina-carichi .carichi-regole li { max-width: 90ch; }
+/* (22/11/2026) finestra dei due grafici delle fonti, caselle per fonte, fonti spente col colore dello sfondo */
+.carichi-finestra { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); margin: var(--s3) 0 0; }
+.carichi-finestra .filtri { margin: 0; gap: var(--s1) var(--s2); }
+.carichi-scorri { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; flex: 1 1 22rem; min-width: 0; }
+.carichi-scorri label { margin: 0; font-weight: 400; color: var(--tenue); font-size: var(--c-s); }
+.carichi-scorri input[type="range"] { flex: 1 1 12rem; min-width: 8rem; width: auto; accent-color: var(--primario); }
+.carichi-scorri input[type="range"]:disabled { opacity: .45; }
+.carichi-scorri output { font-size: var(--c-s); font-variant-numeric: tabular-nums; flex: 1 1 100%; }
+.legenda-caselle { align-items: center; }
+.legenda-caselle label.casella-fonte { display: inline-flex; align-items: center; gap: .35rem; margin: 0; font-weight: 400; cursor: pointer; min-height: 1.75rem; }
+.legenda-caselle label.casella-fonte input { width: auto; margin: 0; accent-color: var(--primario); }
+.legenda-caselle label.casella-fonte:has(input:not(:checked)) { color: var(--tenue); }
+.legenda-caselle label.casella-fonte:has(input:not(:checked)) i { opacity: .3; }
+.legenda-caselle .energia-fonte { color: var(--tenue); font-size: var(--c-xs); font-variant-numeric: tabular-nums; }
+.legenda-caselle .legenda-tutte { display: inline-flex; flex-wrap: wrap; gap: var(--s1) var(--s2); }
+.legenda-caselle .legenda-tutte .filtro { min-height: 2rem; }
+.pagina-carichi .legenda .spenta { color: var(--tenue); text-decoration: line-through; }
+.pagina-carichi .legenda .spenta i, .riquadro-finestra .legenda .spenta i { opacity: .3; }
+.riquadro-finestra .legenda .spenta { color: var(--tenue); text-decoration: line-through; }
+.riquadro-finestra { --sfondo-grafico: var(--foglio); }
+svg .carichi-vuoto { fill: var(--tenue); font-size: 14px; }
+/* (22/11/2026 b, Paolo) pagina divisa in due metà con le loro scelte e i loro grafici (divisore.js su
+   .strumento[data-divisore]); ognuna scorre da sola, alta quanto la finestra sotto la testata (la barra di sinistra a
+   sinistra, per non confondersi con il divisore); col telefono una sotto l'altra */
+.strumento.carichi-meta { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin-top: var(--s3); border-top: 1px solid var(--linea); }
+.carichi-lato { min-width: 0; padding: 0 var(--s4) var(--s5); }
+.carichi-lato[data-lato="1"] { border-left: 1px solid var(--linea); }
+.carichi-lato .comandi-carichi { margin-top: var(--s3); }
+@media (min-width: 861px) {
+  .strumento.carichi-meta { height: calc(100vh - var(--alto-testata)); overflow: hidden; }
+  .strumento.carichi-meta.ridimensionato { grid-template-columns: minmax(0, 1fr) var(--larghezza-pannello, 50%); }
+  .carichi-lato { height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; }
+  .carichi-lato[data-lato="0"] { direction: rtl; padding-left: var(--s3); }
+  .carichi-lato[data-lato="0"] > * { direction: ltr; margin-right: auto; }   /* a sinistra anche se più stretti */
+}
+@media (max-width: 860px) { .strumento.carichi-meta { display: block; } .carichi-lato { padding: 0; } .carichi-lato[data-lato="1"] { border-left: 0; border-top: 2px solid var(--linea); margin-top: var(--s5); } }
+.pagina-carichi .carichi-meta[hidden], .pagina-carichi .carichi-due-meta-nota[hidden], .pagina-carichi .minimappa-con-legenda[hidden] { display: none; }
+.carichi-due-meta-nota { margin: var(--s3) 0 0; max-width: 90ch; }
+.carichi-zona select, .carichi-anno select { width: auto; min-height: 2.25rem; padding: .25rem 1.8rem .25rem .5rem; }
+.carichi-anno select { min-width: 6.5rem; }
+.carichi-anno { display: flex; align-items: center; gap: .3rem; }
+.carichi-anno .bottone { min-height: 2.25rem; min-width: 2.25rem; padding: .2rem .6rem; font-size: 1.1rem; line-height: 1; }
+.carichi-anno .bottone:disabled { opacity: .4; cursor: default; }
+.carichi-mancanti { margin: var(--s2) 0; max-width: 90ch; font-size: var(--c-s); }
+.carichi-mancanti[hidden] { display: none; }
+svg .carichi-mancanti-testo { fill: var(--inchiostro); font-size: 12px; font-weight: 700; paint-order: stroke; stroke: var(--sfondo-grafico, var(--carta)); stroke-width: 4px; }
+/* zone delle due metà nella piccola mappa: sinistra bordo pieno scuro, destra bordo tratteggiato colorato, la stessa in
+   tutte e due bordo pieno colorato; le altre zone più chiare */
+.minimappa-con-legenda { display: flex; flex-direction: column; align-items: flex-end; gap: var(--s1); }
+.minimappa.con-scelta path:not(.attiva) { fill-opacity: .28; }
+:root:not([data-theme="light"]) .minimappa.con-scelta path:not(.attiva) { fill-opacity: .3; }
+.minimappa path.meta-sx { stroke: var(--inchiostro); stroke-width: calc(var(--tratto-mm, 1.2) * 3.2); fill-opacity: 1; }
+.minimappa path.meta-dx { stroke: var(--primario); stroke-width: calc(var(--tratto-mm, 1.2) * 3.2); stroke-dasharray: calc(var(--tratto-mm, 1.2) * 4) calc(var(--tratto-mm, 1.2) * 2.5); fill-opacity: 1; }
+.minimappa path.meta-tutte { stroke: var(--primario); stroke-width: calc(var(--tratto-mm, 1.2) * 3.6); fill-opacity: 1; }
+.minimappa-legenda { margin: 0; display: flex; flex-direction: column; gap: .15rem; font-size: var(--c-xs); color: var(--tenue); max-width: 15rem; text-align: right; }
+.minimappa-legenda .voce-meta { display: inline-flex; align-items: center; justify-content: flex-end; gap: .35rem; }
+.minimappa-legenda i { display: inline-block; width: 1.4rem; height: .7rem; border-radius: 2px; flex: none; }
+.minimappa-legenda i.meta-sx { border: 3px solid var(--inchiostro); }
+.minimappa-legenda i.meta-dx { border: 3px dashed var(--primario); }
+.minimappa-legenda i.meta-tutte { border: 3px solid var(--primario); }
+.carichi-riallinea { min-height: 2.25rem; padding: .3rem .8rem; margin-top: var(--s1); }
+.pagina-carichi .nota-rinnovabili { margin: var(--s2) 0 0; max-width: 90ch; font-size: var(--c-xs); }
+.minimappa-legenda i.meta-italia { border: 1px solid var(--bordo); background: var(--rialzo); }
 svg.zoom-proprio:focus { outline: none; }
 svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-offset: 2px; }
 

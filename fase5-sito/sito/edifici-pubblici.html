@@ -180,6 +180,13 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       catastale sopra l'ortofoto. Cerca un ente, un comune, un indirizzo o una tipologia, accendi e spegni i livelli a destra
       e fai clic su una particella per vedere i beni che contiene. Con «Per ente» scegli fino a 8 enti e vedi tutti i loro
       immobili, ciascuno nel suo colore, con totali ed elenco.</p>
+    <aside class="scheda-sopra" id="scheda-sopra" role="dialog" aria-modal="false" aria-labelledby="titolo-scheda-sopra" hidden>
+      <div class="testa-sopra">
+        <h2 id="titolo-scheda-sopra" tabindex="-1">Scheda</h2>
+        <button type="button" class="chiudi-sopra" id="chiudi-scheda-sopra" aria-label="Chiudi la scheda" title="Chiudi (Esc)">×</button>
+      </div>
+      <div class="corpo-sopra" id="scheda-sopra-corpo"></div>
+    </aside>
     <div class="mappa mappa-gl" id="mappa-pubblici" role="region" aria-label="Mappa degli edifici pubblici"></div>
     <p class="aiuto">Trascina per spostare, rotella o due dita per ingrandire. Da lontano ogni particella è un punto; dallo
       zoom 13 compaiono i suoi confini. Un clic su un punto o su una particella apre la scheda a destra. Con la piccola mappa

@@ -350,6 +350,12 @@ TERNA_STORICO_MESI = max(0, int(os.environ.get("TERNA_STORICO_MESI", "6")))
 TERNA_IMCEI_GIORNO = int(os.environ.get("TERNA_IMCEI_GIORNO", "20"))       # dal giorno 20 si cerca il mese nuovo dell'IMCEI
 TERNA_RIPROVA_MIN = max(15, int(os.environ.get("TERNA_RIPROVA_MIN", "60")))
 TERNA_RIPROVA_MAX = int(os.environ.get("TERNA_RIPROVA_MAX", "4"))
+# (22/11/2026, Paolo: il buco del 14-15 gennaio 2026) giorni mancanti dentro i mesi già archiviati (carico, produzione,
+# rinnovabili): a ogni giro si riprovano al più TERNA_BUCHI_MESI mesi (un tentativo al giorno per mese), dall'API giorno
+# per giorno se c'è quota, altrimenti il mese intero dal Download Center; dopo TERNA_BUCHI_PROVE tentativi il buco è
+# «definitivo» (Terna non ha i dati) e non si riprova più.
+TERNA_BUCHI_MESI = max(0, int(os.environ.get("TERNA_BUCHI_MESI", "3")))
+TERNA_BUCHI_PROVE = max(1, int(os.environ.get("TERNA_BUCHI_PROVE", "14")))
 # email all'amministratore una volta per episodio se né l'API né il Download Center aggiornano l'archivio da più di
 # TERNA_AVVISO_GIORNI giorni (le chiavi mancanti non contano: è una configurazione, non un guasto)
 TERNA_AVVISO_GIORNI = float(os.environ.get("TERNA_AVVISO_GIORNI", "3"))

@@ -26,6 +26,7 @@ def cartelle(tmp_path, monkeypatch):
     (tmp_path / "sito_dati").mkdir()
     monkeypatch.setattr(C, "TERNA_CLIENT_ID", "")
     monkeypatch.setattr(C, "TERNA_CLIENT_SECRET", "")
+    monkeypatch.setattr(C, "TERNA_BUCHI_MESI", 0)          # i giorni mancanti hanno le loro prove (DCFinto ha un giorno al mese)
     return tmp_path
 
 
@@ -621,6 +622,104 @@ def test_carichi_con_la_fase_15_vera_e_l_archivio_parquet(cartelle, email):
     indice = json.loads((uscita / "indice.json").read_text(encoding="utf-8"))
     assert indice["mesi"][0]["n"] == 192 and indice["mesi"][0]["fonti"] is True
     zone_out = json.loads((uscita / "carico_2026-09.json").read_text(encoding="utf-8"))["zone"]
-    assert zone_out["ITA"][:2] == [30000, 30010] and zone_out["NORD"][0] == 18000
+    assert zone_out["ITA"][0] == 30000 and zone_out["NORD"][0] == 18000
+    # (22/11/2026) Italia = somma degli interi delle zone (30.010 di Terna → 30.009 con gli arrotondamenti delle zone)
+    assert all(zone_out["ITA"][i] == sum(v[i] for z, v in zone_out.items() if z != "ITA") for i in range(192))
     voci = json.loads((uscita / "fonti_2026-09.json").read_text(encoding="utf-8"))["voci"]
     assert voci["fv"][0] == 3000 and voci["termo"][0] == 16000          # termo = totale con gli autoconsumi − rinnovabili
+
+
+# ------------------------------------------------------------------------------------------------------- giorni mancanti
+class DCBuchi:
+    """Download Center finto con dati ogni 15 minuti (carico per l'Italia, produzione per una fonte); `buchi` = giorni
+    che non ci sono finché `ripara` è falso."""
+
+    def __init__(self, buchi=(), ripara=False):
+        self.buchi, self.ripara, self.chiamate = set(buchi), ripara, []
+
+    def mese(self, dataset, anno, mese):
+        import calendar as cal
+        self.chiamate.append((dataset, f"{anno:04d}-{mese:02d}"))
+        righe = []
+        for g in range(1, cal.monthrange(anno, mese)[1] + 1):
+            if not self.ripara and f"{anno:04d}-{mese:02d}-{g:02d}" in self.buchi:
+                continue
+            for q in range(96):
+                d = ms(dt.datetime(anno, mese, g) + dt.timedelta(minutes=15 * q))
+                if dataset == "TotalLoad":
+                    righe.append({"Date": d, "Total Load [MW]": 30000.0, "Bidding Zone": "Italy"})
+                elif dataset == "ActualGeneration":
+                    righe.append({"Date": d, "Actual Generation": 2.0, "Primary Source": "Hydro"})
+                elif dataset == "RenewableGeneration":
+                    righe.append({"Date": d, "Renewable Generation": 2.0, "Energy Source": "Hydro"})
+        return righe
+
+
+def test_giorni_mancanti_trovati_e_riprovati(cartelle, email, monkeypatch, caplog):
+    """(22/11/2026, Paolo) il 14 e il 15 gennaio mancanti nel mese archiviato: trovati, riprovati una volta al giorno dal
+    Download Center finché arrivano; il mese completo non si ricontrolla più."""
+    monkeypatch.setattr(C, "TERNA_BUCHI_MESI", 3)
+    monkeypatch.setattr(C, "TERNA_STORICO_MESI", 1)
+    T.stato_scrivi({"dc": {s: "2026-01" for s in T.SERIE}})
+    dc = DCBuchi(buchi={"2026-01-14", "2026-01-15"})
+    with caplog.at_level(logging.WARNING, logger="terna"):
+        e = T.aggiorna(oggi=dt.date(2026, 2, 10), dc=dc)
+    assert T.giorni_mancanti("carico_totale", "2026-01") == ["2026-01-14", "2026-01-15"]
+    st = T.stato_leggi()
+    assert st["buchi"]["carico_totale"]["2026-01"]["giorni"] == ["2026-01-14", "2026-01-15"]
+    assert st["buchi"]["carico_totale"]["2026-01"]["prove"] == 1 and "mancano 2 giorni" in caplog.text
+    assert any("carico_totale 2026-01: 2026-01-14, 2026-01-15" in b for b in e["buchi"])
+    # stesso giorno: nessuna nuova prova
+    dc.chiamate.clear()
+    T.aggiorna(oggi=dt.date(2026, 2, 10), dc=dc)
+    assert not [c for c in dc.chiamate if c[1] == "2026-01" and c[0] in ("TotalLoad", "ActualGeneration", "RenewableGeneration")]
+    # il giorno dopo Terna li ha: recuperati, il mese va tra i controllati e non si chiede più
+    dc.ripara = True
+    e = T.aggiorna(oggi=dt.date(2026, 2, 11), dc=dc)
+    st = T.stato_leggi()
+    assert "2026-01" not in st["buchi"].get("carico_totale", {}) and "2026-01" in st["buchi_controllati"]["carico_totale"]
+    assert "carico_totale 2026-01" in e["buchi_riparati"] and T.giorni_mancanti("carico_totale", "2026-01") == []
+    dc.chiamate.clear()
+    T.aggiorna(oggi=dt.date(2026, 2, 12), dc=dc)
+    assert not [c for c in dc.chiamate if c[1] == "2026-01" and c[0] in ("TotalLoad", "ActualGeneration", "RenewableGeneration")]
+    assert email == []
+
+
+def test_giorni_mancanti_definitivi_dopo_le_prove(cartelle, monkeypatch, caplog):
+    monkeypatch.setattr(C, "TERNA_BUCHI_MESI", 3)
+    monkeypatch.setattr(C, "TERNA_BUCHI_PROVE", 2)
+    monkeypatch.setattr(C, "TERNA_STORICO_MESI", 1)
+    T.stato_scrivi({"dc": {s: "2026-01" for s in T.SERIE}})
+    dc = DCBuchi(buchi={"2026-01-14"})
+    T.aggiorna(oggi=dt.date(2026, 2, 10), dc=dc)
+    with caplog.at_level(logging.WARNING, logger="terna"):
+        T.aggiorna(oggi=dt.date(2026, 2, 11), dc=dc)
+    info = T.stato_leggi()["buchi"]["carico_totale"]["2026-01"]
+    assert info["definitivo"] and info["prove"] == 2 and "non riprovo più" in caplog.text
+    dc.chiamate.clear()
+    T.aggiorna(oggi=dt.date(2026, 2, 12), dc=dc)
+    assert not [c for c in dc.chiamate if c[1] == "2026-01" and c[0] in ("TotalLoad", "ActualGeneration", "RenewableGeneration")]
+
+
+def test_giorni_mancanti_dall_api_giorno_per_giorno(cartelle, monkeypatch):
+    """Con l'API configurata e la quota, i giorni mancanti si chiedono uno per uno (una richiesta per giorno e serie)."""
+    monkeypatch.setattr(C, "TERNA_BUCHI_MESI", 1)
+    monkeypatch.setattr(C, "TERNA_STORICO_MESI", 0)
+    T.archivia("carico_totale", T.normalizza("carico_totale", DCBuchi(buchi={"2026-01-14"}).mese("TotalLoad", 2026, 1), "dc"))
+    T.stato_scrivi({"dc": {s: "2026-02" for s in T.SERIE}, "api_giorno": "2026-02-09"})
+
+    class API:
+        def __init__(self):
+            self.chieste = []
+            self.quota = types.SimpleNamespace(rimaste=lambda: 200, usate=lambda: 0)
+
+        def get(self, percorso, params):
+            self.chieste.append((percorso, params["dateFrom"]))
+            if percorso.endswith("total-load") and params["dateFrom"] == "14/01/2026":
+                return {"total_load": [{"date": f"2026-01-14 {h:02d}:{m:02d}:00", "total_load_MW": 1.0, "bidding_zone": "Italy"}
+                                       for h in range(24) for m in (0, 15, 30, 45)]}
+            return {}
+    api = API()
+    T._ripara_buchi(DCBuchi(), api, T.stato_leggi(), dt.date(2026, 2, 10), {"avvisi": []})
+    assert ("load/v2.0/total-load", "14/01/2026") in api.chieste
+    assert T.giorni_mancanti("carico_totale", "2026-01") == []

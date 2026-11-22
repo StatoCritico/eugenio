@@ -679,6 +679,17 @@ sta già lavorando, il lancio a mano scrive «un altro aggiornamento è in corso
 **429 o un 5xx** di Terna il lavoro si ferma subito (nessuna ripetizione immediata, la quota non si brucia), lo stato non
 avanza e il ciclo riprova dopo `TERNA_RIPROVA_MIN` (60) minuti, al più `TERNA_RIPROVA_MAX` (4) volte al giorno.
 
+**Giorni mancanti** (22/11/2026, Paolo: nel Download Center mancavano il 14 e il 15 gennaio 2026 per carico e
+produzione, e un mese con dei giorni vuoti entrava lo stesso senza più riprove). Dopo lo storico, `terna-api` controlla
+una volta i mesi già archiviati di `carico_totale`, `produzione` e `rinnovabili` (`giorni_mancanti()`: giorni con meno
+della metà degli istanti del giorno tipico del mese, vale per i dati orari e per quelli a 15 minuti). I mesi completi
+vanno in `stato.json` → `buchi_controllati` e non si ricontrollano; quelli con dei giorni vuoti vanno in `buchi`
+(`giorni`, `prove`, `ultima`) e si **riprovano una volta al giorno**, al più `TERNA_BUCHI_MESI` (3) mesi per giro: dall'API
+giorno per giorno se è configurata e c'è quota (una richiesta per giorno), altrimenti il mese intero dal Download Center
+(una richiesta). Recuperati: «giorni mancanti recuperati» nel registro e il mese passa tra i controllati (poi `carichi`
+ricostruisce i file). Dopo `TERNA_BUCHI_PROVE` (14) prove il buco è `definitivo` (Terna non ha i dati: riga nel registro,
+nessuna email) e la pagina lo mostra come «dati mancanti». `TERNA_BUCHI_MESI=0` spegne il controllo.
+
 ### API ufficiale: chiavi, limiti, errori
 
 - Applicazione creata da Paolo su https://developer.terna.it (procedura in `../AGGIORNAMENTO_2026-11-20e.md`); **una
@@ -1225,6 +1236,13 @@ preparato dalla fase 7 (`python -m territorio immobili-pa-sito`): nessun dato in
 | `GET /api/immobili-pa/cerca?q=…&gruppo=…&limite=…` | ricerca a parole (FTS5, ogni parola come prefisso, tutte obbligatorie, al massimo 50 risultati) |
 | `GET /api/immobili-pa/particella/{ref}` | particella (centro, riquadro, area) e beni (al massimo 500) |
 | `GET /api/immobili-pa/bene/{id_bene}` | un bene, anche senza particella: `bene` (la prima dichiarazione) e, dal 22/11/2026, `dichiarazioni` (tutte: lo stesso `id_bene` può essere dichiarato dal proprietario e da chi lo ha in uso; prima si vedeva solo una riga) |
+
+Ogni bene (in `/cerca`, `/particella` e `/bene`) ha i campi pubblicabili dell'indice elencati in `CAMPI_BENE`. Dal
+22/11/2026 sera (scheda in sovraimpressione della ricerca per ente) anche `sup_riferimento_mq`, `detenzione_intera`,
+`sistema_catastale` e `ruolo` (P proprietà, U uso), già nell'indice rifatto il 22/11; con l'indice per ente `/particella` e
+`/bene` aggiungono `ente_chiave`, `ente_settore`, `ente_macrocategoria` ed `ente_sede` (`comune`, `provincia`, `regione`)
+dell'ente dichiarante, letti dalla tabella `enti`. Non serve rifare l'indice. Mai `amm_cf`, `cedente`, `cedente_cf`
+(`ESCLUSE`, controllato nei test).
 | `GET /api/immobili-pa/ente/{chiavi}?ruolo=proprieta,uso&natura=E,T` | (22/11/2026) uno o più enti, chiavi separate da virgole (al massimo 8): dati dell'ente, `totali_dichiarati` (tabella `enti`), `totali` con i filtri (dai beni), `riquadro`, `comuni` (particelle, righe, beni e superficie per comune); con più enti `insieme`, calcolato sui **beni distinti** (un bene dichiarato da due enti scelti conta una volta, «in uso» solo se nessuno degli enti scelti lo ha in proprietà) |
 | `GET /api/immobili-pa/ente/{chiave}/punti` | (22/11/2026) centri delle particelle e dei beni senza particella con punto affidabile, compatti: `{"campi": ["lon","lat","n","natura","ruolo","ref"], "righe": […]}` (5 decimali); `ETag` legato al file dell'indice, `Cache-Control: public, max-age=86400`, 304 con `If-None-Match` |
 | `GET /api/immobili-pa/ente/{chiave}/beni?ruolo=&natura=&regione=&provincia=&comune=&ordina=&verso=&pagina=&per_pagina=` | (22/11/2026) elenco per particella (righe di `ente_particelle` raggruppate per `ref`), al massimo **200 righe per pagina**, ordinamento solo sulle colonne di `ORDINAMENTI` (vuoti in fondo; senza `ordina`: regione, comune, indirizzo), `totale` e `pagine` |

@@ -7,9 +7,11 @@
 // Dopo ogni cambio emette l'evento "eugenio:ridimensiona" su document: mappe e grafici si adattano (gli SVG da soli,
 // i grafici registrati con { adatta: true } in grafici.js col loro ResizeObserver).
 (function () {
-  const main = document.querySelector("main.strumento");
-  const pannello = main && main.querySelector(":scope > .pannello");
-  const sinistra = main && main.querySelector(":scope > .mappa-area");
+  // (22/11/2026) anche un contenitore .strumento[data-divisore] dentro la pagina, con le due metà segnate da
+  // data-divisore-sinistra e data-divisore-destra («Carichi elettrici», due metà da confrontare)
+  const main = document.querySelector("main.strumento, .strumento[data-divisore]");
+  const pannello = main && main.querySelector(":scope > .pannello, :scope > [data-divisore-destra]");
+  const sinistra = main && main.querySelector(":scope > .mappa-area, :scope > [data-divisore-sinistra]");
   if (!main || !pannello || !sinistra) return;
 
   const MIN_PANNELLO = 340, MIN_SINISTRA = 300, PASSO = 24, PASSO_GRANDE = 96;
