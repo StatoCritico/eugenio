@@ -277,7 +277,7 @@ def dati_el(tmp_path_factory):
     sys.path.insert(0, str(QUI.parent / "fase15-elettricita"))
     sys.path.insert(0, str(QUI.parent / "fase15-elettricita" / "tests"))
     from elettricita import costruisci as K
-    import test_costruisci as T
+    T = _prove_costruisci_elettricita()
     tmp = tmp_path_factory.mktemp("el")
     K.costruisci(T._raw(tmp), tmp / "out", SITO / "dati" / "mappa")
     out = tmp / "out"
@@ -841,3 +841,14 @@ def test_pagine_3d(browser, base_range, pagina):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, pagina.replace("-", "_"), SENZA_ARCHIVI)
+
+
+def _prove_costruisci_elettricita():
+    """tests/test_costruisci.py della fase 15 caricato per percorso: la fase 16 ha un file con lo stesso nome e, con le
+    prove delle due pagine nella stessa sessione, «import test_costruisci» prenderebbe quello sbagliato."""
+    import importlib.util
+    f = QUI.parent / "fase15-elettricita" / "tests" / "test_costruisci.py"
+    spec = importlib.util.spec_from_file_location("prove_costruisci_elettricita", f)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m

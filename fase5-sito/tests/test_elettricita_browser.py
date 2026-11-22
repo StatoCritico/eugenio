@@ -59,7 +59,7 @@ def base():
 @pytest.fixture(scope="module")
 def dati(tmp_path_factory):
     from elettricita import costruisci as K
-    import test_costruisci as T
+    T = _prove_costruisci_elettricita()
     tmp = tmp_path_factory.mktemp("el")
     K.costruisci(T._raw(tmp), tmp / "out", SITO / "dati" / "mappa")
     return tmp / "out"
@@ -361,3 +361,14 @@ def EUGENIO_NUMERO(v, d=0):
     """Numero all'italiana come numeri.js (punto delle migliaia, virgola dei decimali)."""
     t = f"{v:,.{d}f}".replace(",", "§").replace(".", ",").replace("§", ".")
     return t
+
+
+def _prove_costruisci_elettricita():
+    """tests/test_costruisci.py della fase 15 caricato per percorso: la fase 16 ha un file con lo stesso nome e, con le
+    prove delle due pagine nella stessa sessione, «import test_costruisci» prenderebbe quello sbagliato."""
+    import importlib.util
+    f = QUI.parent / "fase15-elettricita" / "tests" / "test_costruisci.py"
+    spec = importlib.util.spec_from_file_location("prove_costruisci_elettricita", f)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
