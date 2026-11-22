@@ -3,15 +3,19 @@
 // Amministrazioni (censimento MEF «Patrimonio della PA», dati al 31/12/2023, CC BY 4.0) disegnati con la loro particella
 // catastale (Agenzia delle Entrate, CC BY 4.0), sopra l'ortofoto. Dati preparati dalla fase 7 (`immobili-pa`,
 // `immobili-pa-sito`):
-//  - tessere vettoriali statiche /edifici3d/immobili_pa/immobili_pa_<anno>.pmtiles (strati «particelle», dallo zoom 13, e
+//  - tessere vettoriali statiche /edifici3d/immobili_pa/immobili_pa_<anno>_<versione>.pmtiles (strati «particelle», dallo zoom 13, e
 //    «punti»: un punto per particella fino allo zoom 12 più i beni senza particella, `s` = 1), descritte da indice.json;
 //  - ricerca e schede dall'API: /api/immobili-pa/cerca, /particella/{ref}, /bene/{id} (servizio/immobili_pa.py).
 // Proprietà delle tessere: r (riferimento AdE o «b<id bene>»), t (E edifici, T terreni, M entrambi), n (beni), g (gruppo di
-// enti, codici di indice.json «gruppi»), a (primo ente), tp (tipologie), s (1 = bene senza particella).
+// enti, codici di indice.json «gruppi»: C Comuni, I Unioni di Comuni e Comunità montane, P Province e Città metropolitane,
+// R, S, U, E, M, N, A; le caselle si costruiscono da lì), a (primo ente), tp (tipologie), s (1 = bene senza particella).
 // Livelli accendibili: Edifici (E e M, retinati come in Modelli 3D), Terreni (T e M), Beni senza particella; filtro per
 // gruppo di enti; ortofoto con scelta automatica della fonte migliore (come Ortofoto e Modelli 3D) o a mano; strati
 // comuni (particelle catastali di tutti, contorni degli edifici: strati_gl.js). Ricerca dei luoghi con cerca_luogo.js.
 // Indirizzo: ?lat=&lon=&z= per aprire su un punto, ?ref=<particella> o ?bene=<id> per aprire la scheda.
+// Ricerca per ente (22/11/2026): seconda scheda del passo 1, in pubblici_enti.js (?modo=enti&sel=<chiavi>); qui solo gli
+// agganci: clic e passaggio del mouse (prima i livelli degli enti), righe dell'immagine, «Mostra tutti i beni di questo
+// ente» nella scheda, EUGENIO_PUBBLICI.pronto (promessa: mappa, livelli e indice pronti).
 (function () {
   const $ = (id) => document.getElementById(id);
   const box = $("mappa-pubblici");
@@ -22,10 +26,14 @@
   const conPunto = q.get("lon") && q.get("lat") && Number.isFinite(+q.get("lon")) && Number.isFinite(+q.get("lat"));
   const CONTESTO = "s2cloudless2016";
   const COLORI = { E: R ? R.COLORE : "#c2185b", T: "#2e7d32", M: "#6a1b9a", S: "#ef6c00" };
-  const GRUPPI_PREDEFINITI = { C: "Comuni", P: "Province e Città metropolitane", R: "Regioni", S: "Sanità (ASL e ospedali)",
+  // usati solo se indice.json non ha «gruppi»; dal 22/11/2026 c'è I (Unioni di Comuni e Comunità montane, gruppo proprio)
+  const GRUPPI_PREDEFINITI = { C: "Comuni", I: "Unioni di Comuni e Comunità montane", P: "Province e Città metropolitane", R: "Regioni", S: "Sanità (ASL e ospedali)",
     U: "Università", E: "Edilizia residenziale pubblica", M: "Stato: ministeri e organi costituzionali", N: "Previdenza (INPS, INAIL…)", A: "Altri enti" };
   const stato = { mappa: null, info: null, fonti: [], scelta: null, manuale: false, contesto: null, confini: null, strati: null,
     tipi: new Set(["E", "T", "S"]), gruppi: new Set(Object.keys(GRUPPI_PREDEFINITI)), selezione: null, regione: null, cercato: null };
+  let segnalaPronto;
+  const pronto = new Promise((ok) => { segnalaPronto = ok; });      // mappa, livelli e indice pronti (per pubblici_enti.js)
+  const ENTI = () => window.EUGENIO_PUBBLICI_ENTI;                 // ricerca per ente (pubblici_enti.js, 22/11/2026)
   const colore = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
   function h(tag, cls, t) { const e = document.createElement(tag); if (cls) e.className = cls; if (t !== undefined) e.textContent = t; return e; }
   function messaggio(id, t, errore = false) { const m = $(id); if (!m) return; m.textContent = t; m.classList.toggle("errore", errore); }
@@ -79,10 +87,12 @@
     applicaFiltri();
     const cliccabili = ["pa-punti", "pa-edifici", "pa-misti", "pa-terreni"];
     m.on("click", (e) => {
+      if (ENTI() && ENTI().suClic(e)) return;                       // pallini e contorni degli enti scelti, sopra
       const f = m.queryRenderedFeatures([[e.point.x - 3, e.point.y - 3], [e.point.x + 3, e.point.y + 3]], { layers: cliccabili })[0];
       if (f) { e.preventDefault && e.preventDefault(); apri(String(f.properties.r)); }
     });
     m.on("mousemove", (e) => {
+      if (ENTI() && ENTI().suMovimento(e)) return;
       const f = m.queryRenderedFeatures([[e.point.x - 3, e.point.y - 3], [e.point.x + 3, e.point.y + 3]], { layers: cliccabili })[0];
       m.getCanvas().style.cursor = f ? "pointer" : "";
       m.getCanvas().title = f ? `${f.properties.a || ""}${f.properties.n > 1 ? ` e altri (${f.properties.n} beni)` : ""}${f.properties.tp ? ` – ${f.properties.tp}` : ""}` : "";
@@ -121,12 +131,25 @@
     riga(dl, "Titolo", b.titolo_proprieta ? `${b.titolo_proprieta}${b.quota_proprieta && b.quota_proprieta !== 100 ? ` (${num(b.quota_proprieta, 2)} %)` : ""}` : b.titolo_detenzione);
     riga(dl, "Canone annuo", b.canone_annuo ? `${num(b.canone_annuo)} €` : "");
     riga(dl, "Utilizzo", [b.utilizzo, b.finalita, b.altra_finalita].filter(Boolean).join(" – "));
-    riga(dl, "Dato a terzi", b.a_terzi_intera === "SI" ? "per intero" : b.a_terzi_parziale === "SI" ? "in parte" : "");
+    const si = (v) => /^s[iì]$/i.test(v || "");                     // nei CSV MEF «Sì» (prima del 22/11 si cercava «SI»)
+    riga(dl, "Dato a terzi", si(b.a_terzi_intera) ? "per intero" : si(b.a_terzi_parziale) ? "in parte" : "");
     riga(dl, "Vincolo", b.vincolo && b.vincolo !== "Nessuno" ? b.vincolo : "");
     riga(dl, "Natura giuridica", b.natura_giuridica && b.natura_giuridica !== "ND" ? b.natura_giuridica : "");
     riga(dl, "Compendio", [b.compendio, b.tipologia_compendio].filter(Boolean).join(" – "));
     riga(dl, "Aggancio alla particella", b.aggancio ? AGGANCI[b.aggancio] || b.aggancio : "nessuna particella trovata: si usa il punto del censimento");
     art.appendChild(dl);
+    // ricerca per ente (22/11/2026): tutti i beni dell'ente che ha dichiarato questo
+    if (b.ente_chiave && ENTI() && ENTI().stato.elenco) {
+      const p = h("p", "collegamenti-scheda"), bt = h("button", "bottone secondario piccolo", "Mostra tutti i beni di questo ente");
+      bt.type = "button";
+      bt.addEventListener("click", () => {
+        const E = ENTI();
+        if (!E.stato.attivo) E.modo(true);
+        if (!E.stato.scelti.some((s) => s.chiave === b.ente_chiave)) E.aggiungi(b.ente_chiave, { inquadra: true });
+        const c = document.getElementById("passo-cerca"); if (c) c.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      p.appendChild(bt); art.appendChild(p);
+    }
     return art;
   }
   async function apri(ref, vola = false) {
@@ -139,14 +162,15 @@
       const r = await fetch(bene ? `/api/immobili-pa/bene/${encodeURIComponent(ref.slice(1))}` : `/api/immobili-pa/particella/${encodeURIComponent(ref)}`);
       if (!r.ok) throw new Error(r.status === 404 ? "non trovata" : r.status === 429 ? "troppe richieste: riprova tra poco" : `errore ${r.status}`);
       const d = await r.json();
-      const beni = bene ? [d.bene] : d.beni, p = d.particella;
+      // un bene senza particella può avere più dichiarazioni (proprietario e chi lo ha in uso): tutte (22/11/2026)
+      const beni = bene ? (d.dichiarazioni || [d.bene]) : d.beni, p = d.particella;
       const testa = h("div", "testa-scheda");
       if (p) {
         testa.append(h("p", null, `Particella ${p.ref_ade} – ${riferimentoLeggibile(p.ref_ade)}${p.area_m2 ? ` – ${num(p.area_m2)} m² (dalla mappa catastale)` : ""}.`));
         const altri = p.n_beni - beni.length;
         testa.append(h("p", "aiuto", `${beni.length === 1 ? "Un bene pubblico" : `${beni.length} beni pubblici`} dichiarati in questa particella`
           + (beni.length >= 500 ? " (i primi 500)" : altri > 0 ? `, più ${altri === 1 ? "un'unità" : `${altri} unità`} che ci sta${altri === 1 ? "" : "nno"} solo in parte (unità «graffate» su più particelle, con la scheda nell'altra)` : "") + "."));
-      } else testa.append(h("p", null, "Bene senza particella agganciata: il punto è quello del censimento."));
+      } else testa.append(h("p", null, `Bene senza particella agganciata: il punto è quello del censimento.${beni.length > 1 ? ` Lo dichiarano ${beni.length} enti (di solito chi ne è proprietario e chi lo ha in uso).` : ""}`));
       const punto = p ? p.punto : (beni[0] && beni[0].lon !== undefined ? [beni[0].lon, beni[0].lat] : null);
       if (punto) {
         const l = h("p", "collegamenti-scheda");
@@ -261,7 +285,10 @@
     if (f && !f.copia && $("strato-ortofoto").checked) return `«${f.nome}» è solo in consultazione dal vivo: non si può scaricare. Scegli un'altra fonte o spegni l'ortofoto.`;
     if (f && $("strato-ortofoto").checked) righe.push(`Ortofoto: ${f.citazione} – licenza ${f.licenza} (${f.scheda}).`);
     if (stato.info) righe.push(`Immobili delle PA: ${stato.info.attribuzione}.`);
-    righe.push("Retino a righe oblique: particelle con edifici pubblici; verde: terreni; viola: edifici e terreni; arancio: beni senza particella.");
+    const enti = ENTI() ? ENTI().righeImmagine() : [];
+    if (enti.length) righe.push("Enti scelti (colore: ente):", ...enti);
+    righe.push(enti.length ? "Attenuati: gli altri immobili pubblici (retino a righe oblique magenta: edifici; verde: terreni; viola: edifici e terreni; arancio: beni senza particella)."
+      : "Retino a righe oblique: particelle con edifici pubblici; verde: terreni; viola: edifici e terreni; arancio: beni senza particella.");
     if (stato.strati) righe.push(...stato.strati.righe());
     if (stato.cercato) righe.push(`Punto cercato: ${stato.cercato}.`);
     righe.push(`${C ? C.ATTRIBUZIONE : "Confini: ISTAT (CC BY 4.0)"}. Mappa: MapLibre GL JS (BSD-3).`);
@@ -367,6 +394,7 @@
     else if (/^\d+$/.test(q.get("bene") || "")) apri(`b${q.get("bene")}`, !conPunto);
   })().finally(() => {
     stato.pronto = true;
+    segnalaPronto();
     if (stato.mappa && window.EUGENIO_COLLEGAMENTO) stato.mappa.on("moveend", () => window.EUGENIO_COLLEGAMENTO.aggiorna());
   });
 
@@ -412,5 +440,5 @@
       },
     });
   }
-  window.EUGENIO_PUBBLICI = { stato, filtri, applicaFiltri, apri, cerca, opzioniImmagine };
+  window.EUGENIO_PUBBLICI = { stato, filtri, applicaFiltri, apri, cerca, opzioniImmagine, pronto };
 })();

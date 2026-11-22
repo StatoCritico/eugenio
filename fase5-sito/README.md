@@ -120,7 +120,7 @@ anche lì (`analisi_pubbliche.js`, `emissioni_cog.js`, `dbtr_lettore.js`, `aria_
 script che mostrano numeri: `aggiungi_dbtr.js`, `analisi_pubbliche.js`, `app.js` (anche la scala dei gradi giorno e i kB
 del file), `cerca_luogo.js`, `clima_storico.js`, `cti_legge10.js`, `dati.js`, `dbtr_lettore.js`, `edifici_pubblici.js`,
 `edificio3d.js`, `emissioni_cog.js`, `esporta_mappa.js`, `importa_modello.js`, `indicatori.js`, `indici_prezzi.js`,
-`legge10.js`, `patrimonio.js`, `rete.js` (numeri, non le date), `righello.js`, `valori_sedi.js`, `visure_patrimonio.js`, i
+`legge10.js`, `patrimonio.js`, `pubblici_enti.js`, `rete.js` (numeri, non le date), `righello.js`, `valori_sedi.js`, `visure_patrimonio.js`, i
 moduli del Trattamento aria, `carichi.js`, `elettricita.js`; anche i conteggi lunghi nei messaggi (righe, ore, corpi,
 sedi). Restano senza punto date, anni, codici, coordinate, indirizzi, campi modificabili e i numeri dei file CSV/Excel/ODS.
 Regola in `README_stile.md` («Numeri»); prova `test_costruisci_pagine.py::test_numeri_col_punto_delle_migliaia` (nessun
@@ -152,10 +152,10 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `legge10.html` | legge10.js | a | regione, comune (già della pagina), anni |
 | `dati.html` | dati.js | a | regione, dataset (già), var, tip, tass, freq, dal, al, stagioni, fino, cop, area, prov, comuni (codici ISTAT, anche di altre regioni), capoluoghi, formato |
 | `indicatori.html` | indicatori.js | a | regione, ente (già), comp, componenti, anno |
-| `elettricita.html` | elettricita.js | a | regione o vista=italia, modo (già), anno, barre, fondo, ortofoto |
+| `elettricita.html` | elettricita.js | a | regione o vista=italia, modo (già; dal 21/11/2026 anche `emissioni`), inizio e fine (dal 22/11/2026; `anno` dei collegamenti vecchi = un anno solo), barre, fondo, ortofoto |
 | `rete-elettrica.html` | rete_elettrica.js | a | regione, comune (già), criticita, altri, cabine, interruzioni, ortofoto; prova=1 resta |
 | `ortofoto.html` | ortofoto.js | a | lat, lon, z, fonte (già), archivio, particelle, contorni (lo spostamento manuale della foto resta nella scheda) |
-| `edifici-pubblici.html` | edifici_pubblici.js | a | lat, lon, z, ref o bene (già), tipi, enti, ortofoto, fonte, particelle, contorni |
+| `edifici-pubblici.html` | edifici_pubblici.js, pubblici_enti.js | a | lat, lon, z, ref o bene (già), tipi, enti, ortofoto, fonte, particelle, contorni; dal 22/11/2026 modo (`enti`), sel (chiavi degli enti nell'ordine dei colori), ruolo, natura, ordina (`colonna:asc|desc`), tipo_ente, regione_ente (secondari) |
 | `aria-trasformazioni.html` | aria_trasformazioni.js | a | comune (già), anni, inverno, estate, diagramma, uta (dati e sequenze diversi dai predefiniti, JSON compatto) |
 | `aria-ore.html` | aria_ore.js | a | comune, anni, inverno, estate, diagramma, gruppi, nuvola, raggio, trasp, comfort, vedi_comfort, vedi_progetto, tabella (non le condizioni di progetto corrette a mano) |
 | `aria-latenti.html` | aria_latenti.js | a | comune, anni, inverno, estate, diagramma, obiettivo_estate, obiettivo_inverno, portata, riferimento, gruppi-estate, gruppi-inverno |
@@ -172,7 +172,8 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `dati-per-email.html`, `contatti.html` | dati_per_email.js, contatti.js | c (moduli) | niente: moduli con email e dati personali, non simulazioni |
 | `faq.html`, `metodo.html`, `licenza.html`, `privacy.html`, `sitografia.html`, `mirror.html`, `novita.html`, `esempi.html`, `contributi.html`, `dbtr-istruzioni.html`, `fv-leed.html`, `link.html` | – | c (testo) | niente |
 | `cog-car.html`, `cog-confronto.html`, `cog-rischio.html`, `cog-simulazione.html`, `cog-spark-spread.html`, `edificio-conto-termico.html`, `edificio-ecobonus.html`, `edificio-fabbisogno.html`, `edificio-impianti.html`, `edificio-involucro.html`, `fv-mercato.html`, `lidar.html`, `visure.html` | – | c (segnaposto) | niente (da aggiungere quando diventano pagine con scelte) |
-| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026) |
+| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026; dal 21/11/2026 `passo` solo con le ore, `passo=60`) |
+| `suolo.html` | suolo.js | a | regione o vista=italia, provincia, modo (scritti dalla pagina), inizio, fine, unita (solo se non ha), barre, fondo, ortofoto (22/11/2026) |
 
 - Moduli comuni toccati: `strati_gl.js` (caselle particelle e contorni con `data-collegamento`), `scelta_aria.js` (anni e
   livello dall'indirizzo, più forti della memoria del browser), `gruppi_ore.js` (gruppi dall'indirizzo), `diagramma_aria.js`
@@ -194,6 +195,39 @@ la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
 
+## Statistiche › Suolo e aree agricole (22/11/2026, richiesta di Paolo; sperimentale, release `v2026.11.22`, versione 20261122a)
+
+Pagina `suolo.html` + `suolo.js`, voce «Suolo e aree agricole» (sperimentale, «S») nel gruppo Statistiche dopo «Carichi
+elettrici». Stessa struttura e stile di «Produzione e consumi di elettricità» (`main.pagina-elettricita.pagina-suolo`, classi
+`comandi-elettricita`, `grafico-elettricita`, `tabella-elettricita` riusate): mappa MapLibre con le regioni bianche e un
+istogramma per regione (immagini della mappa, `DOPPIO = 2`), clic → province, secondo clic → Italia, piccola mappa,
+caselle Istogrammi / Regioni bianche / Ortofoto, righello, a destra grafico «anno per anno», province, tabella con il
+totale, «Come leggere i dati», collegamento salvabile, solo «Scarica l'immagine», avviso sperimentale.
+- **Tre scelte** (decisione di Paolo): **Suolo** (barre affiancate: SAU e superficie non utilizzata del censimento 2020,
+  suolo consumato, in aree a pericolosità idraulica P2 e da frana P3+P4, entro 300 m dalla costa, in aree protette;
+  interruttore **ha / % del territorio / m² per abitante**), **Consumi** (colonna impilata per causa: edifici, strade e
+  infrastrutture, piazzali e aree produttive, cantieri, cave e discariche, fotovoltaico a terra, altro, non attribuito; accanto
+  la colonna verde scura «di cui su suolo agricolo», stima EuGEnio, `#1b5e20`), **Colture** (colonna impilata per famiglia).
+- **Periodo a due indicatori** (Paolo, 22/11/2026 01:00): due `input type=range` sovrapposti in `.cursore-doppio` (guida
+  colorata fra i due con `--da` e `--a`; ognuno si muove con mouse, dito e tastiera, `aria-label` «Anno iniziale/finale del
+  periodo», `aria-valuetext` con l'anno); all'apertura tutti e due sull'ultimo anno. Flussi (Consumi) = somma dei periodi
+  fra le due carte (`flussiDelPeriodo`: con un anno solo il periodo che finisce lì, anche 2006–2012 o 2012–2015); stati
+  (Suolo, Colture) = anno finale, con la variazione nel riquadretto e in tabella e un **trattino nero** sull'istogramma al
+  valore dell'anno iniziale. Grafico «anno per anno» su anni di calendario: anni senza carta vuoti, periodi lunghi come barre
+  larghe alte quanto la media annua (scritta «media annua»), periodo scelto riquadrato, «rev» sopra il 2023 e il 2024.
+- **Scala** degli istogrammi: valore più alto fra tutte le unità (regioni o province della regione) e tutti gli anni; per i
+  consumi i periodi di un anno e il periodo scelto (i periodi lunghi schiaccerebbero le barre annuali).
+- **Provincia e comuni**: con una regione scelta il menu «Provincia» (o un clic sulla barra della provincia nel grafico delle
+  province) apre la provincia: con «Suolo» i comuni si colorano per % di suolo consumato all'anno finale (6 classi, da
+  `#fff5d6` a `#6b0f1a`, riquadretto con ha, %, variazione o incremento netto), l'istogramma della provincia sparisce per non
+  coprirli e la tabella passa ai comuni. Il clic sulla mappa resta quello dell'elettricità (secondo clic sulla regione =
+  Italia). In Sardegna le colture sono solo regionali (nota sotto il grafico).
+- **Dati**: `dati/suolo/italia.json` e `dati/suolo/RR.json`, costruiti dal worker con `fase16-suolo` (formato nel README della
+  fase 16), in `.gitignore` come quelli dell'elettricità; senza i file la pagina lo dice sotto la mappa.
+- Fonti nel piè, metodo in `metodo.html#suolo`, caso d'uso in `esempi.html`, righe in `EUGENIO_PER_AGENTI.md` (due copie) e
+  `llms.txt`. Prove: `tests/test_suolo_browser.py` (dati inventati della fase 16: istogrammi, regione → province, provincia →
+  comuni, cambio di scelta, periodo da tastiera, collegamento, 375 px, nessun errore).
+
 ## Statistiche › Carichi elettrici (20/11/2026, richiesta di Paolo; sperimentale, `?v=20261121a`)
 
 Pagina `carichi.html` + `carichi.js`, voce «Carichi elettrici» (sperimentale) nel gruppo Statistiche dopo «Produzione e
@@ -209,8 +243,8 @@ divisione in due metà.
   Basilicata), Calabria, Sicilia, Sardegna.
 - **Periodo**: due date modificabili, predefinito gli ultimi 12 mesi fino all'ultimo dato; pulsante «Ultimi 12 mesi».
   **Passo**: casella «Quarti d'ora» (predefinita); senza, ore = media dei quarti d'ora dell'ora.
-- **Indirizzo**: `?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60` (`history.replaceState` a ogni scelta; senza
-  `zona` = Italia). Dopo l'unione (20/11/2026) la pagina carica `collegamento.js` e si registra con queste quattro chiavi
+- **Indirizzo**: `?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=60` (`history.replaceState` a ogni scelta; senza
+  `zona` = Italia, senza `passo` = quarti d'ora; i collegamenti vecchi con `passo=15` valgono ancora). Dopo l'unione (20/11/2026) la pagina carica `collegamento.js` e si registra con queste quattro chiavi
   (`regione: false`, `pronto` alla fine dell'avvio): riquadro «Collegamento a questa simulazione» in fondo alla pagina;
   prova in `test_collegamento_browser.py::test_carichi`.
 - **Grafici** (tutti con la freccina del riquadro): valori del periodo (energia, potenza massima e minima con l'istante,
@@ -228,9 +262,98 @@ divisione in due metà.
 - **Dati**: `dati/carichi/indice.json`, `carico_AAAA-MM.json`, `fonti_AAAA-MM.json`, costruiti dal worker con
   `fase15-elettricita/elettricita/carichi.py` (formato nel README della fase 15); si caricano solo i mesi del periodo.
   Fuori dal repository (`.gitignore`) e **non scaricabili** (decisione di Paolo): nessun CSV né JSON da scaricare.
-  Senza `indice.json` la pagina dice che i dati non ci sono ancora.
+  Senza `indice.json` (o senza mesi) la pagina dice che i dati non ci sono ancora e nasconde comandi, piccola mappa e
+  sezioni (dal 21/11/2026: niente titoli di sezioni vuote, resta solo il messaggio).
 - Fonti e licenze nel piè, sezione `metodo.html#carichi`, «Come leggere i grafici» in fondo alla pagina.
 - Prove: `tests/test_carichi_browser.py` (Playwright, dati inventati dalla fase 15).
+
+## Segnalazioni di Paolo sulla v2026.11.21 (21–22/11/2026, nella versione 20261121b, pull request #17)
+
+- **Elettricità, istogrammi più grandi**: in `elettricita.js` `INGRANDISCI = 1.4` ingrandisce la tela di tutti i
+  disegni sulla mappa (barre di capacità, produzione, carichi, consumi; colonne del burden sharing): prima il doppio,
+  ridotto del 30 % il 22/11 (00:59, Paolo: «troppo grandi»). Si disegna con le misure di prima e la tela ha
+  `PR × INGRANDISCI` pixel per unità (gli anelli `ANELLI = 2`, con i raggi in pixel di `RAGGI`), quindi resta nitida (non è `icon-size`). Inquadratura con un **margine in
+  alto** pari alle colonne più alte (`margini()`, al più il 40 % della mappa), così la Lombardia non esce dal bordo.
+- **Anelli delle emissioni più piccoli** (22/11, 00:18): raggio sulla mappa da 8 a 21 px per le regioni e da 7 a 20 per
+  le province (`RAGGI`, in pixel sulla mappa, indipendenti da `INGRANDISCI`); nella vista dell'Italia scala con lo zoom dell'inquadratura
+  (`scalaAnelli()`, riferimento zoom 4,5 per una mappa di 800 × 640 px, mai sopra 1, mai sotto 0,5), così non si
+  sovrappongono neppure con la mappa piccola. Il fattore medio nel buco solo se il buco è largo almeno 18 px (altrimenti
+  è nel riquadretto). Controllo: `EUGENIO_ELETTRICITA.cerchi()` (centri e raggi in pixel) nelle prove.
+- **Burden sharing verticale** (00:05 del 22/11): come gli altri istogrammi, ancorato in basso sul punto della regione:
+  colonna delle rinnovabili in più dal 2020 impilata per fonte (**solo le parti positive**: i negativi, per esempio le
+  bioenergie dismesse, stanno solo nel riquadretto) e **linea di base** (lo zero). Il rettangolo **arancione vuoto**
+  (`#f08a24`) alto quanto l'obiettivo 2030 della Tabella A e la linea nera dell'obiettivo dell'anno scelto sono
+  un'immagine a parte (`el-RR-ob`, stessa misura) nello strato `el-obiettivi`, filtrato sul codice della regione **sotto
+  il mouse** (00:18 del 22/11; `mostraObiettivo()`, `stato.obiettivoSu`); col dito il primo tocco mostra l'obiettivo e
+  il riquadretto, il secondo apre le province (tipo del puntatore letto da `pointerdown`/`pointermove`, perché dopo un
+  tocco il browser manda anche mousemove e click di compatibilità). Scala comune che comprende gli obiettivi 2030: quando
+  il rettangolo compare la colonna non cambia. Province: solo la colonna (non hanno obiettivi).
+- **Riquadretto dell'obiettivo**: sulla mappa (tutta l'immagine del simbolo, quindi anche la parte vuota del rettangolo)
+  le prime righe sono «Obiettivo 2030», «Raggiunto: x % (y MW in più dal 2020)» e «Mancano: z MW» (0 se raggiunto);
+  per una provincia sono quelli della sua regione (`verso2030()`). Le stesse righe nel riquadretto del grafico «anno per
+  anno» (anche sul riquadro arancione dell'anno scelto) e la colonna «Mancano al 2030 (MW)» nella tabella. Unità: MW,
+  come nel resto della pagina.
+- **Carichi elettrici**: «Quarti d'ora» acceso già nell'HTML; all'apertura le caselle Dal/al hanno gli ultimi 12 mesi
+  che finiscono all'ultimo giorno con i dati; il passo predefinito non va nell'indirizzo; senza dati solo il messaggio.
+- **Novità**: sotto il titolo di ogni voce, in piccolo, «21/11/2026 · versione 20261121b» (`p.novita-versione`,
+  `costruisci_pagine.py`). Cambia la decisione dell'08/11/2026 solo per la pagina: le ancore e il feed restano senza
+  versione (richiesta di Paolo: la procedura di pubblicazione dice di controllare la versione nelle Novità).
+- Prove: `test_elettricita_browser.py::test_istogrammi_ingranditi` (misure × 1,4; anelli senza sovrapposizioni),
+  `::test_burden_suggerimento_obiettivo` (rettangolo solo sulla regione sotto il mouse), `::test_burden_tocco`;
+  `test_carichi_browser.py` (predefiniti, `passo=15` dei collegamenti vecchi, senza dati);
+  `test_collegamento_browser.py::test_carichi_predefiniti`; `test_costruisci_pagine.py::test_novita_versione_feed_e_menu`.
+
+## Produzione e consumi di elettricità: periodo a due indicatori (22/11/2026, 02:08, richiesta di Paolo; versione 20261122a)
+
+- **Componente comune** `sito/cursore_periodo.js` (`window.EUGENIO_PERIODO.crea({inizio, fine, doppio, min, max, etichetta,
+  testo, cambia})` → `imposta(anni, a, b)`, `scrivi()`): i due `input type=range` sovrapposti in `.cursore-doppio` di
+  «Suolo e aree agricole» (stile in `stile.css`), con la spinta dell'altro indicatore (inizio ≤ fine), `--da`/`--a`,
+  `aria-valuetext` e l'etichetta del periodo. Lo usano `suolo.js` (che prima aveva il codice dentro) ed `elettricita.js`;
+  nelle due pagine `cursore_periodo.js` si carica subito prima dello script della pagina. Tastiera: quella degli input
+  range (frecce, Pagina su/giù, Inizio, Fine).
+- **`elettricita.js`**: `st.inizio`, `st.fine` (e `st.anno` = anno finale, per gli obiettivi del burden sharing); all'apertura
+  tutti e due sull'ultimo anno; cambiando grandezza il periodo resta, avvicinato agli anni della grandezza (`imposta`).
+  **Flussi** (produzione, carichi, consumi, emissioni: `flusso()`) = somma degli anni del periodo (`valoriP`); **fattori**
+  delle emissioni = rapporto delle somme (`indicatoriP`: CO₂/produzione lorda, CO₂/termoelettrico, tep/termoelettrico/1000;
+  con un anno solo i valori del costruttore così come sono); nei riquadri ISPRA come media dei fattori annuali pesata sulla
+  produzione lorda (sul termoelettrico per i fattori del termoelettrico), solo se ISPRA ha tutti gli anni. **Stati**
+  (capacità, burden sharing) all'anno finale con la variazione dall'iniziale nel riquadretto (per fonte e totale), nella
+  tabella (in piccolo sotto ogni valore, classe `small.variazione`, e colonna «Variazione del totale dal …» o «Variazione dal
+  …» del burden sharing), nel suggerimento del grafico per provincia e, sull'istogramma, **trattino nero** al valore iniziale
+  (per barra; per il burden sharing all'altezza della colonna). Scala degli istogrammi e degli anelli: anni singoli e, con
+  un periodo, anche le somme del periodo. Grafico a destra: riquadro `rect.periodo-scelto` dal primo all'ultimo anno del
+  periodo (colorato appena con un periodo), anni iniziale e finale in grassetto.
+- **Collegamento**: `inizio` e `fine` (sempre tutti e due); `anno=AAAA` dei collegamenti di prima vale come `inizio=fine=AAAA`
+  e sparisce dall'indirizzo riscritto.
+- Prove: `test_elettricita_browser.py::test_periodo` (apertura sull'ultimo anno, Inizio/Fine da tastiera, variazioni e
+  trattino nella legenda della capacità, riquadro del grafico, somma della produzione nella tabella, fattore medio
+  dell'Italia come rapporto delle somme, collegamento), `test_collegamento_browser.py::test_elettricita` (periodo nel
+  collegamento e `anno=` vecchio), `test_suolo_browser.py` (componente comune).
+
+## Produzione e consumi di elettricità: grandezza «Emissioni» (21/11/2026, richiesta di Paolo; pubblicata con la versione 20261122a)
+
+Pubblicata nella release `v2026.11.22` (voce delle novità del 22/11, versione 20261122a, che comprende quella del 21/11 b mai pubblicata; procedura in `AGGIORNAMENTO_2026-11-22.md`).
+- **Selettore**: pulsante «Emissioni» (`data-modo="emissioni"`, `?modo=emissioni` nell'indirizzo e nel collegamento
+  salvabile). Si nasconde se `italia.json` non ha la parte `emissioni` (file costruiti prima del 21/11/2026). Anni: quelli
+  di GrossVsCO2Emissions con la produzione (2000–2025).
+- **Mappa**: in ogni regione (o provincia della regione scelta) un **anello** con la produzione lorda per fonte, colori di
+  `VOCI["produzione"]`, disegnato su canvas e aggiunto con `addImage` allo strato di simboli `el-barre` (finisce
+  nell'immagine scaricata). Area = area minima + parte proporzionale alla produzione (raggio
+  `sqrt(r0² + (r1² − r0²)·P/Pmax)`, dal 22/11/2026 r0–r1 8–21 px per le regioni e 7–20 per le province (vedi sopra); Pmax su tutte le unità e tutti gli
+  anni): proporzionale alla produzione, ma le regioni piccole restano leggibili. Nel buco il fattore medio della regione;
+  per le province nessun testo (i fattori sono solo regionali).
+- **Pannello**: tre riquadri `.cifra` (`#riquadri-emissioni`, `data-cifra` tep/medio/termo) con i valori nazionali
+  dell'anno, il confronto con MEF/MASE 0,187 tep/MWh e con ISPRA (fattore della produzione lorda, dei consumi, del
+  termoelettrico con e senza bioenergie, consumo di energia del parco termoelettrico) e lo scarto percentuale; con una
+  regione scelta anche il valore della regione. Grafico «anno per anno»: le tre serie (Italia o regione) con la linea
+  tratteggiata MEF e i cerchi vuoti ISPRA (solo Italia). Tabella: regioni raggruppate per zona di mercato con la riga di
+  zona (`tr.riga-zona`, `data-zona`; per Calabria, Sicilia e Sardegna una sola riga «regione e zona»), totale Italia nel
+  piede, riga della regione scelta `tr.scelta`.
+- **Numeri**: tutti con `EUGENIO_NUMERI.formato`; l'asse verticale dei grafici della pagina ora mette i decimali quando
+  il passo è sotto 1. Indicatori e riferimenti vengono da `italia.json` (fase 15, `indicatori()` e
+  `riferimenti_emissioni.json`): nel JavaScript non ci sono valori di riferimento scritti a mano.
+- Metodo in `metodo.html#elettricita-emissioni`; prove in `tests/test_elettricita_browser.py::test_emissioni` e
+  `test_emissioni_telefono`.
 
 ## Comunità energetiche: confini delle aree delle sedi a qualsiasi zoom (20/11/2026, 14:08, `?v=20261120d`, richiesta di Paolo)
 
@@ -383,15 +506,56 @@ sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i c
   file restano gli stessi; `costruisci_pagine.py` rimette l'etichetta sopra il titolo delle pagine). Nuova voce
   **«Edifici pubblici»** (sperimentale, «S») dopo Patrimonio.
 - **`edifici-pubblici.html`** (`edifici_pubblici.js`, `main.strumento.pagina-ortofoto.pagina-pubblici`): mappa MapLibre con
-  le tessere `/edifici3d/immobili_pa/immobili_pa_<anno>.pmtiles` (descritte da `indice.json`, fase 7
+  le tessere `/edifici3d/immobili_pa/immobili_pa_<anno>_<versione>.pmtiles` (nome scritto in `indice.json`, fase 7
   `immobili-pa-sito`): particelle con edifici retinate a righe oblique, terreni in verde, edifici e terreni insieme in viola,
   beni senza particella come punti arancio; da lontano un punto per particella, dallo zoom 13 i confini. Livelli: Edifici,
-  Terreni, Beni senza particella, gruppi di enti (caselle, «Tutti», «Nessuno»), ortofoto con la fonte migliore della zona
+  Terreni, Beni senza particella, gruppi di enti (caselle, «Tutti», «Nessuno»; costruite da `indice.json` «gruppi»: dal
+  22/11/2026 anche «Unioni di Comuni e Comunità montane», codice `I`, e Province e Università non più vuote), ortofoto con la fonte migliore della zona
   scelta da sola (`EUGENIO_CONFINI.fontiNelPunto`) o a mano, contesto Sentinel-2 sotto, strati comuni (`strati_gl.js`).
   Ricerca a parole nell'indice (`/api/immobili-pa/cerca`, filtro per gruppo) e per indirizzo o foglio e particella
   (`cerca_luogo.js`); clic su punto o particella → scheda (`/api/immobili-pa/particella/{ref}` o `/bene/{id}`) con
-  «Apri in Modelli 3D» e «Apri in Ortofoto». Indirizzo: `?lat=&lon=&z=`, `?ref=`, `?bene=`. Immagine scaricabile con le
-  attribuzioni (`esporta_mappa.js`).
+  «Apri in Modelli 3D», «Apri in Ortofoto» e (dal 22/11/2026) «Mostra tutti i beni di questo ente»; un bene senza particella
+  mostra tutte le sue dichiarazioni (proprietario e chi lo ha in uso). Indirizzo: `?lat=&lon=&z=`, `?ref=`, `?bene=`.
+  Immagine scaricabile con le attribuzioni (`esporta_mappa.js`).
+- **Ricerca per ente** (22/11/2026, `pubblici_enti.js`; decisioni di Paolo e studio
+  `documenti/EDIFICI_PUBBLICI_RICERCA_ENTE_2026-11-22.md`): nel passo 1 due schede (`role="tablist"`, frecce, Inizio e
+  Fine) «Cerca un immobile» e **«Per ente»** (`?modo=enti`). Nella seconda:
+  - menu **tipologia** (gruppi di `indice.json`) e **«con beni in»** (regioni dove l'ente ha beni);
+  - **combobox ARIA** (`role="combobox"`, `aria-expanded`, `aria-activedescendant`, elenco `role="listbox"`; frecce, Invio,
+    Esc) con l'autocompletamento **tutto nel browser** sull'elenco statico `enti_<anno>_<versione>.json` (indicato da
+    `indice.json` → `enti`): ogni parola deve iniziare una parola del nome o della sede, sigle comuni (AUSL, ASL, ACER, ATER,
+    IACP, «unibo») come sinonimi, prima il nome esatto («cesena» → Comune di Cesena prima di Cesenatico), poi i più grandi;
+    proposte con nome leggibile (i nomi MEF sono in maiuscolo), tipologia, sede e beni (`EUGENIO_NUMERI.formato`);
+  - **enti scelti** (al massimo 8) con il colore (tavolozza Okabe–Ito senza arancio e porpora: blu, vermiglione, verde
+    acqua, giallo, celeste, nero, ocra, grigio-blu; un ente nuovo prende il primo colore libero), totali brevi, «Inquadra»,
+    «×» e «Togli tutti»;
+  - caselle **ruolo** («in proprietà» accesa, «in uso» = detenzione spenta) e **natura** (fabbricati accesi, terreni
+    spenti), decisioni di Paolo del 22/11/2026; avvisi del § 5.5 dello studio (beni dichiarati, superfici, cedente non
+    mostrato, Trentino-Alto Adige solo a pallini).
+  - **Mappa**: per ogni ente una sorgente GeoJSON dai punti di `/api/immobili-pa/ente/{chiave}/punti` (filtrati nel browser
+    per ruolo e natura, una feature per particella con `n` beni), pallini fino allo zoom delle particelle (13) con raggio
+    che cresce con √n, raggruppati (`cluster`, senza numeri: la mappa non ha glifi) oltre 3.000 punti; dallo zoom 13 restano
+    i pallini dei soli beni senza particella e compaiono i livelli `pa-enti-terreni`, `pa-enti-edifici` (retino
+    `retino-ente-<n>` nel colore dell'ente) e `pa-enti-linea` sulla sorgente `pa` delle tessere, filtrati con la proprietà
+    `e` (`["in", ",<id>p,", ["get", "e"]]`); se una particella è di più enti scelti vale il colore del primo. I livelli
+    normali si **attenuano** (opacità ~0,1) e la loro legenda si schiarisce; sotto la mappa la legenda degli enti.
+    Clic e passaggio del mouse passano prima da `EUGENIO_PUBBLICI_ENTI.suClic/suMovimento` (nomi degli enti scelti nella
+    particella; clic su un gruppo di pallini → zoom).
+  - **Passo «Edifici degli enti selezionati»** (numeri dei passi rifatti): per ogni ente i totali (`/api/immobili-pa/ente/
+    {chiavi}`, una richiesta per tutti) con superficie dichiarata dei fabbricati in m², dei terreni in ettari, percentuali
+    con un decimale; con più enti la riga «Insieme» sui beni distinti. Elenco con `tabella_ordinabile.js` (una riga per
+    particella con il numero di unità; colonne Comune, Regione solo se l'ente ha beni in più regioni, Indirizzo,
+    Tipologia, Unità, Superficie dichiarata, Area del lotto, Epoca, Utilizzo, Titolo; le ultime quattro nascoste sotto i
+    600 px): fino a 200 righe tutte insieme e ordinate nel browser, oltre si parte dai **comuni** (tabella ordinabile dei
+    comuni, clic → particelle del comune) o, con un solo comune, dalle **pagine da 100 righe ordinate dal server**.
+    L'ordinamento scelto vale per tutti gli enti e va nel collegamento. Clic (o Invio) su una riga → la mappa vola sulla
+    particella, la riga e il contorno si evidenziano e si apre la Scheda. Nessuna esportazione della tabella.
+  - **Immagine** (`opzioniImmagine`): nella fascia sotto la mappa una riga per ente con il colore scritto («blu: Comune di
+    Cesena (FC) – 2.718 beni, 551 particelle»), i filtri e la spiegazione dei segni.
+  - Con un `indice.json` senza `enti` (dati preparati prima del 22/11/2026) la scheda dice che la ricerca per ente non è
+    ancora disponibile; con l'indice vecchio le rotte rispondono `{"disponibile": false}`.
+- **`tabella_ordinabile.js`**: componente riusabile delle tabelle ordinabili (regole in `sito/README_stile.md`, «Tabelle
+  ordinabili»).
 - **`retino.js`**: il motivo a righe oblique (magenta `#c2185b`) registrato come immagine MapLibre, uguale in tutte e due
   le pagine; `campione()` per le legende.
 - **`pubblici_mappa.js`** (Modelli 3D): un edificio è pubblico se il punto interno di uno dei suoi corpi cade in una
@@ -402,7 +566,9 @@ sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i c
   messaggio (`#nota-pubblico`) l'ente, le tipologie e il collegamento alla scheda. `?lat=&lon=` senza `edificio` apre la
   mappa 2D sul punto (collegamento da Edifici pubblici).
 - Test: `test_costruisci_pagine.py` (gruppo «Territorio», voce nuova, 13 «S»), `test_esempi_contributi.py` (esempio
-  della pagina), `test_mappe_browser.py` (pagina a due colonne).
+  della pagina), `test_mappe_browser.py` (pagina a due colonne), `test_pubblici_enti_browser.py` (22/11/2026: file e testi,
+  schede, combobox da tastiera, colori, limite di 8, totali, ordinamento con `aria-sort`, ente grande per comune e
+  pagine, clic su una riga, collegamento riaperto, 375 px, indice vecchio; rotte simulate).
 
 ## Rete elettrica (17/11/2026, richiesta di Paolo; contratto in CONTRATTO_RETE, sintesi qui)
 
@@ -1114,7 +1280,8 @@ in ODT. Sul server i due formati sono spenti (rispondono 410, variabile `REPORT_
   qui** (test con `index.html`, tag della release): pagina, feed, newsletter e testo della release mostrano solo data,
   titolo e gruppi; ancore e identificativi del feed per data (`#d20261107`, `#d20261107-2` per la seconda voce dello
   stesso giorno). Mai dati GME/EEX, fase 2 o `uni_privato`.
-- `python costruisci_pagine.py` genera `sito/novita.html` (pagina di testo con l'indice laterale per versione) e
+- `python costruisci_pagine.py` genera `sito/novita.html` (pagina di testo con l'indice laterale per versione; dal
+  21/11/2026 sotto ogni titolo, in piccolo, «gg/mm/aaaa · versione …») e
   `sito/novita.xml` (feed Atom con indirizzi assoluti); `--controlla` li confronta come le altre pagine. La testata ha
   «Novità» tra Mirror e Contattaci (computer e telefono) con `data-ultima` = versione dell'ultima voce; la testa comune ha
   il `<link rel="alternate" type="application/atom+xml">`; `aspetto.js` mette un pallino sul collegamento se l'ultima

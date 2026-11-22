@@ -614,3 +614,27 @@ simulazione»), prove in `tests/test_collegamento_browser.py`.
 5. Una riga nella tabella del README della fase 5 e una prova in `tests/test_collegamento_browser.py`: scelte, collegamento,
    pagina nuova (contesto nuovo, senza la memoria del browser) con quell'indirizzo, stesse scelte, campo uguale
    all'indirizzo, 375 px senza scorrimento orizzontale.
+
+## Tabelle ordinabili (22/11/2026, regola per le tabelle future)
+
+Componente comune `tabella_ordinabile.js` (oggetto `window.EUGENIO_TABELLA_ORDINABILE`), senza dipendenze; prima pagina che
+lo usa: Territorio › Edifici pubblici, scheda «Per ente» (`pubblici_enti.js`). Uso e opzioni sono descritti in testa al file.
+
+- **Clic sull'intestazione**: crescente → decrescente → non ordinato (torna l'ordine di partenza delle righe). Le
+  intestazioni sono pulsanti dentro i `<th>` (Tab, Invio, Spazio) con `aria-sort` = `ascending`, `descending` o `none` e
+  un'icona (▲, ▼, ↕) nascosta ai lettori di schermo.
+- **Confronto**: testi in italiano con `localeCompare(…, "it", { numeric: true, sensitivity: "base" })` (maiuscole e
+  accenti non contano, «Via 2» prima di «Via 10»), numeri come numeri (colonne `tipo: "numero"`, allineate a destra),
+  **celle vuote sempre in fondo** in tutti e due i versi.
+- **Ordinamento nel browser o sul server**: senza `suOrdina` ordina il componente; con `suOrdina(chiave, verso)` la pagina
+  chiede al server la prima pagina con quell'ordine e poi chiama `imposta(righe)` (elenchi paginati, come gli enti con più
+  di 200 righe).
+- **Righe cliccabili** (`suRiga`): `tabindex="0"`, Invio o Spazio come il clic; la riga scelta ha la classe `evidenziata`
+  (`evidenzia(predicato)`).
+- **Numeri** formattati con `EUGENIO_NUMERI.formato` nella funzione `formato` delle colonne (punto delle migliaia, virgola
+  decimale); i valori delle righe restano numeri, così l'ordinamento è giusto.
+- Una riga di **totali** va in `<tfoot>` (`piede([{ testo, colonne, intestazione }])`) e resta in fondo anche ordinando.
+- La tabella va in un contenitore `.tabella-scorre` (riceve da solo il pulsante «Apri la tabella in un riquadro», § 4 dei
+  grafici); le colonne con la classe `solo-largo` si nascondono sotto i 600 px.
+- Niente pulsanti di download nelle tabelle di dati non scaricabili (Edifici pubblici per ente, dati Terna, GME): resta la
+  stampa del browser.

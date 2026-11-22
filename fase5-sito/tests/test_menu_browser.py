@@ -247,10 +247,11 @@ def test_menu_08_11_sei_gruppi_tendine_e_tastiera(base, browser):
         assert pg.locator(G.format("edificio") + " .tendina a").count() == 3
         assert pg.locator(G.format("edificio") + " .tendina .voce-corso").count() == 5
         # (11/11/2026) Statistiche: Indici dei prezzi prima di Costi energetici Sanità; (20/11/2026) in fondo
-        # «Produzione e consumi di elettricità» e poi «Carichi elettrici»
+        # «Produzione e consumi di elettricità» e poi «Carichi elettrici»; (22/11/2026) «Suolo e aree agricole»
         assert [x.strip() for x in pg.locator(G.format("statistiche") + " .tendina a").all_text_contents()] == \
             ["Indici dei prezzi", "Costi energetici Sanità", "Stato della rete elettrica S (sperimentale)",
-             "Produzione e consumi di elettricità S (sperimentale)", "Carichi elettrici S (sperimentale)"]
+             "Produzione e consumi di elettricità S (sperimentale)", "Carichi elettrici S (sperimentale)",
+             "Suolo e aree agricole S (sperimentale)"]
         ctx.close()
     ctx, pg = pagina(browser, 1366)
     pg.goto(base + "faq.html")

@@ -11,12 +11,12 @@ try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
 var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|aria|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261121a";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261121a"></script>
-<script src="numeri.js?v=20261121a"></script>
-<link rel="stylesheet" href="stile.css?v=20261121a">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261121a">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261121a">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261122a";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261122a"></script>
+<script src="numeri.js?v=20261122a"></script>
+<link rel="stylesheet" href="stile.css?v=20261122a">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261122a">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261122a">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
 </head>
@@ -24,7 +24,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261121a" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261122a" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -32,7 +32,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261121a">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261122a">Novità</a>
       <a href="esempi.html">Esempi</a>
       <a href="contributi.html">Contributi</a>
       <a href="contatti.html">Contattaci</a>
@@ -60,10 +60,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="fv-cabine.html">Cabine primarie <span class="cantiere prova">sperimentale</span></a></li><li><span class="voce-gme voce-corso" data-pagina="fv-ombre.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Ombre e percorso del sole</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-irradiazione.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Sole e irradiazione su tetti e facciate</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-producibilita.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Producibilità con le ombre</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-pvgis.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Confronto con PVGIS</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-dlgs199.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">D.Lgs. 199/2021, Allegato III</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="fv-leed.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Prefattibilità LEED</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme voce-corso" data-pagina="edificio-cer.html" aria-disabled="true" title="In lavorazione: disponibile prossimamente"><span class="voce-nome">Comunità energetiche</span> <span class="cantiere sviluppo breve" aria-hidden="true"><svg class="segnale" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.6 22.4 20.9H1.6z" fill="#f5c400" stroke="#1a1a1a" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v5.6" stroke="#1a1a1a" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.45" fill="#1a1a1a"/></svg></span><span class="solo-lettori">: in lavorazione, disponibile prossimamente</span></span></li><li><span class="voce-gme" data-pagina="fv-mercato.html" aria-disabled="true" title="In attesa di autorizzazione dal GME"><span class="voce-nome">Prezzo catturato, accumuli e mercato</span> <span class="cantiere">licenza GME</span><span class="solo-lettori">: in attesa di autorizzazione dal GME</span></span></li></ul>
         </details>
         <details class="pannello-gruppo" data-gruppo="statistiche"><summary>Statistiche</summary>
-          <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li><li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale</span></a></li><li><a href="elettricita.html">Produzione e consumi di elettricità <span class="cantiere prova">sperimentale</span></a></li><li><a href="carichi.html">Carichi elettrici <span class="cantiere prova">sperimentale</span></a></li></ul>
+          <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li><li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale</span></a></li><li><a href="elettricita.html">Produzione e consumi di elettricità <span class="cantiere prova">sperimentale</span></a></li><li><a href="carichi.html">Carichi elettrici <span class="cantiere prova">sperimentale</span></a></li><li><a href="suolo.html">Suolo e aree agricole <span class="cantiere prova">sperimentale</span></a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html" aria-current="page">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261121a">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
+        <ul><li><a href="metodo.html" aria-current="page">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261122a">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -148,6 +148,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
             <li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="elettricita.html">Produzione e consumi di elettricità <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="carichi.html">Carichi elettrici <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="suolo.html">Suolo e aree agricole <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
           </ul></details></li>
       </ul>
     </nav>
@@ -389,6 +390,38 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     2:1. Il report (PDF, Excel o ODS) contiene, nell'ordine, i totali e i costi unitari medi, le mappe, i diagrammi di
     Pareto dei consumi e poi dei costi, le tabelle dei consumi e poi dei costi; in Excel e ODS solo totali e tabelle.</p>
 
+  <h2 id="edifici-pubblici">Edifici pubblici</h2>
+  <h3>Da dove vengono i dati</h3>
+  <p>La pagina <a href="edifici-pubblici.html">Edifici pubblici</a> mostra i beni immobili dichiarati ogni anno dalle
+    Pubbliche Amministrazioni al Ministero dell'Economia e delle Finanze (censimento
+    <a href="https://www.de.mef.gov.it/it/attivita_istituzionali/patrimonio_pubblico/censimento_immobili_pubblici/open_data_immobili/">«Patrimonio
+    della PA»</a>, art. 2, comma 222, legge 191/2009; ultimo anno pubblicato: dati al 31/12/2023, CC BY 4.0). Il MEF dà un
+    punto e l'identificativo catastale di ogni bene, non i confini: EuGEnio li aggancia alle particelle della cartografia
+    catastale dell'<a href="https://www.agenziaentrate.gov.it/">Agenzia delle Entrate</a> (CC BY 4.0). Per un fabbricato la
+    particella è il lotto dell'edificio, non la sagoma, e più unità immobiliari (appartamenti, box…) stanno nella stessa
+    particella. In Trentino-Alto Adige non ci sono particelle (catasto tavolare): lì restano i punti del censimento.</p>
+  <h3 id="edifici-pubblici-ente">Ricerca per ente</h3>
+  <p>Con la scheda «Per ente» si scelgono fino a otto enti (Comuni, Unioni di Comuni, Province, Regioni, aziende sanitarie,
+    università, enti per la casa, ministeri e altri): ognuno ha un colore e la mappa mostra i suoi immobili, da lontano come
+    pallini (uno per particella, più grande se contiene più beni) e da vicino con il contorno e le righe oblique nel colore
+    dell'ente. L'ente è quello che ha <b>dichiarato</b> il bene: può esserne proprietario (titolo di proprietà) oppure
+    averlo in uso (titolo di detenzione: in gestione per conto di altri, in uso governativo, in locazione, in concessione…).
+    All'inizio la pagina mostra solo i beni in proprietà e solo i fabbricati; «in uso» e i terreni si accendono con le
+    caselle.</p>
+  <p>Per ogni ente ci sono i totali con le scelte fatte: beni dichiarati (le righe del censimento), fabbricati, terreni,
+    particelle, superficie dei fabbricati in metri quadrati e dei terreni in ettari (sono superfici diverse e non si
+    sommano: per i fabbricati è la superficie lorda dichiarata, per i terreni quella catastale; se manca si usa la
+    «superficie di riferimento» del MEF), quota di beni non utilizzati o inutilizzabili, vincolati e in uso, numero dei
+    comuni. Lo stesso bene può essere dichiarato da due enti, di solito il proprietario e chi lo gestisce: scegliendoli
+    insieme, la riga «Insieme» lo conta una volta sola. L'elenco ha una riga per particella con il numero di unità, la
+    superficie dichiarata e, accanto, l'area del lotto presa dalla mappa catastale (due misure diverse, con nomi diversi).
+    La cubatura è compilata solo per un fabbricato su dieci.</p>
+  <p>I dati sono quelli dichiarati: possono mancare beni, le superfici sono a volte stimate dall'ente e alcuni nomi (per
+    esempio di ministeri) non sono aggiornati. I totali non sono il «patrimonio ufficiale» dell'ente. Non sono mostrati il
+    soggetto che cede l'immobile all'ente né codici fiscali: l'ente si riconosce da una chiave derivata, che resta uguale da
+    un anno all'altro e va nel collegamento della pagina. L'elenco si consulta nella pagina e non si scarica; l'immagine
+    della mappa riporta la legenda degli enti con i colori scritti per esteso.</p>
+
   <h2 id="trattamento-aria">Trattamento aria</h2>
   <p>Le quattro pagine del menu Trattamento aria (sperimentali) fanno i calcoli di psicrometria, cioè dell'aria umida,
     con il clima vero del comune scelto invece che con pochi valori di tabella. Tutti i calcoli si fanno nel browser: al
@@ -567,8 +600,19 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       pubblica. I valori regionali sono la somma delle province.</li>
     <li><strong>Correzioni dei dati.</strong> In alcuni anni Terna ripete la stessa riga (provincia e fonte) con due valori
       diversi o con un valore e un vuoto: si tiene il valore più alto. Per il termoelettrico si usa il minore tra il totale
-      degli impianti di generazione e la somma della capacità termoelettrica per categoria (nel 2017 il primo ha 16 GW in
-      più del 2016 e del 2018).</li>
+      degli impianti di generazione e la somma della capacità termoelettrica per categoria.</li>
+    <li><strong>Anni copiati</strong> (dal 22/11/2026). Nel Download Center alcuni anni sono la copia di un altro anno con
+      l'anno cambiato: la produzione per fonte del 2017 è quella del 2008 (Italia 319.130 GWh invece di circa 295.800), quella
+      del 2006 è il 2004 e quella del 2007 ha i valori del 2005; la capacità per fonte del 2005 è il 2002, quella del 2006 il
+      2004, quella del 2017 contiene tutte le righe del 2012; la capacità rinnovabile del 2005 è il 2004. Ogni mese il
+      server confronta tutti gli anni di ogni tabella e non usa gli anni copiati. La produzione del 2006, 2007 e 2017 è
+      ricostruita con le altre tabelle di Terna dello stesso anno: termoelettrico lordo dalla produzione termoelettrica per
+      categoria, idrico rinnovabile, geotermico, eolico e fotovoltaico dalle statistiche delle rinnovabili, pompaggi dalla
+      copertura della richiesta per regione, divisi tra le province come la media dell'anno prima e dopo (Italia 2017:
+      295.787 GWh). La capacità del 2006 e del 2017 è ricostruita allo stesso modo (termoelettrico dalla capacità per
+      categoria senza il geotermico, rinnovabili dalla tabella delle rinnovabili, pompaggio puro come media dell'anno prima
+      e dopo); la capacità del 2005 manca (dato di Terna non disponibile). Un controllo segnala inoltre ogni anno in cui il
+      totale nazionale di una grandezza si scosta di più del 15 % dalla media dell'anno prima e dopo.</li>
     <li><strong>Burden sharing.</strong> Obiettivi di potenza rinnovabile aggiuntiva rispetto al 31/12/2020 del DM 21
       giugno 2024 (aree idonee), art. 2, Tabella A, anno per anno fino al 2030 (80 GW in tutto; Trentino-Alto Adige =
       Bolzano + Trento). La potenza raggiunta è una stima: la variazione della potenza efficiente lorda rinnovabile di Terna
@@ -578,6 +622,54 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <li><strong>Istogrammi.</strong> Barre affiancate, una per fonte o settore, nella stessa scala per tutte le regioni (o
       per tutte le province della regione scelta) e per tutti gli anni. Le province della Sardegna sono quelle usate da
       Terna in ogni anno; quelle soppresse hanno una posizione indicativa.</li>
+    <li><strong>Periodo</strong> (dal 22/11/2026). Sotto la mappa due indicatori scelgono il primo e l'ultimo anno; all'apertura
+      sono tutti e due sull'ultimo anno. Con un periodo produzione, carichi, consumi ed emissioni sono la somma degli anni
+      del periodo, e i fattori di emissione e l'energia primaria per MWh sono il rapporto delle somme (per esempio
+      emissioni del periodo / produzione del periodo), non la media dei valori annuali; i valori ISPRA di confronto sono
+      la media dei fattori annuali pesata sulla produzione di Terna. Capacità e burden sharing sono quelli dell'anno
+      finale, con la variazione rispetto all'anno iniziale; sull'istogramma un trattino nero segna il valore dell'anno
+      iniziale. Con un periodo la scala degli istogrammi comprende anche le somme del periodo.</li>
+  </ul>
+  <h3 id="elettricita-emissioni">Emissioni ed energia primaria del termoelettrico</h3>
+  <ul>
+    <li><strong>Dati.</strong> Dataset «GrossVsCO2Emissions» di Terna: per regione (non per provincia), anno (dal 2000) e
+      combustibile (gas naturale, solidi, petroliferi, bioenergie, altri) la produzione termoelettrica lorda (GWh) e le
+      emissioni di CO₂ (milioni di tonnellate). Ci sono i dati regionali per tutti gli anni, quindi non serve ripiegare
+      sulle zone di mercato: le zone (Nord, Centro-Nord, Centro-Sud, Sud, Calabria, Sicilia, Sardegna, in vigore dal 2021)
+      sono somme delle regioni, anche per gli anni precedenti. Terna attribuisce emissioni anche alla voce «Bioenergie»:
+      dentro ci sono la parte fossile dei rifiuti e altri combustibili come i gas di sintesi delle raffinerie (in Sardegna
+      quasi 4 TWh); la CO₂ delle biomasse è contata zero, come nell'inventario nazionale. Il totale nazionale coincide con
+      ISPRA nel 2005, nel 2010 e dal 2021 (scarto sotto l'1 %); dal 2015 al 2020 Terna ha l'8–12 % in più delle serie ISPRA
+      ricalcolate, e così i fattori di quegli anni.</li>
+    <li><strong>Fattori.</strong> Fattore medio = emissioni / produzione lorda totale senza pompaggi e accumuli (come la
+      «produzione elettrica lorda» di ISPRA); fattore del termoelettrico («marginale») = emissioni / produzione
+      termoelettrica lorda, bioenergie comprese (come la «produzione termoelettrica lorda» di ISPRA); per le zone e per
+      l'Italia si sommano emissioni e produzioni prima di dividere.</li>
+    <li><strong>Energia primaria.</strong> Terna non pubblica nel Download Center il consumo di combustibile delle centrali;
+      ISPRA lo pubblica (dai dati di Terna) solo per l'Italia. Per regione EuGEnio lo stima: per gas naturale, solidi e
+      petroliferi emissioni / fattore di emissione per unità di energia primaria (ISPRA, Rapporto 430/2026, Tabella 1.4:
+      gas naturale 2,474, carbone da vapore 3,861, olio combustibile 3,202 tCO₂/tep nel 2024; prima del 2022 i valori del
+      2022, dopo il 2024 quelli del 2024); per bioenergie e altri (gas siderurgici, recuperi), dove la CO₂ non dice quanto
+      combustibile si è bruciato, produzione × 0,086 tep/MWh / 0,35 (rendimento convenzionale scelto con i valori di
+      riferimento del Regolamento delegato (UE) 2023/2104, Allegato I: biomasse 30–37 %, rifiuti 25 %, biogas 42 %,
+      bioliquidi e gas di sintesi 44,2 %, gas d'altoforno e di cokeria 35 %). 1 tep = 41,868 GJ. La somma nazionale delle
+      stime differisce dal consumo ISPRA di −1/+4 % (2005–2025: per esempio 25,7 contro 24,8 Mtep nel 2024).</li>
+    <li><strong>Riferimenti.</strong> Fattore di conversione dell'elettricità in energia primaria 0,187 tep/MWh: <a
+      href="https://www.arera.it/atti-e-provvedimenti/dettaglio/08/003-08een">delibera AEEG EEN 3/08</a> (28/3/2008), usato
+      nei certificati bianchi e nella Guida operativa del GSE; non abbiamo trovato atti che lo sostituiscano (il DM MASE 21
+      luglio 2025 sui certificati bianchi non ne indica un altro). È una previsione del 2008 del rendimento medio del parco
+      termoelettrico: oggi il termoelettrico consuma meno (circa 0,16–0,17 tep/MWh). Fattori di emissione nazionali per
+      anno: <a href="https://www.isprambiente.gov.it/it/pubblicazioni/rapporti/settore-elettrico-emissioni-di-co2-e-altri-impatti-edizione-2026">ISPRA,
+      «Settore elettrico: emissioni di CO2 e altri impatti», edizione 2026 (Rapporto 430/2026)</a>, che sostituisce i
+      rapporti «Fattori di emissione atmosferica…», e il suo file Excel (FE_energia_elettrica_2025-V2, 7/7/2026; 2025
+      preliminare): produzione termoelettrica lorda, produzione elettrica lorda, consumi elettrici, consumo di energia del
+      parco termoelettrico. Valori in gCO₂/kWh convertiti in tCO₂/MWh. I riferimenti sono nel file
+      <code>riferimenti_emissioni.json</code> della fase 15, con fonte e data di lettura.</li>
+    <li><strong>Mappa.</strong> In ogni regione un anello con la produzione lorda per fonte (stessi colori della
+      Produzione); l'area dell'anello è un'area minima più una parte proporzionale alla produzione, nella stessa scala per
+      tutte le regioni (o le province della regione) e tutti gli anni, così le regioni piccole restano leggibili e le grandi
+      si vedono grandi. Nel buco il fattore medio della regione. Con una regione scelta gli anelli sono per provincia, i
+      fattori restano regionali.</li>
   </ul>
 
   <h2 id="carichi">Carichi elettrici</h2>
@@ -610,6 +702,62 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       periodo. Curva di durata: tutte le potenze del periodo in ordine decrescente. Fonti: una barra per quarto d'ora (o
       ora); quando le barre sono più dei pixel, ogni colonna somma i quarti d'ora che copre. La rotella ingrandisce l'asse
       orizzontale e il grafico si ridisegna con i dati della vista.</li>
+  </ul>
+
+  <h2 id="suolo">Suolo e aree agricole</h2>
+  <p>La pagina <a href="suolo.html">Suolo e aree agricole</a> (Statistiche, sperimentale) mostra per regione, provincia e
+    comune il suolo consumato, il consumo di suolo per causa e le superfici agricole e coltivate. Il worker controlla le fonti
+    una volta al mese e ricostruisce i file solo quando ISPRA pubblica una nuova versione (a fine ottobre) o ISTAT aggiorna
+    i suoi dati.</p>
+  <ul>
+    <li><strong>Fonti.</strong> ISPRA/SNPA, «Consumo di suolo, ecosistemi urbani e stato del territorio» (edizione 2026,
+      Report ambientali SNPA 50/2026): indicatori per comune, provincia, regione e Italia del file
+      <code>consumo_suolo_&lt;anno&gt;_Com_Prov_Reg_Naz_v&lt;versione&gt;.xlsx</code> del repository SINAnet (il worker cerca
+      il file con l'anno e la versione più alti), carta dei cambiamenti del consumo di suolo e Carta nazionale di uso del
+      suolo (che integra dati Copernicus). ISTAT: stime annuali delle superfici coltivate per provincia (dal 2006) e
+      7° Censimento generale dell'agricoltura (2020) per comune. Licenze CC BY 4.0; i dati sono aggregati e ricalcolati da
+      EuGEnio.</li>
+    <li><strong>Anni e periodi.</strong> ISPRA pubblica le carte del 2006, del 2012 e poi ogni anno dal 2015. Il consumo di
+      un anno è il periodo che finisce in quell'anno: 2012 vuol dire 2006–2012 (6 anni), 2015 vuol dire 2012–2015 (3 anni),
+      poi un anno per volta. Con due anni diversi sui due indicatori del periodo i consumi sono la somma dei periodi fra le
+      due carte; suolo e colture sono i valori dell'anno finale, con la variazione dall'anno iniziale. Nel grafico i
+      periodi lunghi sono barre larghe alte quanto la media annua.</li>
+    <li><strong>Revisioni.</strong> Dall'edizione 2025 ISPRA rivede solo l'anno precedente (fogli «_rev»). La pagina mostra
+      le superfici come sono state pubblicate in ogni edizione e segna «rev» il 2023 e il 2024, con il valore rivisto nel
+      riquadretto (Italia: 2.149.607 ha contro 2.152.721 nel 2023, 2.154.864 contro 2.157.457 nel 2024). Per questo la somma
+      dei consumi netti non coincide esattamente con la differenza tra due anni.</li>
+    <li><strong>Suolo.</strong> Suolo consumato = copertura artificiale del suolo secondo ISPRA. Le parti in aree a
+      pericolosità idraulica media (P2: le aree P1, P2 e P3 sono una dentro l'altra, P2 è lo scenario di riferimento), da
+      frana elevata e molto elevata (P3 + P4, classi distinte dei Piani di assetto idrogeologico), entro 300 m dalla costa e
+      in aree protette (EUAP) possono sovrapporsi e non si sommano. Percentuali sulla superficie amministrativa e m² per
+      abitante con la popolazione dell'anno, tutte e due dal file ISPRA. SAU e superficie agricola non utilizzata: censimento
+      ISTAT 2020, uguali in tutti gli anni (i comuni sardi vanno nelle province nuove attraverso l'elenco dei comuni di
+      ISPRA).</li>
+    <li><strong>Consumi per causa.</strong> Incrementi per classe della carta ISPRA raggruppati: edifici (111); strade e
+      infrastrutture (strade pavimentate e sterrate, ferrovie, aeroporti, porti: 112–115, 121); piazzali e aree produttive
+      (116); cantieri e terra battuta (122); cave e discariche (118, 123, 124); fotovoltaico a terra (125); altro (serre
+      pavimentate, altre coperture: 117, 126). Ogni classe conta solo la prima trasformazione: un cantiere che diventa un
+      edificio non è nuovo consumo. Nel periodo 2006–2012 una parte del consumo lordo non è attribuita a una classe
+      (24.222 ha su 63.598 in Italia): è la voce «non attribuito».</li>
+    <li><strong>Suolo agricolo consumato (stima di EuGEnio).</strong> Pixel per pixel (10 m) la carta dei cambiamenti
+      2024–2025 dice dove c'è nuovo consumo e di che classe; la Carta di uso del suolo ISPRA 2023 dice com'era usato quel
+      suolo prima (agricolo: seminativi, foraggere, colture permanenti, aree agroforestali, altri usi agricoli); ogni pixel va
+      al comune che lo contiene. Risultato per l'Italia: 6.904 ha su 10.226 di nuovo consumo (67 %); il fotovoltaico a terra
+      è al 92 % su suolo agricolo. La stima di ISMEA nel rapporto ISPRA è di 8.208 ha (80 %): lo scarto viene soprattutto da
+      circa 2.200 ha che la carta d'uso classifica come «urbano e aree assimilate» (lotti liberi e verde nelle aree urbane) e
+      da circa 600 ha di incolti; per regione la stima di EuGEnio è il 96 % di quella ISMEA nel Lazio, l'89 % in Sicilia,
+      il 90 % in Puglia, l'81 % in Lombardia e l'87 % in Piemonte. Il calcolo si rifà ogni anno con la nuova carta dei
+      cambiamenti (fase 16, <code>agricolo.py</code>).</li>
+    <li><strong>Colture.</strong> Le voci ISTAT sono gerarchiche e la classificazione è cambiata nel 2020: per ogni famiglia
+      (cereali; legumi secchi, patate e piante industriali; ortive; foraggere avvicendate; prati permanenti e pascoli; vite;
+      olivo; frutta, agrumi e frutta a guscio) EuGEnio somma solo voci che non si sovrappongono, scegliendo anno per anno il
+      totale o, se manca, le sue parti. In Italia la somma è di 12,4 milioni di ettari nel 2024, vicina alla SAU del
+      censimento 2020 (12,5). Le stime dell'anno in corso, ancora incomplete, sono escluse. In Sardegna le province delle
+      stime mescolano quelle vecchie e quelle nuove: si mostra solo la regione.</li>
+    <li><strong>Controlli prima della pubblicazione.</strong> Somme dei comuni uguali a province, regioni e Italia; tutti i
+      7.896 comuni abbinati alle mappe del sito (i comuni sardi per nome, perché le mappe hanno ancora i codici vecchi);
+      ultimo anno uguale all'anno dell'edizione meno uno; nessuna regione che cambi di più del 2 % rispetto ai file già
+      pubblicati. Se un controllo non passa restano i file di prima.</li>
   </ul>
 
   <h2 id="fonti">Fonti e licenze</h2>
@@ -649,6 +797,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       INSPIRE, CC BY 4.0): forma della particella del numero civico cercato nelle mappe, per inquadrarla tutta (dal
       17/11/2026); le strade di <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL) per mettere la
       mappa a metà di una via cercata senza numero civico.</li>
+    <li><a href="https://www.de.mef.gov.it/it/attivita_istituzionali/patrimonio_pubblico/censimento_immobili_pubblici/open_data_immobili/">MEF
+      – Dipartimento dell'Economia, «Patrimonio della PA»</a> (CC BY 4.0): beni immobili delle Pubbliche Amministrazioni,
+      dati al 31/12/2023, con l'ente dichiarante; agganciati da EuGEnio alla cartografia catastale dell'Agenzia delle Entrate
+      (download massivo, CC BY 4.0) per <a href="#edifici-pubblici">Edifici pubblici</a>.</li>
   </ul>
 
   <h3>Energia e mercati</h3>
@@ -723,11 +875,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 
 <footer class="piede">
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261121a" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261122a" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL con <a href="licenza.html#attribuzione">termini aggiuntivi</a>, dati <a href="licenza.html#dati">CC BY 4.0</a>). <span class="piede-attribuzione">EuGEnio © 2026 Paolo Bianco – Stato Critico – <a href="https://eugenio.statocritico.it">https://eugenio.statocritico.it</a></span></p>
   <!-- /piede -->
 </footer>
-<script src="aspetto.js?v=20261121a"></script>
+<script src="aspetto.js?v=20261122a"></script>
 <script>
 "use strict";
 const NOMI = {
@@ -757,6 +909,6 @@ fetch("/api/metodologia").then((r) => r.json()).then((d) => {
   document.getElementById("metriche").innerHTML = "<p class='aiuto'>Risultati non disponibili in questo momento.</p>";
 });
 </script>
-<script src="indice.js?v=20261121a"></script>
+<script src="indice.js?v=20261122a"></script>
 </body>
 </html>

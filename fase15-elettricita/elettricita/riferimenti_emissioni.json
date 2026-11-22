@@ -1,0 +1,370 @@
+{
+ "letto": "2026-11-21",
+ "nota": "Riferimenti della grandezza «Emissioni» della pagina Produzione e consumi di elettricità (fase 15). Valori copiati a mano dalle fonti indicate; il costruttore li copia in italia.json, la pagina non ha numeri scritti nel JavaScript.",
+ "mef": {
+  "valore": 0.187,
+  "unita": "tep/MWh",
+  "nome": "Fattore di conversione dell'energia elettrica in energia primaria (certificati bianchi)",
+  "fonte": "Autorità per l'energia elettrica e il gas, delibera EEN 3/08 del 28 marzo 2008, art. 2.1 (0,187 × 10⁻³ tep/kWh), adottata nei decreti sui certificati bianchi del Ministero dello sviluppo economico (oggi MASE) e ancora indicata nella Guida operativa dei Certificati Bianchi del GSE",
+  "url": "https://www.arera.it/atti-e-provvedimenti/dettaglio/08/003-08een",
+  "url_guida": "https://mase.gov.it/sites/default/files/archivio/documenti/allegato_1_-_guida_operativa.pdf",
+  "stato_2026": "Non abbiamo trovato atti che lo sostituiscano: il DM MASE 21 luglio 2025 (aggiornamento dei certificati bianchi, GU n. 211 dell'11/9/2025) non indica un fattore diverso nel testo; la Guida operativa del GSE usa 0,187 tep/MWh. Il valore del 2008 è una previsione del rendimento medio del parco termoelettrico, non un dato annuale."
+ },
+ "ispra": {
+  "fonte": "ISPRA (2026), Settore elettrico: emissioni di CO2 e altri impatti. Edizione 2026. Rapporti n. 430/2026, ISPRA, Roma (giugno 2026)",
+  "edizione": "Rapporto 430/2026 (edizione 2026; sostituisce i rapporti annuali «Fattori di emissione atmosferica di gas a effetto serra nel settore elettrico nazionale e nei principali Paesi europei» e «Le emissioni di CO2 nel settore elettrico nazionale e regionale»)",
+  "url": "https://www.isprambiente.gov.it/it/pubblicazioni/rapporti/settore-elettrico-emissioni-di-co2-e-altri-impatti-edizione-2026",
+  "pdf": "https://www.isprambiente.gov.it/files2026/pubblicazioni/rapporti/r430-2026-2.pdf",
+  "licenza": "CC BY 4.0 con citazione della fonte (https://www.isprambiente.gov.it/it/copyright)",
+  "unita": "tCO2/MWh (convertiti da gCO2/kWh: 1 g/kWh = 0,001 t/MWh), arrotondati a 4 decimali",
+  "serie": {
+   "termoelettrica": {
+    "nome": "Produzione termoelettrica lorda (inclusa l'elettricità da bioenergie)",
+    "tabella": "Excel, foglio «9» (colonna C) = Rapporto 430/2026, Tabella 1.7",
+    "anni": {
+     "2000": 0.5565,
+     "2001": 0.5544,
+     "2002": 0.5656,
+     "2003": 0.5328,
+     "2004": 0.5976,
+     "2005": 0.5719,
+     "2006": 0.5624,
+     "2007": 0.5491,
+     "2008": 0.5429,
+     "2009": 0.5284,
+     "2010": 0.5263,
+     "2011": 0.5233,
+     "2012": 0.5322,
+     "2013": 0.5085,
+     "2014": 0.5165,
+     "2015": 0.4923,
+     "2016": 0.4707,
+     "2017": 0.4502,
+     "2018": 0.4495,
+     "2019": 0.4206,
+     "2020": 0.4052,
+     "2021": 0.4108,
+     "2022": 0.4351,
+     "2023": 0.4149,
+     "2024": 0.3707,
+     "2025": 0.3665
+    }
+   },
+   "termoelettrica_fossili": {
+    "nome": "Produzione termoelettrica lorda (solo fossili)",
+    "tabella": "Excel, foglio «9» (colonna B) = Rapporto 430/2026, Tabella 1.7",
+    "anni": {
+     "2000": 0.5603,
+     "2001": 0.5594,
+     "2002": 0.5723,
+     "2003": 0.5408,
+     "2004": 0.6088,
+     "2005": 0.5831,
+     "2006": 0.574,
+     "2007": 0.5605,
+     "2008": 0.5556,
+     "2009": 0.5467,
+     "2010": 0.5487,
+     "2011": 0.5493,
+     "2012": 0.5646,
+     "2013": 0.5579,
+     "2014": 0.578,
+     "2015": 0.5476,
+     "2016": 0.5217,
+     "2017": 0.4961,
+     "2018": 0.4993,
+     "2019": 0.4673,
+     "2020": 0.4544,
+     "2021": 0.4568,
+     "2022": 0.4773,
+     "2023": 0.4602,
+     "2024": 0.4181,
+     "2025": 0.4133
+    }
+   },
+   "produzione": {
+    "nome": "Produzione elettrica lorda totale (incluse le rinnovabili, al netto di pompaggi e accumuli stand alone)",
+    "tabella": "Excel, foglio «9» (colonna D) = Rapporto 430/2026, Tabella 1.7",
+    "anni": {
+     "2000": 0.4545,
+     "2001": 0.4474,
+     "2002": 0.4726,
+     "2003": 0.4519,
+     "2004": 0.4973,
+     "2005": 0.4876,
+     "2006": 0.4792,
+     "2007": 0.4734,
+     "2008": 0.4525,
+     "2009": 0.4154,
+     "2010": 0.4074,
+     "2011": 0.3977,
+     "2012": 0.3895,
+     "2013": 0.3409,
+     "2014": 0.3272,
+     "2015": 0.3358,
+     "2016": 0.326,
+     "2017": 0.3208,
+     "2018": 0.3008,
+     "2019": 0.2819,
+     "2020": 0.2637,
+     "2021": 0.2716,
+     "2022": 0.3073,
+     "2023": 0.2563,
+     "2024": 0.2094,
+     "2025": 0.2138
+    }
+   },
+   "consumi": {
+    "nome": "Consumi elettrici (incluse le perdite di rete e la quota importata)",
+    "tabella": "Excel, foglio «9» (colonna E) = Rapporto 430/2026, Tabella 1.7",
+    "anni": {
+     "2000": 0.4392,
+     "2001": 0.426,
+     "2002": 0.4508,
+     "2003": 0.4315,
+     "2004": 0.483,
+     "2005": 0.4671,
+     "2006": 0.4643,
+     "2007": 0.4575,
+     "2008": 0.4447,
+     "2009": 0.3993,
+     "2010": 0.3928,
+     "2011": 0.3811,
+     "2012": 0.3769,
+     "2013": 0.3301,
+     "2014": 0.3126,
+     "2015": 0.3182,
+     "2016": 0.3176,
+     "2017": 0.3124,
+     "2018": 0.2855,
+     "2019": 0.2728,
+     "2020": 0.2588,
+     "2021": 0.259,
+     "2022": 0.293,
+     "2023": 0.2347,
+     "2024": 0.1926,
+     "2025": 0.1996
+    }
+   }
+  },
+  "preliminari": [
+   "2025"
+  ],
+  "regioni_2024": {
+   "tabella": "Tabella 2.2 (2024): produzione termoelettrica lorda (solo fossili), produzione elettrica lorda, consumi elettrici",
+   "campi": [
+    "termoelettrica_fossili",
+    "produzione",
+    "consumi"
+   ],
+   "valori": {
+    "Piemonte": [
+     0.3543,
+     0.1879,
+     0.2076
+    ],
+    "Valle d'Aosta": [
+     0.3809,
+     0.0052,
+     0.0064
+    ],
+    "Lombardia": [
+     0.4028,
+     0.2351,
+     0.1861
+    ],
+    "Trentino-Alto Adige": [
+     0.3654,
+     0.0276,
+     0.0297
+    ],
+    "Veneto": [
+     0.3546,
+     0.1363,
+     0.1159
+    ],
+    "Friuli-Venezia Giulia": [
+     0.4113,
+     0.1773,
+     0.1249
+    ],
+    "Liguria": [
+     0.4736,
+     0.3085,
+     0.1842
+    ],
+    "Emilia-Romagna": [
+     0.4317,
+     0.2954,
+     0.255
+    ],
+    "Toscana": [
+     0.3528,
+     0.1665,
+     0.1665
+    ],
+    "Umbria": [
+     0.3825,
+     0.1197,
+     0.1158
+    ],
+    "Marche": [
+     0.3181,
+     0.0478,
+     0.0859
+    ],
+    "Lazio": [
+     0.4428,
+     0.2186,
+     0.1556
+    ],
+    "Abruzzo": [
+     0.3725,
+     0.1804,
+     0.1608
+    ],
+    "Molise": [
+     0.4412,
+     0.2336,
+     0.2637
+    ],
+    "Campania": [
+     0.4128,
+     0.2285,
+     0.2171
+    ],
+    "Puglia": [
+     0.4448,
+     0.2278,
+     0.2603
+    ],
+    "Basilicata": [
+     0.5227,
+     0.0467,
+     0.0566
+    ],
+    "Calabria": [
+     0.3862,
+     0.2388,
+     0.2978
+    ],
+    "Sicilia": [
+     0.4285,
+     0.2367,
+     0.2457
+    ],
+    "Sardegna": [
+     0.6595,
+     0.429,
+     0.5192
+    ]
+   }
+  },
+  "note": [
+   "Serie annuali dal file Excel che accompagna il rapporto (stessi valori delle Tabelle 1.7 e 1.8 del PDF per gli anni pubblicati lì). Nel PDF la Tabella 1.7 ha una riga «2000» con i valori del 1995 (610,1 g/kWh): l'Excel dà per il 2000 556,5 e 454,5 g/kWh, come la Tabella 1.8.",
+   "2025: dati preliminari.",
+   "Consumo di energia del parco termoelettrico: solo nazionale; serve a controllare la stima regionale di EuGEnio."
+  ],
+  "excel": {
+   "nome": "FE_energia_elettrica_2025-V2.xlsx",
+   "url": "https://emissioni.sina.isprambiente.it/wp-content/uploads/2026/07/FE_energia_elettrica_2025-V2.xlsx",
+   "pagina": "https://emissioni.sina.isprambiente.it/fattori-di-emissione-produzione-consumo-energia-elettrica/",
+   "pubblicato": "2026-07-07"
+  },
+  "energia_primaria": {
+   "nome": "Consumo di energia per la produzione elettrica del parco termoelettrico (ktep; cogenerative: quota per l'elettricità)",
+   "tabella": "Excel, foglio «23», riga «Consumo di energia per la produzione elettrica» (dati sul consumo per combustibile forniti da Terna a ISPRA)",
+   "anni_ktep": {
+    "2005": 48339.4,
+    "2006": 49334.3,
+    "2007": 49619.0,
+    "2008": 48198.3,
+    "2009": 41814.8,
+    "2010": 42341.9,
+    "2011": 41827.9,
+    "2012": 40298.6,
+    "2013": 35297.2,
+    "2014": 32862.7,
+    "2015": 34577.5,
+    "2016": 34977.6,
+    "2017": 36137.6,
+    "2018": 33340.6,
+    "2019": 33270.5,
+    "2020": 30727.0,
+    "2021": 32092.7,
+    "2022": 33835.6,
+    "2023": 27294.3,
+    "2024": 24800.9,
+    "2025": 26084.1
+   },
+   "rendimento_equivalente": {
+    "2005": 0.4502,
+    "2006": 0.4569,
+    "2007": 0.4605,
+    "2008": 0.4662,
+    "2009": 0.466,
+    "2010": 0.4696,
+    "2011": 0.4698,
+    "2012": 0.4642,
+    "2013": 0.4701,
+    "2014": 0.4609,
+    "2015": 0.4776,
+    "2016": 0.4903,
+    "2017": 0.4984,
+    "2018": 0.497,
+    "2019": 0.5059,
+    "2020": 0.5074,
+    "2021": 0.5083,
+    "2022": 0.5062,
+    "2023": 0.5122,
+    "2024": 0.5273,
+    "2025": 0.5273
+   }
+  }
+ },
+ "energia_primaria": {
+  "metodo": "Terna non pubblica nel Download Center i consumi di combustibile delle centrali; ISPRA pubblica il consumo di energia per la produzione elettrica solo per l'Italia (Excel del rapporto 430/2026, foglio 23, dati di Terna). Per regione l'energia primaria del termoelettrico si stima dalle emissioni per combustibile divise per il fattore di emissione per unità di energia primaria (gas naturale, solidi, petroliferi) e, dove le emissioni non dicono quanto combustibile si è bruciato (bioenergie, altri), dalla produzione divisa per un rendimento convenzionale. Il valore nazionale ISPRA serve da controllo: la somma delle stime regionali differisce di +1/+4 % nel 2023–2025 e di meno dell'1 % nel 2005 e nel 2010.",
+  "tep_gj": 41.868,
+  "tep_mwh": 0.086,
+  "fonte_fattori": "ISPRA, Rapporto 430/2026, Tabella 1.4 «Fattori di emissione per contenuto di energia primaria dei combustibili utilizzati nel settore elettrico» (colonna tCO2/tep; tCO2/TJ × 0,041868). Fattori nazionali dell'inventario (Annex 6 del National Inventory Document 2026), calcolati dal 2005 con i dati degli impianti ETS.",
+  "fattori_tco2_tep": {
+   "gas": {
+    "combustibile": "Gas naturale (pci 8190 kcal/m³)",
+    "anni": {
+     "2022": 2.467,
+     "2023": 2.479,
+     "2024": 2.474
+    }
+   },
+   "solidi": {
+    "combustibile": "Carbone da vapore",
+    "anni": {
+     "2022": 3.903,
+     "2023": 3.91,
+     "2024": 3.861
+    }
+   },
+   "petroliferi": {
+    "combustibile": "Olio combustibile",
+    "anni": {
+     "2022": 3.207,
+     "2023": 3.2,
+     "2024": 3.202
+    }
+   }
+  },
+  "anni_fuori": "prima del 2022 si usa il fattore del 2022, dopo il 2024 quello del 2024 (come fa ISPRA per l'anno preliminare); ISPRA scrive che la variazione dei fattori dei combustibili è molto limitata.",
+  "rendimenti": {
+   "fonte": "Regolamento delegato (UE) 2023/2104 della Commissione (che sostituisce gli allegati I e II del Regolamento delegato (UE) 2015/2402), Allegato I: valori di rendimento di riferimento armonizzati per la produzione separata di energia elettrica, in vigore dal 1° gennaio 2024",
+   "url": "https://eur-lex.europa.eu/eli/reg_del/2023/2104/oj",
+   "bio": {
+    "valore": 0.35,
+    "spiegazione": "La voce «Bioenergie» di Terna comprende biomasse solide (S4 37 %, S5 30 %), rifiuti (S6 25 %), bioliquidi (L8 44,2 %), biogas (G12 42 %) e anche gas di sintesi e gas residui di processi chimici (G11B 44,2 %): si usa 35 %, valore arrotondato per difetto della media (37 %), perché i valori del regolamento sono quelli dei migliori impianti nuovi."
+   },
+   "altri": {
+    "valore": 0.35,
+    "spiegazione": "La voce «Altri» di Terna sono soprattutto i gas siderurgici (gas di cokeria, d'altoforno e di acciaieria: G13 35 %) e recuperi di calore senza emissioni."
+   }
+  }
+ }
+}

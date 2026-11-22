@@ -5,7 +5,7 @@
 > ombre e fotovoltaico, psicrometria e trattamento dell'aria con il clima orario del comune, indici dei prezzi
 > dell'energia, costi energetici della sanità. Sito in italiano; servizio
 > sperimentale. Ultimo aggiornamento:
-> 21/11/2026: pagine sperimentali Statistiche › Produzione e consumi di elettricità e Statistiche › Carichi elettrici (dati di Terna), collegamento salvabile in fondo alle pagine a scelte, numeri col punto delle migliaia; versione del sito ?v=20261121a. Prima: 19/11/2026 (vedi in fondo a questo paragrafo; prima: 09/11/2026: edifici 3D di Roma e Bari per il comune intero; colore degli edifici e alberi in Modelli 3D, sotto la mappa;
+> 22/11/2026: nuova pagina sperimentale Statistiche › Suolo e aree agricole (suolo.html: suolo consumato, nuovo consumo di suolo per causa con la parte su suolo agricolo, superfici coltivate; dati ISPRA/SNPA e ISTAT); in Territorio › Edifici pubblici la ricerca per ente (edifici-pubblici.html?modo=enti, fino a 8 enti); in Produzione e consumi di elettricità il periodo a due indicatori (&inizio=AAAA&fine=AAAA: flussi sommati, fattori come rapporto delle somme, stati all'anno finale con la variazione); versione del sito ?v=20261122a. Prima: 21/11/2026 b: in Statistiche › Produzione e consumi di elettricità la scelta Emissioni (elettricita.html?modo=emissioni): anelli della produzione per fonte per regione e provincia, fattore di emissione medio e del termoelettrico ed energia primaria del termoelettrico per regione, zona di mercato e Italia dal 2000, confronto con ISPRA e con 0,187 tep/MWh; versione del sito ?v=20261121b. Prima: 21/11/2026 mattina: pagine sperimentali Statistiche › Produzione e consumi di elettricità e Statistiche › Carichi elettrici (dati di Terna), collegamento salvabile in fondo alle pagine a scelte, numeri col punto delle migliaia; versione ?v=20261121a. Prima: 19/11/2026 (vedi in fondo a questo paragrafo; prima: 09/11/2026: edifici 3D di Roma e Bari per il comune intero; colore degli edifici e alberi in Modelli 3D, sotto la mappa;
 > ricerca con un solo Comune in cima, poi Indirizzo, Foglio e Particella e un solo «Reset», tutti i comuni italiani; limiti
 > per IP solo sulle tessere chieste alla fonte e 429 con Retry-After; Previsioni non più sperimentale; tetti tutti piani
 > in partenza e tetti a falde scelti dall'utente nella sezione «Coperture», anche con il cortile; fonte dell'ortofoto
@@ -73,12 +73,25 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
   delle cabine da OpenStreetMap (ODbL, da citare); i perimetri delle aree convenzionali del GSE (CC BY-NC-SA 3.0 IT) non
   sono sul server di EuGEnio: la pagina Cabine primarie li legge dal browser, al massimo 100 aree, mai l'intero strato.
 - Elettricità (dal 21/11/2026, sperimentali): elettricita.html (istogrammi per regione e provincia di potenza installata,
-  produzione, carichi e consumi per settore, obiettivi regionali 2030 di burden sharing; dati annuali di Terna dal 2000) e
+  produzione, carichi e consumi per settore, obiettivi regionali 2030 di burden sharing; dati annuali di Terna dal 2000;
+  ?modo=emissioni, dal 21/11/2026 b: anelli della produzione per fonte, fattore di emissione medio e del termoelettrico,
+  energia primaria del termoelettrico per regione, zona di mercato e Italia dal 2000, confronto con ISPRA e 0,187 tep/MWh;
+  dal 22/11/2026 periodo &inizio=AAAA&fine=AAAA, il vecchio &anno=AAAA vale come un anno solo) e
   carichi.html (?zona=NORD|CNOR|CSUD|SUD|CALA|SICI|SARD, senza zona = Italia, &da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60:
   profilo giornaliero minimo–massimo, curva di durata, mix per fonte al 100 %). I dati di Terna si usano solo per le
   elaborazioni e non si scaricano: nessun CSV, Excel o JSON, al più l'immagine; non estrarli dai file della pagina.
+- Suolo e aree agricole (sperimentale, dal 22/11/2026): suolo.html (?regione=RR o ?vista=italia,
+  &provincia=NNN, &modo=suolo|consumi|colture, &inizio=AAAA&fine=AAAA, &unita=pct|m2ab): istogrammi per regione e provincia
+  di suolo consumato (anche in aree a pericolosità, sulle coste, in aree protette), SAU e superficie non utilizzata
+  (censimento 2020), consumo di suolo per causa con la parte su suolo agricolo (stima EuGEnio, 2024–2025) e superfici
+  coltivate per famiglia; comuni colorati per % consumato. Dati ISPRA/SNPA, ISTAT, Copernicus (CC BY 4.0) in
+  /dati/suolo/italia.json e /dati/suolo/RR.json; citare «Elaborazione EuGEnio su dati ISPRA/SNPA, ISTAT e Copernicus».
 - Collegamento a questa simulazione (dal 20/11/2026): nelle pagine a scelte tutte le scelte stanno nell'indirizzo, mostrato
   in fondo alla pagina con il pulsante per copiarlo; riaprirlo rimette le stesse scelte (mai file caricati né dati personali).
+- Edifici pubblici per ente (dal 22/11/2026): edifici-pubblici.html?modo=enti&sel=<chiavi> (fino a 8 enti, colori nell'ordine;
+  &ruolo=proprieta,uso, &natura=E,T); l'elenco degli enti è il file statico indicato da /edifici3d/immobili_pa/indice.json
+  («enti»), poi GET /api/immobili-pa/ente/{chiavi}, …/ente/{chiave}/punti e …/ente/{chiave}/beni (al massimo 200 righe per
+  pagina, 600 richieste all'ora per IP). Nessun codice fiscale né soggetto cedente; l'elenco non si scarica in blocco.
 - I dati di mercato GME ed EEX non sono mai esposti: non cercarli.
 - Vietato usare i dati catastali per re-identificare persone.
 - User-Agent identificabile, richieste in serie, rispetto dei 429; per uso intensivo un mirror proprio.

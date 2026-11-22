@@ -27,6 +27,7 @@ PROVE = Path("/home/claude/wt_collegamento_prove")      # screenshot, solo se la
 # dal file. Le pagine che non sono qui non hanno il collegamento (testo, segnaposto, moduli, solo file).
 PAGINE = {
     "legge10.html": "a", "dati.html": "a", "indicatori.html": "a", "elettricita.html": "a", "carichi.html": "a",
+    "suolo.html": "a",                   # (22/11/2026) prova nel browser in test_suolo_browser.py::test_collegamento
     "rete-elettrica.html": "a", "ortofoto.html": "a",
     "edifici-pubblici.html": "a",
     "aria-trasformazioni.html": "a", "aria-ore.html": "a", "aria-latenti.html": "a", "aria-freecooling.html": "a",
@@ -276,7 +277,7 @@ def dati_el(tmp_path_factory):
     sys.path.insert(0, str(QUI.parent / "fase15-elettricita"))
     sys.path.insert(0, str(QUI.parent / "fase15-elettricita" / "tests"))
     from elettricita import costruisci as K
-    import test_costruisci as T
+    T = _prove_costruisci_elettricita()
     tmp = tmp_path_factory.mktemp("el")
     K.costruisci(T._raw(tmp), tmp / "out", SITO / "dati" / "mappa")
     out = tmp / "out"
@@ -290,25 +291,34 @@ def test_elettricita(browser, base, dati_el):
     pg.wait_for_function(pronta, timeout=20000)
     pg.evaluate("() => window.EUGENIO_ELETTRICITA.scegliRegione('08')")
     pg.wait_for_function("() => document.getElementById('titolo-vista').textContent === 'Emilia-Romagna'", timeout=10000)
-    # i dati inventati hanno due anni di capacità (2020, 2021): si sceglie il primo, non predefinito
-    pg.eval_on_selector("#anno-elettricita", "c => { c.value = 0; c.dispatchEvent(new Event('input', {bubbles: true})); c.dispatchEvent(new Event('change', {bubbles: true})); }")
-    anno = pg.inner_text("#anno-scelto")
+    # i dati inventati hanno due anni di capacità (2020, 2021): (22/11/2026) periodo 2020–2021 con l'indicatore iniziale
+    pg.eval_on_selector("#anno-inizio", "c => { c.value = 0; c.dispatchEvent(new Event('input', {bubbles: true})); c.dispatchEvent(new Event('change', {bubbles: true})); }")
+    periodo = pg.inner_text("#periodo-scelto")
+    assert periodo == "2020–2021"
     pg.uncheck("#strato-fondo")
     pg.check("#strato-ortofoto")
     link = _collegamento(pg)
-    for parte in ("regione=08", "modo=capacita", "anno=2020", "fondo=0", "ortofoto=1", "barre=1"):
+    for parte in ("regione=08", "modo=capacita", "inizio=2020", "fine=2021", "fondo=0", "ortofoto=1", "barre=1"):
         assert parte in link, parte
+    assert "anno=" not in link
     _foto(pg, "elettricita_1400.png")
     ctx.close()
     ctx, pg, errori2 = _apri(browser, link, rotte=dati_el)
     assert pg.evaluate("() => window.EUGENIO_ELETTRICITA.stato.regione") == "08"
     assert pg.get_attribute('[data-modo="capacita"]', "aria-pressed") == "true"
-    assert pg.inner_text("#anno-scelto") == anno and pg.evaluate("() => String(window.EUGENIO_ELETTRICITA.stato.anno)") == anno
+    pg.wait_for_function("() => document.getElementById('periodo-scelto').textContent === '2020–2021'", timeout=10000)
+    assert pg.evaluate("() => [window.EUGENIO_ELETTRICITA.stato.inizio, window.EUGENIO_ELETTRICITA.stato.fine]") == [2020, 2021]
     assert not pg.is_checked("#strato-fondo") and pg.is_checked("#strato-ortofoto") and pg.is_checked("#strato-barre")
     pg.wait_for_timeout(800)
     assert pg.input_value("#collegamento-indirizzo") == link
     ctx.close()
-    assert not errori and not errori2
+    # i collegamenti di prima con un solo anno (anno=2020) continuano a funzionare: periodo 2020–2020
+    ctx, pg, errori3 = _apri(browser, base + "elettricita.html?vista=italia&modo=capacita&anno=2020", rotte=dati_el)
+    pg.wait_for_function(pronta, timeout=20000)
+    pg.wait_for_function("() => document.getElementById('periodo-scelto').textContent === '2020'", timeout=10000)
+    assert pg.evaluate("() => [window.EUGENIO_ELETTRICITA.stato.inizio, window.EUGENIO_ELETTRICITA.stato.fine]") == [2020, 2020]
+    ctx.close()
+    assert not errori and not errori2 and not errori3
     _stretta(browser, link, "elettricita", dati_el)
 
 
@@ -373,21 +383,28 @@ def test_edifici_pubblici(browser, base):
     pronta = "() => window.EUGENIO_PUBBLICI && window.EUGENIO_PUBBLICI.stato.pronto"
     ctx, pg, errori = _apri(browser, base + "edifici-pubblici.html?lat=44.1394&lon=12.2431&z=16")
     pg.wait_for_function(pronta, timeout=20000)
+    # 22/11/2026: Unioni di Comuni e Comunità montane hanno una casella propria (I), subito dopo i Comuni
+    caselle = pg.eval_on_selector_all("#gruppi-pubblici label", "ls => ls.map((l) => [l.querySelector('input').value, l.textContent.trim()])")
+    assert [c[0] for c in caselle][:3] == ["C", "I", "P"] and caselle[1][1] == "Unioni di Comuni e Comunità montane"
+    assert pg.eval_on_selector("#gruppo-cerca option[value='I']", "o => o.textContent") == "Unioni di Comuni e Comunità montane"
     pg.uncheck("#tipi-pubblici input[value='T']")
     pg.uncheck("#gruppi-pubblici input[value='U']")
+    pg.uncheck("#gruppi-pubblici input[value='I']")
     pg.wait_for_selector("#sfondo-ortofoto option[value='pcn2012']", state="attached")
     pg.select_option("#sfondo-ortofoto", "pcn2012")
     pg.uncheck("#strato-ortofoto")
     link = _collegamento(pg)
     for parte in ("lat=44.139400", "z=16.00", "tipi=E%2CS", "enti=", "fonte=pcn2012", "ortofoto=0"):
         assert parte in link, parte
-    assert "U" not in re.search(r"enti=([^&]*)", link).group(1).replace("%2C", ",").split(",")
+    enti = re.search(r"enti=([^&]*)", link).group(1).replace("%2C", ",").split(",")
+    assert "U" not in enti and "I" not in enti and "C" in enti
     _foto(pg, "edifici_pubblici_1400.png")
     ctx.close()
     ctx, pg, errori2 = _apri(browser, link)
     pg.wait_for_function(pronta, timeout=20000)
     assert pg.evaluate("() => [...window.EUGENIO_PUBBLICI.stato.tipi].sort().join()") == "E,S"
     assert not pg.evaluate("() => window.EUGENIO_PUBBLICI.stato.gruppi.has('U')")
+    assert not pg.evaluate("() => window.EUGENIO_PUBBLICI.stato.gruppi.has('I')") and not pg.is_checked("#gruppi-pubblici input[value='I']")
     assert pg.evaluate("() => window.EUGENIO_PUBBLICI.stato.gruppi.has('C')")
     assert pg.input_value("#sfondo-ortofoto") == "pcn2012" and not pg.is_checked("#strato-ortofoto")
     pg.wait_for_timeout(800)
@@ -719,6 +736,27 @@ def test_carichi(browser, base, dati_carichi):
     _stretta(browser, link, "carichi", rotte)
 
 
+def test_carichi_predefiniti(browser, base, dati_carichi):
+    """(21/11/2026, Paolo) all'apertura ultimi 12 mesi e quarti d'ora; il predefinito «quarti d'ora» non va
+    nell'indirizzo né nel collegamento, e il collegamento riapre lo stesso periodo a quarti d'ora."""
+    rotte = [("**/dati/carichi/**", lambda r: r.fulfill(path=str(dati_carichi / r.request.url.split("/dati/carichi/")[1].split("?")[0])))]
+    pronta = "() => document.getElementById('stato-carichi').textContent.startsWith('Dati')"
+    ctx, pg, errori = _apri(browser, base + "carichi.html", rotte=rotte)
+    pg.wait_for_function(pronta, timeout=20000)
+    assert pg.is_checked("#carichi-quarti")
+    assert pg.input_value("#carichi-da") == "2026-09-01" and pg.input_value("#carichi-a") == "2026-10-31"
+    pg.wait_for_timeout(1000)
+    link = _collegamento(pg)
+    assert "passo=" not in link and "da=2026-09-01" in link and "a=2026-10-31" in link, link
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=rotte)
+    pg.wait_for_function(pronta, timeout=20000)
+    assert pg.is_checked("#carichi-quarti") and pg.evaluate("() => window.EUGENIO_CARICHI.stato.passo") == 15
+    assert pg.input_value("#carichi-da") == "2026-09-01" and pg.input_value("#carichi-a") == "2026-10-31"
+    ctx.close()
+    assert not errori and not errori2
+
+
 # ---------------------------------------------------------------------------------------------- Comunità energetiche (con file)
 def test_edificio_cer(browser, base):
     pronta = "() => window.EUGENIO_CER_SEDI && window.EUGENIO_CER_SEDI.st.pronto"
@@ -803,3 +841,14 @@ def test_pagine_3d(browser, base_range, pagina):
     ctx.close()
     assert not errori and not errori2
     _stretta(browser, link, pagina.replace("-", "_"), SENZA_ARCHIVI)
+
+
+def _prove_costruisci_elettricita():
+    """tests/test_costruisci.py della fase 15 caricato per percorso: la fase 16 ha un file con lo stesso nome e, con le
+    prove delle due pagine nella stessa sessione, «import test_costruisci» prenderebbe quello sbagliato."""
+    import importlib.util
+    f = QUI.parent / "fase15-elettricita" / "tests" / "test_costruisci.py"
+    spec = importlib.util.spec_from_file_location("prove_costruisci_elettricita", f)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m

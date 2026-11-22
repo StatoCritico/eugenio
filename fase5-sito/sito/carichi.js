@@ -13,8 +13,11 @@
 // grande di grafici.js (svg.__zoomProprio: grafici.js gli passa rotella, tasti e «Vista iniziale").
 // Dati: dati/carichi/indice.json, carico_AAAA-MM.json, fonti_AAAA-MM.json (fase 15, elettricita/carichi.py, costruiti
 // dal worker con i dati di Terna). Decisione di Paolo (20/11/2026): i dati non si scaricano.
-// Le scelte stanno nell'indirizzo: ?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60 (history.replaceState); il riquadro
+// Le scelte stanno nell'indirizzo: ?zona=NORD&da=AAAA-MM-GG&a=AAAA-MM-GG&passo=60 (history.replaceState); il riquadro
 // «Collegamento a questa simulazione» in fondo alla pagina lo mostra e lo copia (collegamento.js).
+// (21/11/2026, Paolo) all'apertura: ultimi 12 mesi che finiscono all'ultimo giorno con i dati, già scritti nelle caselle
+// Dal/al, e quarti d'ora accesi. I valori predefiniti non vanno nell'indirizzo (Italia = niente zona, quarti d'ora =
+// niente passo; passo=15 dei collegamenti già salvati vale ancora). Senza dati restano solo il titolo e il messaggio.
 (function () {
   const $ = (id) => document.getElementById(id);
   const G = window.EUGENIO_GRAFICI, E = window.EUGENIO;
@@ -38,6 +41,11 @@
   const pc = (v) => `${num(v, v < 10 ? 1 : 0)} %`;
   const limita = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
   function stato(t, errore = false) { const m = $("stato-carichi"); m.textContent = t; m.classList.toggle("errore", errore); }
+  // dati non disponibili: via comandi, piccola mappa e sezioni (titoli senza grafici), resta il messaggio
+  function senzaDati(t) {
+    stato(t, true);
+    document.querySelectorAll(".comandi-carichi, .carichi-sezione, #minimappa-zone").forEach((e) => { e.hidden = true; });
+  }
 
   // colori delle zone nella piccola mappa: quelli di una regione della zona (variabili --reg-RR di stile.css)
   const COLORE_ZONA = { NORD: "03", CNOR: "09", CSUD: "12", SUD: "16", CALA: "18", SICI: "19", SARD: "20" };
@@ -597,7 +605,8 @@
   function indirizzo() {
     const u = new URL(location.href);
     if (st.zona === "ITA") u.searchParams.delete("zona"); else u.searchParams.set("zona", st.zona);
-    u.searchParams.set("da", st.da); u.searchParams.set("a", st.a); u.searchParams.set("passo", String(st.passo));
+    u.searchParams.set("da", st.da); u.searchParams.set("a", st.a);
+    if (st.passo === 15) u.searchParams.delete("passo"); else u.searchParams.set("passo", String(st.passo));
     history.replaceState(null, "", u);
   }
 
@@ -672,11 +681,11 @@
   }
   async function avvio() {
     try { st.ix = await json("indice.json"); } catch {
-      stato("I dati di Terna non sono ancora disponibili su questo server (li prepara il worker una volta al giorno).", true);
+      senzaDati("I dati di Terna non sono ancora disponibili su questo server (li prepara il worker una volta al giorno).");
       return;
     }
-    st.mesi = st.ix.mesi.map((m) => ({ ...m, t0: Date.parse(m.inizio) }));
-    if (!st.mesi.length) { stato("Nessun dato disponibile.", true); return; }
+    st.mesi = (st.ix.mesi || []).map((m) => ({ ...m, t0: Date.parse(m.inizio) }));
+    if (!st.mesi.length) { senzaDati("Nessun dato di Terna disponibile su questo server."); return; }
     const ult = st.mesi[st.mesi.length - 1];
     st.primoGiorno = dataIso(st.mesi[0].t0);
     st.ultimoGiorno = dataIso(ult.t0 + (ult.n - 1) * Q);
@@ -711,6 +720,6 @@
     principali: ["zona", "da", "a", "passo"],
     pronto: () => st.pronto,
     leggi: () => (st.pronto && st.ix && st.da
-      ? { zona: st.zona === "ITA" ? null : st.zona, da: st.da, a: st.a, passo: String(st.passo) } : null),
+      ? { zona: st.zona === "ITA" ? null : st.zona, da: st.da, a: st.a, passo: st.passo === 15 ? null : String(st.passo) } : null),
   });
 })();

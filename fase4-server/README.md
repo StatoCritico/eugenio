@@ -14,7 +14,7 @@ Container:
 | Container | Cosa fa |
 |---|---|
 | `api` | FastAPI: riceve il CSV dei consumi, costruisce le covariate meteo e di calendario, chiama **TiRex-2** e restituisce la previsione probabilistica (quantili 10–90 %). Fa anche da proxy verso **Zornade** (la chiave resta sul server) e geolocalizza i patrimoni edilizi (ANNCSU + Zornade) |
-| `worker` | (20/11/2026) **dati di Terna**: ogni giorno alle 06:30 il giorno prima dall'API ufficiale e qualche mese di storico dal Download Center (`terna-api`, archivio `/dati/terna/serie`), poi i file di «Carichi elettrici» (`carichi`); il 5 del mese alle 05:00 le statistiche annuali per «Produzione e consumi di elettricità» (`elettricita`), vedi § «Dati di Terna»; (20/11/2026) **controllo mensile del servizio del GSE delle aree convenzionali** il 3 del mese dalle 7 (`gse-aree`, una richiesta `?f=json`, email solo se non risponde); (17/11/2026) **interruzioni della rete elettrica ogni 15 minuti** (thread a parte) e **saturazione dei trasformatori ogni notte alle 01:15** (`rete-interruzioni`, `rete-saturazione`, database `/dati/rete/rete.sqlite`); (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
+| `worker` | (22/11/2026) **suolo e aree agricole** il 6 del mese dalle 05:30 (`suolo`: indicatori ISPRA, colture e censimento ISTAT, incrocio del suolo agricolo una volta per carta; ricostruisce solo se qualcosa è cambiato), vedi § «Suolo e aree agricole»; (20/11/2026) **dati di Terna**: ogni giorno alle 06:30 il giorno prima dall'API ufficiale e qualche mese di storico dal Download Center (`terna-api`, archivio `/dati/terna/serie`), poi i file di «Carichi elettrici» (`carichi`); il 5 del mese alle 05:00 le statistiche annuali per «Produzione e consumi di elettricità» (`elettricita`), vedi § «Dati di Terna»; (20/11/2026) **controllo mensile del servizio del GSE delle aree convenzionali** il 3 del mese dalle 7 (`gse-aree`, una richiesta `?f=json`, email solo se non risponde); (17/11/2026) **interruzioni della rete elettrica ogni 15 minuti** (thread a parte) e **saturazione dei trasformatori ogni notte alle 01:15** (`rete-interruzioni`, `rete-saturazione`, database `/dati/rete/rete.sqlite`); (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
 | `caddy` | sito statico della fase 5 e instradamento verso l'API, solo dentro la rete Docker |
 | `cloudflared` | **Cloudflare Tunnel**: collega il server a Cloudflare senza aprire porte; l'HTTPS lo fa Cloudflare |
 | `listmonk` + `postgres` | newsletter automatica dei dati: liste, doppia conferma, cancellazione, invii |
@@ -56,6 +56,16 @@ Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, v
 - Variabili nuove nel `.env`: `TERNA_CLIENT_ID`, `TERNA_CLIENT_SECRET` (facoltative: senza, l'API non parte; le altre hanno
   valori predefiniti). Nessuna modifica al Caddyfile né ai volumi: le pagine leggono `dati/elettricita/` e `dati/carichi/`
   nella cartella del sito, già montata nel worker come `/sito/dati`. Messa in servizio: `../AGGIORNAMENTO_2026-11-20e.md`.
+
+## Aggiunte del 22/11/2026 (suolo e aree agricole nel worker; non ancora in una release)
+
+- Lavoro nuovo del worker `suolo` (e `suolo-forza`), fase 16: dettagli nel § «Suolo e aree agricole».
+- Immagine: `fase16-suolo/suolo` copiata in `/app/suolo` (`api/Dockerfile`); usa openpyxl, numpy, rasterio, pyproj e
+  shapely, già nell'immagine. `aggiorna_da_github.sh` copia anche `fase16-suolo` (e lo controlla con i COPY del Dockerfile)
+  e non tocca `dati/suolo/` del sito.
+- Variabili nuove nel `.env`, tutte facoltative: `SUOLO_DATI` (archivio, predefinito `/dati/suolo`), `SUOLO_GIORNO` (6),
+  `SUOLO_ORA` (05:30), `SUOLO_CARTE` (1: scarica anche le carte raster, ~800 MB, e fa l'incrocio agricolo; 0 per saltarlo).
+  Nessuna modifica al Caddyfile né ai volumi: la pagina legge `dati/suolo/` nella cartella del sito, già montata nel worker.
 
 ## Ortofoto AGEA 2022-2024 per tutta Italia (17/11/2026, segnalazione di Paolo)
 
@@ -689,6 +699,35 @@ per i costruttori non ancora pronti.
 
 `/dati/terna` non è mai servita da Caddy.
 
+## Suolo e aree agricole (22/11/2026)
+
+Dati della pagina «Suolo e aree agricole» (Statistiche, sperimentale; fase 16, README in `../fase16-suolo/README.md`):
+indicatori del consumo di suolo ISPRA/SNPA, stime delle superfici coltivate e censimento ISTAT, carte raster ISPRA per il
+suolo agricolo consumato. Licenze CC BY 4.0 (dati Copernicus con attribuzione dentro la carta d'uso ISPRA): si possono
+mostrare e rielaborare citando le fonti; per scelta di Paolo la pagina fa scaricare solo l'immagine. I file costruiti non
+vanno nel repository (`.gitignore`: `fase5-sito/sito/dati/suolo/`).
+
+| lavoro | quando | cosa fa | richieste |
+|---|---|---|---|
+| `suolo` | il **6 del mese dalle 05:30** (`SUOLO_GIORNO`, `SUOLO_ORA`); **subito** se `/sito/dati/suolo/italia.json` manca | `scarica.scarica(SUOLO_DATI, carte=SUOLO_CARTE)`: elenco della cartella «indicatori» del groupware SINAnet e file `consumo_suolo_<anno>_Com_Prov_Reg_Naz_v<x>.xlsx` con anno e versione più alti (riscaricato solo se il nome cambia), CSV SDMX ISTAT delle coltivazioni (dal 2006) e del censimento 2020 (impronta SHA-256), con `SUOLO_CARTE` la carta dei cambiamenti più recente e la carta di uso del suolo più recente; se la carta dei cambiamenti è nuova (o manca il suo `agricolo_<anno>.json`) l'incrocio `agricolo.agricolo` (~2 minuti, il file resta nell'archivio e la serie cresce di un anno a ogni edizione); poi, solo se qualcosa è cambiato, `costruisci(SUOLO_DATI, /sito/dati/.suolo_nuova, /sito/dati/mappa, /sito/dati/suolo/italia.json)` e `_pubblica` in `/sito/dati/suolo` se i controlli passano | groupware ISPRA: 1 pagina al mese, l'Excel (87 MB) a ogni nuova versione, le carte (~800 MB) una volta l'anno; ISTAT: 2 richieste SDMX al mese |
+
+Controlli del costruttore (se uno non passa: niente pubblicato, restano i file di prima, email all'amministratore): somme
+dei comuni = province = regioni = Italia (suolo consumato e consumo lordo, tolleranza 1 ha); tutti i comuni ISPRA abbinati
+alle mappe del sito (i sardi per nome); ultimo anno = anno dell'edizione − 1; nessuna regione che cambi di più del 2 % in un
+anno già pubblicato (nuova edizione con revisioni grandi: dopo un controllo, `python -m servizio.worker suolo-forza`). In
+più `_controlla_cartella`: `italia.json` presente e non meno del 90 % dei JSON di prima. Email anche se le fonti non
+rispondono in due mesi diversi di fila (`SUOLO_DATI/lavoro_stato.json`) e se l'incrocio agricolo fallisce (la pagina si
+costruisce lo stesso, senza la parte nuova). Nel `worker_stato.json` la voce `suolo` (una volta al giorno).
+
+| sul server | nel container | cosa |
+|---|---|---|
+| `/srv/energia/dati/suolo/` | `/dati/suolo/` (`SUOLO_DATI`) | `ispra_indicatori.xlsx`, `istat_coltivazioni.csv`, `istat_censimento2020.csv`, `stato_scarico.json`, `agricolo_<anno>.json`, `carte/` (due GeoTIFF, ~800 MB), `lavoro_stato.json` |
+| `/srv/energia/sito/dati/suolo/` | `/sito/dati/suolo/` | `italia.json` e `RR.json` della pagina (~2 MB in tutto), scritti solo dal worker |
+
+Prima messa in servizio (dopo la release che contiene questa parte): `docker compose run --rm worker python -m
+servizio.worker suolo` (circa 5 minuti con le carte: scarico ~900 MB, lettura dell'Excel con openpyxl, incrocio), poi
+controllare `https://eugenio.statocritico.it/suolo.html`.
+
 ### Formato dell'archivio (`/dati/terna/serie`)
 
 Un file **Parquet per serie e mese** (`<AAAA-MM>.parquet`, mese **italiano** dell'istante), scritto in un file temporaneo
@@ -1042,6 +1081,8 @@ bloccherebbe anche chi usa le API dei dati aperti con uno script.
 | `zornade` | `/api/geocodifica`, `/api/particella` | 120 |
 | `patrimonio` | `/api/patrimonio` | 2.000 edifici |
 | `luogo` | `/api/patrimonio` con `luogo=1` (ricerca di un luogo, 17/11/2026, oltre a «patrimonio») | `LUOGO_ORA` (300) |
+| `immobili_pa` | `/api/immobili-pa/cerca`, `/particella/{ref}`, `/bene/{id}` (17/11/2026) | 1.200 |
+| `immobili_pa_ente` | `/api/immobili-pa/ente/{chiavi}`, `/ente/{chiave}/beni` (peso 1) e `/ente/{chiave}/punti` (peso 3), 22/11/2026; più il tetto orario di tutto il sito `IMMOBILI_PA_ENTE_TETTO_ORA` (30.000, oltre: 503) | 600 |
 | `report` | `/api/report`, `/api/report/{tipo}` | 60 |
 | `converti` | `/api/converti` | 200 |
 | `dati` | `/api/meteo`, `/api/clima-legge10`, `/api/mappa`, `/api/comuni`, `/api/metodologia`, `/api/psicro/…` | `LIMITE_DATI_ORA` (600) |
@@ -1115,12 +1156,26 @@ preparato dalla fase 7 (`python -m territorio immobili-pa-sito`): nessun dato in
 | `GET /api/immobili-pa/info` | anno, conteggi, attribuzione, PMTiles, gruppi di enti; `{"disponibile": false}` se l'indice manca |
 | `GET /api/immobili-pa/cerca?q=…&gruppo=…&limite=…` | ricerca a parole (FTS5, ogni parola come prefisso, tutte obbligatorie, al massimo 50 risultati) |
 | `GET /api/immobili-pa/particella/{ref}` | particella (centro, riquadro, area) e beni (al massimo 500) |
-| `GET /api/immobili-pa/bene/{id_bene}` | un bene, anche senza particella |
+| `GET /api/immobili-pa/bene/{id_bene}` | un bene, anche senza particella: `bene` (la prima dichiarazione) e, dal 22/11/2026, `dichiarazioni` (tutte: lo stesso `id_bene` può essere dichiarato dal proprietario e da chi lo ha in uso; prima si vedeva solo una riga) |
+| `GET /api/immobili-pa/ente/{chiavi}?ruolo=proprieta,uso&natura=E,T` | (22/11/2026) uno o più enti, chiavi separate da virgole (al massimo 8): dati dell'ente, `totali_dichiarati` (tabella `enti`), `totali` con i filtri (dai beni), `riquadro`, `comuni` (particelle, righe, beni e superficie per comune); con più enti `insieme`, calcolato sui **beni distinti** (un bene dichiarato da due enti scelti conta una volta, «in uso» solo se nessuno degli enti scelti lo ha in proprietà) |
+| `GET /api/immobili-pa/ente/{chiave}/punti` | (22/11/2026) centri delle particelle e dei beni senza particella con punto affidabile, compatti: `{"campi": ["lon","lat","n","natura","ruolo","ref"], "righe": […]}` (5 decimali); `ETag` legato al file dell'indice, `Cache-Control: public, max-age=86400`, 304 con `If-None-Match` |
+| `GET /api/immobili-pa/ente/{chiave}/beni?ruolo=&natura=&regione=&provincia=&comune=&ordina=&verso=&pagina=&per_pagina=` | (22/11/2026) elenco per particella (righe di `ente_particelle` raggruppate per `ref`), al massimo **200 righe per pagina**, ordinamento solo sulle colonne di `ORDINAMENTI` (vuoti in fondo; senza `ordina`: regione, comune, indirizzo), `totale` e `pagine` |
 
-Limite per IP `immobili_pa`: 1.200 richieste all'ora (`protezione.LIMITI`). Le tessere della mappa non passano dall'API:
-sono il PMTiles statico `immobili_pa_<anno>.pmtiles` nella cartella degli archivi edifici (`CARTELLA_EDIFICI/immobili_pa/`,
-servita da Caddy in `/edifici3d/immobili_pa/`, con `indice.json` riconvalidato sempre). L'indice non contiene il soggetto
-cedente né codici fiscali. Test: `tests/test_immobili_pa.py`.
+Limite per IP `immobili_pa`: 1.200 richieste all'ora (`protezione.LIMITI`); per le rotte degli enti `immobili_pa_ente`:
+600 all'ora (i punti pesano 3) più il tetto `IMMOBILI_PA_ENTE_TETTO_ORA` per tutto il sito (30.000 all'ora, oltre: 503),
+pensati contro la copia sistematica (decisione «non scaricabile»: con 200 righe per pagina servono decine di migliaia di
+richieste per copiare tutto). L'ente si indica con la **chiave** (10 caratteri esadecimali derivati dal codice fiscale
+nella fase 7; il CF non è nell'indice); 404 per una chiave sconosciuta, 400 per chiavi, ruoli, nature, ordinamenti o comuni
+non validi. Con un indice di prima del 22/11/2026 (senza tabella `enti`) le tre rotte rispondono `{"disponibile": false}`:
+l'ordine fra rilascio del sito e rifacimento dell'indice non conta.
+
+Le tessere della mappa non passano dall'API: sono il PMTiles statico `immobili_pa_<anno>_<versione>.pmtiles` nella cartella
+degli archivi edifici (`CARTELLA_EDIFICI/immobili_pa/`, servita da Caddy in `/edifici3d/immobili_pa/`, con `indice.json`
+riconvalidato sempre); accanto c'è `enti_<anno>_<versione>.json`, l'elenco degli enti per l'autocompletamento (in copia
+per un giorno come il PMTiles: il nome cambia a ogni rifacimento). Nessuna rotta restituisce soggetto cedente o codici
+fiscali (`ESCLUSE`). Test: `tests/test_immobili_pa.py` (indice costruito con la fase 7: niente CF né cedente in nessuna
+risposta, paginazione, ordinamento su lista chiusa, filtri, 404, indice vecchio, limite e tetto, `bene` con due
+dichiarazioni).
 
 ## Edifici 3D (fase 10, dal 04/11/2026)
 
@@ -1421,15 +1476,37 @@ Niente pacchetti `codice.tar.gz`/`sito.tar.gz` da copiare con scp.
 | `~/energia/fase4-server/aggiorna_da_github.sh --notte` | dal crontab alle 4:40: solo se c'è una release nuova; **email solo se qualcosa va storto** (16/11/2026) |
 
 Passi: copia di sicurezza di `~/energia` (`~/energia_prima_<release>`, si tengono le ultime 3) e delle convenzioni (`~/convenzioni_prima_<release>`); codice delle fasi 3, 4,
-6, 7, 8, 9, 10 e (20/11/2026) 15 in `~/energia` con rsync **senza cancellare** (restano `.env`, fase 2, `uni_privato`,
+6, 7, 8, 9, 10, (20/11/2026) 15 e (22/11/2026) 16 in `~/energia` con rsync **senza cancellare** (restano `.env`, fase 2, `uni_privato`,
 `mercati_energia/dati/` e tutto ciò che non è nel repository); convenzioni `*.toml` e `fonti/*.toml` in
 `/srv/energia/dati/mercati/convenzioni`; `docker compose build api` e `up -d --force-recreate api worker` con attesa di
 `/api/salute` (3 minuti: se l'api non risponde si torna **da soli** alla copia e si esce con errore, email
 all'amministratore); sito in `/srv/energia/sito` (senza cancellare; `dati/indicatori/`, `dati/prezzi/` e, dal 20/11/2026, `dati/elettricita/` e
-`dati/carichi/` non si toccano) con il controllo della versione `?v=`; `worker prezzi`; **Purge Everything** su Cloudflare se nel `.env` ci sono `CF_ZONE_ID` e
+`dati/carichi/`, dal 22/11/2026 `dati/suolo/` non si toccano) con il controllo della versione `?v=`; `worker prezzi`; **Purge Everything** su Cloudflare se nel `.env` ci sono `CF_ZONE_ID` e
 `CF_PURGE_TOKEN` (token con il **solo** permesso «Zone › Cache Purge» sulla zona; lo script non li stampa mai). Registro in
 `~/aggiorna_da_github.log`; un solo aggiornamento alla volta (`flock`). Lo script si riavvia da una copia temporanea, così
 può aggiornare anche se stesso.
+
+### Correzioni del 21/11/2026 (aggiornamento a v2026.11.21 fallito, `../AGGIORNAMENTO_2026-11-22.md`)
+
+Il 21/11 alle 9:22 lo script di v2026.11.20d ha installato v2026.11.21 senza copiare `fase15-elettricita` (non la
+conosceva) e la build è fallita; il ritorno indietro ha poi fatto `rm -rf ~/energia` verso una copia che la pulizia aveva
+appena cancellato (`cp -a` conserva la data della cartella, e `ls -t` la vedeva come la più vecchia). Ora:
+
+| Punto | Comportamento |
+|---|---|
+| **Script della release** | dopo il checkout del tag nel clone, se `~/eugenio-git/fase4-server/aggiorna_da_github.sh` è diverso da quello in esecuzione, lo script **rilancia quello della release** (`exec`) con gli stessi argomenti e la release già scelta; `EUGENIO_RILANCIATO=1` impedisce un secondo rilancio. Ogni release si installa con la procedura provata insieme a lei (cartelle, esclusioni, controlli, passi nuovi), non solo con l'elenco delle cartelle aggiornato. Il rilancio avviene prima di qualunque copia o modifica. |
+| **Copia del `.env`** | prima di tutto, `~/energia/fase4-server/.env` va in `~/.eugenio_env_backup/env_AAAA-MM-GG` (cartella 700, file 600; se il file del giorno c'è già e il `.env` è diverso, `env_AAAA-MM-GG_HHMMSS`; se è uguale all'ultima copia, niente). Si tengono le ultime 10, in ordine di nome. Le copie fatte a mano con lo stesso nome (es. `env_2026-11-21` di Paolo) non si sovrascrivono mai. |
+| **Controlli iniziali** | se `~/energia` non ha `fase4-server/docker-compose.yml` o il `.env`, lo script si ferma senza toccare niente (avviso). La copia di sicurezza appena fatta deve avere gli stessi due file, altrimenti ci si ferma. |
+| **Copie di sicurezza** | dentro ogni copia `~/energia_prima_<release>` c'è il file `.eugenio_copia` (secondi, versione contenuta, release); la pulizia ordina su quello (le copie senza file, quelle di prima del 21/11, sono le più vecchie, in ordine di release) e tiene le ultime 3. **Mai** cancellate: la copia appena fatta e quelle della versione installata. Con `--forza` su una release che ha già la sua copia, quella non si sovrascrive: la nuova si chiama `~/energia_prima_<release>_<AAAAMMGG-HHMMSS>`. |
+| **Controllo dei `COPY`** | dopo la copia del codice e prima della build, ogni percorso dei `COPY` di `api/Dockerfile` (anche su più righe e con `*`) deve esistere in `~/energia`. Se manca qualcosa: messaggio con l'elenco, codice di prima rimesso dalla copia, **container non toccati**, avviso. Con `--prova` lo stesso controllo si fa sul codice della release e scrive solo «ATTENZIONE». |
+| **Ritorno indietro** | non fa mai `rm -rf ~/energia`. Controlla che la copia esista e abbia `docker-compose.yml` e il `.env`; la copia in `~/energia.ripristino_<data>`, sposta `~/energia` in `~/energia.fallita_<data>` (se ne tengono 3) e mette la copia al suo posto, poi rifà build e avvio. Se la copia manca o è incompleta **non tocca niente**: `~/energia` resta con il codice nuovo, i container di prima restano accesi, errore nel registro («ERRORE GRAVE») ed email. |
+
+Variabili in più per le prove: `EUGENIO_ENV_BACKUP` (`~/.eugenio_env_backup`), `EUGENIO_ATTESA` (5 secondi tra i
+controlli di `/api/salute`). Prove: `tests/test_aggiorna_da_github.py` (repository «origin» locale, `~/energia` finta,
+`docker` finto nel PATH; servono `bash`, `git`, `rsync`, `flock`).
+
+**Attenzione**: il rilancio lo fa solo uno script che lo conosce. Le release fino a v2026.11.21 hanno lo script vecchio:
+la prima volta lo script nuovo va lanciato **dal clone** (procedura in `../AGGIORNAMENTO_2026-11-22.md`).
 
 **Cosa non fa**: i «passi a mano» delle procedure `AGGIORNAMENTO_*.md` cambiate tra le due release (righe nuove del
 `.env`, archivi grandi, crontab, servizi nuovi come `edifici`) li **elenca** alla fine e nel registro, non li esegue; i

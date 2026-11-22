@@ -104,9 +104,12 @@ def _vista(pg, box):
 
 def test_pagina(browser, base, dati):
     pg, errori = _pagina(browser, base, dati)
-    # predefinito: ultimi 12 mesi (qui tutti i dati inventati, settembre e ottobre 2026), quarti d'ora, Italia
-    assert "da=2026-09-01" in pg.url and "a=2026-10-31" in pg.url and "passo=15" in pg.url and "zona=" not in pg.url
+    # predefinito: ultimi 12 mesi (qui tutti i dati inventati, settembre e ottobre 2026), quarti d'ora, Italia; (21/11/2026)
+    # date già scritte nelle caselle, quarti d'ora e Italia non scritti nell'indirizzo
+    assert "da=2026-09-01" in pg.url and "a=2026-10-31" in pg.url and "passo=" not in pg.url and "zona=" not in pg.url
+    assert pg.input_value("#carichi-da") == "2026-09-01" and pg.input_value("#carichi-a") == "2026-10-31"
     assert pg.locator("#carichi-quarti").is_checked() and pg.locator("#zona-scelta").inner_text() == "Italia"
+    assert pg.locator(".comandi-carichi").is_visible() and pg.locator(".carichi-sezione").first.is_visible()
     for g in ("#grafico-profilo", "#grafico-durata", "#grafico-fonti"):
         assert pg.locator(f"{g} svg.zoom-proprio").count() == 1 and pg.locator(f"{g} .grafico-apri").count() == 1
     assert pg.locator("#grafico-fonti svg.zoom-proprio path[fill='#f7cb15']").count() == 1     # fotovoltaico
@@ -172,6 +175,15 @@ def test_indirizzo(browser, base, dati):
     assert pg.input_value("#carichi-da") == "2026-10-01" and pg.input_value("#carichi-a") == "2026-10-10"
     assert pg.evaluate("() => window.EUGENIO_CARICHI.stato.serie.T.length") == 10 * 24
     assert errori == []
+    # collegamenti salvati prima del 21/11/2026 con passo=15: quarti d'ora, e l'indirizzo perde il passo predefinito
+    pg, errori = _pagina(browser, base, dati, "?da=2026-10-01&a=2026-10-02&passo=15")
+    assert pg.locator("#carichi-quarti").is_checked() and pg.evaluate("() => window.EUGENIO_CARICHI.stato.serie.T.length") == 2 * 96
+    assert "passo=" not in pg.url and "da=2026-10-01" in pg.url
+    # quarti d'ora rimessi a mano dopo le ore: il passo sparisce di nuovo dall'indirizzo
+    pg.locator("#carichi-quarti").uncheck(); pg.wait_for_function(PRONTO)
+    assert "passo=60" in pg.url
+    pg.locator("#carichi-quarti").check(); pg.wait_for_function("() => !location.search.includes('passo=')")
+    assert errori == []
 
 
 def test_senza_dati(browser, base, tmp_path):
@@ -180,6 +192,11 @@ def test_senza_dati(browser, base, tmp_path):
     pg.goto(f"{base}/carichi.html")
     pg.wait_for_function("() => document.querySelector('#stato-carichi.errore')")
     assert "non sono ancora disponibili" in pg.locator("#stato-carichi").inner_text()
+    # (21/11/2026, Paolo) senza dati niente titoli di sezioni vuote né comandi: resta solo il messaggio
+    assert pg.locator("#stato-carichi").is_visible()
+    assert pg.locator(".comandi-carichi").is_hidden() and pg.locator("#minimappa-zone").is_hidden()
+    for sezione in ("#titolo-riepilogo", "#titolo-profilo", "#titolo-durata", "#titolo-fonti", "#titolo-regole"):
+        assert pg.locator(sezione).is_hidden(), sezione
 
 
 def test_telefono(browser, base, dati):

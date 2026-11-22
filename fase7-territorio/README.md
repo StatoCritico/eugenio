@@ -284,14 +284,74 @@ python -m territorio immobili-pa-sito --dest /srv/energia/dati/immobili_pa \
 - tessere in **due passate** di tippecanoe (`-r1`: nessuna feature scartata «per frequenza»; particelle dallo zoom 13,
   punti dallo zoom 4 sfoltiti solo se una tessera supera 1 MB) unite con `tile-join`: lo zoom minimo per feature sui
   poligoni, con tippecanoe 2.49, lasciava una sola particella per tessera (prova del 17/11/2026, test che lo controlla);
-- `immobili_pa_2023.pmtiles` e `indice.json` nella cartella degli archivi edifici (servita da Caddy in
+- `immobili_pa_2023_<AAAAMMGGhhmm>.pmtiles` e `indice.json` nella cartella degli archivi edifici (servita da Caddy in
   `/edifici3d/immobili_pa/`): strato `particelle` (dallo zoom 13) e strato `punti` (un punto per particella fino allo
   zoom 12, più i beni con un punto affidabile ma senza particella). Proprietà corte: `r` riferimento, `t` tipo (E, T, M),
   `n` beni, `g` gruppo di enti (`GRUPPI_ENTI` in `immobili_pa_sito.py`), `a` primo ente, `tp` tipologie, `s` = 1 per i
-  punti senza particella;
+  punti senza particella, `e` (dal 22/11/2026) enti della particella in tutti e due gli strati;
+- `enti_2023_<AAAAMMGGhhmm>.json` (dal 22/11/2026) accanto al PMTiles e con la stessa versione: elenco di tutti gli enti per
+  l'autocompletamento della pagina (vedi «Ricerca per ente»);
 - `immobili_pa_2023.sqlite` per l'API (`/api/immobili-pa/…`, fase 4): beni con ricerca a parole (FTS5) e particelle con
-  centro e riquadro. **Senza** soggetto cedente e suo codice fiscale (per gli immobili in affitto possono essere persone
-  fisiche) e senza il codice fiscale dell'ente.
+  centro e riquadro; dal 22/11/2026 anche `enti`, `ente_particelle`, `comuni` e le colonne `ente` e `ruolo` dei beni.
+  **Senza** soggetto cedente e suo codice fiscale (per gli immobili in affitto possono essere persone fisiche) e senza il
+  codice fiscale dell'ente.
+
+**Ricerca per ente** (22/11/2026, decisioni di Paolo; studio `documenti/EDIFICI_PUBBLICI_RICERCA_ENTE_2026-11-22.md`).
+`immobili-pa` non va rifatto: tutto viene dal parquet dei beni, che ha già le colonne MEF dell'ente. In `immobili_pa_sito.enti()`:
+- **enti** raggruppati per **codice fiscale** (`amm_cf`), che resta dentro la preparazione: nome, tipologia, settore,
+  macrocategoria e sede sono i valori più frequenti dell'ente. Ogni ente ha un **id** progressivo (ordine del nome, usato
+  nelle tessere e nell'indice: cambia con i dati) e una **chiave** di 10 caratteri esadecimali (`chiave_ente`: SHA-256 del
+  CF, stabile da un anno all'altro, usata nei collegamenti `?sel=`). Senza CF (file di prova) si raggruppa per nome;
+- **ruolo** di ogni riga: `P` in proprietà (titolo di proprietà compilato), `U` in uso (solo titolo di detenzione);
+- tabella **`enti`** (una riga per ente): `id, chiave, nome, tipologia_amm, gruppo, settore, macrocategoria, sede_*` e i
+  totali `n_beni` (righe dichiarate), `n_fabbricati`, `n_terreni`, `n_particelle`, `n_senza_particella`,
+  `sup_fabbricati_mq` e `sup_terreni_mq` (superficie dichiarata, o quella di riferimento se manca: **mai sommate
+  insieme**), `cubatura_mc`, `area_particelle_m2`, `n_proprieta`, `n_detenzione`, `n_non_utilizzati`, `n_inutilizzabili`,
+  `n_vincolati`, `n_a_terzi`, `epoca_prevalente`, `n_regioni`, `n_comuni` e il riquadro;
+- tabella **`ente_particelle`** `(ente, ref, ruolo, natura)` `WITHOUT ROWID`: centro, unità (`n_beni`), `sup_mq`,
+  `cubatura_mc`, `area_m2` del lotto, `comune_cod`, primo indirizzo, tipologie, epoca, utilizzo e titolo. `ref` è la
+  particella AdE o `b<id bene>` per i beni senza particella (centro solo se il punto del censimento è affidabile, come
+  nelle tessere). Le unità **graffate** contano in ogni particella che toccano (chiavi `chiavi_mef` confrontate con le
+  particelle del GeoParquet); superficie e cubatura vanno solo sulla particella principale. Tabella `comuni` (codice
+  catastale → nome, provincia, regione) per i nomi dell'elenco;
+- proprietà **`e`** delle tessere: `",<id><p|u>,…,"` (es. `",12p,4031u,"`), un elemento per ente e ruolo; la pagina
+  filtra con `["in", ",12p,", ["get", "e"]]`. Il vecchio `a` (primo ente, accorciato) resta per la descrizione al
+  passaggio del mouse;
+- **`enti_<anno>_<versione>.json`**: `{"anno", "campi": ["id", "chiave", "nome", "gruppo", "sede", "beni", "fabbricati",
+  "terreni", "particelle", "regioni"], "regioni": [nomi], "gruppi", "enti": [[…], …]}`, ~0,8–1 MB (~190 KB compressi da
+  Caddy), nome con la versione come il PMTiles e scritto in `indice.json` (`enti`); i file degli anni precedenti si
+  tolgono come i PMTiles.
+
+Mai in uscita `amm_cf`, `cedente`, `cedente_cf` (`ESCLUSE`; test sulle colonne di tutte le tabelle, sui byte del file
+SQLite e sull'elenco JSON).
+
+Prova del 22/11/2026 con i dati veri ridotti (righe MEF con il bene o la sede in Emilia-Romagna o Marche, poligoni AdE
+delle due regioni: 472.704 righe, 212.891 particelle, 848 enti): `immobili-pa-sito` in 96 s (enti 11 s, indice 21 s,
+tessere ~60 s), 260.533 righe in `ente_particelle` (46 MB nell'indice), PMTiles +2,4 % per la proprietà `e`, elenco degli
+enti 76 KB. Proiezione sui dati nazionali: **15–20 minuti** (oggi ~12), indice da ~2,3 a **~2,8 GB** (`ente_particelle`
+~350 MB, indici ~130 MB), PMTiles +~20 MB, memoria di picco ~4 GB. Totali uguali allo studio (Comune di Cesena 4.638
+beni, Azienda USL della Romagna 898, Università di Bologna 1.134).
+
+**Gruppi di enti** (`g` nelle tessere, colonna `gruppo` dell'indice, caselle «Enti» della pagina, filtro della ricerca):
+C Comuni, I Unioni di Comuni e Comunità montane, P Province e Città metropolitane, R Regioni, S Sanità, U Università,
+E Edilizia residenziale pubblica, M Stato (Ministeri e PCM, Organi costituzionali, Agenzie fiscali), N Previdenza, A altri
+enti. Le tipologie si confrontano **senza accenti, apostrofi, maiuscole e spazi doppi**: nei CSV MEF sono scritte con
+l'apostrofo (`Universita'`, `Citta' Metropolitane e Province`, `Unioni di Comuni e Comunita' Montane`). Fino al
+22/11/2026 il confronto era letterale e P e U restavano vuoti (Province, Università e Unioni in «Altri enti»); le Unioni
+hanno dal 22/11 un gruppo proprio (I) invece che stare con i Comuni. Conteggi attesi sui dati 2023 (righe di `beni`):
+C 2.182.550, I 73.157, P 64.324, R 215.908, S 43.217, U 12.436, E 458.139, M 53.964, N 28.288, A 125.061.
+Controllo sul server: `sqlite3 immobili_pa_2023.sqlite "SELECT gruppo, COUNT(*) FROM beni GROUP BY gruppo"`.
+
+**Rifacimento con il sito acceso** (dal 22/11/2026): l'indice si scrive in `.immobili_pa_2023.sqlite.nuovo` e si
+sostituisce con `os.replace` (l'API lo apre con `immutable=1`, una connessione per richiesta: le richieste nuove leggono
+subito il file nuovo, non serve riavviare); il PMTiles ha un **nome nuovo a ogni rifacimento** e `indice.json` (sempre
+riconvalidato, `Cache-Control: no-cache` in Caddy) si sostituisce per ultimo, così Cloudflare e i browser non mescolano
+tessere vecchie e nuove e **non serve la Purge**. Si tiene il PMTiles precedente (pagine già aperte) e si cancellano i più
+vecchi. Spazio in più durante il lavoro: ~4 GB di file di lavoro di tippecanoe (GeoJSON e due PMTiles parziali), il
+PMTiles nuovo (~780 MB) accanto al vecchio e l'indice nuovo (~2,8 GB dal 22/11/2026) accanto al vecchio fino alla
+sostituzione: tenere liberi almeno **9 GB** (`df -h /srv/energia`); a lavoro finito restano in più i ~780 MB del PMTiles
+precedente e i ~500 MB in più dell'indice. Lo stesso vale per `enti_<anno>_<versione>.json` (nome nuovo, il precedente
+resta, i più vecchi si tolgono).
 
 **Attribuzione** (scritta anche nei metadati dei file): «Fonti: MEF – Dipartimento dell'Economia, «Patrimonio della
 PA», dati beni immobili al 31/12/2023 (CC BY 4.0); Agenzia delle Entrate, cartografia catastale (CC BY 4.0).
@@ -305,7 +365,7 @@ regola con il centroide AdE, il punto cade dentro la particella o entro 20 m nel
 Umbria, Marche, Toscana, Abruzzo; 97–99 % Piemonte, Molise, Lazio, Sicilia, Puglia, Basilicata, Veneto, Lombardia,
 Sardegna, Friuli Venezia Giulia; Campania 91,6 %, Calabria 90,7 %; Trentino-Alto Adige 0 %. Prima delle regole 2–4
 (pomeriggio) l'aggancio era all'84 % e la Lombardia al 64 %. Durata: ~40 minuti in due code parallele su 2 vCPU; prodotti
-del sito ~12 minuti (PMTiles ~180 MB, indice SQLite 2,3 GB).
+del sito ~12 minuti (PMTiles ~760 MB, indice SQLite 2,3 GB).
 
 La lettura dei GML è fatta «a flusso» sui byte e costruisce il poligono solo per le particelle del censimento
 (~0,06 s per comune contro ~1,2 s con GDAL); servono solo pandas, pyarrow e shapely. Composizione in due passate

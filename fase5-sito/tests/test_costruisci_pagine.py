@@ -76,8 +76,9 @@ GRUPPI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "d
           "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
                          "dbtr-istruzioni.html", "visure.html"],
           "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
-               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html"]}   # (11/11/2026) Indici dei prezzi prima;
-#                                                    (17/11/2026) Stato della rete elettrica in fondo
+               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html",
+                               "suolo.html"]}   # (11/11/2026) Indici dei prezzi prima;
+#                                                    (17/11/2026) Stato della rete elettrica in fondo; (22/11/2026) Suolo e aree agricole
 VIETATI = ("PUN Index GME =", "€/MWh", "Prezzo medio")   # nessun valore nelle pagine in attesa della licenza GME
 
 
@@ -600,8 +601,8 @@ def test_etichette_brevi_nelle_tendine():
     # (09/11/2026 f) + 3 «S» (Edifici: Obblighi di legge, Geometria e luce naturale, Consumi): 8 «S», 13 in lavorazione
     # (14/11/2026) + 4 «S» del Trattamento aria: 12; (17/11/2026) + «S» di Territorio › Edifici pubblici: 13;
     # (17/11/2026) + Cabine primarie e Stato della rete elettrica: 15; (20/11/2026) + Produzione e consumi di elettricità: 16;
-    # (20/11/2026) + Carichi elettrici: 17
-    assert len(s) == pannello.count(">sperimentale<") == 17 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    # (20/11/2026) + Carichi elettrici: 17; (22/11/2026) + Suolo e aree agricole: 18
+    assert len(s) == pannello.count(">sperimentale<") == 18 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
     assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
@@ -701,12 +702,19 @@ def test_novita_versione_feed_e_menu():
         f = Path(__import__("tempfile").mkdtemp()) / "n.toml"
         f.write_text('[[voce]]\ndata = "2026-10-26"\ntitolo = "X"\nnuovo = ["a"]\n', encoding="utf-8")
         CP.leggi_novita(f)
-    # (08/11/2026, Paolo) la versione del sito resta solo in novita.toml: né in pagina né nel feed (ancore per data)
+    # (08/11/2026, Paolo) la versione del sito non va nel feed né nei titoli e nelle ancore (ancore per data);
+    # (21/11/2026, Paolo) in pagina sì, in piccolo sotto il titolo di ogni voce: «21/11/2026 · versione 20261121b»
     corpo_pag = pag[pag.index('<main class="articolo novita"'):pag.index("</main>")]
     corpo_pag = re.sub(r'^<main[^>]*>', "", corpo_pag)
-    for v in voci:
+    righe_versione = re.findall(r'<p class="novita-versione">([^<]+)</p>', corpo_pag)
+    assert len(righe_versione) == len(voci)
+    for v, r in zip(voci, righe_versione):
+        g = v["data"].split("-")
+        assert r == f"{g[2]}/{g[1]}/{g[0]}" + (f" · versione {v['versione']}" if v.get("versione") else ""), r
         if v.get("versione"):
-            assert v["versione"] not in corpo_pag and v["versione"] not in xml, v["versione"]
+            assert v["versione"] not in xml, v["versione"]
+            assert v["versione"] not in "".join(re.findall(r"<h2[^>]*>.*?</h2>", corpo_pag)), v["versione"]
+    assert righe_versione[0] == f"21/11/2026 · versione {voci[0]['versione']}" or voci[0]["data"] != "2026-11-21"
     assert "Versione del sito" not in pag and "Versione del sito" not in xml
     assert 'id="d20261107"' in pag and 'id="d20261107-2"' in pag             # due voci lo stesso giorno: ancore stabili
     # (08/11/2026, Paolo) solo funzioni per gli utenti: gruppi Nuovo / Migliorato / Verificato, niente modifiche interne
@@ -743,8 +751,9 @@ ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html
                "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
                "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
-               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html"]}   # (11/11/2026) Indici dei prezzi prima;
-#                                                    (17/11/2026) Stato della rete elettrica in fondo
+               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html",
+                               "suolo.html"]}   # (11/11/2026) Indici dei prezzi prima;
+#                                                    (17/11/2026) Stato della rete elettrica in fondo; (22/11/2026) Suolo e aree agricole
 
 
 def test_menu_08_11_gruppi_e_voci_in_lavorazione(sito):
@@ -882,7 +891,7 @@ def test_esempi_un_caso_per_ogni_pagina_del_menu():
     tendine = "".join(re.findall(r'<ul class="tendina">.*?</ul>', t, re.S))
     pagine = sorted(set(re.findall(r'href="([^"#]+\.html)"', tendine)))
     main = re.search(r"<main.*?</main>", (QUI / "sito" / "esempi.html").read_text(encoding="utf-8"), re.S).group(0)
-    assert "carichi.html" in pagine and "elettricita.html" in pagine
+    assert "carichi.html" in pagine and "elettricita.html" in pagine and "suolo.html" in pagine
     assert [p for p in pagine if f'href="{p}' not in main] == []
 
 

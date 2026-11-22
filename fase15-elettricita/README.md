@@ -15,7 +15,7 @@ Prove: `cd fase15-elettricita && python -m pytest -q` (solo dati inventati, nien
 
 ## Produzione e consumi di elettricità (`terna_dc.py`, `costruisci.py`)
 
-Stato al 21/11/2026: scaricatore e costruttore funzionanti; pagina «Produzione e consumi di elettricità»
+Stato al 21/11/2026: scaricatore e costruttore funzionanti (grandezza «Emissioni» pubblicata con la versione del sito 20261122a, release `v2026.11.22`; periodo a due indicatori nella pagina dal 22/11/2026; dal 22/11/2026 controllo degli anni copiati da un altro anno e ricostruzione della produzione 2006, 2007, 2017 e della capacità 2006, 2017, vedi «Problemi noti nei dati di Terna»); pagina «Produzione e consumi di elettricità»
 (`fase5-sito/sito/elettricita.html`, `elettricita.js`) pubblicata il 21/11/2026 (`?v=20261121a`, sperimentale), come «Carichi elettrici».
 
 I dati di Terna **non vanno nel repository** e **non si scaricano dal sito** (decisione di Paolo): la cartella
@@ -35,6 +35,58 @@ rm -rf ../fase5-sito/sito/dati/elettricita && cp -r /tmp/el ../fase5-sito/sito/d
 
 python3 -m pytest -q      # prove (niente rete)
 ```
+
+### Grandezza «Emissioni» (21/11/2026, richiesta di Paolo; pubblicata con la versione 20261122a, release `v2026.11.22`)
+
+`costruisci.py` legge `GrossVsCO2Emissions` (`leggi_emissioni`) e scrive in `italia.json`:
+- per regione `emissioni[anno] = [[GWh × 5], [kt CO2 × 5], [tep × 5]]` per combustibile (`EMISSIONI_VOCI`: gas, solidi,
+  petroliferi, altri, bio) e `indicatori[anno]` = `[termoelettrico GWh, rinnovabili GWh, totale GWh senza pompaggi e
+  accumuli, CO2 kt, tep, fattore medio tCO2/MWh, fattore del termoelettrico tCO2/MWh, tep/MWh]` (`indicatori()`);
+- `zone` (zone di mercato dal 2021, `ZONE`, controllate con `sito/dati/mappa/zone.json`: errore se diverse) con gli
+  indicatori sommati prima dei rapporti; `emissioni.italia` per l'Italia;
+- `emissioni.riferimenti`: copia di `elettricita/riferimenti_emissioni.json` (MEF, ISPRA, metodo dell'energia primaria,
+  data di lettura). Il file è nei `package-data` del pacchetto.
+
+**Cosa c'è nei dati.** Ci sono i dati regionali di tutti gli anni 2000–2025 per tutte e 20 le regioni: non serve
+ripiegare sulle zone di mercato (Terna non pubblica le emissioni per zona né per provincia). Nei file l'ordine vero delle
+colonne è Anno, Combustibile, Produzione, Regione, Emissioni. «Gas naturale» diventa «Gas Naturale» dal 2021. La voce
+**Bioenergie** ha emissioni non nulle (7,5 Mt nel 2023): è la voce «altri combustibili» di Terna, con la parte fossile dei
+rifiuti, i gas di sintesi e i gas residui (Sardegna, Sarroch: ~4 TWh e 1,8 Mt nel 2023); la CO2 biogenica è contata zero
+come nell'inventario. **Altri** sono soprattutto i gas siderurgici (Puglia) e recuperi senza emissioni (Lombardia,
+Toscana, Sardegna). Il totale nazionale coincide con ISPRA (Rapporto 430/2026, Tabella 1.16, solo elettricità) nel 2005
+(−2 %), 2010 e 2021–2025 (sotto l'1 %), ma è più alto dell'8–12 % nel 2015–2020 (p. es. 2020: 82,5 contro 73,5 Mt):
+Terna non ha ricalcolato quegli anni come l'inventario; i fattori di quegli anni sono quindi più alti di quelli ISPRA.
+
+**Fattori.** Medio = CO2 / produzione lorda totale senza pompaggi e accumuli; del termoelettrico = CO2 / produzione
+termoelettrica lorda con le bioenergie (stessa definizione di ISPRA, Tabella 1.7, colonna 1: nel 2022–2024 coincidono
+alla quarta cifra).
+
+**Energia primaria** (`energia_primaria()`). Il Download Center (i 15 dataset scaricati da `terna_dc.py`) non ha i
+consumi di combustibile; ISPRA li pubblica solo per l'Italia (Excel del Rapporto 430/2026, foglio «23», «Consumo di
+energia per la produzione elettrica», dati di Terna). Stima per regione: gas naturale, solidi, petroliferi = emissioni /
+fattore tCO2/tep (ISPRA 430/2026, Tabella 1.4: gas naturale, carbone da vapore, olio combustibile; 2022–2024, fuori
+intervallo l'anno più vicino); bioenergie e altri (e combustibili con produzione ma senza emissioni) = GWh × 1000 ×
+0,086 / 0,35 (rendimento convenzionale dal Reg. delegato (UE) 2023/2104, Allegato I). Controllo con ISPRA (somma delle
+regioni / consumo ISPRA): 2005 +0,5 %, 2010 −0,7 %, 2015 +2,2 %, 2020 +0,9 %, 2022 +3,2 %, 2023 +3,1 %, 2024 +3,5 %,
+2025 +1,2 %. Il petroliferi con l'olio combustibile è l'approssimazione più debole (dentro ci sono anche gas di raffineria
+e coke di petrolio), ma pesa poco (1–2 % della produzione termoelettrica).
+
+**Riferimenti** (`riferimenti_emissioni.json`, letti il 21/11/2026):
+- MEF/MASE **0,187 tep/MWh**: delibera AEEG EEN 3/08 del 28/3/2008, art. 2.1, usata nei certificati bianchi (Guida
+  operativa GSE). Non abbiamo trovato atti che la sostituiscano: il DM MASE 21/7/2025 (GU n. 211 dell'11/9/2025) non indica
+  un altro fattore nel testo. Non è un dato annuale ma una previsione del 2008.
+- **ISPRA, Rapporto 430/2026** «Settore elettrico: emissioni di CO2 e altri impatti. Edizione 2026» (giugno 2026; sostituisce
+  i rapporti «Fattori di emissione atmosferica di gas a effetto serra nel settore elettrico nazionale e nei principali Paesi
+  europei» e «Le emissioni di CO2 nel settore elettrico nazionale e regionale») e il suo Excel
+  `FE_energia_elettrica_2025-V2.xlsx` (7/7/2026): foglio «9» = Tabella 1.7 per tutti gli anni 1990–2025 (termoelettrico
+  solo fossili, termoelettrico con bioenergie, produzione lorda, consumi; 2025 preliminare; convertiti da gCO2/kWh a
+  tCO2/MWh), foglio «23» = consumo di energia per la produzione elettrica (ktep) e rendimento equivalente 2005–2025;
+  Tabella 2.2 = fattori regionali 2024. Licenza CC BY 4.0 con citazione.
+- Ultimo anno (2025, Italia): fattore medio 0,213 tCO2/MWh (ISPRA 0,214), termoelettrico 0,368 (ISPRA 0,367; solo fossili
+  0,413), energia primaria 0,166 tep/MWh (ISPRA 0,164; MEF 0,187, −11 %).
+
+Per aggiornare i riferimenti ogni anno (ISPRA pubblica entro il 30 giugno, DM 224/2023): nuove righe in
+`riferimenti_emissioni.json` (serie, Tabella 1.4, foglio «23») e nuova data in `letto`.
 
 ### Lo scaricatore (`elettricita/terna_dc.py`)
 
@@ -95,7 +147,7 @@ dei minori = netto, 156 156). Sommare tutto conta la produzione due volte. Cogen
 110 (2017), 96 (2023), 91 (2024), 95 (2025).
 
 **GrossVsCO2Emissions** – produzione termoelettrica lorda ed emissioni di CO2 per combustibile. 2000–2025, **solo
-regione**. Colonne: Anno, Combustibile (Solidi, Gas naturale / «Gas Naturale» dal 2021, Petroliferi, Bioenergie,
+regione** (dal 21/11/2026 lo usa la grandezza «Emissioni», vedi sotto). Colonne: Anno, Combustibile (Solidi, Gas naturale / «Gas Naturale» dal 2021, Petroliferi, Bioenergie,
 Altri), Produzione (GWh, lorda: il totale coincide con il termoelettrico lordo), Regione, Emissioni (milioni di
 tonnellate di CO2, comprese quelle delle bioenergie). Alcuni valori sono vuoti (`null`). Italia: 141,5 Mt (2005),
 67,5 (2023), 56,4 (2024), 58,3 (2025).
@@ -155,10 +207,52 @@ Che cosa comprende, verificato sui dati scaricati il 20/11/2026:
   8 804, −25 %), Taranto 2019 (5 199 contro 2 167, −58 %) e 2020 (4 617 contro 2 076, −55 %). Totale Italia dei
   consumi: 2019 296 254 GWh (prima 289 290), 2020 279 171 (prima 273 705); 2015 +41 GWh (servizi di alcune grandi
   province, sotto la soglia); gli altri anni invariati.
-- **ElectricityBySource 2017**: produzione lorda uguale alla netta per tutte le fonti e fotovoltaico Italia 193 GWh
-  (contro 22 104 nel 2016 e 22 654 nel 2018). Il costruttore prende già il massimo con ProductionRenewableSources.
-- Righe doppie con la stessa chiave in GenerationPlants (2017, +16 GW di termoelettrico), ThermalHeat (tutti gli anni,
-  da sommare), ProductionThermal (lorda e netta senza colonna), Market/consumi fino al 2020 (da sommare).
+- **Anni copiati da un altro anno** (trovato il 22/11/2026; segnalazione a Terna preparata). Alcuni file del Download
+  Center sono la copia di un altro anno con l'anno cambiato. Con i dati scaricati al 22/11/2026 (`trova_copie()` su
+  tutti i 354 file di `raw/`):
+
+  | Dataset | Anno | Copia di | Tipo |
+  |---|---|---|---|
+  | ElectricityBySource | 2017 | 2008 | stesse 684 righe (Italia 319 130 GWh, il dato 2008, invece di ~295 800) |
+  | ElectricityBySource | 2006 | 2004 | stesse righe (più 59 righe ripetute) |
+  | ElectricityBySource | 2007 | 2005 | stessi valori (96 %) su province e fonti diverse; stessi totali per fonte |
+  | GenerationPlants | 2005 | 2002 | stesse righe |
+  | GenerationPlants | 2006 | 2004 | stesse righe |
+  | GenerationPlants | 2017 | 2012 | contiene tutte le 800 righe del 2012 più 113 righe diverse (930 righe con le ripetute): erano questi i «+16 GW di termoelettrico» che prima si correggevano col minore tra GenerationPlants e CapacityThermal |
+  | CapacityRenewableSources | 2005 | 2004 | stesse righe |
+
+  Nessuna copia in ProductionRenewableSources, ProductionThermal, CapacityThermal, ElectricityByType,
+  GrossVsCO2Emissions, ConsumptionBySource, Total, ElectricalEnergy, Market, IndustrialSector, ServiceSector,
+  ThermalHeat. Regole (`trova_copie`, solo file con almeno 20 righe con un valore): «identico» = stesse righe tolto
+  l'anno; «contiene» = ha tutte le righe dell'altro anno, che sono almeno l'80 % delle sue; «valori» = almeno il 95 %
+  dei valori diversi da zero sono quelli dell'altro anno. Negli identici e nei «valori» la copia è l'anno più recente
+  (in tutti i casi l'anno più vecchio coincide con le altre tabelle del suo anno). **Gli anni copiati non si leggono**
+  (`_righe(..., salta)`), per ogni dataset; nota in `italia.json` → `note`, su stderr e in `esito["controlli"]["copie"]`.
+  - **Produzione** (`ricostruisci_produzione`): termoelettrico lordo = ProductionThermal (per ogni chiave il valore
+    maggiore = lordo; somma = termoelettrico lordo di ElectricityBySource negli anni buoni, p. es. 199 430 GWh nel 2016,
+    192 730 nel 2018), idrico rinnovabile, geotermico, eolico, fotovoltaico = ProductionRenewableSources, pompaggi =
+    ConsumptionBySource «Idrico tradizionale» per regione (negli anni buoni circa il 2 % sotto il lordo) divisi tra le
+    province come la media dell'anno valido prima e dopo. Italia: 2017 **295 787 GWh** (prima 360 854; dato Terna
+    295 832), 2006 314 000 (prima 305 248), 2007 313 948 (prima 307 452). Se manca ProductionThermal o
+    ProductionRenewableSources dell'anno, l'anno resta vuoto con la nota «dato di Terna non disponibile».
+  - **Capacità** (`ricostruisci_capacita`): termoelettrico = CapacityThermal meno il geotermico (CapacityThermal lo
+    comprende fino al 2022: si decide confrontando con GenerationPlants nell'anno valido più vicino), rinnovabili =
+    CapacityRenewableSources, pompaggio puro = media per provincia dell'anno valido prima e dopo. Italia: 2017
+    117 178 MW (prima 117 816), 2006 92 098 (prima 83 556). **2005 vuoto** (anche CapacityRenewableSources 2005 è una
+    copia): dato di Terna non disponibile.
+  - **Controllo anti-salto** (`controlla_salti`): nota se il totale nazionale di capacità, produzione, richiesta,
+    consumi, produzione termoelettrica o CO2 di un anno si scosta di più del 15 % dalla media dell'anno prima e dopo.
+    Con i dati del 22/11/2026 resta solo «emissioni di CO2 2022, 86 689 kt contro 72 984 (+19 %)» (dato di Terna, da
+    verificare).
+  - **Da verificare** (non corretto): la capacità 2005–2009 sembra in parte spostata di un anno (GenerationPlants 2009
+    ha 7 MW di fotovoltaico e il termoelettrico di CapacityThermal 2006; CapacityRenewableSources 2006 e 2007 hanno
+    l'eolico che Terna dà per il 2005 e il 2006). Non sono copie esatte e il controllo non le riconosce.
+- **ElectricityBySource 2017**: era la copia del 2008 (sopra); la «produzione lorda uguale alla netta» e il fotovoltaico
+  di 193 GWh venivano da lì. Prima del 22/11/2026 il costruttore prendeva il massimo con ProductionRenewableSources e
+  l'Italia 2017 risultava 360 854 GWh.
+- Righe doppie con la stessa chiave in CapacityRenewableSources (2017–2018, valori vicini: si tiene il maggiore),
+  ThermalHeat (tutti gli anni, da sommare), ProductionThermal (lorda e netta senza colonna), Market/consumi fino al 2020
+  (da sommare).
 - Nomi non uniformi: «Valle D'Aosta» / «Valle d'Aosta», «Gas naturale» / «Gas Naturale», sottocategorie
   termoelettriche con maiuscole diverse, province con caratteri sbagliati (`ripara()`).
 - Anni diversi tra dataset: produzione e potenza fino al 2025, consumi fino al 2024, ServiceSector solo dal 2019.

@@ -161,6 +161,8 @@ ZORNADE_AVVISO_QUOTA = float(os.environ.get("ZORNADE_AVVISO_QUOTA", "0.7"))   # 
 # dell'Agenzia delle Entrate (CC BY 4.0) e metà della via dalle strade di OpenStreetMap (Overpass). LUOGO=false la spegne.
 LUOGO = os.environ.get("LUOGO", "true").lower() not in ("false", "0", "no", "spento")
 LUOGO_ORA = int(os.environ.get("LUOGO_ORA", "300"))                       # ricerche di un luogo per IP all'ora
+# (22/11/2026) Edifici pubblici, ricerca per ente: richieste all'ora per tutto il sito (oltre: 503), contro le copie sistematiche
+IMMOBILI_PA_ENTE_TETTO_ORA = int(os.environ.get("IMMOBILI_PA_ENTE_TETTO_ORA", "30000"))
 CATASTO_WFS_URL = os.environ.get("CATASTO_WFS_URL", "https://wfs.cartografia.agenziaentrate.gov.it/inspire/wfs/owfs01.php")
 CATASTO_WFS_TETTO_ORA = int(os.environ.get("CATASTO_WFS_TETTO_ORA", "3000"))   # chiamate al WFS catastale all'ora, tutto il sito
 LUOGO_TIMEOUT_S = float(os.environ.get("LUOGO_TIMEOUT_S", "20"))          # per chiamata (WFS, ogni istanza di Overpass)
@@ -332,6 +334,15 @@ TERNA_PAUSA_S = max(1.0, float(os.environ.get("TERNA_PAUSA_S", "1.1")))     # ma
 # al più TERNA_API_GIORNI_MAX), l'IMCEI del mese, TERNA_STORICO_MESI mesi di storico dal Download Center (dal
 # TERNA_STORICO_INIZIO, ripreso da dove era rimasto), poi i file di «Carichi elettrici». Dopo un 429 o un 5xx si riprova
 # dopo TERNA_RIPROVA_MIN minuti (al più TERNA_RIPROVA_MAX volte al giorno), senza ripetere subito le richieste.
+# (22/11/2026) «Suolo e aree agricole» (fase 16): dati ISPRA/SNPA e ISTAT (CC BY 4.0) in SUOLO_DATI, controllati una volta
+# al mese il giorno SUOLO_GIORNO dalle SUOLO_ORA (ora italiana), subito se il sito non ha ancora i file; si ricostruisce
+# solo quando cambia il file ISPRA (nome con anno e versione) o un dataset ISTAT. Con SUOLO_CARTE=1 (predefinito) il lavoro
+# scarica anche la carta dei cambiamenti più recente e la carta di uso del suolo (~800 MB, di solito una volta l'anno) e
+# fa l'incrocio del suolo agricolo consumato (fase16-suolo/suolo/agricolo.py, ~2 minuti); 0 per saltarlo.
+SUOLO_DATI = Path(os.environ.get("SUOLO_DATI") or str(DATI / "suolo"))
+SUOLO_GIORNO = int(os.environ.get("SUOLO_GIORNO", "6"))
+SUOLO_ORA = os.environ.get("SUOLO_ORA", "05:30")
+SUOLO_CARTE = os.environ.get("SUOLO_CARTE", "1") not in ("0", "", "no", "false")
 TERNA_API_ORA = os.environ.get("TERNA_API_ORA", "06:30")
 TERNA_API_GIORNI_MAX = max(1, int(os.environ.get("TERNA_API_GIORNI_MAX", "7")))
 TERNA_STORICO_INIZIO = os.environ.get("TERNA_STORICO_INIZIO", "2021-01")
