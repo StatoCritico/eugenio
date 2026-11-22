@@ -126,3 +126,19 @@ def test_senza_calamine_con_openpyxl(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "python_calamine", None)
     _, it2 = _costruisci(tmp_path / "b")
     assert it1 == it2
+
+
+def test_serie_agricola_cresce_con_le_edizioni(tmp_path):
+    """Un file agricolo_<anno>.json per carta dei cambiamenti: tutti entrano nella serie; un anno senza dati ISPRA no."""
+    raw = K.raw(tmp_path / "raw")
+    d = json.loads((raw / "agricolo_2015.json").read_text())
+    d["anno"], d["periodo"] = 2012, "2006–2012"
+    (raw / "agricolo_2012.json").write_text(json.dumps(d))
+    d["anno"] = 2030
+    (raw / "agricolo_2030.json").write_text(json.dumps(d))
+    C.costruisci(raw, tmp_path / "out", MAPPA)
+    it = json.loads((tmp_path / "out" / "italia.json").read_text(encoding="utf-8"))
+    assert it["anni"]["agricolo"] == [2012, 2015] and set(it["italia"]["agricolo"]) == {"2012", "2015"}
+    assert any("2030" in n for n in it["note"]) and it["riferimenti"]["agricolo"]["anni"] == [2012, 2015]
+    sa = next(r for r in it["regioni"] if r["cod"] == "20")
+    assert sa["agricolo"]["2012"][0] == 0.5 and next(r for r in it["regioni"] if r["cod"] == "01")["agricolo"]["2015"] == [0.0] * 7

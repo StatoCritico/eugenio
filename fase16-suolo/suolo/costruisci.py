@@ -2,7 +2,8 @@
 
   costruisci(raw: Path, uscita: Path, mappa: Path | None = None, precedente: Path | None = None, forza: bool = False) -> dict
       legge in `raw` i file di scarica.py (ispra_indicatori.xlsx, istat_coltivazioni.csv, istat_censimento2020.csv,
-      stato_scarico.json) e, se c'è, agricolo_<anno>.json di agricolo.py; scrive in `uscita`:
+      stato_scarico.json) e, se ci sono, gli agricolo_<anno>.json di agricolo.py (uno per carta dei cambiamenti: la serie
+      del suolo agricolo consumato cresce di un anno a ogni edizione); scrive in `uscita`:
         italia.json   voci, anni, riferimenti, totale Italia e regioni (valori per anno e voce)
         RR.json       province della regione RR (stesse grandezze) e comuni (suolo consumato e incremento netto per anno)
       `mappa` è la cartella dati/mappa del sito (posizioni e codici, ISTAT 2026); se manca, «mappa» accanto a `uscita`.
@@ -281,32 +282,38 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None, precedente: P
     col = colture.famiglie(raw / "istat_coltivazioni.csv") if (raw / "istat_coltivazioni.csv").exists() else None
     if col:
         note += col["note"]
-    # --- incrocio agricolo (facoltativo)
-    agr = None
-    file_agr = sorted(raw.glob("agricolo_*.json"))
-    if file_agr:
-        agr = json.loads(file_agr[-1].read_text(encoding="utf-8"))
-        if str(agr["anno"]) not in italia_i["consumi"]:
-            note.append(f"Incrocio agricolo {agr['anno']}: anno non presente nei dati ISPRA, ignorato")
-            agr = None
-    agr_reg: dict = {}
-    agr_prov: dict = {}
-    agr_it = None
-    if agr:
-        a = str(agr["anno"])
-        for ist, v in agr["comuni"].items():
+    # --- incrocio agricolo (facoltativo): un file agricolo_<anno>.json per carta dei cambiamenti; la serie cresce ogni anno
+    agri: dict = {}
+    for f in sorted(raw.glob("agricolo_*.json")):
+        d = json.loads(f.read_text(encoding="utf-8"))
+        if str(d.get("anno")) not in italia_i["consumi"]:
+            note.append(f"Incrocio agricolo {d.get('anno')}: anno non presente nei dati ISPRA, ignorato")
+            continue
+        agri[str(d["anno"])] = d
+    agr_reg: dict = defaultdict(dict)       # cod → {anno: [ha per gruppo]}
+    agr_prov: dict = defaultdict(dict)
+    agr_it: dict = {}
+    for a, d in sorted(agri.items()):
+        for ist, v in d["comuni"].items():
             p = provincia_di.get(ist)
             if not p:
                 continue
-            _somma_vettori(agr_prov, p, v["agricolo"])
-            _somma_vettori(agr_reg, m["province"][p]["regione"], v["agricolo"])
-        agr_it = [round(x, 2) for x in agr["italia"]["agricolo"]]
-        lordo_px = sum(agr["italia"]["lordo"])
+            _somma_vettori(agr_prov[p], a, v["agricolo"])
+            _somma_vettori(agr_reg[m["province"][p]["regione"]], a, v["agricolo"])
+        agr_it[a] = [round(x, 2) for x in d["italia"]["agricolo"]]
+        lordo_px = sum(d["italia"]["lordo"])
         lordo_isp = italia_i["bilancio"][a][0]
         scarto = (lordo_px - lordo_isp) / lordo_isp if lordo_isp else 0
         if abs(scarto) > 0.02:
             note.append(f"Incrocio agricolo {a}: nuovo consumo dai pixel {lordo_px:.0f} ha contro {lordo_isp:.0f} ha dell'Excel "
                         f"({scarto * 100:+.1f} %)")
+    zero = [0.0] * len(GRUPPI)
+
+    def agricolo_di(serie: dict) -> dict | None:
+        """{anno: [ha per gruppo]} con lo zero negli anni calcolati in cui l'unità non ha pixel agricoli."""
+        if not agri:
+            return None
+        return {a: [round(x, 2) for x in serie.get(a, zero)] for a in sorted(agri)}
 
     def suolo_con_sau(u: dict, sau_v: list | None) -> dict:
         s = sau_v or [None, None]
@@ -317,8 +324,8 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None, precedente: P
                "pop": u["pop"], "suolo": suolo_con_sau(u, sau_v), "consumi": u["consumi"], "bilancio": u["bilancio"]}
         if u["rev"]:
             out["rev"] = u["rev"]
-        if agr_v is not None and agr:
-            out["agricolo"] = {str(agr["anno"]): [round(x, 2) for x in agr_v]}
+        if agr_v:
+            out["agricolo"] = agr_v
         if col_v:
             out["colture"] = {str(a): v for a, v in sorted(col_v.items())}
         return out
@@ -327,9 +334,9 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None, precedente: P
     for cod in sorted(m["regioni"]):
         pos = m["regioni"][cod]
         regioni_out.append(unita(cod, regioni_i[cod], pos, cens["regioni"].get(cod) if cens else None,
-                                 agr_reg.get(cod, [0.0] * len(GRUPPI)) if agr else None, (col or {}).get("regioni", {}).get(cod)))
+                                 agricolo_di(agr_reg.get(cod, {})), (col or {}).get("regioni", {}).get(cod)))
     italia_out = unita("IT", italia_i, {"nome": "Italia", "lon": None, "lat": None}, cens["italia"] if cens else None,
-                       agr_it, (col or {}).get("italia"))
+                       agricolo_di(agr_it), (col or {}).get("italia"))
 
     anni_suolo = isp["anni"]
     anni_flussi = [a for a in isp["anni"][1:] if str(a) in italia_i["consumi"]]
@@ -349,19 +356,22 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None, precedente: P
         "istat_censimento": {"titolo": "ISTAT, 7° Censimento generale dell'agricoltura (2020): SAU e superficie agricola non utilizzata",
                              "flusso": "DF_DCAT_CENSAGRIC2020_SURF_ALL", "licenza": LICENZA,
                              "nazionale": cens["nazionale"] if cens else None},
-        "agricolo": ({"anno": agr["anno"], "periodo": agr.get("periodo"), "file": agr.get("file"),
+        "agricolo": ({"anni": [int(a) for a in sorted(agri)],
                       "metodo": "carta dei cambiamenti del consumo di suolo ISPRA × Carta nazionale di uso del suolo ISPRA "
                                 "(usi agricoli 11–16), pixel di 10 m assegnati ai comuni; stima EuGEnio",
-                      "usi": agr.get("usi"), "usi_italia": agr["italia"].get("usi"),
-                      "usi_non_agricoli_italia": (agr.get("usi_non_agricoli") or {}).get("IT"),
-                      "confronto": {"fonte": "ISMEA nel Rapporto SNPA 2026, consumo di suolo agricolo 2024–2025", "ha": 8208}}
-                     if agr else None),
+                      "file": {a: d.get("file") for a, d in sorted(agri.items())},
+                      "periodi": {a: d.get("periodo") for a, d in sorted(agri.items())},
+                      "usi": next(iter(agri.values())).get("usi"),
+                      "usi_italia": {a: d["italia"].get("usi") for a, d in sorted(agri.items())},
+                      "usi_non_agricoli_italia": {a: (d.get("usi_non_agricoli") or {}).get("IT") for a, d in sorted(agri.items())},
+                      "confronto": {"fonte": "ISMEA nel Rapporto SNPA 2026, consumo di suolo agricolo 2024–2025", "anno": 2025, "ha": 8208}}
+                     if agri else None),
         "citazione": CITAZIONE,
     }
     comune = {"fonte": CITAZIONE, "unita": "ha"}
     italia_json = {**comune, "riferimenti": riferimenti, "voci": voci, "bilancio": BILANCIO, "censimento_voci": CENSIMENTO_VOCI,
                    "anni": {"suolo": anni_suolo, "consumi": anni_flussi, "colture": (col or {}).get("anni", []),
-                            "agricolo": [agr["anno"]] if agr else []},
+                            "agricolo": [int(a) for a in sorted(agri)]},
                    "periodi": periodi, "rev": [str(a) for a in isp["rev"]], "note": note,
                    "italia": italia_out, "regioni": regioni_out}
     if precedente and Path(precedente).exists():
@@ -383,7 +393,7 @@ def costruisci(raw: Path, uscita: Path, mappa: Path | None = None, precedente: P
             if ppos["regione"] != rcod or pcod not in province_i:
                 continue
             p = unita(pcod, province_i[pcod], ppos, cens["province"].get(pcod) if cens else None,
-                      agr_prov.get(pcod, [0.0] * len(GRUPPI)) if agr else None, (col or {}).get("province", {}).get(pcod))
+                      agricolo_di(agr_prov.get(pcod, {})), (col or {}).get("province", {}).get(pcod))
             p["sigla"] = ppos["sigla"]
             prov_out.append(p)
         comuni_out = []
