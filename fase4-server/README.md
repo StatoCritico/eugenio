@@ -661,6 +661,17 @@ sta già lavorando, il lancio a mano scrive «un altro aggiornamento è in corso
 **429 o un 5xx** di Terna il lavoro si ferma subito (nessuna ripetizione immediata, la quota non si brucia), lo stato non
 avanza e il ciclo riprova dopo `TERNA_RIPROVA_MIN` (60) minuti, al più `TERNA_RIPROVA_MAX` (4) volte al giorno.
 
+**Giorni mancanti** (22/11/2026, Paolo: nel Download Center mancavano il 14 e il 15 gennaio 2026 per carico e
+produzione, e un mese con dei giorni vuoti entrava lo stesso senza più riprove). Dopo lo storico, `terna-api` controlla
+una volta i mesi già archiviati di `carico_totale`, `produzione` e `rinnovabili` (`giorni_mancanti()`: giorni con meno
+della metà degli istanti del giorno tipico del mese, vale per i dati orari e per quelli a 15 minuti). I mesi completi
+vanno in `stato.json` → `buchi_controllati` e non si ricontrollano; quelli con dei giorni vuoti vanno in `buchi`
+(`giorni`, `prove`, `ultima`) e si **riprovano una volta al giorno**, al più `TERNA_BUCHI_MESI` (3) mesi per giro: dall'API
+giorno per giorno se è configurata e c'è quota (una richiesta per giorno), altrimenti il mese intero dal Download Center
+(una richiesta). Recuperati: «giorni mancanti recuperati» nel registro e il mese passa tra i controllati (poi `carichi`
+ricostruisce i file). Dopo `TERNA_BUCHI_PROVE` (14) prove il buco è `definitivo` (Terna non ha i dati: riga nel registro,
+nessuna email) e la pagina lo mostra come «dati mancanti». `TERNA_BUCHI_MESI=0` spegne il controllo.
+
 ### API ufficiale: chiavi, limiti, errori
 
 - Applicazione creata da Paolo su https://developer.terna.it (procedura in `../AGGIORNAMENTO_2026-11-20e.md`); **una

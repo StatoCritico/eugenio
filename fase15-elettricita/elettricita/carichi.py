@@ -5,6 +5,7 @@
         indice.json            zone, voci e colori, fonti, elenco dei mesi con l'istante iniziale (UTC), il numero di
                                quarti d'ora e i cambi d'ora legale; la pagina lo legge per primo
         carico_AAAA-MM.json    potenza richiesta [MW, interi] per quarto d'ora, una serie per zona di mercato + Italia
+                               (dal 22/11/2026 Italia = somma degli interi delle zone, dove ci sono tutte)
         fonti_AAAA-MM.json     potenza per fonte [MW, interi] per quarto d'ora, solo Italia (Terna non la divide per zona)
       La pagina scarica solo i mesi del periodo scelto. Il worker del server lo chiama in una cartella nuova e la
       pubblica in sito/dati/carichi/ (vedi README della fase 15).
@@ -394,9 +395,31 @@ def costruisci_carichi(archivio: Path, uscita: Path) -> dict:
         voce = {"mese": am, "inizio": t0.strftime("%Y-%m-%dT%H:%M:%SZ"), "n": n_dati, "completo": n_dati == n,
                 "ora_legale": _ora_legale(t0, n_dati), "passo_carico": passo_c, "fonti": False}
         _ora_doppia(car, voce["ora_legale"])
+        # (22/11/2026, Paolo) Italia = somma delle sette zone, quarto d'ora per quarto d'ora. Nei dati di Terna la serie
+        # «Italy» coincide già con la somma (scarto massimo 7e-12 MW su nov 2025 – nov 2026, dopo l'ora doppia di
+        # ottobre); arrotondando ogni zona all'intero, però, la somma degli interi poteva differire di 1–3 MW: ora l'Italia
+        # scritta è la somma degli interi delle zone. Dove manca una zona resta la serie «Italy» di Terna (se c'è).
+        # Lo scarto massimo tra «Italy» e la somma (prima dell'arrotondamento) va nell'indice: scarto_italia_mw.
+        zone = [z for z in car if z != "ITA"]
+        interi = {z: _interi(s[:n_dati]) for z, s in car.items()}
+        scarto = 0.0
+        if zone:
+            ita = car.setdefault("ITA", [None] * n)
+            for i in range(n_dati):
+                if any(car[z][i] is None for z in zone):
+                    continue
+                somma = sum(car[z][i] for z in zone)
+                if ita[i] is not None:
+                    scarto = max(scarto, abs(ita[i] - somma))
+                ita[i] = somma
+                interi.setdefault("ITA", [None] * n_dati)[i] = sum(interi[z][i] for z in zone)
+            interi["ITA"] = interi.get("ITA") or _interi(ita[:n_dati])
+        voce["scarto_italia_mw"] = round(scarto, 3)
+        if scarto > 1:
+            log.warning("carichi %s: «Italy» di Terna diversa dalla somma delle zone fino a %.1f MW (si usa la somma)", am, scarto)
         f = uscita / f"carico_{am}.json"
-        f.write_text(json.dumps({"mese": am, "zone": {z: _interi(s[:n_dati]) for z, s in car.items()}}, separators=(",", ":")),
-                     encoding="utf-8")
+        f.write_text(json.dumps({"mese": am, "zone": {z: interi[z] for z in [*(["ITA"] if "ITA" in interi else []), *zone]}},
+                                separators=(",", ":")), encoding="utf-8")
         dimensioni[f.name] = f.stat().st_size
         fa, fr = _file_mese(archivio, "ActualGeneration", am), _file_mese(archivio, "RenewableGeneration", am)
         if fa.exists():
