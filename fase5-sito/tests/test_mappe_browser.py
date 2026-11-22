@@ -1498,7 +1498,7 @@ def test_previsioni_ricerca_col_solo_comune(browser, base):
     geo = []
     risposta = {"risultati": [{"etichetta": "Cesena", "lat": 0, "lon": 0}, {"etichetta": "Viale Giovanni Ghirotti 286, Cesena", "lat": 44.1338, "lon": 12.2597}]}
     pg.route("**/api/geocodifica?*", lambda r: (geo.append(r.request.url), r.fulfill(status=200, content_type="application/json", body=json.dumps(risposta)))[1])
-    pg.goto(base + "previsioni.html")
+    pg.goto(base + "index.html")
     attendi(pg, "document.querySelectorAll('#mappa path[data-istat]').length > 300", 20000)
     assert "viale Ghirotti 286, Cesena" in pg.get_attribute("#cerca", "placeholder")
     pg.fill("#cerca", "Cesena")
@@ -1514,7 +1514,7 @@ def test_previsioni_ricerca_col_solo_comune(browser, base):
     ctx.close()
 
 
-DUE_COLONNE = ["previsioni.html", "legge10.html", "dati.html", "patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "modelli3d.html", "fv-ombre.html",
+DUE_COLONNE = ["index.html", "legge10.html", "dati.html", "patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "modelli3d.html", "fv-ombre.html",
                "importa-dxf-ifc.html", "aggiungi-dbtr.html", "indicatori.html"]
 
 
@@ -1554,7 +1554,7 @@ def test_barra_della_colonna_della_mappa_a_sinistra(browser_con_barre, base):
         d = pg.evaluate("() => { const a = document.querySelector('main.strumento > .mappa-area'); return [a.scrollHeight > a.clientHeight + 1, a.clientLeft, a.offsetWidth - a.clientWidth]; }")
         assert d[0] and d[1] > 0 and d[2] >= d[1], (nome, d)
         ctx.close()
-    for nome in ("previsioni.html", "legge10.html", "dati.html"):
+    for nome in ("index.html", "legge10.html", "dati.html"):
         ctx, pg = pagina(browser, 1366, 900)
         pg.goto(base + nome)
         pg.wait_for_timeout(1200)

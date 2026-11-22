@@ -79,7 +79,7 @@ def test_gettone_comune_alle_schede_senza_turnstile(browser, base):
     pg.route("**/api/edifici/osm?*", lambda r: (mandati.append(r.request.headers.get("x-eugenio-sessione")),
              r.fulfill(status=200, content_type="application/json", body=json.dumps({"type": "FeatureCollection", "features": []}))))
     ctx.add_init_script("try { localStorage.setItem('eugenio_sessione', JSON.stringify({ g: 'GETTONE-DI-PROVA', scade: Math.floor(Date.now() / 1000) + 3000, base: '' })); } catch (e) {}")
-    pg.goto(base + "previsioni.html")
+    pg.goto(base + "index.html")
     for _ in range(3):
         pg.evaluate("fetch('/api/edifici/osm?lon=12.9&lat=43.9').then((r) => r.status)")
     pg.wait_for_timeout(500)
