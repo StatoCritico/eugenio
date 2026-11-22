@@ -284,7 +284,7 @@ python -m territorio immobili-pa-sito --dest /srv/energia/dati/immobili_pa \
 - tessere in **due passate** di tippecanoe (`-r1`: nessuna feature scartata «per frequenza»; particelle dallo zoom 13,
   punti dallo zoom 4 sfoltiti solo se una tessera supera 1 MB) unite con `tile-join`: lo zoom minimo per feature sui
   poligoni, con tippecanoe 2.49, lasciava una sola particella per tessera (prova del 17/11/2026, test che lo controlla);
-- `immobili_pa_2023.pmtiles` e `indice.json` nella cartella degli archivi edifici (servita da Caddy in
+- `immobili_pa_2023_<AAAAMMGGhhmm>.pmtiles` e `indice.json` nella cartella degli archivi edifici (servita da Caddy in
   `/edifici3d/immobili_pa/`): strato `particelle` (dallo zoom 13) e strato `punti` (un punto per particella fino allo
   zoom 12, più i beni con un punto affidabile ma senza particella). Proprietà corte: `r` riferimento, `t` tipo (E, T, M),
   `n` beni, `g` gruppo di enti (`GRUPPI_ENTI` in `immobili_pa_sito.py`), `a` primo ente, `tp` tipologie, `s` = 1 per i
@@ -292,6 +292,24 @@ python -m territorio immobili-pa-sito --dest /srv/energia/dati/immobili_pa \
 - `immobili_pa_2023.sqlite` per l'API (`/api/immobili-pa/…`, fase 4): beni con ricerca a parole (FTS5) e particelle con
   centro e riquadro. **Senza** soggetto cedente e suo codice fiscale (per gli immobili in affitto possono essere persone
   fisiche) e senza il codice fiscale dell'ente.
+
+**Gruppi di enti** (`g` nelle tessere, colonna `gruppo` dell'indice, caselle «Enti» della pagina, filtro della ricerca):
+C Comuni, I Unioni di Comuni e Comunità montane, P Province e Città metropolitane, R Regioni, S Sanità, U Università,
+E Edilizia residenziale pubblica, M Stato (Ministeri e PCM, Organi costituzionali, Agenzie fiscali), N Previdenza, A altri
+enti. Le tipologie si confrontano **senza accenti, apostrofi, maiuscole e spazi doppi**: nei CSV MEF sono scritte con
+l'apostrofo (`Universita'`, `Citta' Metropolitane e Province`, `Unioni di Comuni e Comunita' Montane`). Fino al
+22/11/2026 il confronto era letterale e P e U restavano vuoti (Province, Università e Unioni in «Altri enti»); le Unioni
+hanno dal 22/11 un gruppo proprio (I) invece che stare con i Comuni. Conteggi attesi sui dati 2023 (righe di `beni`):
+C 2.182.550, I 73.157, P 64.324, R 215.908, S 43.217, U 12.436, E 458.139, M 53.964, N 28.288, A 125.061.
+Controllo sul server: `sqlite3 immobili_pa_2023.sqlite "SELECT gruppo, COUNT(*) FROM beni GROUP BY gruppo"`.
+
+**Rifacimento con il sito acceso** (dal 22/11/2026): l'indice si scrive in `.immobili_pa_2023.sqlite.nuovo` e si
+sostituisce con `os.replace` (l'API lo apre con `immutable=1`, una connessione per richiesta: le richieste nuove leggono
+subito il file nuovo, non serve riavviare); il PMTiles ha un **nome nuovo a ogni rifacimento** e `indice.json` (sempre
+riconvalidato, `Cache-Control: no-cache` in Caddy) si sostituisce per ultimo, così Cloudflare e i browser non mescolano
+tessere vecchie e nuove e **non serve la Purge**. Si tiene il PMTiles precedente (pagine già aperte) e si cancellano i più
+vecchi. Spazio in più durante il lavoro: il PMTiles vecchio (~760 MB) resta accanto al nuovo e ai file di lavoro di
+tippecanoe, e l'indice vecchio (2,3 GB) accanto al nuovo fino alla sostituzione: tenere liberi ~6 GB.
 
 **Attribuzione** (scritta anche nei metadati dei file): «Fonti: MEF – Dipartimento dell'Economia, «Patrimonio della
 PA», dati beni immobili al 31/12/2023 (CC BY 4.0); Agenzia delle Entrate, cartografia catastale (CC BY 4.0).
@@ -305,7 +323,7 @@ regola con il centroide AdE, il punto cade dentro la particella o entro 20 m nel
 Umbria, Marche, Toscana, Abruzzo; 97–99 % Piemonte, Molise, Lazio, Sicilia, Puglia, Basilicata, Veneto, Lombardia,
 Sardegna, Friuli Venezia Giulia; Campania 91,6 %, Calabria 90,7 %; Trentino-Alto Adige 0 %. Prima delle regole 2–4
 (pomeriggio) l'aggancio era all'84 % e la Lombardia al 64 %. Durata: ~40 minuti in due code parallele su 2 vCPU; prodotti
-del sito ~12 minuti (PMTiles ~180 MB, indice SQLite 2,3 GB).
+del sito ~12 minuti (PMTiles ~760 MB, indice SQLite 2,3 GB).
 
 La lettura dei GML è fatta «a flusso» sui byte e costruisce il poligono solo per le particelle del censimento
 (~0,06 s per comune contro ~1,2 s con GDAL); servono solo pandas, pyarrow e shapely. Composizione in due passate

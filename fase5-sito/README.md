@@ -444,10 +444,11 @@ sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i c
   file restano gli stessi; `costruisci_pagine.py` rimette l'etichetta sopra il titolo delle pagine). Nuova voce
   **«Edifici pubblici»** (sperimentale, «S») dopo Patrimonio.
 - **`edifici-pubblici.html`** (`edifici_pubblici.js`, `main.strumento.pagina-ortofoto.pagina-pubblici`): mappa MapLibre con
-  le tessere `/edifici3d/immobili_pa/immobili_pa_<anno>.pmtiles` (descritte da `indice.json`, fase 7
+  le tessere `/edifici3d/immobili_pa/immobili_pa_<anno>_<versione>.pmtiles` (nome scritto in `indice.json`, fase 7
   `immobili-pa-sito`): particelle con edifici retinate a righe oblique, terreni in verde, edifici e terreni insieme in viola,
   beni senza particella come punti arancio; da lontano un punto per particella, dallo zoom 13 i confini. Livelli: Edifici,
-  Terreni, Beni senza particella, gruppi di enti (caselle, «Tutti», «Nessuno»), ortofoto con la fonte migliore della zona
+  Terreni, Beni senza particella, gruppi di enti (caselle, «Tutti», «Nessuno»; costruite da `indice.json` «gruppi»: dal
+  22/11/2026 anche «Unioni di Comuni e Comunità montane», codice `I`, e Province e Università non più vuote), ortofoto con la fonte migliore della zona
   scelta da sola (`EUGENIO_CONFINI.fontiNelPunto`) o a mano, contesto Sentinel-2 sotto, strati comuni (`strati_gl.js`).
   Ricerca a parole nell'indice (`/api/immobili-pa/cerca`, filtro per gruppo) e per indirizzo o foglio e particella
   (`cerca_luogo.js`); clic su punto o particella → scheda (`/api/immobili-pa/particella/{ref}` o `/bene/{id}`) con
