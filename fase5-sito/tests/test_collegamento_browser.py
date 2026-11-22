@@ -757,6 +757,39 @@ def test_carichi_predefiniti(browser, base, dati_carichi):
     assert not errori and not errori2
 
 
+def test_carichi_finestra_e_fonti(browser, base, dati_carichi):
+    """(22/11/2026, Paolo) finestra dei due grafici delle fonti e fonti spente nel collegamento (solo se non
+    predefinite), riaperte uguali; tornando a tutto il periodo e a tutte le fonti accese spariscono."""
+    rotte = [("**/dati/carichi/**", lambda r: r.fulfill(path=str(dati_carichi / r.request.url.split("/dati/carichi/")[1].split("?")[0])))]
+    pronta = "() => document.getElementById('stato-carichi').textContent.startsWith('Dati')"
+    ctx, pg, errori = _apri(browser, base + "carichi.html", rotte=rotte)
+    pg.wait_for_function(pronta, timeout=20000)
+    pg.wait_for_timeout(500)
+    assert "finestra=" not in _collegamento(pg) and "spente=" not in _collegamento(pg)
+    pg.click("[data-finestra=settimana]")
+    pg.locator('#grafico-assoluti input[data-fonte="eol"]').uncheck()
+    pg.locator('#grafico-assoluti input[data-fonte="fv"]').uncheck()
+    pg.wait_for_timeout(1500)
+    link = _collegamento(pg)
+    assert "finestra=2026-10-25_2026-10-31" in link and "spente=eol%2Cfv" in link, link
+    ctx.close()
+    ctx, pg, errori2 = _apri(browser, link, rotte=rotte)
+    pg.wait_for_function(pronta, timeout=20000)
+    pg.wait_for_timeout(1000)
+    assert pg.get_attribute("[data-finestra=settimana]", "aria-pressed") == "true"
+    assert not pg.is_checked('#grafico-assoluti input[data-fonte="eol"]') and not pg.is_checked('#grafico-assoluti input[data-fonte="fv"]')
+    assert pg.is_checked('#grafico-assoluti input[data-fonte="termo"]')
+    assert pg.evaluate("() => window.EUGENIO_CARICHI.stato.grafici.fonti.vista !== null")
+    assert pg.input_value("#collegamento-indirizzo") == link
+    pg.click("[data-finestra=tutto]")
+    pg.click("#grafico-assoluti [data-tutte='1']")
+    pg.wait_for_timeout(1500)
+    link2 = _collegamento(pg)
+    assert "finestra=" not in link2 and "spente=" not in link2, link2
+    ctx.close()
+    assert not errori and not errori2
+
+
 # ---------------------------------------------------------------------------------------------- Comunità energetiche (con file)
 def test_edificio_cer(browser, base):
     pronta = "() => window.EUGENIO_CER_SEDI && window.EUGENIO_CER_SEDI.st.pronto"

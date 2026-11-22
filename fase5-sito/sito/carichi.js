@@ -852,7 +852,7 @@
     if (st.passo === 15) u.searchParams.delete("passo"); else u.searchParams.set("passo", String(st.passo));
     // (22/11/2026) finestra dei grafici delle fonti e fonti spente; i predefiniti (tutto il periodo, tutte accese) no
     const f = finestraTesto(), sp = spenteTesto();
-    if (f) u.searchParams.set("finestra", f); else u.searchParams.delete("finestra");
+    if (f) u.searchParams.set("finestra", f); else if (st.grafici.assoluti) u.searchParams.delete("finestra");   // prima dei grafici resta
     if (sp) u.searchParams.set("spente", sp); else u.searchParams.delete("spente");
     if (u.href !== location.href) history.replaceState(null, "", u);
   }
