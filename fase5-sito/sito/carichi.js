@@ -749,7 +749,7 @@
     if (car.length) righe.push(`potenza richiesta (${nomeZona()}): ${testo(car)}`);
     if (fon.length) righe.push(`produzione per fonte: ${testo(fon)}`);
     nota.hidden = !righe.length;
-    nota.textContent = righe.length ? `Dati mancanti nel periodo – ${righe.join(". ")}. Terna non li ha pubblicati: il server riprova a scaricarli ogni giorno e i grafici delle fonti li mostrano tratteggiati.` : "";
+    nota.textContent = righe.length ? `Dati mancanti nel periodo – ${righe.join("; ")}. Terna non li ha pubblicati: il server riprova a scaricarli ogni giorno e i grafici delle fonti li mostrano tratteggiati.` : "";
   }
 
   // ---- fonti accese e spente
