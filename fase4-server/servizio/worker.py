@@ -37,13 +37,18 @@
   statistiche Terna      il giorno ELETTRICITA_GIORNO (5) dalle ELETTRICITA_ORA (05:00), subito se l'archivio è vuoto:
                          statistiche annuali dal Download Center e file di «Produzione e consumi di elettricità»
                          (elettricita: /sito/dati/elettricita/, fase 15)
+  suolo e aree agricole  (22/11/2026) il giorno SUOLO_GIORNO (6) dalle SUOLO_ORA (05:30), subito se il sito non ha i file:
+                         indicatori ISPRA del consumo di suolo (groupware SINAnet, file con anno e versione più alti),
+                         superfici coltivate e censimento ISTAT (SDMX), con SUOLO_CARTE anche le carte raster per
+                         l'incrocio del suolo agricolo; ricostruisce solo se qualcosa è cambiato
+                         (suolo: /sito/dati/suolo/, fase 16)
 I file del sito (indicatori, clima) si scrivono in una cartella nuova e si scambiano con quella pubblicata solo a
 lavoro finito e controllato: se qualcosa va storto restano quelli di prima.
 Gli errori vengono segnalati per email all'amministratore (EMAIL_AMMINISTRATORE).
 
   python -m servizio.worker                 ciclo continuo
   python -m servizio.worker previsioni|storico|psicro|mercati|mercato-mgp|prezzi|mensile|settimanale|avvisi|territorio|anncsu|indicatori|clima
-                            |rete-interruzioni|rete-saturazione|gse-aree|terna-api|elettricita|carichi
+                            |rete-interruzioni|rete-saturazione|gse-aree|terna-api|elettricita|carichi|suolo|suolo-forza
                                             una sola esecuzione (anche con docker compose run --rm worker …)
 """
 from __future__ import annotations
@@ -409,6 +414,84 @@ def elettricita() -> dict:
     return {"scaricati": scaricati, "costruisci": esito, "pubblicati": _conta_json(finale)}
 
 
+def _suolo_mancante() -> bool:
+    return not (C.SITO_DATI / "suolo" / "italia.json").exists()
+
+
+def suolo(forza: bool = False) -> dict:
+    """«Suolo e aree agricole» (fase 16): scarica.scarica (ISPRA groupware + ISTAT SDMX; con SUOLO_CARTE anche le carte
+    raster), agricolo.agricolo se è arrivata una carta dei cambiamenti nuova (o manca il suo incrocio), costruisci →
+    /sito/dati/suolo, pubblicata con _pubblica solo se i controlli passano (somme comuni = province = regioni = Italia,
+    comuni abbinati, ultimo anno = edizione − 1, scarto con i file pubblicati sotto il 2 %, italia.json presente, non meno
+    del 90 % dei file di prima). Niente da fare se non è cambiato nulla e il sito ha già i file. forza=True (comando
+    suolo-forza) ricostruisce comunque e accetta scarti oltre il 2 % (nuova edizione con revisioni grandi, dopo un controllo).
+    Email all'amministratore solo per errori veri: fonti che non rispondono in due mesi diversi di fila, controlli non
+    superati (restano i file di prima)."""
+    from suolo import scarica as scarica_suolo
+    from suolo.costruisci import costruisci as costruisci_suolo
+    raw = C.SUOLO_DATI
+    fstato = raw / "lavoro_stato.json"
+    try:
+        stato = json.loads(fstato.read_text())
+    except Exception:
+        stato = {}
+    mese = dt.datetime.now(ROMA).strftime("%Y-%m")
+    try:
+        sc = scarica_suolo.scarica(raw, carte=C.SUOLO_CARTE)
+    except Exception as e:
+        mesi = stato.setdefault("mesi_falliti", [])
+        if mese not in mesi:
+            mesi.append(mese)
+        log.warning("Suolo: fonti non disponibili (%s: %s), mesi falliti di fila: %s", type(e).__name__, e, mesi)
+        if len(mesi) >= 2 and not stato.get("avvisato"):
+            stato["avvisato"] = True
+            avvisi.invia("suolo e aree agricole: le fonti non rispondono da due mesi",
+                         f"scarica non riuscito nei mesi {', '.join(mesi)}. Ultimo errore: {type(e).__name__}: {e}"
+                         "\nLa pagina «Suolo e aree agricole» mostra ancora i file di prima.")
+        raw.mkdir(parents=True, exist_ok=True)
+        fstato.write_text(json.dumps(stato))
+        return {"errore": f"{type(e).__name__}: {e}"}
+    raw.mkdir(parents=True, exist_ok=True)
+    fstato.write_text(json.dumps({"ultimo_ok": mese}))
+    cambiati = sc["cambiati"]
+    esito: dict = {"cambiati": cambiati}
+    # incrocio agricolo: una volta per carta dei cambiamenti (agricolo_<anno>.json resta nell'archivio: la serie cresce)
+    camb = (sc["stato"].get("cambiamenti") or {})
+    uso = (sc["stato"].get("uso") or {})
+    if C.SUOLO_CARTE and camb.get("nome") and uso.get("nome"):
+        anno = int(camb["periodo"].split("-")[1])
+        fagr = raw / f"agricolo_{anno}.json"
+        if "cambiamenti" in cambiati or "uso" in cambiati or not fagr.exists():
+            try:
+                from suolo.agricolo import agricolo
+                a = agricolo(raw / "carte" / camb["nome"], raw / "carte" / uso["nome"], C.SITO_DATI / "mappa", fagr, anno=anno)
+                esito["agricolo"] = {"anno": anno, "lordo_ha": round(sum(a["italia"]["lordo"]), 1),
+                                     "agricolo_ha": round(sum(a["italia"]["agricolo"]), 1), "secondi": a["secondi"]}
+                cambiati = cambiati + ["agricolo"]
+            except Exception as e:      # l'incrocio è un di più: la pagina si costruisce lo stesso
+                log.exception("Suolo: incrocio agricolo non riuscito")
+                avvisi.invia("suolo e aree agricole: incrocio agricolo non riuscito", f"{type(e).__name__}: {e}")
+                esito["agricolo"] = {"errore": f"{type(e).__name__}: {e}"}
+    finale, nuova = C.SITO_DATI / "suolo", C.SITO_DATI / ".suolo_nuova"
+    if not cambiati and not forza and not _suolo_mancante():
+        log.info("Suolo: niente di nuovo (file ISPRA %s)", (sc["stato"].get("ispra") or {}).get("nome"))
+        return {**esito, "invariato": True}
+    shutil.rmtree(nuova, ignore_errors=True)
+    try:
+        esito["costruisci"] = costruisci_suolo(raw, nuova, C.SITO_DATI / "mappa", finale / "italia.json", forza)
+        _controlla_cartella(nuova, finale, "italia.json", "suolo")
+    except (ValueError, RuntimeError) as e:
+        shutil.rmtree(nuova, ignore_errors=True)
+        log.warning("Suolo: %s", e)
+        avvisi.invia("suolo e aree agricole: controlli non superati", f"{e}\nCambiati: {', '.join(cambiati)}. "
+                     "Restano i file di prima. Se è una nuova edizione ISPRA con revisioni grandi, dopo un controllo: "
+                     "python -m servizio.worker suolo-forza")
+        return {**esito, "errore": str(e)}
+    _pubblica(nuova, finale)
+    log.info("Suolo: %d file pubblicati in %s", _conta_json(finale), finale)
+    return {**esito, "pubblicati": _conta_json(finale)}
+
+
 class _Errori:
     """Letture delle interruzioni fallite (decisione di Paolo del 17/11/2026): un'email SOLO quando non si leggono da più
     di RETE_AVVISO_ORE ore consecutive (dall'ultima lettura riuscita, presa dal database all'avvio), una per episodio;
@@ -571,6 +654,16 @@ def ciclo() -> None:
                 log.exception("Errore nelle statistiche di Terna")
                 avvisi.invia("errore nelle statistiche di Terna", f"{type(e).__name__}: {e}")
             fatti["elettricita"] = oggi
+        # (22/11/2026) suolo e aree agricole: controllo mensile (ISPRA esce a fine ottobre, ISTAT in primavera e autunno)
+        hs, ms = map(int, C.SUOLO_ORA.split(":"))
+        if fatti.get("suolo") != oggi and (
+                (loc.day == C.SUOLO_GIORNO and (loc.hour, loc.minute) >= (hs, ms)) or _suolo_mancante()):
+            try:                        # una volta al giorno anche se fallisce; le email le decide suolo()
+                suolo()
+            except Exception as e:
+                log.exception("Errore nel suolo e aree agricole")
+                avvisi.invia("errore nel suolo e aree agricole", f"{type(e).__name__}: {e}")
+            fatti["suolo"] = oggi
         _stato_scrivi(fatti)
         time.sleep(300)
 
@@ -581,4 +674,4 @@ if __name__ == "__main__":
      "mercati": mercati, "mercato-mgp": mercato_mgp, "prezzi": prezzi, "mensile": mensile, "settimanale": settimanale, "avvisi": avvisi_meteo, "territorio": territorio, "anncsu": anncsu,
      "indicatori": indicatori, "clima": clima, "rete-interruzioni": rete_interruzioni,
      "rete-saturazione": rete_saturazione, "gse-aree": gse_aree, "terna-api": terna_api, "elettricita": elettricita,
-     "carichi": carichi}[cmd]()
+     "carichi": carichi, "suolo": suolo, "suolo-forza": lambda: suolo(forza=True)}[cmd]()

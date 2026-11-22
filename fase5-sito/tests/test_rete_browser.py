@@ -44,7 +44,8 @@ def test_menu_e_pagine():
     assert t.count('href="rete-elettrica.html"') == 2 and t.count('href="fv-cabine.html"') == 2
     gruppi = {g["id"]: g for g in C.gruppi_menu(t)}
     # (20/11/2026) dopo la rete viene «Produzione e consumi di elettricità»
-    assert [v["pagina"] for v in gruppi["statistiche"]["voci"]][-3:] == ["rete-elettrica.html", "elettricita.html", "carichi.html"]
+    assert [v["pagina"] for v in gruppi["statistiche"]["voci"]][-4:] == ["rete-elettrica.html", "elettricita.html", "carichi.html",
+                                                                         "suolo.html"]       # (22/11/2026) Suolo e aree agricole
     assert gruppi["fotovoltaico"]["voci"][0] == {"pagina": "fv-cabine.html", "nome": "Cabine primarie", "tipo": ""}
     assert re.search(r'href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale', t)
     assert C.main(["--controlla"]) == 0

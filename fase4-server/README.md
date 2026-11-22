@@ -14,7 +14,7 @@ Container:
 | Container | Cosa fa |
 |---|---|
 | `api` | FastAPI: riceve il CSV dei consumi, costruisce le covariate meteo e di calendario, chiama **TiRex-2** e restituisce la previsione probabilistica (quantili 10–90 %). Fa anche da proxy verso **Zornade** (la chiave resta sul server) e geolocalizza i patrimoni edilizi (ANNCSU + Zornade) |
-| `worker` | (20/11/2026) **dati di Terna**: ogni giorno alle 06:30 il giorno prima dall'API ufficiale e qualche mese di storico dal Download Center (`terna-api`, archivio `/dati/terna/serie`), poi i file di «Carichi elettrici» (`carichi`); il 5 del mese alle 05:00 le statistiche annuali per «Produzione e consumi di elettricità» (`elettricita`), vedi § «Dati di Terna»; (20/11/2026) **controllo mensile del servizio del GSE delle aree convenzionali** il 3 del mese dalle 7 (`gse-aree`, una richiesta `?f=json`, email solo se non risponde); (17/11/2026) **interruzioni della rete elettrica ogni 15 minuti** (thread a parte) e **saturazione dei trasformatori ogni notte alle 01:15** (`rete-interruzioni`, `rete-saturazione`, database `/dati/rete/rete.sqlite`); (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
+| `worker` | (22/11/2026) **suolo e aree agricole** il 6 del mese dalle 05:30 (`suolo`: indicatori ISPRA, colture e censimento ISTAT, incrocio del suolo agricolo una volta per carta; ricostruisce solo se qualcosa è cambiato), vedi § «Suolo e aree agricole»; (20/11/2026) **dati di Terna**: ogni giorno alle 06:30 il giorno prima dall'API ufficiale e qualche mese di storico dal Download Center (`terna-api`, archivio `/dati/terna/serie`), poi i file di «Carichi elettrici» (`carichi`); il 5 del mese alle 05:00 le statistiche annuali per «Produzione e consumi di elettricità» (`elettricita`), vedi § «Dati di Terna»; (20/11/2026) **controllo mensile del servizio del GSE delle aree convenzionali** il 3 del mese dalle 7 (`gse-aree`, una richiesta `?f=json`, email solo se non risponde); (17/11/2026) **interruzioni della rete elettrica ogni 15 minuti** (thread a parte) e **saturazione dei trasformatori ogni notte alle 01:15** (`rete-interruzioni`, `rete-saturazione`, database `/dati/rete/rete.sqlite`); (14/11/2026) ogni giorno dopo lo storico le ore nuove dell'**archivio psicrometrico** (`psicro`, se `CARTELLA_PSICRO` c'è); (11/11/2026) dopo i mercati di ogni notte anche gli **indici dei prezzi** per il sito (`prezzi`, `/sito/dati/prezzi/indici.json`); previsioni meteo ogni 6 ore e storico meteo ogni giorno per i comuni delle `REGIONI_AGGIORNATE` (vuoto = tutte le `REGIONI` servite; giornaliero aggiornato a blocchi di comuni, vedi «Meteo nazionale a blocchi»); **dati di mercato ogni notte alle 02:30** (fase 6), seguiti dalla **sorveglianza delle fonti delle convenzioni** (pagine di Intercent-ER, Consip, CET; email solo quando cambia qualcosa); **newsletter mensile** il 12 del mese (dopo l'aggiornamento del 10 dei dati di e-distribuzione); verifica comuni/confini il 2 del mese; **indirizzario ANNCSU** il 12 del mese (fase 7); avvisi per email |
 | `caddy` | sito statico della fase 5 e instradamento verso l'API, solo dentro la rete Docker |
 | `cloudflared` | **Cloudflare Tunnel**: collega il server a Cloudflare senza aprire porte; l'HTTPS lo fa Cloudflare |
 | `listmonk` + `postgres` | newsletter automatica dei dati: liste, doppia conferma, cancellazione, invii |
@@ -56,6 +56,16 @@ Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, v
 - Variabili nuove nel `.env`: `TERNA_CLIENT_ID`, `TERNA_CLIENT_SECRET` (facoltative: senza, l'API non parte; le altre hanno
   valori predefiniti). Nessuna modifica al Caddyfile né ai volumi: le pagine leggono `dati/elettricita/` e `dati/carichi/`
   nella cartella del sito, già montata nel worker come `/sito/dati`. Messa in servizio: `../AGGIORNAMENTO_2026-11-20e.md`.
+
+## Aggiunte del 22/11/2026 (suolo e aree agricole nel worker; non ancora in una release)
+
+- Lavoro nuovo del worker `suolo` (e `suolo-forza`), fase 16: dettagli nel § «Suolo e aree agricole».
+- Immagine: `fase16-suolo/suolo` copiata in `/app/suolo` (`api/Dockerfile`); usa openpyxl, numpy, rasterio, pyproj e
+  shapely, già nell'immagine. `aggiorna_da_github.sh` copia anche `fase16-suolo` (e lo controlla con i COPY del Dockerfile)
+  e non tocca `dati/suolo/` del sito.
+- Variabili nuove nel `.env`, tutte facoltative: `SUOLO_DATI` (archivio, predefinito `/dati/suolo`), `SUOLO_GIORNO` (6),
+  `SUOLO_ORA` (05:30), `SUOLO_CARTE` (1: scarica anche le carte raster, ~800 MB, e fa l'incrocio agricolo; 0 per saltarlo).
+  Nessuna modifica al Caddyfile né ai volumi: la pagina legge `dati/suolo/` nella cartella del sito, già montata nel worker.
 
 ## Ortofoto AGEA 2022-2024 per tutta Italia (17/11/2026, segnalazione di Paolo)
 
@@ -688,6 +698,35 @@ per i costruttori non ancora pronti.
 | `/srv/energia/sito/dati/elettricita/`, `/srv/energia/sito/dati/carichi/` | `/sito/dati/elettricita/`, `/sito/dati/carichi/` | file statici delle due pagine, scritti solo dal worker |
 
 `/dati/terna` non è mai servita da Caddy.
+
+## Suolo e aree agricole (22/11/2026)
+
+Dati della pagina «Suolo e aree agricole» (Statistiche, sperimentale; fase 16, README in `../fase16-suolo/README.md`):
+indicatori del consumo di suolo ISPRA/SNPA, stime delle superfici coltivate e censimento ISTAT, carte raster ISPRA per il
+suolo agricolo consumato. Licenze CC BY 4.0 (dati Copernicus con attribuzione dentro la carta d'uso ISPRA): si possono
+mostrare e rielaborare citando le fonti; per scelta di Paolo la pagina fa scaricare solo l'immagine. I file costruiti non
+vanno nel repository (`.gitignore`: `fase5-sito/sito/dati/suolo/`).
+
+| lavoro | quando | cosa fa | richieste |
+|---|---|---|---|
+| `suolo` | il **6 del mese dalle 05:30** (`SUOLO_GIORNO`, `SUOLO_ORA`); **subito** se `/sito/dati/suolo/italia.json` manca | `scarica.scarica(SUOLO_DATI, carte=SUOLO_CARTE)`: elenco della cartella «indicatori» del groupware SINAnet e file `consumo_suolo_<anno>_Com_Prov_Reg_Naz_v<x>.xlsx` con anno e versione più alti (riscaricato solo se il nome cambia), CSV SDMX ISTAT delle coltivazioni (dal 2006) e del censimento 2020 (impronta SHA-256), con `SUOLO_CARTE` la carta dei cambiamenti più recente e la carta di uso del suolo più recente; se la carta dei cambiamenti è nuova (o manca il suo `agricolo_<anno>.json`) l'incrocio `agricolo.agricolo` (~2 minuti, il file resta nell'archivio e la serie cresce di un anno a ogni edizione); poi, solo se qualcosa è cambiato, `costruisci(SUOLO_DATI, /sito/dati/.suolo_nuova, /sito/dati/mappa, /sito/dati/suolo/italia.json)` e `_pubblica` in `/sito/dati/suolo` se i controlli passano | groupware ISPRA: 1 pagina al mese, l'Excel (87 MB) a ogni nuova versione, le carte (~800 MB) una volta l'anno; ISTAT: 2 richieste SDMX al mese |
+
+Controlli del costruttore (se uno non passa: niente pubblicato, restano i file di prima, email all'amministratore): somme
+dei comuni = province = regioni = Italia (suolo consumato e consumo lordo, tolleranza 1 ha); tutti i comuni ISPRA abbinati
+alle mappe del sito (i sardi per nome); ultimo anno = anno dell'edizione − 1; nessuna regione che cambi di più del 2 % in un
+anno già pubblicato (nuova edizione con revisioni grandi: dopo un controllo, `python -m servizio.worker suolo-forza`). In
+più `_controlla_cartella`: `italia.json` presente e non meno del 90 % dei JSON di prima. Email anche se le fonti non
+rispondono in due mesi diversi di fila (`SUOLO_DATI/lavoro_stato.json`) e se l'incrocio agricolo fallisce (la pagina si
+costruisce lo stesso, senza la parte nuova). Nel `worker_stato.json` la voce `suolo` (una volta al giorno).
+
+| sul server | nel container | cosa |
+|---|---|---|
+| `/srv/energia/dati/suolo/` | `/dati/suolo/` (`SUOLO_DATI`) | `ispra_indicatori.xlsx`, `istat_coltivazioni.csv`, `istat_censimento2020.csv`, `stato_scarico.json`, `agricolo_<anno>.json`, `carte/` (due GeoTIFF, ~800 MB), `lavoro_stato.json` |
+| `/srv/energia/sito/dati/suolo/` | `/sito/dati/suolo/` | `italia.json` e `RR.json` della pagina (~2 MB in tutto), scritti solo dal worker |
+
+Prima messa in servizio (dopo la release che contiene questa parte): `docker compose run --rm worker python -m
+servizio.worker suolo` (circa 5 minuti con le carte: scarico ~900 MB, lettura dell'Excel con openpyxl, incrocio), poi
+controllare `https://eugenio.statocritico.it/suolo.html`.
 
 ### Formato dell'archivio (`/dati/terna/serie`)
 
@@ -1437,12 +1476,12 @@ Niente pacchetti `codice.tar.gz`/`sito.tar.gz` da copiare con scp.
 | `~/energia/fase4-server/aggiorna_da_github.sh --notte` | dal crontab alle 4:40: solo se c'è una release nuova; **email solo se qualcosa va storto** (16/11/2026) |
 
 Passi: copia di sicurezza di `~/energia` (`~/energia_prima_<release>`, si tengono le ultime 3) e delle convenzioni (`~/convenzioni_prima_<release>`); codice delle fasi 3, 4,
-6, 7, 8, 9, 10 e (20/11/2026) 15 in `~/energia` con rsync **senza cancellare** (restano `.env`, fase 2, `uni_privato`,
+6, 7, 8, 9, 10, (20/11/2026) 15 e (22/11/2026) 16 in `~/energia` con rsync **senza cancellare** (restano `.env`, fase 2, `uni_privato`,
 `mercati_energia/dati/` e tutto ciò che non è nel repository); convenzioni `*.toml` e `fonti/*.toml` in
 `/srv/energia/dati/mercati/convenzioni`; `docker compose build api` e `up -d --force-recreate api worker` con attesa di
 `/api/salute` (3 minuti: se l'api non risponde si torna **da soli** alla copia e si esce con errore, email
 all'amministratore); sito in `/srv/energia/sito` (senza cancellare; `dati/indicatori/`, `dati/prezzi/` e, dal 20/11/2026, `dati/elettricita/` e
-`dati/carichi/` non si toccano) con il controllo della versione `?v=`; `worker prezzi`; **Purge Everything** su Cloudflare se nel `.env` ci sono `CF_ZONE_ID` e
+`dati/carichi/`, dal 22/11/2026 `dati/suolo/` non si toccano) con il controllo della versione `?v=`; `worker prezzi`; **Purge Everything** su Cloudflare se nel `.env` ci sono `CF_ZONE_ID` e
 `CF_PURGE_TOKEN` (token con il **solo** permesso «Zone › Cache Purge» sulla zona; lo script non li stampa mai). Registro in
 `~/aggiorna_da_github.log`; un solo aggiornamento alla volta (`flock`). Lo script si riavvia da una copia temporanea, così
 può aggiornare anche se stesso.

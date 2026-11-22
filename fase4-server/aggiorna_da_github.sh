@@ -73,7 +73,7 @@ ENV_BACKUP="${EUGENIO_ENV_BACKUP:-$HOME/.eugenio_env_backup}"
 ATTESA="${EUGENIO_ATTESA:-5}"
 ADESSO=$(date '+%Y%m%d-%H%M%S')
 CARTELLE=(fase3-storico fase4-server fase6-mercati fase7-territorio fase8-indicatori fase9-clima-storico fase10-edifici3d
-          fase15-elettricita)
+          fase15-elettricita fase16-suolo)
 ESCLUSI=(--exclude=.env --exclude=.venv --exclude=__pycache__ --exclude=.pytest_cache --exclude=uni_privato
          --exclude=fase2-gradi-giorno --exclude=mercati_energia/dati/ --exclude=node_modules)
 
@@ -326,7 +326,8 @@ else
 fi
 
 # ------------------------------------------------------------------ 5. sito
-S=(rsync -a -i --exclude=dati/indicatori/ --exclude=dati/prezzi/ --exclude=dati/elettricita/ --exclude=dati/carichi/)
+S=(rsync -a -i --exclude=dati/indicatori/ --exclude=dati/prezzi/ --exclude=dati/elettricita/ --exclude=dati/carichi/
+   --exclude=dati/suolo/)
 [ "$PROVA" = 1 ] && S+=(-n)
 "${S[@]}" "$SORG/fase5-sito/sito/" "$SITO/" >"$ELENCO"
 registra "Sito: $(grep -c '^>f' "$ELENCO" || true) file nuovi o cambiati in $SITO"

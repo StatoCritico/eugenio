@@ -1,0 +1,19 @@
+[project]
+name = "suolo"
+version = "0.1.0"
+description = "EuGEnio – suolo consumato, consumo per causa, suolo agricolo consumato e colture (ISPRA/SNPA, ISTAT, Copernicus)"
+requires-python = ">=3.11"
+dependencies = ["openpyxl"]
+
+[project.optional-dependencies]
+carte = ["numpy", "rasterio", "pyproj", "shapely"]
+prove = ["pytest", "httpx"]
+
+[tool.setuptools]
+packages = ["suolo"]
+
+[tool.setuptools.package-data]
+suolo = ["*.json"]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "tests"]

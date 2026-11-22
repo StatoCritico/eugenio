@@ -79,6 +79,12 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
   carichi.html (?zona=NORD|CNOR|CSUD|SUD|CALA|SICI|SARD, senza zona = Italia, &da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60:
   profilo giornaliero minimo–massimo, curva di durata, mix per fonte al 100 %). I dati di Terna si usano solo per le
   elaborazioni e non si scaricano: nessun CSV, Excel o JSON, al più l'immagine; non estrarli dai file della pagina.
+- Suolo e aree agricole (sperimentale, in preparazione dal 22/11/2026): suolo.html (?regione=RR o ?vista=italia,
+  &provincia=NNN, &modo=suolo|consumi|colture, &inizio=AAAA&fine=AAAA, &unita=pct|m2ab): istogrammi per regione e provincia
+  di suolo consumato (anche in aree a pericolosità, sulle coste, in aree protette), SAU e superficie non utilizzata
+  (censimento 2020), consumo di suolo per causa con la parte su suolo agricolo (stima EuGEnio, 2024–2025) e superfici
+  coltivate per famiglia; comuni colorati per % consumato. Dati ISPRA/SNPA, ISTAT, Copernicus (CC BY 4.0) in
+  /dati/suolo/italia.json e /dati/suolo/RR.json; citare «Elaborazione EuGEnio su dati ISPRA/SNPA, ISTAT e Copernicus».
 - Collegamento a questa simulazione (dal 20/11/2026): nelle pagine a scelte tutte le scelte stanno nell'indirizzo, mostrato
   in fondo alla pagina con il pulsante per copiarlo; riaprirlo rimette le stesse scelte (mai file caricati né dati personali).
 - Edifici pubblici per ente (dal 22/11/2026): edifici-pubblici.html?modo=enti&sel=<chiavi> (fino a 8 enti, colori nell'ordine;

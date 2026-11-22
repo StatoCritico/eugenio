@@ -173,6 +173,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `faq.html`, `metodo.html`, `licenza.html`, `privacy.html`, `sitografia.html`, `mirror.html`, `novita.html`, `esempi.html`, `contributi.html`, `dbtr-istruzioni.html`, `fv-leed.html`, `link.html` | – | c (testo) | niente |
 | `cog-car.html`, `cog-confronto.html`, `cog-rischio.html`, `cog-simulazione.html`, `cog-spark-spread.html`, `edificio-conto-termico.html`, `edificio-ecobonus.html`, `edificio-fabbisogno.html`, `edificio-impianti.html`, `edificio-involucro.html`, `fv-mercato.html`, `lidar.html`, `visure.html` | – | c (segnaposto) | niente (da aggiungere quando diventano pagine con scelte) |
 | `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026; dal 21/11/2026 `passo` solo con le ore, `passo=60`) |
+| `suolo.html` | suolo.js | a | regione o vista=italia, provincia, modo (scritti dalla pagina), inizio, fine, unita (solo se non ha), barre, fondo, ortofoto (22/11/2026) |
 
 - Moduli comuni toccati: `strati_gl.js` (caselle particelle e contorni con `data-collegamento`), `scelta_aria.js` (anni e
   livello dall'indirizzo, più forti della memoria del browser), `gruppi_ore.js` (gruppi dall'indirizzo), `diagramma_aria.js`
@@ -193,6 +194,39 @@ la riaccende se l'utente l'aveva spenta (ma non quando le sedi tornano da un col
 la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (all'apertura la
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
+
+## Statistiche › Suolo e aree agricole (22/11/2026, richiesta di Paolo; sperimentale, non ancora pubblicata)
+
+Pagina `suolo.html` + `suolo.js`, voce «Suolo e aree agricole» (sperimentale, «S») nel gruppo Statistiche dopo «Carichi
+elettrici». Stessa struttura e stile di «Produzione e consumi di elettricità» (`main.pagina-elettricita.pagina-suolo`, classi
+`comandi-elettricita`, `grafico-elettricita`, `tabella-elettricita` riusate): mappa MapLibre con le regioni bianche e un
+istogramma per regione (immagini della mappa, `DOPPIO = 2`), clic → province, secondo clic → Italia, piccola mappa,
+caselle Istogrammi / Regioni bianche / Ortofoto, righello, a destra grafico «anno per anno», province, tabella con il
+totale, «Come leggere i dati», collegamento salvabile, solo «Scarica l'immagine», avviso sperimentale.
+- **Tre scelte** (decisione di Paolo): **Suolo** (barre affiancate: SAU e superficie non utilizzata del censimento 2020,
+  suolo consumato, in aree a pericolosità idraulica P2 e da frana P3+P4, entro 300 m dalla costa, in aree protette;
+  interruttore **ha / % del territorio / m² per abitante**), **Consumi** (colonna impilata per causa: edifici, strade e
+  infrastrutture, piazzali e aree produttive, cantieri, cave e discariche, fotovoltaico a terra, altro, non attribuito; accanto
+  la colonna verde scura «di cui su suolo agricolo», stima EuGEnio, `#1b5e20`), **Colture** (colonna impilata per famiglia).
+- **Periodo a due indicatori** (Paolo, 22/11/2026 01:00): due `input type=range` sovrapposti in `.cursore-doppio` (guida
+  colorata fra i due con `--da` e `--a`; ognuno si muove con mouse, dito e tastiera, `aria-label` «Anno iniziale/finale del
+  periodo», `aria-valuetext` con l'anno); all'apertura tutti e due sull'ultimo anno. Flussi (Consumi) = somma dei periodi
+  fra le due carte (`flussiDelPeriodo`: con un anno solo il periodo che finisce lì, anche 2006–2012 o 2012–2015); stati
+  (Suolo, Colture) = anno finale, con la variazione nel riquadretto e in tabella e un **trattino nero** sull'istogramma al
+  valore dell'anno iniziale. Grafico «anno per anno» su anni di calendario: anni senza carta vuoti, periodi lunghi come barre
+  larghe alte quanto la media annua (scritta «media annua»), periodo scelto riquadrato, «rev» sopra il 2023 e il 2024.
+- **Scala** degli istogrammi: valore più alto fra tutte le unità (regioni o province della regione) e tutti gli anni; per i
+  consumi i periodi di un anno e il periodo scelto (i periodi lunghi schiaccerebbero le barre annuali).
+- **Provincia e comuni**: con una regione scelta il menu «Provincia» (o un clic sulla barra della provincia nel grafico delle
+  province) apre la provincia: con «Suolo» i comuni si colorano per % di suolo consumato all'anno finale (6 classi, da
+  `#fff5d6` a `#6b0f1a`, riquadretto con ha, %, variazione o incremento netto), l'istogramma della provincia sparisce per non
+  coprirli e la tabella passa ai comuni. Il clic sulla mappa resta quello dell'elettricità (secondo clic sulla regione =
+  Italia). In Sardegna le colture sono solo regionali (nota sotto il grafico).
+- **Dati**: `dati/suolo/italia.json` e `dati/suolo/RR.json`, costruiti dal worker con `fase16-suolo` (formato nel README della
+  fase 16), in `.gitignore` come quelli dell'elettricità; senza i file la pagina lo dice sotto la mappa.
+- Fonti nel piè, metodo in `metodo.html#suolo`, caso d'uso in `esempi.html`, righe in `EUGENIO_PER_AGENTI.md` (due copie) e
+  `llms.txt`. Prove: `tests/test_suolo_browser.py` (dati inventati della fase 16: istogrammi, regione → province, provincia →
+  comuni, cambio di scelta, periodo da tastiera, collegamento, 375 px, nessun errore).
 
 ## Statistiche › Carichi elettrici (20/11/2026, richiesta di Paolo; sperimentale, `?v=20261121a`)
 

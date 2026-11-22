@@ -23,6 +23,9 @@ COPY fase9-clima-storico/*.py /app/clima_storico/
 # (20/11/2026) dati di Terna (fase 15): scaricatore delle statistiche annuali e costruttori dei file delle pagine
 # «Produzione e consumi di elettricità» e «Carichi elettrici», chiamati dal worker (elettricita, carichi)
 COPY fase15-elettricita/elettricita /app/elettricita
+# (22/11/2026) «Suolo e aree agricole» (fase 16): scaricatore ISPRA/ISTAT, incrocio agricolo e costruttore, chiamati dal
+# worker (suolo); usa openpyxl, numpy, rasterio, pyproj e shapely già installati
+COPY fase16-suolo/suolo /app/suolo
 # fonti delle ortofoto (fase 10, Fase B): un TOML per regione, letti da servizio/ortofoto.py
 COPY fase10-edifici3d/ortofoto /app/ortofoto_fonti
 # analisi 5 e 7–13 (Fase E): solo l'aggancio pubblico; il modulo privato uni_privato NON entra nell'immagine (si monta

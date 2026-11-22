@@ -1825,6 +1825,34 @@ table.sedi-cer .origine-cabina { font-style: italic; }
 .tabella-elettricita tfoot th, .tabella-elettricita tfoot td { font-weight: 700; border-top: 2px solid var(--linea); }
 .tabella-elettricita thead th { font-size: var(--c-xs); vertical-align: bottom; }
 #passo-vista h3, #passo-tabella h3 { font: 600 var(--c-m)/1.25 var(--titoli); margin: var(--s4) 0 var(--s1); }
+/* Suolo e aree agricole (22/11/2026): come Produzione e consumi di elettricità, con l'interruttore delle unità e il cursore
+   del periodo a due indicatori (due input range sovrapposti: si muovono con il mouse, il dito e la tastiera; la parte
+   scelta della guida è colorata con --da e --a, impostate da suolo.js) */
+.modo-unita[hidden] { display: none; }
+.cursore-periodo { min-width: 16rem; }
+.cursore-doppio { position: relative; flex: 1; height: 1.6rem; min-width: 8rem; }
+.cursore-doppio::before { content: ""; position: absolute; left: .55rem; right: .55rem; top: 50%; height: 4px; transform: translateY(-50%);
+  border-radius: 2px; background: linear-gradient(to right, var(--linea) var(--da, 0%), var(--primario) var(--da, 0%),
+  var(--primario) var(--a, 100%), var(--linea) var(--a, 100%)); }
+.cursore-doppio input[type="range"] { position: absolute; inset: 0; width: 100%; margin: 0; background: none; pointer-events: none;
+  -webkit-appearance: none; appearance: none; accent-color: var(--primario); }
+.cursore-doppio input[type="range"]::-webkit-slider-runnable-track { background: none; height: 1.6rem; }
+.cursore-doppio input[type="range"]::-moz-range-track { background: none; }
+.cursore-doppio input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; pointer-events: auto; cursor: pointer;
+  width: 1.1rem; height: 1.1rem; margin-top: .25rem; border-radius: 50%; background: var(--primario); border: 2px solid var(--foglio);
+  box-shadow: 0 0 0 1px var(--inchiostro); }
+.cursore-doppio input[type="range"]::-moz-range-thumb { pointer-events: auto; cursor: pointer; width: 1rem; height: 1rem; border-radius: 50%;
+  background: var(--primario); border: 2px solid var(--foglio); box-shadow: 0 0 0 1px var(--inchiostro); }
+.cursore-doppio input[type="range"]:focus-visible { outline: none; }
+.cursore-doppio input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--primario); }
+.cursore-doppio input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--primario); }
+.scelta-provincia { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .6rem; margin: var(--s2) 0; }
+.scelta-provincia[hidden] { display: none; }
+.scelta-provincia label { margin: 0; }
+.scelta-provincia select { width: auto; max-width: 100%; }
+.cifre-suolo:empty { display: none; }
+.tabella-suolo tr.scelta > th { color: var(--primario); }
+.tabella-suolo tr.scelta > th::before { content: "▸ "; }
 /* Emissioni (21/11/2026): tre riquadri con i valori nazionali e i riferimenti MEF/ISPRA; righe delle zone di mercato */
 .cifre-emissioni { grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); margin-top: var(--s1); }
 .cifre-emissioni .cifra small { overflow-wrap: anywhere; }
