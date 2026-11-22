@@ -3,11 +3,12 @@
 // Amministrazioni (censimento MEF «Patrimonio della PA», dati al 31/12/2023, CC BY 4.0) disegnati con la loro particella
 // catastale (Agenzia delle Entrate, CC BY 4.0), sopra l'ortofoto. Dati preparati dalla fase 7 (`immobili-pa`,
 // `immobili-pa-sito`):
-//  - tessere vettoriali statiche /edifici3d/immobili_pa/immobili_pa_<anno>.pmtiles (strati «particelle», dallo zoom 13, e
+//  - tessere vettoriali statiche /edifici3d/immobili_pa/immobili_pa_<anno>_<versione>.pmtiles (strati «particelle», dallo zoom 13, e
 //    «punti»: un punto per particella fino allo zoom 12 più i beni senza particella, `s` = 1), descritte da indice.json;
 //  - ricerca e schede dall'API: /api/immobili-pa/cerca, /particella/{ref}, /bene/{id} (servizio/immobili_pa.py).
 // Proprietà delle tessere: r (riferimento AdE o «b<id bene>»), t (E edifici, T terreni, M entrambi), n (beni), g (gruppo di
-// enti, codici di indice.json «gruppi»), a (primo ente), tp (tipologie), s (1 = bene senza particella).
+// enti, codici di indice.json «gruppi»: C Comuni, I Unioni di Comuni e Comunità montane, P Province e Città metropolitane,
+// R, S, U, E, M, N, A; le caselle si costruiscono da lì), a (primo ente), tp (tipologie), s (1 = bene senza particella).
 // Livelli accendibili: Edifici (E e M, retinati come in Modelli 3D), Terreni (T e M), Beni senza particella; filtro per
 // gruppo di enti; ortofoto con scelta automatica della fonte migliore (come Ortofoto e Modelli 3D) o a mano; strati
 // comuni (particelle catastali di tutti, contorni degli edifici: strati_gl.js). Ricerca dei luoghi con cerca_luogo.js.
@@ -22,7 +23,8 @@
   const conPunto = q.get("lon") && q.get("lat") && Number.isFinite(+q.get("lon")) && Number.isFinite(+q.get("lat"));
   const CONTESTO = "s2cloudless2016";
   const COLORI = { E: R ? R.COLORE : "#c2185b", T: "#2e7d32", M: "#6a1b9a", S: "#ef6c00" };
-  const GRUPPI_PREDEFINITI = { C: "Comuni", P: "Province e Città metropolitane", R: "Regioni", S: "Sanità (ASL e ospedali)",
+  // usati solo se indice.json non ha «gruppi»; dal 22/11/2026 c'è I (Unioni di Comuni e Comunità montane, gruppo proprio)
+  const GRUPPI_PREDEFINITI = { C: "Comuni", I: "Unioni di Comuni e Comunità montane", P: "Province e Città metropolitane", R: "Regioni", S: "Sanità (ASL e ospedali)",
     U: "Università", E: "Edilizia residenziale pubblica", M: "Stato: ministeri e organi costituzionali", N: "Previdenza (INPS, INAIL…)", A: "Altri enti" };
   const stato = { mappa: null, info: null, fonti: [], scelta: null, manuale: false, contesto: null, confini: null, strati: null,
     tipi: new Set(["E", "T", "S"]), gruppi: new Set(Object.keys(GRUPPI_PREDEFINITI)), selezione: null, regione: null, cercato: null };

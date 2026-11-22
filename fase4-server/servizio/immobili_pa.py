@@ -46,6 +46,9 @@ def indice() -> Path | None:
 
 
 def _db() -> sqlite3.Connection:
+    # una connessione per richiesta: quando la fase 7 sostituisce l'indice (file provvisorio `.…sqlite.nuovo`, che il
+    # glob di indice() non vede, poi os.replace) le richieste già aperte finiscono sul file vecchio e le nuove leggono
+    # quello nuovo; con immutable=1 non serve riavviare l'API (22/11/2026)
     f = indice()
     if not f:
         raise HTTPException(503, "Gli immobili delle PA non sono ancora sul server.")

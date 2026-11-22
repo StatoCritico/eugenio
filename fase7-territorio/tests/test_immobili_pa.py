@@ -195,16 +195,34 @@ def test_prodotti_del_sito(tmp_path: Path):
     assert trovati == [("1",)]
     assert c.execute("SELECT lon, lat FROM particelle WHERE ref_ade='A045_000100.1'").fetchone()[0] > 12
 
+    assert c.execute("SELECT valore FROM info").fetchall() == []          # senza info: tabella vuota
+    c.close()
+    assert not list(tmp_path.glob(".*.nuovo"))                              # niente file provvisori rimasti
+
     if not shutil.which("tippecanoe"):
         pytest.skip("tippecanoe non installato")
-    ind = s.prepara(tmp_path, 2023, tmp_path / "tessere", tmp_path / "indice", "prova")
-    assert (tmp_path / "tessere" / "immobili_pa_2023.pmtiles").stat().st_size > 1000
-    assert ind["pmtiles"] == "/edifici3d/immobili_pa/immobili_pa_2023.pmtiles"
-    assert json.loads((tmp_path / "tessere" / "indice.json").read_text())["gruppi"]["U"] == "Università"
+    (tmp_path / "tessere").mkdir()
+    vecchio = tmp_path / "tessere" / "immobili_pa_2023.pmtiles"; vecchio.write_bytes(b"vecchio")
+    piu_vecchio = tmp_path / "tessere" / "immobili_pa_2023_202601010000.pmtiles"; piu_vecchio.write_bytes(b"x")
+    (tmp_path / "tessere" / "indice.json").write_text(json.dumps({"pmtiles": "/edifici3d/immobili_pa/immobili_pa_2023.pmtiles"}))
+    ind = s.prepara(tmp_path, 2023, tmp_path / "tessere", tmp_path / "indice", "prova", versione="202611221200")
+    pm = tmp_path / "tessere" / "immobili_pa_2023_202611221200.pmtiles"
+    assert pm.stat().st_size > 1000
+    assert ind["pmtiles"] == "/edifici3d/immobili_pa/immobili_pa_2023_202611221200.pmtiles"
+    # il precedente (quello di indice.json) resta per le pagine già aperte, i più vecchi si tolgono
+    assert vecchio.exists() and not piu_vecchio.exists()
+    scritto = json.loads((tmp_path / "tessere" / "indice.json").read_text())
+    assert scritto["gruppi"]["U"] == "Università" and scritto["pmtiles"] == ind["pmtiles"]
+    assert list(scritto["gruppi"])[:3] == ["C", "I", "P"]                   # ordine del menu: Unioni dopo i Comuni
+    info = dict(sqlite3.connect(tmp_path / "indice" / "immobili_pa_2023.sqlite").execute("SELECT chiave, valore FROM info"))
+    assert json.loads(info["pmtiles"]) == ind["pmtiles"]
+    assert not list((tmp_path / "tessere").glob(".*")) and not list((tmp_path / "indice").glob(".*"))
+    assert not [d for d in (tmp_path / "tessere").iterdir() if d.is_dir()]  # cartella di lavoro tolta
+    pm_nome = pm.name
     # contenuto delle tessere (17/11/2026: con lo zoom minimo per feature restava una sola particella per tessera)
     lettore = pytest.importorskip("pmtiles.reader"); mvt = pytest.importorskip("mapbox_vector_tile")
     import gzip, math
-    r = lettore.Reader(lettore.MmapSource(open(tmp_path / "tessere" / "immobili_pa_2023.pmtiles", "rb")))
+    r = lettore.Reader(lettore.MmapSource(open(tmp_path / "tessere" / pm_nome, "rb")))
     def strati(z, lon=12.4930, lat=42.7335):
         n = 2 ** z; x = int((lon + 180) / 360 * n); y = int((1 - math.asinh(math.tan(math.radians(lat))) / math.pi) / 2 * n)
         d = r.get(z, x, y)
@@ -223,3 +241,82 @@ def test_comando_immobili_pa_passa_il_percorso_a_componi(tmp_path, monkeypatch):
     monkeypatch.setattr(ip, "componi", lambda b, pol, dest, anno: visti.setdefault("b", b) and {})
     assert cli.main(["immobili-pa", "--dest", str(tmp_path)]) == 0
     assert visti["b"] == f
+
+
+# tipologie come sono scritte nei CSV MEF 2023 (apostrofi al posto degli accenti), con il gruppo atteso
+TIPOLOGIE_MEF = {
+    "Comuni": "C", "Unioni di Comuni e Comunita' Montane": "I", "Citta' Metropolitane e Province": "P",
+    "Regioni": "R", "Enti Locali del Servizio Sanitario": "S", "Universita'": "U",
+    "Aziende, Enti e Istituti Territoriali per l'Edilizia Residenziale": "E",
+    "Ministeri e Presidenza del Consiglio dei Ministri": "M", "Organi Costituzionali e di Rilievo Costituzionale": "M",
+    "Agenzie Fiscali": "M", "Enti Nazionali Pubblici di Previdenza e Assistenza": "N",
+    "Altre Amministrazioni Centrali": "A", "Altre Amministrazioni Locali": "A", "Aziende di Servizi alla Persona": "A",
+    "Camere di Commercio e Unioni delle Camere di Commercio": "A", "Automobile Club d'Italia": "A",
+    "Altre Aziende, Consorzi, Enti e Amministrazioni Locali": "A", "Altro": "A",
+    "CONSORZI TRA AMMINISTRAZIONI LOCALI - NON IN S13": "A", "ENTI E ISTITUZIONI DI RICERCA - NON IN S13": "A",
+    "ENTI PRODUTTORI DI SERVIZI ASSISTENZIALI, RICREATIVI E CULTURALI - NON IN S13": "A",
+}
+
+
+def test_gruppi_con_le_tipologie_vere_dei_csv():
+    """22/11/2026: con il confronto letterale Province, Università e Unioni (scritte con l'apostrofo) finivano in «A»."""
+    from territorio import immobili_pa_sito as s
+    assert len(TIPOLOGIE_MEF) == 21
+    for t, g in TIPOLOGIE_MEF.items():
+        assert s.gruppo_ente(t) == g, t
+    # stesse tipologie con gli accenti del dizionario, maiuscole e spazi diversi
+    assert s.gruppo_ente("Università") == "U" and s.gruppo_ente("  città   metropolitane e PROVINCE ") == "P"
+    assert s.gruppo_ente("Unioni di Comuni e Comunità Montane") == "I" and s.gruppo_ente("Universita’") == "U"
+    assert s.gruppo_ente("") == "A" and s.gruppo_ente(None) == "A"
+    assert s.GRUPPI_ENTI["I"][0] == "Unioni di Comuni e Comunità montane"
+
+
+def test_indice_sostituito_solo_intero(tmp_path: Path, monkeypatch):
+    """L'API apre l'indice con immutable=1: un rifacimento interrotto non deve toccare il file in uso."""
+    from territorio import immobili_pa_sito as s
+    out = tmp_path / "immobili_pa_2023.sqlite"; out.write_bytes(b"in uso")
+    def rotto(*a, **k):
+        (tmp_path / ".immobili_pa_2023.sqlite.nuovo").write_bytes(b"a meta")
+        raise RuntimeError("interrotto")
+    monkeypatch.setattr(s, "_scrivi_indice", rotto)
+    import pytest
+    with pytest.raises(RuntimeError):
+        s.indice_sqlite(tmp_path / "b.parquet", tmp_path / "p.parquet", out)
+    assert out.read_bytes() == b"in uso" and not (tmp_path / ".immobili_pa_2023.sqlite.nuovo").exists()
+    assert s.nome_pmtiles(2023, "202611221200") == "immobili_pa_2023_202611221200.pmtiles"
+
+
+def test_prepara_versione_e_scambio_senza_tippecanoe(tmp_path: Path, monkeypatch):
+    """prepara con le tessere finte: PMTiles con nome nuovo, indice.json per ultimo, precedente tenuto, vecchi tolti."""
+    import sqlite3
+    from territorio import immobili_pa_sito as s
+    beni = ip.leggi_csv_mef(CSV); beni["tipologia_amm"] = "Universita'"
+    bf = tmp_path / "mef.parquet"; beni.to_parquet(bf)
+    comune = _zip({"A045_ACQUASPARTA_ple.gml": _gml(_membro("A045_000100.1", [QUADRO]))})
+    reg = tmp_path / "R.zip"; reg.write_bytes(_zip({"TR.zip": _zip({"A045_ACQUASPARTA.zip": comune})}))
+    tab, _ = ip.poligoni_regione(reg, ip.richieste_per_comune(beni), tmp_path)
+    pq.write_table(tab, tmp_path / "pol.parquet")
+    ip.componi(bf, [tmp_path / "pol.parquet"], tmp_path, 2023)
+    tess, ind_dir = tmp_path / "tessere", tmp_path / "indice"
+    tess.mkdir()
+    (tess / "immobili_pa_2023.pmtiles").write_bytes(b"vecchio")
+    (tess / "immobili_pa_2023_202601010000.pmtiles").write_bytes(b"piu vecchio")
+    (tess / "indice.json").write_text(json.dumps({"pmtiles": "/edifici3d/immobili_pa/immobili_pa_2023.pmtiles"}))
+    visto = {}
+    def finte(part, ben, out, attr):
+        visto["indice_al_momento"] = json.loads((tess / "indice.json").read_text())["pmtiles"]
+        out.write_bytes(b"nuovo"); return {"particelle": 0, "punti": 0}
+    monkeypatch.setattr(s, "tessere", finte)
+    ind = s.prepara(tmp_path, 2023, tess, ind_dir, "prova", versione="202611221200")
+    assert visto["indice_al_momento"].endswith("/immobili_pa_2023.pmtiles")   # indice.json cambia solo dopo
+    assert ind["pmtiles"] == "/edifici3d/immobili_pa/immobili_pa_2023_202611221200.pmtiles"
+    assert sorted(f.name for f in tess.iterdir()) == ["immobili_pa_2023.pmtiles", "immobili_pa_2023_202611221200.pmtiles",
+                                                      "indice.json"]
+    db = sqlite3.connect(ind_dir / "immobili_pa_2023.sqlite")
+    assert db.execute("SELECT DISTINCT gruppo FROM beni").fetchall() == [("U",)]
+    assert json.loads(dict(db.execute("SELECT chiave, valore FROM info"))["gruppi"])["I"].startswith("Unioni")
+    db.close()
+    # secondo giro: il primo PMTiles (non più in indice.json) si toglie
+    s.prepara(tmp_path, 2023, tess, ind_dir, "prova", versione="202611231200")
+    assert sorted(f.name for f in tess.glob("*.pmtiles")) == ["immobili_pa_2023_202611221200.pmtiles",
+                                                              "immobili_pa_2023_202611231200.pmtiles"]
