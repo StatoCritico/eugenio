@@ -18,10 +18,11 @@ Procedimento (pixel per pixel, nessuna ricampionatura dei raster):
   2. il centro di ogni pixel si porta da EPSG:7794 a EPSG:3035 (pyproj) e si legge l'uso del suolo 2023 in quel punto;
   3. il centro si porta in UTM 32N (coordinate dei file di mappa) e si assegna al comune;
   4. si somma per comune: nuovo consumo per gruppo di classi (classi.GRUPPI) e la parte su suolo agricolo, per gruppo e
-     per uso agricolo; poi province, regioni, Italia. Un pixel vale 0,01 ha.
+     per uso agricolo; poi regioni e Italia (le province le somma costruisci.py con la tabella comune → provincia 2026).
+     Un pixel vale 0,01 ha.
 Il risultato è una stima di EuGEnio: dichiararlo come «elaborazione EuGEnio su dati ISPRA/SNPA» (vedi README).
 
-Uscita: un JSON {"anno", "periodo", "file", "gruppi", "usi", "italia", "regioni", "province", "comuni"} dove ogni unità è
+Uscita: un JSON {"anno", "periodo", "file", "gruppi", "usi", "italia", "regioni", "comuni"} dove ogni unità è
 {"lordo": [ha per gruppo], "agricolo": [ha per gruppo], "usi": [ha per uso agricolo]} (lordo = nuovo consumo, come
 csuolo10 dell'Excel ISPRA salvo i bordi dei comuni).
 
@@ -166,11 +167,10 @@ def agricolo(cambiamenti: Path, uso: Path, mappa: Path, uscita: Path | None = No
         for k in acc:
             acc[k] = [a + b for a, b in zip(acc[k], v[k])]
 
-    sig2cod = {p["sigla"]: c for c, p in m["province"].items()}
-    province, reg, italia = {}, {}, {}
+    # le province le somma costruisci.py dai comuni (nelle mappe i comuni sardi hanno le sigle delle province vecchie)
+    reg, italia = {}, {}
     for ist, v in comuni.items():
         c = m["comuni"][ist]
-        somma(province, sig2cod.get(c["prov"], c["prov"]), v)
         somma(reg, c["regione"], v)
         somma(italia, "IT", v)
     tondo = lambda d: {k: {kk: [round(x, 2) for x in vv] for kk, vv in v.items()} for k, v in sorted(d.items())}
@@ -185,7 +185,7 @@ def agricolo(cambiamenti: Path, uso: Path, mappa: Path, uscita: Path | None = No
         "usi": [{"id": k, "nome": v} for k, v in USI_AGRICOLI.items()],
         "pixel_ha": PIXEL_HA, "pixel_fuori_dai_comuni": fuori,
         "usi_non_agricoli": {k: {u: round(x, 2) for u, x in sorted(v.items(), key=lambda q: -q[1])} for k, v in sorted(altri.items())},
-        "italia": tondo(italia).get("IT", vuoto()), "regioni": tondo(reg), "province": tondo(province), "comuni": tondo(comuni),
+        "italia": tondo(italia).get("IT", vuoto()), "regioni": tondo(reg), "comuni": tondo(comuni),
         "secondi": round(time.time() - t0),
     }
     if uscita:
