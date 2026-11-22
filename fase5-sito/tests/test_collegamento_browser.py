@@ -27,6 +27,7 @@ PROVE = Path("/home/claude/wt_collegamento_prove")      # screenshot, solo se la
 # dal file. Le pagine che non sono qui non hanno il collegamento (testo, segnaposto, moduli, solo file).
 PAGINE = {
     "legge10.html": "a", "dati.html": "a", "indicatori.html": "a", "elettricita.html": "a", "carichi.html": "a",
+    "suolo.html": "a",                   # (22/11/2026) prova nel browser in test_suolo_browser.py::test_collegamento
     "rete-elettrica.html": "a", "ortofoto.html": "a",
     "edifici-pubblici.html": "a",
     "aria-trasformazioni.html": "a", "aria-ore.html": "a", "aria-latenti.html": "a", "aria-freecooling.html": "a",

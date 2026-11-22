@@ -227,6 +227,7 @@
 
   // ------------------------------------------------------------------ mappa
   async function avvio() {
+    window.EUGENIO_SUOLO = { stato: st, scegliRegione, togliRegione, scegliProvincia, cambiaModo, periodo, valori };   // per le prove
     try { st.it = await carica("dati/suolo/italia.json"); } catch (e) {
       messaggio("messaggio-mappa", "I dati del suolo non sono ancora disponibili su questo server (li prepara il worker, controllo una volta al mese).", true);
       st.pronto = true;
@@ -237,7 +238,6 @@
       canvasContextAttributes: { preserveDrawingBuffer: true },
       style: { version: 8, sources: {}, layers: [{ id: "sfondo", type: "background", paint: { "background-color": css("--carta", "#f4f4f4") } }] } });
     st.mappa = m;
-    window.EUGENIO_SUOLO = { stato: st, scegliRegione, togliRegione, scegliProvincia, cambiaModo, periodo, valori };   // per le prove
     m.addControl(new window.maplibregl.NavigationControl({ showCompass: false }), "top-right");
     m.addControl(new window.maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
     m.addControl(new window.maplibregl.AttributionControl({ compact: true }), "bottom-right");
