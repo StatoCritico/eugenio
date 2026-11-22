@@ -172,7 +172,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `dati-per-email.html`, `contatti.html` | dati_per_email.js, contatti.js | c (moduli) | niente: moduli con email e dati personali, non simulazioni |
 | `faq.html`, `metodo.html`, `licenza.html`, `privacy.html`, `sitografia.html`, `mirror.html`, `novita.html`, `esempi.html`, `contributi.html`, `dbtr-istruzioni.html`, `fv-leed.html`, `link.html` | – | c (testo) | niente |
 | `cog-car.html`, `cog-confronto.html`, `cog-rischio.html`, `cog-simulazione.html`, `cog-spark-spread.html`, `edificio-conto-termico.html`, `edificio-ecobonus.html`, `edificio-fabbisogno.html`, `edificio-impianti.html`, `edificio-involucro.html`, `fv-mercato.html`, `lidar.html`, `visure.html` | – | c (segnaposto) | niente (da aggiungere quando diventano pagine con scelte) |
-| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026; dal 21/11/2026 `passo` solo con le ore, `passo=60`) |
+| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026; dal 21/11/2026 `passo` solo con le ore, `passo=60`); dal 22/11/2026 finestra (`finestra=AAAA-MM-GG_AAAA-MM-GG`, solo se non è tutto il periodo) e spente (`spente=fv,eol`, solo con fonti spente) |
 | `suolo.html` | suolo.js | a | regione o vista=italia, provincia, modo (scritti dalla pagina), inizio, fine, unita (solo se non ha), barre, fondo, ortofoto (22/11/2026) |
 
 - Moduli comuni toccati: `strati_gl.js` (caselle particelle e contorni con `data-collegamento`), `scelta_aria.js` (anni e
@@ -250,8 +250,9 @@ divisione in due metà.
 - **Grafici** (tutti con la freccina del riquadro): valori del periodo (energia, potenza massima e minima con l'istante,
   media, quota rinnovabile per l'Italia, quarti d'ora senza dati); profilo giornaliero (fascia minimo–massimo e media
   per quarto d'ora o ora del giorno, ora italiana); curva di durata (potenze in ordine decrescente, ascissa in ore);
-  fonti (barre al 100 % per quarto d'ora o ora, colori di `fase15-elettricita/elettricita/costruisci.py`, solo Italia:
-  con una zona scelta compare la nota «Terna pubblica la produzione per fonte solo per tutta l'Italia»).
+  potenza per fonte in MW (dal 22/11/2026, vedi sotto) e fonti (barre al 100 % per quarto d'ora o ora, colori di
+  `fase15-elettricita/elettricita/costruisci.py`, solo Italia: con una zona scelta compare la nota «Terna pubblica la
+  produzione per fonte solo per tutta l'Italia»).
 - **Zoom proprio**: rotella = zoom dell'asse orizzontale attorno al puntatore, trascinamento = spostamento, due dita =
   zoom, doppio clic = vista iniziale, tastiera (frecce, `+ − 0`). Il grafico si **ridisegna con i dati della vista**
   (percorsi aggregati per pixel: le barre delle fonti sono una colonna per pixel che somma i quarti d'ora coperti, o una
@@ -266,6 +267,40 @@ divisione in due metà.
   sezioni (dal 21/11/2026: niente titoli di sezioni vuote, resta solo il messaggio).
 - Fonti e licenze nel piè, sezione `metodo.html#carichi`, «Come leggere i grafici» in fondo alla pagina.
 - Prove: `tests/test_carichi_browser.py` (Playwright, dati inventati dalla fase 15).
+
+### Potenza per fonte, finestra comune e fonti spente (22/11/2026, richiesta di Paolo delle 09:42)
+
+- **Grafico «Potenza per fonte»** (`#grafico-assoluti`, `cfgAssoluti()`) prima delle barre al 100 % (`#grafico-fonti`):
+  stessa scomposizione e stessi colori (`indice.json`, `voci`), aree impilate in **MW medi** del quarto d'ora o dell'ora
+  (una colonna per quarto d'ora, o per pixel con la **media** dei quarti d'ora coperti, `colonneFonti()`, comune ai due
+  grafici; il saldo entra solo quando è positivo, come nelle barre al 100 %). Asse verticale da 0 al massimo della pila
+  visibile. L'energia (**GWh**) di ogni fonte nella finestra visibile sta accanto alla sua casella (`scriviEnergie()`).
+  La nota «Terna pubblica la produzione per fonte solo per tutta l'Italia» è passata in questa sezione e vale per i due.
+- **Stessa vista**: i due grafici delle fonti stanno in un gruppo (`cfg.gruppo = st.finestra`, `grafico()`): rotella,
+  trascinamento, dita, tasti `+ − 0`, doppio clic e riquadro grande in uno spostano anche l'altro. Col cambio di zona o
+  di passo la finestra resta; col cambio di periodo torna a tutto il periodo.
+- **Pulsanti** sopra il grafico (`#carichi-finestre`, `.filtro` con `aria-pressed`): «Ieri», «Ultima settimana»,
+  «Ultimo mese», «Ultimi 3 mesi», «Ultimo anno» contano all'indietro dall'**ultimo giorno con i dati di tutte le
+  fonti** nel periodo (`ultimoGiornoFonti()`, `finestraDi()`: settimana = 7 giorni, mese = stesso giorno del mese prima
+  + 1, tagliati all'inizio del periodo); «Tutto il periodo» torna alla vista intera. Acceso il pulsante della finestra
+  di adesso (tolleranza un minuto).
+- **Cursore «Sposta di un mese»** (`#carichi-scorri`, input range): con la finestra più corta del periodo, ogni scatto la
+  porta un mese avanti o indietro **con la stessa larghezza** (`posizioni()`: finestre che finiscono alla fine del
+  periodo e poi un mese prima a ogni scatto, l'ultima che comincia all'inizio del periodo). Con tutto il periodo è
+  spento. Frecce, Pagina su/giù, Inizio e Fine come ogni input range; `aria-valuetext` e `<output>` con la finestra.
+- **Caselle per fonte** sotto il grafico in MW (anche nel riquadro grande; tutte le copie restano allineate,
+  `accendiFonti()`), «Accendi tutte», «Spegni tutte». Il grafico in MW si ridisegna con le sole fonti accese («Nessuna
+  fonte accesa» se sono tutte spente); in quello al 100 % le spente restano al loro posto col **colore dello sfondo**
+  (`fill: var(--sfondo-grafico, var(--carta))`, `--sfondo-grafico: var(--foglio)` nel riquadro grande) e sono barrate
+  nella legenda. Riquadretto: «(spenta)» accanto alla fonte, «fonti accese, in tutto».
+- **Indirizzo e collegamento**: `finestra=AAAA-MM-GG_AAAA-MM-GG` (giorni interi, fine compresa) oppure con l'ora,
+  `AAAA-MM-GGTHHMM` (istante esatto, ora italiana, dopo zoom e trascinamento), e `spente=termo,saldo` (identificativi
+  di `voci`, ignorati quelli che non ci sono). I predefiniti (tutto il periodo, tutte accese) non si scrivono. Scritti
+  300 ms dopo l'ultimo cambio (`scriviPresto()`, poi `EUGENIO_COLLEGAMENTO.aggiorna()`).
+- Correzioni: «Tutta Italia» davvero nascosto quando la zona è l'Italia (`.carichi-zona .bottone[hidden]`); tacche
+  dell'asse dei tempi ogni 64 px (prima 80), così una settimana a 375 px ha le date.
+- Prove: `test_carichi_browser.py::test_potenza_per_fonte_e_finestra`, `::test_fonti_spente` (colore dello sfondo nel
+  tema scuro, nel chiaro e nel riquadro), `::test_telefono_fonti`; `test_collegamento_browser.py::test_carichi_finestra_e_fonti`.
 
 ## Segnalazioni di Paolo sulla v2026.11.21 (21–22/11/2026, nella versione 20261121b, pull request #17)
 

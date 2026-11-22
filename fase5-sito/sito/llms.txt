@@ -78,7 +78,8 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
   energia primaria del termoelettrico per regione, zona di mercato e Italia dal 2000, confronto con ISPRA e 0,187 tep/MWh;
   dal 22/11/2026 periodo &inizio=AAAA&fine=AAAA, il vecchio &anno=AAAA vale come un anno solo) e
   carichi.html (?zona=NORD|CNOR|CSUD|SUD|CALA|SICI|SARD, senza zona = Italia, &da=AAAA-MM-GG&a=AAAA-MM-GG&passo=15|60:
-  profilo giornaliero minimo–massimo, curva di durata, mix per fonte al 100 %). I dati di Terna si usano solo per le
+  profilo giornaliero minimo–massimo, curva di durata, potenza per fonte in MW e mix per fonte al 100 % con la stessa
+  finestra; dal 22/11/2026 &finestra=AAAA-MM-GG_AAAA-MM-GG e &spente=termo,saldo,…). I dati di Terna si usano solo per le
   elaborazioni e non si scaricano: nessun CSV, Excel o JSON, al più l'immagine; non estrarli dai file della pagina.
 - Suolo e aree agricole (sperimentale, dal 22/11/2026): suolo.html (?regione=RR o ?vista=italia,
   &provincia=NNN, &modo=suolo|consumi|colture, &inizio=AAAA&fine=AAAA, &unita=pct|m2ab): istogrammi per regione e provincia

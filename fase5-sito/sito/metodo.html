@@ -698,6 +698,17 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       saldo è la potenza richiesta meno la produzione: l'energia arrivata dall'estero meno quella assorbita da pompaggi e
       accumuli; nelle barre al 100 % entra solo quando è positivo. Fino al 2024 la produzione è oraria: i quattro quarti
       d'ora dell'ora hanno gli stessi valori.</li>
+    <li><strong>Potenza per fonte.</strong> Prima delle barre al 100 % la stessa scomposizione in valore assoluto: aree
+      impilate in MW medi del quarto d'ora (o dell'ora); il saldo entra quando è positivo. Quando una colonna del grafico
+      copre più quarti d'ora, l'altezza è la loro media. Accanto a ogni fonte, l'energia prodotta nella finestra visibile
+      (GWh, somma delle potenze per la durata del passo). Le caselle accendono e spengono le fonti: il grafico in MW
+      impila solo quelle accese; in quello al 100 % le spente restano al loro posto (la quota resta sul totale) e
+      prendono il colore dello sfondo.</li>
+    <li><strong>Finestra.</strong> I due grafici delle fonti mostrano sempre lo stesso tratto di tempo. «Ieri», «Ultima
+      settimana», «Ultimo mese», «Ultimi 3 mesi» e «Ultimo anno» finiscono all'ultimo giorno con i dati di tutte le fonti
+      (Terna li pubblica con un giorno o due di ritardo) e non escono dal periodo scelto; «Sposta di un mese» porta la
+      finestra, con la stessa larghezza, un mese avanti o indietro a ogni scatto. Finestra e fonti spente stanno
+      nell'indirizzo (<code>finestra=</code>, <code>spente=</code>) solo quando non sono quelle predefinite.</li>
     <li><strong>Grafici.</strong> Profilo giornaliero: minimo, media e massimo per quarto d'ora (o ora) del giorno nel
       periodo. Curva di durata: tutte le potenze del periodo in ordine decrescente. Fonti: una barra per quarto d'ora (o
       ora); quando le barre sono più dei pixel, ogni colonna somma i quarti d'ora che copre. La rotella ingrandisce l'asse
