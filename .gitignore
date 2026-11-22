@@ -40,3 +40,8 @@ fase5-sito/sito/dati/carichi/
 fase15-elettricita/raw/
 # (20/11/2026) carichi elettrici (Terna, quartorari): solo sul server, li costruisce il worker; mai nel repository né scaricabili
 fase5-sito/sito/dati/carichi/
+# (22/11/2026) Suolo e aree agricole (fase 16): file costruiti dal worker (ISPRA/SNPA, ISTAT, Copernicus) e dati scaricati;
+# solo sul server, mai nel repository (come per l'elettricità)
+fase5-sito/sito/dati/suolo/
+fase16-suolo/raw/
+fase16-suolo/carte/

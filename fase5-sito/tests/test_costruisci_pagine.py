@@ -76,8 +76,9 @@ GRUPPI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html", "d
           "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
                          "dbtr-istruzioni.html", "visure.html"],
           "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
-               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html"]}   # (11/11/2026) Indici dei prezzi prima;
-#                                                    (17/11/2026) Stato della rete elettrica in fondo
+               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html",
+                               "suolo.html"]}   # (11/11/2026) Indici dei prezzi prima;
+#                                                    (17/11/2026) Stato della rete elettrica in fondo; (22/11/2026) Suolo e aree agricole
 VIETATI = ("PUN Index GME =", "€/MWh", "Prezzo medio")   # nessun valore nelle pagine in attesa della licenza GME
 
 
@@ -750,8 +751,9 @@ ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "./", "edificio-clima.html
                "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
                "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
-               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html"]}   # (11/11/2026) Indici dei prezzi prima;
-#                                                    (17/11/2026) Stato della rete elettrica in fondo
+               "statistiche": ["indici-prezzi.html", "indicatori.html", "rete-elettrica.html", "elettricita.html", "carichi.html",
+                               "suolo.html"]}   # (11/11/2026) Indici dei prezzi prima;
+#                                                    (17/11/2026) Stato della rete elettrica in fondo; (22/11/2026) Suolo e aree agricole
 
 
 def test_menu_08_11_gruppi_e_voci_in_lavorazione(sito):
@@ -889,7 +891,7 @@ def test_esempi_un_caso_per_ogni_pagina_del_menu():
     tendine = "".join(re.findall(r'<ul class="tendina">.*?</ul>', t, re.S))
     pagine = sorted(set(re.findall(r'href="([^"#]+\.html)"', tendine)))
     main = re.search(r"<main.*?</main>", (QUI / "sito" / "esempi.html").read_text(encoding="utf-8"), re.S).group(0)
-    assert "carichi.html" in pagine and "elettricita.html" in pagine
+    assert "carichi.html" in pagine and "elettricita.html" in pagine and "suolo.html" in pagine
     assert [p for p in pagine if f'href="{p}' not in main] == []
 
 
