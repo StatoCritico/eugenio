@@ -207,7 +207,16 @@ totale, «Come leggere i dati», collegamento salvabile, solo «Scarica l'immagi
   suolo consumato, in aree a pericolosità idraulica P2 e da frana P3+P4, entro 300 m dalla costa, in aree protette;
   interruttore **ha / % del territorio / m² per abitante**), **Consumi** (colonna impilata per causa: edifici, strade e
   infrastrutture, piazzali e aree produttive, cantieri, cave e discariche, fotovoltaico a terra, altro, non attribuito; accanto
-  la colonna verde scura «di cui su suolo agricolo», stima EuGEnio, `#1b5e20`), **Colture** (colonna impilata per famiglia).
+  la colonna verde «di cui su suolo agricolo», stima EuGEnio), **Colture** (colonna impilata per famiglia).
+- **Colori** (Paolo, 22/11/2026: nel tema scuro i grafici non si leggevano): `TAVOLOZZA` in `suolo.js`, per id della voce,
+  `[scuro, chiaro]` come le serie di `stile.css`: nel tema scuro colori chiari come nella pagina dell'elettricità (contrasto
+  ≥ 4,5:1 sui riquadri `--foglio`), nel tema chiaro più scuri (≥ 3:1 sul bianco); fra le voci dello stesso gruppo ΔE2000 ≥ 7,8
+  anche con deuteranopia, protanopia e tritanopia simulate (Machado 2009). Valgono per mappa, grafici, legende e immagine
+  scaricata; il colore nei dati della fase 16 resta solo per voci nuove senza tavolozza. «Di cui su suolo agricolo»
+  `#77f69e` (scuro) / `#2a9a50` (chiaro), al posto di `#1b5e20`. Comuni per % consumato: nel tema scuro la scala va dal
+  giallo chiaro al viola chiaro (`#fff3b8 → #a35ee6`, tutte ≥ 4,5:1 sul fondo), nel tema chiaro resta `#fff5d6 → #6b0f1a`.
+  Al cambio di tema (`eugenio:aspetto`) si ridisegnano anche gli istogrammi della mappa. Il trattino del valore iniziale
+  resta nero (in legenda con il bordo).
 - **Periodo a due indicatori** (Paolo, 22/11/2026 01:00): due `input type=range` sovrapposti in `.cursore-doppio` (guida
   colorata fra i due con `--da` e `--a`; ognuno si muove con mouse, dito e tastiera, `aria-label` «Anno iniziale/finale del
   periodo», `aria-valuetext` con l'anno); all'apertura tutti e due sull'ultimo anno. Flussi (Consumi) = somma dei periodi
