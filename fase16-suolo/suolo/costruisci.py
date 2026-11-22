@@ -72,7 +72,7 @@ RE_FOGLIO = re.compile(r"^(Comuni|Province|Regioni|Nazionale)_(\d{4})(_rev)?$")
 # ---------------------------------------------------------------- lettura dell'Excel
 class Libro:
     """Fogli dell'Excel ISPRA come liste di dizionari. python-calamine se c'è (1 s), altrimenti openpyxl in sola lettura
-    (qualche minuto per 87 MB: va bene per un lavoro annuale del worker)."""
+    (circa 40 s per gli 87 MB dell'edizione 2026, stessi file: va bene per il lavoro mensile del worker)."""
 
     def __init__(self, percorso: Path):
         self.percorso = Path(percorso)

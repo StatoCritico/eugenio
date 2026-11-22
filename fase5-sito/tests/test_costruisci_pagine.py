@@ -601,8 +601,8 @@ def test_etichette_brevi_nelle_tendine():
     # (09/11/2026 f) + 3 «S» (Edifici: Obblighi di legge, Geometria e luce naturale, Consumi): 8 «S», 13 in lavorazione
     # (14/11/2026) + 4 «S» del Trattamento aria: 12; (17/11/2026) + «S» di Territorio › Edifici pubblici: 13;
     # (17/11/2026) + Cabine primarie e Stato della rete elettrica: 15; (20/11/2026) + Produzione e consumi di elettricità: 16;
-    # (20/11/2026) + Carichi elettrici: 17
-    assert len(s) == pannello.count(">sperimentale<") == 17 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    # (20/11/2026) + Carichi elettrici: 17; (22/11/2026) + Suolo e aree agricole: 18
+    assert len(s) == pannello.count(">sperimentale<") == 18 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
     assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
