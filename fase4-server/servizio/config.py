@@ -161,6 +161,8 @@ ZORNADE_AVVISO_QUOTA = float(os.environ.get("ZORNADE_AVVISO_QUOTA", "0.7"))   # 
 # dell'Agenzia delle Entrate (CC BY 4.0) e metà della via dalle strade di OpenStreetMap (Overpass). LUOGO=false la spegne.
 LUOGO = os.environ.get("LUOGO", "true").lower() not in ("false", "0", "no", "spento")
 LUOGO_ORA = int(os.environ.get("LUOGO_ORA", "300"))                       # ricerche di un luogo per IP all'ora
+# (22/11/2026) Edifici pubblici, ricerca per ente: richieste all'ora per tutto il sito (oltre: 503), contro le copie sistematiche
+IMMOBILI_PA_ENTE_TETTO_ORA = int(os.environ.get("IMMOBILI_PA_ENTE_TETTO_ORA", "30000"))
 CATASTO_WFS_URL = os.environ.get("CATASTO_WFS_URL", "https://wfs.cartografia.agenziaentrate.gov.it/inspire/wfs/owfs01.php")
 CATASTO_WFS_TETTO_ORA = int(os.environ.get("CATASTO_WFS_TETTO_ORA", "3000"))   # chiamate al WFS catastale all'ora, tutto il sito
 LUOGO_TIMEOUT_S = float(os.environ.get("LUOGO_TIMEOUT_S", "20"))          # per chiamata (WFS, ogni istanza di Overpass)
