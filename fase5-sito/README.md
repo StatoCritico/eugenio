@@ -4,8 +4,11 @@ Sito statico (HTML, CSS e JavaScript senza librerie esterne), servito da Caddy n
 
 ```
 sito/
-  index.html        mappa dei comuni colorata con i gradi giorno previsti a 7 giorni, ricerca indirizzo
-                    (Zornade), caricamento CSV, scelta della modalità, grafico con le fasce di probabilità
+  index.html        pagina iniziale (22/11/2026): scena animata di Claude Design, una per tema (parti/scena_home.html,
+                    home_*.webp, home.js), schede dei gruppi del menu (parti/home.toml), come lavora, ultime novità; i
+                    vecchi indirizzi con le scelte (/?comune=…, #…) passano a previsioni.html
+  previsioni.html   (fino al 22/11/2026 era index.html) mappa dei comuni colorata con i gradi giorno previsti a 7 giorni,
+                    ricerca indirizzo, caricamento CSV, scelta della modalità, grafico con le fasce di probabilità
   patrimonio.html   elenco di edifici (CSV) → punto e particella catastale, mappa dei punti, esiti, download; dal
                     04/11/2026 passo «Visure catastali» con i file di EuGEnio Visure (visure_abbina.js,
                     visure_patrimonio.js), abbinati solo nel browser
@@ -87,6 +90,8 @@ sito/
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
   rete-elettrica.html  Statistiche › Stato della rete elettrica (17/11/2026, sperimentale): rete_elettrica.js
   fv-cabine.html    Fotovoltaico › Cabine primarie (17/11/2026, sperimentale): fv_cabine.js
+  pluviometria.html Clima e meteo › Dati pluviometrici (22/11/2026, sperimentale): pluviometria.js e pioggia_gl.js
+                    (indice, immagini e legenda della pioggia, usato anche da rete_elettrica.js)
   rete.js           parte comune delle pagine della rete (e di Comunità energetiche): API /api/rete/…, dati sintetici
                     con ?prova=1, colori e regola della criticità, strisce e retino, cabine, riquadretti, GSE dal browser
                     (unico indirizzo del servizio nel sito), CSV/PDF/Excel/ODS (sezione «Rete elettrica» qui sotto)
@@ -154,6 +159,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `indicatori.html` | indicatori.js | a | regione, ente (già), comp, componenti, anno |
 | `elettricita.html` | elettricita.js | a | regione o vista=italia, modo (già; dal 21/11/2026 anche `emissioni`), inizio e fine (dal 22/11/2026; `anno` dei collegamenti vecchi = un anno solo), barre, fondo, ortofoto |
 | `rete-elettrica.html` | rete_elettrica.js | a | regione, comune (già), criticita, altri, cabine, interruzioni, ortofoto; prova=1 resta |
+| `pluviometria.html` | pluviometria.js | a | durata, passo, secondi, fine (null = ultimo dato), lat, lon, pioggia, interruzioni, ortofoto (22/11/2026) |
 | `ortofoto.html` | ortofoto.js | a | lat, lon, z, fonte (già), archivio, particelle, contorni (lo spostamento manuale della foto resta nella scheda) |
 | `edifici-pubblici.html` | edifici_pubblici.js, pubblici_enti.js | a | lat, lon, z, ref o bene (già), tipi, enti, ortofoto, fonte, particelle, contorni; dal 22/11/2026 modo (`enti`), sel (chiavi degli enti nell'ordine dei colori), ruolo, natura, ordina (`colonna:asc|desc`), tipo_ente, regione_ente (secondari) |
 | `aria-trasformazioni.html` | aria_trasformazioni.js | a | comune (già), anni, inverno, estate, diagramma, uta (dati e sequenze diversi dai predefiniti, JSON compatto) |
@@ -162,7 +168,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `aria-freecooling.html` | aria_freecooling.js | a | comune, anni, inverno, estate, diagramma, gruppi, tutti i campi dell'UTA (V, riferimento, quotaMinima, estateT…, epsS, epsL…), gruppo_diagramma (non le condizioni di progetto corrette a mano) |
 | `cog-emissioni.html` | emissioni_cog.js | a | modo, elettrica, calore, gas, unita_gas, potenza, ore, eta_e, eta_t, anno, rete, eta_caldaia, calcolato (il calcolo si rifà da solo) |
 | `edificio-clima.html` | analisi_pubbliche.js | a | istat (già), dal, base, pendenza |
-| `index.html` (Previsioni) | app.js | b | regione, comune, cosa, tipo, modalita, orizzonte, verifica, cov, calcolato (solo «Solo il clima»); il file dei consumi va ricaricato |
+| `previsioni.html` (Previsioni; fino al 22/11/2026 `index.html`) | app.js | b | regione, comune, cosa, tipo, modalita, orizzonte, verifica, cov, calcolato (solo «Solo il clima»); il file dei consumi va ricaricato |
 | `indici-prezzi.html` | indici_prezzi.js | b | scelte (lotto e fascia di ogni indice), lotto_consip; il file dei consumi per fascia va ricaricato |
 | `fv-cabine.html` | fv_cabine.js | b | centro, punti (solo coordinate dei punti segnati o cercati), fonte scelta a mano, particelle, contorni; non i punti dell'elenco caricato |
 | `edificio-cer.html` | cer_sedi.js, analisi_pubbliche.js | b | centro, sedi (coordinate e cabina scelta a mano, non i nomi), fonte, aree_gse, particelle, contorni; non le sedi del file né il file orario |
@@ -172,7 +178,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `dati-per-email.html`, `contatti.html` | dati_per_email.js, contatti.js | c (moduli) | niente: moduli con email e dati personali, non simulazioni |
 | `faq.html`, `metodo.html`, `licenza.html`, `privacy.html`, `sitografia.html`, `mirror.html`, `novita.html`, `esempi.html`, `contributi.html`, `dbtr-istruzioni.html`, `fv-leed.html`, `link.html` | – | c (testo) | niente |
 | `cog-car.html`, `cog-confronto.html`, `cog-rischio.html`, `cog-simulazione.html`, `cog-spark-spread.html`, `edificio-conto-termico.html`, `edificio-ecobonus.html`, `edificio-fabbisogno.html`, `edificio-impianti.html`, `edificio-involucro.html`, `fv-mercato.html`, `lidar.html`, `visure.html` | – | c (segnaposto) | niente (da aggiungere quando diventano pagine con scelte) |
-| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026; dal 21/11/2026 `passo` solo con le ore, `passo=60`) |
+| `carichi.html` | carichi.js | a | zona, da, a, passo (già della pagina, 20/11/2026; dal 21/11/2026 `passo` solo con le ore, `passo=60`); dal 22/11/2026 finestra (`finestra=AAAA-MM-GG_AAAA-MM-GG`, solo se non è tutto il periodo) e spente (`spente=fv,eol`, solo con fonti spente); dal 22/11/2026 b gli stessi sei con «2» per la metà destra (`zona2`, `da2`, `a2`, `passo2`, `finestra2`, `spente2`) |
 | `suolo.html` | suolo.js | a | regione o vista=italia, provincia, modo (scritti dalla pagina), inizio, fine, unita (solo se non ha), barre, fondo, ortofoto (22/11/2026) |
 
 - Moduli comuni toccati: `strati_gl.js` (caselle particelle e contorni con `data-collegamento`), `scelta_aria.js` (anni e
@@ -195,6 +201,76 @@ la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
 
+## Pagina iniziale (22/11/2026, richieste di Paolo delle 11:38 e delle 12:13)
+
+Paolo: «ci vuole una home page che aiuti l'utente a capire cosa fa eugenio senza rimanere disorientato»; poi: «uno schema
+grafico che mostra un edificio 3d e le reti che lo alimentano, il territorio che lo circonda e il meteo che gli sta sopra,
+animato per stagione (d'estate sole e pioggia, d'inverno sole e neve) e che posizionando il mouse faccia vedere le funzioni
+(raggruppate per gruppi, con titolo e descrizione di gruppo). Cliccando sulle parti grafiche si aprono le schede e cliccando
+sulla voce si apre la pagina, aprendo anche il relativo menu in alto in orizzontale».
+
+- `index.html` non è più Previsioni: titolo e una riga su cosa fa EuGEnio, poi il **disegno** (a sinistra; sotto i 960 px
+  sopra le schede) e le **schede dei gruppi** (a destra), poi «Come lavora EuGEnio» e le ultime tre novità.
+- **Disegno** (22/11/2026 sera: versione di **Claude Design**, zip `eugenio_home_temi.zip` di Paolo, al posto del disegno
+  in assonometria del pomeriggio): `parti/scena_home.html` (blocco `<!-- scena-home -->`, messo da `costruisci_pagine.py`)
+  con **due scene, una per tema**: `.scena.tema-scuro` (variante futuristica) e `.scena.tema-chiaro` (variante tecnica,
+  visibile con `[data-theme="light"]`). Ogni scena, 1200 × 875: due **fondali WebP** fermi (`sito/home_scuro_estate.webp`,
+  `home_scuro_inverno.webp`, `home_chiaro_estate.webp`, `home_chiaro_inverno.webp`, 50–85 KB) alternati con una dissolvenza,
+  velo per pioggia e neve, `svg.strato-anim` (solo ciò che si muove: flussi, radar, riflettori, fumi, ventole, pioggia,
+  neve, richiami e titoli a turno; non riceve il mouse), `svg.strato-parti` con le **16 parti** trasparenti
+  `<g class="parte" data-parte data-gruppo>` e i riquadri HUD (fase della stagione, informazioni della parte sotto il mouse
+  o col fuoco, legenda delle reti, consumo di suolo **con dati d'esempio**). Stagioni, pause al passaggio del mouse e
+  informazioni sono **solo CSS** (`:has(.parte:hover)`), nel blocco «pagina iniziale» di `stile.css`; con il movimento
+  ridotto niente animazioni. Pensata per PC senza scheda grafica dedicata (il browser non ridisegna tutta la scena).
+  Ritocchi nell'integrazione: caratteri del sito al posto di quelli di Google Fonts (nessun carattere esterno), titoli del
+  riquadro della fase accorciati («SIM · STAGIONI», «TAV. 01 — STAGIONI») perché non si sovrapponessero a «IN PAUSA»; la
+  parte «cabina primaria» non c'è nel disegno, quindi le sue pagine (Stato della rete elettrica, Cabine primarie) sono
+  nel **traliccio** («Rete elettrica (dati Terna e cabine primarie)»). Il contenitore `.scena-contenitore` riduce la scena
+  alla sua larghezza (`--k`, `home.js`). Per i fondali con i dati veri del consumo di suolo serve il generatore di Claude
+  Design (non nel repository).
+- **Parti** (`parti/home.toml`, `[parti.…]`): titolo, descrizione, gruppo e pagine collegate (anche di altri gruppi e in
+  lavorazione). `costruisci_pagine.py` (`parti_home`, blocco `<!-- parti-home -->`, JSON) aggiunge nome e stato dal menu e
+  segna «prossimamente» le parti senza pagine accessibili (oggi solare termico, pompa di calore, centrale termica, frigo,
+  cogeneratore, cabina del gas).
+- **Mouse su una parte** (CSS): l'animazione si ferma, la parte si accende e il riquadro in basso a destra mostra gruppo,
+  titolo e descrizione (per le parti non ancora attive «Prossimamente»). **Clic, tocco o Invio** (`home.js`): sotto il
+  disegno si apre la scheda del gruppo al posto di «Da dove cominciare», con le pagine della parte in evidenza e la riga
+  «Dal disegno: …» (× per tornare; i pulsanti dei sette gruppi aprono le schede). **Clic su una voce**: `localStorage`
+  «menu-fissato» = gruppo, così la pagina si apre con le voci del gruppo in orizzontale sotto il menu (come il clic sul
+  titolo del gruppo, `aspetto.js`). Senza JavaScript le schede sono tutte visibili.
+- **Schede**: le scrive `costruisci_pagine.py` (`schede_home`, blocco `<!-- schede-home -->`) dal menu (`parti/testata.html`:
+  ordine, nomi, stato sperimentale / in sviluppo / in lavorazione / licenza GME) e da `parti/home.toml` (parte del disegno,
+  descrizione del gruppo, una riga per pagina). Una pagina nuova del menu entra da sola nella scheda; la riga va aggiunta in
+  `home.toml` (la prova `test_pagina_iniziale` lo controlla). Le ultime tre novità: `ultime_novita`, blocco
+  `<!-- ultime-novita -->`.
+- Previsioni sta in `previsioni.html` (menu e collegamenti aggiornati). Uno script in testa a `index.html` manda a
+  `previsioni.html` ogni indirizzo con parametri (tranne `utm_…`) o con un'ancora: i collegamenti salvati e quelli delle
+  email continuano a funzionare.
+- Prove: `test_costruisci_pagine.py::test_pagina_iniziale` (parti, schede, righe, voci, redirect, novità) e
+  `test_home_browser.py` (riquadretto, scheda, tastiera, menu fissato, stagioni e pausa, vecchi indirizzi, movimento
+  ridotto, telefono a 375 px).
+
+## Clima e meteo › Dati pluviometrici (22/11/2026, richiesta di Paolo; sperimentale, release `v2026.11.22b`, versione 20261122b)
+
+Pagina `pluviometria.html` + `pluviometria.js` + `pioggia_gl.js`, voce «Dati pluviometrici» (sperimentale) nel gruppo
+Clima e meteo **prima di Previsioni**. Decisioni di Paolo: solo il «Merging» del DPC ogni 30 minuti (niente radar puro),
+fini statistici e non di allerta, licenza CC BY-SA 4.0 scritta accanto ai dati.
+- Mappa MapLibre con l'immagine della pioggia (sorgente `image`, `updateImage`; nessuna `attribution` nella sorgente: la
+  citazione sta nell'`AttributionControl` con `customAttribution`), strati «Pioggia», «Interruzioni» (del periodo, da
+  `/api/rete/interruzioni/periodo`) e «Ortofoto» come in Stato della rete elettrica, righello.
+- Animazione: `#durata` 3/6/12/24/168 ore (predefinito 24), `#passo` 3/6/12/24 ore automatico (durata ≤ 24 ore → 3 ore,
+  7 giorni → 24 ore; i passi più lunghi della durata sono disabilitati; l'utente lo può cambiare), `#secondi` (0,7), «Play»
+  e cursore `#fine` sulla fine del periodo; ogni immagine = pioggia caduta nel passo che finisce a quell'ora (CUM3, CUM6,
+  CUM12 o CUM24); immagini precaricate; indice in `dati/radar/indice.json` scritto dal worker.
+- Clic: `/api/radar/punto` (ultimi 3/6/12/24 ore) e comune (`C.comuneNelPunto`) → `/api/radar/comune/{istat}`: grafico
+  SVG (`EUGENIO_GRAFICI`) dei 30 giorni misurati con la prevista, tabella, file CSV/PDF/Excel con `licenza: "CC BY-SA 4.0"`.
+  «–» = nessuna misura, mai zero.
+- In `rete-elettrica.html` la casella `#strato-pioggia` «Pioggia misurata (ultime 3 ore)», spenta in partenza: ultimo
+  CUM3 sotto le cabine, legenda, aggiornata ogni 5 minuti.
+- Stile: blocco «dati pluviometrici» in `stile.css`; 375 px senza scorrimento orizzontale. Prove:
+  `test_pluviometria_browser.py` (con `page.route` sulle rotte e immagini finte), `test_rete_browser.py`,
+  `test_costruisci_pagine.py`.
+
 ## Statistiche › Suolo e aree agricole (22/11/2026, richiesta di Paolo; sperimentale, release `v2026.11.22`, versione 20261122a)
 
 Pagina `suolo.html` + `suolo.js`, voce «Suolo e aree agricole» (sperimentale, «S») nel gruppo Statistiche dopo «Carichi
@@ -207,7 +283,16 @@ totale, «Come leggere i dati», collegamento salvabile, solo «Scarica l'immagi
   suolo consumato, in aree a pericolosità idraulica P2 e da frana P3+P4, entro 300 m dalla costa, in aree protette;
   interruttore **ha / % del territorio / m² per abitante**), **Consumi** (colonna impilata per causa: edifici, strade e
   infrastrutture, piazzali e aree produttive, cantieri, cave e discariche, fotovoltaico a terra, altro, non attribuito; accanto
-  la colonna verde scura «di cui su suolo agricolo», stima EuGEnio, `#1b5e20`), **Colture** (colonna impilata per famiglia).
+  la colonna verde «di cui su suolo agricolo», stima EuGEnio), **Colture** (colonna impilata per famiglia).
+- **Colori** (Paolo, 22/11/2026: nel tema scuro i grafici non si leggevano): `TAVOLOZZA` in `suolo.js`, per id della voce,
+  `[scuro, chiaro]` come le serie di `stile.css`: nel tema scuro colori chiari come nella pagina dell'elettricità (contrasto
+  ≥ 4,5:1 sui riquadri `--foglio`), nel tema chiaro più scuri (≥ 3:1 sul bianco); fra le voci dello stesso gruppo ΔE2000 ≥ 7,8
+  anche con deuteranopia, protanopia e tritanopia simulate (Machado 2009). Valgono per mappa, grafici, legende e immagine
+  scaricata; il colore nei dati della fase 16 resta solo per voci nuove senza tavolozza. «Di cui su suolo agricolo»
+  `#77f69e` (scuro) / `#2a9a50` (chiaro), al posto di `#1b5e20`. Comuni per % consumato: nel tema scuro la scala va dal
+  giallo chiaro al viola chiaro (`#fff3b8 → #a35ee6`, tutte ≥ 4,5:1 sul fondo), nel tema chiaro resta `#fff5d6 → #6b0f1a`.
+  Al cambio di tema (`eugenio:aspetto`) si ridisegnano anche gli istogrammi della mappa. Il trattino del valore iniziale
+  resta nero (in legenda con il bordo).
 - **Periodo a due indicatori** (Paolo, 22/11/2026 01:00): due `input type=range` sovrapposti in `.cursore-doppio` (guida
   colorata fra i due con `--da` e `--a`; ognuno si muove con mouse, dito e tastiera, `aria-label` «Anno iniziale/finale del
   periodo», `aria-valuetext` con l'anno); all'apertura tutti e due sull'ultimo anno. Flussi (Consumi) = somma dei periodi
@@ -250,8 +335,9 @@ divisione in due metà.
 - **Grafici** (tutti con la freccina del riquadro): valori del periodo (energia, potenza massima e minima con l'istante,
   media, quota rinnovabile per l'Italia, quarti d'ora senza dati); profilo giornaliero (fascia minimo–massimo e media
   per quarto d'ora o ora del giorno, ora italiana); curva di durata (potenze in ordine decrescente, ascissa in ore);
-  fonti (barre al 100 % per quarto d'ora o ora, colori di `fase15-elettricita/elettricita/costruisci.py`, solo Italia:
-  con una zona scelta compare la nota «Terna pubblica la produzione per fonte solo per tutta l'Italia»).
+  potenza per fonte in MW (dal 22/11/2026, vedi sotto) e fonti (barre al 100 % per quarto d'ora o ora, colori di
+  `fase15-elettricita/elettricita/costruisci.py`, solo Italia: con una zona scelta compare la nota «Terna pubblica la
+  produzione per fonte solo per tutta l'Italia»).
 - **Zoom proprio**: rotella = zoom dell'asse orizzontale attorno al puntatore, trascinamento = spostamento, due dita =
   zoom, doppio clic = vista iniziale, tastiera (frecce, `+ − 0`). Il grafico si **ridisegna con i dati della vista**
   (percorsi aggregati per pixel: le barre delle fonti sono una colonna per pixel che somma i quarti d'ora coperti, o una
@@ -266,6 +352,98 @@ divisione in due metà.
   sezioni (dal 21/11/2026: niente titoli di sezioni vuote, resta solo il messaggio).
 - Fonti e licenze nel piè, sezione `metodo.html#carichi`, «Come leggere i grafici» in fondo alla pagina.
 - Prove: `tests/test_carichi_browser.py` (Playwright, dati inventati dalla fase 15).
+
+### Potenza per fonte, finestra comune e fonti spente (22/11/2026, richiesta di Paolo delle 09:42)
+
+- **Grafico «Potenza per fonte»** (`#grafico-assoluti`, `cfgAssoluti()`) prima delle barre al 100 % (`#grafico-fonti`):
+  stessa scomposizione e stessi colori (`indice.json`, `voci`), aree impilate in **MW medi** del quarto d'ora o dell'ora
+  (una colonna per quarto d'ora, o per pixel con la **media** dei quarti d'ora coperti, `colonneFonti()`, comune ai due
+  grafici; il saldo entra solo quando è positivo, come nelle barre al 100 %). Asse verticale da 0 al massimo della pila
+  visibile. L'energia (**GWh**) di ogni fonte nella finestra visibile sta accanto alla sua casella (`scriviEnergie()`).
+  La nota «Terna pubblica la produzione per fonte solo per tutta l'Italia» è passata in questa sezione e vale per i due.
+- **Stessa vista**: i due grafici delle fonti stanno in un gruppo (`cfg.gruppo = st.finestra`, `grafico()`): rotella,
+  trascinamento, dita, tasti `+ − 0`, doppio clic e riquadro grande in uno spostano anche l'altro. Col cambio di zona o
+  di passo la finestra resta; col cambio di periodo torna a tutto il periodo.
+- **Pulsanti** sopra il grafico (`#carichi-finestre`, `.filtro` con `aria-pressed`): «Ieri», «Ultima settimana»,
+  «Ultimo mese», «Ultimi 3 mesi», «Ultimo anno» contano all'indietro dall'**ultimo giorno con i dati di tutte le
+  fonti** nel periodo (`ultimoGiornoFonti()`, `finestraDi()`: settimana = 7 giorni, mese = stesso giorno del mese prima
+  + 1, tagliati all'inizio del periodo); «Tutto il periodo» torna alla vista intera. Acceso il pulsante della finestra
+  di adesso (tolleranza un minuto).
+- **Cursore «Sposta di un mese»** (`#carichi-scorri`, input range): con la finestra più corta del periodo, ogni scatto la
+  porta un mese avanti o indietro **con la stessa larghezza** (`posizioni()`: finestre che finiscono alla fine del
+  periodo e poi un mese prima a ogni scatto, l'ultima che comincia all'inizio del periodo). Con tutto il periodo è
+  spento. Frecce, Pagina su/giù, Inizio e Fine come ogni input range; `aria-valuetext` e `<output>` con la finestra.
+- **Caselle per fonte** sotto il grafico in MW (anche nel riquadro grande; tutte le copie restano allineate,
+  `accendiFonti()`), «Accendi tutte», «Spegni tutte». Il grafico in MW si ridisegna con le sole fonti accese («Nessuna
+  fonte accesa» se sono tutte spente); in quello al 100 % le spente restano al loro posto col **colore dello sfondo**
+  (`fill: var(--sfondo-grafico, var(--carta))`, `--sfondo-grafico: var(--foglio)` nel riquadro grande) e sono barrate
+  nella legenda. Riquadretto: «(spenta)» accanto alla fonte, «fonti accese, in tutto».
+- **Indirizzo e collegamento**: `finestra=AAAA-MM-GG_AAAA-MM-GG` (giorni interi, fine compresa) oppure con l'ora,
+  `AAAA-MM-GGTHHMM` (istante esatto, ora italiana, dopo zoom e trascinamento), e `spente=termo,saldo` (identificativi
+  di `voci`, ignorati quelli che non ci sono). I predefiniti (tutto il periodo, tutte accese) non si scrivono. Scritti
+  300 ms dopo l'ultimo cambio (`scriviPresto()`, poi `EUGENIO_COLLEGAMENTO.aggiorna()`).
+- Correzioni: «Tutta Italia» davvero nascosto quando la zona è l'Italia (`.carichi-zona .bottone[hidden]`); tacche
+  dell'asse dei tempi ogni 64 px (prima 80), così una settimana a 375 px ha le date.
+- Prove: `test_carichi_browser.py::test_potenza_per_fonte_e_finestra`, `::test_fonti_spente` (colore dello sfondo nel
+  tema scuro, nel chiaro e nel riquadro), `::test_telefono_fonti`; `test_collegamento_browser.py::test_carichi_finestra_e_fonti`.
+
+### Due metà, zona a discesa, anni, Italia = somma delle zone, dati mancanti (22/11/2026 b, richiesta di Paolo delle 09:54)
+
+- **Due metà** sotto il titolo e l'avviso: `div.strumento.carichi-meta[data-divisore]` con `section.carichi-lato`
+  `data-lato="0"` (`data-divisore-sinistra`, identificativi di sempre) e `data-lato="1"` (`data-divisore-destra`). La
+  destra la riempie `copiaMeta()` copiando la sinistra e aggiungendo «-2» a `id`, `for`, `aria-labelledby`,
+  `aria-describedby`, `aria-controls`. `divisore.js` ora accetta anche `.strumento[data-divisore]` dentro la pagina con le
+  due metà segnate da `data-divisore-sinistra` / `data-divisore-destra` (stesso comportamento: trascinamento, frecce,
+  doppio clic, larghezza ricordata). Dagli 861 px ogni metà è alta quanto la finestra sotto la testata e scorre da sola
+  (la barra della sinistra a sinistra, `direction: rtl`); col telefono una sotto l'altra. Il JavaScript ha lo stato di
+  ogni metà in `creaLato(k)` (zona, periodo, passo, grafici, finestra, fonti spente) e i dati comuni in `D` (indice,
+  mesi, file letti una volta sola per le due metà). `window.EUGENIO_CARICHI.stato` è la metà sinistra, `.destra` la destra.
+- **Zona**: casella a discesa `#carichi-zona` (e `-2`) con «Italia (tutte le zone)» e le sette zone, al posto di «Zona
+  Italia / Tutta Italia». La **piccola mappa** resta una sola, sopra: il clic su una zona la sceglie in **tutte e due**
+  le metà; se è già in tutte e due, torna all'Italia. Evidenza (`evidenzia()`): le zone non scelte più chiare, zona della
+  sinistra `.meta-sx` (bordo pieno scuro, spesso), della destra `.meta-dx` (bordo tratteggiato color primario), la stessa
+  in tutte e due `.meta-tutte` (bordo pieno color primario); spiegazione in `#minimappa-legenda` sotto la mappa
+  («Sinistra: Nord», «Destra: Sicilia» o «Tutte e due le metà: …»).
+- **Anni e archivio**: menu `#carichi-anno` (anni dell'archivio) e «‹ ›» (`#anno-prima`, `#anno-dopo`: anno precedente e
+  successivo; con un periodo che non è un anno intero «‹» va all'anno prima di quello della data finale e «›» a
+  quello della data finale) che scrivono Dal/al (anno tagliato ai limiti dell'archivio). Pulsanti della finestra e
+  cursore «Sposta di un mese» ora vanno su **tutto l'archivio** (`posizioni()` dalla fine dell'archivio indietro di un
+  mese per scatto, `finestraDi()` dall'ultimo giorno con le fonti dell'archivio): se la finestra esce dal periodo Dal/al
+  (`vaiA()`), il periodo si sposta con la stessa lunghezza in giorni (più lungo se la finestra non ci sta), si ricalcola
+  e la finestra si rimette dopo il calcolo. Con tutto il periodo visibile il cursore sposta il periodo intero, un mese a
+  scatto.
+- **Italia = somma delle zone** (fase 15, `carichi.py`): l'Italia scritta è la somma degli interi delle zone, quarto
+  d'ora per quarto d'ora (dove manca una zona resta «Italy» di Terna); `scarto_italia_mw` nell'indice di ogni mese.
+  Scarto misurato su nov 2025 – nov 2026 tra «Italy» e la somma: 7·10⁻¹² MW (cioè nessuno); 1–3 MW solo per gli
+  arrotondamenti delle singole zone, ora spariti. La produzione per fonte è solo nazionale.
+- **Dati mancanti**: `scriviMancanti()` elenca sotto lo stato di ogni metà (`#carichi-mancanti`, nascosto se non ce ne
+  sono) i tratti senza potenza richiesta della zona e senza produzione per fonte; `tratteggia()` disegna nei due grafici
+  delle fonti un rettangolo tratteggiato (`rect.carichi-mancanti-area`, motivo SVG) con «dati mancanti» se è largo almeno
+  96 px; il riquadretto lo dice. Il worker riprova i giorni mancanti (fase 4, § «Dati di Terna», «Giorni mancanti»).
+- Prove: `test_carichi_browser.py::test_due_meta_zone_e_mappa`, `::test_anni_e_archivio`, `::test_dati_mancanti` (dati
+  scritti a mano: dicembre 2025 e gennaio 2026 col buco del 14–15 gennaio); `test_collegamento_browser.py::test_carichi_due_meta`;
+  fase 15 `test_carichi.py::test_italia_somma_delle_zone`; fase 4 `test_terna.py::test_giorni_mancanti_*`.
+
+### «Riallinea le due metà» ed energia rinnovabile (22/11/2026 c, richiesta di Paolo delle 10:20)
+
+- Pulsante **«Riallinea le due metà»** (`#carichi-riallinea`, sotto la legenda della piccola mappa, in alto e comune):
+  `riallinea()` prende il pezzo della metà sinistra (scelte o sezione `.carichi-sezione`) che è in cima alla sua area
+  visibile e fa scorrere la metà destra fino allo stesso pezzo, alla stessa distanza dal bordo (`scrollBy` istantaneo),
+  anche se sopra i grafici le due metà sono alte in modo diverso (nota delle zone, dati mancanti…). Col telefono (una
+  metà sotto l'altra) la pagina salta dal pezzo in alto allo stesso pezzo dell'altra metà (dalla sinistra alla destra e
+  viceversa). Annuncio per i lettori di schermo; si usa anche da tastiera (è un pulsante). Corretto anche il telefono:
+  sotto gli 861 px le due metà sono davvero una sotto l'altra (`.strumento.carichi-meta { display: block }`; prima
+  restavano due colonne strette).
+- **Sesto riquadro** di «Valori del periodo» (al posto di «Produzione rinnovabile», che c'era solo per l'Italia):
+  «Energia da fonti rinnovabili (Italia)» in GWh o TWh e, sotto, la quota sulla **produzione nazionale** (rinnovabili +
+  termoelettrico negli stessi quarti d'ora) e quella sulla potenza richiesta dell'Italia. Rinnovabili: bioenergie,
+  idroelettrico (come lo pubblica Terna nella produzione rinnovabile, pompaggi compresi: Terna non li separa),
+  geotermico, eolico, fotovoltaico; esclusi termoelettrico tradizionale e saldo (estero, pompaggi, accumuli). Sempre
+  dell'Italia, anche con una zona scelta (le fonti esistono solo per l'Italia), e per tutte le fonti: le caselle
+  accese/spente non contano. Contano solo i quarti d'ora con tutte le fonti. Spiegazione in `#nota-rinnovabili` sotto i
+  riquadri.
+- Prove: `test_carichi_browser.py::test_riallinea` (due colonne, tastiera, telefono), `::test_energia_rinnovabile`
+  (valore e quota ricalcolati dai file, uguali con una fonte spenta e con una zona).
 
 ## Segnalazioni di Paolo sulla v2026.11.21 (21–22/11/2026, nella versione 20261121b, pull request #17)
 
@@ -535,12 +713,39 @@ sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i c
   - **Mappa**: per ogni ente una sorgente GeoJSON dai punti di `/api/immobili-pa/ente/{chiave}/punti` (filtrati nel browser
     per ruolo e natura, una feature per particella con `n` beni), pallini fino allo zoom delle particelle (13) con raggio
     che cresce con √n, raggruppati (`cluster`, senza numeri: la mappa non ha glifi) oltre 3.000 punti; dallo zoom 13 restano
-    i pallini dei soli beni senza particella e compaiono i livelli `pa-enti-terreni`, `pa-enti-edifici` (retino
-    `retino-ente-<n>` nel colore dell'ente) e `pa-enti-linea` sulla sorgente `pa` delle tessere, filtrati con la proprietà
-    `e` (`["in", ",<id>p,", ["get", "e"]]`); se una particella è di più enti scelti vale il colore del primo. I livelli
+    i pallini dei soli beni senza particella e compaiono i livelli dei contorni sulla sorgente `pa` delle tessere, filtrati
+    con la proprietà `e` (`["in", ",<id>p,", ["get", "e"]]`); se una particella è di più enti scelti vale il colore del
+    primo. I livelli
     normali si **attenuano** (opacità ~0,1) e la loro legenda si schiarisce; sotto la mappa la legenda degli enti.
     Clic e passaggio del mouse passano prima da `EUGENIO_PUBBLICI_ENTI.suClic/suMovimento` (nomi degli enti scelti nella
     particella; clic su un gruppo di pallini → zoom).
+  - **Stili proprietà / uso / terreni** (22/11/2026 sera, richiesta di Paolo), sempre nel colore dell'ente:
+    - **in proprietà**: colore pieno e acceso (pallino pieno con bordo bianco; particella piena, opacità 0,72, con
+      contorno continuo: livelli `pa-enti-edifici`, `pa-enti-terreni`, `pa-enti-linea`);
+    - **in uso** (detenzione): stesso colore trasparente (pallino ad anello, interno a opacità 0,22 e bordo nel colore;
+      particella a opacità 0,22 con contorno tratteggiato: `pa-enti-uso-edifici`, `pa-enti-uso-terreni`,
+      `pa-enti-uso-linea`, sotto quelli della proprietà, filtrati con `,<id>u,` e senza `,<id>p,` degli enti scelti);
+    - **terreni**: righe oblique «\» chiare e scure nel colore dell'ente (immagini `terreno-ente-<n>` per il riempimento e
+      `pallino-terreno-<n>-p|u` per i pallini, livelli `symbol` `pe-<chiave>-righe` e `-senza-righe` con `icon-size`
+      proporzionale al raggio); **fabbricati senza righe** (il retino magenta resta il segno degli immobili pubblici nella
+      vista normale).
+    Un pallino o una particella con beni in proprietà e in uso prende lo stile della proprietà; con fabbricati e terreni
+    quello dei fabbricati. La legenda sotto la mappa spiega i tre stili con campioni disegnati come sulla mappa (pallino e
+    riquadro nel colore del primo ente, `campioneStile`); le righe dell'immagine scaricata li descrivono a parole e la mappa
+    nell'immagine è la stessa.
+  - **Scheda in sovraimpressione** (22/11/2026 sera): nella modalità per ente un clic su un pallino, una particella o una
+    riga della tabella apre la scheda completa in un riquadro **sopra la mappa** (`#scheda-sopra`, `role="dialog"` non
+    modale, in alto a sinistra: la posizione la scrive `edifici_pubblici.js` dal contenitore della mappa, lasciando liberi
+    i pulsanti di zoom a destra e attribuzione, righello e livelli sotto), chiusa con **×**, **Esc** o un **clic fuori**
+    (non con uno spostamento della mappa); sotto i 860 px è a **tutta larghezza in basso** (al massimo 62 % dell'altezza).
+    Contiene tutti i campi pubblicabili restituiti da `/particella/{ref}` e `/bene/{id}`, per **ogni dichiarazione**
+    (proprietario e chi lo ha in uso), con prima i beni degli enti scelti e il campione del loro colore e ruolo: ente,
+    tipo, settore e macrocategoria, sede dell'ente, ruolo, titolo e quota, detenzione dell'intera unità, natura,
+    indirizzo, comune con codice catastale, regione, identificativo e sistema catastale, superficie dichiarata e di
+    riferimento, cubatura, pertinenze, epoca, canone, utilizzo e finalità, dati a terzi, vincolo, natura giuridica,
+    compendio, punto del censimento con la sua fonte, aggancio, identificativo del bene. Mai soggetto cedente né codici
+    fiscali. La stessa scheda resta anche nel passo «Scheda» del pannello; passando a «Cerca un immobile» il riquadro si
+    chiude.
   - **Passo «Edifici degli enti selezionati»** (numeri dei passi rifatti): per ogni ente i totali (`/api/immobili-pa/ente/
     {chiavi}`, una richiesta per tutti) con superficie dichiarata dei fabbricati in m², dei terreni in ettari, percentuali
     con un decimale; con più enti la riga «Insieme» sui beni distinti. Elenco con `tabella_ordinabile.js` (una riga per
@@ -549,7 +754,8 @@ sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i c
     600 px): fino a 200 righe tutte insieme e ordinate nel browser, oltre si parte dai **comuni** (tabella ordinabile dei
     comuni, clic → particelle del comune) o, con un solo comune, dalle **pagine da 100 righe ordinate dal server**.
     L'ordinamento scelto vale per tutti gli enti e va nel collegamento. Clic (o Invio) su una riga → la mappa vola sulla
-    particella, la riga e il contorno si evidenziano e si apre la Scheda. Nessuna esportazione della tabella.
+    particella, la riga e il contorno si evidenziano e si apre la scheda sopra la mappa (con Invio il fuoco va al
+    riquadro e torna alla riga quando si chiude). Nessuna esportazione della tabella.
   - **Immagine** (`opzioniImmagine`): nella fascia sotto la mappa una riga per ente con il colore scritto («blu: Comune di
     Cesena (FC) – 2.718 beni, 551 particelle»), i filtri e la spiegazione dei segni.
   - Con un `indice.json` senza `enti` (dati preparati prima del 22/11/2026) la scheda dice che la ricerca per ente non è

@@ -498,6 +498,83 @@ def invia_personali(chiave: str, servizio: str, lista: int, costruisci) -> dict:
     return esito
 
 
+# ---------------------------------------------------------------------------------------------- pioggia misurata
+# (22/11/2026, decisione di Paolo) dati pluviometrici del DPC solo «Merging» (radar corretto con i pluviometri), a fini
+# statistici: una sezione nel mensile per regione e una nel settimanale, nessun avviso. Licenza CC BY-SA 4.0, scritta
+# accanto ai dati (servizio/radar.py).
+PAGINA_PIOGGIA = "https://eugenio.statocritico.it/pluviometria.html"
+FONTE_PIOGGIA = ("Pioggia misurata: «Merging» del Dipartimento della Protezione Civile (radar corretto con i pluviometri), "
+                 "CC BY-SA 4.0: questa sezione e i suoi numeri hanno la stessa licenza. Elaborazione EuGEnio, a fini "
+                 "statistici (non di allerta). «–» = nessuna misura.")
+
+
+def _mm(x) -> str:
+    return "–" if x is None or (isinstance(x, float) and x != x) else f"{_num(x, 1 if x < 10 else 0)} mm"
+
+
+def righe_pioggia_settimana(c: dict, giorni: list[dt.date]) -> list[str]:
+    """Pioggia misurata giorno per giorno nella settimana passata in un comune, con la previsione di una settimana prima
+    (quella dell'email settimanale) o, se manca, quella del sito di inizio giornata. Nessuna riga senza dati."""
+    from . import radar as RD
+    try:
+        mis = {g["data"]: g["mm"] for g in RD.giornalieri(c["istat"], 7, giorni[-1])}
+        prev = RD.previsti_email(c["istat"]) or RD.previsti(c["istat"], giorni[0], giorni[-1])
+    except Exception as e:
+        log.warning("Pioggia misurata di %s non letta: %s", c["istat"], e)
+        return []
+    if not any(mis.get(g.isoformat()) is not None for g in giorni):
+        return []
+    con_prev = any(prev.get(g.isoformat()) is not None for g in giorni)
+    righe = [("| Giorno | Misurata | Prevista |" if con_prev else "| Giorno | Misurata |"),
+             ("|---|---:|---:|" if con_prev else "|---|---:|")]
+    for g in giorni:
+        m = mis.get(g.isoformat())
+        r = f"| {GIORNI_BREVI[g.weekday()]} {g.day} | {_mm(m)} |"
+        righe.append(r + (f" {_mm(prev.get(g.isoformat()))} |" if con_prev else ""))
+    validi = [mis[g.isoformat()] for g in giorni if mis.get(g.isoformat()) is not None]
+    tot = f"Totale misurato: **{_mm(sum(validi))}**" + ("" if len(validi) == 7 else f" ({len(validi)} giorni su 7 con misura)")
+    if con_prev:
+        pv = [prev[g.isoformat()] for g in giorni if prev.get(g.isoformat()) is not None]
+        tot += f"; previsto: {_mm(sum(pv))}" + ("" if len(pv) == 7 else f" ({len(pv)} giorni)")
+    return righe + ["", tot + ".", ""]
+
+
+def tabella_pioggia_regioni(anno: int, mese: int, regioni: list[str], nomi: dict[str, str]) -> list[str]:
+    """Pioggia del mese nelle regioni scelte: per provincia la media dei comuni e il comune più piovoso, poi i cinque comuni
+    più piovosi della regione. Solo comuni misurati tutti i giorni del mese."""
+    from . import radar as RD
+    import calendar
+    try:
+        tot = RD.totali_mese(anno, mese)
+    except Exception as e:
+        log.warning("Pioggia del mese non letta: %s", e)
+        return []
+    if tot.empty:
+        return []
+    giorni = calendar.monthrange(anno, mese)[1]
+    cm = pd.read_parquet(C.DATI / "comuni.parquet", columns=["istat", "nome", "provincia", "regione_cod"])
+    cm["istat"] = cm.istat.astype(str).str.zfill(6)
+    d = tot.merge(cm, on="istat")
+    d = d[d.giorni >= giorni]
+    righe: list[str] = []
+    for r in regioni:
+        dr = d[d.regione_cod.astype(str) == str(r)]
+        if dr.empty:
+            continue
+        righe += [f"### {nomi.get(r, r)}", "", "| Provincia | Media dei comuni | Comune più piovoso |", "|---|---:|---|"]
+        for prov, dp in sorted(dr.groupby("provincia"), key=lambda x: str(x[0])):
+            mx = dp.loc[dp.mm.idxmax()]
+            righe.append(f"| {prov} | {_mm(dp.mm.mean())} | {mx['nome']}, {_mm(mx.mm)} |")
+        top = dr.nlargest(5, "mm")
+        righe += ["", "Comuni più piovosi: " + "; ".join(f"{x.nome} ({x.provincia}) {_mm(x.mm)}" for x in top.itertuples())
+                  + ".", ""]
+    if not righe:
+        return []
+    return ([f"Pioggia caduta in {MESI[mese - 1]} {anno}, somma dei giorni misurati dal «Merging» del DPC nel punto di "
+             f"ogni comune (solo i comuni misurati tutti i {giorni} giorni). Mappa e serie per comune: "
+             f"[Dati pluviometrici]({PAGINA_PIOGGIA}).", ""] + righe + [FONTE_PIOGGIA, ""])
+
+
 # ---------------------------------------------------------------------------------------------- mensile per regione
 def _capoluoghi_italia() -> pd.DataFrame:
     """Capoluoghi di tutte le regioni (comuni.parquet intero, non solo le REGIONI servite), con i secondi capoluoghi."""
@@ -565,15 +642,19 @@ def testo_mensile_regioni(anno: int, mese: int, invio: dt.date, regioni: list[st
         vv = [v for v in voci if str(v.get("regione_cod")) == r]
         if vv:
             righe += [f"## {nomi[r]}: i capoluoghi", ""] + _righe_freddo(vv, anno, mese, note=False)
+    pioggia = tabella_pioggia_regioni(anno, mese, scelte, nomi) if scelte else []
+    if pioggia:
+        righe += [f"## La pioggia di {nome_mese}", ""] + pioggia
     if not scelte:
-        righe += [f"Scegli fino a {C.EMAIL_MAX_REGIONI} regioni per avere anche i loro capoluoghi uno per uno: trovi il "
-                  "collegamento in fondo all'email.", ""]
+        righe += [f"Scegli fino a {C.EMAIL_MAX_REGIONI} regioni per avere anche i loro capoluoghi uno per uno e la "
+                  "pioggia del mese: trovi il collegamento in fondo all'email.", ""]
     if voci:
         per = _periodo(min(v["da"] for v in voci), max(v["a"] for v in voci))
         righe += _note_freddo(per, any(v["dn"] is not None for v in voci)) + [""]
     righe += novita_tra(_numero_precedente(invio), invio)
     titolo = " e ".join(nomi[r] for r in scelte[:2]) + (" e altre" if len(scelte) > 2 else "")
-    oggetto = f"EuGEnio – prezzi e freddo di {nome_mese}" + (f" ({titolo})" if titolo else "")
+    oggetto = (f"EuGEnio – {'prezzi, freddo e pioggia' if pioggia else 'prezzi e freddo'} di {nome_mese}"
+               + (f" ({titolo})" if titolo else ""))
     return oggetto, "\n".join(righe)
 
 
@@ -624,7 +705,7 @@ def testo_settimanale(lunedi: dt.date, comuni: list[dict], prev: dict[str, pd.Da
              "Temperature minime e massime, pioggia (neve fusa compresa), neve fresca, raffica più forte e gradi giorno "
              "(base 20 °C) previsti giorno per giorno. Sono previsioni: più i giorni sono lontani, più possono cambiare.",
              ""]
-    trovati = 0
+    trovati, con_pioggia = 0, False
     for c in comuni:
         p = prev.get(c["istat"])
         if p is None or p.empty:
@@ -643,6 +724,9 @@ def testo_settimanale(lunedi: dt.date, comuni: list[dict], prev: dict[str, pd.Da
                          f"{_fmt(r.tmax, 0, '°C')} | {_fmt(r.pioggia, 0, 'mm')} | {_fmt(r.neve, 0, 'cm')} | "
                          f"{_fmt(r.raffica, 0, 'km/h')} | {_fmt(r.gg20, 1)} | {nota} |")
         gg = float(sett.gg20.sum())
+        ieri = min(lunedi, dt.date.today()) - dt.timedelta(days=1)      # gli ultimi 7 giorni interi
+        passata = [ieri - dt.timedelta(days=6 - i) for i in range(7)]
+        pioggia = righe_pioggia_settimana(c, passata)
         frase = f"Gradi giorno previsti nella settimana: **{_num(gg)}**"
         if len(sett) == 7:
             n = _gg_stessi_giorni(c["istat"], giorni)
@@ -650,12 +734,16 @@ def testo_settimanale(lunedi: dt.date, comuni: list[dict], prev: dict[str, pd.Da
                 frase += (f"; negli stessi giorni del {_periodo(n[1], n[2])} in media {_num(n[0])} "
                           f"({_segno(100 * (gg / n[0] - 1))} %)")
         righe += ["", frase + ".", ""]
+        if pioggia:
+            righe += [f"**Pioggia misurata dal {passata[0].day} {MESI[passata[0].month - 1]} al {passata[-1].day} "
+                      f"{MESI[passata[-1].month - 1]}**", ""] + pioggia
+            con_pioggia = True
     if not trovati:
         return None
     righe += ["La colonna «Attenzione» segna i giorni che superano le soglie degli avvisi meteo di EuGEnio (pioggia "
               f"forte, neve, vento molto forte); per riceverli il giorno prima iscriviti agli avvisi meteo.",
               "", f"Le previsioni non sostituiscono le allerte della Protezione Civile e degli enti pubblici.",
-              "", ME.FONTE, ""]
+              "", ME.FONTE, ""] + ([FONTE_PIOGGIA, ""] if con_pioggia else [])
     oggetto = (f"EuGEnio – previsioni dal {lunedi.day} al {domenica.day} {MESI[domenica.month - 1]}: "
                + ", ".join(c["nome"] for c in comuni[:3]) + (" e altri" if len(comuni) > 3 else ""))
     return oggetto, "\n".join(righe)
@@ -687,6 +775,11 @@ def settimanale(oggi: dt.date | None = None) -> dict | None:
     cm = _comuni_nomi()
     tutti = sorted({c for s in iscritti for c in L.scelte(s)["comuni"]})
     prev = ME.previsioni(tutti, (lunedi - oggi).days + 8)
+    try:                                 # (22/11/2026) per il confronto con la pioggia misurata della settimana dopo
+        from . import radar as RD
+        RD.registra_previsto_email(prev)
+    except Exception as e:
+        log.warning("Previsioni per il confronto con la pioggia misurata non salvate: %s", e)
     return invia_personali(f"settimanale-{lunedi}", "settimanale", lista,
                            lambda s: testo_settimanale(lunedi, _comuni_di(s, cm), prev))
 

@@ -11,12 +11,12 @@ try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
 var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|aria|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261122a";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261122a"></script>
-<script src="numeri.js?v=20261122a"></script>
-<link rel="stylesheet" href="stile.css?v=20261122a">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261122a">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261122a">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261122b";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261122b"></script>
+<script src="numeri.js?v=20261122b"></script>
+<link rel="stylesheet" href="stile.css?v=20261122b">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261122b">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261122b">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
 </head>
@@ -24,7 +24,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261122a" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261122b" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -32,7 +32,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261122a">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261122b">Novità</a>
       <a href="esempi.html">Esempi</a>
       <a href="contributi.html">Contributi</a>
       <a href="contatti.html">Contattaci</a>
@@ -42,7 +42,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <nav class="menu-pannello" aria-label="Menu completo">
         <h2>Servizi</h2>
         <details class="pannello-gruppo" data-gruppo="clima"><summary>Clima e meteo</summary>
-          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="./">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
+          <ul><li><a href="dati.html">Dati climatici</a></li><li><a href="legge10.html">Legge 10</a></li><li><a href="pluviometria.html">Dati pluviometrici <span class="cantiere prova">sperimentale</span></a></li><li><a href="previsioni.html">Previsioni</a></li><li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale</span></a></li><li><a href="dati-per-email.html">Newsletter e avvisi</a></li></ul>
         </details>
         <details class="pannello-gruppo" data-gruppo="patrimonio"><summary>Territorio</summary>
           <ul><li><a href="patrimonio.html">Patrimonio</a></li><li><a href="edifici-pubblici.html">Edifici pubblici <span class="cantiere prova">sperimentale</span></a></li><li><a href="ortofoto.html">Ortofoto <span class="cantiere prova">sperimentale</span></a></li><li><a href="lidar.html">LiDAR <span class="cantiere">in sviluppo</span></a></li><li><a href="modelli3d.html">Modelli 3D <span class="cantiere prova">sperimentale</span></a></li><li><a href="importa-dxf-ifc.html">Importa DXF/IFC <span class="cantiere prova">sperimentale</span></a></li><li><a href="aggiungi-dbtr.html">Aggiungi edifici (DB topografico) <span class="cantiere prova">sperimentale</span></a></li><li><a href="dbtr-istruzioni.html">Scaricare i DB topografici</a></li><li><a href="visure.html">Visure <span class="cantiere">in sviluppo</span></a></li></ul>
@@ -63,7 +63,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li><li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale</span></a></li><li><a href="elettricita.html">Produzione e consumi di elettricità <span class="cantiere prova">sperimentale</span></a></li><li><a href="carichi.html" aria-current="page">Carichi elettrici <span class="cantiere prova">sperimentale</span></a></li><li><a href="suolo.html">Suolo e aree agricole <span class="cantiere prova">sperimentale</span></a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261122a">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261122b">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -85,7 +85,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul class="tendina">
             <li><a href="dati.html">Dati climatici</a></li>
             <li><a href="legge10.html">Legge 10</a></li>
-            <li><a href="./">Previsioni</a></li>
+            <li><a href="pluviometria.html">Dati pluviometrici <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
+            <li><a href="previsioni.html">Previsioni</a></li>
             <li><a href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova breve" title="sperimentale"><span aria-hidden="true">S</span><span class="solo-lettori"> (sperimentale)</span></span></a></li>
             <li><a href="dati-per-email.html">Newsletter e avvisi</a></li>
           </ul></details></li>
@@ -176,9 +177,15 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <h1>Carichi elettrici</h1>
       <p class="sotto">Quanta potenza elettrica chiede l'Italia, quarto d'ora per quarto d'ora: il profilo della giornata con
         il minimo, la media e il massimo del periodo, la curva di durata e le fonti che la coprono. Scegli una zona di
-        mercato nella piccola mappa (un secondo clic torna all'Italia), il periodo e il passo.</p>
+        mercato nella piccola mappa (vale per tutte e due le metà della pagina; un secondo clic torna all'Italia) o nella
+        casella «Zona» di ogni metà, il periodo e il passo.</p>
     </div>
-    <div class="minimappa minimappa-zone" id="minimappa-zone" aria-label="Zone di mercato"></div>
+    <div class="minimappa-con-legenda">
+      <div class="minimappa minimappa-zone" id="minimappa-zone" aria-label="Zone di mercato"></div>
+      <p class="minimappa-legenda" id="minimappa-legenda" aria-live="polite"></p>
+      <button class="bottone secondario carichi-riallinea" id="carichi-riallinea" type="button"
+        title="Porta la metà destra allo stesso grafico che si vede in alto nella metà sinistra">Riallinea le due metà</button>
+    </div>
   </div>
 
   <!-- sperimentale -->
@@ -192,24 +199,36 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     </div>
     <!-- /sperimentale -->
 
-  <div class="comandi-carichi" role="group" aria-label="Scelte della pagina">
+  <p class="aiuto carichi-due-meta-nota">La pagina è divisa in due metà, ognuna con le sue scelte e i suoi grafici, per
+    confrontare due zone o due periodi: trascina il divisore tra le due per cambiarne la larghezza.</p>
+
+  <div class="strumento carichi-meta" id="carichi-meta" data-divisore>
+  <section class="carichi-lato" id="carichi-lato" data-lato="0" data-divisore-sinistra aria-label="Metà sinistra">
+  <div class="comandi-carichi" role="group" aria-label="Scelte della metà sinistra">
     <div class="carichi-zona">
-      <span class="carichi-etichetta">Zona</span>
-      <b id="zona-scelta">Italia</b>
-      <button class="bottone secondario" id="torna-italia" type="button" hidden>Tutta Italia</button>
+      <label class="carichi-etichetta" for="carichi-zona">Zona</label>
+      <select id="carichi-zona"><option value="ITA">Italia</option></select>
     </div>
     <div class="carichi-periodo">
       <label for="carichi-da">Dal</label><input type="date" id="carichi-da">
       <label for="carichi-a">al</label><input type="date" id="carichi-a">
       <button class="bottone secondario" id="ultimi-12" type="button">Ultimi 12 mesi</button>
     </div>
+    <div class="carichi-anno" role="group" aria-label="Anno intero">
+      <button class="bottone secondario" id="anno-prima" type="button" aria-label="Anno precedente" title="Anno precedente">‹</button>
+      <label class="solo-lettori" for="carichi-anno">Anno</label>
+      <select id="carichi-anno"><option value="">Anno…</option></select>
+      <button class="bottone secondario" id="anno-dopo" type="button" aria-label="Anno successivo" title="Anno successivo">›</button>
+    </div>
     <label class="casella-strato carichi-passo"><input type="checkbox" id="carichi-quarti" checked> Quarti d'ora <span class="aiuto">(senza: ore)</span></label>
   </div>
-  <p class="aiuto" id="stato-carichi" role="status" aria-live="polite">Caricamento…</p>
+  <p class="aiuto stato-carichi" id="stato-carichi" role="status" aria-live="polite">Caricamento…</p>
+  <p class="messaggio attenzione carichi-mancanti" id="carichi-mancanti" role="note" hidden></p>
 
   <section class="carichi-sezione" aria-labelledby="titolo-riepilogo">
     <h2 id="titolo-riepilogo">Valori del periodo</h2>
     <dl class="carichi-riepilogo" id="riepilogo-carichi"></dl>
+    <p class="aiuto nota-rinnovabili" id="nota-rinnovabili"></p>
   </section>
 
   <section class="carichi-sezione" aria-labelledby="titolo-profilo">
@@ -226,15 +245,45 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <div class="grafico grafico-carichi" id="grafico-durata"></div>
   </section>
 
+  <section class="carichi-sezione" aria-labelledby="titolo-assoluti">
+    <h2 id="titolo-assoluti">Potenza per fonte</h2>
+    <p class="aiuto" id="nota-assoluti">Per ogni quarto d'ora (o ora) del periodo, la potenza prodotta da ogni fonte, una
+      sopra l'altra (MW medi del quarto d'ora o dell'ora). Le caselle sotto il grafico accendono e spengono le fonti; accanto
+      a ogni fonte, l'energia prodotta nella finestra visibile. I tratti senza dati sono tratteggiati.</p>
+    <p class="messaggio attenzione nota-zona-fonti" id="nota-zona-fonti" role="note" hidden>Terna pubblica la produzione per
+      fonte solo per tutta l'Italia, non per zona di mercato: questi due grafici restano dell'Italia anche con una zona scelta
+      (nessuna ripartizione per zona è stimata).</p>
+    <div class="carichi-finestra" role="group" aria-labelledby="finestra-nome">
+      <span class="carichi-etichetta" id="finestra-nome">Finestra dei due grafici delle fonti</span>
+      <div class="filtri carichi-finestre" id="carichi-finestre">
+        <button class="filtro" type="button" data-finestra="giorno" aria-pressed="false">Ieri</button>
+        <button class="filtro" type="button" data-finestra="settimana" aria-pressed="false">Ultima settimana</button>
+        <button class="filtro" type="button" data-finestra="mese" aria-pressed="false">Ultimo mese</button>
+        <button class="filtro" type="button" data-finestra="trimestre" aria-pressed="false">Ultimi 3 mesi</button>
+        <button class="filtro" type="button" data-finestra="anno" aria-pressed="false">Ultimo anno</button>
+        <button class="filtro" type="button" data-finestra="tutto" aria-pressed="true">Tutto il periodo</button>
+      </div>
+      <div class="carichi-scorri">
+        <label for="carichi-scorri">Sposta di un mese</label>
+        <input type="range" id="carichi-scorri" min="0" max="0" step="1" value="0" disabled
+          aria-describedby="carichi-scorri-testo">
+        <output id="carichi-scorri-testo" for="carichi-scorri" aria-live="polite"></output>
+      </div>
+    </div>
+    <div class="grafico grafico-carichi" id="grafico-assoluti"></div>
+  </section>
+
   <section class="carichi-sezione" aria-labelledby="titolo-fonti">
     <h2 id="titolo-fonti">Fonti di produzione</h2>
     <p class="aiuto" id="nota-fonti">Per ogni quarto d'ora (o ora) del periodo, la parte della produzione coperta da ogni
-      fonte: barre tutte alte uguali (100 %).</p>
-    <p class="messaggio attenzione nota-zona-fonti" id="nota-zona-fonti" role="note" hidden>Terna pubblica la produzione per
-      fonte solo per tutta l'Italia, non per zona di mercato: questo grafico resta dell'Italia anche con una zona scelta
-      (nessuna ripartizione per zona è stimata).</p>
+      fonte: barre tutte alte uguali (100 %). Stessa finestra del grafico sopra; le fonti spente lì qui restano al loro
+      posto, del colore dello sfondo.</p>
     <div class="grafico grafico-carichi" id="grafico-fonti"></div>
   </section>
+  </section>
+  <!-- la metà destra (data-lato="1", identificativi con «-2») la costruisce carichi.js copiando la sinistra -->
+  <section class="carichi-lato" id="carichi-lato-2" data-lato="1" data-divisore-destra aria-label="Metà destra"></section>
+  </div>
 
   <section class="carichi-sezione carichi-regole" aria-labelledby="titolo-regole">
     <h2 id="titolo-regole">Come leggere i grafici</h2>
@@ -244,7 +293,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         due. Passando sopra (o toccando) si leggono i valori. La freccina in alto a destra apre il grafico in un riquadro
         grande, con gli stessi comandi.</li>
       <li><b>Potenza richiesta.</b> È il fabbisogno di Terna («Total Load»): la potenza media del quarto d'ora chiesta
-        alla rete, perdite e autoconsumi compresi, nella zona di mercato scelta o in tutta Italia (somma delle zone). Con
+        alla rete, perdite e autoconsumi compresi, nella zona di mercato scelta o in tutta Italia (somma delle sette zone, quarto
+        d'ora per quarto d'ora). Con
         le ore, ogni valore è la media dei quattro quarti d'ora dell'ora.</li>
       <li><b>Profilo giornaliero.</b> Le ore sono quelle italiane (ora legale d'estate): nel giorno del cambio dell'ora un
         quarto d'ora manca o conta due volte.</li>
@@ -255,6 +305,25 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         (potenza richiesta meno produzione) è l'energia arrivata dall'estero meno quella assorbita da pompaggi e accumuli:
         entra nelle barre quando è positivo, compare nel riquadretto anche quando è negativo. Fino al 2024 Terna pubblica
         la produzione ora per ora: allora i quattro quarti d'ora dell'ora hanno gli stessi valori.</li>
+      <li><b>Due metà.</b> La pagina è divisa in due metà con le loro scelte e i loro grafici, per confrontare due zone o
+        due periodi; il divisore tra le due si trascina (o si sposta con le frecce). La piccola mappa è una sola: un clic su
+        una zona la sceglie in tutte e due le metà, un secondo clic torna all'Italia; con la casella «Zona» ogni metà può
+        avere la sua. Sulla mappa la zona della metà sinistra ha il bordo pieno scuro, quella della destra il bordo
+        tratteggiato colorato, la stessa zona in tutte e due il bordo pieno colorato. «Riallinea le due metà», sotto la mappa,
+        porta la metà destra allo stesso grafico che si vede in alto a sinistra (col telefono salta all'altra metà).</li>
+      <li><b>Energia da fonti rinnovabili.</b> Bioenergie, idroelettrico (pompaggi compresi, che Terna non separa),
+        geotermico, eolico e fotovoltaico; la percentuale è sulla produzione nazionale. Sempre dell'Italia e per tutte le
+        fonti, anche quelle spente nei grafici.</li>
+      <li><b>Anni.</b> Il menu dell'anno e le frecce «‹ ›» scelgono un anno intero (Dal/al); l'archivio va dal 2021.</li>
+      <li><b>Dati mancanti.</b> I tratti che Terna non ha pubblicato (per esempio il 14 e il 15 gennaio 2026) sono elencati
+        sotto lo stato e tratteggiati nei grafici delle fonti; il server riprova a scaricarli ogni giorno.</li>
+      <li><b>Potenza per fonte e finestra.</b> I due grafici delle fonti mostrano sempre lo stesso tratto di tempo: zoom e
+        trascinamento in uno spostano anche l'altro. I pulsanti «Ieri», «Ultima settimana», «Ultimo mese», «Ultimi 3 mesi»
+        e «Ultimo anno» contano all'indietro dall'ultimo giorno con i dati delle fonti; il cursore «Sposta di un mese» porta
+        la finestra, con la stessa larghezza, un mese avanti o indietro a ogni scatto, su tutto l'archivio: se la finestra
+        esce dal periodo Dal/al, il periodo si sposta con lei (stessa lunghezza). Quando una colonna del grafico copre più quarti d'ora, la sua altezza è la loro media. Spegnendo una
+        fonte il grafico della potenza la toglie dalla pila; in quello in percentuale resta al suo posto, del colore dello
+        sfondo.</li>
       <li><b>Dati.</b> Terna aggiorna i dati ogni giorno; il server li legge una volta al giorno. I dati di Terna si usano
         solo per i grafici di questa pagina e non si scaricano.</li>
     </ul>
@@ -272,15 +341,16 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       amministrative a fini statistici (generalizzati, CC BY 4.0).</p>
   </div>
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261122a" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261122b" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL con <a href="licenza.html#attribuzione">termini aggiuntivi</a>, dati <a href="licenza.html#dati">CC BY 4.0</a>). <span class="piede-attribuzione">EuGEnio © 2026 Paolo Bianco – Stato Critico – <a href="https://eugenio.statocritico.it">https://eugenio.statocritico.it</a></span></p>
   <!-- /piede -->
 </footer>
 
-<script src="aspetto.js?v=20261122a"></script>
-<script src="collegamento.js?v=20261122a"></script>
-<script src="grafici.js?v=20261122a"></script>
-<script src="minimappa.js?v=20261122a"></script>
-<script src="carichi.js?v=20261122a"></script>
+<script src="aspetto.js?v=20261122b"></script>
+<script src="divisore.js?v=20261122b"></script>
+<script src="collegamento.js?v=20261122b"></script>
+<script src="grafici.js?v=20261122b"></script>
+<script src="minimappa.js?v=20261122b"></script>
+<script src="carichi.js?v=20261122b"></script>
 </body>
 </html>

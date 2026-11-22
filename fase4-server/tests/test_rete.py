@@ -469,3 +469,22 @@ def test_indirizzo_gse_uguale_nel_server_e_nel_browser():
     assert rete_js.count("services-eu1.arcgis.com") == 1
     py = Path(R.__file__).read_text(encoding="utf-8")
     assert py.count("services-eu1.arcgis.com") == 1
+
+
+def test_rotta_interruzioni_periodo(api):
+    """(22/11/2026) Interruzioni in corso in un periodo, per l'animazione di «Dati pluviometrici»: la 1 (chiusa alla
+    seconda lettura) c'è se il periodo comprende la prima lettura; la 5 è nuova e attiva; periodo troppo lungo → 422."""
+    da, a = T0 - dt.timedelta(hours=6), T0 + dt.timedelta(minutes=40)
+    r = api.get("/api/rete/interruzioni/periodo", params={"da": da.isoformat(), "a": a.isoformat()})
+    assert r.status_code == 200
+    j = r.json()
+    ids = {f["properties"]["id"] for f in j["features"]}
+    assert {1, 2, 5} <= ids
+    p1 = next(f["properties"] for f in j["features"] if f["properties"]["id"] == 1)
+    assert not p1["attiva"] and p1["fine_stimata"] == R.iso(T0)
+    tardi = api.get("/api/rete/interruzioni/periodo",
+                    params={"da": (T0 + dt.timedelta(minutes=20)).isoformat(), "a": a.isoformat()}).json()
+    assert 1 not in {f["properties"]["id"] for f in tardi["features"]}
+    assert api.get("/api/rete/interruzioni/periodo", params={"da": "2026-11-01T00:00:00Z", "a": "2026-11-20T00:00:00Z"}
+                   ).status_code == 422
+    assert api.get("/api/rete/interruzioni/periodo", params={"da": "ieri", "a": "oggi"}).status_code == 422

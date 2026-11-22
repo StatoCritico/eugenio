@@ -101,6 +101,30 @@ def test_carico_e_ora_doppia(uscita):
     assert max(abs(c["ITA"][i] - sum(c[z][i] for z in c if z != "ITA")) for i in range(n)) <= 4
 
 
+def test_italia_somma_delle_zone(uscita, tmp_path):
+    """(22/11/2026, Paolo) Italia = somma delle zone quarto d'ora per quarto d'ora, esatta anche dopo l'arrotondamento;
+    lo scarto tra «Italy» di Terna e la somma va nell'indice. Dove manca una zona resta «Italy» di Terna."""
+    ix = json.loads((uscita / "indice.json").read_text(encoding="utf-8"))
+    assert all(m["scarto_italia_mw"] < 0.01 for m in ix["mesi"])
+    for am in ("2026-09", "2026-10"):
+        c = json.loads((uscita / f"carico_{am}.json").read_text(encoding="utf-8"))["zone"]
+        assert list(c)[0] == "ITA"
+        assert all(c["ITA"][i] == sum(c[z][i] for z in c if z != "ITA") for i in range(len(c["ITA"])))
+    # Italia di Terna diversa dalla somma (+500 MW) e una zona mancante in un quarto d'ora
+    arch = tmp_path / "b"; arch.mkdir()
+    righe = []
+    for h in range(2):
+        d = f"2026-09-01T0{h}:00:00"
+        righe.append([d, 1500.0 + 500, "Italy"])
+        righe += [[d, v, z] for z, v in {"North": 1000.4, "Centre-North": 499.6}.items() if not (h == 1 and z == "North")]
+        righe += [[d, 0.0, z] for z in ("Centre-South", "South", "Calabria", "Sicily", "Sardinia")]
+    _scrivi(arch / "TotalLoad_2026-09.json", ["Date", "Total Load [MW]", "Bidding Zone"], righe)
+    K.costruisci_carichi(arch, tmp_path / "o")
+    c = json.loads((tmp_path / "o" / "carico_2026-09.json").read_text(encoding="utf-8"))["zone"]
+    assert c["ITA"][0] == 1500 and c["ITA"][4] == 2000                  # somma delle zone; senza North: Italy di Terna
+    assert json.loads((tmp_path / "o" / "indice.json").read_text(encoding="utf-8"))["mesi"][0]["scarto_italia_mw"] == 500
+
+
 def test_fonti(uscita):
     f9 = json.loads((uscita / "fonti_2026-09.json").read_text(encoding="utf-8"))["voci"]
     c9 = json.loads((uscita / "carico_2026-09.json").read_text(encoding="utf-8"))["zone"]["ITA"]

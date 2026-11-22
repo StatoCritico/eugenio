@@ -1032,6 +1032,43 @@ def interruzioni_attive(regione: str | None = None, bbox: tuple | None = None) -
             "attribuzione": FONTE_ED, "licenze": {"e-distribuzione": LICENZE["e-distribuzione"]}}
 
 
+def interruzioni_periodo(da: dt.datetime, a: dt.datetime, bbox: tuple | None = None) -> dict:
+    """(22/11/2026) Interruzioni in corso in qualche momento tra `da` e `a` (aware), per l'animazione della pagina «Dati
+    pluviometrici»: inizio dichiarato e fine stimata (ultima lettura in cui compare; per le attive, adesso). Al più 8 giorni."""
+    if a <= da or a - da > dt.timedelta(days=8):
+        raise HTTPException(422, "periodo: da prima di a, al più 8 giorni")
+    db = _db()
+    try:
+        righe = db.execute("SELECT * FROM interruzioni WHERE data_interruzione <= ? AND "
+                           "(chiusa_il IS NULL OR ultima_lettura >= ?) ORDER BY data_interruzione",
+                           (iso(a), iso(da))).fetchall()
+        agg = _meta(db, "interruzioni_aggiornate")
+        nomi = _nomi(db, anagrafica())
+    finally:
+        db.close()
+    ora, feat = adesso(), []
+    for r in righe:
+        if r["lat"] is None or r["lon"] is None:
+            continue
+        if bbox and not (bbox[0] <= r["lon"] <= bbox[2] and bbox[1] <= r["lat"] <= bbox[3]):
+            continue
+        p = _interruzione(r, ora, nomi)
+        p["fine_stimata"] = iso(ora) if p["attiva"] else r["ultima_lettura"]
+        feat.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [r["lon"], r["lat"]]},
+                     "properties": p})
+    return {"type": "FeatureCollection", "features": feat, "da": iso(da), "a": iso(a), "aggiornate": agg,
+            "nota_durata": NOTA_DURATA, "attribuzione": FONTE_ED,
+            "licenze": {"e-distribuzione": LICENZE["e-distribuzione"]}}
+
+
+def _istante(x: str | None, nome: str) -> dt.datetime:
+    try:
+        t = dt.datetime.fromisoformat(str(x).replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(422, f"{nome}: data e ora ISO (es. 2026-11-22T08:00:00Z)") from None
+    return t if t.tzinfo else t.replace(tzinfo=ROMA)
+
+
 def _mese(x: str | None, nome: str) -> str | None:
     if not x:
         return None
@@ -1174,6 +1211,12 @@ def rotta_comuni(request: Request, regione: str | None = None):
 def rotta_attive(request: Request, regione: str | None = None, bbox: str | None = None):
     P.limita(request, "rete")
     return _risposta(interruzioni_attive(_cod_regione(regione), _bbox(bbox)), 120)
+
+
+@router.get("/interruzioni/periodo")
+def rotta_interruzioni_periodo(request: Request, da: str, a: str, bbox: str | None = None):
+    P.limita(request, "rete")
+    return _risposta(interruzioni_periodo(_istante(da, "da"), _istante(a, "a"), _bbox(bbox)), 300)
 
 
 @router.get("/interruzioni/comune/{istat}")

@@ -53,7 +53,8 @@ def test_menu_e_pagine():
         s = _t(nome)
         assert f'<p class="gruppo-servizio">{gruppo}</p>' in s and "Servizio sperimentale non ancora verificato" in s
         assert s.count('aria-current="page"') == 2
-        assert re.search(rf'<script src="rete\.js\?v=\d{{8}}[a-z]"></script>\s*<script src="{js}\?v=', s)
+        # (22/11/2026) in rete-elettrica.html c'è pioggia_gl.js (casella «Pioggia misurata») tra rete.js e lo script della pagina
+        assert re.search(rf'<script src="rete\.js\?v=\d{{8}}[a-z]"></script>\s*(<script src="pioggia_gl\.js\?v=\d{{8}}[a-z]"></script>\s*)?<script src="{js}\?v=', s)
         assert "openstreetmap.org/copyright" in s and "ODbL" in s and "e-distribuzione" in s
         for vietato in ("PUN", "TTF", "€/MWh"):
             assert vietato not in s, (nome, vietato)

@@ -350,6 +350,31 @@ TERNA_STORICO_MESI = max(0, int(os.environ.get("TERNA_STORICO_MESI", "6")))
 TERNA_IMCEI_GIORNO = int(os.environ.get("TERNA_IMCEI_GIORNO", "20"))       # dal giorno 20 si cerca il mese nuovo dell'IMCEI
 TERNA_RIPROVA_MIN = max(15, int(os.environ.get("TERNA_RIPROVA_MIN", "60")))
 TERNA_RIPROVA_MAX = int(os.environ.get("TERNA_RIPROVA_MAX", "4"))
+# (22/11/2026, Paolo: il buco del 14-15 gennaio 2026) giorni mancanti dentro i mesi già archiviati (carico, produzione,
+# rinnovabili): a ogni giro si riprovano al più TERNA_BUCHI_MESI mesi (un tentativo al giorno per mese), dall'API giorno
+# per giorno se c'è quota, altrimenti il mese intero dal Download Center; dopo TERNA_BUCHI_PROVE tentativi il buco è
+# «definitivo» (Terna non ha i dati) e non si riprova più.
+TERNA_BUCHI_MESI = max(0, int(os.environ.get("TERNA_BUCHI_MESI", "3")))
+TERNA_BUCHI_PROVE = max(1, int(os.environ.get("TERNA_BUCHI_PROVE", "14")))
 # email all'amministratore una volta per episodio se né l'API né il Download Center aggiornano l'archivio da più di
 # TERNA_AVVISO_GIORNI giorni (le chiavi mancanti non contano: è una configurazione, non un guasto)
 TERNA_AVVISO_GIORNI = float(os.environ.get("TERNA_AVVISO_GIORNI", "3"))
+# (22/11/2026) «Dati pluviometrici» (Clima e meteo, servizio/radar.py): solo il «Merging» del Dipartimento della Protezione
+# Civile (radar corretto con i pluviometri, CUM3/6/12/24, CC BY-SA 4.0), letto con la libreria dpc-radar (Apache-2.0); fini
+# statistici, non di allerta (decisioni di Paolo del 22/11/2026). Il worker, in un thread a parte ogni RADAR_MIN minuti
+# (30, come il DPC): ultimo frame di ogni prodotto controllato contro quello di 30 minuti prima, immagini PNG della mappa
+# per RADAR_GIORNI_MAPPA giorni in RADAR_SITO, archivio delle mappe CUM3 e CUM24 per RADAR_ARCHIVIO_ANNI anni (10,
+# decisione di Paolo; ~250 MB l'anno) e valori per comune per sempre in RADAR_DATI, recupero all'indietro fino a
+# RADAR_RECUPERO_GIORNI giorni (il DPC tiene le mappe ~5 mesi), al più RADAR_SCARICHI frame per giro. Sotto
+# RADAR_SPAZIO_MIN_GB GB liberi l'archivio delle mappe si ferma (email una volta). RADAR_ATTIVO=false spegne il lavoro.
+RADAR_ATTIVO = os.environ.get("RADAR_ATTIVO", "true").lower() not in ("false", "0", "no", "spento")
+RADAR_DATI = Path(os.environ.get("RADAR_DATI") or str(DATI / "radar"))
+RADAR_SITO = Path(os.environ.get("RADAR_SITO") or str(SITO_DATI / "radar"))
+RADAR_MIN = max(30, int(os.environ.get("RADAR_MIN", "30")))
+RADAR_GIORNI_MAPPA = max(1, int(os.environ.get("RADAR_GIORNI_MAPPA", "7")))
+RADAR_ARCHIVIO_ANNI = max(1, int(os.environ.get("RADAR_ARCHIVIO_ANNI", "10")))
+RADAR_RECUPERO_GIORNI = max(0, int(os.environ.get("RADAR_RECUPERO_GIORNI", "150")))
+RADAR_SCARICHI = max(1, int(os.environ.get("RADAR_SCARICHI", "60")))
+RADAR_SPAZIO_MIN_GB = float(os.environ.get("RADAR_SPAZIO_MIN_GB", "5"))
+RADAR_ORA = int(os.environ.get("RADAR_ORA", "1200"))                     # richieste /api/radar/… per IP all'ora
+RADAR_AVVISO_ORE = float(os.environ.get("RADAR_AVVISO_ORE", "12"))      # email se nessun giro riesce da tante ore

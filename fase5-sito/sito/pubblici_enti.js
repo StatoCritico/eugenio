@@ -9,7 +9,11 @@
 //  - caselle ruolo (in proprietà, acceso; in uso = detenzione, spento) e natura (fabbricati acceso, terreni spento);
 //  - mappa: fino allo zoom delle particelle (13) un pallino per particella (dalla rotta /api/immobili-pa/ente/{chiave}/punti,
 //    raggruppati per gli enti con molti punti), poi i contorni delle particelle delle tessere con la proprietà «e»
-//    (",<id><p|u>,…") nel colore dell'ente, retino nel colore dell'ente per i fabbricati; i livelli normali si attenuano;
+//    (",<id><p|u>,…") nel colore dell'ente; i livelli normali si attenuano;
+//  - stili (22/11/2026 sera): in proprietà colore pieno; in uso (detenzione) stesso colore trasparente, con anello (pallini)
+//    o contorno tratteggiato (particelle); terreni a righe chiare e scure (pallini a righe e particelle a righe), fabbricati
+//    senza righe; legenda con i tre campioni e righe dell'immagine che li descrivono;
+//  - clic su un pallino, una particella o una riga: scheda completa in sovraimpressione sulla mappa (edifici_pubblici.js);
 //  - passo «Edifici degli enti selezionati»: per ogni ente una riga di totali (/api/immobili-pa/ente/{chiavi}, con più
 //    enti anche i totali sui beni distinti) e una tabella ordinabile (tabella_ordinabile.js) con una riga per particella;
 //    oltre 200 righe l'elenco parte per comune o è paginato dal server; clic su una riga → la mappa vola lì e si apre la
@@ -21,7 +25,7 @@
 // Nessun codice fiscale e nessun soggetto cedente: non sono né nel file degli enti né nelle risposte dell'API.
 (function () {
   const $ = (id) => document.getElementById(id);
-  const P = window.EUGENIO_PUBBLICI, T = window.EUGENIO_TABELLA_ORDINABILE, R = window.EUGENIO_RETINO;
+  const P = window.EUGENIO_PUBBLICI, T = window.EUGENIO_TABELLA_ORDINABILE;
   if (!P || !$("pannello-enti")) return;
   const MAX = 8, PER_PAGINA = 100, TUTTE = 200, GRUPPI_DA = 3000, PROPOSTE = 12;
   // Okabe–Ito senza arancio e porpora, più ocra e grigio-blu (studio § 4.3): nome scritto per l'immagine e i lettori.
@@ -263,18 +267,96 @@
   }
 
   // ------------------------------------------------------------------ mappa: pallini (punti dell'ente) e contorni (tessere)
+  // Stili (22/11/2026 sera, richiesta di Paolo: proprietà, uso e terreni a colpo d'occhio, sempre nel colore dell'ente):
+  //  - in proprietà: colore pieno e acceso (pallino pieno con bordo bianco, particella piena con contorno continuo);
+  //  - in uso (detenzione): stesso colore trasparente (pallino ad anello: interno trasparente e bordo nel colore; particella
+  //    trasparente con contorno tratteggiato);
+  //  - terreni: righe chiare e scure nel colore dell'ente (pallino a righe, particella a righe); fabbricati senza righe.
+  // Una particella o un pallino con beni in proprietà e in uso dello stesso ente (o di più enti) prende lo stile della
+  // proprietà; con fabbricati e terreni insieme quello dei fabbricati.
+  const R0 = 10;                                 // raggio (px) delle icone dei pallini a righe: icon-size = raggio / R0
+  const OPACITA = { pieno: 0.72, uso: 0.22, righe: 0.9, righeUso: 0.5 };
+  function mescola(hex, k) {                      // colore schiarito verso il bianco (k = 0…1)
+    const n = parseInt(hex.slice(1), 16), c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (255 - v) * k));
+    return `rgb(${c.join(",")})`;
+  }
+  // righe oblique «\» (l'altra direzione rispetto al retino magenta degli immobili pubblici): fondo chiaro, righe scure
+  function righe(g, colore, n, scala, alfa = 1) {
+    g.save(); g.globalAlpha = alfa;
+    g.fillStyle = mescola(colore, 0.62); g.fillRect(0, 0, n, n);
+    g.strokeStyle = colore; g.lineWidth = 3 * scala; g.lineCap = "square";
+    for (const d of [-n, 0, n]) { g.beginPath(); g.moveTo(d, 0); g.lineTo(d + n, n); g.stroke(); }
+    g.restore();
+  }
+  function tela(n) { const c = document.createElement("canvas"); c.width = n; c.height = n; return c; }
+  function immagine(m, nome, c, pr) {
+    if (m.hasImage(nome)) return;
+    const d = c.getContext("2d").getImageData(0, 0, c.width, c.height);
+    m.addImage(nome, { width: c.width, height: c.height, data: new Uint8Array(d.data.buffer) }, { pixelRatio: pr });
+  }
+  // pallino a righe (terreni): pieno con bordo bianco (proprietà) o righe trasparenti con anello nel colore (uso)
+  function pallinoRighe(colore, uso, pr = 2, raggio = R0) {
+    const n = Math.ceil((raggio + 2) * 2 * pr), c = tela(n), g = c.getContext("2d"), r = raggio * pr, o = n / 2;
+    g.save(); g.beginPath(); g.arc(o, o, r, 0, 2 * Math.PI); g.clip();
+    const t = tela(Math.round(7 * pr)); righe(t.getContext("2d"), colore, t.width, pr * 0.8);
+    g.globalAlpha = uso ? 0.4 : 1; g.fillStyle = g.createPattern(t, "repeat"); g.fillRect(0, 0, n, n); g.restore();
+    g.beginPath(); g.arc(o, o, r - (uso ? 1 : 0.6) * pr, 0, 2 * Math.PI);
+    g.lineWidth = (uso ? 2.2 : 1.4) * pr; g.strokeStyle = uso ? colore : "#fff"; g.stroke();
+    return c;
+  }
+  function immaginiStili(m) {
+    const pr = window.devicePixelRatio > 1 ? 2 : 1;
+    TAVOLOZZA.forEach(([c], k) => {
+      const t = tela(12 * pr); righe(t.getContext("2d"), c, t.width, pr);
+      immagine(m, `terreno-ente-${k}`, t, pr);
+      immagine(m, `pallino-terreno-${k}-p`, pallinoRighe(c, false, 2), 2);
+      immagine(m, `pallino-terreno-${k}-u`, pallinoRighe(c, true, 2), 2);
+    });
+  }
+  // campione per la legenda e la scheda: «pieno», «uso», «terreno» (righe), «terreno-uso»; forma pallino o rettangolo
+  function campioneStile(colore, tipo, titolo) {
+    const L = 26, A = 14, pr = 2, c = document.createElement("canvas");
+    c.width = L * pr; c.height = A * pr; c.className = "campione-stile"; c.setAttribute("aria-hidden", "true");
+    if (titolo) c.title = titolo;
+    const g = c.getContext("2d"), w = c.width, hh = c.height, uso = /uso/.test(tipo);
+    g.save(); g.beginPath(); g.rect(2, 2, w - 4, hh - 4); g.clip();
+    if (/terreno/.test(tipo)) { const t = tela(7 * pr); righe(t.getContext("2d"), colore, t.width, pr * 0.8); g.globalAlpha = uso ? OPACITA.righeUso : OPACITA.righe; g.fillStyle = g.createPattern(t, "repeat"); }
+    else { g.globalAlpha = uso ? OPACITA.uso : 0.9; g.fillStyle = colore; }
+    g.fillRect(0, 0, w, hh); g.restore();
+    g.lineWidth = 2.4; g.strokeStyle = colore; if (uso) g.setLineDash([5, 3.5]);
+    g.strokeRect(2, 2, w - 4, hh - 4);
+    return c;
+  }
+
+  // pallino per la legenda, disegnato come sulla mappa: pieno, ad anello (uso), a righe (terreni)
+  function campionePallino(colore, tipo) {
+    let c;
+    if (/terreno/.test(tipo)) c = pallinoRighe(colore, /uso/.test(tipo), 2, 6);
+    else {
+      c = tela(32); const g = c.getContext("2d");
+      g.beginPath(); g.arc(16, 16, 11, 0, 2 * Math.PI);
+      if (tipo === "uso") { g.globalAlpha = OPACITA.uso; g.fillStyle = colore; g.fill(); g.globalAlpha = 1; g.lineWidth = 4.4; g.strokeStyle = colore; g.stroke(); }
+      else { g.fillStyle = colore; g.fill(); g.lineWidth = 2.6; g.strokeStyle = "#fff"; g.stroke(); }
+    }
+    c.className = "campione-pallino"; c.setAttribute("aria-hidden", "true");
+    return c;
+  }
+
   const filtroRuolo = (r) => stato.ruoli.has(r === "U" ? "uso" : "proprieta");
   function geojson(s) {
     const per = new Map();
     for (const [lon, lat, n, natura, ruolo, ref] of s.punti || []) {
       if (!filtroRuolo(ruolo) || !stato.nature.has(natura)) continue;
-      const x = per.get(ref);
-      if (x) x.properties.n += n;
-      else per.set(ref, { type: "Feature", properties: { n, ref, b: ref[0] === "b" ? 1 : 0 }, geometry: { type: "Point", coordinates: [lon, lat] } });
+      let x = per.get(ref);
+      if (!x) { x = { type: "Feature", properties: { n: 0, ref, b: ref[0] === "b" ? 1 : 0, u: 1, ter: 1 }, geometry: { type: "Point", coordinates: [lon, lat] } }; per.set(ref, x); }
+      x.properties.n += n;
+      if (ruolo !== "U") x.properties.u = 0;              // basta un bene in proprietà: stile pieno
+      if (natura !== "T") x.properties.ter = 0;           // basta un fabbricato: niente righe
     }
     return { type: "FeatureCollection", features: [...per.values()] };
   }
   const idSorgente = (s) => `pe-${s.chiave}`;
+  const LIVELLI_PUNTI = ["gruppi", "pallini", "righe", "senza", "senza-righe"];
   function sopraLivelli() { const m = P.stato.mappa; return ["cercato", "confini-comuni-clic", "confini-regioni-clic"].find((id) => m.getLayer(id)); }
   function sorgente(s) {
     const m = P.stato.mappa, id = idSorgente(s), dati = geojson(s), zoomP = (P.stato.info && P.stato.info.zoom_particelle) || 13;
@@ -286,31 +368,40 @@
       togliSorgente(s);
     }
     s.grande = grande;
+    immaginiStili(m);
     m.addSource(id, { type: "geojson", data: dati, ...(grande ? { cluster: true, clusterMaxZoom: 11, clusterRadius: 38, clusterProperties: { n: ["+", ["get", "n"]] } } : {}) });
-    const raggio = ["interpolate", ["linear"], ["zoom"], 5, ["min", 7, ["+", 2.2, ["*", 0.5, ["sqrt", ["get", "n"]]]]],
-      10, ["min", 11, ["+", 3, ["*", 0.9, ["sqrt", ["get", "n"]]]]], 13, ["min", 15, ["+", 4.5, ["*", 1.3, ["sqrt", ["get", "n"]]]]]];
-    const tratto = "#fff";
+    const tappe = [[5, 7, 2.2, 0.5], [10, 11, 3, 0.9], [13, 15, 4.5, 1.3]];
+    const r = (t) => ["min", t[1], ["+", t[2], ["*", t[3], ["sqrt", ["get", "n"]]]]];
+    const raggio = ["interpolate", ["linear"], ["zoom"], ...tappe.flatMap((t) => [t[0], r(t)])];
+    const dimensione = ["interpolate", ["linear"], ["zoom"], ...tappe.flatMap((t) => [t[0], ["/", r(t), R0]])];
+    const uso = ["==", ["get", "u"], 1], terreno = ["==", ["get", "ter"], 1], noGruppo = ["!", ["has", "point_count"]];
     const sotto = sopraLivelli();
+    const cerchio = (raggioC) => ({ "circle-color": s.colore, "circle-radius": raggioC,
+      "circle-opacity": ["case", uso, OPACITA.uso, 0.92],
+      "circle-stroke-color": ["case", uso, s.colore, "#fff"],
+      "circle-stroke-width": typeof raggioC === "number" ? ["case", uso, 2.6, 2] : ["interpolate", ["linear"], ["zoom"], 5, ["case", uso, 1.8, 0.6], 11, ["case", uso, 2.6, 1.2]] });
+    const icona = (dim) => ({ "icon-image": ["case", uso, `pallino-terreno-${s.slot}-u`, `pallino-terreno-${s.slot}-p`], "icon-size": dim,
+      "icon-allow-overlap": true, "icon-ignore-placement": true });
     if (grande) {
       m.addLayer({ id: `${id}-gruppi`, type: "circle", source: id, filter: ["has", "point_count"], maxzoom: zoomP,
-        paint: { "circle-color": s.colore, "circle-opacity": 0.75, "circle-stroke-color": tratto, "circle-stroke-width": 1.5,
+        paint: { "circle-color": s.colore, "circle-opacity": 0.75, "circle-stroke-color": "#fff", "circle-stroke-width": 1.5,
           "circle-radius": ["min", 26, ["+", 7, ["*", 1.6, ["sqrt", ["get", "point_count"]]]]] } }, sotto);
     }
-    m.addLayer({ id: `${id}-pallini`, type: "circle", source: id, maxzoom: zoomP, filter: grande ? ["!", ["has", "point_count"]] : true,
-      paint: { "circle-color": s.colore, "circle-opacity": 0.9, "circle-radius": raggio, "circle-stroke-color": tratto,
-        "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 5, 0.6, 11, 1.2] } }, sotto);
+    m.addLayer({ id: `${id}-pallini`, type: "circle", source: id, maxzoom: zoomP, filter: ["all", noGruppo, ["!", terreno]], paint: cerchio(raggio) }, sotto);
+    m.addLayer({ id: `${id}-righe`, type: "symbol", source: id, maxzoom: zoomP, filter: ["all", noGruppo, terreno], layout: icona(dimensione) }, sotto);
     // dallo zoom delle particelle restano i soli beni senza particella (le particelle si vedono con i contorni)
-    m.addLayer({ id: `${id}-senza`, type: "circle", source: id, minzoom: zoomP, filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "b"], 1]],
-      paint: { "circle-color": s.colore, "circle-radius": 6, "circle-stroke-color": tratto, "circle-stroke-width": 2 } }, sotto);
+    const senza = ["all", noGruppo, ["==", ["get", "b"], 1]];
+    m.addLayer({ id: `${id}-senza`, type: "circle", source: id, minzoom: zoomP, filter: ["all", senza, ["!", terreno]], paint: cerchio(6) }, sotto);
+    m.addLayer({ id: `${id}-senza-righe`, type: "symbol", source: id, minzoom: zoomP, filter: ["all", senza, terreno], layout: icona(0.65) }, sotto);
     visibilita();
   }
   function togliSorgente(s) {
     const m = P.stato.mappa, id = idSorgente(s);
     if (!m) return;
-    [`${id}-gruppi`, `${id}-pallini`, `${id}-senza`].forEach((l) => { if (m.getLayer(l)) m.removeLayer(l); });
+    LIVELLI_PUNTI.forEach((l) => { if (m.getLayer(`${id}-${l}`)) m.removeLayer(`${id}-${l}`); });
     if (m.getSource(id)) m.removeSource(id);
   }
-  const livelliPunti = () => stato.scelti.flatMap((s) => [`${idSorgente(s)}-gruppi`, `${idSorgente(s)}-pallini`, `${idSorgente(s)}-senza`]).filter((l) => P.stato.mappa.getLayer(l));
+  const livelliPunti = () => stato.scelti.flatMap((s) => LIVELLI_PUNTI.map((l) => `${idSorgente(s)}-${l}`)).filter((l) => P.stato.mappa.getLayer(l));
   async function caricaPunti(s) {
     try {
       const r = await fetch(`/api/immobili-pa/ente/${encodeURIComponent(s.chiave)}/punti`);
@@ -322,21 +413,29 @@
       sorgente(s);
     } catch (e) { messaggio(`I punti di ${s.nome} non sono arrivati (${e.message || e}).`, true); }
   }
-  // contorni: tre livelli sulla sorgente «pa» delle tessere (strato «particelle»), filtrati con la proprietà «e»
+  // contorni: sei livelli sulla sorgente «pa» delle tessere (strato «particelle»), filtrati con la proprietà «e»
+  // (",<id>p," proprietà, ",<id>u," uso): prima quelli «in uso» (trasparenti, contorno tratteggiato), sopra quelli in
+  // proprietà (pieni, contorno continuo); terreni con le righe chiare e scure, fabbricati senza righe
+  const CONTORNI = ["pa-enti-uso-edifici", "pa-enti-uso-terreni", "pa-enti-uso-linea", "pa-enti-edifici", "pa-enti-terreni", "pa-enti-linea"];
   function gettoni(s) { const out = []; if (stato.ruoli.has("proprieta")) out.push(`,${s.id}p,`); if (stato.ruoli.has("uso")) out.push(`,${s.id}u,`); return out; }
   const E = ["coalesce", ["get", "e"], ""];
   const dell = (s) => ["any", ...gettoni(s).map((g) => ["in", g, E]), false];
+  const inProprieta = (s) => (stato.ruoli.has("proprieta") ? ["in", `,${s.id}p,`, E] : false);
+  // «in uso» per lo stile: l'ente la ha in uso e non (anche) in proprietà
+  const inUso = (s) => (stato.ruoli.has("uso") ? ["all", ["in", `,${s.id}u,`, E], ["!", inProprieta(s)]] : false);
   function aggiungiContorni() {
     const m = P.stato.mappa;
     if (stato.livelli || !m || !m.getSource("pa")) return;
-    TAVOLOZZA.forEach(([c], k) => { if (R) R.aggiungi(m, { nome: `retino-ente-${k}`, colore: c, fondo: "rgba(255,255,255,0.35)" }); });
+    immaginiStili(m);
     const prima = m.getLayer("pa-scelta") ? "pa-scelta" : sopraLivelli();
-    const no = ["boolean", false];
-    m.addLayer({ id: "pa-enti-terreni", type: "fill", source: "pa", "source-layer": "particelle", filter: no, paint: { "fill-color": "#888", "fill-opacity": 0.42 } }, prima);
-    m.addLayer({ id: "pa-enti-edifici", type: "fill", source: "pa", "source-layer": "particelle", filter: no,
-      paint: R ? { "fill-pattern": "retino-ente-0", "fill-opacity": 0.95 } : { "fill-color": "#888", "fill-opacity": 0.5 } }, prima);
-    m.addLayer({ id: "pa-enti-linea", type: "line", source: "pa", "source-layer": "particelle", filter: no,
-      paint: { "line-color": "#888", "line-width": ["interpolate", ["linear"], ["zoom"], 13, 1.4, 18, 3.2] } }, prima);
+    const no = ["boolean", false], largo = ["interpolate", ["linear"], ["zoom"], 13, 1.4, 18, 3.2];
+    m.addLayer({ id: "pa-enti-uso-edifici", type: "fill", source: "pa", "source-layer": "particelle", filter: no, paint: { "fill-color": "#888", "fill-opacity": OPACITA.uso } }, prima);
+    m.addLayer({ id: "pa-enti-uso-terreni", type: "fill", source: "pa", "source-layer": "particelle", filter: no, paint: { "fill-pattern": "terreno-ente-0", "fill-opacity": OPACITA.righeUso } }, prima);
+    m.addLayer({ id: "pa-enti-uso-linea", type: "line", source: "pa", "source-layer": "particelle", filter: no,
+      paint: { "line-color": "#888", "line-width": largo, "line-dasharray": [2, 1.4] } }, prima);
+    m.addLayer({ id: "pa-enti-edifici", type: "fill", source: "pa", "source-layer": "particelle", filter: no, paint: { "fill-color": "#888", "fill-opacity": OPACITA.pieno } }, prima);
+    m.addLayer({ id: "pa-enti-terreni", type: "fill", source: "pa", "source-layer": "particelle", filter: no, paint: { "fill-pattern": "terreno-ente-0", "fill-opacity": OPACITA.righe } }, prima);
+    m.addLayer({ id: "pa-enti-linea", type: "line", source: "pa", "source-layer": "particelle", filter: no, paint: { "line-color": "#888", "line-width": largo } }, prima);
     stato.livelli = true;
   }
   function aggiornaContorni() {
@@ -344,23 +443,30 @@
     if (!stato.livelli || !m) return;
     const scelti = stato.scelti.filter((s) => gettoni(s).length);
     const no = ["boolean", false];
-    if (!scelti.length || !stato.nature.size) { ["pa-enti-terreni", "pa-enti-edifici", "pa-enti-linea"].forEach((l) => m.setFilter(l, no)); return; }
-    const qualcuno = ["any", ...scelti.map(dell)];
-    const colore = ["case", ...scelti.flatMap((s) => [dell(s), s.colore]), "#888"];
-    const retino = ["case", ...scelti.flatMap((s) => [dell(s), `retino-ente-${s.slot}`]), `retino-ente-${scelti[0].slot}`];
+    if (!scelti.length || !stato.nature.size) { CONTORNI.forEach((l) => m.setFilter(l, no)); return; }
     const conE = stato.nature.has("E"), conT = stato.nature.has("T");
-    m.setFilter("pa-enti-terreni", conT ? ["all", ["in", ["get", "t"], ["literal", conE ? ["T"] : ["T", "M"]]], qualcuno] : no);
-    m.setFilter("pa-enti-edifici", conE ? ["all", ["in", ["get", "t"], ["literal", ["E", "M"]]], qualcuno] : no);
-    m.setFilter("pa-enti-linea", ["all", ["in", ["get", "t"], ["literal", [...(conE ? ["E", "M"] : []), ...(conT ? ["T", "M"] : [])]]], qualcuno]);
-    m.setPaintProperty("pa-enti-terreni", "fill-color", colore);
-    m.setPaintProperty("pa-enti-linea", "line-color", colore);
-    if (R) m.setPaintProperty("pa-enti-edifici", "fill-pattern", retino); else m.setPaintProperty("pa-enti-edifici", "fill-color", colore);
+    const tipi = (quali) => ["in", ["get", "t"], ["literal", quali]];
+    const edifici = tipi(["E", "M"]), terreni = tipi(conE ? ["T"] : ["T", "M"]);
+    const linee = tipi([...(conE ? ["E", "M"] : []), ...(conT ? ["T", "M"] : [])]);
+    for (const [pref, quale] of [["pa-enti-uso", inUso], ["pa-enti", inProprieta]]) {
+      // l'uso si disegna solo dove nessun ente scelto ha la particella in proprietà (sotto ci sarebbe comunque il pieno)
+      const qualcuno = pref === "pa-enti-uso" ? ["all", ["any", ...scelti.map(quale), false], ["!", ["any", ...scelti.map(inProprieta), false]]]
+        : ["any", ...scelti.map(quale), false];
+      const colore = ["case", ...scelti.flatMap((s) => [quale(s), s.colore]), "#888"];
+      const motivo = ["case", ...scelti.flatMap((s) => [quale(s), `terreno-ente-${s.slot}`]), `terreno-ente-${scelti[0].slot}`];
+      m.setFilter(`${pref}-terreni`, conT ? ["all", terreni, qualcuno] : no);
+      m.setFilter(`${pref}-edifici`, conE ? ["all", edifici, qualcuno] : no);
+      m.setFilter(`${pref}-linea`, ["all", linee, qualcuno]);
+      m.setPaintProperty(`${pref}-edifici`, "fill-color", colore);
+      m.setPaintProperty(`${pref}-linea`, "line-color", colore);
+      m.setPaintProperty(`${pref}-terreni`, "fill-pattern", motivo);
+    }
   }
   function visibilita() {
     const m = P.stato.mappa;
     if (!m) return;
     const v = stato.attivo ? "visible" : "none";
-    [...livelliPunti(), "pa-enti-terreni", "pa-enti-edifici", "pa-enti-linea"].forEach((l) => { if (m.getLayer(l)) m.setLayoutProperty(l, "visibility", v); });
+    [...livelliPunti(), ...CONTORNI].forEach((l) => { if (m.getLayer(l)) m.setLayoutProperty(l, "visibility", v); });
     // livelli normali attenuati nella modalità per ente
     Object.entries(ATTENUATI).forEach(([l, [prop, pieno, basso]]) => {
       if (!m.getLayer(l)) return;
@@ -375,7 +481,7 @@
   function sottoIlMouse(e) {
     const m = P.stato.mappa;
     if (!stato.attivo || !m) return null;
-    const ls = [...livelliPunti(), "pa-enti-edifici", "pa-enti-terreni"].filter((l) => m.getLayer(l));
+    const ls = [...livelliPunti(), "pa-enti-edifici", "pa-enti-terreni", "pa-enti-uso-edifici", "pa-enti-uso-terreni"].filter((l) => m.getLayer(l));
     if (!ls.length) return null;
     return m.queryRenderedFeatures([[e.point.x - 4, e.point.y - 4], [e.point.x + 4, e.point.y + 4]], { layers: ls })[0] || null;
   }
@@ -383,9 +489,18 @@
     const p = f.properties || {};
     if (p.point_count) return `${num(p.point_count)} particelle, ${num(p.n)} beni: fai clic per avvicinarti`;
     const e = p.e || "";
-    const chi = stato.scelti.filter((s) => (p.ref ? f.source === idSorgente(s) : gettoni(s).some((g) => e.includes(g))));
-    const nomi = chi.map((s) => s.nome).join(" e ");
-    return `${nomi}${p.n ? ` – ${num(p.n)} ${p.n === 1 ? "bene" : "beni"}` : ""}${p.tp ? ` – ${p.tp}` : ""}`;
+    let nomi;
+    if (p.ref) {
+      const s = stato.scelti.find((x) => f.source === idSorgente(x));
+      nomi = s ? `${s.nome} (${p.u ? "in uso" : "in proprietà"})` : "";
+    } else {
+      nomi = stato.scelti.map((s) => {
+        const pr = stato.ruoli.has("proprieta") && e.includes(`,${s.id}p,`), us = stato.ruoli.has("uso") && e.includes(`,${s.id}u,`);
+        return pr || us ? `${s.nome} (${[pr && "in proprietà", us && "in uso"].filter(Boolean).join(" e ")})` : "";
+      }).filter(Boolean).join(" e ");
+    }
+    const natura = p.ref ? (p.ter ? "terreni" : "") : p.t === "T" ? "terreni" : p.t === "M" ? "fabbricati e terreni" : "";
+    return `${nomi}${p.n ? ` – ${num(p.n)} ${p.n === 1 ? "bene" : "beni"}` : ""}${natura ? ` – ${natura}` : ""}${p.tp ? ` – ${p.tp}` : ""}`;
   }
   function suMovimento(e) {
     const f = sottoIlMouse(e);
@@ -528,9 +643,7 @@
       evidenziaRighe(r.ref);
       const m = P.stato.mappa;
       if (r.lon !== undefined && r.lat !== undefined && m) m.flyTo({ center: [r.lon, r.lat], zoom: Math.max(m.getZoom(), r.ref[0] === "b" ? 16.5 : 17), duration: 900 });
-      P.apri(r.ref, r.lon === undefined);
-      const sch = $("passo-scheda");
-      if (sch && matchMedia("(max-width: 860px)").matches) sch.scrollIntoView({ behavior: "smooth", block: "start" });
+      P.apri(r.ref, r.lon === undefined);         // scheda in sovraimpressione sulla mappa (sul telefono in basso)
     };
   }
   function evidenziaRighe(ref) {
@@ -605,6 +718,9 @@
   }
 
   // ------------------------------------------------------------------ legenda sotto la mappa e immagine
+  // tre stili spiegati con campioni disegnati come sulla mappa, nel colore del primo ente scelto
+  const STILI = [["pieno", "in proprietà: colore pieno"], ["uso", "in uso (detenzione): stesso colore trasparente, anello o contorno tratteggiato"],
+    ["terreno", "terreni: righe chiare e scure (fabbricati senza righe)"]];
   function legenda() {
     const l = $("legenda-enti"), base = $("legenda-pubblici");
     if (!l) return;
@@ -614,7 +730,16 @@
     if (!stato.attivo) return;
     if (!stato.scelti.length) { l.appendChild(h("span", null, "Scegli un ente a destra: i suoi immobili compariranno qui nel suo colore.")); return; }
     stato.scelti.forEach((s) => { const x = h("span"); x.append(campione(s.colore), `${s.nome}`); l.appendChild(x); });
-    l.appendChild(h("span", "aiuto-breve", "Pallini: particelle (da lontano, più grandi con più beni); da vicino contorni e righe oblique nel colore dell'ente. Gli altri immobili pubblici sono attenuati."));
+    const c = stato.scelti[0].colore, st = h("div", "stili-enti");
+    st.setAttribute("role", "list"); st.setAttribute("aria-label", "Stili della mappa per ente");
+    STILI.forEach(([tipo, testo]) => {
+      if (tipo === "uso" && !stato.ruoli.has("uso")) testo += " (accendi «in uso» per vederli)";
+      if (tipo === "terreno" && !stato.nature.has("T")) testo += " (accendi «terreni» per vederli)";
+      const x = h("span"); x.setAttribute("role", "listitem"); x.dataset.stile = tipo;
+      x.append(campionePallino(c, tipo), campioneStile(c, tipo), testo); st.appendChild(x);
+    });
+    l.appendChild(st);
+    l.appendChild(h("span", "aiuto-breve", "Pallini: particelle (da lontano, più grandi con più beni); da vicino i contorni delle particelle. Gli altri immobili pubblici sono attenuati."));
   }
   function righeImmagine() {
     if (!stato.attivo || !stato.scelti.length) return [];
@@ -623,7 +748,10 @@
       return `${s.nomeColore}: ${s.nome}${t ? ` – ${num(t.n_beni)} beni, ${num(t.n_particelle)} particelle` : ""}.`;
     });
     out.push(`Beni ${[...stato.ruoli].map((r) => (r === "uso" ? "in uso" : "in proprietà")).join(" e ")}; ${[...stato.nature].map((n) => (n === "E" ? "fabbricati" : "terreni")).join(" e ")}.`);
-    out.push("Righe oblique colorate: fabbricati dell'ente; pallini: particelle (da lontano); gli altri immobili pubblici sono attenuati.");
+    const stili = ["colore pieno: in proprietà"];
+    if (stato.ruoli.has("uso")) stili.push("stesso colore trasparente, con anello (pallini) o contorno tratteggiato (particelle): in uso (detenzione)");
+    if (stato.nature.has("T")) stili.push("righe chiare e scure: terreni (fabbricati senza righe)");
+    out.push(`Stili nel colore dell'ente: ${stili.join("; ")}. Pallini: particelle (da lontano); gli altri immobili pubblici sono attenuati.`);
     return out;
   }
 
@@ -638,7 +766,7 @@
     document.querySelector(".pagina-pubblici")?.classList.toggle("modo-enti", enti);
     let n = 1;
     document.querySelectorAll(".pagina-pubblici .pannello > .passo").forEach((p) => { if (!p.hidden) { const s = p.querySelector("h2 .n"); if (s) s.textContent = String(n++); } });
-    if (enti) aggiungiContorni();
+    if (enti) aggiungiContorni(); else if (P.chiudiSopra) P.chiudiSopra();
     aggiornaContorni();
     visibilita();
     legenda();
@@ -664,6 +792,7 @@
     box.addEventListener("change", () => {
       insieme.clear();
       box.querySelectorAll("input:checked").forEach((x) => insieme.add(x.value));
+      legenda();
       aggiornaTutto();
     });
   }
@@ -720,5 +849,5 @@
   });
 
   window.EUGENIO_PUBBLICI_ENTI = { stato, aggiungi, togli, togliTutti, modo, cerca, nomeLeggibile, suClic, suMovimento, righeImmagine,
-    inquadra, TAVOLOZZA };
+    inquadra, campioneStile, campionePallino, TAVOLOZZA };
 })();

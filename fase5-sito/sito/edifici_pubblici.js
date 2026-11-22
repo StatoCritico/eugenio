@@ -115,20 +115,59 @@
     if (valore === undefined || valore === null || valore === "") return;
     dl.append(h("dt", null, nome), h("dd", null, String(valore)));
   }
+  const FONTI_PUNTO = { IDENTIFICATIVI_CATASTALI: "dagli identificativi catastali", INDIRIZZO: "dall'indirizzo", UTENTE: "indicato dall'ente" };
+  const RUOLI = { P: "in proprietà", U: "in uso (detenzione)" };
+  // nomi MEF in maiuscolo resi leggibili come nella ricerca per ente (se c'è)
+  const leggibile = (t) => (t && ENTI() && ENTI().nomeLeggibile ? ENTI().nomeLeggibile(t) : t);
+  // «Cesena (FC)»; la provincia per esteso (nei dati MEF a volte è il nome intero) solo se diversa dal comune
+  function luogo(comune, provincia) {
+    if (!comune) return "";
+    const c = leggibile(comune), p = (provincia || "").trim();
+    if (!p) return c;
+    if (p.length <= 3) return `${c} (${p.toUpperCase()})`;
+    return p.toLowerCase() === String(comune).toLowerCase() ? c : `${c}, provincia di ${leggibile(p)}`;
+  }
+  // scheda di un bene (una dichiarazione): tutti i campi pubblicabili che l'API restituisce (22/11/2026 sera: anche ruolo,
+  // superficie di riferimento, detenzione dell'intera unità, sistema catastale, classificazione e sede dell'ente). Mai
+  // soggetto cedente né codici fiscali: l'API non li ha.
   function schedaBene(b) {
     const art = h("article", "bene-pubblico");
-    art.append(h("h3", null, `${b.tipologia || (b.natura === "TERRENO" ? "Terreno" : "Fabbricato")}`));
+    const tit = h("h3", null, `${b.tipologia || (b.natura === "TERRENO" ? "Terreno" : "Fabbricato")}`);
+    art.appendChild(tit);
+    // ente scelto nella ricerca per ente: campione del suo colore e stile (pieno = proprietà, trasparente = in uso)
+    const scelto = b.ente_chiave && ENTI() ? ENTI().stato.scelti.find((x) => x.chiave === b.ente_chiave) : null;
+    if (b.ruolo || scelto) {
+      const et = h("p", `ruolo-bene${b.ruolo === "U" ? " in-uso" : ""}`);
+      if (scelto) {
+        // stesso segno dei pallini della mappa: pieno, ad anello (in uso), a righe (terreni)
+        et.style.setProperty("--colore-ente", scelto.colore);
+        const tipo = `${b.natura === "TERRENO" ? "terreno" : ""}${b.ruolo === "U" ? "-uso" : ""}`.replace(/^-/, "") || "pieno";
+        const c = ENTI().campionePallino ? ENTI().campionePallino(scelto.colore, tipo) : h("i", "campione-ruolo");
+        c.classList.add("campione-ruolo-pallino"); et.appendChild(c);
+      }
+      et.append(`${RUOLI[b.ruolo] || ""}${scelto ? `${b.ruolo ? " – " : ""}${scelto.nome} (colore ${scelto.nomeColore})` : ""}`);
+      art.appendChild(et);
+    }
     const dl = h("dl", "scheda-bene");
-    riga(dl, "Ente", b.amministrazione);
-    riga(dl, "Tipo di ente", b.tipologia_amm);
+    riga(dl, "Ente", leggibile(b.amministrazione));
+    riga(dl, "Tipo di ente", leggibile(b.tipologia_amm));
+    riga(dl, "Settore e macrocategoria", [b.ente_settore && leggibile(b.ente_settore), b.ente_macrocategoria].filter(Boolean).join(" – "));
+    if (b.ente_sede) riga(dl, "Sede dell'ente", [luogo(b.ente_sede.comune, b.ente_sede.provincia), b.ente_sede.regione && leggibile(b.ente_sede.regione)].filter(Boolean).join(" – "));
+    riga(dl, "Ruolo dell'ente", RUOLI[b.ruolo]);
+    riga(dl, "Titolo", b.titolo_proprieta ? `${b.titolo_proprieta}${b.quota_proprieta && b.quota_proprieta !== 100 ? ` (quota ${num(b.quota_proprieta, 2)} %)` : ""}` : b.titolo_detenzione);
+    if (b.titolo_proprieta && b.quota_proprieta === 0) riga(dl, "Quota", "0 % (dato anomalo nella dichiarazione)");
+    riga(dl, "Detenzione dell'intera unità", b.titolo_detenzione ? b.detenzione_intera : "");
     riga(dl, "Natura", b.natura === "TERRENO" ? "terreno" : b.natura === "FABBRICATO" ? "fabbricato" : b.natura);
-    riga(dl, "Indirizzo", [b.indirizzo, b.civico].filter(Boolean).join(" ") + (b.comune ? `, ${b.comune}${b.provincia ? ` (${b.provincia})` : ""}` : ""));
+    riga(dl, "Indirizzo", [b.indirizzo, b.civico].filter(Boolean).join(" "));
+    riga(dl, "Comune", b.comune ? `${luogo(b.comune, b.provincia)}${b.comune_cod ? ` – codice catastale ${b.comune_cod}` : ""}` : "");
+    riga(dl, "Regione", leggibile(b.regione));
     riga(dl, "Identificativo catastale (MEF)", b.id_catastale);
-    riga(dl, "Superficie dichiarata", b.superficie_mq ? `${num(b.superficie_mq)} m²` : "");
+    riga(dl, "Sistema catastale", b.sistema_catastale);
+    riga(dl, "Superficie dichiarata", b.superficie_mq ? `${num(b.superficie_mq)} m²${b.natura === "FABBRICATO" ? " (lorda)" : ""}` : "");
+    riga(dl, "Superficie di riferimento", b.sup_riferimento_mq && Math.abs((b.sup_riferimento_mq || 0) - (b.superficie_mq || 0)) >= 1 ? `${num(b.sup_riferimento_mq)} m²` : "");
     riga(dl, "Cubatura", b.cubatura_mc ? `${num(b.cubatura_mc)} m³` : "");
     riga(dl, "Aree di pertinenza", b.sup_pertinenze_mq ? `${num(b.sup_pertinenze_mq)} m²` : "");
     riga(dl, "Epoca di costruzione", b.epoca);
-    riga(dl, "Titolo", b.titolo_proprieta ? `${b.titolo_proprieta}${b.quota_proprieta && b.quota_proprieta !== 100 ? ` (${num(b.quota_proprieta, 2)} %)` : ""}` : b.titolo_detenzione);
     riga(dl, "Canone annuo", b.canone_annuo ? `${num(b.canone_annuo)} €` : "");
     riga(dl, "Utilizzo", [b.utilizzo, b.finalita, b.altra_finalita].filter(Boolean).join(" – "));
     const si = (v) => /^s[iì]$/i.test(v || "");                     // nei CSV MEF «Sì» (prima del 22/11 si cercava «SI»)
@@ -136,55 +175,131 @@
     riga(dl, "Vincolo", b.vincolo && b.vincolo !== "Nessuno" ? b.vincolo : "");
     riga(dl, "Natura giuridica", b.natura_giuridica && b.natura_giuridica !== "ND" ? b.natura_giuridica : "");
     riga(dl, "Compendio", [b.compendio, b.tipologia_compendio].filter(Boolean).join(" – "));
+    riga(dl, "Punto del censimento", b.lat !== undefined && b.lon !== undefined ? `${(+b.lat).toFixed(5)} N, ${(+b.lon).toFixed(5)} E${b.geo_fonte ? ` (${FONTI_PUNTO[b.geo_fonte] || b.geo_fonte.toLowerCase().replace(/_/g, " ")})` : ""}` : "");
     riga(dl, "Aggancio alla particella", b.aggancio ? AGGANCI[b.aggancio] || b.aggancio : "nessuna particella trovata: si usa il punto del censimento");
+    riga(dl, "Identificativo del bene (MEF)", b.id_bene);
     art.appendChild(dl);
     // ricerca per ente (22/11/2026): tutti i beni dell'ente che ha dichiarato questo
-    if (b.ente_chiave && ENTI() && ENTI().stato.elenco) {
+    if (b.ente_chiave && ENTI() && ENTI().stato.elenco && !scelto) {
       const p = h("p", "collegamenti-scheda"), bt = h("button", "bottone secondario piccolo", "Mostra tutti i beni di questo ente");
       bt.type = "button";
       bt.addEventListener("click", () => {
         const E = ENTI();
         if (!E.stato.attivo) E.modo(true);
         if (!E.stato.scelti.some((s) => s.chiave === b.ente_chiave)) E.aggiungi(b.ente_chiave, { inquadra: true });
+        chiudiSopra();
         const c = document.getElementById("passo-cerca"); if (c) c.scrollIntoView({ behavior: "smooth", block: "start" });
       });
       p.appendChild(bt); art.appendChild(p);
     }
     return art;
   }
+
+  // ------------------------------------------------------------------ scheda in sovraimpressione (22/11/2026 sera)
+  // Nella ricerca per ente un clic su un pallino, su una particella o su una riga della tabella apre la scheda completa in
+  // un riquadro sopra la mappa (in alto a sinistra: non copre i comandi della mappa né il righello e la riga dei livelli
+  // sotto); sul telefono a tutta larghezza in basso. Si chiude con ×, Esc o un clic fuori (non con uno spostamento della
+  // mappa). La stessa scheda resta anche nel passo «Scheda» del pannello.
+  const riquadro = { aperto: false, da: null, quando: 0, giu: null };
+  const TELEFONO = "(max-width: 860px)";
+  function posizionaSopra() {
+    const box = $("scheda-sopra"), m = $("mappa-pubblici");
+    if (!box || box.hidden) return;
+    if (matchMedia(TELEFONO).matches) { box.style.top = box.style.left = box.style.width = box.style.maxHeight = ""; return; }
+    // stesso genitore posizionato della mappa: si allinea al suo angolo in alto a sinistra; a destra restano ~70 px per i
+    // pulsanti di zoom, in basso ~60 px per scala e attribuzione (anche su due righe)
+    box.style.top = `${m.offsetTop + 10}px`;
+    box.style.left = `${m.offsetLeft + 10}px`;
+    box.style.width = `${Math.max(220, Math.min(400, m.offsetWidth - 80))}px`;
+    box.style.maxHeight = `${Math.max(180, m.offsetHeight - 72)}px`;
+  }
+  window.addEventListener("resize", posizionaSopra);
+  document.addEventListener("eugenio:ridimensiona", posizionaSopra);
+  function apriSopra(disegna, titolo) {
+    const box = $("scheda-sopra");
+    if (!box) return;
+    const corpo = $("scheda-sopra-corpo");
+    corpo.textContent = "";
+    disegna(corpo);
+    $("titolo-scheda-sopra").textContent = titolo;
+    if (!riquadro.aperto) riquadro.da = document.activeElement;
+    box.hidden = false; riquadro.aperto = true;
+    posizionaSopra();
+    corpo.scrollTop = 0;
+    // il fuoco va al riquadro solo se l'apertura viene dalla tastiera (riga della tabella): un clic sulla mappa lo lascia lì
+    if (riquadro.da && riquadro.da.closest && riquadro.da.closest("tr")) $("titolo-scheda-sopra").focus({ preventScroll: true });
+  }
+  function chiudiSopra() {
+    const box = $("scheda-sopra");
+    if (!box || !riquadro.aperto) return;
+    box.hidden = true; riquadro.aperto = false;
+    const torna = riquadro.da; riquadro.da = null;
+    if (torna && torna.isConnected && box.contains(document.activeElement)) torna.focus({ preventScroll: true });
+  }
+  (function agganciSopra() {
+    const box = $("scheda-sopra");
+    if (!box) return;
+    $("chiudi-scheda-sopra").addEventListener("click", chiudiSopra);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && riquadro.aperto && !e.defaultPrevented) { e.preventDefault(); chiudiSopra(); }
+    });
+    // clic fuori: solo un clic vero (non la fine di un trascinamento della mappa) e non quello che l'ha appena aperta
+    document.addEventListener("pointerdown", (e) => { riquadro.giu = [e.clientX, e.clientY]; }, true);
+    document.addEventListener("click", (e) => {
+      if (!riquadro.aperto || box.contains(e.target) || e.timeStamp <= riquadro.quando) return;   // il clic che l'ha aperta
+      if (riquadro.giu && Math.hypot(e.clientX - riquadro.giu[0], e.clientY - riquadro.giu[1]) > 5) return;
+      if (e.target.closest && e.target.closest(".tabella-enti tbody, #risultati-pubblici, .ente-scelto")) return;   // apriranno altro
+      chiudiSopra();
+    });
+  })();
+
   async function apri(ref, vola = false) {
     if (!ref) return;
     const out = $("scheda-pubblici"); out.innerHTML = "";
     evidenzia(ref);
+    const conSopra = !!(ENTI() && ENTI().stato.attivo && $("scheda-sopra"));
+    riquadro.quando = performance.now();           // i clic nati prima (quello che apre la scheda) non la chiudono
     messaggio("messaggio-scheda", "Carico la scheda…");
     try {
       const bene = ref.startsWith("b");
       const r = await fetch(bene ? `/api/immobili-pa/bene/${encodeURIComponent(ref.slice(1))}` : `/api/immobili-pa/particella/${encodeURIComponent(ref)}`);
       if (!r.ok) throw new Error(r.status === 404 ? "non trovata" : r.status === 429 ? "troppe richieste: riprova tra poco" : `errore ${r.status}`);
       const d = await r.json();
+      if (stato.selezione !== ref) return;                       // nel frattempo è stato scelto un altro immobile
       // un bene senza particella può avere più dichiarazioni (proprietario e chi lo ha in uso): tutte (22/11/2026)
-      const beni = bene ? (d.dichiarazioni || [d.bene]) : d.beni, p = d.particella;
-      const testa = h("div", "testa-scheda");
-      if (p) {
-        testa.append(h("p", null, `Particella ${p.ref_ade} – ${riferimentoLeggibile(p.ref_ade)}${p.area_m2 ? ` – ${num(p.area_m2)} m² (dalla mappa catastale)` : ""}.`));
-        const altri = p.n_beni - beni.length;
-        testa.append(h("p", "aiuto", `${beni.length === 1 ? "Un bene pubblico" : `${beni.length} beni pubblici`} dichiarati in questa particella`
-          + (beni.length >= 500 ? " (i primi 500)" : altri > 0 ? `, più ${altri === 1 ? "un'unità" : `${altri} unità`} che ci sta${altri === 1 ? "" : "nno"} solo in parte (unità «graffate» su più particelle, con la scheda nell'altra)` : "") + "."));
-      } else testa.append(h("p", null, `Bene senza particella agganciata: il punto è quello del censimento.${beni.length > 1 ? ` Lo dichiarano ${beni.length} enti (di solito chi ne è proprietario e chi lo ha in uso).` : ""}`));
-      const punto = p ? p.punto : (beni[0] && beni[0].lon !== undefined ? [beni[0].lon, beni[0].lat] : null);
-      if (punto) {
-        const l = h("p", "collegamenti-scheda");
-        const a3 = h("a", "bottone secondario", "Apri in Modelli 3D"); a3.href = `modelli3d.html?lat=${punto[1].toFixed(6)}&lon=${punto[0].toFixed(6)}`;
-        const ao = h("a", "bottone secondario", "Apri in Ortofoto"); ao.href = `ortofoto.html?lat=${punto[1].toFixed(6)}&lon=${punto[0].toFixed(6)}&z=18`;
-        l.append(a3, " ", ao); testa.appendChild(l);
-        if (vola) stato.mappa.flyTo({ center: punto, zoom: Math.max(stato.mappa.getZoom(), p ? 17 : 16.5), duration: 900 });
+      const beni = (bene ? (d.dichiarazioni || [d.bene]) : d.beni).slice(), p = d.particella;
+      // prima i beni degli enti scelti nella ricerca per ente (nell'ordine dei colori), poi gli altri come arrivano
+      const scelti = ENTI() ? ENTI().stato.scelti.map((x) => x.chiave) : [];
+      if (scelti.length) {
+        const posto = (b) => { const k = scelti.indexOf(b.ente_chiave); return k < 0 ? scelti.length : k; };
+        beni.sort((a, b) => posto(a) - posto(b));
       }
-      out.appendChild(testa);
-      beni.forEach((b) => out.appendChild(schedaBene(b)));
+      const punto = p ? p.punto : (beni[0] && beni[0].lon !== undefined ? [beni[0].lon, beni[0].lat] : null);
+      const disegna = (dove) => {
+        const testa = h("div", "testa-scheda");
+        if (p) {
+          testa.append(h("p", null, `Particella ${p.ref_ade} – ${riferimentoLeggibile(p.ref_ade)}${p.area_m2 ? ` – ${num(p.area_m2)} m² (dalla mappa catastale)` : ""}.`));
+          const altri = p.n_beni - beni.length;
+          testa.append(h("p", "aiuto", `${beni.length === 1 ? "Un bene pubblico" : `${beni.length} beni pubblici`} dichiarati in questa particella`
+            + (beni.length >= 500 ? " (i primi 500)" : altri > 0 ? `, più ${altri === 1 ? "un'unità" : `${altri} unità`} che ci sta${altri === 1 ? "" : "nno"} solo in parte (unità «graffate» su più particelle, con la scheda nell'altra)` : "") + "."));
+        } else testa.append(h("p", null, `Bene senza particella agganciata: il punto è quello del censimento.${beni.length > 1 ? ` Lo dichiarano ${beni.length} enti (di solito chi ne è proprietario e chi lo ha in uso).` : ""}`));
+        if (punto) {
+          const l = h("p", "collegamenti-scheda");
+          const a3 = h("a", "bottone secondario", "Apri in Modelli 3D"); a3.href = `modelli3d.html?lat=${punto[1].toFixed(6)}&lon=${punto[0].toFixed(6)}`;
+          const ao = h("a", "bottone secondario", "Apri in Ortofoto"); ao.href = `ortofoto.html?lat=${punto[1].toFixed(6)}&lon=${punto[0].toFixed(6)}&z=18`;
+          l.append(a3, " ", ao); testa.appendChild(l);
+        }
+        dove.appendChild(testa);
+        beni.forEach((b) => dove.appendChild(schedaBene(b)));
+      };
+      if (punto && vola) stato.mappa.flyTo({ center: punto, zoom: Math.max(stato.mappa.getZoom(), p ? 17 : 16.5), duration: 900 });
+      disegna(out);
+      if (conSopra && ENTI().stato.attivo) apriSopra(disegna, p ? `Particella ${p.ref_ade}` : beni.length > 1 ? "Bene senza particella (più dichiarazioni)" : "Bene senza particella");
       messaggio("messaggio-scheda", "");
       try { const u = new URL(location.href); u.searchParams.delete("ref"); u.searchParams.delete("bene"); u.searchParams.set(bene ? "bene" : "ref", bene ? ref.slice(1) : ref); history.replaceState(null, "", u); } catch { /* niente */ }
     } catch (e) {
       messaggio("messaggio-scheda", `La scheda non è arrivata (${e.message || e}).`, true);
+      if (conSopra) apriSopra((dove) => dove.appendChild(h("p", "messaggio errore", `La scheda non è arrivata (${e.message || e}).`)), "Scheda");
     }
   }
 
@@ -440,5 +555,5 @@
       },
     });
   }
-  window.EUGENIO_PUBBLICI = { stato, filtri, applicaFiltri, apri, cerca, opzioniImmagine, pronto };
+  window.EUGENIO_PUBBLICI = { stato, filtri, applicaFiltri, apri, cerca, opzioniImmagine, pronto, chiudiSopra, schedaAperta: () => riquadro.aperto };
 })();

@@ -26,3 +26,6 @@ pyproj==3.8.0
 # tessere del terreno 3D su richiesta (07/11/2026, servizio/terreno.py): letture a finestra dal COG del DTM; stessa versione
 # della fase 10 (GDAL incluso nella ruota, anche Linux ARM); Pillow arriva già con fpdf2
 rasterio==1.5.2
+# (22/11/2026) «Dati pluviometrici»: dati radar aperti del Dipartimento della Protezione Civile (servizio/radar.py);
+# dipende solo da httpx, numpy e rasterio, già installati (niente extra: niente bollettini di allerta)
+dpc-radar==0.3.0
