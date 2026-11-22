@@ -389,6 +389,38 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     2:1. Il report (PDF, Excel o ODS) contiene, nell'ordine, i totali e i costi unitari medi, le mappe, i diagrammi di
     Pareto dei consumi e poi dei costi, le tabelle dei consumi e poi dei costi; in Excel e ODS solo totali e tabelle.</p>
 
+  <h2 id="edifici-pubblici">Edifici pubblici</h2>
+  <h3>Da dove vengono i dati</h3>
+  <p>La pagina <a href="edifici-pubblici.html">Edifici pubblici</a> mostra i beni immobili dichiarati ogni anno dalle
+    Pubbliche Amministrazioni al Ministero dell'Economia e delle Finanze (censimento
+    <a href="https://www.de.mef.gov.it/it/attivita_istituzionali/patrimonio_pubblico/censimento_immobili_pubblici/open_data_immobili/">«Patrimonio
+    della PA»</a>, art. 2, comma 222, legge 191/2009; ultimo anno pubblicato: dati al 31/12/2023, CC BY 4.0). Il MEF dà un
+    punto e l'identificativo catastale di ogni bene, non i confini: EuGEnio li aggancia alle particelle della cartografia
+    catastale dell'<a href="https://www.agenziaentrate.gov.it/">Agenzia delle Entrate</a> (CC BY 4.0). Per un fabbricato la
+    particella è il lotto dell'edificio, non la sagoma, e più unità immobiliari (appartamenti, box…) stanno nella stessa
+    particella. In Trentino-Alto Adige non ci sono particelle (catasto tavolare): lì restano i punti del censimento.</p>
+  <h3 id="edifici-pubblici-ente">Ricerca per ente</h3>
+  <p>Con la scheda «Per ente» si scelgono fino a otto enti (Comuni, Unioni di Comuni, Province, Regioni, aziende sanitarie,
+    università, enti per la casa, ministeri e altri): ognuno ha un colore e la mappa mostra i suoi immobili, da lontano come
+    pallini (uno per particella, più grande se contiene più beni) e da vicino con il contorno e le righe oblique nel colore
+    dell'ente. L'ente è quello che ha <b>dichiarato</b> il bene: può esserne proprietario (titolo di proprietà) oppure
+    averlo in uso (titolo di detenzione: in gestione per conto di altri, in uso governativo, in locazione, in concessione…).
+    All'inizio la pagina mostra solo i beni in proprietà e solo i fabbricati; «in uso» e i terreni si accendono con le
+    caselle.</p>
+  <p>Per ogni ente ci sono i totali con le scelte fatte: beni dichiarati (le righe del censimento), fabbricati, terreni,
+    particelle, superficie dei fabbricati in metri quadrati e dei terreni in ettari (sono superfici diverse e non si
+    sommano: per i fabbricati è la superficie lorda dichiarata, per i terreni quella catastale; se manca si usa la
+    «superficie di riferimento» del MEF), quota di beni non utilizzati o inutilizzabili, vincolati e in uso, numero dei
+    comuni. Lo stesso bene può essere dichiarato da due enti, di solito il proprietario e chi lo gestisce: scegliendoli
+    insieme, la riga «Insieme» lo conta una volta sola. L'elenco ha una riga per particella con il numero di unità, la
+    superficie dichiarata e, accanto, l'area del lotto presa dalla mappa catastale (due misure diverse, con nomi diversi).
+    La cubatura è compilata solo per un fabbricato su dieci.</p>
+  <p>I dati sono quelli dichiarati: possono mancare beni, le superfici sono a volte stimate dall'ente e alcuni nomi (per
+    esempio di ministeri) non sono aggiornati. I totali non sono il «patrimonio ufficiale» dell'ente. Non sono mostrati il
+    soggetto che cede l'immobile all'ente né codici fiscali: l'ente si riconosce da una chiave derivata, che resta uguale da
+    un anno all'altro e va nel collegamento della pagina. L'elenco si consulta nella pagina e non si scarica; l'immagine
+    della mappa riporta la legenda degli enti con i colori scritti per esteso.</p>
+
   <h2 id="trattamento-aria">Trattamento aria</h2>
   <p>Le quattro pagine del menu Trattamento aria (sperimentali) fanno i calcoli di psicrometria, cioè dell'aria umida,
     con il clima vero del comune scelto invece che con pochi valori di tabella. Tutti i calcoli si fanno nel browser: al
@@ -690,6 +722,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       INSPIRE, CC BY 4.0): forma della particella del numero civico cercato nelle mappe, per inquadrarla tutta (dal
       17/11/2026); le strade di <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL) per mettere la
       mappa a metà di una via cercata senza numero civico.</li>
+    <li><a href="https://www.de.mef.gov.it/it/attivita_istituzionali/patrimonio_pubblico/censimento_immobili_pubblici/open_data_immobili/">MEF
+      – Dipartimento dell'Economia, «Patrimonio della PA»</a> (CC BY 4.0): beni immobili delle Pubbliche Amministrazioni,
+      dati al 31/12/2023, con l'ente dichiarante; agganciati da EuGEnio alla cartografia catastale dell'Agenzia delle Entrate
+      (download massivo, CC BY 4.0) per <a href="#edifici-pubblici">Edifici pubblici</a>.</li>
   </ul>
 
   <h3>Energia e mercati</h3>

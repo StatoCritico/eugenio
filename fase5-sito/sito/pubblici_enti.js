@@ -712,6 +712,7 @@
       const o = (p.get("ordina") || "").match(/^([a-z_0-9]+):(asc|desc)$/);
       if (o) stato.ordine = { chiave: o[1], verso: o[2] };
       if (p.get("modo") === "enti") modo(true, { silenzioso: true });
+      if (!stato.elenco) return;                          // elenco non disponibile: resta il messaggio che lo dice
       const sel = (p.get("sel") || "").split(",").filter((k) => /^[0-9a-f]{10}$/.test(k)).slice(0, MAX);
       sel.forEach((k) => aggiungi(k, { senzaAggiorna: true, attiva: p.get("modo") === "enti" }));
       if (sel.length || p.get("modo") === "enti") await aggiornaTutto();

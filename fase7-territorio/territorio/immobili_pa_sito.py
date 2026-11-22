@@ -615,7 +615,7 @@ def prepara(cartella: Path, anno: int, uscita_tessere: Path, uscita_indice: Path
     en = enti(beni, part, centri)
     log.info("enti: %d, coppie ente–particella: %d", len(en["enti"]), len(en["coppie"]))
     pm = uscita_tessere / nome_pmtiles(anno, versione)
-    cont = tessere(part, beni, pm, attribuzione, e_di=en["e_di"])
+    cont = tessere(part, beni, pm, attribuzione, e_di=en.pop("e_di"))      # poi non serve più: memoria liberata
     fe = uscita_tessere / f"enti_{anno}_{versione}.json"
     elenco = enti_json(en, anno)
     tmp = _provvisorio(fe)

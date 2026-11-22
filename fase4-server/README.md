@@ -1042,6 +1042,8 @@ bloccherebbe anche chi usa le API dei dati aperti con uno script.
 | `zornade` | `/api/geocodifica`, `/api/particella` | 120 |
 | `patrimonio` | `/api/patrimonio` | 2.000 edifici |
 | `luogo` | `/api/patrimonio` con `luogo=1` (ricerca di un luogo, 17/11/2026, oltre a «patrimonio») | `LUOGO_ORA` (300) |
+| `immobili_pa` | `/api/immobili-pa/cerca`, `/particella/{ref}`, `/bene/{id}` (17/11/2026) | 1.200 |
+| `immobili_pa_ente` | `/api/immobili-pa/ente/{chiavi}`, `/ente/{chiave}/beni` (peso 1) e `/ente/{chiave}/punti` (peso 3), 22/11/2026; più il tetto orario di tutto il sito `IMMOBILI_PA_ENTE_TETTO_ORA` (30.000, oltre: 503) | 600 |
 | `report` | `/api/report`, `/api/report/{tipo}` | 60 |
 | `converti` | `/api/converti` | 200 |
 | `dati` | `/api/meteo`, `/api/clima-legge10`, `/api/mappa`, `/api/comuni`, `/api/metodologia`, `/api/psicro/…` | `LIMITE_DATI_ORA` (600) |
@@ -1115,12 +1117,26 @@ preparato dalla fase 7 (`python -m territorio immobili-pa-sito`): nessun dato in
 | `GET /api/immobili-pa/info` | anno, conteggi, attribuzione, PMTiles, gruppi di enti; `{"disponibile": false}` se l'indice manca |
 | `GET /api/immobili-pa/cerca?q=…&gruppo=…&limite=…` | ricerca a parole (FTS5, ogni parola come prefisso, tutte obbligatorie, al massimo 50 risultati) |
 | `GET /api/immobili-pa/particella/{ref}` | particella (centro, riquadro, area) e beni (al massimo 500) |
-| `GET /api/immobili-pa/bene/{id_bene}` | un bene, anche senza particella |
+| `GET /api/immobili-pa/bene/{id_bene}` | un bene, anche senza particella: `bene` (la prima dichiarazione) e, dal 22/11/2026, `dichiarazioni` (tutte: lo stesso `id_bene` può essere dichiarato dal proprietario e da chi lo ha in uso; prima si vedeva solo una riga) |
+| `GET /api/immobili-pa/ente/{chiavi}?ruolo=proprieta,uso&natura=E,T` | (22/11/2026) uno o più enti, chiavi separate da virgole (al massimo 8): dati dell'ente, `totali_dichiarati` (tabella `enti`), `totali` con i filtri (dai beni), `riquadro`, `comuni` (particelle, righe, beni e superficie per comune); con più enti `insieme`, calcolato sui **beni distinti** (un bene dichiarato da due enti scelti conta una volta, «in uso» solo se nessuno degli enti scelti lo ha in proprietà) |
+| `GET /api/immobili-pa/ente/{chiave}/punti` | (22/11/2026) centri delle particelle e dei beni senza particella con punto affidabile, compatti: `{"campi": ["lon","lat","n","natura","ruolo","ref"], "righe": […]}` (5 decimali); `ETag` legato al file dell'indice, `Cache-Control: public, max-age=86400`, 304 con `If-None-Match` |
+| `GET /api/immobili-pa/ente/{chiave}/beni?ruolo=&natura=&regione=&provincia=&comune=&ordina=&verso=&pagina=&per_pagina=` | (22/11/2026) elenco per particella (righe di `ente_particelle` raggruppate per `ref`), al massimo **200 righe per pagina**, ordinamento solo sulle colonne di `ORDINAMENTI` (vuoti in fondo; senza `ordina`: regione, comune, indirizzo), `totale` e `pagine` |
 
-Limite per IP `immobili_pa`: 1.200 richieste all'ora (`protezione.LIMITI`). Le tessere della mappa non passano dall'API:
-sono il PMTiles statico `immobili_pa_<anno>.pmtiles` nella cartella degli archivi edifici (`CARTELLA_EDIFICI/immobili_pa/`,
-servita da Caddy in `/edifici3d/immobili_pa/`, con `indice.json` riconvalidato sempre). L'indice non contiene il soggetto
-cedente né codici fiscali. Test: `tests/test_immobili_pa.py`.
+Limite per IP `immobili_pa`: 1.200 richieste all'ora (`protezione.LIMITI`); per le rotte degli enti `immobili_pa_ente`:
+600 all'ora (i punti pesano 3) più il tetto `IMMOBILI_PA_ENTE_TETTO_ORA` per tutto il sito (30.000 all'ora, oltre: 503),
+pensati contro la copia sistematica (decisione «non scaricabile»: con 200 righe per pagina servono decine di migliaia di
+richieste per copiare tutto). L'ente si indica con la **chiave** (10 caratteri esadecimali derivati dal codice fiscale
+nella fase 7; il CF non è nell'indice); 404 per una chiave sconosciuta, 400 per chiavi, ruoli, nature, ordinamenti o comuni
+non validi. Con un indice di prima del 22/11/2026 (senza tabella `enti`) le tre rotte rispondono `{"disponibile": false}`:
+l'ordine fra rilascio del sito e rifacimento dell'indice non conta.
+
+Le tessere della mappa non passano dall'API: sono il PMTiles statico `immobili_pa_<anno>_<versione>.pmtiles` nella cartella
+degli archivi edifici (`CARTELLA_EDIFICI/immobili_pa/`, servita da Caddy in `/edifici3d/immobili_pa/`, con `indice.json`
+riconvalidato sempre); accanto c'è `enti_<anno>_<versione>.json`, l'elenco degli enti per l'autocompletamento (in copia
+per un giorno come il PMTiles: il nome cambia a ogni rifacimento). Nessuna rotta restituisce soggetto cedente o codici
+fiscali (`ESCLUSE`). Test: `tests/test_immobili_pa.py` (indice costruito con la fase 7: niente CF né cedente in nessuna
+risposta, paginazione, ordinamento su lista chiusa, filtri, 404, indice vecchio, limite e tetto, `bene` con due
+dichiarazioni).
 
 ## Edifici 3D (fase 10, dal 04/11/2026)
 

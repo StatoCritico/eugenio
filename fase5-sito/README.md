@@ -120,7 +120,7 @@ anche lì (`analisi_pubbliche.js`, `emissioni_cog.js`, `dbtr_lettore.js`, `aria_
 script che mostrano numeri: `aggiungi_dbtr.js`, `analisi_pubbliche.js`, `app.js` (anche la scala dei gradi giorno e i kB
 del file), `cerca_luogo.js`, `clima_storico.js`, `cti_legge10.js`, `dati.js`, `dbtr_lettore.js`, `edifici_pubblici.js`,
 `edificio3d.js`, `emissioni_cog.js`, `esporta_mappa.js`, `importa_modello.js`, `indicatori.js`, `indici_prezzi.js`,
-`legge10.js`, `patrimonio.js`, `rete.js` (numeri, non le date), `righello.js`, `valori_sedi.js`, `visure_patrimonio.js`, i
+`legge10.js`, `patrimonio.js`, `pubblici_enti.js`, `rete.js` (numeri, non le date), `righello.js`, `valori_sedi.js`, `visure_patrimonio.js`, i
 moduli del Trattamento aria, `carichi.js`, `elettricita.js`; anche i conteggi lunghi nei messaggi (righe, ore, corpi,
 sedi). Restano senza punto date, anni, codici, coordinate, indirizzi, campi modificabili e i numeri dei file CSV/Excel/ODS.
 Regola in `README_stile.md` («Numeri»); prova `test_costruisci_pagine.py::test_numeri_col_punto_delle_migliaia` (nessun
@@ -155,7 +155,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `elettricita.html` | elettricita.js | a | regione o vista=italia, modo (già; dal 21/11/2026 anche `emissioni`), anno, barre, fondo, ortofoto |
 | `rete-elettrica.html` | rete_elettrica.js | a | regione, comune (già), criticita, altri, cabine, interruzioni, ortofoto; prova=1 resta |
 | `ortofoto.html` | ortofoto.js | a | lat, lon, z, fonte (già), archivio, particelle, contorni (lo spostamento manuale della foto resta nella scheda) |
-| `edifici-pubblici.html` | edifici_pubblici.js | a | lat, lon, z, ref o bene (già), tipi, enti, ortofoto, fonte, particelle, contorni |
+| `edifici-pubblici.html` | edifici_pubblici.js, pubblici_enti.js | a | lat, lon, z, ref o bene (già), tipi, enti, ortofoto, fonte, particelle, contorni; dal 22/11/2026 modo (`enti`), sel (chiavi degli enti nell'ordine dei colori), ruolo, natura, ordina (`colonna:asc|desc`), tipo_ente, regione_ente (secondari) |
 | `aria-trasformazioni.html` | aria_trasformazioni.js | a | comune (già), anni, inverno, estate, diagramma, uta (dati e sequenze diversi dai predefiniti, JSON compatto) |
 | `aria-ore.html` | aria_ore.js | a | comune, anni, inverno, estate, diagramma, gruppi, nuvola, raggio, trasp, comfort, vedi_comfort, vedi_progetto, tabella (non le condizioni di progetto corrette a mano) |
 | `aria-latenti.html` | aria_latenti.js | a | comune, anni, inverno, estate, diagramma, obiettivo_estate, obiettivo_inverno, portata, riferimento, gruppi-estate, gruppi-inverno |
@@ -453,8 +453,48 @@ sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i c
   scelta da sola (`EUGENIO_CONFINI.fontiNelPunto`) o a mano, contesto Sentinel-2 sotto, strati comuni (`strati_gl.js`).
   Ricerca a parole nell'indice (`/api/immobili-pa/cerca`, filtro per gruppo) e per indirizzo o foglio e particella
   (`cerca_luogo.js`); clic su punto o particella → scheda (`/api/immobili-pa/particella/{ref}` o `/bene/{id}`) con
-  «Apri in Modelli 3D» e «Apri in Ortofoto». Indirizzo: `?lat=&lon=&z=`, `?ref=`, `?bene=`. Immagine scaricabile con le
-  attribuzioni (`esporta_mappa.js`).
+  «Apri in Modelli 3D», «Apri in Ortofoto» e (dal 22/11/2026) «Mostra tutti i beni di questo ente»; un bene senza particella
+  mostra tutte le sue dichiarazioni (proprietario e chi lo ha in uso). Indirizzo: `?lat=&lon=&z=`, `?ref=`, `?bene=`.
+  Immagine scaricabile con le attribuzioni (`esporta_mappa.js`).
+- **Ricerca per ente** (22/11/2026, `pubblici_enti.js`; decisioni di Paolo e studio
+  `documenti/EDIFICI_PUBBLICI_RICERCA_ENTE_2026-11-22.md`): nel passo 1 due schede (`role="tablist"`, frecce, Inizio e
+  Fine) «Cerca un immobile» e **«Per ente»** (`?modo=enti`). Nella seconda:
+  - menu **tipologia** (gruppi di `indice.json`) e **«con beni in»** (regioni dove l'ente ha beni);
+  - **combobox ARIA** (`role="combobox"`, `aria-expanded`, `aria-activedescendant`, elenco `role="listbox"`; frecce, Invio,
+    Esc) con l'autocompletamento **tutto nel browser** sull'elenco statico `enti_<anno>_<versione>.json` (indicato da
+    `indice.json` → `enti`): ogni parola deve iniziare una parola del nome o della sede, sigle comuni (AUSL, ASL, ACER, ATER,
+    IACP, «unibo») come sinonimi, prima il nome esatto («cesena» → Comune di Cesena prima di Cesenatico), poi i più grandi;
+    proposte con nome leggibile (i nomi MEF sono in maiuscolo), tipologia, sede e beni (`EUGENIO_NUMERI.formato`);
+  - **enti scelti** (al massimo 8) con il colore (tavolozza Okabe–Ito senza arancio e porpora: blu, vermiglione, verde
+    acqua, giallo, celeste, nero, ocra, grigio-blu; un ente nuovo prende il primo colore libero), totali brevi, «Inquadra»,
+    «×» e «Togli tutti»;
+  - caselle **ruolo** («in proprietà» accesa, «in uso» = detenzione spenta) e **natura** (fabbricati accesi, terreni
+    spenti), decisioni di Paolo del 22/11/2026; avvisi del § 5.5 dello studio (beni dichiarati, superfici, cedente non
+    mostrato, Trentino-Alto Adige solo a pallini).
+  - **Mappa**: per ogni ente una sorgente GeoJSON dai punti di `/api/immobili-pa/ente/{chiave}/punti` (filtrati nel browser
+    per ruolo e natura, una feature per particella con `n` beni), pallini fino allo zoom delle particelle (13) con raggio
+    che cresce con √n, raggruppati (`cluster`, senza numeri: la mappa non ha glifi) oltre 3.000 punti; dallo zoom 13 restano
+    i pallini dei soli beni senza particella e compaiono i livelli `pa-enti-terreni`, `pa-enti-edifici` (retino
+    `retino-ente-<n>` nel colore dell'ente) e `pa-enti-linea` sulla sorgente `pa` delle tessere, filtrati con la proprietà
+    `e` (`["in", ",<id>p,", ["get", "e"]]`); se una particella è di più enti scelti vale il colore del primo. I livelli
+    normali si **attenuano** (opacità ~0,1) e la loro legenda si schiarisce; sotto la mappa la legenda degli enti.
+    Clic e passaggio del mouse passano prima da `EUGENIO_PUBBLICI_ENTI.suClic/suMovimento` (nomi degli enti scelti nella
+    particella; clic su un gruppo di pallini → zoom).
+  - **Passo «Edifici degli enti selezionati»** (numeri dei passi rifatti): per ogni ente i totali (`/api/immobili-pa/ente/
+    {chiavi}`, una richiesta per tutti) con superficie dichiarata dei fabbricati in m², dei terreni in ettari, percentuali
+    con un decimale; con più enti la riga «Insieme» sui beni distinti. Elenco con `tabella_ordinabile.js` (una riga per
+    particella con il numero di unità; colonne Comune, Regione solo se l'ente ha beni in più regioni, Indirizzo,
+    Tipologia, Unità, Superficie dichiarata, Area del lotto, Epoca, Utilizzo, Titolo; le ultime quattro nascoste sotto i
+    600 px): fino a 200 righe tutte insieme e ordinate nel browser, oltre si parte dai **comuni** (tabella ordinabile dei
+    comuni, clic → particelle del comune) o, con un solo comune, dalle **pagine da 100 righe ordinate dal server**.
+    L'ordinamento scelto vale per tutti gli enti e va nel collegamento. Clic (o Invio) su una riga → la mappa vola sulla
+    particella, la riga e il contorno si evidenziano e si apre la Scheda. Nessuna esportazione della tabella.
+  - **Immagine** (`opzioniImmagine`): nella fascia sotto la mappa una riga per ente con il colore scritto («blu: Comune di
+    Cesena (FC) – 2.718 beni, 551 particelle»), i filtri e la spiegazione dei segni.
+  - Con un `indice.json` senza `enti` (dati preparati prima del 22/11/2026) la scheda dice che la ricerca per ente non è
+    ancora disponibile; con l'indice vecchio le rotte rispondono `{"disponibile": false}`.
+- **`tabella_ordinabile.js`**: componente riusabile delle tabelle ordinabili (regole in `sito/README_stile.md`, «Tabelle
+  ordinabili»).
 - **`retino.js`**: il motivo a righe oblique (magenta `#c2185b`) registrato come immagine MapLibre, uguale in tutte e due
   le pagine; `campione()` per le legende.
 - **`pubblici_mappa.js`** (Modelli 3D): un edificio è pubblico se il punto interno di uno dei suoi corpi cade in una
@@ -465,7 +505,9 @@ sticky): la mappa di dettaglio con l'ortofoto restava schiacciata in fondo e i c
   messaggio (`#nota-pubblico`) l'ente, le tipologie e il collegamento alla scheda. `?lat=&lon=` senza `edificio` apre la
   mappa 2D sul punto (collegamento da Edifici pubblici).
 - Test: `test_costruisci_pagine.py` (gruppo «Territorio», voce nuova, 13 «S»), `test_esempi_contributi.py` (esempio
-  della pagina), `test_mappe_browser.py` (pagina a due colonne).
+  della pagina), `test_mappe_browser.py` (pagina a due colonne), `test_pubblici_enti_browser.py` (22/11/2026: file e testi,
+  schede, combobox da tastiera, colori, limite di 8, totali, ordinamento con `aria-sort`, ente grande per comune e
+  pagine, clic su una riga, collegamento riaperto, 375 px, indice vecchio; rotte simulate).
 
 ## Rete elettrica (17/11/2026, richiesta di Paolo; contratto in CONTRATTO_RETE, sintesi qui)
 
