@@ -951,10 +951,18 @@ def test_pagina_iniziale():
     conf = tomllib.loads((QUI / "parti" / "home.toml").read_text(encoding="utf-8"))
     assert set(conf["gruppi"]) == set(ids)
     assert accessibili <= set(conf["pagine"]), sorted(accessibili - set(conf["pagine"]))
-    assert (QUI / "parti" / "scena_home.svg").read_text(encoding="utf-8").strip() in s
+    scena = (QUI / "parti" / "scena_home.html").read_text(encoding="utf-8").strip()
+    assert scena in s                                   # la scena di Claude Design, due temi, fondali accanto alla pagina
+    assert s.count('<div class="scena tema-scuro"') == 1 and s.count('<div class="scena tema-chiaro"') == 1
+    for img in set(re.findall(r'<img class="fondale[^"]*" src="([^"]+)"', scena)):
+        assert (QUI / "sito" / img).exists(), img
+    assert "fonts.googleapis" not in s and "fonts.googleapis" not in (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
     # parti del disegno: le stesse di home.toml, ognuna con un gruppo vero; ogni pagina accessibile è in almeno una parte
-    chiavi = re.findall(r'<g class="parte" data-parte="([^"]+)"', main)
-    assert sorted(chiavi) == sorted(conf["parti"]) and all(conf["parti"][k]["gruppo"] in ids for k in chiavi)
+    chiavi = re.findall(r'<g class="parte" data-parte="([^"]+)" data-gruppo="([^"]+)"', main)
+    for tema in ("tema-scuro", "tema-chiaro"):          # le stesse parti in entrambi i temi
+        blocco = main.split(f'<div class="scena {tema}"')[1].split('<div class="scena tema-')[0]
+        assert sorted(re.findall(r'<g class="parte" data-parte="([^"]+)"', blocco)) == sorted(conf["parti"])
+    assert all(conf["parti"][k]["gruppo"] == g for k, g in chiavi)
     dati = json.loads(re.search(r'<script type="application/json" id="parti-home">(.*?)</script>', main, re.S).group(1))
     in_parti = {v["pagina"] for d in dati.values() for v in d["voci"]}
     assert accessibili <= in_parti, sorted(accessibili - in_parti)

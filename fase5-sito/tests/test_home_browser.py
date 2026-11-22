@@ -1,6 +1,7 @@
-"""Pagina iniziale (index.html, home.js; 22/11/2026, richiesta di Paolo): disegno dell'edificio con reti, territorio e
-meteo, animato per stagione; il mouse su una parte mostra il gruppo di pagine; il clic apre la scheda; il clic su una
-voce apre la pagina con il menu del gruppo fissato. In Chromium (si salta se Playwright o Chromium non ci sono)."""
+"""Pagina iniziale (index.html, home.js; 22/11/2026): scena a strati di Claude Design, una per tema (scuro futuristica,
+chiaro tecnica), con i fondali WebP, l'animazione delle stagioni in CSS e le 16 parti. Il mouse su una parte ferma
+l'animazione e mostra le sue informazioni (CSS); il clic apre la scheda del gruppo con le pagine della parte in evidenza; il
+clic su una voce apre la pagina con il menu del gruppo fissato. In Chromium (si salta se Playwright o Chromium non ci sono)."""
 from __future__ import annotations
 
 import functools
@@ -38,67 +39,79 @@ def browser():
         b.close()
 
 
-def _apri(browser, base, larghezza=1366, **kw):
+def _apri(browser, base, larghezza=1366, tema=None, **kw):
     ctx = browser.new_context(viewport={"width": larghezza, "height": 900}, **kw)
+    if tema:
+        ctx.add_init_script(f"localStorage.setItem('tema', '{tema}')")
     pg = ctx.new_page()
     errori = []
     pg.on("pageerror", lambda e: errori.append(str(e)))
     pg.route("**/api/**", lambda r: r.fulfill(status=404, body="{}"))
     pg.goto(base)
-    pg.wait_for_selector("#scena-barra:not([hidden])")
+    pg.wait_for_function("getComputedStyle(document.getElementById('scena-contenitore')).getPropertyValue('--k') !== ''")
     return ctx, pg, errori
 
 
-def test_disegno_schede_e_menu_fissato(browser, base):
+def _centro(pg, sel):
+    """Un punto della parte che il mouse prende davvero (le sagome trasparenti si sovrappongono)."""
+    pg.locator(sel).first.scroll_into_view_if_needed()
+    bb = pg.locator(sel).first.bounding_box()
+    parte = pg.locator(sel).first.get_attribute("data-parte")
+    for fy in (.5, .35, .65, .2, .8, .1, .9):
+        for fx in (.5, .3, .7, .15, .85, .05, .95):
+            x, y = bb["x"] + bb["width"] * fx, bb["y"] + bb["height"] * fy
+            trovata = pg.evaluate(f"(document.elementFromPoint({x}, {y}) || document.body).closest('.parte')?.dataset.parte")
+            if trovata == parte:
+                return x, y
+    raise AssertionError(f"nessun punto libero per {parte}")
+
+
+def test_scena_informazioni_schede_e_menu_fissato(browser, base):
     ctx, pg, errori = _apri(browser, base)
-    # all'inizio solo la scheda «Da dove cominciare», con un pulsante per gruppo
-    assert pg.locator(".home-scheda:visible").count() == 1 and pg.locator("#scheda-intro").is_visible()
-    assert pg.locator("#home-scelte button").count() == 7
-    # mouse sull'edificio: riquadretto con il gruppo e le voci, parte in evidenza
-    def sopra(parte):
-        bb = pg.locator(f'.parte[data-parte="{parte}"] polygon').first.bounding_box()
-        pg.mouse.move(bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2)
-        pg.wait_for_function("!document.getElementById('scena-tip').hidden")
-        return pg.locator("#scena-tip").inner_text()
-    tip = sopra("uta")                                    # parte attiva: gruppo, titolo, pagine
-    assert "Unità di trattamento aria" in tip and "Trasformazioni" in tip and "Prossimamente" not in tip
-    assert "su" in pg.locator('.parte[data-parte="uta"]').get_attribute("class")
-    tip = sopra("cogenerazione")                          # parte non ancora attiva: «Prossimamente»
-    assert "Cogeneratore" in tip and "Prossimamente" in tip
-    pg.mouse.move(2, 2)
-    # clic sul traliccio: si apre la scheda Statistiche con le pagine di Terna in evidenza
-    pg.locator('.parte[data-parte="traliccio"] line').first.click(force=True)
+    assert pg.locator(".scena.tema-scuro").is_visible() and not pg.locator(".scena.tema-chiaro").is_visible()
+    # la scena (1200 × 875) sta nel contenitore
+    larg = pg.evaluate("document.getElementById('scena-contenitore').clientWidth")
+    bb = pg.locator(".scena.tema-scuro").bounding_box()
+    assert abs(bb["width"] - larg) < 3 and pg.evaluate("document.documentElement.scrollWidth") <= 1366
+    # i fondali si caricano
+    assert pg.evaluate("[...document.querySelectorAll('.scena.tema-scuro img.fondale')].every(i => i.complete && i.naturalWidth > 0)")
+    # all'inizio solo «Da dove cominciare», con un pulsante per gruppo
+    assert pg.locator(".home-scheda:visible").count() == 1 and pg.locator("#home-scelte button").count() == 7
+    # mouse sull'UTA: le sue informazioni nel riquadro della scena
+    pg.mouse.move(*_centro(pg, '.scena.tema-scuro .parte[data-parte="uta"]'))
+    pg.wait_for_selector(".scena.tema-scuro .info-uta", state="visible")
+    assert "trattamento aria" in pg.locator(".scena.tema-scuro .info-uta").inner_text().lower()
+    # mouse sul cogeneratore: «Prossimamente»
+    pg.mouse.move(*_centro(pg, '.scena.tema-scuro .parte[data-parte="cogenerazione"]'))
+    pg.wait_for_selector(".scena.tema-scuro .info-cogenerazione", state="visible")
+    assert "prossimamente" in pg.locator(".scena.tema-scuro .info-cogenerazione").inner_text().lower()
+    # clic sul traliccio: scheda Statistiche con le pagine della rete elettrica in evidenza
+    pg.mouse.click(*_centro(pg, '.scena.tema-scuro .parte[data-parte="traliccio"]'))
     assert pg.evaluate("[...document.querySelectorAll('.home-scheda')].filter(s => !s.hidden).map(s => s.id)") == ["scheda-statistiche"]
-    assert pg.locator('#scheda-statistiche li.evidenza a').all_inner_texts() == ["Produzione e consumi di elettricità", "Carichi elettrici"]
-    assert "Rete di trasmissione" in pg.locator("#scheda-statistiche .scheda-parte").text_content()
-    # la × torna all'inizio
+    evid = pg.locator("#scheda-statistiche li.evidenza a").all_inner_texts()
+    assert "Carichi elettrici" in evid and "Stato della rete elettrica" in evid
+    assert "Rete elettrica" in pg.locator("#scheda-statistiche .scheda-parte").text_content()
     pg.locator("#scheda-statistiche .scheda-chiudi").click()
     assert pg.locator("#scheda-intro").is_visible()
-    # da tastiera: Invio su una parte apre la sua scheda
-    pg.locator('.parte[data-parte="recupero"]').focus()
+    # da tastiera: Invio sul recupero apre la scheda Trattamento aria
+    pg.locator('.scena.tema-scuro .parte[data-parte="recupero"]').focus()
     pg.keyboard.press("Enter")
     assert pg.locator("#scheda-aria").is_visible()
-    # voce scelta: la pagina si apre con il gruppo fissato in orizzontale sotto il menu
     assert pg.locator('#scheda-aria li.evidenza a').all_inner_texts() == ["Free cooling e recupero"]
+    # voce scelta: la pagina si apre con il gruppo fissato in orizzontale sotto il menu
     pg.locator('#scheda-aria a[href="aria-ore.html"]').click()
     pg.wait_for_url("**/aria-ore.html")
     pg.wait_for_selector("nav.riga-fissata ul.riga-voci a[href='aria-ore.html']")
     assert pg.evaluate("document.documentElement.dataset.menuFissato") == "aria"
-    assert pg.locator("nav.riga-fissata ul.riga-voci").is_visible()
-    assert pg.locator("nav.riga-fissata .riga-titolo").text_content().strip() == "Trattamento aria"
     assert not errori, errori
     ctx.close()
 
 
-def test_stagioni_pausa_e_vecchi_indirizzi(browser, base):
-    ctx, pg, errori = _apri(browser, base)
-    scena = pg.locator("#scena")
-    assert scena.get_attribute("data-stagione") == "estate" and scena.get_attribute("data-meteo") == "sole"
-    pg.wait_for_function("document.getElementById('scena').dataset.meteo === 'pioggia'", timeout=8000)
-    pg.locator("#scena-pausa").click()                     # ferma: la fase non cambia più
-    fase = (scena.get_attribute("data-stagione"), scena.get_attribute("data-meteo"))
-    pg.wait_for_timeout(5000)
-    assert (scena.get_attribute("data-stagione"), scena.get_attribute("data-meteo")) == fase
+def test_tema_chiaro_e_vecchi_indirizzi(browser, base):
+    ctx, pg, errori = _apri(browser, base, tema="light")
+    assert pg.locator(".scena.tema-chiaro").is_visible() and not pg.locator(".scena.tema-scuro").is_visible()
+    pg.mouse.click(*_centro(pg, '.scena.tema-chiaro .parte[data-parte="fotovoltaico"]'))
+    assert pg.locator("#scheda-fotovoltaico").is_visible()
     # i vecchi collegamenti di Previsioni (/?comune=…) passano a previsioni.html con le stesse scelte
     pg.goto(base + "?comune=040007&cosa=clima")
     pg.wait_for_url("**/previsioni.html?comune=040007*")
@@ -108,13 +121,10 @@ def test_stagioni_pausa_e_vecchi_indirizzi(browser, base):
 
 def test_movimento_ridotto_e_telefono(browser, base):
     ctx, pg, errori = _apri(browser, base, larghezza=375, reduced_motion="reduce")
-    scena = pg.locator("#scena")
-    pg.wait_for_timeout(5000)
-    assert scena.get_attribute("data-meteo") == "sole"     # niente animazione da sola
-    pg.locator("#scena-pausa").click()                     # il pulsante passa alla fase successiva
-    assert scena.get_attribute("data-meteo") == "pioggia"
     assert pg.evaluate("document.documentElement.scrollWidth") <= 375
-    pg.locator('.parte[data-parte="territorio"] .sc-campo').nth(2).click(force=True)   # tocco: scheda, niente riquadretto
+    # animazioni ferme con il movimento ridotto
+    assert pg.evaluate("document.getAnimations().filter(a => a.playState === 'running').length") == 0
+    pg.mouse.click(*_centro(pg, '.scena.tema-scuro .parte[data-parte="territorio"]'))
     assert pg.locator("#scheda-patrimonio").is_visible()
     assert not errori, errori
     ctx.close()

@@ -457,8 +457,8 @@ def main(argv=None) -> int:
         conf_home = tomllib.loads((PARTI / "home.toml").read_text(encoding="utf-8"))
         blocchi["schede-home"] = schede_home(parti["testata"], conf_home)
         blocchi["parti-home"] = parti_home(parti["testata"], conf_home)
-    if (PARTI / "scena_home.svg").exists():
-        blocchi["scena-home"] = (PARTI / "scena_home.svg").read_text(encoding="utf-8")
+    if (PARTI / "scena_home.html").exists():                 # scena a strati di Claude Design (22/11/2026, sera)
+        blocchi["scena-home"] = (PARTI / "scena_home.html").read_text(encoding="utf-8")
     for pagina in sorted(sito.glob("*.html")):
         if pagina.name in ESCLUSE:
             continue

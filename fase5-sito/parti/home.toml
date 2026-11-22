@@ -62,7 +62,7 @@ descrizione = "I numeri dell'energia in Italia: prezzi, produzione e consumi di 
 "carichi.html" = "la potenza richiesta quarto d'ora per quarto d'ora, con le fonti"
 "suolo.html" = "suolo consumato, cause del consumo e superfici coltivate"
 
-# Parti del disegno (parti/scena_home.py): titolo e descrizione nel riquadretto, pagine collegate (anche di altri
+# Parti del disegno (parti/scena_home.html, di Claude Design; 16 parti: la cabina primaria sta nel traliccio): titolo e descrizione nel riquadretto, pagine collegate (anche di altri
 # gruppi, anche in lavorazione). Il clic apre la scheda del gruppo («gruppo») con queste pagine in evidenza. Una parte
 # senza pagine accessibili è «prossimamente» (lo calcola costruisci_pagine.py dal menu).
 [parti.meteo]
@@ -149,17 +149,11 @@ titolo = "Cogeneratore"
 descrizione = "Elettricità e calore prodotti sul posto: convenienza, emissioni, rischio prezzo, confronto con le alternative."
 pagine = ["cog-simulazione.html", "cog-emissioni.html", "cog-confronto.html", "cog-spark-spread.html", "cog-car.html", "cog-rischio.html"]
 
-[parti.cabina-primaria]
-gruppo = "statistiche"
-titolo = "Cabina primaria e rete di distribuzione"
-descrizione = "Le cabine primarie, la loro saturazione e le interruzioni della rete, comune per comune; le aree del GSE."
-pagine = ["rete-elettrica.html", "fv-cabine.html"]
-
 [parti.traliccio]
 gruppo = "statistiche"
-titolo = "Rete di trasmissione (dati Terna)"
-descrizione = "Produzione per fonte, consumi, emissioni e carichi elettrici dell'Italia, dai dati di Terna."
-pagine = ["elettricita.html", "carichi.html"]
+titolo = "Rete elettrica (dati Terna e cabine primarie)"
+descrizione = "Produzione per fonte, consumi, emissioni e carichi elettrici dai dati di Terna; cabine primarie, saturazione e interruzioni della rete, comune per comune."
+pagine = ["elettricita.html", "carichi.html", "rete-elettrica.html", "fv-cabine.html"]
 
 [parti.cabina-gas]
 gruppo = "statistiche"

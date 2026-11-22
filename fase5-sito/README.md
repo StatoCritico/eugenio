@@ -4,8 +4,8 @@ Sito statico (HTML, CSS e JavaScript senza librerie esterne), servito da Caddy n
 
 ```
 sito/
-  index.html        pagina iniziale (22/11/2026): disegno animato dell'edificio con reti, territorio e meteo (home.js,
-                    parti/scena_home.py), schede dei gruppi del menu (parti/home.toml), come lavora, ultime novità; i
+  index.html        pagina iniziale (22/11/2026): scena animata di Claude Design, una per tema (parti/scena_home.html,
+                    home_*.webp, home.js), schede dei gruppi del menu (parti/home.toml), come lavora, ultime novità; i
                     vecchi indirizzi con le scelte (/?comune=…, #…) passano a previsioni.html
   previsioni.html   (fino al 22/11/2026 era index.html) mappa dei comuni colorata con i gradi giorno previsti a 7 giorni,
                     ricerca indirizzo, caricamento CSV, scelta della modalità, grafico con le fasce di probabilità
@@ -211,32 +211,31 @@ sulla voce si apre la pagina, aprendo anche il relativo menu in alto in orizzont
 
 - `index.html` non è più Previsioni: titolo e una riga su cosa fa EuGEnio, poi il **disegno** (a sinistra; sotto i 960 px
   sopra le schede) e le **schede dei gruppi** (a destra), poi «Come lavora EuGEnio» e le ultime tre novità.
-- **Disegno** (rifatto alle 13:41–13:45 su richiesta di Paolo: stile più professionale, piastra e torre, impianti in
-  evidenza, spaccato, frigo e torre evaporativa sulla centrale termica, pompa di calore sul tetto alto, traliccio e cabina
-  del gas, radar e stazione meteo): `parti/scena_home.py` (assonometria in Python, si rilancia solo per cambiarlo) scrive
-  `parti/scena_home.svg`, che `costruisci_pagine.py` mette nel blocco `<!-- scena-home -->`. Edificio a **piastra** bassa
-  (aperta in **spaccato** sull'angolo: pareti interne, sezioni in nero, **UTA** con il **recuperatore** a flussi incrociati,
-  batteria, ventilatore, canali di mandata e ripresa) e **torre** a vetri (tetto: **solare termico** con accumulo e **pompa
-  di calore**); **fotovoltaico** sulla piastra; **centrale termica** con camino e sopra **gruppo frigo** e **torre
-  evaporativa**; **cogeneratore** in container; **ombre** a terra (corte d'estate, lunghe d'inverno, nascoste con pioggia e
-  neve); **cabina primaria**, **traliccio** con la linea fino alla cabina MT/BT; **cabina del gas** con il tubo; **contatore**
-  all'ingresso; **radar e stazione meteo**; territorio con campi, particelle, case, alberi e strada; cielo. Diciassette
-  parti `<g class="parte" data-parte="…" data-gruppo="…">` con un punto di richiamo (+; grigio tratteggiato se la parte è
-  «prossimamente»). Colori in `stile.css` (classi `sc-…`, variabili `--sc-…`, contorni sottili) per estate e inverno, tema
-  scuro e chiaro; animazioni CSS (ventole, anemometro, fumo del cogeneratore, vapore del camino d'inverno, pennacchio della
-  torre evaporativa d'estate, flusso in linea e tubo, pioggia, neve, nuvole, richiami), ferme con `prefers-reduced-motion`.
+- **Disegno** (22/11/2026 sera: versione di **Claude Design**, zip `eugenio_home_temi.zip` di Paolo, al posto del disegno
+  in assonometria del pomeriggio): `parti/scena_home.html` (blocco `<!-- scena-home -->`, messo da `costruisci_pagine.py`)
+  con **due scene, una per tema**: `.scena.tema-scuro` (variante futuristica) e `.scena.tema-chiaro` (variante tecnica,
+  visibile con `[data-theme="light"]`). Ogni scena, 1200 × 875: due **fondali WebP** fermi (`sito/home_scuro_estate.webp`,
+  `home_scuro_inverno.webp`, `home_chiaro_estate.webp`, `home_chiaro_inverno.webp`, 50–85 KB) alternati con una dissolvenza,
+  velo per pioggia e neve, `svg.strato-anim` (solo ciò che si muove: flussi, radar, riflettori, fumi, ventole, pioggia,
+  neve, richiami e titoli a turno; non riceve il mouse), `svg.strato-parti` con le **16 parti** trasparenti
+  `<g class="parte" data-parte data-gruppo>` e i riquadri HUD (fase della stagione, informazioni della parte sotto il mouse
+  o col fuoco, legenda delle reti, consumo di suolo **con dati d'esempio**). Stagioni, pause al passaggio del mouse e
+  informazioni sono **solo CSS** (`:has(.parte:hover)`), nel blocco «pagina iniziale» di `stile.css`; con il movimento
+  ridotto niente animazioni. Pensata per PC senza scheda grafica dedicata (il browser non ridisegna tutta la scena).
+  Ritocchi nell'integrazione: caratteri del sito al posto di quelli di Google Fonts (nessun carattere esterno), titoli del
+  riquadro della fase accorciati («SIM · STAGIONI», «TAV. 01 — STAGIONI») perché non si sovrapponessero a «IN PAUSA»; la
+  parte «cabina primaria» non c'è nel disegno, quindi le sue pagine (Stato della rete elettrica, Cabine primarie) sono
+  nel **traliccio** («Rete elettrica (dati Terna e cabine primarie)»). Il contenitore `.scena-contenitore` riduce la scena
+  alla sua larghezza (`--k`, `home.js`). Per i fondali con i dati veri del consumo di suolo serve il generatore di Claude
+  Design (non nel repository).
 - **Parti** (`parti/home.toml`, `[parti.…]`): titolo, descrizione, gruppo e pagine collegate (anche di altri gruppi e in
   lavorazione). `costruisci_pagine.py` (`parti_home`, blocco `<!-- parti-home -->`, JSON) aggiunge nome e stato dal menu e
   segna «prossimamente» le parti senza pagine accessibili (oggi solare termico, pompa di calore, centrale termica, frigo,
   cogeneratore, cabina del gas).
-- **Stagioni** (`home.js`): estate sole → estate pioggia → inverno sole → inverno neve, 4,5 secondi l'una
-  (`data-stagione`, `data-meteo` sulla `.scena`); d'inverno neve su terreno, tetti, alberi e pannelli. Pulsante per fermare e
-  riprendere; con il movimento ridotto niente animazione e il pulsante passa alla fase successiva; ferma quando la scheda del
-  browser è nascosta.
-- **Mouse su una parte**: la parte si accende (le altre si spengono), riquadretto con il gruppo, il titolo e la
-  descrizione della parte e le sue pagine; per le parti non ancora attive «Prossimamente». **Clic, tocco o Invio**: si apre
-  la scheda del gruppo al posto di «Da dove cominciare», con le pagine della parte in evidenza e la riga «Dal disegno: …»
-  (× per tornare; i pulsanti dei sette gruppi accendono tutte le parti del gruppo). **Clic su una voce**: `localStorage`
+- **Mouse su una parte** (CSS): l'animazione si ferma, la parte si accende e il riquadro in basso a destra mostra gruppo,
+  titolo e descrizione (per le parti non ancora attive «Prossimamente»). **Clic, tocco o Invio** (`home.js`): sotto il
+  disegno si apre la scheda del gruppo al posto di «Da dove cominciare», con le pagine della parte in evidenza e la riga
+  «Dal disegno: …» (× per tornare; i pulsanti dei sette gruppi aprono le schede). **Clic su una voce**: `localStorage`
   «menu-fissato» = gruppo, così la pagina si apre con le voci del gruppo in orizzontale sotto il menu (come il clic sul
   titolo del gruppo, `aspetto.js`). Senza JavaScript le schede sono tutte visibili.
 - **Schede**: le scrive `costruisci_pagine.py` (`schede_home`, blocco `<!-- schede-home -->`) dal menu (`parti/testata.html`:

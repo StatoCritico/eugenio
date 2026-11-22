@@ -25,7 +25,7 @@ data = "2026-11-22"
 versione = "20261122b"
 titolo = "Nuova pagina iniziale, dati pluviometrici, carichi elettrici a confronto, schede degli enti pubblici"
 nuovo = [
-  "Nuova pagina iniziale: un disegno animato con le stagioni mostra un edificio aperto in spaccato con i suoi impianti, le reti che lo alimentano, il territorio intorno e il meteo sopra. Passando con il mouse su ogni parte vedi a cosa serve e quali pagine ci sono; con un clic si apre la scheda del gruppo, e da lì la pagina con le voci del suo gruppo già in vista. Le parti ancora in preparazione dicono «Prossimamente».",
+  "Nuova pagina iniziale: un disegno animato con le stagioni mostra un edificio con i suoi impianti, le reti che lo alimentano, il territorio intorno e il meteo sopra, in due stili: futuristico con il tema scuro, tecnico con il tema chiaro. Passando con il mouse su ogni elemento l’animazione si ferma e vedi a cosa serve; con un clic si apre la scheda del gruppo, e da lì la pagina con le voci del suo gruppo già in vista. Le parti ancora in preparazione dicono «Prossimamente».",
   "Previsioni ora si apre da previsioni.html; i vecchi collegamenti continuano a funzionare.",
   "Clima e meteo › Dati pluviometrici (sperimentale): la pioggia misurata in Italia dalla Protezione Civile (radar corretti con i pluviometri, un dato ogni mezz'ora), su una mappa che si anima fino a 7 giorni indietro: scegli la durata, il passo e la velocità. Un clic su un punto mostra la pioggia delle ultime 3, 6, 12 e 24 ore e quella di ogni giorno degli ultimi 30 nel comune, accanto a quella prevista da EuGEnio. Si possono accendere le interruzioni della rete elettrica dello stesso periodo. Dati a fini statistici, non di allerta, con licenza CC BY-SA 4.0.",
 ]
