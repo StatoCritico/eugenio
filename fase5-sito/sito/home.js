@@ -14,6 +14,9 @@
   const intro = document.getElementById("scheda-intro");
   const scelte = document.getElementById("home-scelte");
   const parti = [...svg.querySelectorAll(".parte")];
+  let DATI = {};
+  try { DATI = JSON.parse(document.getElementById("parti-home").textContent); } catch (e) { /* niente */ }
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const scheda = (g) => schede.find((s) => s.dataset.gruppo === g);
   const fermo = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let scelta = null;
@@ -26,25 +29,43 @@
     x.setAttribute("aria-label", "Chiudi la scheda"); x.title = "Torna all'inizio";
     x.addEventListener("click", () => scegli(null, true));
     s.prepend(x);
+    const dal = document.createElement("p");
+    dal.className = "scheda-parte"; dal.hidden = true;
+    s.querySelector("h2").before(dal);
     const b = document.createElement("button");
     b.type = "button"; b.textContent = s.querySelector("h2").textContent; b.dataset.gruppo = s.dataset.gruppo;
     b.setAttribute("aria-pressed", "false");
     b.addEventListener("click", () => scegli(s.dataset.gruppo, true));
-    b.addEventListener("mouseenter", () => evidenzia(s.dataset.gruppo));
+    b.addEventListener("mouseenter", () => evidenzia("gruppo:" + s.dataset.gruppo));
     b.addEventListener("mouseleave", () => evidenzia(null));
     scelte.appendChild(b);
   });
 
-  function evidenzia(g) {
-    parti.forEach((p) => p.classList.toggle("su", p.dataset.gruppo === g || p.dataset.gruppo === scelta));
-    scena.classList.toggle("indica", !!(g || scelta));
+  // g: chiave di una parte (data-parte) o, dai pulsanti dei gruppi, «gruppo:<id>» (si accendono tutte le sue parti)
+  let parteScelta = null;
+  function accesa(p, k) {
+    if (!k) return false;
+    return k.startsWith("gruppo:") ? p.dataset.gruppo === k.slice(7) : p.dataset.parte === k;
+  }
+  function evidenzia(k) {
+    parti.forEach((p) => p.classList.toggle("su", accesa(p, k) || accesa(p, parteScelta)));
+    scena.classList.toggle("indica", !!(k || parteScelta));
   }
 
-  function scegli(g, fuoco) {
+  function scegli(g, fuoco, chiave) {
     scelta = g;
+    parteScelta = chiave || (g ? "gruppo:" + g : null);
     schede.forEach((s) => { s.hidden = s.dataset.gruppo !== g; });
     intro.hidden = !!g;
-    parti.forEach((p) => p.setAttribute("aria-pressed", String(p.dataset.gruppo === g)));
+    // pagine della parte scelta in evidenza nella scheda
+    const pagine = chiave && DATI[chiave] ? DATI[chiave].voci.map((v) => v.pagina) : [];
+    document.querySelectorAll(".home-scheda li[data-pagina]").forEach((li) => li.classList.toggle("evidenza", pagine.includes(li.dataset.pagina)));
+    const titoloParte = g && document.querySelector(`#scheda-${g} .scheda-parte`);
+    if (titoloParte) {
+      titoloParte.hidden = !(chiave && DATI[chiave]);
+      if (chiave && DATI[chiave]) titoloParte.textContent = `Dal disegno: ${DATI[chiave].titolo}` + (DATI[chiave].prossimamente ? " – prossimamente" : "");
+    }
+    parti.forEach((p) => p.setAttribute("aria-pressed", String(accesa(p, parteScelta))));
     scelte.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.gruppo === g)));
     evidenzia(null);
     const s = g ? scheda(g) : intro;
@@ -58,16 +79,14 @@
   }
 
   // ------------------------------------------------------------------ parti del disegno
-  function testoTip(g) {
-    const s = scheda(g);
-    if (!s) return "";
-    const voci = [...s.querySelectorAll("li")].map((li) => {
-      const a = li.querySelector("a"), n = li.querySelector(".voce-nome");
-      const nome = (a || n || li).textContent.trim();
-      return `<li${a ? "" : ' class="in-arrivo"'}>${nome}${a ? "" : " (in arrivo)"}</li>`;
-    });
-    return `<strong>${s.querySelector("h2").textContent}</strong><p>${s.querySelector("p").textContent}</p>` +
-      `<ul>${voci.join("")}</ul><p class="tip-clic">Clicca per aprire la scheda</p>`;
+  function testoTip(k) {
+    const d = DATI[k];
+    if (!d) return "";
+    const voci = d.voci.map((v) => `<li${v.attiva ? "" : ' class="in-arrivo"'}>${esc(v.nome)}${v.attiva ? "" : " (prossimamente)"}</li>`);
+    return `<span class="tip-gruppo">${esc(d.titolo_gruppo)}</span><strong>${esc(d.titolo)}</strong>` +
+      (d.prossimamente ? '<span class="tip-poi">Prossimamente</span>' : "") +
+      `<p>${esc(d.descrizione)}</p>` + (voci.length ? `<ul>${voci.join("")}</ul>` : "") +
+      `<p class="tip-clic">${d.prossimamente ? "Le pagine sono in preparazione: clicca per vedere il gruppo" : "Clicca per aprire le pagine"}</p>`;
   }
 
   function mostraTip(g, e) {
@@ -83,21 +102,21 @@
   }
 
   parti.forEach((p) => {
-    const g = p.dataset.gruppo;
-    const s = scheda(g);
-    if (s) p.setAttribute("aria-label", `${s.querySelector("h2").textContent}: ${s.dataset.parte}`);
+    const g = p.dataset.gruppo, k = p.dataset.parte, d = DATI[k];
+    if (d) p.setAttribute("aria-label", `${d.titolo} (${d.titolo_gruppo})${d.prossimamente ? ", prossimamente" : ""}`);
+    if (d && d.prossimamente) p.classList.add("poi");
     p.setAttribute("aria-pressed", "false");
     p.addEventListener("pointermove", (e) => {
       if (e.pointerType !== "mouse") return;
-      evidenzia(g);
-      mostraTip(g, e);
+      evidenzia(k);
+      mostraTip(k, e);
     });
     p.addEventListener("pointerleave", () => { evidenzia(null); if (tip) tip.hidden = true; });
-    p.addEventListener("click", () => { if (tip) tip.hidden = true; scegli(g, true); });
+    p.addEventListener("click", () => { if (tip) tip.hidden = true; scegli(g, true, k); });
     p.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); scegli(g, true); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); scegli(g, true, k); }
     });
-    p.addEventListener("focus", () => evidenzia(g));
+    p.addEventListener("focus", () => evidenzia(k));
     p.addEventListener("blur", () => evidenzia(null));
   });
 

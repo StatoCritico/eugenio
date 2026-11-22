@@ -2039,7 +2039,7 @@ svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-off
 .home .home-apertura h1 { margin: var(--s3) 0 var(--s3); }
 .home .home-sotto { font-size: var(--c-l); max-width: 70ch; margin: 0; }
 .home-scena { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(19rem, 1fr); gap: var(--s5); align-items: start; }
-.scena { position: relative; border-radius: var(--r-l); overflow: hidden; border: 1px solid var(--linea); background: var(--sc-cielo); }
+.scena { position: relative; border-radius: var(--r-l); overflow: hidden; border: 1px solid var(--linea); }
 .scena-svg { display: block; width: 100%; height: auto; }
 .scena-barra { position: absolute; left: var(--s3); bottom: var(--s3); display: flex; gap: var(--s2); align-items: center;
   font: 600 var(--c-s)/1 var(--testo); color: var(--sc-scritta); background: var(--sc-etichetta); border-radius: var(--r-tondo); padding: .3rem .4rem .3rem .8rem; }
@@ -2056,85 +2056,135 @@ svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-off
 .scena-tip .tip-clic { margin: .4rem 0 0; font-size: var(--c-xs); color: var(--tenue); }
 
 /* parti del disegno: in evidenza quella sotto il mouse o scelta, le altre più tenui */
-.scena .parte { cursor: pointer; outline: none; transition: opacity .25s, filter .25s; }
-.scena.indica .parte:not(.su):not([data-gruppo="clima"]), .scena.indica .parte[data-gruppo="clima"]:not(.su) .sc-sole,
-.scena.indica .parte[data-gruppo="clima"]:not(.su) .sc-nuvola { filter: saturate(.3) brightness(.7); }
-.scena .parte.su { filter: drop-shadow(0 0 6px var(--primario)) drop-shadow(0 0 2px var(--primario)); }
-.scena .parte[data-gruppo="clima"].su { filter: none; }
-.scena .parte[data-gruppo="clima"].su .sc-sole circle, .scena .parte[data-gruppo="clima"].su .sc-nuvola { stroke: var(--primario); stroke-width: 3; }
+.scena .parte { cursor: pointer; outline: none; transition: filter .25s; }
+.scena.indica .parte:not(.su):not([data-parte="meteo"]):not([data-parte="territorio"]),
+.scena.indica .parte[data-parte="meteo"]:not(.su) .sc-sole, .scena.indica .parte[data-parte="meteo"]:not(.su) .sc-nuvola,
+.scena.indica .parte[data-parte="territorio"]:not(.su) > :not(.sc-terreno):not(.sc-terreno-bordo-sx):not(.sc-terreno-bordo-dx):not(.sc-neve-terreno) {
+  filter: saturate(.25) brightness(.78); }
+.scena .parte.su { filter: drop-shadow(0 0 5px var(--primario)) drop-shadow(0 0 1.5px var(--primario)); }
+.scena .parte[data-parte="meteo"].su, .scena .parte[data-parte="territorio"].su { filter: none; }
+.scena .parte[data-parte="meteo"].su .sc-sole-disco, .scena .parte[data-parte="meteo"].su .sc-nuvola-corpo,
+.scena .parte[data-parte="territorio"].su .sc-campo, .scena .parte[data-parte="territorio"].su .sc-casa-su { stroke: var(--primario); stroke-width: 2.5; }
 .scena .parte:focus-visible { filter: drop-shadow(0 0 4px var(--primario)); }
+.sc-richiamo { pointer-events: none; }
+.sc-richiamo .sc-punto { fill: var(--primario); stroke: #fff; stroke-width: 1.5; }
+.sc-richiamo path { stroke: #fff; stroke-width: 2; stroke-linecap: round; }
+.sc-richiamo .sc-alone { fill: none; stroke: var(--primario); stroke-width: 1.5; transform-box: fill-box; transform-origin: center;
+  animation: sc-pulsa 2.4s ease-out infinite; }
+.sc-richiamo-poi .sc-punto { fill: #7d8590; stroke-dasharray: 3 2; }
+.sc-richiamo-poi .sc-alone { stroke: #7d8590; animation: none; opacity: .6; stroke-dasharray: 3 3; }
+.scena.indica .parte.su .sc-richiamo .sc-alone { animation: none; opacity: 0; }
 
 /* colori del disegno: estate e inverno, tema scuro (predefinito) e chiaro */
 .scena {
-  --sc-cielo: #34537a; --sc-sole: #ffc44d; --sc-nuvola: #c9d1de; --sc-nuvola-pioggia: #8792a6; --sc-acqua: #8ccbf2; --sc-fiocco: #ffffff;
-  --sc-terreno: #3f6b45; --sc-terreno-sx: #2e4f33; --sc-terreno-dx: #233f28; --sc-campo: #6e8a3d; --sc-solco: #56702c;
-  --sc-strada: #5d5866; --sc-chioma: #4f9a52; --sc-tronco: #7a5a3c; --sc-neve: #eef3f8;
-  --sc-ed-su: #b9b2c2; --sc-ed-sx: #8f8799; --sc-ed-dx: #6f6879; --sc-vetro: #9fd3f5;
-  --sc-casa-su: #d9c7a8; --sc-casa-sx: #c2ab86; --sc-casa-dx: #a08a66; --sc-tetto-sx: #b8553c; --sc-tetto-dx: #8f3f2b;
-  --sc-pannello: #1f3f8a; --sc-pannello-riga: #6d8fe0; --sc-uta-su: #d5d9df; --sc-uta-sx: #a9aeb7; --sc-uta-dx: #8a909a;
-  --sc-cog-su: #f2c14e; --sc-cog-sx: #cf9d2c; --sc-cog-dx: #a87d1d; --sc-cabina-su: #c9c3cf; --sc-cabina-sx: #9f98a8; --sc-cabina-dx: #7e7787;
-  --sc-trafo-su: #8a8f98; --sc-trafo-sx: #6a6f78; --sc-trafo-dx: #555a62; --sc-gas: #f2d16b; --sc-ferro: #6b7380; --sc-filo: #2b3038; --sc-fumo: #d8dce3;
+  --sc-cielo-alto: #29405f; --sc-cielo-basso: #5f80a6; --sc-sole: #ffd36b; --sc-nuvola: #e3e8ef; --sc-nuvola-ombra: #b9c3d0;
+  --sc-acqua: #9fd4f7; --sc-fiocco: #ffffff; --sc-neve: #f2f5f9; --sc-ombra: rgb(8 14 30 / .28); --sc-bordo: rgb(10 12 20 / .38);
+  --sc-terreno: #4d6d50; --sc-terreno-sx: #3a553d; --sc-terreno-dx: #2d4430; --sc-campo: #6f8a4a; --sc-campo-2: #8b8a4f; --sc-solco: rgb(0 0 0 / .14);
+  --sc-piazzale: #676a73; --sc-strada: #3d3f47; --sc-marciapiede: #8b8d95; --sc-chioma: #4e8f55; --sc-chioma-luce: #6aac6d;
+  --sc-conifera: #2f6b45; --sc-conifera-luce: #3f8457; --sc-ferro: #aab2bd; --sc-filo: #1f2430;
   --sc-scritta: #ffffff; --sc-etichetta: rgb(0 0 0 / .45);
 }
-.scena[data-stagione="inverno"] { --sc-cielo: #3b4658; --sc-chioma: #3c6b4a; --sc-sole: #f6dc9a; --sc-campo: #7d7a63; }
-.scena[data-meteo="pioggia"], .scena[data-meteo="neve"] { --sc-cielo: #2a3343; }
+.scena[data-stagione="inverno"] { --sc-cielo-alto: #36445a; --sc-cielo-basso: #7a8ba1; --sc-sole: #f3dda0; --sc-chioma: #5f7a5c; --sc-chioma-luce: #7a9576; }
+.scena[data-meteo="pioggia"], .scena[data-meteo="neve"] { --sc-cielo-alto: #263040; --sc-cielo-basso: #4d5a6c; --sc-nuvola: #9aa5b5; --sc-nuvola-ombra: #7a8597; }
 [data-theme="light"] .scena {
-  --sc-cielo: #cfe6f7; --sc-nuvola: #ffffff; --sc-nuvola-pioggia: #9aa6b8; --sc-acqua: #2f7fc1; --sc-fiocco: #ffffff;
-  --sc-terreno: #9cc77d; --sc-terreno-sx: #7ea763; --sc-terreno-dx: #67904f; --sc-campo: #c8d98a; --sc-solco: #a8bb68;
-  --sc-strada: #a7a2ad; --sc-chioma: #4f9a52; --sc-neve: #ffffff;
-  --sc-ed-su: #eeeaf2; --sc-ed-sx: #d2ccd9; --sc-ed-dx: #b4adbd; --sc-vetro: #5aa9e0;
-  --sc-scritta: #19171c; --sc-etichetta: rgb(255 255 255 / .75);
+  --sc-cielo-alto: #a9cdea; --sc-cielo-basso: #e6f1f9; --sc-nuvola: #ffffff; --sc-nuvola-ombra: #d5dde7; --sc-acqua: #3a83c4;
+  --sc-terreno: #a8c98f; --sc-terreno-sx: #8bb071; --sc-terreno-dx: #739a5c; --sc-campo: #c3d68c; --sc-campo-2: #d8d29a;
+  --sc-piazzale: #d3d5da; --sc-strada: #8e929b; --sc-marciapiede: #c7cad0; --sc-ombra: rgb(30 40 60 / .2); --sc-bordo: rgb(30 34 44 / .32);
+  --sc-ferro: #5b636e; --sc-filo: #3a404a; --sc-scritta: #19171c; --sc-etichetta: rgb(255 255 255 / .8);
 }
-[data-theme="light"] .scena[data-stagione="inverno"] { --sc-cielo: #dde4ec; --sc-campo: #cfcbb5; }
-[data-theme="light"] .scena[data-meteo="pioggia"], [data-theme="light"] .scena[data-meteo="neve"] { --sc-cielo: #b9c6d4; }
-.scena-svg [class^="sc-"], .scena-svg [class*=" sc-"] { transition: fill 1.2s, opacity 1.2s, transform 1.2s; }
-.sc-cielo { fill: var(--sc-cielo); }
-.sc-sole circle { fill: var(--sc-sole); } .sc-raggi line { stroke: var(--sc-sole); stroke-width: 5; stroke-linecap: round; }
-.sc-raggi { transform-origin: 170px 100px; animation: sc-gira 40s linear infinite; }
-.scena[data-stagione="inverno"] .sc-sole { transform: translateY(28px); }
-.scena[data-meteo="pioggia"] .sc-sole, .scena[data-meteo="neve"] .sc-sole { opacity: .45; }
-.sc-nuvola ellipse { fill: var(--sc-nuvola); transition: fill 1.2s; }
-.scena[data-meteo="pioggia"] .sc-nuvola ellipse, .scena[data-meteo="neve"] .sc-nuvola ellipse { fill: var(--sc-nuvola-pioggia); }
-.sc-nuvola-lenta { animation: sc-vento 26s ease-in-out infinite alternate; }
-.sc-pioggia line { stroke: var(--sc-acqua); stroke-width: 2; stroke-linecap: round; animation: sc-goccia .9s linear infinite; }
+[data-theme="light"] .scena[data-stagione="inverno"] { --sc-cielo-alto: #c3d0dd; --sc-cielo-basso: #eef2f6; }
+[data-theme="light"] .scena[data-meteo="pioggia"], [data-theme="light"] .scena[data-meteo="neve"] { --sc-cielo-alto: #9eadbe; --sc-cielo-basso: #d6dde5; --sc-nuvola: #a9b4c2; --sc-nuvola-ombra: #8e9aaa; }
+.scena { background: var(--sc-cielo-alto); }
+.scena-svg polygon, .scena-svg path:not(.sc-gas):not(.sc-filo) { stroke: var(--sc-bordo); stroke-width: .6; stroke-linejoin: round; }
+.scena-svg .sc-nuvola-corpo, .scena-svg .sc-nuvola-ombra, .scena-svg .sc-ombra, .scena-svg .sc-neve, .scena-svg .sc-particella { stroke: none; }
+.scena-svg polygon, .scena-svg .sc-chioma, .scena-svg .sc-nuvola-corpo, .scena-svg stop { transition: fill 1.2s, stop-color 1.2s, opacity 1.2s; }
+.sc-cielo { fill: url(#sc-g-cielo); }
+.sc-cielo-alto { stop-color: var(--sc-cielo-alto); } .sc-cielo-basso { stop-color: var(--sc-cielo-basso); }
+.sc-sole-centro { stop-color: var(--sc-sole); stop-opacity: .55; } .sc-sole-alone { stop-color: var(--sc-sole); stop-opacity: 0; }
+.sc-sole-alone { fill: url(#sc-g-sole); } .sc-sole-disco { fill: var(--sc-sole); }
+.sc-sole { transition: transform 1.2s, opacity 1.2s; transform-box: view-box; }
+.scena[data-stagione="inverno"] .sc-sole { transform: translateY(34px); }
+.scena[data-meteo="pioggia"] .sc-sole, .scena[data-meteo="neve"] .sc-sole { opacity: .4; }
+.sc-nuvola-corpo { fill: var(--sc-nuvola); } .sc-nuvola-ombra { fill: var(--sc-nuvola-ombra); }
+.sc-nuvola-lenta { animation: sc-vento 28s ease-in-out infinite alternate; transform-box: view-box; }
+.sc-pioggia line { stroke: var(--sc-acqua); stroke-width: 1.8; stroke-linecap: round; animation: sc-goccia .9s linear infinite; }
 .sc-fiocchi circle { fill: var(--sc-fiocco); animation: sc-fiocco 3s linear infinite; }
 .sc-pioggia, .sc-fiocchi { opacity: 0; transition: opacity 1s; }
 .scena[data-meteo="pioggia"] .sc-pioggia, .scena[data-meteo="neve"] .sc-fiocchi { opacity: 1; }
-.sc-terreno { fill: var(--sc-terreno); } .sc-terreno-bordo-sx { fill: var(--sc-terreno-sx); } .sc-terreno-bordo-dx { fill: var(--sc-terreno-dx); }
-.sc-strada { fill: var(--sc-strada); } .sc-campo { fill: var(--sc-campo); } .sc-solco { stroke: var(--sc-solco); stroke-width: 1.5; }
-.sc-particella { fill: none; stroke: var(--sc-scritta); stroke-opacity: .55; stroke-width: 1.2; stroke-dasharray: 5 4; }
-.sc-chioma { fill: var(--sc-chioma); } .sc-tronco { stroke: var(--sc-tronco); stroke-width: 4; stroke-linecap: round; }
 .sc-neve { fill: var(--sc-neve); opacity: 0; pointer-events: none; }
 .scena[data-stagione="inverno"] .sc-neve { opacity: .95; }
 .scena[data-stagione="inverno"] .sc-neve-terreno { opacity: .85; }
-.scena[data-stagione="inverno"] .sc-neve-campo { opacity: .7; }
-.scena[data-stagione="inverno"] .sc-neve-pannello { opacity: .55; }
-.sc-edificio-su { fill: var(--sc-ed-su); } .sc-edificio-sx { fill: var(--sc-ed-sx); } .sc-edificio-dx { fill: var(--sc-ed-dx); }
-.sc-vetro { fill: var(--sc-vetro); } .sc-porta { fill: #4a3f52; }
-.sc-casa-su { fill: var(--sc-casa-su); } .sc-casa-sx { fill: var(--sc-casa-sx); } .sc-casa-dx { fill: var(--sc-casa-dx); }
-.sc-tetto-sx { fill: var(--sc-tetto-sx); } .sc-tetto-dx { fill: var(--sc-tetto-dx); }
-.sc-pannello { fill: var(--sc-pannello); stroke: var(--sc-pannello-riga); stroke-width: 1.2; }
-.sc-uta-su { fill: var(--sc-uta-su); } .sc-uta-sx { fill: var(--sc-uta-sx); } .sc-uta-dx { fill: var(--sc-uta-dx); }
-.sc-ventola-fondo { fill: #3b3f46; } .sc-ventola line { stroke: #e6e9ee; stroke-width: 2.5; stroke-linecap: round; }
-.sc-ventola { animation: sc-gira 1.6s linear infinite; } .sc-griglia { stroke: #6a6f78; stroke-width: 1.5; }
-.sc-cog-su { fill: var(--sc-cog-su); } .sc-cog-sx { fill: var(--sc-cog-sx); } .sc-cog-dx { fill: var(--sc-cog-dx); }
-.sc-camino { stroke: #8a8f98; stroke-width: 7; stroke-linecap: butt; }
-.sc-fumo circle { fill: var(--sc-fumo); opacity: 0; animation: sc-fumo 2.7s ease-out infinite; }
-.sc-cabina-su { fill: var(--sc-cabina-su); } .sc-cabina-sx { fill: var(--sc-cabina-sx); } .sc-cabina-dx { fill: var(--sc-cabina-dx); }
-.sc-trafo-su { fill: var(--sc-trafo-su); } .sc-trafo-sx { fill: var(--sc-trafo-sx); } .sc-trafo-dx { fill: var(--sc-trafo-dx); }
-.sc-gas-su { fill: var(--sc-gas); } .sc-gas-sx { fill: #cfae45; } .sc-gas-dx { fill: #a88b30; }
-.sc-recinto { fill: var(--sc-strada); fill-opacity: .55; stroke: var(--sc-ferro); stroke-width: 1; stroke-dasharray: 3 3; }
-.sc-gas { fill: none; stroke: var(--sc-gas); stroke-width: 3; stroke-dasharray: 8 5; animation: sc-flusso 1.4s linear infinite; }
-.sc-ferro { stroke: var(--sc-ferro); stroke-width: 2.6; stroke-linecap: round; }
-.sc-filo { fill: none; stroke: var(--sc-filo); stroke-width: 2; stroke-dasharray: 6 4; animation: sc-flusso 1s linear infinite; }
+.scena[data-stagione="inverno"] .sc-neve-campo { opacity: .65; }
+.scena[data-stagione="inverno"] .sc-neve-pannello { opacity: .5; }
+.sc-ombra { fill: var(--sc-ombra); opacity: 0; transition: opacity 1.2s; pointer-events: visibleFill; }
+.scena[data-stagione="estate"] .sc-ombra-estate, .scena[data-stagione="inverno"] .sc-ombra-inverno { opacity: 1; }
+.scena[data-meteo="pioggia"] .sc-ombra, .scena[data-meteo="neve"] .sc-ombra { opacity: 0; }
+.sc-terreno { fill: var(--sc-terreno); } .sc-terreno-bordo-sx { fill: var(--sc-terreno-sx); } .sc-terreno-bordo-dx { fill: var(--sc-terreno-dx); }
+.sc-campo { fill: var(--sc-campo); } .sc-campo-2 { fill: var(--sc-campo-2); } .sc-solco { stroke: var(--sc-solco); stroke-width: 1.2; }
+.sc-particella { fill: none; stroke: var(--sc-scritta); stroke-opacity: .5; stroke-width: 1; stroke-dasharray: 5 4; }
+.sc-piazzale { fill: var(--sc-piazzale); } .sc-strada { fill: var(--sc-strada); } .sc-marciapiede { fill: var(--sc-marciapiede); }
+.sc-mezzeria { stroke: #e9e9e9; stroke-width: 1.4; }
+.sc-chioma { fill: var(--sc-chioma); } .sc-chioma-luce { fill: var(--sc-chioma-luce); } .sc-tronco { stroke: #6e5640; stroke-width: 3; stroke-linecap: round; }
+.sc-conifera { fill: var(--sc-conifera); } .sc-conifera-luce { fill: var(--sc-conifera-luce); }
+.sc-casa-su { fill: #efe6d6; } .sc-casa-sx { fill: #dccdb3; } .sc-casa-dx { fill: #bfae92; }
+.sc-tetto-sx { fill: #b4553f; } .sc-tetto-dx { fill: #8d4232; } .sc-finestra { fill: #6f93b3; }
+/* edificio */
+.sc-muro-su { fill: #e4e1dc; } .sc-muro-sx { fill: #cfcac3; } .sc-muro-dx { fill: #aaa59e; }
+.sc-copertura { fill: #8e9198; }
+.sc-nastro-sx { fill: #7fa3c2; } .sc-nastro-dx { fill: #5d82a6; }
+.sc-vetro-sx { fill: #86abcb; } .sc-vetro-dx { fill: #5f84a8; }
+.sc-marcapiano-sx { fill: #dcd8d2; } .sc-marcapiano-dx { fill: #b6b1aa; }
+.sc-montante { stroke: rgb(255 255 255 / .38); stroke-width: .8; }
+.sc-corona-su { fill: #ecebe7; } .sc-corona-sx { fill: #d2cec8; } .sc-corona-dx { fill: #aea9a2; }
+.sc-pensilina { fill: #d3cfc9; } .sc-ingresso { fill: #3c5670; }
+.sc-interno-sx { fill: #efe9df; } .sc-interno-dx { fill: #dcd4c7; } .sc-pavimento { fill: #b8b0a3; }
+.sc-sezione { fill: #2b2c34; }
+.sc-contatore-su { fill: #f1f2f4; } .sc-contatore-sx { fill: #d9dde2; } .sc-contatore-dx { fill: #b9bec5; } .sc-display { fill: #3a8f6a; }
+/* impianti */
+.sc-uta-su { fill: #eef1f4; } .sc-uta-sx { fill: #cdd4db; } .sc-uta-dx { fill: #aeb7c1; } .sc-uta-giunto { stroke: #8a95a1; stroke-width: 1; }
+.sc-recupero-su { fill: #c8ecea; } .sc-recupero-sx { fill: #7fcfca; } .sc-recupero-dx { fill: #5fb5b0; } .sc-recupero-x { stroke: #1f6f6a; stroke-width: 1.4; }
+.sc-canale-mandata-su { fill: #a9cff1; } .sc-canale-mandata-sx { fill: #78aee0; } .sc-canale-mandata-dx { fill: #5b92c6; }
+.sc-canale-ripresa-su { fill: #f3baa9; } .sc-canale-ripresa-sx { fill: #e1907b; } .sc-canale-ripresa-dx { fill: #c67560; }
+.sc-batteria { fill: #c9874a; } .sc-freccia-mandata { stroke: #2f6fb0; stroke-width: 2; }
+.sc-fv { fill: #1e3768; } .sc-fv-riga { stroke: #6f8fd6; stroke-width: .7; }
+.sc-st { fill: #273036; } .sc-st-riga { stroke: #c98a4b; stroke-width: 1.1; }
+.sc-serbatoio-corpo { fill: #d9dde2; } .sc-serbatoio-su { fill: #f1f3f5; }
+.sc-pdc-su { fill: #e9edf0; } .sc-pdc-sx { fill: #c6ced6; } .sc-pdc-dx { fill: #a6b0bb; } .sc-pdc-fascia { fill: #3a8dde; }
+.sc-ventola-fondo { fill: #33373e; } .sc-ventola line { stroke: #e6e9ee; stroke-width: 2; stroke-linecap: round; }
+.sc-ventola { animation: sc-gira 1.6s linear infinite; }
+.sc-centrale-su { fill: #d8d2c8; } .sc-centrale-sx { fill: #bdb5a8; } .sc-centrale-dx { fill: #9e9588; }
+.sc-feritoia { stroke: #6f675c; stroke-width: 1.1; } .sc-porta { fill: #5b6470; }
+.sc-camino-corpo, .sc-scarico-corpo, .sc-sfiato-corpo { fill: #9aa1ab; } .sc-camino-su, .sc-scarico-su, .sc-sfiato-su { fill: #c3c8ce; }
+.sc-frigo-su { fill: #e6ebef; } .sc-frigo-sx { fill: #c2cbd3; } .sc-frigo-dx { fill: #a3adb8; }
+.sc-torre-su { fill: #d9e8ee; } .sc-torre-sx { fill: #a9c6d1; } .sc-torre-dx { fill: #87aab8; } .sc-torre-lamella { stroke: #5f8796; stroke-width: 1; }
+.sc-cog-su { fill: #86a273; } .sc-cog-sx { fill: #6b875a; } .sc-cog-dx { fill: #546d47; } .sc-cog-giunto { stroke: #3f5236; stroke-width: 1; }
+.sc-fumo circle { fill: #c9ced6; opacity: 0; animation: sc-fumo 2.7s ease-out infinite; }
+.sc-vapore circle, .sc-pennacchio circle { fill: #ffffff; opacity: 0; }
+.scena[data-stagione="inverno"] .sc-vapore circle, .scena[data-stagione="estate"] .sc-pennacchio circle { animation: sc-fumo 2.7s ease-out infinite; }
+/* reti */
+.sc-recinto { fill: rgb(0 0 0 / .1); stroke: var(--sc-ferro); stroke-width: 1; stroke-dasharray: 3 3; }
+.sc-cabina-su { fill: #ddd8d0; } .sc-cabina-sx { fill: #c1bbb1; } .sc-cabina-dx { fill: #a39c91; }
+.sc-trafo-su { fill: #9aa0a8; } .sc-trafo-sx { fill: #7c828b; } .sc-trafo-dx { fill: #646a72; } .sc-alette { stroke: #50555c; stroke-width: 1.2; }
+.sc-gas-su { fill: #f2cd5c; } .sc-gas-sx { fill: #d9b13f; } .sc-gas-dx { fill: #b8932c; } .sc-gas-fascia { fill: #2b2c34; }
+.sc-gas { fill: none; stroke: #f2cd5c; stroke-width: 3; stroke-linejoin: round; stroke-dasharray: 8 5; animation: sc-flusso 1.4s linear infinite; }
+.sc-ferro { stroke: var(--sc-ferro); stroke-width: 2.2; stroke-linecap: round; }
+.sc-filo { fill: none; stroke: var(--sc-filo); stroke-width: 1.6; stroke-dasharray: 6 4; animation: sc-flusso 1s linear infinite; }
+/* radar e stazione meteo */
+.sc-base-su { fill: #d7dade; } .sc-base-sx { fill: #babec4; } .sc-base-dx { fill: #9da2a9; }
+.sc-traliccio-radar { fill: #c7ccd3; } .sc-ferro-fine { stroke: #8e96a1; stroke-width: 1; }
+.sc-radome { fill: #f4f6f8; stroke: var(--sc-bordo); stroke-width: .6; } .sc-radome-luce { fill: #ffffff; }
+.sc-palo { stroke: #7d8590; stroke-width: 2; stroke-linecap: round; }
+.sc-anemometro { animation: sc-gira 2.2s linear infinite; } .sc-anemometro circle { fill: #3b4049; } .sc-anemometro line { stroke: #3b4049; stroke-width: 1.2; }
+.sc-banderuola { fill: #e05a3a; }
+.sc-schermo-su { fill: #ffffff; } .sc-schermo-sx { fill: #e6e9ed; } .sc-schermo-dx { fill: #c9ced4; }
 @keyframes sc-gira { to { transform: rotate(360deg); } }
 @keyframes sc-vento { to { transform: translateX(60px); } }
+@keyframes sc-pulsa { from { transform: scale(.8); opacity: .9; } to { transform: scale(1.6); opacity: 0; } }
 @keyframes sc-goccia { from { transform: translateY(-20px); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(150px); opacity: 0; } }
 @keyframes sc-fiocco { from { transform: translate(0, -30px); opacity: 0; } 15% { opacity: 1; } 50% { transform: translate(8px, 70px); }
   to { transform: translate(-6px, 190px); opacity: 0; } }
 @keyframes sc-fumo { from { transform: translateY(0) scale(.6); opacity: 0; } 25% { opacity: .8; } to { transform: translate(14px, -40px) scale(1.5); opacity: 0; } }
 @keyframes sc-flusso { to { stroke-dashoffset: -26; } }
-.sc-nuvola-lenta, .sc-sole, .sc-raggi { transform-box: view-box; }
 @media (prefers-reduced-motion: reduce) {
   .scena-svg * { animation: none !important; transition: none !important; }
 }
@@ -2167,3 +2217,12 @@ svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-off
   .home-scena { grid-template-columns: minmax(0, 1fr); }
   .scena-aiuto { display: none; }
 }
+/* pagina iniziale: riquadretto e schede con la parte scelta (22/11/2026, disegno a piastra e torre) */
+.scena-tip .tip-gruppo { display: block; font: 600 var(--c-xs)/1.2 var(--testo); text-transform: uppercase; letter-spacing: .06em; color: var(--tenue); }
+.scena-tip .tip-poi { display: inline-block; margin-top: .3rem; font: 600 var(--c-xs)/1 var(--testo); color: #fff; background: #7d8590;
+  border-radius: var(--r-tondo); padding: .2rem .55rem; }
+.articolo .home-scheda .scheda-parte { margin: 0 0 .25rem; font: 600 var(--c-xs)/1.2 var(--testo); text-transform: uppercase; letter-spacing: .06em; color: var(--primario); }
+.articolo .home-scheda li.evidenza { background: color-mix(in srgb, var(--primario) 10%, transparent); box-shadow: inset 3px 0 0 var(--primario); padding-left: .6rem; }
+.home-piu { display: inline-grid; place-items: center; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: var(--primario); color: #fff;
+  font: 700 .8rem/1 var(--testo); vertical-align: .05em; }
+.sc-fumo circle, .sc-vapore circle, .sc-pennacchio circle { transform-box: fill-box; transform-origin: center; }

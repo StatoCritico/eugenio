@@ -946,11 +946,18 @@ def test_pagina_iniziale():
     assert (QUI / "sito" / "previsioni.html").exists() and 'id="calcola"' in (QUI / "sito" / "previsioni.html").read_text(encoding="utf-8")
     # disegno e schede: una parte e una scheda per ogni gruppo del menu, una riga in home.toml per ogni pagina accessibile
     ids = [g["id"] for g in gruppi]
-    assert sorted(set(re.findall(r'<g class="parte" data-gruppo="([^"]+)"', main))) == sorted(ids)
+    assert sorted(set(re.findall(r'<g class="parte" data-parte="[^"]+" data-gruppo="([^"]+)"', main))) == sorted(ids)
     assert re.findall(r'<article class="home-scheda" id="scheda-([^"]+)"', main) == ids
     conf = tomllib.loads((QUI / "parti" / "home.toml").read_text(encoding="utf-8"))
     assert set(conf["gruppi"]) == set(ids)
     assert accessibili <= set(conf["pagine"]), sorted(accessibili - set(conf["pagine"]))
     assert (QUI / "parti" / "scena_home.svg").read_text(encoding="utf-8").strip() in s
+    # parti del disegno: le stesse di home.toml, ognuna con un gruppo vero; ogni pagina accessibile è in almeno una parte
+    chiavi = re.findall(r'<g class="parte" data-parte="([^"]+)"', main)
+    assert sorted(chiavi) == sorted(conf["parti"]) and all(conf["parti"][k]["gruppo"] in ids for k in chiavi)
+    dati = json.loads(re.search(r'<script type="application/json" id="parti-home">(.*?)</script>', main, re.S).group(1))
+    in_parti = {v["pagina"] for d in dati.values() for v in d["voci"]}
+    assert accessibili <= in_parti, sorted(accessibili - in_parti)
+    assert dati["cogenerazione"]["prossimamente"] and dati["cabina-gas"]["prossimamente"] and not dati["uta"]["prossimamente"]
     for a in re.findall(r'<a href="([^"]+)" data-gruppo="([^"]+)">', main):    # la voce apre la pagina col menu del gruppo
         assert any(v["pagina"] == a[0] for g in gruppi if g["id"] == a[1] for v in g["voci"]), a

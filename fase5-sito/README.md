@@ -211,21 +211,32 @@ sulla voce si apre la pagina, aprendo anche il relativo menu in alto in orizzont
 
 - `index.html` non è più Previsioni: titolo e una riga su cosa fa EuGEnio, poi il **disegno** (a sinistra; sotto i 960 px
   sopra le schede) e le **schede dei gruppi** (a destra), poi «Come lavora EuGEnio» e le ultime tre novità.
-- **Disegno**: `parti/scena_home.py` (assonometria in Python, si rilancia solo per cambiarlo) scrive `parti/scena_home.svg`,
-  che `costruisci_pagine.py` mette nel blocco `<!-- scena-home -->`. Sette parti `<g class="parte" data-gruppo="…">`, una per
-  gruppo del menu: cielo, sole, nuvole, pioggia e neve = Clima e meteo; terreno, campi con le particelle, alberi, case,
-  strada = Territorio; l'edificio = Edifici; l'unità di trattamento aria sul tetto = Trattamento aria; i pannelli =
-  Fotovoltaico; il cogeneratore con il camino = Cogenerazione; cabina primaria, traliccio, linea, cabina MT/BT, tubo del gas
-  = Statistiche (reti e mercati). Colori in `stile.css` (classi `sc-…`, variabili `--sc-…`) per estate e inverno, tema
-  scuro e chiaro; animazioni CSS (ventola, fumo, flusso in linea e tubo, pioggia, neve, nuvole), ferme con
-  `prefers-reduced-motion`.
+- **Disegno** (rifatto alle 13:41–13:45 su richiesta di Paolo: stile più professionale, piastra e torre, impianti in
+  evidenza, spaccato, frigo e torre evaporativa sulla centrale termica, pompa di calore sul tetto alto, traliccio e cabina
+  del gas, radar e stazione meteo): `parti/scena_home.py` (assonometria in Python, si rilancia solo per cambiarlo) scrive
+  `parti/scena_home.svg`, che `costruisci_pagine.py` mette nel blocco `<!-- scena-home -->`. Edificio a **piastra** bassa
+  (aperta in **spaccato** sull'angolo: pareti interne, sezioni in nero, **UTA** con il **recuperatore** a flussi incrociati,
+  batteria, ventilatore, canali di mandata e ripresa) e **torre** a vetri (tetto: **solare termico** con accumulo e **pompa
+  di calore**); **fotovoltaico** sulla piastra; **centrale termica** con camino e sopra **gruppo frigo** e **torre
+  evaporativa**; **cogeneratore** in container; **ombre** a terra (corte d'estate, lunghe d'inverno, nascoste con pioggia e
+  neve); **cabina primaria**, **traliccio** con la linea fino alla cabina MT/BT; **cabina del gas** con il tubo; **contatore**
+  all'ingresso; **radar e stazione meteo**; territorio con campi, particelle, case, alberi e strada; cielo. Diciassette
+  parti `<g class="parte" data-parte="…" data-gruppo="…">` con un punto di richiamo (+; grigio tratteggiato se la parte è
+  «prossimamente»). Colori in `stile.css` (classi `sc-…`, variabili `--sc-…`, contorni sottili) per estate e inverno, tema
+  scuro e chiaro; animazioni CSS (ventole, anemometro, fumo del cogeneratore, vapore del camino d'inverno, pennacchio della
+  torre evaporativa d'estate, flusso in linea e tubo, pioggia, neve, nuvole, richiami), ferme con `prefers-reduced-motion`.
+- **Parti** (`parti/home.toml`, `[parti.…]`): titolo, descrizione, gruppo e pagine collegate (anche di altri gruppi e in
+  lavorazione). `costruisci_pagine.py` (`parti_home`, blocco `<!-- parti-home -->`, JSON) aggiunge nome e stato dal menu e
+  segna «prossimamente» le parti senza pagine accessibili (oggi solare termico, pompa di calore, centrale termica, frigo,
+  cogeneratore, cabina del gas).
 - **Stagioni** (`home.js`): estate sole → estate pioggia → inverno sole → inverno neve, 4,5 secondi l'una
   (`data-stagione`, `data-meteo` sulla `.scena`); d'inverno neve su terreno, tetti, alberi e pannelli. Pulsante per fermare e
   riprendere; con il movimento ridotto niente animazione e il pulsante passa alla fase successiva; ferma quando la scheda del
   browser è nascosta.
-- **Mouse su una parte**: la parte si accende (le altre si spengono), riquadretto con titolo e descrizione del gruppo e le
-  voci (quelle in lavorazione «in arrivo»). **Clic, tocco o Invio**: si apre la scheda del gruppo al posto di «Da dove
-  cominciare» (× per tornare; i pulsanti dei sette gruppi fanno lo stesso). **Clic su una voce**: `localStorage`
+- **Mouse su una parte**: la parte si accende (le altre si spengono), riquadretto con il gruppo, il titolo e la
+  descrizione della parte e le sue pagine; per le parti non ancora attive «Prossimamente». **Clic, tocco o Invio**: si apre
+  la scheda del gruppo al posto di «Da dove cominciare», con le pagine della parte in evidenza e la riga «Dal disegno: …»
+  (× per tornare; i pulsanti dei sette gruppi accendono tutte le parti del gruppo). **Clic su una voce**: `localStorage`
   «menu-fissato» = gruppo, così la pagina si apre con le voci del gruppo in orizzontale sotto il menu (come il clic sul
   titolo del gruppo, `aspetto.js`). Senza JavaScript le schede sono tutte visibili.
 - **Schede**: le scrive `costruisci_pagine.py` (`schede_home`, blocco `<!-- schede-home -->`) dal menu (`parti/testata.html`:

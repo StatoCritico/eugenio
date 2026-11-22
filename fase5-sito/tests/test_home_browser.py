@@ -55,24 +55,31 @@ def test_disegno_schede_e_menu_fissato(browser, base):
     assert pg.locator(".home-scheda:visible").count() == 1 and pg.locator("#scheda-intro").is_visible()
     assert pg.locator("#home-scelte button").count() == 7
     # mouse sull'edificio: riquadretto con il gruppo e le voci, parte in evidenza
-    bb = pg.locator('.parte[data-gruppo="edificio"] polygon').first.bounding_box()
-    pg.mouse.move(bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2)
-    pg.wait_for_selector("#scena-tip:not([hidden])")
-    tip = pg.locator("#scena-tip").inner_text()
-    assert "Edifici" in tip and "Obblighi di legge" in tip and "(in arrivo)" in tip
-    assert "su" in pg.locator('.parte[data-gruppo="edificio"]').get_attribute("class")
-    # clic sulle reti: si apre la scheda Statistiche, le altre restano chiuse
-    pg.locator('.parte[data-gruppo="statistiche"] polygon').first.click(force=True)
+    def sopra(parte):
+        bb = pg.locator(f'.parte[data-parte="{parte}"] polygon').first.bounding_box()
+        pg.mouse.move(bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2)
+        pg.wait_for_function("!document.getElementById('scena-tip').hidden")
+        return pg.locator("#scena-tip").inner_text()
+    tip = sopra("uta")                                    # parte attiva: gruppo, titolo, pagine
+    assert "Unità di trattamento aria" in tip and "Trasformazioni" in tip and "Prossimamente" not in tip
+    assert "su" in pg.locator('.parte[data-parte="uta"]').get_attribute("class")
+    tip = sopra("cogenerazione")                          # parte non ancora attiva: «Prossimamente»
+    assert "Cogeneratore" in tip and "Prossimamente" in tip
+    pg.mouse.move(2, 2)
+    # clic sul traliccio: si apre la scheda Statistiche con le pagine di Terna in evidenza
+    pg.locator('.parte[data-parte="traliccio"] line').first.click(force=True)
     assert pg.evaluate("[...document.querySelectorAll('.home-scheda')].filter(s => !s.hidden).map(s => s.id)") == ["scheda-statistiche"]
-    assert pg.locator('#home-scelte button[data-gruppo="statistiche"]').get_attribute("aria-pressed") == "true"
+    assert pg.locator('#scheda-statistiche li.evidenza a').all_inner_texts() == ["Produzione e consumi di elettricità", "Carichi elettrici"]
+    assert "Rete di trasmissione" in pg.locator("#scheda-statistiche .scheda-parte").text_content()
     # la × torna all'inizio
     pg.locator("#scheda-statistiche .scheda-chiudi").click()
     assert pg.locator("#scheda-intro").is_visible()
     # da tastiera: Invio su una parte apre la sua scheda
-    pg.locator('.parte[data-gruppo="aria"]').focus()
+    pg.locator('.parte[data-parte="recupero"]').focus()
     pg.keyboard.press("Enter")
     assert pg.locator("#scheda-aria").is_visible()
     # voce scelta: la pagina si apre con il gruppo fissato in orizzontale sotto il menu
+    assert pg.locator('#scheda-aria li.evidenza a').all_inner_texts() == ["Free cooling e recupero"]
     pg.locator('#scheda-aria a[href="aria-ore.html"]').click()
     pg.wait_for_url("**/aria-ore.html")
     pg.wait_for_selector("nav.riga-fissata ul.riga-voci a[href='aria-ore.html']")
@@ -107,7 +114,7 @@ def test_movimento_ridotto_e_telefono(browser, base):
     pg.locator("#scena-pausa").click()                     # il pulsante passa alla fase successiva
     assert scena.get_attribute("data-meteo") == "pioggia"
     assert pg.evaluate("document.documentElement.scrollWidth") <= 375
-    pg.locator('.parte[data-gruppo="patrimonio"] .sc-campo').nth(2).click(force=True)   # tocco: scheda, niente riquadretto
+    pg.locator('.parte[data-parte="territorio"] .sc-campo').nth(2).click(force=True)   # tocco: scheda, niente riquadretto
     assert pg.locator("#scheda-patrimonio").is_visible()
     assert not errori, errori
     ctx.close()
