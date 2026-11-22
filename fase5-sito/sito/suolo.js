@@ -50,7 +50,18 @@
   const st = { mappa: null, it: null, prov: new Map(), modo: "suolo", unita: "ha", inizio: null, fine: null, regione: null,
     provincia: null, giro: 0, img: new Set(), sugg: null };
   const D = () => st.it;
-  const voci = (g) => D().voci[g] || [];
+  // (22/11/2026, Paolo) colori chiari nel tema scuro, come la pagina dell'elettricità, e più scuri nel tema chiaro: [scuro, chiaro]
+  // per id; scelti col contrasto sul fondo (scuro ≥ 4,5:1 sui riquadri, chiaro ≥ 3:1 sul bianco) e la distanza fra le voci
+  // dello stesso gruppo anche con deuteranopia, protanopia e tritanopia simulate (ΔE2000 ≥ 7,8). Il colore dei dati
+  // (fase 16) resta per le voci nuove che non sono qui.
+  const TAVOLOZZA = {
+    suolo: { sau: ["#bce6a6", "#5b8356"], nonut: ["#969288", "#605952"], cons: ["#e9614e", "#b22711"], idr: ["#89a8fe", "#3b5bbe"], frane: ["#f6be00", "#c28213"], coste: ["#6eedff", "#2c9bae"], protette: ["#ba79ab", "#893870"] },
+    consumi: { edifici: ["#ea683a", "#a91714"], strade: ["#9194a1", "#8180aa"], piazzali: ["#c26cc4", "#633eaf"], cantieri: ["#e9c131", "#ac6e00"], cave: ["#ad9372", "#6e594b"], fv: ["#72bffe", "#0d94ed"], altro: ["#e8c8e3", "#942f62"], nc: ["#d9d8ce", "#938e86"] },
+    colture: { cereali: ["#f0d66c", "#ae8604"], industriali: ["#a98f7b", "#7d7062"], ortive: ["#ea91b6", "#9b3083"], avvicendate: ["#31f9d2", "#319f84"], prati: ["#96ca95", "#2f6a38"], vite: ["#9e83f9", "#9280c7"], olivo: ["#9f9e59", "#828d5a"], frutta: ["#d27f05", "#b4520a"] },
+  };
+  const chiaro = () => document.documentElement.getAttribute("data-theme") === "light";
+  const tinta = (g, v) => { const t = (TAVOLOZZA[g] || {})[v.id]; return t ? t[chiaro() ? 1 : 0] : v.colore; };
+  const voci = (g) => (D().voci[g] || []).map((v) => ({ ...v, colore: tinta(g, v) }));
   const NC = () => D().censimento_voci || 2;            // prime voci di «suolo»: censimento 2020 (SAU, non utilizzata)
   const anniDi = (modo) => (modo === "colture" ? D().anni.colture : D().anni.suolo);
   const anniFlusso = () => D().anni.consumi;
@@ -104,7 +115,8 @@
   // ------------------------------------------------------------------ istogrammi come immagini della mappa
   const PR = Math.min(2, window.devicePixelRatio || 1);
   const DOPPIO = 2;
-  const AGRICOLO = "#1b5e20";
+  // «di cui su suolo agricolo»: verde vivo, diverso da tutte le cause (era verde scuro #1b5e20, illeggibile nel tema scuro)
+  const agricolo = () => (chiaro() ? "#2a9a50" : "#77f69e");
   function tela(w, hgt) { const f = PR * DOPPIO, c = document.createElement("canvas"); c.width = Math.round(w * f); c.height = Math.round(hgt * f); const k = c.getContext("2d"); k.scale(f, f); return [c, k]; }
   const tratto = (k, x, y, w) => { k.fillStyle = "#111"; k.fillRect(x - 1.5, y - 0.8, w + 3, 1.6); };
   // barre affiancate (Suolo): base in basso, contorno scuro sottile; trattino nero al valore iniziale del periodo
@@ -133,7 +145,7 @@
     if (primaTot > 0) tratto(k, x0, y0 - sc(primaTot), lo);
     if (agr > 0) {
       const la = lo * 0.6, hh = Math.max(1, sc(agr)), xa = x0 + lo + 2;
-      k.fillStyle = AGRICOLO; k.fillRect(xa, y0 - hh, la, hh);
+      k.fillStyle = agricolo(); k.fillRect(xa, y0 - hh, la, hh);
       k.strokeStyle = "rgba(0,0,0,0.6)"; k.lineWidth = 0.6; k.strokeRect(xa + 0.3, y0 - hh + 0.3, la - 0.6, hh - 0.6);
     }
     k.strokeStyle = "#222"; k.lineWidth = 1; k.beginPath(); k.moveTo(0, y0 + 0.5); k.lineTo(W, y0 + 0.5); k.stroke();
@@ -199,8 +211,11 @@
   }
 
   // ------------------------------------------------------------------ comuni della provincia scelta (Suolo, % consumato)
-  const CLASSI = [[2, "#fff5d6"], [5, "#fdd99b"], [10, "#f9a65a"], [20, "#e6603c"], [40, "#b3261e"], [Infinity, "#6b0f1a"]];
-  const coloreClasse = (p) => (CLASSI.find(([lim]) => p < lim) || CLASSI[CLASSI.length - 1])[1];
+  // limiti in %; colori [scuro, chiaro]: nel tema scuro la scala finisce in viola chiaro invece che nel bordeaux quasi nero,
+  // così anche le classi alte si leggono sul fondo scuro (contrasto ≥ 4,5:1) e restano distinte dalle vicine
+  const CLASSI = [[2, "#fff3b8", "#fff5d6"], [5, "#fcd36a", "#fdd99b"], [10, "#f99a52", "#f9a65a"], [20, "#f0605e", "#e6603c"], [40, "#d94a9a", "#b3261e"], [Infinity, "#a35ee6", "#6b0f1a"]];
+  const coloreDi = (c) => c[chiaro() ? 2 : 1];
+  const coloreClasse = (p) => coloreDi(CLASSI.find(([lim]) => p < lim) || CLASSI[CLASSI.length - 1]);
   let comuniGeo = null;
   function datiComune(p, ist) {
     const c = p.comuni, i = c.anni.indexOf(st.fine), j = c.anni.indexOf(st.inizio), riga = (st.comuniIndice || {})[ist];
@@ -280,7 +295,8 @@
       await scegliRegione(reg, /^\d{3}$/.test(q.get("provincia") || "") ? q.get("provincia") : null);
     } else { await disegnaBarre(); pannello(); }
     st.pronto = true;
-    document.addEventListener("eugenio:aspetto", () => { m.setPaintProperty("sfondo", "background-color", css("--carta", "#f4f4f4")); pannello(); });
+    // cambio di tema: i colori delle voci e dei comuni cambiano, quindi si ridisegnano anche gli istogrammi della mappa
+    document.addEventListener("eugenio:aspetto", () => { m.setPaintProperty("sfondo", "background-color", css("--carta", "#f4f4f4")); disegnaBarre().then(pannello); });
   }
   function margini(p) {
     const alto = Math.round((st.regione ? 90 : 70) * DOPPIO * 0.85), H = box.clientHeight || 600;
@@ -409,7 +425,7 @@
     if (st.modo === "consumi") {
       const out = vv.map((q, i) => [q.colore, `${q.nome}: ${num(r.v[i], dec(r.v[i]))} ha`]).filter((_, i) => r.v[i]);
       if (r.bil) out.push([null, `Consumo lordo: ${num(r.bil[0], dec(r.bil[0]))} ha · ripristini ${num(r.bil[1], dec(r.bil[1]))} ha · netto ${segno(r.bil[2], dec(r.bil[2]))} ha`]);
-      if (r.agr) out.push([AGRICOLO, `di cui su suolo agricolo (stima EuGEnio): ${num(somma(r.agr), dec(somma(r.agr)))} ha (${num(100 * somma(r.agr) / (somma(r.v) || 1))} %)`]);
+      if (r.agr) out.push([agricolo(), `di cui su suolo agricolo (stima EuGEnio): ${num(somma(r.agr), dec(somma(r.agr)))} ha (${num(100 * somma(r.agr) / (somma(r.v) || 1))} %)`]);
       else if (D().anni.agricolo.length) out.push([null, `suolo agricolo: stima solo per ${D().anni.agricolo.map((t) => testoFlussi([t])).join(", ")}`]);
       const anni = r.anni.length ? periodoDi(r.anni[r.anni.length - 1])[1] - periodoDi(r.anni[0])[0] : 1;
       if (anni > 1) out.push([null, `Media annua: ${num(somma(r.v) / anni, 0)} ha (${anni} anni)`]);
@@ -467,15 +483,15 @@
   // ------------------------------------------------------------------ legenda e immagine
   function voceLegenda(L, colore, testo, bordo) {
     const sp = h("span"), i = h("i");
-    i.style.background = colore; if (bordo) i.style.outline = "1px solid #555";
+    i.style.background = colore; if (bordo) i.style.outline = `1px solid ${css("--bordo", "#555")}`;
     sp.append(i, testo); L.appendChild(sp);
   }
   function legenda() {
     const L = $("legenda-suolo"); if (!L || !D()) return;
     L.innerHTML = "";
     voci(st.modo).forEach((v) => voceLegenda(L, v.colore, v.nome));
-    if (st.modo === "consumi" && D().anni.agricolo.length) voceLegenda(L, AGRICOLO, "di cui su suolo agricolo (stima EuGEnio, barra accanto)");
-    if (st.inizio < st.fine && st.modo !== "consumi") voceLegenda(L, "#111", `trattino: valore del ${st.inizio}`);
+    if (st.modo === "consumi" && D().anni.agricolo.length) voceLegenda(L, agricolo(), "di cui su suolo agricolo (stima EuGEnio, barra accanto)");
+    if (st.inizio < st.fine && st.modo !== "consumi") voceLegenda(L, "#111", `trattino: valore del ${st.inizio}`, true);   // nero come sulla mappa, bordato per il tema scuro
     const dove = st.regione ? "le province della regione" : "tutte le regioni";
     const nota = st.modo === "suolo" ? `Barre affiancate in ${unitaTesto()}, da sinistra nell'ordine della legenda, in scala con il valore più alto fra ${dove} in tutti gli anni; le voci del suolo consumato si sovrappongono.`
       : st.modo === "consumi" ? `Colonna impilata: nuovo consumo nel periodo per causa (ha), in scala con il valore più alto fra ${dove} (periodi di un anno e periodo scelto).`
@@ -483,7 +499,7 @@
     L.appendChild(h("span", "legenda-nota", nota));
     if (st.provincia && st.modo === "suolo") {
       const lim = [0, ...CLASSI.map(([l]) => l)];
-      CLASSI.forEach(([l, c], i) => voceLegenda(L, c, `comuni: ${l === Infinity ? `oltre ${lim[i]}` : `${lim[i]}–${l}`} % consumato`, true));
+      CLASSI.forEach((cl, i) => { const l = cl[0]; voceLegenda(L, coloreDi(cl), `comuni: ${l === Infinity ? `oltre ${lim[i]}` : `${lim[i]}–${l}`} % consumato`, true); });
     }
   }
   function opzioniImmagine() {
@@ -495,7 +511,7 @@
     const nome = pr ? pr.nome : reg ? reg.nome : "Italia";
     const dove = st.regione ? "tutte le province della regione" : "tutte le regioni";
     const leg = st.modo === "suolo" ? `Barre affiancate (${unitaTesto()}), da sinistra: ${voci("suolo").map((v) => v.nome.toLowerCase()).join(", ")}; scala comune a ${dove} e a tutti gli anni.${st.inizio < st.fine ? ` Trattino nero: valore del ${st.inizio}.` : ""}${pr ? " Comuni colorati per percentuale di suolo consumato." : ""}`
-      : st.modo === "consumi" ? `Colonna impilata: nuovo consumo di suolo ${testoFlussi(flussiDelPeriodo(st.inizio, st.fine))} per causa (${voci("consumi").map((v) => v.nome.toLowerCase()).join(", ")}), ha.${valori(D().italia) && valori(D().italia).agr ? " Barra verde scura: di cui su suolo agricolo (stima EuGEnio: carta dei cambiamenti ISPRA × Carta di uso del suolo ISPRA 2023)." : ""}`
+      : st.modo === "consumi" ? `Colonna impilata: nuovo consumo di suolo ${testoFlussi(flussiDelPeriodo(st.inizio, st.fine))} per causa (${voci("consumi").map((v) => v.nome.toLowerCase()).join(", ")}), ha.${valori(D().italia) && valori(D().italia).agr ? " Barra verde: di cui su suolo agricolo (stima EuGEnio: carta dei cambiamenti ISPRA × Carta di uso del suolo ISPRA 2023)." : ""}`
         : `Colonna impilata: superfici coltivate per famiglia (${voci("colture").map((v) => v.nome.toLowerCase()).join(", ")}), ha.${st.inizio < st.fine ? ` Trattino nero: totale del ${st.inizio}.` : ""}`;
     const righe = [leg, `Dati: ${D().fonte}.`, ...ro, C.ATTRIBUZIONE];
     const file = `suolo_${st.modo}_${testoPeriodo().replace("–", "-")}_${nome.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
@@ -607,8 +623,8 @@
           el.push(s("rect", { x: cx - lb / 2, y: Y(y0 + y), width: lb, height: Y(y0) - Y(y0 + y), fill: q.colore, "fill-opacity": col.n > 1 ? 0.7 : 1 }, svg)); y0 += y;
           righe.push([q.colore, `${q.nome}: ${num(col.r.v[j], dec(col.r.v[j]))} ha`]); });
         if (col.r.agr) { const y = somma(col.r.agr) / col.n;
-          el.push(s("rect", { x: cx + lb / 2 - Math.max(2, lb * 0.25), y: Y(y), width: Math.max(2, lb * 0.25), height: Y(0) - Y(y), fill: AGRICOLO, stroke: "#fff", "stroke-width": 0.6 }, svg));
-          righe.push([AGRICOLO, `di cui su suolo agricolo (stima EuGEnio): ${num(somma(col.r.agr))} ha`]); }
+          el.push(s("rect", { x: cx + lb / 2 - Math.max(2, lb * 0.25), y: Y(y), width: Math.max(2, lb * 0.25), height: Y(0) - Y(y), fill: agricolo(), stroke: "var(--foglio)", "stroke-width": 0.8 }, svg));
+          righe.push([agricolo(), `di cui su suolo agricolo (stima EuGEnio): ${num(somma(col.r.agr))} ha`]); }
         if (col.r.bil) righe.push([null, `Lordo ${num(col.r.bil[0])} ha · ripristini ${num(col.r.bil[1])} ha · netto ${segno(col.r.bil[2], 0)} ha`]);
         if (col.n > 1) {
           righe.push([null, `Media annua: ${num(somma(col.r.v) / col.n)} ha (periodo di ${col.n} anni)`]);
@@ -633,7 +649,7 @@
     }
     G.osserva(svg, punti, { area: [sx, su, W - 8, H - gi], guida: false });
     const leg = (st.modo === "suolo" ? vv.slice(NC()) : vv).map((q) => [q.colore, q.nome]);
-    if (st.modo === "consumi" && D().anni.agricolo.length) leg.push([AGRICOLO, "di cui su suolo agricolo (stima EuGEnio)"]);
+    if (st.modo === "consumi" && D().anni.agricolo.length) leg.push([agricolo(), "di cui su suolo agricolo (stima EuGEnio)"]);
     legendaHtml(dest, leg);
   }
   // barre per provincia nel periodo scelto (clic: apre la provincia)
