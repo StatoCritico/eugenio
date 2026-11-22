@@ -73,12 +73,12 @@
       m.addLayer({ id, type: "raster", source: id, paint: { "raster-opacity": opz.opacita ?? 0.85, "raster-fade-duration": 0, "raster-resampling": "nearest" },
         layout: { visibility: "visible" } }, prima);
       return ind;
-    });
+    }).catch(() => null);                     // indice non ancora pubblicato: niente strato, la pagina lo dice da sé
     return {
       pronto,
       id,
       async mostra(p, n) {
-        await pronto;
+        if (!(await pronto)) return;
         const u = n ? url(p, n) : VUOTA;
         if (u === attuale) return;
         attuale = u;

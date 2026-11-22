@@ -11,12 +11,12 @@ try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
 var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|aria|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261122a";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261122a"></script>
-<script src="numeri.js?v=20261122a"></script>
-<link rel="stylesheet" href="stile.css?v=20261122a">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261122a">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261122a">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261122b";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261122b"></script>
+<script src="numeri.js?v=20261122b"></script>
+<link rel="stylesheet" href="stile.css?v=20261122b">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261122b">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261122b">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
 </head>
@@ -24,7 +24,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261122a" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261122b" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -32,7 +32,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261122a" aria-current="page">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261122b" aria-current="page">Novità</a>
       <a href="esempi.html">Esempi</a>
       <a href="contributi.html">Contributi</a>
       <a href="contatti.html">Contattaci</a>
@@ -63,7 +63,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li><li><a href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale</span></a></li><li><a href="elettricita.html">Produzione e consumi di elettricità <span class="cantiere prova">sperimentale</span></a></li><li><a href="carichi.html">Carichi elettrici <span class="cantiere prova">sperimentale</span></a></li><li><a href="suolo.html">Suolo e aree agricole <span class="cantiere prova">sperimentale</span></a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261122a" aria-current="page">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261122b" aria-current="page">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -170,13 +170,21 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 </header>
 <!-- /testata -->
 
-<main class="articolo novita" data-ultima="20261122a">
+<main class="articolo novita" data-ultima="20261122b">
   <h1>Novità</h1>
   <p class="sotto">Le funzioni di EuGEnio per chi lo usa, pubblicazione per pubblicazione, dalla più recente: servizi
     nuovi, servizi migliorati e servizi verificati (non più sperimentali). Le stesse voci sono nel
     <a href="novita.xml">feed Atom</a> (per seguirle con un lettore di feed) e nelle
     <a href="https://github.com/statocritico/eugenio/releases">release del codice su GitHub</a>.</p>
 
+  <h2 id="d20261122-2">22 novembre 2026 – Dati pluviometrici, carichi elettrici a confronto, schede degli enti pubblici</h2>
+  <div class="novita-voce">
+    <p class="novita-versione">22/11/2026 · versione 20261122b</p>
+    <p class="novita-tipo">Nuovo</p>
+    <ul><li>Clima e meteo › Dati pluviometrici (sperimentale): la pioggia misurata in Italia dalla Protezione Civile (radar corretti con i pluviometri, un dato ogni mezz&#x27;ora), su una mappa che si anima fino a 7 giorni indietro: scegli la durata, il passo e la velocità. Un clic su un punto mostra la pioggia delle ultime 3, 6, 12 e 24 ore e quella di ogni giorno degli ultimi 30 nel comune, accanto a quella prevista da EuGEnio. Si possono accendere le interruzioni della rete elettrica dello stesso periodo. Dati a fini statistici, non di allerta, con licenza CC BY-SA 4.0.</li></ul>
+    <p class="novita-tipo">Migliorato</p>
+    <ul><li>Statistiche › Stato della rete elettrica: nuova casella «Pioggia misurata (ultime 3 ore)» per vedere la pioggia sotto le cabine.</li><li>Newsletter: nel mensile per regione la pioggia del mese per provincia e i comuni più piovosi; nel settimanale la pioggia caduta nei tuoi comuni, confrontata con quella prevista.</li><li>Statistiche › Carichi elettrici: la pagina è divisa in due metà, ognuna con le sue scelte, per confrontare due zone o due periodi; la zona si sceglie anche da una casella a discesa, l&#x27;anno con le frecce, e la finestra si sposta su tutto l&#x27;archivio. Il pulsante «Riallinea le due metà» porta l&#x27;altra metà allo stesso punto.</li><li>Statistiche › Carichi elettrici: nuovo grafico «Potenza per fonte» in MW, che si ingrandisce e si sposta insieme a quello in percentuale; pulsanti per ieri, l&#x27;ultima settimana, mese, tre mesi o anno; caselle per accendere e spegnere le fonti, con l&#x27;energia di ciascuna.</li><li>Statistiche › Carichi elettrici: nuovo riquadro «Energia da fonti rinnovabili (Italia)» con la quota sulla produzione e sulla richiesta; i tratti senza dati di Terna sono segnati con un tratteggio.</li><li>Statistiche › Suolo e aree agricole: colori leggibili anche nel tema scuro e distinguibili anche con il daltonismo.</li><li>Territorio › Edifici pubblici, scheda «Per ente»: un clic su un immobile apre la scheda completa sopra la mappa; gli immobili in proprietà sono a colore pieno, quelli in uso trasparenti con il bordo, i terreni a righe.</li></ul>
+  </div>
   <h2 id="d20261122">22 novembre 2026 – Suolo e aree agricole, ricerca per ente negli edifici pubblici, emissioni dell&#x27;elettricità</h2>
   <div class="novita-voce">
     <p class="novita-versione">22/11/2026 · versione 20261122a</p>
@@ -436,11 +444,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 
 <footer class="piede">
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261122a" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261122b" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL con <a href="licenza.html#attribuzione">termini aggiuntivi</a>, dati <a href="licenza.html#dati">CC BY 4.0</a>). <span class="piede-attribuzione">EuGEnio © 2026 Paolo Bianco – Stato Critico – <a href="https://eugenio.statocritico.it">https://eugenio.statocritico.it</a></span></p>
   <!-- /piede -->
 </footer>
-<script src="aspetto.js?v=20261122a"></script>
-<script src="indice.js?v=20261122a"></script>
+<script src="aspetto.js?v=20261122b"></script>
+<script src="indice.js?v=20261122b"></script>
 </body>
 </html>

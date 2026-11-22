@@ -143,7 +143,7 @@
     });
     if (G) {                            // (22/11/2026) pioggia misurata sotto cabine e interruzioni
       pioggia.strato = G.strato(m, { id: "pioggia", prima: "rete-cabine-punti", opacita: 0.8 });
-      pioggia.strato.pronto.then(() => { strati(); caricaPioggia(); }).catch(() => { pioggia.strato = null; });
+      pioggia.strato.pronto.then((ind) => { if (!ind) { pioggia.strato = null; return; } strati(); caricaPioggia(); });
     }
     R.suggerimento(m, () => ["rete-interruzioni", "rete-cabine-punti", "rete-comuni-clic"], contenutoSuggerimento);
     m.on("click", clic);

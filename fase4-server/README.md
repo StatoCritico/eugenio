@@ -67,7 +67,7 @@ Un quarto container, `open-meteo`, è facoltativo (istanza Open-Meteo propria, v
   `SUOLO_ORA` (05:30), `SUOLO_CARTE` (1: scarica anche le carte raster, ~800 MB, e fa l'incrocio agricolo; 0 per saltarlo).
   Nessuna modifica al Caddyfile né ai volumi: la pagina legge `dati/suolo/` nella cartella del sito, già montata nel worker.
 
-## Aggiunte del 22/11/2026 b (dati pluviometrici; non ancora in una release)
+## Aggiunte del 22/11/2026 b (dati pluviometrici; release `v2026.11.22b`, versione 20261122b)
 
 - Modulo nuovo `servizio/radar.py`: lavoro del worker in un thread a parte (`radar`, ogni 30 minuti) e rotte
   `/api/radar/stato`, `/api/radar/punto`, `/api/radar/comune/{istat}` (limite `RADAR_ORA`); dettagli nel § «Dati

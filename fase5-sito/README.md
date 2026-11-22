@@ -198,7 +198,7 @@ la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
 
-## Clima e meteo › Dati pluviometrici (22/11/2026, richiesta di Paolo; sperimentale, non ancora in una release)
+## Clima e meteo › Dati pluviometrici (22/11/2026, richiesta di Paolo; sperimentale, release `v2026.11.22b`, versione 20261122b)
 
 Pagina `pluviometria.html` + `pluviometria.js` + `pioggia_gl.js`, voce «Dati pluviometrici» (sperimentale) nel gruppo
 Clima e meteo **prima di Previsioni**. Decisioni di Paolo: solo il «Merging» del DPC ogni 30 minuti (niente radar puro),

@@ -22,6 +22,23 @@
 
 [[voce]]
 data = "2026-11-22"
+versione = "20261122b"
+titolo = "Dati pluviometrici, carichi elettrici a confronto, schede degli enti pubblici"
+nuovo = [
+  "Clima e meteo › Dati pluviometrici (sperimentale): la pioggia misurata in Italia dalla Protezione Civile (radar corretti con i pluviometri, un dato ogni mezz'ora), su una mappa che si anima fino a 7 giorni indietro: scegli la durata, il passo e la velocità. Un clic su un punto mostra la pioggia delle ultime 3, 6, 12 e 24 ore e quella di ogni giorno degli ultimi 30 nel comune, accanto a quella prevista da EuGEnio. Si possono accendere le interruzioni della rete elettrica dello stesso periodo. Dati a fini statistici, non di allerta, con licenza CC BY-SA 4.0.",
+]
+migliorato = [
+  "Statistiche › Stato della rete elettrica: nuova casella «Pioggia misurata (ultime 3 ore)» per vedere la pioggia sotto le cabine.",
+  "Newsletter: nel mensile per regione la pioggia del mese per provincia e i comuni più piovosi; nel settimanale la pioggia caduta nei tuoi comuni, confrontata con quella prevista.",
+  "Statistiche › Carichi elettrici: la pagina è divisa in due metà, ognuna con le sue scelte, per confrontare due zone o due periodi; la zona si sceglie anche da una casella a discesa, l'anno con le frecce, e la finestra si sposta su tutto l'archivio. Il pulsante «Riallinea le due metà» porta l'altra metà allo stesso punto.",
+  "Statistiche › Carichi elettrici: nuovo grafico «Potenza per fonte» in MW, che si ingrandisce e si sposta insieme a quello in percentuale; pulsanti per ieri, l'ultima settimana, mese, tre mesi o anno; caselle per accendere e spegnere le fonti, con l'energia di ciascuna.",
+  "Statistiche › Carichi elettrici: nuovo riquadro «Energia da fonti rinnovabili (Italia)» con la quota sulla produzione e sulla richiesta; i tratti senza dati di Terna sono segnati con un tratteggio.",
+  "Statistiche › Suolo e aree agricole: colori leggibili anche nel tema scuro e distinguibili anche con il daltonismo.",
+  "Territorio › Edifici pubblici, scheda «Per ente»: un clic su un immobile apre la scheda completa sopra la mappa; gli immobili in proprietà sono a colore pieno, quelli in uso trasparenti con il bordo, i terreni a righe.",
+]
+
+[[voce]]
+data = "2026-11-22"
 versione = "20261122a"
 titolo = "Suolo e aree agricole, ricerca per ente negli edifici pubblici, emissioni dell'elettricità"
 nuovo = [
