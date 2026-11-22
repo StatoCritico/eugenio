@@ -723,10 +723,18 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       sotto lo stato di ogni metà e li tratteggia, con la scritta «dati mancanti», nei grafici delle fonti. Il server
       riprova a scaricare i giorni mancanti una volta al giorno (per due settimane); se arrivano, i grafici si
       completano da soli.</li>
+    <li><strong>Energia da fonti rinnovabili.</strong> Il riquadro di «Valori del periodo» somma, nei quarti d'ora con
+      tutte le fonti, bioenergie, idroelettrico, geotermico, eolico e fotovoltaico (autoconsumi compresi). L'idroelettrico è
+      quello della produzione rinnovabile di Terna, che comprende anche la parte da pompaggio: nei dati quartorari Terna
+      non la separa. Sono esclusi il termoelettrico tradizionale e il saldo con l'estero, i pompaggi e gli accumuli. La
+      percentuale principale è sulla produzione nazionale (rinnovabili più termoelettrico); c'è anche quella sulla potenza
+      richiesta dell'Italia. I valori sono sempre dell'Italia, anche con una zona scelta, e non dipendono dalle fonti
+      spente nei grafici.</li>
     <li><strong>Due metà.</strong> La pagina è divisa in due metà, ognuna con la sua zona, il suo periodo, il suo passo, la
       sua finestra e le sue fonti accese, per confrontare due selezioni. La piccola mappa è comune: un clic sceglie la
       zona in tutte e due le metà; la casella «Zona» di ogni metà la sceglie solo lì. Il collegamento ricorda le due metà
-      (i parametri della destra finiscono con «2»: <code>zona2=</code>, <code>da2=</code>, …).</li>
+      (i parametri della destra finiscono con «2»: <code>zona2=</code>, <code>da2=</code>, …). «Riallinea le due metà» porta la
+      metà destra allo stesso grafico che si vede in alto a sinistra.</li>
     <li><strong>Grafici.</strong> Profilo giornaliero: minimo, media e massimo per quarto d'ora (o ora) del giorno nel
       periodo. Curva di durata: tutte le potenze del periodo in ordine decrescente. Fonti: una barra per quarto d'ora (o
       ora); quando le barre sono più dei pixel, ogni colonna somma i quarti d'ora che copre. La rotella ingrandisce l'asse

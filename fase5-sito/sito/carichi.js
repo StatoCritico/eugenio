@@ -458,11 +458,21 @@
       if (v > mx) { mx = v; tmx = S.T[i]; }
       if (v < mn) { mn = v; tmn = S.T[i]; }
     }
-    if (st.zona === "ITA") for (let i = 0; i < S.T.length; i++) {
-      if (Number.isNaN(S.L[i]) || R.some((k) => Number.isNaN(S.F[k][i]))) continue;
-      ren += R.reduce((t, k) => t + S.F[k][i], 0); carRen += S.L[i]; cRen++;
+    // (22/11/2026 c, Paolo) energia rinnovabile del periodo: sempre dell'Italia (Terna pubblica le fonti solo per l'Italia),
+    // per tutte le fonti (le caselle accese/spente non contano), solo nei quarti d'ora con tutte le fonti. Rinnovabili:
+    // bioenergie, idroelettrico (come lo pubblica Terna, pompaggi compresi: non li separa), geotermico, eolico,
+    // fotovoltaico; fuori: termoelettrico tradizionale e saldo (estero, pompaggi e accumuli). Denominatore: la produzione
+    // nazionale (rinnovabili + termoelettrico) negli stessi quarti d'ora; in più la quota sulla potenza richiesta dell'Italia.
+    let prod = 0, carIt = 0, cRenL = 0;
+    for (let i = 0; i < S.T.length; i++) {
+      if (R.some((k) => Number.isNaN(S.F[k][i])) || Number.isNaN(S.F.termo[i])) continue;
+      const r = R.reduce((t, k) => t + Math.max(0, S.F[k][i]), 0);
+      ren += r; prod += r + Math.max(0, S.F.termo[i]); cRen++;
+      if (!Number.isNaN(S.LI[i])) { carRen += r; carIt += S.LI[i]; cRenL++; }
     }
-    return { c, n: S.T.length, mx, mn, tmx, tmn, media: c ? tot / c : NaN, energia: tot * S.passo / 60, quotaRen: cRen ? 100 * ren / carRen : null };
+    const h = S.passo / 60;
+    return { c, n: S.T.length, mx, mn, tmx, tmn, media: c ? tot / c : NaN, energia: tot * h,
+      ren: cRen ? { energia: ren * h, suProduzione: prod ? 100 * ren / prod : null, suRichiesta: carIt ? 100 * carRen / carIt : null, quarti: cRen } : null };
   }
   // ------------------------------------------------------------------ grafico 1: profilo giornaliero
   function cfgProfilo() {
@@ -879,7 +889,17 @@
     riga("Potenza massima", MW(R.mx), R.tmx !== null ? `${dataBreve(R.tmx)}, ${oraBreve(R.tmx)}` : "");
     riga("Potenza minima", MW(R.mn), R.tmn !== null ? `${dataBreve(R.tmn)}, ${oraBreve(R.tmn)}` : "");
     riga("Potenza media", MW(R.media), Number.isFinite(R.mx) && R.mx ? `${pc(100 * R.media / R.mx)} della massima` : "");
-    if (R.quotaRen !== null) riga("Produzione rinnovabile", pc(R.quotaRen), "della potenza richiesta (Italia)");
+    const energiaTesto = (e) => (e >= 1e6 ? `${num(e / 1e6, 2)} TWh` : `${num(e / 1e3, 1)} GWh`);
+    if (R.ren) riga("Energia da fonti rinnovabili (Italia)", energiaTesto(R.ren.energia),
+      `${pc(R.ren.suProduzione)} della produzione nazionale${R.ren.suRichiesta !== null ? ` · ${pc(R.ren.suRichiesta)} della richiesta dell'Italia` : ""}`);
+    else riga("Energia da fonti rinnovabili (Italia)", "–", "produzione per fonte non disponibile nel periodo");
+    const nota = $("nota-rinnovabili");
+    nota.textContent = `Fonti rinnovabili: bioenergie, idroelettrico (come lo pubblica Terna nella produzione rinnovabile: comprende `
+      + `la parte da pompaggio, che Terna non separa), geotermico, eolico e fotovoltaico, autoconsumi compresi; esclusi il `
+      + `termoelettrico tradizionale e il saldo con l'estero, i pompaggi e gli accumuli. La percentuale è sulla produzione `
+      + `nazionale (rinnovabili più termoelettrico) negli stessi quarti d'ora; c'è anche quella sulla potenza richiesta `
+      + `dell'Italia. Sempre valori dell'Italia, anche con una zona scelta (Terna pubblica le fonti solo per l'Italia), e per tutte `
+      + `le fonti, anche quelle spente nei grafici.${R.ren && R.ren.quarti < R.n ? ` Contano i ${num(R.ren.quarti)} ${unita} con tutte le fonti.` : ""}`;
     riga(st.passo === 15 ? "Quarti d'ora" : "Ore", num(R.c), R.c < R.n ? `${num(R.n - R.c)} ${unita} senza dati` : "tutti con i dati");
   }
 
@@ -1104,6 +1124,37 @@
     if (box) { box.classList.toggle("tutta-italia", s0 === "ITA" && s1 === "ITA"); box.classList.toggle("con-scelta", s0 !== "ITA" || s1 !== "ITA"); }
   }
 
+  // (22/11/2026 c, Paolo) «Riallinea le due metà»: la metà destra scorre fino allo stesso pezzo (scelte o sezione) che è in
+  // alto nella metà sinistra, alla stessa distanza dal bordo, anche se sopra i grafici le due metà sono alte in modo
+  // diverso. Col telefono (una metà sotto l'altra) la pagina salta dal pezzo in alto allo stesso pezzo dell'altra metà.
+  const una = window.matchMedia("(max-width: 860px)");
+  function riallinea() {
+    const sx = $("carichi-lato"), dx = $("carichi-lato-2");
+    if (!sx || !dx || !dx.childElementCount) return null;
+    const pezzi = (L) => [...L.querySelectorAll(":scope > .comandi-carichi, :scope > .carichi-sezione")].filter((e) => !e.hidden);
+    const a = pezzi(sx), b = pezzi(dx);
+    const nome = (e) => (e.querySelector("h2") ? e.querySelector("h2").textContent : "Scelte");
+    let i;
+    if (!una.matches) {
+      const cima = sx.getBoundingClientRect().top;
+      i = a.findIndex((e) => e.getBoundingClientRect().bottom > cima + 1);
+      if (i < 0 || !b[i]) return null;
+      const distanza = a[i].getBoundingClientRect().top - cima;
+      dx.scrollBy({ top: b[i].getBoundingClientRect().top - dx.getBoundingClientRect().top - distanza, behavior: "instant" });
+      annuncio.textContent = `Metà destra allineata a «${nome(a[i])}»`;
+      return nome(a[i]);
+    }
+    // una colonna: dalla metà in cui si è all'altra
+    const cima = document.querySelector(".testata") ? document.querySelector(".testata").getBoundingClientRect().bottom : 0;
+    const inDestra = dx.getBoundingClientRect().top <= cima + 1;
+    const [da, verso] = inDestra ? [b, a] : [a, b];
+    i = da.findIndex((e) => e.getBoundingClientRect().bottom > cima + 1);
+    if (i < 0 || !verso[i]) return null;
+    window.scrollBy({ top: verso[i].getBoundingClientRect().top - da[i].getBoundingClientRect().top, behavior: "instant" });
+    annuncio.textContent = `${inDestra ? "Metà sinistra" : "Metà destra"}: «${nome(verso[i])}»`;
+    return nome(verso[i]);
+  }
+
   async function avvio() {
     try { D.ix = await json("indice.json"); } catch {
       senzaDati("I dati di Terna non sono ancora disponibili su questo server (li prepara il worker una volta al giorno).");
@@ -1117,11 +1168,12 @@
     D.ultimoGiornoFonti = ultF ? dataIso(ultF.t0 + (ultF.n - 1) * Q) : D.ultimoGiorno;
     D.passoFonti60 = (t) => { const m = D.mesi.find((x) => t >= x.t0 && t < x.t0 + x.n * Q); return m && m.passo_fonti === 60; };
     copiaMeta();
+    $("carichi-riallinea").addEventListener("click", riallinea);
     const q = new URLSearchParams(location.search);
     D.lati = [creaLato(0), creaLato(1)];
     D.lati.forEach((L) => L.avvia(q));
     window.EUGENIO_CARICHI = { stato: D.lati[0], destra: D.lati[1], lati: D.lati, dati: D, scegliZona: (id) => D.lati[0].scegliZona(id),
-      calcola: () => D.lati[0].calcola(), finestraDi: (t) => D.lati[0].finestraDi(t), posizioni: () => D.lati[0].posizioniCursore() };   // per le prove
+      calcola: () => D.lati[0].calcola(), finestraDi: (t) => D.lati[0].finestraDi(t), posizioni: () => D.lati[0].posizioniCursore(), riallinea };   // per le prove
     indirizzo();
     minimappa();
     evidenzia();

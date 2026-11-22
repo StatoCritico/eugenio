@@ -339,6 +339,27 @@ divisione in due metà.
   scritti a mano: dicembre 2025 e gennaio 2026 col buco del 14–15 gennaio); `test_collegamento_browser.py::test_carichi_due_meta`;
   fase 15 `test_carichi.py::test_italia_somma_delle_zone`; fase 4 `test_terna.py::test_giorni_mancanti_*`.
 
+### «Riallinea le due metà» ed energia rinnovabile (22/11/2026 c, richiesta di Paolo delle 10:20)
+
+- Pulsante **«Riallinea le due metà»** (`#carichi-riallinea`, sotto la legenda della piccola mappa, in alto e comune):
+  `riallinea()` prende il pezzo della metà sinistra (scelte o sezione `.carichi-sezione`) che è in cima alla sua area
+  visibile e fa scorrere la metà destra fino allo stesso pezzo, alla stessa distanza dal bordo (`scrollBy` istantaneo),
+  anche se sopra i grafici le due metà sono alte in modo diverso (nota delle zone, dati mancanti…). Col telefono (una
+  metà sotto l'altra) la pagina salta dal pezzo in alto allo stesso pezzo dell'altra metà (dalla sinistra alla destra e
+  viceversa). Annuncio per i lettori di schermo; si usa anche da tastiera (è un pulsante). Corretto anche il telefono:
+  sotto gli 861 px le due metà sono davvero una sotto l'altra (`.strumento.carichi-meta { display: block }`; prima
+  restavano due colonne strette).
+- **Sesto riquadro** di «Valori del periodo» (al posto di «Produzione rinnovabile», che c'era solo per l'Italia):
+  «Energia da fonti rinnovabili (Italia)» in GWh o TWh e, sotto, la quota sulla **produzione nazionale** (rinnovabili +
+  termoelettrico negli stessi quarti d'ora) e quella sulla potenza richiesta dell'Italia. Rinnovabili: bioenergie,
+  idroelettrico (come lo pubblica Terna nella produzione rinnovabile, pompaggi compresi: Terna non li separa),
+  geotermico, eolico, fotovoltaico; esclusi termoelettrico tradizionale e saldo (estero, pompaggi, accumuli). Sempre
+  dell'Italia, anche con una zona scelta (le fonti esistono solo per l'Italia), e per tutte le fonti: le caselle
+  accese/spente non contano. Contano solo i quarti d'ora con tutte le fonti. Spiegazione in `#nota-rinnovabili` sotto i
+  riquadri.
+- Prove: `test_carichi_browser.py::test_riallinea` (due colonne, tastiera, telefono), `::test_energia_rinnovabile`
+  (valore e quota ricalcolati dai file, uguali con una fonte spenta e con una zona).
+
 ## Segnalazioni di Paolo sulla v2026.11.21 (21–22/11/2026, nella versione 20261121b, pull request #17)
 
 - **Elettricità, istogrammi più grandi**: in `elettricita.js` `INGRANDISCI = 1.4` ingrandisce la tela di tutti i

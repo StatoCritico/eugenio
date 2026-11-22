@@ -501,3 +501,64 @@ def test_dati_mancanti(browser, base, dati_anni):
     pg.select_option("#carichi-anno", "2025")
     pg.wait_for_function("() => document.getElementById('carichi-mancanti').hidden")
     assert errori == []
+
+
+# ---------------------------------------------------------------------------------------------- 22/11/2026 c
+def test_riallinea(browser, base, dati):
+    """(22/11/2026 c, Paolo) «Riallinea le due metà»: la metà destra va allo stesso grafico che è in alto a sinistra, alla
+    stessa altezza, anche se sopra i grafici le due metà sono alte in modo diverso; dalla tastiera e col telefono."""
+    pg, errori = _due(browser, base, dati, "?zona2=SICI")              # a destra la nota sulle fonti per zona: più alta
+    cima = lambda sel: pg.eval_on_selector(sel, "(e) => e.getBoundingClientRect().top")
+    pg.evaluate("document.getElementById('carichi-meta').scrollIntoView()")
+    pg.evaluate("(() => { const L = document.getElementById('carichi-lato'), t = document.getElementById('titolo-assoluti');"
+                " L.scrollTop += t.getBoundingClientRect().top - L.getBoundingClientRect().top - 30; })()")
+    assert abs(cima("#titolo-assoluti") - cima("#titolo-assoluti-2")) > 40
+    pg.locator("#carichi-riallinea").focus()
+    pg.evaluate("document.getElementById('carichi-meta').scrollIntoView()")
+    pg.keyboard.press("Enter")
+    pg.wait_for_timeout(200)
+    assert abs(cima("#titolo-assoluti") - cima("#titolo-assoluti-2")) < 2
+    assert errori == []
+    # telefono: dalla sezione in alto della metà sinistra alla stessa della destra
+    pg, errori = _due(browser, base, dati, "?zona2=SICI", 375, 800)
+    # col telefono le due metà sono una sotto l'altra, a tutta larghezza
+    assert pg.evaluate("(() => { const a = document.getElementById('carichi-lato').getBoundingClientRect(),"
+                       " b = document.getElementById('carichi-lato-2').getBoundingClientRect(); return b.top >= a.bottom && b.width > 300; })()")
+    pg.evaluate("(() => { const c = Math.max(0, document.querySelector('.testata').getBoundingClientRect().bottom);"
+                " window.scrollTo(0, document.getElementById('titolo-durata').closest('section').getBoundingClientRect().top + scrollY - c + 2); })()")
+    prima = cima("#titolo-durata")
+    assert pg.evaluate("window.EUGENIO_CARICHI.riallinea()") == "Curva di durata – Sicilia"
+    assert abs(cima("#titolo-durata-2") - prima) < 2
+    assert pg.evaluate("document.documentElement.scrollWidth") <= 376 and errori == []
+
+
+def test_energia_rinnovabile(browser, base, dati):
+    """(22/11/2026 c, Paolo) sesto riquadro di «Valori del periodo»: energia da fonti rinnovabili e quota sulla
+    produzione nazionale (e sulla richiesta dell'Italia); sempre dell'Italia e per tutte le fonti, anche spente."""
+    ren = prod = 0.0
+    for f in sorted(dati.glob("fonti_*.json")):
+        v = json.loads(f.read_text(encoding="utf-8"))["voci"]
+        for i in range(len(v["fv"])):
+            if any(v[k][i] is None for k in ("termo", "bio", "idro", "geo", "eol", "fv")):
+                continue
+            r = sum(max(0, v[k][i]) for k in ("bio", "idro", "geo", "eol", "fv"))
+            ren += r; prod += r + max(0, v["termo"][i])
+    twh = f"{ren * 0.25 / 1e6:.2f}".replace(".", ",")
+    quota = f"{round(100 * ren / prod)} %"
+    pg, errori = _pagina(browser, base, dati)
+    riq = pg.locator("#riepilogo-carichi > div")
+    assert riq.count() == 6
+    testo = riq.nth(4).inner_text()
+    assert "Energia da fonti rinnovabili (Italia)" in testo and f"{twh} TWh" in testo, testo
+    assert f"{quota} della produzione nazionale" in testo and "della richiesta dell'Italia" in testo, (quota, testo)
+    nota = pg.locator("#nota-rinnovabili").inner_text()
+    for parola in ("bioenergie", "idroelettrico", "pompaggio", "esclusi il termoelettrico", "produzione nazionale", "solo per l'Italia"):
+        assert parola in nota, parola
+    # fonti spente e zona: lo stesso valore
+    pg.locator('#grafico-assoluti input[data-fonte="fv"]').uncheck()
+    pg.select_option("#carichi-zona", "SICI")
+    pg.wait_for_function("() => document.getElementById('titolo-profilo').textContent.includes('Sicilia')")
+    pg.wait_for_function(PRONTO)
+    assert pg.locator("#riepilogo-carichi > div").count() == 6
+    assert f"{twh} TWh" in pg.locator("#riepilogo-carichi > div").nth(4).inner_text()
+    assert errori == []

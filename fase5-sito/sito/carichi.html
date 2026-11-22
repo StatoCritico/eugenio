@@ -182,6 +182,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <div class="minimappa-con-legenda">
       <div class="minimappa minimappa-zone" id="minimappa-zone" aria-label="Zone di mercato"></div>
       <p class="minimappa-legenda" id="minimappa-legenda" aria-live="polite"></p>
+      <button class="bottone secondario carichi-riallinea" id="carichi-riallinea" type="button"
+        title="Porta la metà destra allo stesso grafico che si vede in alto nella metà sinistra">Riallinea le due metà</button>
     </div>
   </div>
 
@@ -225,6 +227,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   <section class="carichi-sezione" aria-labelledby="titolo-riepilogo">
     <h2 id="titolo-riepilogo">Valori del periodo</h2>
     <dl class="carichi-riepilogo" id="riepilogo-carichi"></dl>
+    <p class="aiuto nota-rinnovabili" id="nota-rinnovabili"></p>
   </section>
 
   <section class="carichi-sezione" aria-labelledby="titolo-profilo">
@@ -305,7 +308,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         due periodi; il divisore tra le due si trascina (o si sposta con le frecce). La piccola mappa è una sola: un clic su
         una zona la sceglie in tutte e due le metà, un secondo clic torna all'Italia; con la casella «Zona» ogni metà può
         avere la sua. Sulla mappa la zona della metà sinistra ha il bordo pieno scuro, quella della destra il bordo
-        tratteggiato colorato, la stessa zona in tutte e due il bordo pieno colorato.</li>
+        tratteggiato colorato, la stessa zona in tutte e due il bordo pieno colorato. «Riallinea le due metà», sotto la mappa,
+        porta la metà destra allo stesso grafico che si vede in alto a sinistra (col telefono salta all'altra metà).</li>
+      <li><b>Energia da fonti rinnovabili.</b> Bioenergie, idroelettrico (pompaggi compresi, che Terna non separa),
+        geotermico, eolico e fotovoltaico; la percentuale è sulla produzione nazionale. Sempre dell'Italia e per tutte le
+        fonti, anche quelle spente nei grafici.</li>
       <li><b>Anni.</b> Il menu dell'anno e le frecce «‹ ›» scelgono un anno intero (Dal/al); l'archivio va dal 2021.</li>
       <li><b>Dati mancanti.</b> I tratti che Terna non ha pubblicato (per esempio il 14 e il 15 gennaio 2026) sono elencati
         sotto lo stato e tratteggiati nei grafici delle fonti; il server riprova a scaricarli ogni giorno.</li>
