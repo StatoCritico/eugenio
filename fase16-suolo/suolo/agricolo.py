@@ -46,6 +46,11 @@ RIGHE_STRISCIA = 512
 PIXEL_HA = 0.01
 
 
+def _applica(t, x, y):
+    """Trasformazione affine (Affine di rasterio) applicata a vettori numpy."""
+    return t.a * x + t.b * y + t.c, t.d * x + t.e * y + t.f
+
+
 def _pixel_nuovo_consumo(cambiamenti: Path, avanzamento=None):
     """(righe, colonne, codici, trasformazione, crs) dei pixel con un codice di nuovo consumo."""
     import numpy as np
@@ -76,8 +81,7 @@ def _campiona(uso: Path, xs, ys, crs_da):
     with rasterio.open(uso) as d:
         t = Transformer.from_crs(crs_da, d.crs, always_xy=True)
         X, Y = t.transform(xs, ys)
-        inv = ~d.transform
-        col, riga = inv * (np.asarray(X), np.asarray(Y))
+        col, riga = _applica(~d.transform, np.asarray(X), np.asarray(Y))
         col = np.floor(col).astype(np.int64); riga = np.floor(riga).astype(np.int64)
         out = np.full(len(xs), -1, dtype=np.int32)
         dentro = (col >= 0) & (col < d.width) & (riga >= 0) & (riga < d.height)
@@ -128,8 +132,7 @@ def agricolo(cambiamenti: Path, uso: Path, mappa: Path, uscita: Path | None = No
     log = avanzamento or (lambda s: None)
     righe, col, cod, tr, crs = _pixel_nuovo_consumo(Path(cambiamenti), log)
     log(f"pixel di nuovo consumo: {len(cod)} ({time.time() - t0:.0f} s)")
-    xs, ys = tr * (col + 0.5, righe + 0.5)
-    xs, ys = np.asarray(xs), np.asarray(ys)
+    xs, ys = _applica(tr, col + 0.5, righe + 0.5)
     istat = _comuni(xs, ys, crs, Path(mappa))
     log(f"comuni assegnati ({time.time() - t0:.0f} s)")
     m = M.carica(Path(mappa))
