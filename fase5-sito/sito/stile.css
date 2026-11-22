@@ -2033,32 +2033,137 @@ svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-off
 #scheda-punto h3 { margin: var(--s3) 0 var(--s1); }
 
 /* ------------------------------------------------------------------------------- pagina iniziale (22/11/2026) */
-.home { max-width: 82rem; margin: 0 auto; }
-.home .home-apertura { padding: var(--s5) 0 var(--s4); border-bottom: 1px solid var(--linea); }
-.home .home-apertura h1 { max-width: 22ch; margin-bottom: var(--s4); }
-.home .home-sotto { font-size: var(--c-l); color: var(--inchiostro); max-width: 64ch; margin: 0 0 var(--s5); }
-.home-azioni { display: flex; flex-wrap: wrap; gap: var(--s3); margin: 0 0 var(--s4); }
-.home-azioni .home-secondario { background: transparent; color: var(--inchiostro); border-color: var(--bordo); }
-.home-azioni .home-secondario:hover { background: var(--rialzo); color: var(--inchiostro); border-color: var(--inchiostro); }
-.home .home-nota { color: var(--tenue); font-size: var(--c-s); }
+/* disegno (parti/scena_home.py → parti/scena_home.svg, messo da costruisci_pagine.py) e schede dei gruppi del menu */
+.home { max-width: 90rem; margin: 0 auto; }
+.home .home-apertura { padding: var(--s3) 0 var(--s4); }
+.home .home-apertura h1 { margin: var(--s3) 0 var(--s3); }
+.home .home-sotto { font-size: var(--c-l); max-width: 70ch; margin: 0; }
+.home-scena { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(19rem, 1fr); gap: var(--s5); align-items: start; }
+.scena { position: relative; border-radius: var(--r-l); overflow: hidden; border: 1px solid var(--linea); background: var(--sc-cielo); }
+.scena-svg { display: block; width: 100%; height: auto; }
+.scena-barra { position: absolute; left: var(--s3); bottom: var(--s3); display: flex; gap: var(--s2); align-items: center;
+  font: 600 var(--c-s)/1 var(--testo); color: var(--sc-scritta); background: var(--sc-etichetta); border-radius: var(--r-tondo); padding: .3rem .4rem .3rem .8rem; }
+.scena-barra button { width: 1.9rem; height: 1.9rem; border-radius: 50%; border: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer; font-size: .8rem; }
+.scena-aiuto { position: absolute; right: var(--s3); bottom: var(--s3); max-width: 60%; font: 500 var(--c-xs)/1.3 var(--testo);
+  color: var(--sc-scritta); background: var(--sc-etichetta); border-radius: var(--r); padding: .35rem .6rem; pointer-events: none; }
+.scena-tip { position: absolute; z-index: 3; width: min(21rem, 70%); pointer-events: none; background: var(--foglio); color: var(--inchiostro);
+  border: 1px solid var(--bordo); border-radius: var(--r); box-shadow: var(--ombra-2); padding: .6rem .8rem; font-size: var(--c-s); }
+.scena-tip strong { display: block; font: 700 var(--c-l)/1.2 var(--titoli); color: var(--primario); }
+.scena-tip p { margin: .2rem 0 .4rem; color: var(--tenue); }
+.scena-tip ul { margin: 0; padding-left: 1.1rem; }
+.scena-tip li { margin: .1rem 0; }
+.scena-tip li.in-arrivo { color: var(--tenue); }
+.scena-tip .tip-clic { margin: .4rem 0 0; font-size: var(--c-xs); color: var(--tenue); }
+
+/* parti del disegno: in evidenza quella sotto il mouse o scelta, le altre più tenui */
+.scena .parte { cursor: pointer; outline: none; transition: opacity .25s, filter .25s; }
+.scena.indica .parte:not(.su):not([data-gruppo="clima"]), .scena.indica .parte[data-gruppo="clima"]:not(.su) .sc-sole,
+.scena.indica .parte[data-gruppo="clima"]:not(.su) .sc-nuvola { filter: saturate(.3) brightness(.7); }
+.scena .parte.su { filter: drop-shadow(0 0 6px var(--primario)) drop-shadow(0 0 2px var(--primario)); }
+.scena .parte[data-gruppo="clima"].su { filter: none; }
+.scena .parte[data-gruppo="clima"].su .sc-sole circle, .scena .parte[data-gruppo="clima"].su .sc-nuvola { stroke: var(--primario); stroke-width: 3; }
+.scena .parte:focus-visible { filter: drop-shadow(0 0 4px var(--primario)); }
+
+/* colori del disegno: estate e inverno, tema scuro (predefinito) e chiaro */
+.scena {
+  --sc-cielo: #34537a; --sc-sole: #ffc44d; --sc-nuvola: #c9d1de; --sc-nuvola-pioggia: #8792a6; --sc-acqua: #8ccbf2; --sc-fiocco: #ffffff;
+  --sc-terreno: #3f6b45; --sc-terreno-sx: #2e4f33; --sc-terreno-dx: #233f28; --sc-campo: #6e8a3d; --sc-solco: #56702c;
+  --sc-strada: #5d5866; --sc-chioma: #4f9a52; --sc-tronco: #7a5a3c; --sc-neve: #eef3f8;
+  --sc-ed-su: #b9b2c2; --sc-ed-sx: #8f8799; --sc-ed-dx: #6f6879; --sc-vetro: #9fd3f5;
+  --sc-casa-su: #d9c7a8; --sc-casa-sx: #c2ab86; --sc-casa-dx: #a08a66; --sc-tetto-sx: #b8553c; --sc-tetto-dx: #8f3f2b;
+  --sc-pannello: #1f3f8a; --sc-pannello-riga: #6d8fe0; --sc-uta-su: #d5d9df; --sc-uta-sx: #a9aeb7; --sc-uta-dx: #8a909a;
+  --sc-cog-su: #f2c14e; --sc-cog-sx: #cf9d2c; --sc-cog-dx: #a87d1d; --sc-cabina-su: #c9c3cf; --sc-cabina-sx: #9f98a8; --sc-cabina-dx: #7e7787;
+  --sc-trafo-su: #8a8f98; --sc-trafo-sx: #6a6f78; --sc-trafo-dx: #555a62; --sc-gas: #f2d16b; --sc-ferro: #6b7380; --sc-filo: #2b3038; --sc-fumo: #d8dce3;
+  --sc-scritta: #ffffff; --sc-etichetta: rgb(0 0 0 / .45);
+}
+.scena[data-stagione="inverno"] { --sc-cielo: #3b4658; --sc-chioma: #3c6b4a; --sc-sole: #f6dc9a; --sc-campo: #7d7a63; }
+.scena[data-meteo="pioggia"], .scena[data-meteo="neve"] { --sc-cielo: #2a3343; }
+[data-theme="light"] .scena {
+  --sc-cielo: #cfe6f7; --sc-nuvola: #ffffff; --sc-nuvola-pioggia: #9aa6b8; --sc-acqua: #2f7fc1; --sc-fiocco: #ffffff;
+  --sc-terreno: #9cc77d; --sc-terreno-sx: #7ea763; --sc-terreno-dx: #67904f; --sc-campo: #c8d98a; --sc-solco: #a8bb68;
+  --sc-strada: #a7a2ad; --sc-chioma: #4f9a52; --sc-neve: #ffffff;
+  --sc-ed-su: #eeeaf2; --sc-ed-sx: #d2ccd9; --sc-ed-dx: #b4adbd; --sc-vetro: #5aa9e0;
+  --sc-scritta: #19171c; --sc-etichetta: rgb(255 255 255 / .75);
+}
+[data-theme="light"] .scena[data-stagione="inverno"] { --sc-cielo: #dde4ec; --sc-campo: #cfcbb5; }
+[data-theme="light"] .scena[data-meteo="pioggia"], [data-theme="light"] .scena[data-meteo="neve"] { --sc-cielo: #b9c6d4; }
+.scena-svg [class^="sc-"], .scena-svg [class*=" sc-"] { transition: fill 1.2s, opacity 1.2s, transform 1.2s; }
+.sc-cielo { fill: var(--sc-cielo); }
+.sc-sole circle { fill: var(--sc-sole); } .sc-raggi line { stroke: var(--sc-sole); stroke-width: 5; stroke-linecap: round; }
+.sc-raggi { transform-origin: 170px 100px; animation: sc-gira 40s linear infinite; }
+.scena[data-stagione="inverno"] .sc-sole { transform: translateY(28px); }
+.scena[data-meteo="pioggia"] .sc-sole, .scena[data-meteo="neve"] .sc-sole { opacity: .45; }
+.sc-nuvola ellipse { fill: var(--sc-nuvola); transition: fill 1.2s; }
+.scena[data-meteo="pioggia"] .sc-nuvola ellipse, .scena[data-meteo="neve"] .sc-nuvola ellipse { fill: var(--sc-nuvola-pioggia); }
+.sc-nuvola-lenta { animation: sc-vento 26s ease-in-out infinite alternate; }
+.sc-pioggia line { stroke: var(--sc-acqua); stroke-width: 2; stroke-linecap: round; animation: sc-goccia .9s linear infinite; }
+.sc-fiocchi circle { fill: var(--sc-fiocco); animation: sc-fiocco 3s linear infinite; }
+.sc-pioggia, .sc-fiocchi { opacity: 0; transition: opacity 1s; }
+.scena[data-meteo="pioggia"] .sc-pioggia, .scena[data-meteo="neve"] .sc-fiocchi { opacity: 1; }
+.sc-terreno { fill: var(--sc-terreno); } .sc-terreno-bordo-sx { fill: var(--sc-terreno-sx); } .sc-terreno-bordo-dx { fill: var(--sc-terreno-dx); }
+.sc-strada { fill: var(--sc-strada); } .sc-campo { fill: var(--sc-campo); } .sc-solco { stroke: var(--sc-solco); stroke-width: 1.5; }
+.sc-particella { fill: none; stroke: var(--sc-scritta); stroke-opacity: .55; stroke-width: 1.2; stroke-dasharray: 5 4; }
+.sc-chioma { fill: var(--sc-chioma); } .sc-tronco { stroke: var(--sc-tronco); stroke-width: 4; stroke-linecap: round; }
+.sc-neve { fill: var(--sc-neve); opacity: 0; pointer-events: none; }
+.scena[data-stagione="inverno"] .sc-neve { opacity: .95; }
+.scena[data-stagione="inverno"] .sc-neve-terreno { opacity: .85; }
+.scena[data-stagione="inverno"] .sc-neve-campo { opacity: .7; }
+.scena[data-stagione="inverno"] .sc-neve-pannello { opacity: .55; }
+.sc-edificio-su { fill: var(--sc-ed-su); } .sc-edificio-sx { fill: var(--sc-ed-sx); } .sc-edificio-dx { fill: var(--sc-ed-dx); }
+.sc-vetro { fill: var(--sc-vetro); } .sc-porta { fill: #4a3f52; }
+.sc-casa-su { fill: var(--sc-casa-su); } .sc-casa-sx { fill: var(--sc-casa-sx); } .sc-casa-dx { fill: var(--sc-casa-dx); }
+.sc-tetto-sx { fill: var(--sc-tetto-sx); } .sc-tetto-dx { fill: var(--sc-tetto-dx); }
+.sc-pannello { fill: var(--sc-pannello); stroke: var(--sc-pannello-riga); stroke-width: 1.2; }
+.sc-uta-su { fill: var(--sc-uta-su); } .sc-uta-sx { fill: var(--sc-uta-sx); } .sc-uta-dx { fill: var(--sc-uta-dx); }
+.sc-ventola-fondo { fill: #3b3f46; } .sc-ventola line { stroke: #e6e9ee; stroke-width: 2.5; stroke-linecap: round; }
+.sc-ventola { animation: sc-gira 1.6s linear infinite; } .sc-griglia { stroke: #6a6f78; stroke-width: 1.5; }
+.sc-cog-su { fill: var(--sc-cog-su); } .sc-cog-sx { fill: var(--sc-cog-sx); } .sc-cog-dx { fill: var(--sc-cog-dx); }
+.sc-camino { stroke: #8a8f98; stroke-width: 7; stroke-linecap: butt; }
+.sc-fumo circle { fill: var(--sc-fumo); opacity: 0; animation: sc-fumo 2.7s ease-out infinite; }
+.sc-cabina-su { fill: var(--sc-cabina-su); } .sc-cabina-sx { fill: var(--sc-cabina-sx); } .sc-cabina-dx { fill: var(--sc-cabina-dx); }
+.sc-trafo-su { fill: var(--sc-trafo-su); } .sc-trafo-sx { fill: var(--sc-trafo-sx); } .sc-trafo-dx { fill: var(--sc-trafo-dx); }
+.sc-gas-su { fill: var(--sc-gas); } .sc-gas-sx { fill: #cfae45; } .sc-gas-dx { fill: #a88b30; }
+.sc-recinto { fill: var(--sc-strada); fill-opacity: .55; stroke: var(--sc-ferro); stroke-width: 1; stroke-dasharray: 3 3; }
+.sc-gas { fill: none; stroke: var(--sc-gas); stroke-width: 3; stroke-dasharray: 8 5; animation: sc-flusso 1.4s linear infinite; }
+.sc-ferro { stroke: var(--sc-ferro); stroke-width: 2.6; stroke-linecap: round; }
+.sc-filo { fill: none; stroke: var(--sc-filo); stroke-width: 2; stroke-dasharray: 6 4; animation: sc-flusso 1s linear infinite; }
+@keyframes sc-gira { to { transform: rotate(360deg); } }
+@keyframes sc-vento { to { transform: translateX(60px); } }
+@keyframes sc-goccia { from { transform: translateY(-20px); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(150px); opacity: 0; } }
+@keyframes sc-fiocco { from { transform: translate(0, -30px); opacity: 0; } 15% { opacity: 1; } 50% { transform: translate(8px, 70px); }
+  to { transform: translate(-6px, 190px); opacity: 0; } }
+@keyframes sc-fumo { from { transform: translateY(0) scale(.6); opacity: 0; } 25% { opacity: .8; } to { transform: translate(14px, -40px) scale(1.5); opacity: 0; } }
+@keyframes sc-flusso { to { stroke-dashoffset: -26; } }
+.sc-nuvola-lenta, .sc-sole, .sc-raggi { transform-box: view-box; }
+@media (prefers-reduced-motion: reduce) {
+  .scena-svg * { animation: none !important; transition: none !important; }
+}
+
+/* schede dei gruppi (accanto al disegno) */
+.home-schede { min-width: 0; }
+.home-scheda { background: var(--foglio); border: 1px solid var(--linea); border-radius: var(--r-l); padding: var(--s4) var(--s5) var(--s5); margin-bottom: var(--s4); }
+.home-scheda[hidden] { display: none; }
+.articolo .home-scheda h2 { margin: 0 0 var(--s1); font-size: var(--c-xl); }
+.articolo .home-scheda > p { color: var(--tenue); margin: 0 0 var(--s3); max-width: none; }
+.articolo .home-scheda ul { list-style: none; padding: 0; margin: 0; }
+.articolo .home-scheda li { margin: 0; padding: .5rem 0; border-top: 1px solid var(--linea); color: var(--tenue); font-size: var(--c-s); max-width: none; }
+.articolo .home-scheda li a { font: 600 var(--c-m)/1.3 var(--testo); }
+.articolo .home-scheda li.in-arrivo .voce-nome { font-weight: 600; color: var(--inchiostro); opacity: .7; }
+.home-scheda-intro .home-scelte { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
+.home-scelte button { min-height: 2.25rem; padding: .3rem .8rem; border-radius: var(--r-tondo); border: 1px solid var(--bordo); background: transparent;
+  color: var(--inchiostro); font: 600 var(--c-s)/1 var(--testo); cursor: pointer; }
+.home-scelte button:hover, .home-scelte button[aria-pressed="true"] { border-color: var(--primario); color: var(--primario); }
+.home-scheda .scheda-chiudi { float: right; border: 0; background: none; color: var(--tenue); font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .home .cantiere { display: inline-block; font: 500 .72rem/1 var(--testo); color: var(--tenue); border: 1px solid var(--linea);
   border-radius: var(--r-tondo); padding: .15rem .45rem; vertical-align: .1em; white-space: nowrap; }
 .home .cantiere.prova { color: var(--primario); border-color: var(--primario); }
-.home-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); gap: var(--s4); margin-top: var(--s4); }
-.home-tema { background: var(--foglio); border: 1px solid var(--linea); border-radius: var(--r-l); padding: var(--s4) var(--s5) var(--s5); }
-.articolo .home-tema h3 { margin: 0 0 var(--s1); font-size: var(--c-xl); }
-.articolo .home-tema > p { color: var(--tenue); margin: 0 0 var(--s3); }
-.articolo .home-tema ul { list-style: none; padding: 0; margin: 0; }
-.articolo .home-tema li { margin: 0; padding: .55rem 0; border-top: 1px solid var(--linea); color: var(--tenue); font-size: var(--c-s); }
-.articolo .home-tema li a { font: 600 var(--c-m)/1.3 var(--testo); }
-.articolo .home-tema .home-anche { margin: var(--s3) 0 0; font-size: var(--c-s); }
 .home-principi ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--s3) var(--s5); padding: 0; list-style: none; }
 .articolo .home-principi li { margin: 0; max-width: none; padding-left: var(--s3); border-left: 3px solid var(--primario); }
 .home-principi strong { display: block; font: 700 var(--c-m)/1.3 var(--titoli); margin-bottom: .2rem; }
 .articolo .home-elenco-novita { list-style: none; padding: 0; }
 .articolo .home-elenco-novita li { margin: 0; padding: .45rem 0; border-bottom: 1px solid var(--linea); }
 .home-data { color: var(--tenue); font-size: var(--c-s); white-space: nowrap; }
-@media (max-width: 600px) {
-  .home-azioni .bottone { flex: 1 1 100%; }
-  .home-tema { padding: var(--s3) var(--s4) var(--s4); }
+@media (max-width: 960px) {
+  .home-scena { grid-template-columns: minmax(0, 1fr); }
+  .scena-aiuto { display: none; }
 }

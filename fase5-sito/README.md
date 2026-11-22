@@ -4,9 +4,9 @@ Sito statico (HTML, CSS e JavaScript senza librerie esterne), servito da Caddy n
 
 ```
 sito/
-  index.html        pagina iniziale (22/11/2026): cosa fa EuGEnio, le pagine raggruppate per «cosa vuoi fare», come
-                    lavora, ultime tre novità (scritte da costruisci_pagine.py); i vecchi indirizzi con le scelte
-                    (/?comune=…, #…) passano a previsioni.html
+  index.html        pagina iniziale (22/11/2026): disegno animato dell'edificio con reti, territorio e meteo (home.js,
+                    parti/scena_home.py), schede dei gruppi del menu (parti/home.toml), come lavora, ultime novità; i
+                    vecchi indirizzi con le scelte (/?comune=…, #…) passano a previsioni.html
   previsioni.html   (fino al 22/11/2026 era index.html) mappa dei comuni colorata con i gradi giorno previsti a 7 giorni,
                     ricerca indirizzo, caricamento CSV, scelta della modalità, grafico con le fasce di probabilità
   patrimonio.html   elenco di edifici (CSV) → punto e particella catastale, mappa dei punti, esiti, download; dal
@@ -201,21 +201,44 @@ la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
 
-## Pagina iniziale (22/11/2026, richiesta di Paolo: «ci vuole una home page che aiuti l'utente a capire cosa fa eugenio senza rimanere disorientato»)
+## Pagina iniziale (22/11/2026, richieste di Paolo delle 11:38 e delle 12:13)
 
-- `index.html` non è più Previsioni: è una pagina di testo (`main.articolo.home`) con apertura (titolo, cosa fa EuGEnio, tre
-  pulsanti: Il clima del tuo comune → `legge10.html`, Prevedi i consumi → `previsioni.html`, Esempi), «Cosa vuoi fare?» in
-  sei riquadri per obiettivo (clima del comune, consumi, edifici e territorio, impianti, numeri dell'energia, restare
-  aggiornati) con tutte le pagine accessibili del menu e una riga ciascuna, «Come lavora EuGEnio» (fonti citate, file non
-  salvati, risultati da controllare, licenze) e le ultime tre novità.
+Paolo: «ci vuole una home page che aiuti l'utente a capire cosa fa eugenio senza rimanere disorientato»; poi: «uno schema
+grafico che mostra un edificio 3d e le reti che lo alimentano, il territorio che lo circonda e il meteo che gli sta sopra,
+animato per stagione (d'estate sole e pioggia, d'inverno sole e neve) e che posizionando il mouse faccia vedere le funzioni
+(raggruppate per gruppi, con titolo e descrizione di gruppo). Cliccando sulle parti grafiche si aprono le schede e cliccando
+sulla voce si apre la pagina, aprendo anche il relativo menu in alto in orizzontale».
+
+- `index.html` non è più Previsioni: titolo e una riga su cosa fa EuGEnio, poi il **disegno** (a sinistra; sotto i 960 px
+  sopra le schede) e le **schede dei gruppi** (a destra), poi «Come lavora EuGEnio» e le ultime tre novità.
+- **Disegno**: `parti/scena_home.py` (assonometria in Python, si rilancia solo per cambiarlo) scrive `parti/scena_home.svg`,
+  che `costruisci_pagine.py` mette nel blocco `<!-- scena-home -->`. Sette parti `<g class="parte" data-gruppo="…">`, una per
+  gruppo del menu: cielo, sole, nuvole, pioggia e neve = Clima e meteo; terreno, campi con le particelle, alberi, case,
+  strada = Territorio; l'edificio = Edifici; l'unità di trattamento aria sul tetto = Trattamento aria; i pannelli =
+  Fotovoltaico; il cogeneratore con il camino = Cogenerazione; cabina primaria, traliccio, linea, cabina MT/BT, tubo del gas
+  = Statistiche (reti e mercati). Colori in `stile.css` (classi `sc-…`, variabili `--sc-…`) per estate e inverno, tema
+  scuro e chiaro; animazioni CSS (ventola, fumo, flusso in linea e tubo, pioggia, neve, nuvole), ferme con
+  `prefers-reduced-motion`.
+- **Stagioni** (`home.js`): estate sole → estate pioggia → inverno sole → inverno neve, 4,5 secondi l'una
+  (`data-stagione`, `data-meteo` sulla `.scena`); d'inverno neve su terreno, tetti, alberi e pannelli. Pulsante per fermare e
+  riprendere; con il movimento ridotto niente animazione e il pulsante passa alla fase successiva; ferma quando la scheda del
+  browser è nascosta.
+- **Mouse su una parte**: la parte si accende (le altre si spengono), riquadretto con titolo e descrizione del gruppo e le
+  voci (quelle in lavorazione «in arrivo»). **Clic, tocco o Invio**: si apre la scheda del gruppo al posto di «Da dove
+  cominciare» (× per tornare; i pulsanti dei sette gruppi fanno lo stesso). **Clic su una voce**: `localStorage`
+  «menu-fissato» = gruppo, così la pagina si apre con le voci del gruppo in orizzontale sotto il menu (come il clic sul
+  titolo del gruppo, `aspetto.js`). Senza JavaScript le schede sono tutte visibili.
+- **Schede**: le scrive `costruisci_pagine.py` (`schede_home`, blocco `<!-- schede-home -->`) dal menu (`parti/testata.html`:
+  ordine, nomi, stato sperimentale / in sviluppo / in lavorazione / licenza GME) e da `parti/home.toml` (parte del disegno,
+  descrizione del gruppo, una riga per pagina). Una pagina nuova del menu entra da sola nella scheda; la riga va aggiunta in
+  `home.toml` (la prova `test_pagina_iniziale` lo controlla). Le ultime tre novità: `ultime_novita`, blocco
+  `<!-- ultime-novita -->`.
 - Previsioni sta in `previsioni.html` (menu e collegamenti aggiornati). Uno script in testa a `index.html` manda a
-  `previsioni.html` ogni indirizzo con parametri (tranne `utm_…`) o con un'ancora, così i collegamenti salvati e quelli
-  delle email continuano a funzionare.
-- `costruisci_pagine.py` riempie il blocco `<!-- ultime-novita -->` con le prime tre voci di `novita.toml` (funzione
-  `ultime_novita`, parametro `blocchi` di `costruisci`): la pagina non va toccata a ogni pubblicazione. I riquadri invece
-  sono scritti a mano: quando una pagina entra nel menu va aggiunta anche qui (la prova `test_pagina_iniziale` lo
-  controlla).
-- Stile: blocco «pagina iniziale» in fondo a `stile.css` (griglia `auto-fill` da 22rem, una colonna sul telefono).
+  `previsioni.html` ogni indirizzo con parametri (tranne `utm_…`) o con un'ancora: i collegamenti salvati e quelli delle
+  email continuano a funzionare.
+- Prove: `test_costruisci_pagine.py::test_pagina_iniziale` (parti, schede, righe, voci, redirect, novità) e
+  `test_home_browser.py` (riquadretto, scheda, tastiera, menu fissato, stagioni e pausa, vecchi indirizzi, movimento
+  ridotto, telefono a 375 px).
 
 ## Clima e meteo › Dati pluviometrici (22/11/2026, richiesta di Paolo; sperimentale, release `v2026.11.22b`, versione 20261122b)
 

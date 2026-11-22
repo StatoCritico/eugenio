@@ -1,0 +1,63 @@
+# Testi delle schede della pagina iniziale (index.html, 22/11/2026). costruisci_pagine.py prende le voci dal menu
+# (parti/testata.html: ordine, nome, stato) e da qui il titolo del gruppo nel disegno, la descrizione del gruppo e una
+# riga per pagina. Una pagina nuova nel menu compare da sola nella scheda; la sua riga va aggiunta qui sotto (la prova
+# test_pagina_iniziale controlla che ogni pagina accessibile ne abbia una).
+
+[gruppi.clima]
+parte = "il cielo e il meteo"
+descrizione = "Il clima osservato e quello previsto, comune per comune: gradi giorno, temperature, pioggia, dati da scaricare e da ricevere per email."
+
+[gruppi.patrimonio]
+parte = "il territorio intorno"
+descrizione = "Gli edifici sulla mappa con il catasto, le foto aeree e il 3D: dal tuo elenco di sedi agli immobili pubblici di tutta Italia."
+
+[gruppi.edificio]
+parte = "l'edificio"
+descrizione = "Cosa chiede la legge all'edificio, com'è fatto e quanto consuma: geometria, firma energetica, priorità tra le sedi."
+
+[gruppi.aria]
+parte = "l'impianto dell'aria sul tetto"
+descrizione = "La psicrometria per le unità di trattamento aria, dal clima ora per ora del comune: trasformazioni, ore, carichi latenti, free cooling."
+
+[gruppi.cogenerazione]
+parte = "il cogeneratore"
+descrizione = "Produrre elettricità e calore sul posto: convenienza, emissioni e rischio prezzo. Pagine in preparazione."
+
+[gruppi.fotovoltaico]
+parte = "i pannelli fotovoltaici"
+descrizione = "Il sole sui tetti e la rete che riceve l'energia: cabine primarie e aree del GSE per le comunità energetiche, ombre e producibilità."
+
+[gruppi.statistiche]
+parte = "le reti e i mercati"
+descrizione = "I numeri dell'energia in Italia: prezzi, produzione e consumi di elettricità, carichi, stato della rete, suolo, costi della sanità."
+
+[pagine]
+"dati.html" = "meteo orario e giornaliero e gradi giorno da scaricare in CSV o Excel"
+"legge10.html" = "gradi giorno, zona climatica e temperature di progetto degli ultimi anni, accanto ai valori di legge"
+"pluviometria.html" = "la pioggia misurata in Italia su una mappa che si anima fino a 7 giorni indietro"
+"previsioni.html" = "dall'export del contatore ai consumi dei prossimi giorni o mesi, con il meteo previsto"
+"edificio-clima.html" = "come sono cambiati i gradi giorno dal 1940"
+"dati-per-email.html" = "il riepilogo mensile della regione, le previsioni della settimana e gli avvisi meteo"
+"patrimonio.html" = "da un elenco di indirizzi o dati catastali alla particella e al punto sulla mappa"
+"edifici-pubblici.html" = "gli immobili di Comuni, Regioni, ASL, Università e Stato, cercabili anche per ente"
+"ortofoto.html" = "le foto aeree come sfondo della mappa, ognuna con la sua fonte"
+"lidar.html" = "le quote del terreno e dei tetti dai rilievi laser"
+"modelli3d.html" = "un edificio in 3D con i vicini e il terreno, con superfici e ombre"
+"importa-dxf-ifc.html" = "il tuo disegno DXF o modello IFC portato in 3D, senza inviarlo"
+"aggiungi-dbtr.html" = "gli edifici del DB topografico regionale caricati nel browser"
+"dbtr-istruzioni.html" = "come scaricare i DB topografici dai portali delle Regioni"
+"visure.html" = "le visure catastali in PDF lette sul tuo computer"
+"edificio-obblighi.html" = "rinnovabili minime, rapporto S/V e limiti di trasmittanza"
+"edificio-geometria.html" = "volume, superfici e pareti esposte dell'edificio in 3D"
+"edificio-consumi.html" = "consumi per metro quadro, firma energetica e sedi da guardare per prime"
+"aria-trasformazioni.html" = "le trasformazioni dell'aria sul diagramma psicrometrico"
+"aria-ore.html" = "quante ore dell'anno cadono in ogni zona di trattamento"
+"aria-latenti.html" = "quanta umidità togliere o aggiungere all'aria esterna"
+"aria-freecooling.html" = "le ore in cui basta l'aria esterna e quanto rende un recuperatore"
+"fv-cabine.html" = "la cabina primaria e l'area del GSE dei tuoi edifici"
+"indici-prezzi.html" = "i prezzi dell'energia delle convenzioni pubbliche, mese per mese"
+"indicatori.html" = "quanto spende per l'energia un'azienda sanitaria, rispetto alla regione e all'Italia"
+"rete-elettrica.html" = "cabine primarie, criticità e interruzioni, comune per comune"
+"elettricita.html" = "potenza, produzione per fonte, consumi ed emissioni dal 2000"
+"carichi.html" = "la potenza richiesta quarto d'ora per quarto d'ora, con le fonti"
+"suolo.html" = "suolo consumato, cause del consumo e superfici coltivate"

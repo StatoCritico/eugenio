@@ -1,6 +1,7 @@
 """Prove di costruisci_pagine.py su una copia del sito."""
 import json
 import re
+import tomllib
 import shutil
 import sys
 from pathlib import Path
@@ -943,3 +944,13 @@ def test_pagina_iniziale():
     assert blocco.count("<li>") == 3 and f'href="novita.html#{C.ancora(voci[0], voci)}"' in blocco
     assert 'aria-current="page"' not in re.search(r'<header class="testata">.*?</header>', s, re.S).group(0)
     assert (QUI / "sito" / "previsioni.html").exists() and 'id="calcola"' in (QUI / "sito" / "previsioni.html").read_text(encoding="utf-8")
+    # disegno e schede: una parte e una scheda per ogni gruppo del menu, una riga in home.toml per ogni pagina accessibile
+    ids = [g["id"] for g in gruppi]
+    assert sorted(set(re.findall(r'<g class="parte" data-gruppo="([^"]+)"', main))) == sorted(ids)
+    assert re.findall(r'<article class="home-scheda" id="scheda-([^"]+)"', main) == ids
+    conf = tomllib.loads((QUI / "parti" / "home.toml").read_text(encoding="utf-8"))
+    assert set(conf["gruppi"]) == set(ids)
+    assert accessibili <= set(conf["pagine"]), sorted(accessibili - set(conf["pagine"]))
+    assert (QUI / "parti" / "scena_home.svg").read_text(encoding="utf-8").strip() in s
+    for a in re.findall(r'<a href="([^"]+)" data-gruppo="([^"]+)">', main):    # la voce apre la pagina col menu del gruppo
+        assert any(v["pagina"] == a[0] for g in gruppi if g["id"] == a[1] for v in g["voci"]), a

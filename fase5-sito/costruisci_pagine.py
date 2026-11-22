@@ -212,6 +212,38 @@ def ultime_novita(voci: list[dict], quante: int = 3) -> str:
     return "    <ul class=\"home-elenco-novita\">\n" + "\n".join(righe) + "\n    </ul>"
 
 
+def schede_home(testata: str, conf: dict) -> str:
+    """(22/11/2026) Schede dei gruppi della pagina iniziale (blocco <!-- schede-home --> di index.html): per ogni gruppo
+    del menu, nell'ordine del menu, il titolo, la descrizione e le voci da parti/home.toml; per ogni voce il nome e lo
+    stato presi dalla tendina (sperimentale, in sviluppo, in lavorazione, licenza GME) e la riga di spiegazione."""
+    gruppi, righe = conf.get("gruppi", {}), conf.get("pagine", {})
+    out = []
+    for m in re.finditer(r'<details class="voce-gruppo" data-gruppo="([^"]+)"><summary>([^<]+)</summary>\s*<ul class="tendina">(.*?)</ul>', testata, re.S):
+        gid, titolo = m.group(1), m.group(2).strip()
+        g = gruppi.get(gid, {})
+        voci = []
+        for li in re.findall(r"<li[^>]*>(.*?)</li>", m.group(3), re.S):
+            a = re.match(r'<a href="([^"]+)">(.*?)</a>', li, re.S)
+            if a:
+                href, dentro = a.group(1), a.group(2)
+                nome = re.sub(r"<span class=\"cantiere.*", "", dentro, flags=re.S).strip()
+                stato = ("sperimentale" if 'class="cantiere prova' in dentro
+                         else ("in sviluppo" if 'class="cantiere' in dentro else ""))
+                badge = f' <span class="cantiere{" prova" if stato == "sperimentale" else ""}">{stato}</span>' if stato else ""
+                riga = righe.get(href, "")
+                voci.append(f'<li><a href="{href}" data-gruppo="{gid}">{nome}</a>{badge}' + (f" – {html.escape(riga)}" if riga else "") + "</li>")
+                continue
+            v = re.search(r'<span class="voce-gme( voce-corso)?" data-pagina="([^"]+)"[^>]*><span class="voce-nome">(.*?)</span>', li, re.S)
+            if v:
+                stato = "in lavorazione" if v.group(1) else "licenza GME"
+                voci.append(f'<li class="in-arrivo"><span class="voce-nome">{v.group(3)}</span> <span class="cantiere">{stato}</span></li>')
+        out.append(f'      <article class="home-scheda" id="scheda-{gid}" data-gruppo="{gid}" data-parte="{html.escape(g.get("parte", titolo))}" '
+                   f'aria-labelledby="scheda-{gid}-titolo">\n        <h2 id="scheda-{gid}-titolo">{titolo}</h2>\n'
+                   f'        <p>{html.escape(g.get("descrizione", ""))}</p>\n        <ul>\n          '
+                   + "\n          ".join(voci) + "\n        </ul>\n      </article>")
+    return "\n".join(out)
+
+
 def _senza_parti(s: str) -> str:
     """La pagina senza il contenuto dei blocchi comuni (per confrontare la pagina delle novità con quella generata)."""
     for nome in ("testa", "testata", "piede"):
@@ -388,10 +420,15 @@ def main(argv=None) -> int:
                 diverse.append(nome)
                 if not a.controlla:
                     f.write_text(testo, encoding="utf-8")
+    blocchi = {"ultime-novita": ultime_novita(voci)} if voci else {}
+    if (PARTI / "home.toml").exists():                # (22/11/2026) pagina iniziale: schede dei gruppi e disegno
+        blocchi["schede-home"] = schede_home(parti["testata"], tomllib.loads((PARTI / "home.toml").read_text(encoding="utf-8")))
+    if (PARTI / "scena_home.svg").exists():
+        blocchi["scena-home"] = (PARTI / "scena_home.svg").read_text(encoding="utf-8")
     for pagina in sorted(sito.glob("*.html")):
         if pagina.name in ESCLUSE:
             continue
-        nuovo = costruisci(pagina, parti, versione, {"ultime-novita": ultime_novita(voci)} if voci else None)
+        nuovo = costruisci(pagina, parti, versione, blocchi)
         if nuovo != pagina.read_text(encoding="utf-8"):
             if pagina.name not in diverse:
                 diverse.append(pagina.name)
