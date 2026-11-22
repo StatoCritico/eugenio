@@ -604,6 +604,87 @@ def _dc_storico(dc: ClienteDC, cli: ClienteAPI | None, stato: dict, oggi: dt.dat
             stato_scrivi(stato)
 
 
+# ------------------------------------------------------------------------------------------------------- giorni mancanti
+# (22/11/2026, Paolo) nello storico del Download Center mancavano il 14 e il 15 gennaio 2026 (carico e produzione): un
+# mese con dei giorni vuoti entrava lo stesso e non si riprovava più. Ora i mesi archiviati si controllano una volta
+# (quelli completi vanno in stato["buchi_controllati"]), quelli con giorni mancanti vanno in stato["buchi"] e si riprovano
+# una volta al giorno, al più TERNA_BUCHI_MESI mesi per giro e TERNA_BUCHI_PROVE volte.
+SERIE_BUCHI = ("carico_totale", "produzione", "rinnovabili")
+
+
+def giorni_mancanti(serie: str, mese: str, cartella: Path | None = None) -> list[str]:
+    """Giorni (AAAA-MM-GG, ora italiana) del mese archiviato con meno della metà degli istanti di un giorno tipico del
+    mese (mediana: vale per i dati orari e per quelli a 15 minuti). [] se il file non c'è."""
+    import pandas as pd
+    f = (cartella or cartella_serie()) / serie / f"{mese}.parquet"
+    if not f.exists():
+        return []
+    df = pd.read_parquet(f, columns=["istante"])
+    giorni = pd.to_datetime(df["istante"], utc=True).dt.tz_convert("Europe/Rome").dt.strftime("%Y-%m-%d")
+    conta = df["istante"].groupby(giorni.values).nunique()
+    if conta.empty:
+        return []
+    soglia = 0.5 * float(conta.median())
+    a, m = _mese(mese)
+    tutti = [f"{mese}-{g:02d}" for g in range(1, calendar.monthrange(a, m)[1] + 1)]
+    return [g for g in tutti if conta.get(g, 0) < soglia]
+
+
+def _ripara_buchi(dc: ClienteDC, cli: ClienteAPI | None, stato: dict, oggi: dt.date, esito: dict) -> None:
+    corrente = _mese_str(oggi.year, oggi.month)
+    buchi, controllati = stato.setdefault("buchi", {}), stato.setdefault("buchi_controllati", {})
+    puntatori = stato.get("dc") or {}
+    da_fare = []
+    for serie in SERIE_BUCHI:
+        cartella = cartella_serie() / serie
+        fine = puntatori.get(serie) or C.TERNA_STORICO_INIZIO      # i mesi prima di questo sono già nello storico
+        for f in sorted(cartella.glob("*.parquet")) if cartella.exists() else []:
+            m = f.stem
+            if m >= corrente or m >= fine or m in controllati.get(serie, []):
+                continue
+            info = buchi.get(serie, {}).get(m)
+            if info is None:
+                g = giorni_mancanti(serie, m)
+                if not g:
+                    controllati.setdefault(serie, []).append(m)
+                    continue
+                info = buchi.setdefault(serie, {})[m] = {"giorni": g, "prove": 0}
+                log.warning("Terna %s %s: mancano %d giorni (%s): li riprovo nei prossimi giri", serie, m, len(g),
+                            ", ".join(g[:5]) + ("…" if len(g) > 5 else ""))
+            if info.get("definitivo") or info.get("ultima") == str(oggi):
+                continue
+            da_fare.append((serie, m, info))
+    for serie, m, info in da_fare[:C.TERNA_BUCHI_MESI]:
+        a, mm = _mese(m)
+        info["prove"] += 1
+        info["ultima"] = str(oggi)
+        S = SERIE[serie]
+        try:
+            if cli is not None and cli.quota.rimaste() >= len(info["giorni"]) + 1:
+                for g in info["giorni"]:
+                    d = dt.date.fromisoformat(g)
+                    risposta = cli.get(S["api"], {"dateFrom": _giorno_it(d), "dateTo": _giorno_it(d)})
+                    archivia(serie, normalizza(serie, _elenco(risposta, S["json"]), "api"))
+            else:
+                archivia(serie, normalizza(serie, dc.mese(S["dc"], a, mm), "dc"))
+        except (ErroreTerna, Rimanda, QuotaEsaurita, httpx.HTTPError) as e:
+            log.warning("Terna %s %s, giorni mancanti: %s", serie, m, e)
+            esito["avvisi"].append(f"{serie} {m}, giorni mancanti: {e}")
+        resto = giorni_mancanti(serie, m)
+        if not resto:
+            del buchi[serie][m]
+            controllati.setdefault(serie, []).append(m)
+            esito.setdefault("buchi_riparati", []).append(f"{serie} {m}")
+            log.info("Terna %s %s: giorni mancanti recuperati", serie, m)
+        else:
+            info["giorni"] = resto
+            if info["prove"] >= C.TERNA_BUCHI_PROVE:
+                info["definitivo"] = True
+                log.warning("Terna %s %s: %s ancora mancanti dopo %d prove, non riprovo più", serie, m, ", ".join(resto), info["prove"])
+            esito.setdefault("buchi", []).append(f"{serie} {m}: {', '.join(resto)}")
+    stato_scrivi(stato)
+
+
 def _dc_mese_corrente(dc: ClienteDC, stato: dict, oggi: dt.date, esito: dict) -> None:
     """Riserva dell'aggiornamento giornaliero: il mese in corso dal Download Center (solo per le serie col storico
     completo), quando l'API non è configurata o non ha risposto."""
@@ -668,6 +749,8 @@ def _aggiorna(oggi: dt.date | None, api: ClienteAPI | None, dc: ClienteDC | None
             esito["avvisi"].append(f"API: {type(e).__name__}: {e}")
     dc = dc or ClienteDC()
     _dc_storico(dc, api if (api is not None and not esito["rimandato"]) else None, stato, oggi, esito)
+    if C.TERNA_BUCHI_MESI:
+        _ripara_buchi(dc, api if (api is not None and not esito["rimandato"]) else None, stato, oggi, esito)
     if not api_ok:
         _dc_mese_corrente(dc, stato, oggi, esito)
     if api is not None:
