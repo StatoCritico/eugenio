@@ -1,0 +1,96 @@
+<!-- Scena della pagina iniziale (Claude Design, 23/11/2026): disegno fermo (un fondale per tema), solo i bersagli sono
+     attivi. home.js: dimensione sulla finestra, titoli a turno, descrizione al passaggio, scheda flottante al clic. -->
+<style>
+/* ---- pagina iniziale: scena statica a tutta finestra (23/11/2026) ---- */
+#scena-contenitore{height:auto!important;aspect-ratio:auto!important;overflow:visible!important;max-width:none!important;border:0!important;border-radius:0!important}
+.sh{position:relative;left:var(--sh-x,0px);width:var(--sh-w,100%);margin:0 0 1rem;container-type:inline-size;
+  --sh-acc:#5ee1ff;--sh-poi:#ffb020;--sh-fondo:rgba(8,12,18,.92);--sh-testo:#eaf6fb;--sh-tenue:#9fb7c4;--sh-bordo:rgba(94,225,255,.55)}
+[data-theme="light"] .sh{--sh-acc:#c2410c;--sh-poi:#6b7280;--sh-fondo:rgba(255,255,255,.96);--sh-testo:#1d2a33;--sh-tenue:#4a5761;--sh-bordo:#1d2a33}
+.sh-quadro{position:relative;width:100%;aspect-ratio:1200/875;overflow:hidden;border-radius:6px;background:#0b0d10}
+[data-theme="light"] .sh-quadro{background:#eceee9}
+.sh-fondo{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
+.sh-fondo-chiaro{display:none}
+[data-theme="light"] .sh-fondo-scuro{display:none}
+[data-theme="light"] .sh-fondo-chiaro{display:block}
+/* bersagli: gli unici elementi attivi */
+.sh-punto{position:absolute;transform:translate(-50%,-50%);width:clamp(30px,3.4cqw,46px);height:clamp(30px,3.4cqw,46px);
+  padding:0;border:0;background:none;cursor:pointer;color:var(--sh-acc);border-radius:50%;z-index:2}
+.sh-punto.sh-poi{color:var(--sh-poi)}
+.sh-mira{width:100%;height:100%;display:block;overflow:visible}
+.sh-mira circle{fill:var(--sh-fondo);stroke:currentColor;stroke-width:2.2}
+.sh-mira path{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.sh-poi .sh-mira circle{stroke-dasharray:4 3}
+.sh-punto:hover .sh-mira circle,.sh-punto:focus-visible .sh-mira circle,.sh-punto[aria-expanded="true"] .sh-mira circle{fill:currentColor}
+.sh-punto:hover .sh-croce,.sh-punto:focus-visible .sh-croce,.sh-punto[aria-expanded="true"] .sh-croce{stroke:var(--sh-fondo)}
+.sh-punto:focus-visible{outline:2px solid var(--sh-acc);outline-offset:3px}
+.sh-titolo{position:absolute;left:calc(100% + 6px);top:50%;transform:translateY(-50%);white-space:nowrap;pointer-events:none;
+  font:600 clamp(11px,1.1cqw,15px)/1.2 system-ui,sans-serif;color:var(--sh-testo);background:var(--sh-fondo);
+  border:1px solid var(--sh-bordo);border-radius:4px;padding:3px 8px;opacity:0;visibility:hidden}
+.sh-sx .sh-titolo{left:auto;right:calc(100% + 6px)}
+.sh-punto.sh-acceso .sh-titolo{opacity:1;visibility:visible}
+/* descrizione breve (sostando sul bersaglio) e scheda flottante (clic) */
+.sh-descr,.sh-scheda{position:absolute;z-index:4;background:var(--sh-fondo);color:var(--sh-testo);border:1px solid var(--sh-bordo);
+  border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);font:400 clamp(12.5px,1.1cqw,15px)/1.45 system-ui,sans-serif}
+.sh-descr{width:min(320px,72cqw);padding:10px 12px;pointer-events:none}
+.sh-descr strong{display:block;font-size:1.05em;margin-bottom:2px}
+.sh-descr .sh-nota{display:block;margin-top:6px;font-size:.85em;color:var(--sh-acc)}
+.sh-scheda{width:min(380px,92cqw);max-height:calc(100% - 24px);overflow:auto;padding:14px 16px 12px}
+.sh-scheda h2{margin:0 28px 4px 0;font-size:1.15em;line-height:1.25}
+.sh-scheda .sh-gruppo{margin:0 0 4px;font-size:.78em;letter-spacing:.08em;text-transform:uppercase;color:var(--sh-acc)}
+.sh-scheda p{margin:0 0 10px;color:var(--sh-tenue)}
+.sh-scheda ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.sh-scheda li a,.sh-scheda li .sh-spenta{display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:8px 10px;
+  border-radius:4px;text-decoration:none;color:var(--sh-testo);border:1px solid transparent;min-height:44px;box-sizing:border-box}
+.sh-scheda li a{border-color:var(--sh-bordo)}
+.sh-scheda li a:hover,.sh-scheda li a:focus-visible{background:var(--sh-acc);color:var(--sh-fondo);outline:none}
+.sh-scheda li .sh-spenta{color:var(--sh-tenue);cursor:default}
+.sh-scheda .sh-stato{font-size:.78em;white-space:nowrap;opacity:.85}
+.sh-scheda .sh-vuota{color:var(--sh-tenue);font-style:italic}
+.sh-chiudi{position:absolute;top:6px;right:6px;width:36px;height:36px;border:0;border-radius:4px;background:none;color:var(--sh-testo);
+  font-size:22px;line-height:1;cursor:pointer}
+.sh-chiudi:hover,.sh-chiudi:focus-visible{background:var(--sh-acc);color:var(--sh-fondo)}
+.sh-tutte{display:inline-block;margin-top:10px;font-size:.9em;color:var(--sh-acc)}
+/* legenda del consumo di suolo */
+.sh-legenda{position:absolute;left:1.6%;bottom:2.4%;z-index:1;width:min(220px,30cqw);padding:8px 10px;background:var(--sh-fondo);
+  border:1px solid var(--sh-bordo);border-radius:4px;color:var(--sh-testo);font:400 clamp(10px,.9cqw,12px)/1.3 system-ui,sans-serif}
+.sh-legenda b{display:flex;justify-content:space-between;gap:6px;font-weight:600}.sh-legenda b span{font-weight:400;opacity:.75}
+.sh-scala{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));height:8px;margin:6px 0 3px}
+.sh-tacche{display:flex;justify-content:space-between;opacity:.8}
+.sh-scala i:nth-child(1){background:#0b3b37}.sh-scala i:nth-child(2){background:#11594c}.sh-scala i:nth-child(3){background:#4c5a18}
+.sh-scala i:nth-child(4){background:#8a3d14}.sh-scala i:nth-child(5){background:#b3204f}
+[data-theme="light"] .sh-scala i:nth-child(1){background:#e3efd3}[data-theme="light"] .sh-scala i:nth-child(2){background:#c5dea2}
+[data-theme="light"] .sh-scala i:nth-child(3){background:#f1dc86}[data-theme="light"] .sh-scala i:nth-child(4){background:#eea25a}
+[data-theme="light"] .sh-scala i:nth-child(5){background:#d6553a}
+@container (max-width:560px){.sh-legenda{display:none}.sh-scheda{left:4%!important;right:4%;width:auto;top:auto!important;bottom:12px}}
+</style>
+<div class="sh" id="scena-home">
+  <div class="sh-quadro">
+    <img class="sh-fondo sh-fondo-scuro" src="home_scuro_estate.webp?v=20261122b" width="1920" height="1400"
+      alt="Una torre e la sua piastra tra le megastrutture, con il traliccio dell'alta tensione, il radar meteo, la centrale e i flussi di energia, visti dal basso">
+    <img class="sh-fondo sh-fondo-chiaro" src="home_chiaro_estate.webp?v=20261122b" width="1920" height="1400"
+      alt="Tavola tecnica: una torre e la sua piastra tra gli edifici, con il traliccio dell'alta tensione, il radar meteo, la centrale e le reti, visti dal basso">
+    <div class="sh-punti" role="group" aria-label="Elementi del disegno: ognuno porta alle sue pagine">
+      <button type="button" class="sh-punto" data-parte="meteo" data-gruppo="clima" style="left:31.25%;top:10.0%" aria-label="Meteo e clima"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Meteo e clima</span></button>
+      <button type="button" class="sh-punto sh-sx" data-parte="stazione-meteo" data-gruppo="clima" style="left:72.6%;top:24.0%" aria-label="Radar e stazione meteo"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Radar e stazione meteo</span></button>
+      <button type="button" class="sh-punto" data-parte="territorio" data-gruppo="patrimonio" style="left:55.0%;top:90.0%" aria-label="Territorio e catasto"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Territorio e catasto</span></button>
+      <button type="button" class="sh-punto" data-parte="edificio" data-gruppo="edificio" style="left:55.55%;top:39.83%" aria-label="L&#x27;edificio: piastra e torre"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">L&#x27;edificio: piastra e torre</span></button>
+      <button type="button" class="sh-punto" data-parte="ombre" data-gruppo="edificio" style="left:33.5%;top:82.5%" aria-label="Ombre e luce naturale"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Ombre e luce naturale</span></button>
+      <button type="button" class="sh-punto sh-sx" data-parte="contatore" data-gruppo="statistiche" style="left:65.6%;top:75.2%" aria-label="Contatore, prezzi e costi"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Contatore, prezzi e costi</span></button>
+      <button type="button" class="sh-punto" data-parte="uta" data-gruppo="aria" style="left:46.06%;top:67.49%" aria-label="Unità di trattamento aria"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Unità di trattamento aria</span></button>
+      <button type="button" class="sh-punto" data-parte="recupero" data-gruppo="aria" style="left:52.48%;top:70.7%" aria-label="Recupero di calore e free cooling"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Recupero di calore e free cooling</span></button>
+      <button type="button" class="sh-punto" data-parte="fotovoltaico" data-gruppo="fotovoltaico" style="left:61.89%;top:67.26%" aria-label="Fotovoltaico sulla piastra"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Fotovoltaico sulla piastra</span></button>
+      <button type="button" class="sh-punto sh-poi" data-parte="solare-termico" data-gruppo="edificio" style="left:59.86%;top:30.67%" aria-label="Solare termico sulla torre (prossimamente)"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Solare termico sulla torre</span></button>
+      <button type="button" class="sh-punto sh-poi" data-parte="pdc" data-gruppo="edificio" style="left:58.04%;top:22.19%" aria-label="Pompa di calore sul tetto (prossimamente)"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Pompa di calore sul tetto</span></button>
+      <button type="button" class="sh-punto sh-poi sh-sx" data-parte="caldaia" data-gruppo="edificio" style="left:80.03%;top:75.91%" aria-label="Centrale termica (prossimamente)"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Centrale termica</span></button>
+      <button type="button" class="sh-punto sh-poi sh-sx" data-parte="frigo" data-gruppo="edificio" style="left:77.43%;top:68.63%" aria-label="Gruppo frigo e torre evaporativa (prossimamente)"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Gruppo frigo e torre evaporativa</span></button>
+      <button type="button" class="sh-punto sh-poi sh-sx" data-parte="cogenerazione" data-gruppo="cogenerazione" style="left:90.4%;top:73.8%" aria-label="Cogeneratore (prossimamente)"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Cogeneratore</span></button>
+      <button type="button" class="sh-punto" data-parte="traliccio" data-gruppo="statistiche" style="left:25.0%;top:38.0%" aria-label="Rete elettrica (dati Terna e cabine primarie)"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Rete elettrica (dati Terna e cabine primarie)</span></button>
+      <button type="button" class="sh-punto sh-poi sh-sx" data-parte="cabina-gas" data-gruppo="statistiche" style="left:96.0%;top:78.5%" aria-label="Rete del gas (prossimamente)"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Rete del gas</span></button>
+    </div>
+    <div class="sh-descr" id="sh-descr" role="tooltip" hidden></div>
+    <div class="sh-scheda" id="sh-scheda" role="dialog" aria-modal="false" aria-labelledby="sh-scheda-titolo" hidden></div>
+    <div class="sh-legenda" aria-label="Legenda del terreno"><b>Consumo di suolo <span>dati d'esempio</span></b>
+      <div class="sh-scala"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="sh-tacche"><span>0%</span><span>25</span><span>50</span><span>75</span><span>100%</span></div></div>
+  </div>
+</div>

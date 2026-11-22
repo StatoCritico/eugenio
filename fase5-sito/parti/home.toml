@@ -1,0 +1,162 @@
+# Testi delle schede della pagina iniziale (index.html, 22/11/2026). costruisci_pagine.py prende le voci dal menu
+# (parti/testata.html: ordine, nome, stato) e da qui il titolo del gruppo nel disegno, la descrizione del gruppo e una
+# riga per pagina. Una pagina nuova nel menu compare da sola nella scheda; la sua riga va aggiunta qui sotto (la prova
+# test_pagina_iniziale controlla che ogni pagina accessibile ne abbia una).
+
+[gruppi.clima]
+parte = "il cielo e il meteo"
+descrizione = "Il clima osservato e quello previsto, comune per comune: gradi giorno, temperature, pioggia, dati da scaricare e da ricevere per email."
+
+[gruppi.patrimonio]
+parte = "il territorio intorno"
+descrizione = "Gli edifici sulla mappa con il catasto, le foto aeree e il 3D: dal tuo elenco di sedi agli immobili pubblici di tutta Italia."
+
+[gruppi.edificio]
+parte = "l'edificio"
+descrizione = "Cosa chiede la legge all'edificio, com'è fatto e quanto consuma: geometria, firma energetica, priorità tra le sedi."
+
+[gruppi.aria]
+parte = "l'impianto dell'aria sul tetto"
+descrizione = "La psicrometria per le unità di trattamento aria, dal clima ora per ora del comune: trasformazioni, ore, carichi latenti, free cooling."
+
+[gruppi.cogenerazione]
+parte = "il cogeneratore"
+descrizione = "Produrre elettricità e calore sul posto: convenienza, emissioni e rischio prezzo. Pagine in preparazione."
+
+[gruppi.fotovoltaico]
+parte = "i pannelli fotovoltaici"
+descrizione = "Il sole sui tetti e la rete che riceve l'energia: cabine primarie e aree del GSE per le comunità energetiche, ombre e producibilità."
+
+[gruppi.statistiche]
+parte = "le reti e i mercati"
+descrizione = "I numeri dell'energia in Italia: prezzi, produzione e consumi di elettricità, carichi, stato della rete, suolo, costi della sanità."
+
+[pagine]
+"dati.html" = "meteo orario e giornaliero e gradi giorno da scaricare in CSV o Excel"
+"legge10.html" = "gradi giorno, zona climatica e temperature di progetto degli ultimi anni, accanto ai valori di legge"
+"pluviometria.html" = "la pioggia misurata in Italia su una mappa che si anima fino a 7 giorni indietro"
+"previsioni.html" = "dall'export del contatore ai consumi dei prossimi giorni o mesi, con il meteo previsto"
+"edificio-clima.html" = "come sono cambiati i gradi giorno dal 1940"
+"dati-per-email.html" = "il riepilogo mensile della regione, le previsioni della settimana e gli avvisi meteo"
+"patrimonio.html" = "da un elenco di indirizzi o dati catastali alla particella e al punto sulla mappa"
+"edifici-pubblici.html" = "gli immobili di Comuni, Regioni, ASL, Università e Stato, cercabili anche per ente"
+"ortofoto.html" = "le foto aeree come sfondo della mappa, ognuna con la sua fonte"
+"lidar.html" = "le quote del terreno e dei tetti dai rilievi laser"
+"modelli3d.html" = "un edificio in 3D con i vicini e il terreno, con superfici e ombre"
+"importa-dxf-ifc.html" = "il tuo disegno DXF o modello IFC portato in 3D, senza inviarlo"
+"aggiungi-dbtr.html" = "gli edifici del DB topografico regionale caricati nel browser"
+"dbtr-istruzioni.html" = "come scaricare i DB topografici dai portali delle Regioni"
+"visure.html" = "le visure catastali in PDF lette sul tuo computer"
+"edificio-obblighi.html" = "rinnovabili minime, rapporto S/V e limiti di trasmittanza"
+"edificio-geometria.html" = "volume, superfici e pareti esposte dell'edificio in 3D"
+"edificio-consumi.html" = "consumi per metro quadro, firma energetica e sedi da guardare per prime"
+"aria-trasformazioni.html" = "le trasformazioni dell'aria sul diagramma psicrometrico"
+"aria-ore.html" = "quante ore dell'anno cadono in ogni zona di trattamento"
+"aria-latenti.html" = "quanta umidità togliere o aggiungere all'aria esterna"
+"aria-freecooling.html" = "le ore in cui basta l'aria esterna e quanto rende un recuperatore"
+"fv-cabine.html" = "la cabina primaria e l'area del GSE dei tuoi edifici"
+"indici-prezzi.html" = "i prezzi dell'energia delle convenzioni pubbliche, mese per mese"
+"indicatori.html" = "quanto spende per l'energia un'azienda sanitaria, rispetto alla regione e all'Italia"
+"rete-elettrica.html" = "cabine primarie, criticità e interruzioni, comune per comune"
+"elettricita.html" = "potenza, produzione per fonte, consumi ed emissioni dal 2000"
+"carichi.html" = "la potenza richiesta quarto d'ora per quarto d'ora, con le fonti"
+"suolo.html" = "suolo consumato, cause del consumo e superfici coltivate"
+
+# Parti del disegno (parti/scena_home.html, di Claude Design; 16 parti: la cabina primaria sta nel traliccio): titolo e descrizione nel riquadretto, pagine collegate (anche di altri
+# gruppi, anche in lavorazione). Il clic apre la scheda del gruppo («gruppo») con queste pagine in evidenza. Una parte
+# senza pagine accessibili è «prossimamente» (lo calcola costruisci_pagine.py dal menu).
+[parti.meteo]
+gruppo = "clima"
+titolo = "Meteo e clima"
+descrizione = "Temperature, gradi giorno e previsioni del comune: per le previsioni dei consumi, i dati climatici e gli avvisi per email."
+pagine = ["previsioni.html", "legge10.html", "dati.html", "edificio-clima.html", "dati-per-email.html"]
+
+[parti.stazione-meteo]
+gruppo = "clima"
+titolo = "Radar e stazione meteo"
+descrizione = "La pioggia misurata dai radar e dai pluviometri della Protezione Civile e i dati orari delle rianalisi meteo."
+pagine = ["pluviometria.html", "dati.html", "legge10.html"]
+
+[parti.territorio]
+gruppo = "patrimonio"
+titolo = "Territorio e catasto"
+descrizione = "Particelle, foto aeree, quote del terreno ed edifici pubblici: per trovare e misurare gli edifici sulla mappa."
+pagine = ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "suolo.html", "dbtr-istruzioni.html", "visure.html"]
+
+[parti.edificio]
+gruppo = "edificio"
+titolo = "L'edificio: piastra e torre"
+descrizione = "Geometria, involucro, obblighi di legge e consumi dell'edificio, anche ricostruito in 3D dai dati topografici."
+pagine = ["modelli3d.html", "edificio-geometria.html", "edificio-obblighi.html", "edificio-consumi.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html", "edificio-involucro.html", "edificio-fabbisogno.html"]
+
+[parti.ombre]
+gruppo = "edificio"
+titolo = "Ombre e luce naturale"
+descrizione = "Le ombre degli edifici vicini e del terreno, corte d'estate e lunghe d'inverno, e la luce sulle facciate."
+pagine = ["modelli3d.html", "edificio-geometria.html", "fv-ombre.html"]
+
+[parti.contatore]
+gruppo = "statistiche"
+titolo = "Contatore, prezzi e costi"
+descrizione = "Quanto costa l'energia: i prezzi delle convenzioni pubbliche, i consumi per metro quadro e i costi della sanità."
+pagine = ["indici-prezzi.html", "edificio-consumi.html", "indicatori.html"]
+
+[parti.uta]
+gruppo = "aria"
+titolo = "Unità di trattamento aria"
+descrizione = "L'aria esterna filtrata, scaldata o raffreddata e umidificata o deumidificata, ora per ora con il clima del comune."
+pagine = ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html"]
+
+[parti.recupero]
+gruppo = "aria"
+titolo = "Recupero di calore e free cooling"
+descrizione = "Quanta energia recupera lo scambiatore tra aria espulsa e aria esterna, e le ore in cui basta l'aria esterna."
+pagine = ["aria-freecooling.html"]
+
+[parti.fotovoltaico]
+gruppo = "fotovoltaico"
+titolo = "Fotovoltaico sulla piastra"
+descrizione = "La rete che riceve l'energia (cabina primaria e area del GSE) e, presto, sole, ombre e producibilità sui tetti."
+pagine = ["fv-cabine.html", "fv-irradiazione.html", "fv-producibilita.html", "fv-pvgis.html", "fv-dlgs199.html"]
+
+[parti.solare-termico]
+gruppo = "edificio"
+titolo = "Solare termico sulla torre"
+descrizione = "Collettori e accumulo per l'acqua calda: quanto coprono del fabbisogno, comune per comune."
+pagine = ["edificio-impianti.html"]
+
+[parti.pdc]
+gruppo = "edificio"
+titolo = "Pompa di calore sul tetto"
+descrizione = "Rendimento stagionale della pompa di calore con il clima ora per ora del comune."
+pagine = ["edificio-impianti.html"]
+
+[parti.caldaia]
+gruppo = "edificio"
+titolo = "Centrale termica"
+descrizione = "Caldaie e fabbisogno di energia per il riscaldamento con le metodiche UNI, e gli incentivi per sostituirle."
+pagine = ["edificio-fabbisogno.html", "edificio-conto-termico.html"]
+
+[parti.frigo]
+gruppo = "edificio"
+titolo = "Gruppo frigo e torre evaporativa"
+descrizione = "Il freddo per l'edificio: carichi estivi, ore di funzionamento e consumi del gruppo frigo."
+pagine = ["edificio-impianti.html"]
+
+[parti.cogenerazione]
+gruppo = "cogenerazione"
+titolo = "Cogeneratore"
+descrizione = "Elettricità e calore prodotti sul posto: convenienza, emissioni, rischio prezzo, confronto con le alternative."
+pagine = ["cog-simulazione.html", "cog-emissioni.html", "cog-confronto.html", "cog-spark-spread.html", "cog-car.html", "cog-rischio.html"]
+
+[parti.traliccio]
+gruppo = "statistiche"
+titolo = "Rete elettrica (dati Terna e cabine primarie)"
+descrizione = "Produzione per fonte, consumi, emissioni e carichi elettrici dai dati di Terna; cabine primarie, saturazione e interruzioni della rete, comune per comune."
+pagine = ["elettricita.html", "carichi.html", "rete-elettrica.html", "fv-cabine.html"]
+
+[parti.cabina-gas]
+gruppo = "statistiche"
+titolo = "Rete del gas"
+descrizione = "I consumi di gas naturale per regione e provincia e l'andamento giornaliero con i gradi giorno."
+pagine = []
