@@ -308,8 +308,9 @@ sostituisce con `os.replace` (l'API lo apre con `immutable=1`, una connessione p
 subito il file nuovo, non serve riavviare); il PMTiles ha un **nome nuovo a ogni rifacimento** e `indice.json` (sempre
 riconvalidato, `Cache-Control: no-cache` in Caddy) si sostituisce per ultimo, così Cloudflare e i browser non mescolano
 tessere vecchie e nuove e **non serve la Purge**. Si tiene il PMTiles precedente (pagine già aperte) e si cancellano i più
-vecchi. Spazio in più durante il lavoro: il PMTiles vecchio (~760 MB) resta accanto al nuovo e ai file di lavoro di
-tippecanoe, e l'indice vecchio (2,3 GB) accanto al nuovo fino alla sostituzione: tenere liberi ~6 GB.
+vecchi. Spazio in più durante il lavoro: ~4 GB di file di lavoro di tippecanoe (GeoJSON e due PMTiles parziali), il
+PMTiles nuovo (~760 MB) accanto al vecchio e l'indice nuovo (2,3 GB) accanto al vecchio fino alla sostituzione: tenere
+liberi almeno **8 GB** (`df -h /srv/energia`); a lavoro finito restano in più solo i ~760 MB del PMTiles precedente.
 
 **Attribuzione** (scritta anche nei metadati dei file): «Fonti: MEF – Dipartimento dell'Economia, «Patrimonio della
 PA», dati beni immobili al 31/12/2023 (CC BY 4.0); Agenzia delle Entrate, cartografia catastale (CC BY 4.0).
