@@ -21,9 +21,13 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
-data = "2026-11-21"
-versione = "20261121b"
-titolo = "Elettricità: emissioni ed energia primaria per regione"
+data = "2026-11-22"
+versione = "20261122a"
+titolo = "Suolo e aree agricole, ricerca per ente negli edifici pubblici, emissioni dell'elettricità"
+nuovo = [
+  "Statistiche › Suolo e aree agricole (sperimentale): per regione e provincia il suolo consumato, il nuovo consumo di suolo per causa (con la parte su suolo agricolo) e le superfici coltivate, con una mappa a istogrammi e un periodo da scegliere. Scelta una provincia, i comuni si colorano per percentuale di suolo consumato. Dati ISPRA/SNPA e ISTAT; si scarica solo l'immagine.",
+  "Territorio › Edifici pubblici, nuova scheda «Per ente»: scrivi il nome di un ente (un Comune, un'azienda sanitaria, un'università…) e vedi sulla mappa tutti i suoi immobili, con i totali e una tabella. Puoi mettere a confronto fino a 8 enti, ognuno con il suo colore.",
+]
 migliorato = [
   "Statistiche › Produzione e consumi di elettricità, nuova scelta «Emissioni»: anelli con la produzione per fonte in ogni regione e provincia.",
   "Statistiche › Produzione e consumi di elettricità, scelta «Emissioni»: il fattore di emissione medio e quello del termoelettrico, e l'energia primaria del termoelettrico, per regione, per zona di mercato e per l'Italia, anno per anno dal 2000.",
@@ -33,11 +37,13 @@ migliorato = [
   "Statistiche › Carichi elettrici: si apre sull'ultimo anno con i dati, a quarti d'ora, con le date già scritte; se i dati non ci sono ancora, compare solo il messaggio, senza sezioni vuote.",
   "Novità: accanto alla data di ogni voce c'è il numero di versione del sito.",
   "Territorio › Edifici pubblici: i filtri «Province e Città metropolitane» e «Università» ora mostrano i loro immobili (prima erano vuoti e finivano in «Altri enti»), e c'è una voce nuova «Unioni di Comuni e Comunità montane», anche nel filtro della ricerca.",
+  "Statistiche › Produzione e consumi di elettricità: si sceglie un periodo con due indicatori, come in Suolo e aree agricole. Produzione, carichi, consumi ed emissioni sono la somma degli anni del periodo e i fattori di emissione sono ricalcolati sul periodo; per capacità e burden sharing si vede l'ultimo anno con la variazione dal primo. Il collegamento ricorda il periodo.",
 ]
 collegamenti = [
+  { testo = "Suolo e aree agricole", indirizzo = "suolo.html" },
+  { testo = "Edifici pubblici per ente", indirizzo = "edifici-pubblici.html?modo=enti" },
   { testo = "Emissioni della produzione di elettricità", indirizzo = "elettricita.html?modo=emissioni" },
   { testo = "Carichi elettrici", indirizzo = "carichi.html" },
-  { testo = "Edifici pubblici", indirizzo = "edifici-pubblici.html" },
 ]
 
 [[voce]]

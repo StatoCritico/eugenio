@@ -152,7 +152,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `legge10.html` | legge10.js | a | regione, comune (già della pagina), anni |
 | `dati.html` | dati.js | a | regione, dataset (già), var, tip, tass, freq, dal, al, stagioni, fino, cop, area, prov, comuni (codici ISTAT, anche di altre regioni), capoluoghi, formato |
 | `indicatori.html` | indicatori.js | a | regione, ente (già), comp, componenti, anno |
-| `elettricita.html` | elettricita.js | a | regione o vista=italia, modo (già; dal 21/11/2026 anche `emissioni`), anno, barre, fondo, ortofoto |
+| `elettricita.html` | elettricita.js | a | regione o vista=italia, modo (già; dal 21/11/2026 anche `emissioni`), inizio e fine (dal 22/11/2026; `anno` dei collegamenti vecchi = un anno solo), barre, fondo, ortofoto |
 | `rete-elettrica.html` | rete_elettrica.js | a | regione, comune (già), criticita, altri, cabine, interruzioni, ortofoto; prova=1 resta |
 | `ortofoto.html` | ortofoto.js | a | lat, lon, z, fonte (già), archivio, particelle, contorni (lo spostamento manuale della foto resta nella scheda) |
 | `edifici-pubblici.html` | edifici_pubblici.js, pubblici_enti.js | a | lat, lon, z, ref o bene (già), tipi, enti, ortofoto, fonte, particelle, contorni; dal 22/11/2026 modo (`enti`), sel (chiavi degli enti nell'ordine dei colori), ruolo, natura, ordina (`colonna:asc|desc`), tipo_ente, regione_ente (secondari) |
@@ -302,6 +302,33 @@ divisione in due metà.
   `::test_burden_suggerimento_obiettivo` (rettangolo solo sulla regione sotto il mouse), `::test_burden_tocco`;
   `test_carichi_browser.py` (predefiniti, `passo=15` dei collegamenti vecchi, senza dati);
   `test_collegamento_browser.py::test_carichi_predefiniti`; `test_costruisci_pagine.py::test_novita_versione_feed_e_menu`.
+
+## Produzione e consumi di elettricità: periodo a due indicatori (22/11/2026, 02:08, richiesta di Paolo; versione 20261122a)
+
+- **Componente comune** `sito/cursore_periodo.js` (`window.EUGENIO_PERIODO.crea({inizio, fine, doppio, min, max, etichetta,
+  testo, cambia})` → `imposta(anni, a, b)`, `scrivi()`): i due `input type=range` sovrapposti in `.cursore-doppio` di
+  «Suolo e aree agricole» (stile in `stile.css`), con la spinta dell'altro indicatore (inizio ≤ fine), `--da`/`--a`,
+  `aria-valuetext` e l'etichetta del periodo. Lo usano `suolo.js` (che prima aveva il codice dentro) ed `elettricita.js`;
+  nelle due pagine `cursore_periodo.js` si carica subito prima dello script della pagina. Tastiera: quella degli input
+  range (frecce, Pagina su/giù, Inizio, Fine).
+- **`elettricita.js`**: `st.inizio`, `st.fine` (e `st.anno` = anno finale, per gli obiettivi del burden sharing); all'apertura
+  tutti e due sull'ultimo anno; cambiando grandezza il periodo resta, avvicinato agli anni della grandezza (`imposta`).
+  **Flussi** (produzione, carichi, consumi, emissioni: `flusso()`) = somma degli anni del periodo (`valoriP`); **fattori**
+  delle emissioni = rapporto delle somme (`indicatoriP`: CO₂/produzione lorda, CO₂/termoelettrico, tep/termoelettrico/1000;
+  con un anno solo i valori del costruttore così come sono); nei riquadri ISPRA come media dei fattori annuali pesata sulla
+  produzione lorda (sul termoelettrico per i fattori del termoelettrico), solo se ISPRA ha tutti gli anni. **Stati**
+  (capacità, burden sharing) all'anno finale con la variazione dall'iniziale nel riquadretto (per fonte e totale), nella
+  tabella (in piccolo sotto ogni valore, classe `small.variazione`, e colonna «Variazione del totale dal …» o «Variazione dal
+  …» del burden sharing), nel suggerimento del grafico per provincia e, sull'istogramma, **trattino nero** al valore iniziale
+  (per barra; per il burden sharing all'altezza della colonna). Scala degli istogrammi e degli anelli: anni singoli e, con
+  un periodo, anche le somme del periodo. Grafico a destra: riquadro `rect.periodo-scelto` dal primo all'ultimo anno del
+  periodo (colorato appena con un periodo), anni iniziale e finale in grassetto.
+- **Collegamento**: `inizio` e `fine` (sempre tutti e due); `anno=AAAA` dei collegamenti di prima vale come `inizio=fine=AAAA`
+  e sparisce dall'indirizzo riscritto.
+- Prove: `test_elettricita_browser.py::test_periodo` (apertura sull'ultimo anno, Inizio/Fine da tastiera, variazioni e
+  trattino nella legenda della capacità, riquadro del grafico, somma della produzione nella tabella, fattore medio
+  dell'Italia come rapporto delle somme, collegamento), `test_collegamento_browser.py::test_elettricita` (periodo nel
+  collegamento e `anno=` vecchio), `test_suolo_browser.py` (componente comune).
 
 ## Produzione e consumi di elettricità: grandezza «Emissioni» (21/11/2026, richiesta di Paolo; pubblicata con la versione 20261121b)
 
