@@ -176,7 +176,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <p class="sotto">Gli edifici e i terreni delle Pubbliche Amministrazioni (Comuni, Regioni, ASL, Università, Stato e altri
       enti) dal censimento del Ministero dell'Economia e delle Finanze, disegnati con i confini della loro particella
       catastale sopra l'ortofoto. Cerca un ente, un comune, un indirizzo o una tipologia, accendi e spegni i livelli a destra
-      e fai clic su una particella per vedere i beni che contiene.</p>
+      e fai clic su una particella per vedere i beni che contiene. Con «Per ente» scegli fino a 8 enti e vedi tutti i loro
+      immobili, ciascuno nel suo colore, con totali ed elenco.</p>
     <div class="mappa mappa-gl" id="mappa-pubblici" role="region" aria-label="Mappa degli edifici pubblici"></div>
     <p class="aiuto">Trascina per spostare, rotella o due dita per ingrandire. Da lontano ogni particella è un punto; dallo
       zoom 13 compaiono i suoi confini. Un clic su un punto o su una particella apre la scheda a destra. Con la piccola mappa
@@ -188,6 +189,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <span><i class="pallino pa-misti"></i>edifici e terreni insieme</span>
       <span><i class="pallino pa-punti"></i>beni senza particella (punto del censimento)</span>
     </div>
+    <div class="legenda legenda-enti" id="legenda-enti" aria-live="polite" hidden></div>
     <p class="attribuzione-ortofoto" id="attribuzione" aria-live="polite"></p>
     <p class="aiuto" id="attribuzione-pubblici"></p>
     <div class="legenda-strati" id="legenda-strati" aria-live="polite" hidden></div>
@@ -229,6 +231,11 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <!-- /sperimentale -->
     <div class="passo" id="passo-cerca">
       <h2><span class="n">1</span>Cerca</h2>
+      <div class="schede schede-pubblici" role="tablist" aria-label="Come cercare">
+        <button type="button" role="tab" id="scheda-immobile" aria-controls="pannello-immobile" aria-selected="true">Cerca un immobile</button>
+        <button type="button" role="tab" id="scheda-enti" aria-controls="pannello-enti" aria-selected="false" tabindex="-1">Per ente</button>
+      </div>
+      <div id="pannello-immobile" role="tabpanel" aria-labelledby="scheda-immobile">
       <p class="aiuto">Un ente, un comune, un indirizzo, una tipologia (es. «scuola», «caserma») o i dati catastali: valgono
         anche le parole iniziate («univ bologna»). Puoi limitare la ricerca a un gruppo di enti.</p>
       <form class="cerca-pubblici" id="cerca-pubblici" role="search">
@@ -243,6 +250,54 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <summary>Oppure vai a un indirizzo o a foglio e particella</summary>
         <div id="cerca-luogo"></div>
       </details>
+      </div>
+      <div id="pannello-enti" role="tabpanel" aria-labelledby="scheda-enti" hidden>
+        <p class="aiuto">Scegli uno o più enti (fino a 8 <span id="conta-enti">tra tutti gli enti del censimento</span>): ognuno
+          prende un colore e la mappa mostra i suoi immobili, da lontano come pallini e da vicino con i contorni delle
+          particelle. Sotto trovi i totali e l'elenco, ordinabile.</p>
+        <div class="riga-campi filtri-enti">
+          <label>tipologia <select id="tipo-ente" data-collegamento="tipo_ente" data-collegamento-secondario><option value="">tutte</option></select></label>
+          <label>con beni in <select id="regione-ente" data-collegamento="regione_ente" data-collegamento-secondario><option value="">tutta Italia</option></select></label>
+        </div>
+        <div class="combo-enti">
+          <label for="cerca-ente">Ente</label>
+          <input id="cerca-ente" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false"
+            aria-controls="proposte-enti" autocomplete="off" spellcheck="false" maxlength="120"
+            placeholder="es. comune di cesena, ausl romagna, università bologna" aria-describedby="aiuto-cerca-ente">
+          <ul class="proposte-enti" id="proposte-enti" role="listbox" aria-label="Enti trovati" hidden></ul>
+          <p class="aiuto-breve" id="aiuto-cerca-ente">Scrivi parte del nome o una sigla (AUSL, ACER, ATER…); frecce per
+            scegliere, Invio per aggiungere, Esc per chiudere.</p>
+        </div>
+        <div class="messaggio" id="messaggio-enti" role="status" aria-live="polite"></div>
+        <ul class="enti-scelti" id="enti-scelti" aria-label="Enti scelti"></ul>
+        <p class="riga-campi"><button class="bottone secondario" id="togli-enti" type="button" hidden>Togli tutti</button></p>
+        <fieldset class="caselle-pubblici" id="ruolo-enti"><legend>Beni</legend>
+          <label class="casella-strato"><input type="checkbox" value="proprieta" checked> in proprietà</label>
+          <label class="casella-strato"><input type="checkbox" value="uso"> in uso (detenzione: gestione, locazione, uso governativo…)</label>
+        </fieldset>
+        <fieldset class="caselle-pubblici" id="natura-enti"><legend>Natura</legend>
+          <label class="casella-strato"><input type="checkbox" value="E" checked> fabbricati</label>
+          <label class="casella-strato"><input type="checkbox" value="T"> terreni</label>
+        </fieldset>
+        <ul class="avvisi-enti aiuto">
+          <li>I beni sono quelli <b>dichiarati</b> dall'ente al MEF (dati al 31/12/2023): possono mancare beni; un bene dato in
+            uso compare sia per il proprietario sia per chi lo usa.</li>
+          <li>Superficie: lorda per i fabbricati, catastale per i terreni; la cubatura è compilata solo per 1 fabbricato su 10.
+            L'«area del lotto» è quella della particella nella mappa catastale.</li>
+          <li>Il soggetto che cede l'immobile all'ente non è mostrato.</li>
+          <li>In Trentino-Alto Adige non ci sono particelle (catasto tavolare): i beni compaiono solo come pallini.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="passo" id="passo-elenco-enti" hidden>
+      <h2><span class="n">2</span>Edifici degli enti selezionati</h2>
+      <p class="aiuto">Per ogni ente i totali con le scelte del passo 1 e una riga per particella (edificio o lotto), con il
+        numero di unità dichiarate; i beni senza particella hanno una riga ciascuno. Un clic su una riga porta la mappa lì e
+        apre la scheda. Un clic sull'intestazione di una colonna ordina: crescente, decrescente, come all'inizio. La tabella
+        non si scarica: per un'immagine della mappa con la legenda degli enti usa i pulsanti sotto la mappa.</p>
+      <div class="messaggio" id="messaggio-elenco" role="status" aria-live="polite"></div>
+      <div id="elenco-enti"></div>
     </div>
 
     <div class="passo" id="passo-livelli">
@@ -303,6 +358,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
 <script src="strati_gl.js?v=20261121b"></script>
 <script src="retino.js?v=20261121b"></script>
 <script src="righello.js?v=20261121b"></script>
+<script src="tabella_ordinabile.js?v=20261121b"></script>
 <script src="edifici_pubblici.js?v=20261121b"></script>
+<script src="pubblici_enti.js?v=20261121b"></script>
 </body>
 </html>

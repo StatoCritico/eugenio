@@ -1668,6 +1668,61 @@ a.voce-novita.con-novita::after { content: ""; display: inline-block; width: .45
 .scheda-bene { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: .2rem var(--s3); margin: 0; font-size: var(--c-s); }
 .scheda-bene dt { color: var(--tenue); }
 .scheda-bene dd { margin: 0; }
+/* ricerca per ente (22/11/2026, pubblici_enti.js): schede del passo 1, autocompletamento, enti scelti, elenco */
+.schede.schede-pubblici { margin-bottom: var(--s3); }
+.filtri-enti { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); }
+.filtri-enti select { max-width: 100%; }
+.combo-enti { position: relative; margin: var(--s2) 0; }
+.combo-enti > label { display: block; font-weight: 600; margin-bottom: .25rem; }
+.combo-enti input { width: 100%; min-height: var(--tocco, 2.75rem); }
+.proposte-enti { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% - 1.6rem); margin: 0; padding: 0; list-style: none;
+  max-height: 22rem; overflow-y: auto; background: var(--foglio); border: 1px solid var(--bordo); border-radius: var(--r);
+  box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+.combo-enti .aiuto-breve { margin: .3rem 0 0; }
+.proposte-enti li { padding: .5rem .7rem; cursor: pointer; font-size: var(--c-s); line-height: 1.35; }
+.proposte-enti li + li { border-top: 1px solid var(--linea); }
+.proposte-enti li[aria-selected="true"], .proposte-enti li:hover { background: var(--tinta); }
+.proposte-enti li.nessuna { cursor: default; color: var(--tenue); }
+.enti-scelti { list-style: none; margin: var(--s2) 0; padding: 0; display: grid; gap: var(--s1); }
+.ente-scelto { display: flex; align-items: center; gap: var(--s2); padding: .35rem .5rem; border: 1px solid var(--linea);
+  border-left: 6px solid var(--colore-ente, var(--bordo)); border-radius: var(--r); background: var(--foglio); }
+.ente-scelto .ente-nome { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem; }
+.togli-ente { flex: none; min-width: 2.25rem; min-height: 2.25rem; border: 1px solid var(--linea); border-radius: var(--r-tondo, 999px);
+  background: none; color: inherit; font-size: 1.2rem; line-height: 1; cursor: pointer; }
+.togli-ente:hover, .togli-ente:focus-visible { background: var(--rialzo); }
+.campione-ente { display: inline-block; flex: none; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #1a1a1a; vertical-align: -2px; }
+.avvisi-enti { margin: var(--s2) 0 0; padding-left: 1.1rem; font-size: var(--c-xs); }
+.avvisi-enti li { margin: .2rem 0; }
+.legenda.attenuata { opacity: .45; }
+.legenda-enti { color: var(--inchiostro); }
+.legenda-enti .campione-ente { width: 12px; height: 12px; }
+.gruppo-ente { border-left: 5px solid var(--colore-ente, var(--bordo)); padding-left: var(--s2); margin: var(--s4) 0; }
+.gruppo-ente .titolo-ente { display: flex; align-items: center; gap: .45rem; margin: 0 0 var(--s1); font-size: var(--c-m, 1rem); }
+.gruppo-ente .totali-ente, .totali-insieme { font-size: var(--c-s); margin: var(--s1) 0; }
+.totali-insieme { border-top: 1px solid var(--linea); padding-top: var(--s2); }
+.testa-elenco { align-items: center; gap: var(--s2); margin: var(--s1) 0; }
+.paginazione { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); font-size: var(--c-s); margin: var(--s1) 0 var(--s2); }
+.tabella-enti { max-height: 26rem; overflow: auto; }
+/* tabella ordinabile (tabella_ordinabile.js; regole in README_stile.md, «Tabelle ordinabili») */
+table.tabella-ordinabile { width: 100%; border-collapse: collapse; font-size: var(--c-s); font-variant-numeric: tabular-nums; }
+table.tabella-ordinabile th, table.tabella-ordinabile td { padding: .4rem .55rem; border-bottom: 1px solid var(--linea); text-align: left; vertical-align: top; }
+table.tabella-ordinabile thead th { position: sticky; top: 0; z-index: 1; background: var(--rialzo); padding: 0; white-space: nowrap; vertical-align: bottom; }
+table.tabella-ordinabile thead th:not(:has(button)) { padding: .4rem .55rem; }
+table.tabella-ordinabile .num { text-align: right; white-space: nowrap; }
+table.tabella-ordinabile button.ordina { display: flex; width: 100%; align-items: center; gap: .3rem; padding: .45rem .55rem; border: 0;
+  background: none; color: inherit; font: 600 var(--c-s)/1.2 var(--titoli); text-align: left; cursor: pointer; }
+table.tabella-ordinabile th.num button.ordina { justify-content: flex-end; text-align: right; }
+table.tabella-ordinabile button.ordina:hover { background: var(--tinta); }
+table.tabella-ordinabile button.ordina:focus-visible { outline: 3px solid var(--primario); outline-offset: -3px; }
+table.tabella-ordinabile .verso { color: var(--tenue); font-size: .75em; }
+table.tabella-ordinabile th[aria-sort="ascending"] .verso, table.tabella-ordinabile th[aria-sort="descending"] .verso { color: var(--primario); }
+table.tabella-ordinabile tr.cliccabile { cursor: pointer; }
+table.tabella-ordinabile tbody tr:hover > *, table.tabella-ordinabile tr.cliccabile:focus-visible > * { background: var(--rialzo); }
+table.tabella-ordinabile tr.cliccabile:focus-visible { outline: 3px solid var(--primario); outline-offset: -3px; }
+table.tabella-ordinabile tr.evidenziata > * { background: var(--tinta); font-weight: 600; }
+table.tabella-ordinabile tfoot th, table.tabella-ordinabile tfoot td { font-weight: 600; border-bottom: 0; background: var(--foglio); position: sticky; bottom: 0; }
+@media (max-width: 600px) { table.tabella-ordinabile .solo-largo { display: none; } }
 
 /* ===================================================================================== Rete elettrica (17/11/2026)
    Statistiche › «Stato della rete elettrica» (rete-elettrica.html) e Fotovoltaico › «Cabine primarie» (fv-cabine.html),

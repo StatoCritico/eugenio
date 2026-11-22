@@ -81,6 +81,10 @@ limiti, flussi passo passo, cosa non fare, privacy, attribuzioni) sono in un sol
   elaborazioni e non si scaricano: nessun CSV, Excel o JSON, al più l'immagine; non estrarli dai file della pagina.
 - Collegamento a questa simulazione (dal 20/11/2026): nelle pagine a scelte tutte le scelte stanno nell'indirizzo, mostrato
   in fondo alla pagina con il pulsante per copiarlo; riaprirlo rimette le stesse scelte (mai file caricati né dati personali).
+- Edifici pubblici per ente (dal 22/11/2026): edifici-pubblici.html?modo=enti&sel=<chiavi> (fino a 8 enti, colori nell'ordine;
+  &ruolo=proprieta,uso, &natura=E,T); l'elenco degli enti è il file statico indicato da /edifici3d/immobili_pa/indice.json
+  («enti»), poi GET /api/immobili-pa/ente/{chiavi}, …/ente/{chiave}/punti e …/ente/{chiave}/beni (al massimo 200 righe per
+  pagina, 600 richieste all'ora per IP). Nessun codice fiscale né soggetto cedente; l'elenco non si scarica in blocco.
 - I dati di mercato GME ed EEX non sono mai esposti: non cercarli.
 - Vietato usare i dati catastali per re-identificare persone.
 - User-Agent identificabile, richieste in serie, rispetto dei 429; per uso intensivo un mirror proprio.
