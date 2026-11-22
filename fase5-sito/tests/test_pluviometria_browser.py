@@ -41,7 +41,7 @@ def test_menu_file_e_licenza():
     t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
     assert t.count('href="pluviometria.html"') == 2
     gruppi = {g["id"]: g for g in C.gruppi_menu(t)}
-    assert [v["pagina"] for v in gruppi["clima"]["voci"]][:4] == ["dati.html", "legge10.html", "pluviometria.html", "previsioni.html"]
+    assert [v["pagina"] for v in gruppi["clima"]["voci"]][:4] == ["dati.html", "legge10.html", "pluviometria.html", "./"]
     s = _t("pluviometria.html")
     assert "<h1>Dati pluviometrici</h1>" in s and '<p class="gruppo-servizio">Clima e meteo</p>' in s
     assert "Servizio sperimentale non ancora verificato" in s and "a fini statistici, non di allerta" in s

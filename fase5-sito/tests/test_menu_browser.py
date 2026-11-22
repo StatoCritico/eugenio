@@ -150,7 +150,7 @@ def test_menu_computer(base, browser):
 
 def test_menu_telefono(base, browser):
     ctx, pg = pagina(browser, 375, 740)
-    pg.goto(base + "previsioni.html")
+    pg.goto(base + "index.html")
     pg.evaluate("localStorage.setItem('menu-fissato', 'fotovoltaico')")      # (08/11/2026) Comunità energetiche nel Fotovoltaico
     pg.goto(base + "edificio-cer.html")
     riga = pg.locator("nav.riga-fissata")
