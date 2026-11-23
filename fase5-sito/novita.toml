@@ -22,6 +22,15 @@
 
 [[voce]]
 data = "2026-11-23"
+versione = "20261123b"
+titolo = "Pagina iniziale: disegno 16:9 e titoli più chiari"
+migliorato = [
+  "Pagina iniziale: il disegno è ora in formato 16:9, più adatto agli schermi dei computer, e si vede tutto senza scorrere, sotto il titolo e il testo di presentazione, che ora occupa tutta la larghezza.",
+  "I nomi sui mirini sono più grandi, si alternano più in fretta e indicano gli argomenti delle pagine (per esempio «Pompe di calore», «Dati pluviometrici», «Elettricità e rete elettrica»).",
+]
+
+[[voce]]
+data = "2026-11-23"
 versione = "20261123a"
 titolo = "Nuova pagina iniziale"
 nuovo = [

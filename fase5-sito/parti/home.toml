@@ -64,40 +64,41 @@ descrizione = "I numeri dell'energia in Italia: prezzi, produzione e consumi di 
 
 # Parti del disegno (parti/scena_home.html, di Claude Design; 16 parti: la cabina primaria sta nel traliccio): titolo e descrizione nel riquadretto, pagine collegate (anche di altri
 # gruppi, anche in lavorazione). Il clic apre la scheda del gruppo («gruppo») con queste pagine in evidenza. Una parte
-# senza pagine accessibili è «prossimamente» (lo calcola costruisci_pagine.py dal menu).
+# senza pagine accessibili è «prossimamente» (lo calcola costruisci_pagine.py dal menu). I titoli riportano gli argomenti
+# del menu, non gli oggetti del disegno (23/11/2026, Paolo: niente «sul tetto», «sulla torre»…).
 [parti.meteo]
 gruppo = "clima"
-titolo = "Meteo e clima"
+titolo = "Previsioni e dati climatici"
 descrizione = "Temperature, gradi giorno e previsioni del comune: per le previsioni dei consumi, i dati climatici e gli avvisi per email."
 pagine = ["previsioni.html", "legge10.html", "dati.html", "edificio-clima.html", "dati-per-email.html"]
 
 [parti.stazione-meteo]
 gruppo = "clima"
-titolo = "Radar e stazione meteo"
+titolo = "Dati pluviometrici"
 descrizione = "La pioggia misurata dai radar e dai pluviometri della Protezione Civile e i dati orari delle rianalisi meteo."
 pagine = ["pluviometria.html", "dati.html", "legge10.html"]
 
 [parti.territorio]
 gruppo = "patrimonio"
-titolo = "Territorio e catasto"
+titolo = "Territorio ed edifici pubblici"
 descrizione = "Particelle, foto aeree, quote del terreno ed edifici pubblici: per trovare e misurare gli edifici sulla mappa."
 pagine = ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "suolo.html", "dbtr-istruzioni.html", "visure.html"]
 
 [parti.edificio]
 gruppo = "edificio"
-titolo = "L'edificio: piastra e torre"
+titolo = "Edifici e modelli 3D"
 descrizione = "Geometria, involucro, obblighi di legge e consumi dell'edificio, anche ricostruito in 3D dai dati topografici."
 pagine = ["modelli3d.html", "edificio-geometria.html", "edificio-obblighi.html", "edificio-consumi.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html", "edificio-involucro.html", "edificio-fabbisogno.html"]
 
 [parti.ombre]
 gruppo = "edificio"
-titolo = "Ombre e luce naturale"
+titolo = "Geometria e luce naturale"
 descrizione = "Le ombre degli edifici vicini e del terreno, corte d'estate e lunghe d'inverno, e la luce sulle facciate."
 pagine = ["modelli3d.html", "edificio-geometria.html", "fv-ombre.html"]
 
 [parti.contatore]
 gruppo = "statistiche"
-titolo = "Contatore, prezzi e costi"
+titolo = "Indici dei prezzi e costi energetici"
 descrizione = "Quanto costa l'energia: i prezzi delle convenzioni pubbliche, i consumi per metro quadro e i costi della sanità."
 pagine = ["indici-prezzi.html", "edificio-consumi.html", "indicatori.html"]
 
@@ -115,31 +116,31 @@ pagine = ["aria-freecooling.html"]
 
 [parti.fotovoltaico]
 gruppo = "fotovoltaico"
-titolo = "Fotovoltaico sulla piastra"
+titolo = "Fotovoltaico"
 descrizione = "La rete che riceve l'energia (cabina primaria e area del GSE) e, presto, sole, ombre e producibilità sui tetti."
 pagine = ["fv-cabine.html", "fv-irradiazione.html", "fv-producibilita.html", "fv-pvgis.html", "fv-dlgs199.html"]
 
 [parti.solare-termico]
 gruppo = "edificio"
-titolo = "Solare termico sulla torre"
+titolo = "Solare termico"
 descrizione = "Collettori e accumulo per l'acqua calda: quanto coprono del fabbisogno, comune per comune."
 pagine = ["edificio-impianti.html"]
 
 [parti.pdc]
 gruppo = "edificio"
-titolo = "Pompa di calore sul tetto"
+titolo = "Pompe di calore"
 descrizione = "Rendimento stagionale della pompa di calore con il clima ora per ora del comune."
 pagine = ["edificio-impianti.html"]
 
 [parti.caldaia]
 gruppo = "edificio"
-titolo = "Centrale termica"
+titolo = "Fabbisogno e Conto Termico"
 descrizione = "Caldaie e fabbisogno di energia per il riscaldamento con le metodiche UNI, e gli incentivi per sostituirle."
 pagine = ["edificio-fabbisogno.html", "edificio-conto-termico.html"]
 
 [parti.frigo]
 gruppo = "edificio"
-titolo = "Gruppo frigo e torre evaporativa"
+titolo = "Raffrescamento"
 descrizione = "Il freddo per l'edificio: carichi estivi, ore di funzionamento e consumi del gruppo frigo."
 pagine = ["edificio-impianti.html"]
 
@@ -151,12 +152,12 @@ pagine = ["cog-simulazione.html", "cog-emissioni.html", "cog-confronto.html", "c
 
 [parti.traliccio]
 gruppo = "statistiche"
-titolo = "Rete elettrica (dati Terna e cabine primarie)"
+titolo = "Elettricità e rete elettrica"
 descrizione = "Produzione per fonte, consumi, emissioni e carichi elettrici dai dati di Terna; cabine primarie, saturazione e interruzioni della rete, comune per comune."
 pagine = ["elettricita.html", "carichi.html", "rete-elettrica.html", "fv-cabine.html"]
 
 [parti.cabina-gas]
 gruppo = "statistiche"
-titolo = "Rete del gas"
+titolo = "Consumi di gas naturale"
 descrizione = "I consumi di gas naturale per regione e provincia e l'andamento giornaliero con i gradi giorno."
 pagine = []

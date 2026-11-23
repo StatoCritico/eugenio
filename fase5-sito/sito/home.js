@@ -1,7 +1,9 @@
 // Pagina iniziale (23/11/2026). Il disegno è fermo (parti/scena_home.html: un fondale WebP per tema) e gli unici elementi
 // attivi sono i bersagli (button.sh-punto data-parte data-gruppo). Qui:
-//  - la scena si adatta alla finestra: larga quanto la pagina, ma non più alta dello spazio sotto la testata;
-//  - i titoli dei bersagli compaiono a turno, uno alla volta (1 s acceso, 1 s spento), e si fermano quando si usa la scena;
+//  - la scena si adatta alla finestra: larga quanto la pagina, ma non più alta dello spazio che resta sotto titolo e testo
+//    (23/11/2026: si vede tutta senza scorrere); rapporto letto dall'aspect-ratio del CSS (16:9);
+//  - i titoli dei bersagli compaiono a turno, uno alla volta (1 s acceso, 0,5 s spento), e si fermano quando si usa la
+//    scena; il titolo sta a sinistra del bersaglio quando questo è nella parte destra del disegno;
 //  - sostando su un bersaglio (o con il fuoco da tastiera) compare la descrizione breve;
 //  - il clic (Invio, tocco) apre sull'immagine la scheda flottante della parte con le sue pagine;
 //  - il clic su una pagina la apre con il menu del suo gruppo già aperto in orizzontale (localStorage «menu-fissato»,
@@ -25,34 +27,70 @@
   // ------------------------------------------------------------------ dimensione sulla finestra
   function misura() {
     const pagina = document.documentElement.clientWidth;
-    const testata = document.querySelector(".testata");
-    const alto = testata ? testata.getBoundingClientRect().height : 0;
-    const spazio = Math.max(260, window.innerHeight - alto - 16);
-    const w = Math.round(Math.min(pagina, spazio * 1200 / 875));
+    // spazio dal bordo alto del disegno (sotto testata, titolo e testo, a pagina non scorsa) al fondo della finestra
+    const inizio = scena.getBoundingClientRect().top + window.scrollY;
+    const spazio = Math.max(260, window.innerHeight - inizio - 12);
+    const w = Math.round(Math.min(pagina, spazio * rapporto()));
     scena.style.setProperty("--sh-w", w + "px");
     // posizione senza lo spostamento attuale (vale anche con bordi o margini del genitore: 23/11/2026, 1 px di troppo sul
     // telefono con il bordo del contenitore); per difetto, così il bordo destro non supera mai la pagina
     const base = scena.getBoundingClientRect().left - (parseFloat(getComputedStyle(scena).left) || 0);
     scena.style.setProperty("--sh-x", Math.floor((pagina - w) / 2 - base) + "px");
   }
+  function rapporto() {                       // larghezza / altezza del quadro, dal CSS (aspect-ratio: 16 / 9 o 1200 / 875)
+    const a = getComputedStyle(quadro).aspectRatio.split("/").map(parseFloat);
+    return a.length === 2 && a[0] > 0 && a[1] > 0 ? a[0] / a[1] : (a[0] > 0 ? a[0] : 1200 / 875);
+  }
+  function lati() {                           // titolo a sinistra dei bersagli nella parte destra del disegno
+    const q = quadro.getBoundingClientRect();
+    if (!q.width) return;
+    const fuori = (p) => {                    // quanti px del titolo escono dal disegno
+      const t = p.querySelector(".sh-titolo");
+      if (!t) return 0;
+      const r = t.getBoundingClientRect();
+      return Math.max(0, q.left - r.left) + Math.max(0, r.right - q.right);
+    };
+    punti.forEach((p) => {
+      const t = p.querySelector(".sh-titolo");
+      if (t) t.style.removeProperty("--dx");
+      const r = p.getBoundingClientRect();
+      p.classList.toggle("sh-sx", (r.left + r.width / 2 - q.left) / q.width > 0.6);
+      const prima = fuori(p);                 // se non ci sta da quella parte, prova l'altra (telefoni: titoli lunghi)
+      if (prima > 0) {
+        p.classList.toggle("sh-sx");
+        if (fuori(p) >= prima) p.classList.toggle("sh-sx");
+      }
+      if (t && fuori(p) > 0) {                // più lungo dello spazio da entrambe le parti: lo fa scorrere dentro il bordo
+        const b = t.getBoundingClientRect();
+        const dx = b.left < q.left ? q.left - b.left + 4 : q.right - b.right - 4;
+        t.style.setProperty("--dx", Math.round(dx) + "px");
+      }
+    });
+  }
+  function adatta() { misura(); lati(); }
   misura();
-  window.addEventListener("resize", misura);
-  if (window.ResizeObserver) new ResizeObserver(misura).observe(document.documentElement);
+  lati();
+  window.addEventListener("resize", adatta);
+  if (window.ResizeObserver) new ResizeObserver(adatta).observe(document.documentElement);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(adatta);   // il testo sopra cambia altezza coi font
 
   // ------------------------------------------------------------------ titoli a turno
   let turno = 0, acceso = false, fermi = false;
+  const ACCESO = 1000, SPENTO = 500;          // ms (23/11/2026, Paolo: 0,5 s tra un titolo e l'altro)
   function giro() {
-    if (fermi || document.hidden) return;
-    punti.forEach((p) => p.classList.remove("sh-acceso"));
-    if (!acceso) punti[turno].classList.add("sh-acceso");
-    else turno = (turno + 1) % punti.length;
-    acceso = !acceso;
+    if (!fermi && !document.hidden) {
+      punti.forEach((p) => p.classList.remove("sh-acceso"));
+      if (!acceso) punti[turno].classList.add("sh-acceso");
+      else turno = (turno + 1) % punti.length;
+      acceso = !acceso;
+    }
+    setTimeout(giro, acceso ? ACCESO : SPENTO);
   }
   function ferma(v) {
     fermi = v;
     if (v) punti.forEach((p) => p.classList.remove("sh-acceso"));
   }
-  setInterval(giro, 1000);
+  setTimeout(giro, SPENTO);
 
   // ------------------------------------------------------------------ posizione di un riquadro accanto al bersaglio
   function accosta(box, p) {
