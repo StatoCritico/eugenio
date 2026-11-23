@@ -21,6 +21,15 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
+data = "2026-11-23"
+versione = "20261123a"
+titolo = "Nuova pagina iniziale"
+nuovo = [
+  "Nuova pagina iniziale: un disegno con l'edificio, i suoi impianti, le reti che lo alimentano, il territorio intorno e il meteo, in due stili (futuristico con il tema scuro, tecnico con il tema chiaro). I mirini sul disegno mostrano a turno il loro nome; passandoci sopra vedi a cosa servono e con un clic (o un tocco) si apre una scheda con le pagine di quella parte. Le parti ancora in preparazione dicono «Prossimamente». Il disegno è un'immagine ferma: la pagina si apre subito.",
+  "Previsioni ora si apre da previsioni.html; i vecchi collegamenti continuano a funzionare.",
+]
+
+[[voce]]
 data = "2026-11-22"
 versione = "20261122c"
 titolo = "Torna la pagina iniziale con le previsioni"

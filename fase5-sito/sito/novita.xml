@@ -5,9 +5,18 @@
   <id>tag:eugenio.statocritico.it,2026:novita</id>
   <link rel="self" type="application/atom+xml" href="https://eugenio.statocritico.it/novita.xml"/>
   <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html"/>
-  <updated>2026-11-22T12:00:00Z</updated>
+  <updated>2026-11-23T12:00:00Z</updated>
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
+  <entry>
+    <title>23 novembre 2026 – Nuova pagina iniziale</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261123</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261123"/>
+    <updated>2026-11-23T12:00:00Z</updated>
+    <summary>Nuova pagina iniziale</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Nuova pagina iniziale: un disegno con l&amp;#x27;edificio, i suoi impianti, le reti che lo alimentano, il territorio intorno e il meteo, in due stili (futuristico con il tema scuro, tecnico con il tema chiaro). I mirini sul disegno mostrano a turno il loro nome; passandoci sopra vedi a cosa servono e con un clic (o un tocco) si apre una scheda con le pagine di quella parte. Le parti ancora in preparazione dicono «Prossimamente». Il disegno è un&amp;#x27;immagine ferma: la pagina si apre subito.&lt;/li&gt;&lt;li&gt;Previsioni ora si apre da previsioni.html; i vecchi collegamenti continuano a funzionare.&lt;/li&gt;&lt;/ul&gt;</content>
+  </entry>
   <entry>
     <title>22 novembre 2026 – Torna la pagina iniziale con le previsioni</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261122-3</id>

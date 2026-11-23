@@ -4,8 +4,11 @@ Sito statico (HTML, CSS e JavaScript senza librerie esterne), servito da Caddy n
 
 ```
 sito/
-  index.html        mappa dei comuni colorata con i gradi giorno previsti a 7 giorni, ricerca indirizzo
-                    (Zornade), caricamento CSV, scelta della modalità, grafico con le fasce di probabilità
+  index.html        pagina iniziale (dal 23/11/2026): disegno fermo di Claude Design, uno per tema (parti/scena_home.html,
+                    home_*_estate.webp, home.js) con 16 bersagli, schede dei gruppi del menu (parti/home.toml), ultime novità; i
+                    vecchi indirizzi con le scelte (/?comune=…, #…) passano a previsioni.html
+  previsioni.html   (fino al 22/11/2026 era index.html) mappa dei comuni colorata con i gradi giorno previsti a 7 giorni,
+                    ricerca indirizzo, caricamento CSV, scelta della modalità, grafico con le fasce di probabilità
   patrimonio.html   elenco di edifici (CSV) → punto e particella catastale, mappa dei punti, esiti, download; dal
                     04/11/2026 passo «Visure catastali» con i file di EuGEnio Visure (visure_abbina.js,
                     visure_patrimonio.js), abbinati solo nel browser
@@ -165,7 +168,7 @@ si aggiorna automaticamente a ogni modifica; reincollandolo si riparte esattamen
 | `aria-freecooling.html` | aria_freecooling.js | a | comune, anni, inverno, estate, diagramma, gruppi, tutti i campi dell'UTA (V, riferimento, quotaMinima, estateT…, epsS, epsL…), gruppo_diagramma (non le condizioni di progetto corrette a mano) |
 | `cog-emissioni.html` | emissioni_cog.js | a | modo, elettrica, calore, gas, unita_gas, potenza, ore, eta_e, eta_t, anno, rete, eta_caldaia, calcolato (il calcolo si rifà da solo) |
 | `edificio-clima.html` | analisi_pubbliche.js | a | istat (già), dal, base, pendenza |
-| `index.html` (Previsioni) | app.js | b | regione, comune, cosa, tipo, modalita, orizzonte, verifica, cov, calcolato (solo «Solo il clima»); il file dei consumi va ricaricato |
+| `previsioni.html` (Previsioni; fino al 22/11/2026 `index.html`) | app.js | b | regione, comune, cosa, tipo, modalita, orizzonte, verifica, cov, calcolato (solo «Solo il clima»); il file dei consumi va ricaricato |
 | `indici-prezzi.html` | indici_prezzi.js | b | scelte (lotto e fascia di ogni indice), lotto_consip; il file dei consumi per fascia va ricaricato |
 | `fv-cabine.html` | fv_cabine.js | b | centro, punti (solo coordinate dei punti segnati o cercati), fonte scelta a mano, particelle, contorni; non i punti dell'elenco caricato |
 | `edificio-cer.html` | cer_sedi.js, analisi_pubbliche.js | b | centro, sedi (coordinate e cabina scelta a mano, non i nomi), fonte, aree_gse, particelle, contorni; non le sedi del file né il file orario |
@@ -198,14 +201,53 @@ la rispegne). Le domande al GSE per lo strato partono sempre e solo da zoom 10 (
 mappa è sull'Italia, nessuna domanda). I messaggi dei confini delle sedi vanno nel passo 1 a destra (`messaggio-sedi`),
 quelli dello strato restano sotto la mappa. Prove: `test_cer_browser.py`.
 
-## Pagina iniziale con il disegno: ritirata (22/11/2026, sera)
+## Pagina iniziale (22/11/2026, richieste di Paolo delle 11:38 e delle 12:13; versione statica dal 23/11/2026)
 
-Il 22/11 è stata provata una pagina iniziale nuova (disegno animato di un edificio con impianti, reti e meteo, poi la
-versione di Claude Design, pubblicata nella `v2026.11.22b`). Paolo, alle 22:56: lentissima, le scritte a rotazione e le
-descrizioni al passaggio del mouse non funzionavano e le pagine si aprivano «sotto» l'immagine. Ritirata nella
-`v2026.11.22c` (versione `20261122c`): `index.html` è di nuovo Previsioni, menu e collegamenti come prima, tolti
-`home.js`, i fondali `home_*.webp`, `parti/home.toml`, `parti/scena_home.html` e il CSS della scena. Il lavoro resta nella
-storia di git (commit da `812042a` a `3267240`) per rifarla.
+Paolo: «ci vuole una home page che aiuti l'utente a capire cosa fa eugenio senza rimanere disorientato»; poi: «uno schema
+grafico che mostra un edificio 3d e le reti che lo alimentano, il territorio che lo circonda e il meteo che gli sta sopra,
+animato per stagione (d'estate sole e pioggia, d'inverno sole e neve) e che posizionando il mouse faccia vedere le funzioni
+(raggruppate per gruppi, con titolo e descrizione di gruppo). Cliccando sulle parti grafiche si aprono le schede e cliccando
+sulla voce si apre la pagina, aprendo anche il relativo menu in alto in orizzontale».
+
+- `index.html` non è più Previsioni: titolo e una riga su cosa fa EuGEnio, poi il **disegno** e sotto le **schede dei
+  gruppi** («Da dove cominciare» con un pulsante per gruppo), poi «Come lavora EuGEnio» e le ultime tre novità.
+- **Storia**: la prima versione animata (scena a strati con le stagioni, `v2026.11.22b`) era lentissima sul sito vero e
+  non mostrava titoli e descrizioni; è stata ritirata la sera del 22/11 (`v2026.11.22c`, `/` di nuovo Previsioni). Dal
+  **23/11/2026** (`v2026.11.23`, versione 20261123a) torna con la **versione statica** rifatta da Paolo con Claude Design
+  (zip `eugenio_home_statica_2026-11-23.zip`).
+- **Disegno** (`parti/scena_home.html`, blocco `<!-- scena-home -->` messo da `costruisci_pagine.py`, con il suo `<style>`):
+  un'**immagine ferma per tema**, `sito/home_scuro_estate.webp` (variante futuristica, 120 KB) e `home_chiaro_estate.webp`
+  (variante tecnica, 190 KB), 1920 × 1400, scambiate con `[data-theme="light"]`; **nessuna animazione**. Gli unici elementi
+  attivi sono i **16 bersagli** `button.sh-punto data-parte data-gruppo` (mirini; tratteggiati e grigi/arancio, classe
+  `sh-poi`, le parti «prossimamente»), posizionati in percentuale; testi e bersagli scalano con la scena (`cqw`). Legenda del
+  consumo di suolo **con dati d'esempio**. Gli stili della vecchia scena animata sono stati tolti da `stile.css`; il blocco
+  annulla anche cornice e proporzioni di `.scena-contenitore`.
+- **Dimensione** (`home.js`): larga quanto la pagina (esce dalla colonna, centrata) ma mai più alta dello spazio sotto la
+  `.testata` (rapporto 1200:875). Lo spostamento `--sh-x` si calcola dalla posizione reale della scena, per difetto, così non
+  sborda mai a destra (23/11: col bordo del contenitore sborda di 1 px sul telefono).
+- **Parti** (`parti/home.toml`, `[parti.…]`): titolo, descrizione, gruppo e pagine collegate (anche di altri gruppi e in
+  lavorazione). `costruisci_pagine.py` (`parti_home`, blocco `<!-- parti-home -->`, JSON) aggiunge nome e stato dal menu e
+  segna «prossimamente» le parti senza pagine accessibili (oggi solare termico, pompa di calore, centrale termica, frigo,
+  cogeneratore, cabina del gas). La parte «cabina primaria» non c'è nel disegno: le sue pagine (Stato della rete elettrica,
+  Cabine primarie) sono nel **traliccio**.
+- **Comportamento** (`home.js`): i **titoli** dei bersagli compaiono a turno, uno alla volta (1 s acceso, 1 s spento), e si
+  fermano mentre si usa la scena; **sostando** ~0,35 s su un bersaglio (o col fuoco da tastiera) compare la descrizione breve
+  («Clic per le pagine» o «Prossimamente»); il **clic** (Invio, tocco) apre sopra l'immagine, accanto al bersaglio, la
+  **scheda flottante** con le pagine della parte (quelle non disponibili spente, con lo stato) e «Tutte le pagine di …», che
+  apre la scheda del gruppo sotto il disegno; si chiude con ×, Esc o un clic fuori. Sotto i 560 px di scena la scheda sta in
+  basso e la legenda sparisce. **Clic su una pagina**: `localStorage` «menu-fissato» = gruppo della pagina nel menu (preso
+  dalle schede dei gruppi), così la pagina si apre con le voci del gruppo in orizzontale sotto il menu (`aspetto.js`).
+- **Schede**: le scrive `costruisci_pagine.py` (`schede_home`, blocco `<!-- schede-home -->`) dal menu (`parti/testata.html`:
+  ordine, nomi, stato sperimentale / in sviluppo / in lavorazione / licenza GME) e da `parti/home.toml` (parte del disegno,
+  descrizione del gruppo, una riga per pagina). Una pagina nuova del menu entra da sola nella scheda; la riga va aggiunta in
+  `home.toml` (la prova `test_pagina_iniziale` lo controlla). Le ultime tre novità: `ultime_novita`, blocco
+  `<!-- ultime-novita -->`.
+- Previsioni sta in `previsioni.html` (menu e collegamenti aggiornati). Uno script in testa a `index.html` manda a
+  `previsioni.html` ogni indirizzo con parametri (tranne `utm_…`) o con un'ancora: i collegamenti salvati e quelli delle
+  email continuano a funzionare.
+- Prove: `test_costruisci_pagine.py::test_pagina_iniziale` (parti, schede, righe, voci, redirect, novità) e
+  `test_home_browser.py` (23/11: scena nella finestra e solo bersagli attivi, titoli a turno, descrizione, scheda
+  flottante e menu fissato, pagina di un altro gruppo, tema chiaro e vecchi indirizzi, telefono a 375 px senza sbordare).
 
 ## Clima e meteo › Dati pluviometrici (22/11/2026, richiesta di Paolo; sperimentale, release `v2026.11.22b`, versione 20261122b)
 

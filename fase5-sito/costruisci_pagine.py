@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import html
+import json
 import re
 import sys
 import tomllib
@@ -180,8 +181,12 @@ def applica_gruppi(s: str, pagina: str, testata: str) -> str:
     return s
 
 
-def costruisci(pagina: Path, parti: dict[str, str], versione: str) -> str:
+def costruisci(pagina: Path, parti: dict[str, str], versione: str, blocchi: dict[str, str] | None = None) -> str:
     s = applica_gruppi(pagina.read_text(encoding="utf-8"), pagina.name, parti["testata"])
+    for nome, testo in (blocchi or {}).items():    # (22/11/2026) blocchi facoltativi, solo nelle pagine che li marcano
+        rx = marcati(nome)
+        if rx.search(s):
+            s = rx.sub(lambda m: m.group(1) + testo.rstrip("\n") + m.group(3), s, count=1)
     for nome, testo in parti.items():
         if nome == "testata":
             testo = segna_voce(testo, pagina.name)
@@ -196,6 +201,79 @@ def costruisci(pagina: Path, parti: dict[str, str], versione: str) -> str:
             rientro = "  " if nome == "piede" else ""
             s = s[:m.start()] + f"{rientro}<!-- {nome} -->\n{testo}\n{rientro}<!-- /{nome} -->" + s[m.end():]
     return VERS.sub(versione, s)
+
+
+def ultime_novita(voci: list[dict], quante: int = 3) -> str:
+    """(22/11/2026) Le ultime voci delle novità per la pagina iniziale (blocco <!-- ultime-novita --> di index.html):
+    data e titolo, con il collegamento alla voce nella pagina delle novità."""
+    righe = []
+    for v in voci[:quante]:
+        righe.append(f'      <li><a href="novita.html#{ancora(v, voci)}">{html.escape(str(v["titolo"]))}</a> '
+                     f'<span class="home-data">{data_italiana(str(v["data"]))}</span></li>')
+    return "    <ul class=\"home-elenco-novita\">\n" + "\n".join(righe) + "\n    </ul>"
+
+
+def voci_menu(testata: str) -> list[dict]:
+    """(22/11/2026) Gruppi e voci della tendina del menu, con lo stato: per la pagina iniziale."""
+    gruppi = []
+    for m in re.finditer(r'<details class="voce-gruppo" data-gruppo="([^"]+)"><summary>([^<]+)</summary>\s*<ul class="tendina">(.*?)</ul>', testata, re.S):
+        voci = []
+        for li in re.findall(r"<li[^>]*>(.*?)</li>", m.group(3), re.S):
+            a = re.match(r'<a href="([^"]+)">(.*?)</a>', li, re.S)
+            if a:
+                dentro = a.group(2)
+                stato = ("sperimentale" if 'class="cantiere prova' in dentro
+                         else ("in sviluppo" if 'class="cantiere' in dentro else ""))
+                voci.append({"pagina": a.group(1), "nome": re.sub(r"<span class=\"cantiere.*", "", dentro, flags=re.S).strip(),
+                             "stato": stato, "attiva": True})
+                continue
+            v = re.search(r'<span class="voce-gme( voce-corso)?" data-pagina="([^"]+)"[^>]*><span class="voce-nome">(.*?)</span>', li, re.S)
+            if v:
+                voci.append({"pagina": v.group(2), "nome": v.group(3), "stato": "in lavorazione" if v.group(1) else "licenza GME",
+                             "attiva": False})
+        gruppi.append({"id": m.group(1), "titolo": m.group(2).strip(), "voci": voci})
+    return gruppi
+
+
+def schede_home(testata: str, conf: dict) -> str:
+    """(22/11/2026) Schede dei gruppi della pagina iniziale (blocco <!-- schede-home --> di index.html): per ogni gruppo
+    del menu, nell'ordine del menu, il titolo, la descrizione e le voci da parti/home.toml; per ogni voce il nome e lo
+    stato presi dalla tendina (sperimentale, in sviluppo, in lavorazione, licenza GME) e la riga di spiegazione."""
+    gruppi, righe = conf.get("gruppi", {}), conf.get("pagine", {})
+    out = []
+    for gr in voci_menu(testata):
+        gid, titolo, g = gr["id"], gr["titolo"], gruppi.get(gr["id"], {})
+        voci = []
+        for v in gr["voci"]:
+            if v["attiva"]:
+                badge = (f' <span class="cantiere{" prova" if v["stato"] == "sperimentale" else ""}">{v["stato"]}</span>'
+                         if v["stato"] else "")
+                riga = righe.get(v["pagina"], "")
+                voci.append(f'<li data-pagina="{v["pagina"]}"><a href="{v["pagina"]}" data-gruppo="{gid}">{v["nome"]}</a>{badge}'
+                            + (f" – {html.escape(riga)}" if riga else "") + "</li>")
+            else:
+                voci.append(f'<li class="in-arrivo" data-pagina="{v["pagina"]}"><span class="voce-nome">{v["nome"]}</span> '
+                            f'<span class="cantiere">{v["stato"]}</span></li>')
+        out.append(f'      <article class="home-scheda" id="scheda-{gid}" data-gruppo="{gid}" '
+                   f'aria-labelledby="scheda-{gid}-titolo">\n        <h2 id="scheda-{gid}-titolo">{titolo}</h2>\n'
+                   f'        <p>{html.escape(g.get("descrizione", ""))}</p>\n        <ul>\n          '
+                   + "\n          ".join(voci) + "\n        </ul>\n      </article>")
+    return "\n".join(out)
+
+
+def parti_home(testata: str, conf: dict) -> str:
+    """(22/11/2026) Dati delle parti del disegno per home.js (blocco <!-- parti-home -->, JSON): titolo, descrizione,
+    gruppo e pagine collegate con nome e stato presi dal menu; «prossimamente» se nessuna pagina è accessibile."""
+    indice = {v["pagina"]: dict(v, gruppo=g["id"], titolo_gruppo=g["titolo"]) for g in voci_menu(testata) for v in g["voci"]}
+    titoli = {g["id"]: g["titolo"] for g in voci_menu(testata)}
+    dati = {}
+    for chiave, p in conf.get("parti", {}).items():
+        voci = [indice[x] for x in p.get("pagine", []) if x in indice]
+        dati[chiave] = {"gruppo": p["gruppo"], "titolo_gruppo": titoli.get(p["gruppo"], ""), "titolo": p["titolo"],
+                        "descrizione": p["descrizione"], "prossimamente": not any(v["attiva"] for v in voci),
+                        "voci": [{"pagina": v["pagina"], "nome": v["nome"], "attiva": v["attiva"], "stato": v["stato"]} for v in voci]}
+    testo = json.dumps(dati, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    return f'      <script type="application/json" id="parti-home">{testo}</script>'
 
 
 def _senza_parti(s: str) -> str:
@@ -374,10 +452,17 @@ def main(argv=None) -> int:
                 diverse.append(nome)
                 if not a.controlla:
                     f.write_text(testo, encoding="utf-8")
+    blocchi = {"ultime-novita": ultime_novita(voci)} if voci else {}
+    if (PARTI / "home.toml").exists():                # (22/11/2026) pagina iniziale: schede dei gruppi e disegno
+        conf_home = tomllib.loads((PARTI / "home.toml").read_text(encoding="utf-8"))
+        blocchi["schede-home"] = schede_home(parti["testata"], conf_home)
+        blocchi["parti-home"] = parti_home(parti["testata"], conf_home)
+    if (PARTI / "scena_home.html").exists():                 # scena a strati di Claude Design (22/11/2026, sera)
+        blocchi["scena-home"] = (PARTI / "scena_home.html").read_text(encoding="utf-8")
     for pagina in sorted(sito.glob("*.html")):
         if pagina.name in ESCLUSE:
             continue
-        nuovo = costruisci(pagina, parti, versione)
+        nuovo = costruisci(pagina, parti, versione, blocchi)
         if nuovo != pagina.read_text(encoding="utf-8"):
             if pagina.name not in diverse:
                 diverse.append(pagina.name)

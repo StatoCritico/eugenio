@@ -1,6 +1,7 @@
 """Prove di costruisci_pagine.py su una copia del sito."""
 import json
 import re
+import tomllib
 import shutil
 import sys
 from pathlib import Path
@@ -11,7 +12,7 @@ QUI = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(QUI))
 import costruisci_pagine as C  # noqa: E402
 
-VOCI = {"index.html": "./", "patrimonio.html": "patrimonio.html", "legge10.html": "legge10.html",
+VOCI = {"index.html": None, "previsioni.html": "previsioni.html", "patrimonio.html": "patrimonio.html", "legge10.html": "legge10.html",
         "dati.html": "dati.html", "indicatori.html": "indicatori.html", "metodo.html": "metodo.html",
         "faq.html": "faq.html", "sitografia.html": "sitografia.html", "mirror.html": "mirror.html",
         "contatti.html": "contatti.html", "licenza.html": None, "privacy.html": None,
@@ -72,7 +73,7 @@ def test_modifica_del_modello_arriva_in_tutte_le_pagine(sito, monkeypatch, tmp_p
 
 
 # ---------------------------------------------------------------- menu a gruppi e pagine segnaposto (03/11/2026)
-GRUPPI = {"clima": ["dati.html", "legge10.html", "pluviometria.html", "./", "edificio-clima.html", "dati-per-email.html"],   # (08/11/2026) Cambiamento climatico, ultima
+GRUPPI = {"clima": ["dati.html", "legge10.html", "pluviometria.html", "previsioni.html", "edificio-clima.html", "dati-per-email.html"],   # (08/11/2026) Cambiamento climatico, ultima
           "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html", "aggiungi-dbtr.html",
                          "dbtr-istruzioni.html", "visure.html"],
           "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
@@ -114,7 +115,7 @@ def test_gruppo_attivo(sito):
     assert "Servizio sperimentale non ancora verificato" not in s     # validata: niente avviso né «S» nel menu
     # dal 07/11/2026 sera anche Dati climatici e Legge 10 sono validate: niente avviso né «S» nel menu; dal 09/11/2026
     # anche Previsioni (index.html)
-    for nome in ("dati.html", "legge10.html", "index.html"):
+    for nome in ("dati.html", "legge10.html", "previsioni.html"):
         s = (sito / nome).read_text(encoding="utf-8")
         assert "Servizio sperimentale non ancora verificato" not in s, nome
         assert not re.search(r'href="%s">[^<]*<span class="cantiere' % re.escape(nome), s), nome
@@ -747,7 +748,7 @@ PAGINE_IN_CORSO = ["edificio-fabbisogno.html",
                    "edificio-involucro.html", "edificio-impianti.html", "edificio-ecobonus.html", "edificio-conto-termico.html",
                    "cog-emissioni.html", "fv-ombre.html", "fv-irradiazione.html", "fv-producibilita.html", "fv-pvgis.html",
                    "fv-dlgs199.html", "fv-leed.html", "edificio-cer.html"]
-ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "pluviometria.html", "./", "edificio-clima.html", "dati-per-email.html"],
+ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "pluviometria.html", "previsioni.html", "edificio-clima.html", "dati-per-email.html"],
                "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
                "aria": ["aria-trasformazioni.html", "aria-ore.html", "aria-latenti.html", "aria-freecooling.html"],   # (14/11/2026)
@@ -790,7 +791,7 @@ def test_menu_08_11_gruppi_e_voci_in_lavorazione(sito):
         assert s.index("<!-- /testata -->") < s.index("<!-- in-lavorazione -->") < s.index("<main"), p
         assert len(re.findall(rf'<span class="voce-gme voce-corso" data-pagina="{re.escape(p)}"[^>]*aria-current="page"', s)) == 2, p
         assert s.count("data-attivo") == 2, p
-    for p in ("modelli3d.html", "edificio-clima.html", "index.html", "cog-car.html"):
+    for p in ("modelli3d.html", "edificio-clima.html", "previsioni.html", "cog-car.html"):
         assert "<!-- in-lavorazione -->" not in (sito / p).read_text(encoding="utf-8"), p
 
 
@@ -822,7 +823,7 @@ def test_stesso_gruppo_ed_etichetta_dal_menu(sito):
     assert '<p class="gruppo-servizio">Clima e meteo</p>' in s and "<h1>Cambiamento climatico</h1>" in s
     assert "<title>EuGEnio – Cambiamento climatico</title>" in s and "Clima che cambia" not in s
     blocco = re.search(r'<ul class="stesso-gruppo">(.*?)</ul>', s, re.S).group(1)
-    assert re.findall(r'href="([^"]+)"', blocco) == ["dati.html", "legge10.html", "pluviometria.html", "./", "edificio-clima.html", "dati-per-email.html"]
+    assert re.findall(r'href="([^"]+)"', blocco) == ["dati.html", "legge10.html", "pluviometria.html", "previsioni.html", "edificio-clima.html", "dati-per-email.html"]
     s = (sito / "edificio-cer.html").read_text(encoding="utf-8")
     assert '<p class="gruppo-servizio">Fotovoltaico</p>' in s
     blocco = re.search(r'<ul class="stesso-gruppo">(.*?)</ul>', s, re.S).group(1)
@@ -847,7 +848,7 @@ def test_ricerca_esempio_cesena_e_partenza():
     assert 12.2580 < lon < 12.2625 and 44.1310 < lat < 44.1364 and 15 <= z <= 16.5
     assert "partenza()" in (QUI / "sito" / "edificio3d.js").read_text(encoding="utf-8")
     assert "P0.zoom" in (QUI / "sito" / "ortofoto.js").read_text(encoding="utf-8")
-    assert 'placeholder="Es. viale Ghirotti 286, Cesena' in (QUI / "sito" / "index.html").read_text(encoding="utf-8")
+    assert 'placeholder="Es. viale Ghirotti 286, Cesena' in (QUI / "sito" / "previsioni.html").read_text(encoding="utf-8")
 
 
 def test_confini_json_validi_per_il_browser():
@@ -924,3 +925,49 @@ console.log(JSON.stringify(out));
 """
     out = subprocess.run([node, "-e", prova, str(QUI / "sito" / "numeri.js")], capture_output=True, text=True, encoding="utf-8", check=True).stdout
     assert json.loads(out) == ["1.234", "1.234,5", "-12.345,68", "999", "0,25", "3", "1.000.000", "–", "–", "–", "-1.234.567,5", "12"]
+
+
+def test_pagina_iniziale():
+    """(22/11/2026) index.html è la pagina iniziale che spiega EuGEnio; Previsioni è in previsioni.html. Ogni pagina
+    accessibile del menu ha un collegamento nella pagina iniziale; i vecchi collegamenti con le scelte vanno a Previsioni;
+    le ultime tre novità le scrive costruisci_pagine.py da novita.toml."""
+    s = (QUI / "sito" / "index.html").read_text(encoding="utf-8")
+    main = re.search(r"<main.*?</main>", s, re.S).group(0)
+    gruppi = C.gruppi_menu((QUI / "parti" / "testata.html").read_text(encoding="utf-8"))
+    accessibili = {v["pagina"] for g in gruppi for v in g["voci"] if v["tipo"] == ""}
+    assert "previsioni.html" in accessibili and "./" not in accessibili
+    collegate = set(re.findall(r'href="([^"#?:]+\.html)', main))
+    assert accessibili <= collegate, sorted(accessibili - collegate)
+    assert 'location.replace("previsioni.html"+location.search+location.hash)' in s
+    voci = C.leggi_novita()
+    blocco = re.search(r"<!-- ultime-novita -->\n(.*?)\n *<!-- /ultime-novita -->", s, re.S).group(1)
+    assert blocco.count("<li>") == 3 and f'href="novita.html#{C.ancora(voci[0], voci)}"' in blocco
+    assert 'aria-current="page"' not in re.search(r'<header class="testata">.*?</header>', s, re.S).group(0)
+    assert (QUI / "sito" / "previsioni.html").exists() and 'id="calcola"' in (QUI / "sito" / "previsioni.html").read_text(encoding="utf-8")
+    # disegno e schede: una parte e una scheda per ogni gruppo del menu, una riga in home.toml per ogni pagina accessibile
+    ids = [g["id"] for g in gruppi]
+    # (23/11/2026) disegno fermo: i bersagli sono button.sh-punto con data-parte e data-gruppo
+    BERSAGLIO = r'<button type="button" class="sh-punto[^"]*" data-parte="([^"]+)" data-gruppo="([^"]+)"'
+    assert sorted({g for _, g in re.findall(BERSAGLIO, main)}) == sorted(ids)
+    assert re.findall(r'<article class="home-scheda" id="scheda-([^"]+)"', main) == ids
+    conf = tomllib.loads((QUI / "parti" / "home.toml").read_text(encoding="utf-8"))
+    assert set(conf["gruppi"]) == set(ids)
+    assert accessibili <= set(conf["pagine"]), sorted(accessibili - set(conf["pagine"]))
+    scena = (QUI / "parti" / "scena_home.html").read_text(encoding="utf-8").strip()
+    assert scena in s.replace("?v=" + C.VERS.search(s).group(0), "?v=" + C.VERS.search(scena).group(0))  # scena di Claude Design
+    assert s.count('<div class="sh" id="scena-home">') == 1   # un solo disegno, un fondale per tema accanto alla pagina
+    fondali = re.findall(r'<img class="sh-fondo (sh-fondo-scuro|sh-fondo-chiaro)" src="([^"?]+)', scena)
+    assert sorted(t for t, _ in fondali) == ["sh-fondo-chiaro", "sh-fondo-scuro"]
+    for _, img in fondali:
+        assert (QUI / "sito" / img).exists(), img
+    assert "fonts.googleapis" not in s and "fonts.googleapis" not in (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
+    # parti del disegno: le stesse di home.toml, ognuna con un gruppo vero; ogni pagina accessibile è in almeno una parte
+    chiavi = re.findall(BERSAGLIO, main)
+    assert sorted(k for k, _ in chiavi) == sorted(conf["parti"])   # un bersaglio per parte, valido per tutti e due i temi
+    assert all(conf["parti"][k]["gruppo"] == g for k, g in chiavi)
+    dati = json.loads(re.search(r'<script type="application/json" id="parti-home">(.*?)</script>', main, re.S).group(1))
+    in_parti = {v["pagina"] for d in dati.values() for v in d["voci"]}
+    assert accessibili <= in_parti, sorted(accessibili - in_parti)
+    assert dati["cogenerazione"]["prossimamente"] and dati["cabina-gas"]["prossimamente"] and not dati["uta"]["prossimamente"]
+    for a in re.findall(r'<a href="([^"]+)" data-gruppo="([^"]+)">', main):    # la voce apre la pagina col menu del gruppo
+        assert any(v["pagina"] == a[0] for g in gruppi if g["id"] == a[1] for v in g["voci"]), a
