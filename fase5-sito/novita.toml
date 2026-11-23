@@ -23,10 +23,13 @@
 [[voce]]
 data = "2026-11-23"
 versione = "20261123b"
-titolo = "Pagina iniziale: disegno 16:9 e titoli più chiari"
+titolo = "Pagina iniziale 16:9 e dodici pagine verificate"
 migliorato = [
   "Pagina iniziale: il disegno è ora in formato 16:9, più adatto agli schermi dei computer, e si vede tutto senza scorrere, sotto il titolo e il testo di presentazione, che ora occupa tutta la larghezza.",
   "I nomi sui mirini sono più grandi, si alternano più in fretta e indicano gli argomenti delle pagine (per esempio «Pompe di calore», «Dati pluviometrici», «Elettricità e rete elettrica»).",
+]
+verificato = [
+  "Non più sperimentali: Clima e meteo › Dati pluviometrici e Cambiamento climatico; Territorio › Edifici pubblici, Ortofoto e Modelli 3D; Trattamento aria › Trasformazioni (UTA), Ore di funzionamento e Carichi latenti; Fotovoltaico › Cabine primarie; Statistiche › Stato della rete elettrica, Produzione e consumi di elettricità e Carichi elettrici.",
 ]
 
 [[voce]]

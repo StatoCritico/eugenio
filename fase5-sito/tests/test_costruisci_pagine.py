@@ -194,7 +194,7 @@ def test_pagine_fase_b():
     for vietato in ("google.com", "googleapis", "arcgisonline", "virtualearth", "s2cloudless-20"):   # nessun indirizzo dei servizi esclusi
         assert vietato not in o.lower() and vietato not in js.lower()
     t = (QUI / "parti" / "testata.html").read_text(encoding="utf-8")
-    assert re.search(r'href="ortofoto.html">[^<]*<span class="cantiere prova">sperimentale', t)
+    assert re.search(r'href="ortofoto.html">Ortofoto</a>', t)     # 23/11/2026: non più sperimentale
     for href in ("fv-irradiazione.html", "fv-pvgis.html", "fv-dlgs199.html"):     # (08/11/2026) in lavorazione
         assert f'href="{href}"' not in t and f'data-pagina="{href}"' in t, href
 
@@ -492,7 +492,7 @@ def test_pagine_blocco_3_senza_gme_ne_uni():
     assert d["gas_naturale"]["anni"]["2024"] == {"t_co2_tj": 59.089, "t_co2_1000_sm3": 2.026}
     t = (QUI / "parti" / "testata.html").read_text(encoding="utf-8")
     # (08/11/2026) Cambiamento climatico resta sperimentale e accessibile; le altre tre sono in lavorazione
-    assert re.search(r'href="edificio-clima.html">Cambiamento climatico <span class="cantiere prova">sperimentale', t)
+    assert re.search(r'href="edificio-clima.html">Cambiamento climatico</a>', t)   # 23/11/2026: non più sperimentale
     for href in ("cog-emissioni.html", "edificio-cer.html", "fv-leed.html"):
         assert f'href="{href}"' not in t and t.count(f'<span class="voce-gme voce-corso" data-pagina="{href}"') == 2, href
     l = (QUI / "sito" / "fv-leed.html").read_text(encoding="utf-8")
@@ -602,8 +602,11 @@ def test_etichette_brevi_nelle_tendine():
     # (09/11/2026 f) + 3 «S» (Edifici: Obblighi di legge, Geometria e luce naturale, Consumi): 8 «S», 13 in lavorazione
     # (14/11/2026) + 4 «S» del Trattamento aria: 12; (17/11/2026) + «S» di Territorio › Edifici pubblici: 13;
     # (17/11/2026) + Cabine primarie e Stato della rete elettrica: 15; (20/11/2026) + Produzione e consumi di elettricità: 16;
-    # (20/11/2026) + Carichi elettrici: 17; (22/11/2026) + Suolo e aree agricole: 18
-    assert len(s) == pannello.count(">sperimentale<") == 19 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    # (20/11/2026) + Carichi elettrici: 17; (22/11/2026) + Suolo e aree agricole: 18 (+ Dati pluviometrici: 19)
+    # (23/11/2026, Paolo) non più sperimentali: Dati pluviometrici, Cambiamento climatico, Edifici pubblici, Ortofoto,
+    # Modelli 3D, Trasformazioni (UTA), Ore di funzionamento, Carichi latenti, Cabine primarie, Stato della rete
+    # elettrica, Produzione e consumi di elettricità, Carichi elettrici: restano 7 «S»
+    assert len(s) == pannello.count(">sperimentale<") == 7 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
     assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")

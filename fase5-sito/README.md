@@ -88,9 +88,9 @@ sito/
                     scelta_aria.js, gruppi_ore.js (sezione «Trattamento aria» qui sotto)
   strumenti/psicro_UTA.xlsx  foglio psicrometrico UTA scaricabile (generato da fase14-trattamento-aria/foglio)
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
-  rete-elettrica.html  Statistiche › Stato della rete elettrica (17/11/2026, sperimentale): rete_elettrica.js
-  fv-cabine.html    Fotovoltaico › Cabine primarie (17/11/2026, sperimentale): fv_cabine.js
-  pluviometria.html Clima e meteo › Dati pluviometrici (22/11/2026, sperimentale): pluviometria.js e pioggia_gl.js
+  rete-elettrica.html  Statistiche › Stato della rete elettrica (17/11/2026; verificata il 23/11): rete_elettrica.js
+  fv-cabine.html    Fotovoltaico › Cabine primarie (17/11/2026; verificata il 23/11): fv_cabine.js
+  pluviometria.html Clima e meteo › Dati pluviometrici (22/11/2026; verificata il 23/11): pluviometria.js e pioggia_gl.js
                     (indice, immagini e legenda della pioggia, usato anche da rete_elettrica.js)
   rete.js           parte comune delle pagine della rete (e di Comunità energetiche): API /api/rete/…, dati sintetici
                     con ?prova=1, colori e regola della criticità, strisce e retino, cabine, riquadretti, GSE dal browser
@@ -1275,6 +1275,11 @@ Richiesta e decisioni di Paolo dell'08/11: frecce per compensare a occhio gli sc
 Dettagli e procedura J1–J12 nella sezione I di `AGGIORNAMENTO_2026-11-07.md`.
 
 - **Dati climatici e Legge 10** senza l'avviso «Servizio sperimentale» (validate, come Costi energetici Sanità).
+- **23/11/2026 (Paolo)**: tolti etichetta «S»/«sperimentale» (menu in alto, menu del telefono, schede della pagina
+  iniziale) e avviso «Servizio sperimentale» (blocco `<!-- sperimentale -->` della pagina) da Dati pluviometrici, Cambiamento
+  climatico, Edifici pubblici, Ortofoto, Modelli 3D, Trasformazioni (UTA), Ore di funzionamento, Carichi latenti (queste tre
+  senza avviso), Cabine primarie, Stato della rete elettrica, Produzione e consumi di elettricità, Carichi elettrici.
+  Restano sperimentali le pagine di Edifici, Free cooling e recupero, Suolo e aree agricole.
 - **Pagine 3D e Ortofoto**: la ricerca (`cerca_luogo.js`) è il **passo 1 della colonna destra** (`#passo-cerca`), prima dei
   livelli; con il **solo comune** la mappa va al centro del comune (baricentro del confine ISTAT di `dati/mappa/<regione>.json`,
   zoom 14, nessuna chiamata); una risposta senza coordinate (vuota o 0,0) porta al centro del comune con l'avviso. Barra di

@@ -32,10 +32,10 @@ import costruisci_pagine as C  # noqa: E402
 def test_menu_e_pagina():
     t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
     assert t.count('href="carichi.html"') == 2
-    assert re.search(r'href="carichi.html">Carichi elettrici <span class="cantiere prova">sperimentale', t)
+    assert re.search(r'href="carichi.html">Carichi elettrici</a>', t)      # 23/11/2026: non più sperimentale
     assert t.index('href="carichi.html"') > t.index('href="elettricita.html"')        # dopo «Produzione e consumi»
     s = (SITO / "carichi.html").read_text(encoding="utf-8")
-    assert '<p class="gruppo-servizio">Statistiche</p>' in s and "Servizio sperimentale non ancora verificato" in s
+    assert '<p class="gruppo-servizio">Statistiche</p>' in s and "Servizio sperimentale non ancora verificato" not in s
     assert s.count('aria-current="page"') == 2 and "dati.terna.it" in s and "Come leggere i grafici" in s
     assert re.search(r'<script src="minimappa\.js\?v=\d{8}[a-z]"></script>\s*<script src="carichi\.js\?v=', s)
     assert 'class="mappa ' not in s and "mappa-area" not in s                          # niente mappa grande
