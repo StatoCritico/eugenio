@@ -44,7 +44,7 @@ def test_menu_file_e_licenza():
     assert [v["pagina"] for v in gruppi["clima"]["voci"]][:4] == ["dati.html", "legge10.html", "pluviometria.html", "previsioni.html"]
     s = _t("pluviometria.html")
     assert "<h1>Dati pluviometrici</h1>" in s and '<p class="gruppo-servizio">Clima e meteo</p>' in s
-    assert "Servizio sperimentale non ancora verificato" in s and "a fini statistici, non di allerta" in s
+    assert "Servizio sperimentale non ancora verificato" not in s and "a fini statistici, non di allerta" in s   # 23/11/2026
     assert "CC BY-SA 4.0" in s and "radar.protezionecivile.gov.it" in s and "dpc-radar" in s
     assert re.search(r'<script src="pioggia_gl\.js\?v=\w+"></script>\s*<script src="pluviometria\.js\?v=\w+"></script>', s)
     for js in ("pluviometria.js", "pioggia_gl.js"):

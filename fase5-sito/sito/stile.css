@@ -2037,9 +2037,9 @@ svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-off
    home_*_estate.webp; tema scuro = variante futuristica, tema chiaro = variante tecnica), messo da costruisci_pagine.py;
    gli unici elementi attivi sono i bersagli (home.js). Sotto: schede dei gruppi del menu. */
 .home { max-width: 90rem; margin: 0 auto; }
-.home .home-apertura { padding: var(--s3) 0 var(--s4); }
-.home .home-apertura h1 { margin: var(--s3) 0 var(--s3); }
-.home .home-sotto { font-size: var(--c-l); max-width: 70ch; margin: 0; }
+.home .home-apertura { padding: var(--s2) 0 var(--s3); }
+.home .home-apertura h1 { margin: var(--s2) 0 var(--s2); }
+.home .home-sotto { font-size: var(--c-l); max-width: none; margin: 0; }   /* a tutta larghezza (23/11/2026) */
 .home-scena { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5); align-items: start; }
 .scena-contenitore { position: relative; width: 100%; max-width: 1200px; aspect-ratio: 1200 / 875; overflow: hidden;
   border-radius: var(--r-l); border: 1px solid var(--linea); }

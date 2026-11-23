@@ -55,10 +55,16 @@ def _apri(browser, base, larghezza=1366, altezza=800, tema=None, **kw):
 def test_scena_nella_finestra_e_solo_bersagli(browser, base):
     ctx, pg, errori = _apri(browser, base)
     q = pg.locator(".sh-quadro").bounding_box()
-    testata = pg.evaluate("document.querySelector('.testata').getBoundingClientRect().height")
-    # sta nella finestra: non più larga della pagina né più alta dello spazio sotto la testata
-    assert q["width"] <= 1366 and q["height"] <= 800 - testata + 1
-    assert abs(q["width"] / q["height"] - 1200 / 875) < 0.01
+    # (23/11/2026) sta tutta nella finestra a pagina non scorsa, sotto titolo e testo, col rapporto del quadro (CSS, 16:9)
+    assert q["width"] <= 1366 and q["y"] + q["height"] <= 800 + 1
+    rapporto = pg.evaluate("(a => a[0] / (a[1] || 1))(getComputedStyle(document.querySelector('.sh-quadro')).aspectRatio.split('/').map(parseFloat))")
+    assert abs(q["width"] / q["height"] - rapporto) < 0.01 and abs(rapporto - 16 / 9) < 0.01
+    # il testo di presentazione va su tutta la larghezza della colonna
+    sotto, home = pg.locator(".home-sotto").bounding_box(), pg.locator(".home-apertura").bounding_box()
+    assert sotto["width"] >= home["width"] - 2
+    # titoli dei bersagli: argomenti del menu, mai gli oggetti del disegno
+    titoli = pg.evaluate("[...document.querySelectorAll('.sh-titolo')].map(t => t.textContent)")
+    assert "Pompe di calore" in titoli and not any(" sul " in t or " sulla " in t for t in titoli), titoli
     assert pg.evaluate("document.documentElement.scrollWidth") <= 1366
     # niente animazioni; il fondale del tema scuro si carica
     assert pg.evaluate("document.getAnimations().filter(a => a.playState === 'running').length") == 0
@@ -139,7 +145,8 @@ def test_telefono(browser, base):
     ctx, pg, errori = _apri(browser, base, larghezza=375, altezza=740, has_touch=True)
     assert pg.evaluate("document.documentElement.scrollWidth") <= 375
     pg.tap('.sh-punto[data-parte="territorio"]')
-    q, s = pg.locator(".sh-quadro").bounding_box(), pg.locator("#sh-scheda").bounding_box()
-    assert s["x"] >= q["x"] - 1 and s["x"] + s["width"] <= q["x"] + q["width"] + 1
+    # sul telefono la scheda sale dal fondo dello schermo, tutta visibile
+    s = pg.locator("#sh-scheda").bounding_box()
+    assert s["x"] >= 0 and s["x"] + s["width"] <= 375 and s["y"] >= 0 and s["y"] + s["height"] <= 740
     assert not errori, errori
     ctx.close()

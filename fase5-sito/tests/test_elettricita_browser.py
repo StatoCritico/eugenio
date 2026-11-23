@@ -31,9 +31,9 @@ import costruisci_pagine as C  # noqa: E402
 def test_menu_e_pagina():
     t = (C.PARTI / "testata.html").read_text(encoding="utf-8")
     assert t.count('href="elettricita.html"') == 2
-    assert re.search(r'href="elettricita.html">Produzione e consumi di elettricità <span class="cantiere prova">sperimentale', t)
+    assert re.search(r'href="elettricita.html">Produzione e consumi di elettricità</a>', t)   # 23/11/2026: validata
     s = (SITO / "elettricita.html").read_text(encoding="utf-8")
-    assert '<p class="gruppo-servizio">Statistiche</p>' in s and "Servizio sperimentale non ancora verificato" in s
+    assert '<p class="gruppo-servizio">Statistiche</p>' in s and "Servizio sperimentale non ancora verificato" not in s
     assert s.count('aria-current="page"') == 2 and "dati.terna.it" in s and "21 giugno 2024" in s
     assert re.search(r'<script src="rete\.js\?v=\d{8}[a-z]"></script>\s*<script src="cursore_periodo\.js\?v=\d{8}[a-z]"></script>\s*<script src="elettricita\.js\?v=', s)
     assert 'id="anno-inizio"' in s and 'id="anno-fine"' in s and 'aria-label="Anno finale del periodo"' in s

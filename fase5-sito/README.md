@@ -88,9 +88,9 @@ sito/
                     scelta_aria.js, gruppi_ore.js (sezione «Trattamento aria» qui sotto)
   strumenti/psicro_UTA.xlsx  foglio psicrometrico UTA scaricabile (generato da fase14-trattamento-aria/foglio)
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
-  rete-elettrica.html  Statistiche › Stato della rete elettrica (17/11/2026, sperimentale): rete_elettrica.js
-  fv-cabine.html    Fotovoltaico › Cabine primarie (17/11/2026, sperimentale): fv_cabine.js
-  pluviometria.html Clima e meteo › Dati pluviometrici (22/11/2026, sperimentale): pluviometria.js e pioggia_gl.js
+  rete-elettrica.html  Statistiche › Stato della rete elettrica (17/11/2026; verificata il 23/11): rete_elettrica.js
+  fv-cabine.html    Fotovoltaico › Cabine primarie (17/11/2026; verificata il 23/11): fv_cabine.js
+  pluviometria.html Clima e meteo › Dati pluviometrici (22/11/2026; verificata il 23/11): pluviometria.js e pioggia_gl.js
                     (indice, immagini e legenda della pioggia, usato anche da rete_elettrica.js)
   rete.js           parte comune delle pagine della rete (e di Comunità energetiche): API /api/rete/…, dati sintetici
                     con ?prova=1, colori e regola della criticità, strisce e retino, cabine, riquadretti, GSE dal browser
@@ -216,22 +216,30 @@ sulla voce si apre la pagina, aprendo anche il relativo menu in alto in orizzont
   **23/11/2026** (`v2026.11.23`, versione 20261123a) torna con la **versione statica** rifatta da Paolo con Claude Design
   (zip `eugenio_home_statica_2026-11-23.zip`).
 - **Disegno** (`parti/scena_home.html`, blocco `<!-- scena-home -->` messo da `costruisci_pagine.py`, con il suo `<style>`):
-  un'**immagine ferma per tema**, `sito/home_scuro_estate.webp` (variante futuristica, 120 KB) e `home_chiaro_estate.webp`
-  (variante tecnica, 190 KB), 1920 × 1400, scambiate con `[data-theme="light"]`; **nessuna animazione**. Gli unici elementi
+  un'**immagine ferma per tema**, `sito/home_scuro_estate.webp` (variante futuristica) e `home_chiaro_estate.webp`
+  (variante tecnica), 1920 × 1080 dal 23/11 b (prima 1920 × 1400), scambiate con `[data-theme="light"]`; **nessuna animazione**. Gli unici elementi
   attivi sono i **16 bersagli** `button.sh-punto data-parte data-gruppo` (mirini; tratteggiati e grigi/arancio, classe
   `sh-poi`, le parti «prossimamente»), posizionati in percentuale; testi e bersagli scalano con la scena (`cqw`). Legenda del
   consumo di suolo **con dati d'esempio**. Gli stili della vecchia scena animata sono stati tolti da `stile.css`; il blocco
   annulla anche cornice e proporzioni di `.scena-contenitore`.
-- **Dimensione** (`home.js`): larga quanto la pagina (esce dalla colonna, centrata) ma mai più alta dello spazio sotto la
-  `.testata` (rapporto 1200:875). Lo spostamento `--sh-x` si calcola dalla posizione reale della scena, per difetto, così non
+- **16:9** (23/11/2026 b): fondali nuovi di Claude Design 1920 × 1080 (scuro 81 KB, chiaro 118 KB) per tutti gli schermi,
+  `.sh-quadro` con `aspect-ratio: 16/9`, bersagli riposizionati da Design; sotto i 560 px di scena la scheda flottante è
+  fissata in fondo allo schermo (`position: fixed`, al più 70 % dell'altezza).
+- **Dimensione** (`home.js`): larga quanto la pagina (esce dalla colonna, centrata) ma mai più alta dello spazio che resta
+  **dal bordo alto del disegno** (sotto testata, titolo e testo, a pagina non scorsa) al fondo della finestra (23/11 b:
+  prima contava solo la testata e bisognava scorrere); rapporto letto dall'`aspect-ratio` del CSS; ricalcolo anche a font
+  caricati. Il testo di presentazione (`.home-sotto`) va su tutta la larghezza. Lo spostamento `--sh-x` si calcola dalla posizione reale della scena, per difetto, così non
   sborda mai a destra (23/11: col bordo del contenitore sborda di 1 px sul telefono).
 - **Parti** (`parti/home.toml`, `[parti.…]`): titolo, descrizione, gruppo e pagine collegate (anche di altri gruppi e in
   lavorazione). `costruisci_pagine.py` (`parti_home`, blocco `<!-- parti-home -->`, JSON) aggiunge nome e stato dal menu e
   segna «prossimamente» le parti senza pagine accessibili (oggi solare termico, pompa di calore, centrale termica, frigo,
   cogeneratore, cabina del gas). La parte «cabina primaria» non c'è nel disegno: le sue pagine (Stato della rete elettrica,
   Cabine primarie) sono nel **traliccio**.
-- **Comportamento** (`home.js`): i **titoli** dei bersagli compaiono a turno, uno alla volta (1 s acceso, 1 s spento), e si
-  fermano mentre si usa la scena; **sostando** ~0,35 s su un bersaglio (o col fuoco da tastiera) compare la descrizione breve
+- **Comportamento** (`home.js`): i **titoli** dei bersagli (23/11 b: 30 % più grandi, `clamp(14px, 1,43cqw, 19,5px)`)
+  compaiono a turno, uno alla volta (1 s acceso, **0,5 s** spento), e si fermano mentre si usa la scena; stanno a sinistra
+  del bersaglio nella parte destra del disegno e, se non ci stanno da nessuna parte (telefoni), scorrono dentro il bordo
+  (`--dx`). **Titoli = argomenti del menu**, non oggetti del disegno (23/11 b, Paolo: niente «sul tetto», «sulla torre»),
+  uguali in `home.toml` e nei bottoni di `scena_home.html`; **sostando** ~0,35 s su un bersaglio (o col fuoco da tastiera) compare la descrizione breve
   («Clic per le pagine» o «Prossimamente»); il **clic** (Invio, tocco) apre sopra l'immagine, accanto al bersaglio, la
   **scheda flottante** con le pagine della parte (quelle non disponibili spente, con lo stato) e «Tutte le pagine di …», che
   apre la scheda del gruppo sotto il disegno; si chiude con ×, Esc o un clic fuori. Sotto i 560 px di scena la scheda sta in
@@ -1267,6 +1275,11 @@ Richiesta e decisioni di Paolo dell'08/11: frecce per compensare a occhio gli sc
 Dettagli e procedura J1–J12 nella sezione I di `AGGIORNAMENTO_2026-11-07.md`.
 
 - **Dati climatici e Legge 10** senza l'avviso «Servizio sperimentale» (validate, come Costi energetici Sanità).
+- **23/11/2026 (Paolo)**: tolti etichetta «S»/«sperimentale» (menu in alto, menu del telefono, schede della pagina
+  iniziale) e avviso «Servizio sperimentale» (blocco `<!-- sperimentale -->` della pagina) da Dati pluviometrici, Cambiamento
+  climatico, Edifici pubblici, Ortofoto, Modelli 3D, Trasformazioni (UTA), Ore di funzionamento, Carichi latenti (queste tre
+  senza avviso), Cabine primarie, Stato della rete elettrica, Produzione e consumi di elettricità, Carichi elettrici.
+  Restano sperimentali le pagine di Edifici, Free cooling e recupero, Suolo e aree agricole.
 - **Pagine 3D e Ortofoto**: la ricerca (`cerca_luogo.js`) è il **passo 1 della colonna destra** (`#passo-cerca`), prima dei
   livelli; con il **solo comune** la mappa va al centro del comune (baricentro del confine ISTAT di `dati/mappa/<regione>.json`,
   zoom 14, nessuna chiamata); una risposta senza coordinate (vuota o 0,0) porta al centro del comune con l'avviso. Barra di

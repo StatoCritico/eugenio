@@ -47,11 +47,11 @@ def test_menu_e_pagine():
     assert [v["pagina"] for v in gruppi["statistiche"]["voci"]][-4:] == ["rete-elettrica.html", "elettricita.html", "carichi.html",
                                                                          "suolo.html"]       # (22/11/2026) Suolo e aree agricole
     assert gruppi["fotovoltaico"]["voci"][0] == {"pagina": "fv-cabine.html", "nome": "Cabine primarie", "tipo": ""}
-    assert re.search(r'href="rete-elettrica.html">Stato della rete elettrica <span class="cantiere prova">sperimentale', t)
+    assert re.search(r'href="rete-elettrica.html">Stato della rete elettrica</a>', t)   # 23/11/2026: validata
     assert C.main(["--controlla"]) == 0
     for nome, gruppo, js in (("rete-elettrica.html", "Statistiche", "rete_elettrica.js"), ("fv-cabine.html", "Fotovoltaico", "fv_cabine.js")):
         s = _t(nome)
-        assert f'<p class="gruppo-servizio">{gruppo}</p>' in s and "Servizio sperimentale non ancora verificato" in s
+        assert f'<p class="gruppo-servizio">{gruppo}</p>' in s and "Servizio sperimentale non ancora verificato" not in s
         assert s.count('aria-current="page"') == 2
         # (22/11/2026) in rete-elettrica.html c'è pioggia_gl.js (casella «Pioggia misurata») tra rete.js e lo script della pagina
         assert re.search(rf'<script src="rete\.js\?v=\d{{8}}[a-z]"></script>\s*(<script src="pioggia_gl\.js\?v=\d{{8}}[a-z]"></script>\s*)?<script src="{js}\?v=', s)

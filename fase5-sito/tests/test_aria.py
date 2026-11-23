@@ -1,7 +1,8 @@
 """Trattamento aria (14/11/2026): menu, pagine, moduli comuni (senza browser).
 
 - il gruppo «Trattamento aria» sta tra Edifici e Cogenerazione (tendina, menu del telefono), con il sottotitolo non
-  cliccabile «Psicrometria» e 4 voci sperimentali («S» nella tendina, «sperimentale» nel telefono);
+  cliccabile «Psicrometria» e 4 voci (dal 23/11/2026 solo «Free cooling e recupero» resta sperimentale: «S» nella
+  tendina, «sperimentale» nel telefono);
 - le 4 pagine si costruiscono: etichetta del gruppo, «Nello stesso gruppo», due colonne (mappa e diagramma a sinistra,
   passi a destra), script dei moduli nell'ordine giusto, foglio Excel scaricabile;
 - psicro.js e gruppi_ore.js in node: stato, sequenza di riferimento, livelli di progetto (99 % / 1 % predefiniti),
@@ -42,9 +43,10 @@ def test_menu_gruppo_trattamento_aria():
     assert [(v["pagina"], v["nome"], v["tipo"]) for v in aria["voci"]] == [(p, n, "") for p, n in zip(PAGINE, NOMI)]
     tendina = re.search(r'data-gruppo="aria"><summary>Trattamento aria</summary>\s*<ul class="tendina">(.*?)</ul>', t, re.S).group(1)
     assert tendina.strip().startswith('<li class="voce-sottotitolo">Psicrometria</li>')
-    assert tendina.count('<span class="cantiere prova breve" title="sperimentale">') == 4
+    assert tendina.count('<span class="cantiere prova breve" title="sperimentale">') == 1   # 23/11/2026: solo il free cooling
+    assert re.search(r'href="aria-freecooling.html">[^<]*<span class="cantiere prova breve"', tendina)
     tel = re.search(r'<details class="pannello-gruppo" data-gruppo="aria"><summary>Trattamento aria</summary>(.*?)</details>', t, re.S).group(1)
-    assert '<li class="voce-sottotitolo">Psicrometria</li>' in tel and tel.count(">sperimentale<") == 4
+    assert '<li class="voce-sottotitolo">Psicrometria</li>' in tel and tel.count(">sperimentale<") == 1
     assert all(f'href="{p}"' in tel for p in PAGINE)
     # dopo Edifici e prima di Cogenerazione, sia nella tendina sia nel telefono
     for cls in ("voce-gruppo", "pannello-gruppo"):
