@@ -116,6 +116,10 @@ out.vincoli = {
   dieci_no: F.punteggioTerreno({ area_m2: f.haMin * 11000, distanza_m: 500, prob_coltura: 80, n_enti: 1 }, fa),
   dieci_si: F.punteggioTerreno({ area_m2: f.haMin * 11000, distanza_m: 500, prob_coltura: 80, n_enti: 1 }, { ...fa, limite10: true }),
   dieci_grande: F.punteggioTerreno({ area_m2: f.haMin * 110000, distanza_m: 500, prob_coltura: 80, n_enti: 1 }, { ...fa, limite10: true }),
+  // vincoli paesaggistici: conta la parte libera; escluso se vincolato per metà o più
+  paes_meta: F.punteggioTerreno({ area_m2: f.haMin * 40000, distanza_m: 500, prob_coltura: 10, n_enti: 1, quota_vincolata: 0.6, vincoli: "foreste e boschi 60 %" }, f),
+  paes_poco: F.punteggioTerreno({ area_m2: f.haMin * 40000, distanza_m: 500, prob_coltura: 10, n_enti: 1, quota_vincolata: 0.2, vincoli: "foreste e boschi 20 %" }, f),
+  paes_stretto: F.punteggioTerreno({ area_m2: f.haMin * 11000, distanza_m: 500, prob_coltura: 10, n_enti: 1, quota_vincolata: 0.3, vincoli: "fiumi 30 %" }, f),
 };
 console.log(JSON.stringify(out));
 """
@@ -147,6 +151,9 @@ def test_calcolo_con_node():
     v = o["vincoli"]
     assert not v["non_idonea"]["ammesso"] and "area non idonea" in v["non_idonea"]["motivi"][0]
     assert v["limitata"]["ammesso"]
+    assert not v["paes_meta"]["ammesso"] and "vincoli paesaggistici sul 60 %" in v["paes_meta"]["motivi"][0]
+    assert v["paes_poco"]["ammesso"] and v["paes_poco"]["haLibera"] < v["paes_poco"]["ha"]
+    assert not v["paes_stretto"]["ammesso"] and "libera dai vincoli" in v["paes_stretto"]["motivi"][0]
     assert v["dieci_no"]["ammesso"] and not v["dieci_si"]["ammesso"] and "10%" in v["dieci_si"]["motivi"][0] and v["dieci_grande"]["ammesso"]
 
 
@@ -218,6 +225,10 @@ def test_pagina_in_prova(browser, base):
     for o in ordine:
         assert o == sorted(o, reverse=True) and any(o)                      # prima tutti i propri, poi gli altri
     assert "★" in pg.inner_text("#elenco-terreni")
+    # vincoli paesaggistici SINTETICI: il quinto terreno di ogni cabina (70 % vincolato) è escluso; usi civici segnalati
+    pv = pg.evaluate("window.EUGENIO_CER_FV_PAGINA.st.cabine.flatMap(c => (c.terreni || []).filter(t => t.vincoli || t.vincoli_segnalati).map(t => [t.ammesso, t.motivi.join(';'), t.quota_vincolata, t.vincoli || '', t.vincoli_segnalati || '']))")
+    assert any(q == 0.7 and not a and "vincoli paesaggistici" in m for a, m, q, _, _ in pv)
+    assert any("usi civici" in sg for *_, sg in pv)
     # (24/11/2026 sera) area non idonea SINTETICA: il terreno che ci cade è escluso; schede al passaggio del mouse
     esclusi = pg.evaluate("window.EUGENIO_CER_FV_PAGINA.st.cabine.flatMap(c => (c.terreni || []).filter(t => t.vincolo).map(t => [t.ammesso, t.motivi.join(';')]))")
     assert esclusi and all(not a and "area non idonea" in m for a, m in esclusi)
