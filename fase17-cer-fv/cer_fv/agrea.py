@@ -158,7 +158,10 @@ def istat_belfiore(comuni: Path | None = None, cartella: Path = CARTELLA) -> dic
         import pyarrow.parquet as pq
         t = pq.read_table(comuni).to_pydict()
         ist = t.get("istat") or t.get("__index_level_0__")
-        return {str(i).zfill(6): str(b).upper() for i, b in zip(ist, t["belfiore"]) if i and b}
+        if ist and t.get("belfiore"):
+            return {str(i).zfill(6): str(b).upper() for i, b in zip(ist, t["belfiore"]) if i and b}
+        # (24/11/2026) il comuni.parquet del server non ha la colonna belfiore: si passa all'elenco ISTAT
+        log.warning("%s senza le colonne istat e belfiore: uso l'elenco dei comuni dell'ISTAT", comuni)
     import csv
     import io
     f = comuni if comuni.exists() and comuni.suffix == ".csv" else cartella / "comuni_istat.csv"
