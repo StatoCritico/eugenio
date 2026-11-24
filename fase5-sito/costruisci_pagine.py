@@ -376,6 +376,12 @@ def pagina_novita(voci: list[dict]) -> str:
     nuovi, servizi migliorati e servizi verificati (non più sperimentali). Le stesse voci sono nel
     <a href="novita.xml">feed Atom</a> (per seguirle con un lettore di feed) e nelle
     <a href="https://github.com/statocritico/eugenio/releases">release del codice su GitHub</a>.</p>
+  <aside class="riquadro-llm" role="note" aria-label="File per gli assistenti AI">
+    <p><strong>Usi un assistente AI?</strong> EuGEnio ha un file scritto apposta per i modelli linguistici (LLM): <a
+      href="llms.txt">llms.txt</a>, con l'indice del sito, le pagine e le rotte dell'API, e la guida completa <a
+      href="EUGENIO_PER_AGENTI.md">EUGENIO_PER_AGENTI.md</a>. Dai il collegamento al tuo assistente: saprà da solo cosa
+      c'è e come usarlo.</p>
+  </aside>
 
 {chr(10).join(sezioni)}
 </main>

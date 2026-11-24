@@ -90,6 +90,7 @@ sito/
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
   rete-elettrica.html  Statistiche › Stato della rete elettrica (17/11/2026; verificata il 23/11): rete_elettrica.js
   fv-cabine.html    Fotovoltaico › Cabine primarie (17/11/2026; verificata il 23/11): fv_cabine.js
+  fv-curve.html     Fotovoltaico › Curve di carico (24/11/2026, in lavorazione): strumenti/load-curve.zip; skill AU da fare
   fv-cer.html       Fotovoltaico › CER – Sviluppo impianti FV (24/11/2026, sperimentale): fv_cer.js, cer_fv_calcolo.js
                     (calcoli senza DOM, provati con Node), esempi/cer_fv_sedi_esempio.csv e cer_fv_curve_esempio.csv (sintetici)
   pluviometria.html Clima e meteo › Dati pluviometrici (22/11/2026; verificata il 23/11): pluviometria.js e pioggia_gl.js
@@ -608,6 +609,14 @@ solo su azione dell'utente (sede aggiunta o strato acceso).
   4 alla volta, strato, riquadro al clic, immagine, file, telefono, `?prova=1`).
 
 ## CER – Sviluppo impianti FV (24/11/2026, sperimentale, richiesta di Paolo)
+
+Riquadro `.riquadro-llm` (24/11/2026) in cima a Novità (`pagina_novita` in `costruisci_pagine.py`) e Come funziona
+(`metodo.html`) con `llms.txt` e `EUGENIO_PER_AGENTI.md`; nella pagina iniziale un 17° bersaglio verde (`a.sh-punto.sh-file`
+in `parti/scena_home.html`, in cima al fascio di luce dietro la torre) è un collegamento diretto a `EUGENIO_PER_AGENTI.md`:
+`home.js` gli dà la descrizione al passaggio (attributi `data-titolo`, `data-descrizione`) ma nessuna scheda.
+Voce **Curve di carico** (`fv-curve.html`, prima del gruppo Fotovoltaico, in lavorazione): skill `load-curve` per
+e-distribuzione (`sito/strumenti/load-curve.zip`, dallo zip di Paolo del 24/11 con POD e percorsi d'esempio al posto di quelli veri) e skill per il Portale Consumi dell'Acquirente Unico, quando ci sarà
+l'accesso da persona giuridica.
 
 Pagina `fv-cer.html` in Fotovoltaico, dopo Cabine primarie («S» nel menu, avviso sperimentale). Proposta e scelte aperte:
 `documenti/PROPOSTA_TERRENI_CER_2026-11-24.md` (Project). Struttura di Cabine primarie: mappa con ortofoto, livelli e

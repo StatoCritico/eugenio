@@ -19,6 +19,18 @@ Fatto:
 - **Server**: rotte `/api/cer-fv/info` e `/api/cer-fv/terreni` (`servizio/cer_fv.py`, limite `cer_fv` 600 all'ora);
   `aggiorna_da_github.sh` copia anche `fase17-cer-fv`.
 
+Aggiunte sullo stesso ramo (24/11, ore 09:24–09:27, richieste di Paolo):
+
+- **Riquadro evidenziato** (`.riquadro-llm` in `stile.css`) in cima a **Novità** e **Come funziona** con i collegamenti a
+  `llms.txt` ed `EUGENIO_PER_AGENTI.md`.
+- **Bersaglio verde** nella pagina iniziale, in cima al fascio di luce dietro la torre (17°, `a.sh-punto.sh-file`): porta
+  dritto a `EUGENIO_PER_AGENTI.md`, con la descrizione al passaggio e senza scheda. Verde (non azzurro) per attirare
+  l'attenzione, in tutti e due i temi.
+- **Fotovoltaico › Curve di carico** (`fv-curve.html`, prima voce del gruppo, **in lavorazione**): skill `load-curve` per
+  e-distribuzione scaricabile da `strumenti/load-curve.zip` (zip di Paolo delle 09:55, con un POD e percorsi d'esempio al
+  posto di quelli veri) e skill per il Portale Consumi dell'Acquirente Unico;
+  si attiva quando ci sarà l'accesso come persona giuridica.
+
 Prove: `fase5-sito/tests/test_fv_cer.py` (file, calcolo con Node, pagina in Chromium con `?prova=1`), suite della fase 5,
 `fase17-cer-fv/tests` (4), `fase4-server/tests/test_cer_fv.py`, `test_protezione.py`, `test_aggiorna_da_github.py`.
 

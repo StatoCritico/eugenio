@@ -109,7 +109,7 @@ def test_menu_computer(base, browser):
     assert gme.count() == 1 and gme.get_attribute("aria-disabled") == "true"
     corso = pg.locator(G.format("fotovoltaico") + " .tendina .voce-corso")
     # (17/11/2026) «Cabine primarie» voce cliccabile del Fotovoltaico; (24/11/2026) + «CER – Sviluppo impianti FV»
-    assert corso.count() == 7 and pg.locator(G.format("fotovoltaico") + " .tendina a").count() == 2
+    assert corso.count() == 8 and pg.locator(G.format("fotovoltaico") + " .tendina a").count() == 2
     assert [pg.locator(G.format("fotovoltaico") + " .tendina a").nth(i).get_attribute("href") for i in range(2)] == ["fv-cabine.html", "fv-cer.html"]
     assert corso.first.get_attribute("title") == "In lavorazione: disponibile prossimamente"
     assert corso.first.locator("svg.segnale path[fill='#f5c400']").count() == 1           # triangolo giallo

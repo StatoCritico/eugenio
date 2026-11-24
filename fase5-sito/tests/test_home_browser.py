@@ -69,8 +69,8 @@ def test_scena_nella_finestra_e_solo_bersagli(browser, base):
     # niente animazioni; il fondale del tema scuro si carica
     assert pg.evaluate("document.getAnimations().filter(a => a.playState === 'running').length") == 0
     assert pg.evaluate("(i => i.complete && i.naturalWidth > 0)(document.querySelector('.sh-fondo-scuro'))")
-    # solo i 16 bersagli sono attivi (nessuna sagoma .parte)
-    assert pg.locator(".sh-punto").count() == 16 and pg.locator("#scena-home .parte").count() == 0
+    # solo i 16 bersagli più il collegamento verde al file per gli LLM (24/11/2026) sono attivi (nessuna sagoma .parte)
+    assert pg.locator(".sh-punto").count() == 17 and pg.locator("a.sh-punto.sh-file[href='EUGENIO_PER_AGENTI.md']").count() == 1 and pg.locator("#scena-home .parte").count() == 0
     # all'inizio solo «Da dove cominciare», con un pulsante per gruppo
     assert pg.locator(".home-scheda:visible").count() == 1 and pg.locator("#home-scelte button").count() == 7
     assert not errori, errori

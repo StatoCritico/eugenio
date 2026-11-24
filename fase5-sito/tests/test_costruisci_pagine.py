@@ -608,8 +608,8 @@ def test_etichette_brevi_nelle_tendine():
     # elettrica, Produzione e consumi di elettricità, Carichi elettrici: restano 7 «S»; (24/11/2026) + Fotovoltaico › CER –
     # Sviluppo impianti FV: 8
     assert len(s) == pannello.count(">sperimentale<") == 8 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
-    assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
-    assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
+    assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 14
+    assert tendine.count('fill="#f5c400"') == 16 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
     assert ".cantiere.breve" in css and ".cantiere .segnale" in css
     # «Costi energetici Sanità» senza etichetta (pagina validata)
@@ -751,7 +751,8 @@ EDIFICI_SPERIMENTALI = ["edificio-obblighi.html", "edificio-geometria.html", "ed
 PAGINE_IN_CORSO = ["edificio-fabbisogno.html",
                    "edificio-involucro.html", "edificio-impianti.html", "edificio-ecobonus.html", "edificio-conto-termico.html",
                    "cog-emissioni.html", "fv-ombre.html", "fv-irradiazione.html", "fv-producibilita.html", "fv-pvgis.html",
-                   "fv-dlgs199.html", "fv-leed.html", "edificio-cer.html"]
+                   "fv-dlgs199.html", "fv-leed.html", "edificio-cer.html",
+                   "fv-curve.html"]                                      # (24/11/2026) in attesa dell'accesso da persona giuridica
 ACCESSIBILI = {"clima": ["dati.html", "legge10.html", "pluviometria.html", "previsioni.html", "edificio-clima.html", "dati-per-email.html"],
                "patrimonio": ["patrimonio.html", "edifici-pubblici.html", "ortofoto.html", "lidar.html", "modelli3d.html", "importa-dxf-ifc.html",
                               "aggiungi-dbtr.html", "dbtr-istruzioni.html", "visure.html"],
@@ -831,7 +832,7 @@ def test_stesso_gruppo_ed_etichetta_dal_menu(sito):
     s = (sito / "edificio-cer.html").read_text(encoding="utf-8")
     assert '<p class="gruppo-servizio">Fotovoltaico</p>' in s
     blocco = re.search(r'<ul class="stesso-gruppo">(.*?)</ul>', s, re.S).group(1)
-    assert blocco.count('class="voce-gme voce-corso"') == 6 and blocco.count('title="In attesa di autorizzazione dal GME"') == 1
+    assert blocco.count('class="voce-gme voce-corso"') == 7 and blocco.count('title="In attesa di autorizzazione dal GME"') == 1
     # (17/11/2026) Cabine primarie; (24/11/2026) CER – Sviluppo impianti FV
     assert re.findall(r'href="([^"]+)"', blocco) == ["fv-cabine.html", "fv-cer.html", "edificio-cer.html"]
     for p in ("edificio-geometria.html", "edificio-ecobonus.html", "edificio-conto-termico.html", "edificio-fabbisogno.html"):

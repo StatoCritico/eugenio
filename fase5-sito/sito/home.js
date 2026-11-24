@@ -113,10 +113,11 @@
   // ------------------------------------------------------------------ descrizione breve
   let attesa = null;
   function mostraDescr(p) {
-    const d = DATI[p.dataset.parte];
+    // (24/11/2026) bersaglio-collegamento (a.sh-punto, file per gli LLM): titolo e descrizione dagli attributi data-
+    const d = p.tagName === "A" ? { titolo: p.dataset.titolo || "", descrizione: p.dataset.descrizione || "", link: true } : DATI[p.dataset.parte];
     if (!d || !scheda.hidden) return;
     descr.innerHTML = `<strong>${esc(d.titolo)}</strong>${esc(d.descrizione)}` +
-      `<span class="sh-nota">${d.prossimamente ? "Prossimamente" : "Clic per le pagine"}</span>`;
+      `<span class="sh-nota">${d.link ? "Clic per aprire il file" : d.prossimamente ? "Prossimamente" : "Clic per le pagine"}</span>`;
     descr.hidden = false;
     accosta(descr, p);
   }
@@ -175,6 +176,13 @@
   });
 
   punti.forEach((p) => {
+    if (p.tagName === "A") {                  // collegamento diretto: descrizione al passaggio, nessuna scheda
+      p.addEventListener("pointerenter", (e) => { if (e.pointerType === "touch") return; ferma(true); clearTimeout(attesa); attesa = setTimeout(() => mostraDescr(p), fermo ? 0 : 350); });
+      p.addEventListener("pointerleave", () => { nascondiDescr(); if (scheda.hidden) ferma(false); });
+      p.addEventListener("focus", () => { if (p.matches(":focus-visible")) { ferma(true); mostraDescr(p); } });
+      p.addEventListener("blur", () => { nascondiDescr(); if (scheda.hidden) ferma(false); });
+      return;
+    }
     p.setAttribute("aria-expanded", "false");
     p.setAttribute("aria-haspopup", "dialog");
     p.setAttribute("aria-controls", "sh-scheda");
