@@ -46,7 +46,9 @@ def test_menu_e_pagine():
     # (20/11/2026) dopo la rete viene «Produzione e consumi di elettricità»
     assert [v["pagina"] for v in gruppi["statistiche"]["voci"]][-4:] == ["rete-elettrica.html", "elettricita.html", "carichi.html",
                                                                          "suolo.html"]       # (22/11/2026) Suolo e aree agricole
-    assert gruppi["fotovoltaico"]["voci"][0] == {"pagina": "fv-cabine.html", "nome": "Cabine primarie", "tipo": ""}
+    # (24/11/2026) prima «Curve di carico», in lavorazione, poi Cabine primarie
+    assert gruppi["fotovoltaico"]["voci"][0] == {"pagina": "fv-curve.html", "nome": "Curve di carico", "tipo": "corso"}
+    assert gruppi["fotovoltaico"]["voci"][1] == {"pagina": "fv-cabine.html", "nome": "Cabine primarie", "tipo": ""}
     assert re.search(r'href="rete-elettrica.html">Stato della rete elettrica</a>', t)   # 23/11/2026: validata
     assert C.main(["--controlla"]) == 0
     for nome, gruppo, js in (("rete-elettrica.html", "Statistiche", "rete_elettrica.js"), ("fv-cabine.html", "Fotovoltaico", "fv_cabine.js")):

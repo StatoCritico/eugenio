@@ -73,7 +73,7 @@ ENV_BACKUP="${EUGENIO_ENV_BACKUP:-$HOME/.eugenio_env_backup}"
 ATTESA="${EUGENIO_ATTESA:-5}"
 ADESSO=$(date '+%Y%m%d-%H%M%S')
 CARTELLE=(fase3-storico fase4-server fase6-mercati fase7-territorio fase8-indicatori fase9-clima-storico fase10-edifici3d
-          fase15-elettricita fase16-suolo)
+          fase15-elettricita fase16-suolo fase17-cer-fv)
 ESCLUSI=(--exclude=.env --exclude=.venv --exclude=__pycache__ --exclude=.pytest_cache --exclude=uni_privato
          --exclude=fase2-gradi-giorno --exclude=mercati_energia/dati/ --exclude=node_modules)
 

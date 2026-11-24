@@ -1161,6 +1161,7 @@ bloccherebbe anche chi usa le API dei dati aperti con uno script.
 | `patrimonio` | `/api/patrimonio` | 2.000 edifici |
 | `luogo` | `/api/patrimonio` con `luogo=1` (ricerca di un luogo, 17/11/2026, oltre a «patrimonio») | `LUOGO_ORA` (300) |
 | `immobili_pa` | `/api/immobili-pa/cerca`, `/particella/{ref}`, `/bene/{id}` (17/11/2026) | 1.200 |
+| `cer_fv` | `/api/cer-fv/terreni` (24/11/2026) | 600 |
 | `immobili_pa_ente` | `/api/immobili-pa/ente/{chiavi}`, `/ente/{chiave}/beni` (peso 1) e `/ente/{chiave}/punti` (peso 3), 22/11/2026; più il tetto orario di tutto il sito `IMMOBILI_PA_ENTE_TETTO_ORA` (30.000, oltre: 503) | 600 |
 | `report` | `/api/report`, `/api/report/{tipo}` | 60 |
 | `converti` | `/api/converti` | 200 |
@@ -1223,6 +1224,21 @@ stessa rete supera i limiti almeno `AVVISO_429_SOGLIA` (20) volte al giorno per 
 consecutivi, una volta per serie di giorni, con i conteggi e la strada per bloccarla in Cloudflare (Security → WAF →
 Tools → IP Access Rules). I conteggi si cancellano dopo `AVVISO_429_CONSERVA_GIORNI` (7) giorni, come dice
 l'informativa privacy.
+
+## CER – Sviluppo impianti FV (24/11/2026)
+
+Rotte di `servizio/cer_fv.py` per **Fotovoltaico › CER – Sviluppo impianti FV** (fase 5). Leggono in sola lettura
+`DATI/cer_fv/terreni_pubblici_<anno>.sqlite` (il più recente; `CARTELLA_CER_FV` lo sposta), preparato sull'host dalla
+fase 17 (`python -m cer_fv terreni`): terreni in proprietà di enti pubblici con la probabilità di coltura DOP o certificata.
+
+| Rotta | Cosa dà |
+|---|---|
+| `GET /api/cer-fv/info` | anno, conteggi, campagne AGREA usate, attribuzione; `{"disponibile": false}` se il file manca |
+| `GET /api/cer-fv/terreni?lon=…&lat=…&raggio_km=5&min_m2=0&limite=100` | terreni entro il raggio (al massimo 15 km, 300 risultati), dal più vicino, con `distanza_m`; 503 se il file manca |
+
+Campi: riferimento, centro, area, comune, foglio e particella, ente (nome, settore, sede, chiave derivata), numero di enti,
+tipologie, utilizzo, `prob_coltura` (0-100), `classe_coltura`, `campagne`, `quota_dichiarata`. Nessun dato AGREA oltre
+all'indicatore, nessun codice fiscale né soggetto cedente (prove in `tests/test_cer_fv.py`).
 
 ## Immobili delle Pubbliche Amministrazioni (17/11/2026, `?v=20261117a`)
 

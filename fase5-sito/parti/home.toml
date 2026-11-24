@@ -54,7 +54,9 @@ descrizione = "I numeri dell'energia in Italia: prezzi, produzione e consumi di 
 "aria-ore.html" = "quante ore dell'anno cadono in ogni zona di trattamento"
 "aria-latenti.html" = "quanta umidità togliere o aggiungere all'aria esterna"
 "aria-freecooling.html" = "le ore in cui basta l'aria esterna e quanto rende un recuperatore"
+"fv-curve.html" = "skill per scaricare le curve di carico da e-distribuzione e dal Portale Consumi"
 "fv-cabine.html" = "la cabina primaria e l'area del GSE dei tuoi edifici"
+"fv-cer.html" = "potenza FV e accumulo per cabina, terreni pubblici e manifestazioni di interesse per le CER"
 "indici-prezzi.html" = "i prezzi dell'energia delle convenzioni pubbliche, mese per mese"
 "indicatori.html" = "quanto spende per l'energia un'azienda sanitaria, rispetto alla regione e all'Italia"
 "rete-elettrica.html" = "cabine primarie, criticità e interruzioni, comune per comune"
@@ -118,7 +120,7 @@ pagine = ["aria-freecooling.html"]
 gruppo = "fotovoltaico"
 titolo = "Fotovoltaico"
 descrizione = "La rete che riceve l'energia (cabina primaria e area del GSE) e, presto, sole, ombre e producibilità sui tetti."
-pagine = ["fv-cabine.html", "fv-irradiazione.html", "fv-producibilita.html", "fv-pvgis.html", "fv-dlgs199.html"]
+pagine = ["fv-curve.html", "fv-cabine.html", "fv-cer.html", "fv-irradiazione.html", "fv-producibilita.html", "fv-pvgis.html", "fv-dlgs199.html"]
 
 [parti.solare-termico]
 gruppo = "edificio"

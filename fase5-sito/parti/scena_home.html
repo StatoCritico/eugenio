@@ -28,6 +28,12 @@
   border:1px solid var(--sh-bordo);border-radius:4px;padding:3px 8px;opacity:0;visibility:hidden}
 .sh-sx .sh-titolo{left:auto;right:calc(100% + 6px)}
 .sh-punto.sh-acceso .sh-titolo{opacity:1;visibility:visible}
+/* (24/11/2026, Paolo) bersaglio del file per gli LLM in cima al fascio di luce dietro la torre: verde per attirare
+   l'attenzione; è un collegamento diretto al file, senza scheda */
+.sh{--sh-llm:#3ddc84}[data-theme="light"] .sh{--sh-llm:#15803d}
+.sh-punto.sh-file{color:var(--sh-llm)}
+.sh-punto.sh-file .sh-titolo{border-color:var(--sh-llm)}
+.sh-punto.sh-file:focus-visible{outline-color:var(--sh-llm)}
 /* descrizione breve (sostando sul bersaglio) e scheda flottante (clic) */
 .sh-descr,.sh-scheda{position:absolute;z-index:4;background:var(--sh-fondo);color:var(--sh-testo);border:1px solid var(--sh-bordo);
   border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);font:400 clamp(12.5px,1.1cqw,15px)/1.45 system-ui,sans-serif}
@@ -86,6 +92,7 @@
       <button type="button" class="sh-punto sh-poi sh-sx" data-parte="cogenerazione" data-gruppo="cogenerazione" style="left:81.17%;top:73.8%" aria-label="Cogeneratore (prossimamente)"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Cogeneratore</span></button>
       <button type="button" class="sh-punto" data-parte="traliccio" data-gruppo="statistiche" style="left:31.5%;top:36.0%" aria-label="Elettricità e rete elettrica"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Elettricità e rete elettrica</span></button>
       <button type="button" class="sh-punto sh-poi sh-sx" data-parte="cabina-gas" data-gruppo="statistiche" style="left:97.0%;top:74.6%" aria-label="Consumi di gas naturale (prossimamente)"><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">Consumi di gas naturale</span></button>
+      <a class="sh-punto sh-file" data-parte="llm" href="EUGENIO_PER_AGENTI.md" style="left:57.6%;top:5.5%" aria-label="File per gli assistenti AI (EUGENIO_PER_AGENTI.md)" data-titolo="File per gli assistenti AI" data-descrizione="La guida di EuGEnio scritta per i modelli linguistici (LLM): pagine, dati, rotte dell'API e regole. Dalla al tuo assistente AI."><svg class="sh-mira" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="11"/><path d="M20 2v8M20 30v8M2 20h8M30 20h8"/><path class="sh-croce" d="M16 20h8M20 16v8"/></svg><span class="sh-titolo" aria-hidden="true">File per gli assistenti AI</span></a>
     </div>
     <div class="sh-descr" id="sh-descr" role="tooltip" hidden></div>
     <div class="sh-scheda" id="sh-scheda" role="dialog" aria-modal="false" aria-labelledby="sh-scheda-titolo" hidden></div>

@@ -47,3 +47,8 @@ fase5-sito/sito/dati/suolo/
 fase5-sito/sito/dati/radar/
 fase16-suolo/raw/
 fase16-suolo/carte/
+
+# (24/11/2026) prove locali con dati veri (AGREA): mai nel repository
+dati_locali/
+# (24/11/2026) eccezione: la skill per le curve di carico scaricabile dal sito
+!fase5-sito/sito/strumenti/load-curve.zip
