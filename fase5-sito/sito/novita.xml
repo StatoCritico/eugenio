@@ -5,9 +5,19 @@
   <id>tag:eugenio.statocritico.it,2026:novita</id>
   <link rel="self" type="application/atom+xml" href="https://eugenio.statocritico.it/novita.xml"/>
   <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html"/>
-  <updated>2026-11-23T12:00:00Z</updated>
+  <updated>2026-11-24T12:00:00Z</updated>
   <author><name>Stato Critico</name><uri>https://statocritico.it</uri></author>
   <icon>https://eugenio.statocritico.it/logo/corallo/icona_32_chiaro.svg</icon>
+  <entry>
+    <title>24 novembre 2026 – CER – Sviluppo impianti FV</title>
+    <id>tag:eugenio.statocritico.it,2026:novita/d20261124</id>
+    <link rel="alternate" type="text/html" href="https://eugenio.statocritico.it/novita.html#d20261124"/>
+    <updated>2026-11-24T12:00:00Z</updated>
+    <summary>CER – Sviluppo impianti FV</summary>
+    <content type="html">&lt;p class=&quot;novita-tipo&quot;&gt;Nuovo&lt;/p&gt;
+&lt;ul&gt;&lt;li&gt;Fotovoltaico › CER – Sviluppo impianti FV (sperimentale): carichi l&amp;#x27;elenco degli edifici e le loro curve di carico (restano nel tuo browser); EuGEnio trova l&amp;#x27;area della cabina primaria di ogni edificio, somma i consumi e calcola, con il clima del posto, la potenza fotovoltaica e l&amp;#x27;accumulo più grandi che rispettano la quota minima di energia condivisa che scegli. Poi propone i terreni pubblici vicini alla cabina, con l&amp;#x27;ente proprietario e la probabilità che ci sia una coltura DOP o certificata (solo in Emilia-Romagna, dai piani colturali di AGREA: un&amp;#x27;indicazione, non una certificazione), oppure prepara l&amp;#x27;elenco delle cabine e un avviso tipo per raccogliere le manifestazioni di interesse dei proprietari.&lt;/li&gt;&lt;/ul&gt;
+&lt;p class=&quot;novita-collegamenti&quot;&gt;&lt;a href=&quot;https://eugenio.statocritico.it/fv-cer.html&quot;&gt;CER – Sviluppo impianti FV&lt;/a&gt;&lt;/p&gt;</content>
+  </entry>
   <entry>
     <title>23 novembre 2026 – Pagina iniziale 16:9 e dodici pagine verificate</title>
     <id>tag:eugenio.statocritico.it,2026:novita/d20261123-2</id>

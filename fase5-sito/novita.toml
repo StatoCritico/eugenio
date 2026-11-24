@@ -21,6 +21,17 @@
 # Mai dati di mercato GME o EEX, mai la fase 2, mai il modulo privato delle norme UNI.
 
 [[voce]]
+data = "2026-11-24"
+versione = "20261124a"
+titolo = "CER – Sviluppo impianti FV"
+nuovo = [
+  "Fotovoltaico › CER – Sviluppo impianti FV (sperimentale): carichi l'elenco degli edifici e le loro curve di carico (restano nel tuo browser); EuGEnio trova l'area della cabina primaria di ogni edificio, somma i consumi e calcola, con il clima del posto, la potenza fotovoltaica e l'accumulo più grandi che rispettano la quota minima di energia condivisa che scegli. Poi propone i terreni pubblici vicini alla cabina, con l'ente proprietario e la probabilità che ci sia una coltura DOP o certificata (solo in Emilia-Romagna, dai piani colturali di AGREA: un'indicazione, non una certificazione), oppure prepara l'elenco delle cabine e un avviso tipo per raccogliere le manifestazioni di interesse dei proprietari.",
+]
+collegamenti = [
+  { testo = "CER – Sviluppo impianti FV", indirizzo = "fv-cer.html" },
+]
+
+[[voce]]
 data = "2026-11-23"
 versione = "20261123b"
 titolo = "Pagina iniziale 16:9 e dodici pagine verificate"
