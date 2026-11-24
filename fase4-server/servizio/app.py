@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
-from . import alberi_osm, analisi, config as C, dbtr_coda, edifici, edifici_osm, immobili_pa, interno, meteo, modello, orizzonte, ortofoto, preferenze_email, protezione as P, psicro, pvgis, radar, report, rete, storici, strati, tabelle, terreno
+from . import alberi_osm, analisi, cer_fv, config as C, dbtr_coda, edifici, edifici_osm, immobili_pa, interno, meteo, modello, orizzonte, ortofoto, preferenze_email, protezione as P, psicro, pvgis, radar, report, rete, storici, strati, tabelle, terreno
 from .report_servizi import CON_FORMATO as REPORT_CON_FORMATO, TIPI as TIPI_REPORT
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -44,6 +44,7 @@ app.include_router(preferenze_email.router)   # pagina «Dati per email»: scelt
 app.include_router(rete.router)      # «Stato della rete elettrica» e «Cabine primarie» (17/11/2026): /api/rete/...
 app.include_router(radar.router)     # «Dati pluviometrici» (22/11/2026): radar e Merging del DPC, /api/radar/...
 app.include_router(immobili_pa.router)   # Territorio › Edifici pubblici: ricerca e schede degli immobili delle PA (17/11/2026)
+app.include_router(cer_fv.router)   # Fotovoltaico › «CER – Sviluppo impianti FV»: terreni pubblici vicino alle cabine (24/11/2026)
 app.include_router(analisi.router)   # analisi 5 e 7–13 (fase 10, Fase E): modulo privato facoltativo, altrimenti «non disponibile»
 # limiti per indirizzo (IPv6 per rete /64) in finestra mobile di un'ora: previsioni (pesanti), geocodifica (quota
 # Zornade), patrimonio (contato in edifici: il sito invia i file grandi a blocchi, perché il tunnel Cloudflare chiude

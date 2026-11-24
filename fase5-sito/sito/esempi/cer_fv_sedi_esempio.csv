@@ -1,0 +1,7 @@
+# DATI SINTETICI DI ESEMPIO: edifici inventati per provare la pagina «CER – Sviluppo impianti FV»
+id;denominazione;comune;lat;lon
+S01;Scuola primaria (esempio);Rimini;44.059000;12.565000
+S02;Municipio (esempio);Rimini;44.061200;12.566800
+S03;Piscina comunale (esempio);Rimini;44.048500;12.582100
+S04;Casa di riposo (esempio);Rimini;44.070000;12.548000
+S05;Scuola media (esempio);Rimini;43.999000;12.655000

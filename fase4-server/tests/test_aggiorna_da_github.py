@@ -14,7 +14,7 @@ import pytest
 
 SCRIPT = Path(__file__).resolve().parents[1] / "aggiorna_da_github.sh"
 CARTELLE = ["fase3-storico", "fase4-server", "fase6-mercati", "fase7-territorio", "fase8-indicatori",
-            "fase9-clima-storico", "fase10-edifici3d", "fase15-elettricita", "fase16-suolo"]
+            "fase9-clima-storico", "fase10-edifici3d", "fase15-elettricita", "fase16-suolo", "fase17-cer-fv"]
 ENV_SEGRETO = "CHIAVE_FINTA=solo-per-le-prove\n"
 
 pytestmark = pytest.mark.skipif(any(shutil.which(c) is None for c in ("bash", "git", "rsync", "flock")),
@@ -78,8 +78,8 @@ def _release(origin: Path, tag: str, script_testo: str | None = None, dockerfile
 def banco(tmp_path):
     home = tmp_path / "home"
     energia = home / "energia"
-    # ~/energia della versione installata (v2026.11.16): senza fase15-elettricita (e fase16-suolo), con il .env
-    for d in CARTELLE[:-2]:
+    # ~/energia della versione installata (v2026.11.16): senza fase15-elettricita (né fase16-suolo e fase17-cer-fv), con il .env
+    for d in CARTELLE[:-3]:
         _scrivi(energia / d / "LEGGIMI.txt", d + " vecchia")
     _scrivi(energia / "fase4-server/docker-compose.yml", "services: {}\n")
     _scrivi(energia / "fase4-server/.env", ENV_SEGRETO)

@@ -1,0 +1,64 @@
+# Probabilità di coltura DOP o certificata (fase 17, 24/11/2026): regole dell'indicatore pubblicato per i terreni pubblici.
+#
+# L'indicatore usa i piani colturali grafici di AGREA (appezzamenti dichiarati, coltura, segni biologico e produzione
+# integrata). I dati AGREA restano sul server e NON si cedono (decisione di Paolo del 24/11/2026): si pubblica solo il
+# numero 0-100 e la classe per particella. Non è una certificazione: per la L.R. Emilia-Romagna 5/2026 (art. 10) serve
+# l'attestazione di un agronomo.
+#
+# Peso di un appezzamento (0-1):
+#   - 1 se è biologico (FLAG_BIO), in produzione integrata (FLAG_INTE) o se la qualità dichiarata cita DOP/IGP/DOC/DOCG;
+#   - altrimenti il peso della prima categoria di coltura che corrisponde (espressione regolare sulla descrizione della
+#     coltura e dell'uso), moltiplicato per il fattore della provincia (zone dei disciplinari, approssimate per provincia).
+# Per ogni campagna: somma (area in comune con la particella / area della particella) × peso, al massimo 1.
+# Indicatore = massimo delle ultime `campagne` campagne, in percentuale.
+
+campagne = 3
+qualita_certificata = "\\b(DOP|IGP|DOC|DOCG|IGT)\\b"
+
+[classi]
+alta = 60     # da 60 in su
+media = 30    # da 30 a 59; sotto 30 «bassa»
+
+# province: codici ISTAT a 3 cifre (033 Piacenza, 034 Parma, 035 Reggio Emilia, 036 Modena, 037 Bologna, 038 Ferrara,
+# 039 Ravenna, 040 Forlì-Cesena, 099 Rimini); «*» = tutte le altre
+[[categoria]]
+nome = "vite"
+cerca = "VITE|VIGNET|UVA"
+peso = 0.7                      # DOC/DOCG e IGT coprono quasi tutta la regione
+province = { "*" = 1.0 }
+
+[[categoria]]
+nome = "frutteti"
+cerca = "PER[OI]\\b|PERE\\b|MEL[OI]\\b|PESC[OHA]|NETTARIN|ALBICOCC|CILIEG|SUSIN|KIWI|ACTINIDIA|FRUTT"
+peso = 0.5                      # Pera dell'Emilia-Romagna IGP, Pesca e nettarina di Romagna IGP, Ciliegia di Vignola IGP
+province = { "036" = 1.0, "037" = 1.0, "038" = 1.0, "039" = 1.0, "040" = 1.0, "099" = 0.8, "035" = 0.8, "034" = 0.5, "033" = 0.5 }
+
+[[categoria]]
+nome = "foraggere"
+cerca = "MEDICA|PRAT[OI]|FORAGG|ERBAI|LOIETTO|TRIFOGLIO|PASCOL"
+peso = 0.6                      # foraggi per il Parmigiano Reggiano (zona: Parma, Reggio Emilia, Modena, Bologna a sinistra del Reno)
+province = { "034" = 1.0, "035" = 1.0, "036" = 1.0, "037" = 0.5, "*" = 0.1 }
+
+[[categoria]]
+nome = "olivo"
+cerca = "OLIV"
+peso = 0.5                      # Brisighella DOP, Colline di Romagna DOP
+province = { "039" = 1.0, "040" = 1.0, "099" = 1.0, "*" = 0.3 }
+
+[[categoria]]
+nome = "castagno"
+cerca = "CASTAGN"
+peso = 0.4                      # Marrone di Castel del Rio IGP, Castagna di Montemezzano/Appennino bolognese
+province = { "037" = 1.0, "039" = 1.0, "040" = 1.0, "*" = 0.5 }
+
+[[categoria]]
+nome = "orticole"
+cerca = "PATAT|SCALOGN|AGLIO|ASPARAG|POMODOR|ORTIV|ORTICOL|MELONE|COCOMER"
+peso = 0.25                     # Patata di Bologna DOP, Scalogno di Romagna IGP, Aglio di Voghiera DOP, Asparago verde di Altedo IGP…
+province = { "*" = 1.0 }
+
+[[categoria]]
+nome = "seminativi"
+cerca = ".*"
+peso = 0.05
+province = { "*" = 1.0 }

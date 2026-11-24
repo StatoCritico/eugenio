@@ -108,9 +108,9 @@ def test_menu_computer(base, browser):
     gme = pg.locator(G.format("fotovoltaico") + " .tendina .voce-gme:not(.voce-corso)")
     assert gme.count() == 1 and gme.get_attribute("aria-disabled") == "true"
     corso = pg.locator(G.format("fotovoltaico") + " .tendina .voce-corso")
-    # (17/11/2026) «Cabine primarie» è la sola voce cliccabile del Fotovoltaico (sperimentale)
-    assert corso.count() == 7 and pg.locator(G.format("fotovoltaico") + " .tendina a").count() == 1
-    assert pg.locator(G.format("fotovoltaico") + " .tendina a").get_attribute("href") == "fv-cabine.html"
+    # (17/11/2026) «Cabine primarie» voce cliccabile del Fotovoltaico; (24/11/2026) + «CER – Sviluppo impianti FV»
+    assert corso.count() == 7 and pg.locator(G.format("fotovoltaico") + " .tendina a").count() == 2
+    assert [pg.locator(G.format("fotovoltaico") + " .tendina a").nth(i).get_attribute("href") for i in range(2)] == ["fv-cabine.html", "fv-cer.html"]
     assert corso.first.get_attribute("title") == "In lavorazione: disponibile prossimamente"
     assert corso.first.locator("svg.segnale path[fill='#f5c400']").count() == 1           # triangolo giallo
     assert float(corso.first.evaluate("e => getComputedStyle(e).opacity")) < 1 and corso.first.evaluate("e => getComputedStyle(e).cursor") == "not-allowed"

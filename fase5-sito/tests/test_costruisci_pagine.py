@@ -605,8 +605,9 @@ def test_etichette_brevi_nelle_tendine():
     # (20/11/2026) + Carichi elettrici: 17; (22/11/2026) + Suolo e aree agricole: 18 (+ Dati pluviometrici: 19)
     # (23/11/2026, Paolo) non più sperimentali: Dati pluviometrici, Cambiamento climatico, Edifici pubblici, Ortofoto,
     # Modelli 3D, Trasformazioni (UTA), Ore di funzionamento, Carichi latenti, Cabine primarie, Stato della rete
-    # elettrica, Produzione e consumi di elettricità, Carichi elettrici: restano 7 «S»
-    assert len(s) == pannello.count(">sperimentale<") == 7 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
+    # elettrica, Produzione e consumi di elettricità, Carichi elettrici: restano 7 «S»; (24/11/2026) + Fotovoltaico › CER –
+    # Sviluppo impianti FV: 8
+    assert len(s) == pannello.count(">sperimentale<") == 8 and len(v) == pannello.count(">in sviluppo<") == 2 and len(g) == 6
     assert tendine.count('class="voce-gme voce-corso"') == pannello.count('class="voce-gme voce-corso"') == 13
     assert tendine.count('fill="#f5c400"') == 15 and tendine.count('stroke="#1a1a1a"') >= 18      # giallo con il bordo scuro
     css = (QUI / "sito" / "stile.css").read_text(encoding="utf-8")
@@ -831,7 +832,8 @@ def test_stesso_gruppo_ed_etichetta_dal_menu(sito):
     assert '<p class="gruppo-servizio">Fotovoltaico</p>' in s
     blocco = re.search(r'<ul class="stesso-gruppo">(.*?)</ul>', s, re.S).group(1)
     assert blocco.count('class="voce-gme voce-corso"') == 6 and blocco.count('title="In attesa di autorizzazione dal GME"') == 1
-    assert re.findall(r'href="([^"]+)"', blocco) == ["fv-cabine.html", "edificio-cer.html"]   # (17/11/2026) Cabine primarie
+    # (17/11/2026) Cabine primarie; (24/11/2026) CER – Sviluppo impianti FV
+    assert re.findall(r'href="([^"]+)"', blocco) == ["fv-cabine.html", "fv-cer.html", "edificio-cer.html"]
     for p in ("edificio-geometria.html", "edificio-ecobonus.html", "edificio-conto-termico.html", "edificio-fabbisogno.html"):
         assert '<p class="gruppo-servizio">Edifici</p>' in (sito / p).read_text(encoding="utf-8"), p
     s = (sito / "lidar.html").read_text(encoding="utf-8")

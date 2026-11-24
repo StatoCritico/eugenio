@@ -90,6 +90,8 @@ sito/
   esempi/           CSV di consumi SINTETICI e patrimonio_esempio.csv (tre edifici, uno per tipo di dato)
   rete-elettrica.html  Statistiche › Stato della rete elettrica (17/11/2026; verificata il 23/11): rete_elettrica.js
   fv-cabine.html    Fotovoltaico › Cabine primarie (17/11/2026; verificata il 23/11): fv_cabine.js
+  fv-cer.html       Fotovoltaico › CER – Sviluppo impianti FV (24/11/2026, sperimentale): fv_cer.js, cer_fv_calcolo.js
+                    (calcoli senza DOM, provati con Node), esempi/cer_fv_sedi_esempio.csv e cer_fv_curve_esempio.csv (sintetici)
   pluviometria.html Clima e meteo › Dati pluviometrici (22/11/2026; verificata il 23/11): pluviometria.js e pioggia_gl.js
                     (indice, immagini e legenda della pioggia, usato anche da rete_elettrica.js)
   rete.js           parte comune delle pagine della rete (e di Comunità energetiche): API /api/rete/…, dati sintetici
@@ -604,6 +606,40 @@ solo su azione dell'utente (sede aggiunta o strato acceso).
   in `servizio/rete.py` (`URL_GSE_AREE`, controllo mensile del worker); una prova della fase 4 controlla che coincidano.
 - Prove: `tests/test_cer_browser.py` (GSE e `/api/rete/…` simulati: richieste, confine, mare, menu, regola del comune,
   4 alla volta, strato, riquadro al clic, immagine, file, telefono, `?prova=1`).
+
+## CER – Sviluppo impianti FV (24/11/2026, sperimentale, richiesta di Paolo)
+
+Pagina `fv-cer.html` in Fotovoltaico, dopo Cabine primarie («S» nel menu, avviso sperimentale). Proposta e scelte aperte:
+`documenti/PROPOSTA_TERRENI_CER_2026-11-24.md` (Project). Struttura di Cabine primarie: mappa con ortofoto, livelli e
+righello a sinistra; passi a destra.
+
+1. **Edifici e curve**: file degli edifici nel formato di Patrimonio (coordinate dal file, le altre righe a
+   `POST /api/patrimonio` a blocchi di 40, al massimo 200) e file delle curve in tre formati (`cer_fv_calcolo.leggiCurve`:
+   una colonna per edificio, `id;data_ora;kwh`, una riga per giorno con 24 o 96 valori; kWh dell'intervallo, ora locale
+   d'inizio). Le curve restano nel browser. Anno tipo di 8.760 ore in ora locale (ora legale europea, 29 febbraio
+   scartato); più anni → media per ora; ore mancanti → media della stessa ora nello stesso mese (copertura dichiarata).
+2. **Area del GSE** di ogni edificio dal browser (`R.gse.areaNelPunto`, 4 alla volta); edifici raggruppati per `COD_AC`.
+3. **Calcolo per area**: curve sommate; clima orario del comune della cabina (`/api/edifici/clima-orario/{istat}`, UTC);
+   produzione per kWp con `sole` e `trasponi` (Perez) di `edifici_calcoli.js`, temperatura delle celle, perdite;
+   simulazione oraria con l'accumulo (E = h × P, potenza 0,5 E, rendimento 0,9, SOC minimo 10 %, carica solo dal FV);
+   energia condivisa = min(immessa, consumi) ora per ora; **bisezione** sulla potenza più alta con quota condivisa ≥ minima
+   (su produzione o su energia immessa), eventuale tetto per cabina; impianti uguali da 1 MW al massimo; superficie =
+   kW × ha/MWp (fisso 1,4, agrivoltaico 2,5, modificabile) + 0,02 ha per impianto + 0,01 ha per MWh di accumulo; per
+   l'agrivoltaico il 30 % come suolo agricolo (art. 5 L.R. 5/2026). Valori indicativi, scritti in pagina e nei file.
+4. **A – Terreni pubblici**: `/api/cer-fv/terreni` (fase 17) attorno alla cabina (posizione OSM o baricentro degli edifici),
+   superficie almeno quella necessaria; punteggio `punteggioTerreno` (distanza 35, superficie 30, coltura 20, un solo ente
+   15); classe C (agricola non idonea: CER fino a 1 MW o agrivoltaico) o A (probabilità di coltura DOP o certificata
+   ≥ 50 %: solo agrivoltaico); per i primi `n × 2` ammessi domanda al GSE sull'area: fuori area → esclusi. Classe I (aree
+   idonee) e X (vincoli) in una fase successiva con gli strati regionali. Contatti: rimando all'IPA.
+5. **B – Manifestazione di interesse**: per cabina terreni da cercare (necessari meno i pubblici adatti nella stessa area),
+   kW, superficie, distanza, classi; **avviso tipo** in PDF (`/api/report`) con criteri e modulo; **modulo CSV** senza dati
+   personali. EuGEnio non raccoglie domande.
+6. **File** (CSV, Excel, PDF): parametri, edifici, cabine, A, B; solo i codici del GSE, solo l'indicatore delle colture.
+   Aree del GSE spente nell'immagine della mappa. Collegamento salvabile: vista, ortofoto e parametri (`data-collegamento`),
+   mai i file.
+
+Con `?prova=1`: cabine e aree del GSE sintetiche di `rete.js`, clima sintetico (`climaSintetico`), terreni sintetici
+generati per cabina; tutto dichiarato. Prove: `tests/test_fv_cer.py` (file, calcolo con Node, pagina in Chromium).
 
 ## Cabine primarie: apertura su tutta Italia e due metà scorrevoli (19/11/2026, 21:29, `?v=20261119e`, richiesta di Paolo)
 
