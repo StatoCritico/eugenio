@@ -175,6 +175,6 @@ def test_immagine_aggiornamento_e_repository():
     df = (radice / "fase4-server" / "api" / "Dockerfile").read_text(encoding="utf-8")
     assert "COPY fase16-suolo/suolo /app/suolo" in df
     sh = (radice / "fase4-server" / "aggiorna_da_github.sh").read_text(encoding="utf-8")
-    assert "fase15-elettricita fase16-suolo)" in sh and "--exclude=dati/suolo/" in sh
+    assert "fase15-elettricita fase16-suolo" in sh and "--exclude=dati/suolo/" in sh
     gi = (radice / ".gitignore").read_text(encoding="utf-8")
     assert "fase5-sito/sito/dati/suolo/" in gi and "fase16-suolo/raw/" in gi

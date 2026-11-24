@@ -1,7 +1,9 @@
 # Aggiornamento del 24/11/2026 (notte) – CER: vincoli paesaggistici
 
-Ramo `claude/2026-11-24-cer-vincoli`, **non ancora in una release** (release solo al via di Paolo; sito ancora
-`20261124b`, nessuna voce di Novità).
+Release **`v2026.11.24c`**, sito **`?v=20261124c`** (via di Paolo del 24/11 alle 21:53: «correggiamo e pubblichiamo»),
+ramo `claude/2026-11-24-cer-vincoli`. Con la correzione delle prove della fase 4 (`tests/conftest.py` mette nei percorsi
+di Python le altre fasi come fa il container: prima serviva il PYTHONPATH a mano) e della prova di `aggiorna_da_github.sh`
+che non contava la fase 17.
 
 Richiesta di Paolo del 24/11 alle 20:54 («verifica se tra le aree non idonee abbiamo escluso questi vincoli»: il gruppo
 «Vincoli paesaggistici» del catalogo della Regione) e via alla proposta alle 20:56 («fallo così»).
@@ -24,9 +26,17 @@ Fatto:
 - **Pagina**: livello viola dei vincoli paesaggistici dallo zoom 13, sotto «Aree non idonee e vincoli paesaggistici»;
   scheda del terreno con i vincoli e la superficie libera; colonne nel file.
 
-Prove: fase 17 (14), fase 4 `test_cer_fv.py` (4), fase 5 `test_fv_cer.py` e `test_costruisci_pagine.py`.
+Prove: fase 17 (14), fase 4 completa (439 passate), fase 5 `test_fv_cer.py` e `test_costruisci_pagine.py`.
 
-## Passi (dopo il via di Paolo: pull request, Merge, release e installazione come sempre)
+## Pubblicazione
+
+- **PC1** – [Browser] Merge della pull request su GitHub (collegamento nella risposta di Claude).
+- **PC2** – [Browser] Release `v2026.11.24c` da questo collegamento già compilato, con **Publish release**:
+  https://github.com/StatoCritico/eugenio/releases/new?tag=v2026.11.24c&target=main&title=v2026.11.24c%20%E2%80%93%20CER%20%E2%80%93%20Sviluppo%20impianti%20FV%3A%20vincoli%20paesaggistici&body=%2A%2ACER%20%E2%80%93%20Sviluppo%20impianti%20FV%3A%20vincoli%20paesaggistici%2A%2A%20%2824%2F11%2F2026%2C%20versione%2020261124c%29%0A%0AMigliorato%0A-%20Fotovoltaico%20%E2%80%BA%20CER%20%E2%80%93%20Sviluppo%20impianti%20FV%3A%20i%20terreni%20pubblici%20dell%27Emilia-Romagna%20tengono%20conto%20dei%20vincoli%20paesaggistici%20della%20Regione%20%28boschi%2C%20corsi%20d%27acqua%20con%20le%20fasce%20di%20150%20m%2C%20coste%2C%20laghi%2C%20zone%20umide%2C%20zone%20e%20beni%20archeologici%2C%20beni%20dichiarati%20di%20notevole%20interesse%20pubblico%29%3A%20conta%20solo%20la%20parte%20libera%20della%20particella%20e%20il%20terreno%20%C3%A8%20escluso%20se%20%C3%A8%20vincolato%20per%20met%C3%A0%20o%20pi%C3%B9.%20Gli%20usi%20civici%20sono%20segnalati%20nella%20scheda.%20Avvicinandosi%2C%20i%20vincoli%20si%20vedono%20in%20viola%20sulla%20mappa.%0A%0APagina%3A%20https%3A%2F%2Feugenio.statocritico.it%2Ffv-cer.html%0A%0ADopo%20l%27installazione%3A%20passi%20VP1%E2%80%93VP4%20di%20AGGIORNAMENTO_2026-11-24c.md%20%28vincoli%20sul%20server%29.
+- **PC3** – [Server] `~/energia/fase4-server/aggiorna_da_github.sh --forza` e poi `cat ~/.eugenio_versione`: deve dire
+  `v2026.11.24c`.
+
+## Passi dei vincoli (dopo PC3)
 
 **VP1 – Server**: crea la cartella dei vincoli e rendila tua:
 

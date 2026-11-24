@@ -22,6 +22,17 @@
 
 [[voce]]
 data = "2026-11-24"
+versione = "20261124c"
+titolo = "CER – Sviluppo impianti FV: vincoli paesaggistici"
+migliorato = [
+  "Fotovoltaico › CER – Sviluppo impianti FV: i terreni pubblici dell'Emilia-Romagna tengono conto dei vincoli paesaggistici della Regione (boschi, corsi d'acqua con le fasce di 150 m, coste, laghi, zone umide, zone e beni archeologici, beni dichiarati di notevole interesse pubblico): conta solo la parte libera della particella e il terreno è escluso se è vincolato per metà o più. Gli usi civici sono segnalati nella scheda. Avvicinandosi, i vincoli si vedono in viola sulla mappa.",
+]
+collegamenti = [
+  { testo = "CER – Sviluppo impianti FV", indirizzo = "fv-cer.html" },
+]
+
+[[voce]]
+data = "2026-11-24"
 versione = "20261124b"
 titolo = "CER – Sviluppo impianti FV: mappa più ricca, aree non idonee ed ente promotore"
 migliorato = [

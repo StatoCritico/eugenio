@@ -1718,3 +1718,13 @@ parte dell'archivio comune dopo l'approvazione nella pagina interna.
 - Ortofoto (Fase B): la citazione e la licenza di ogni fonte stanno nel suo TOML e sotto la mappa; PVGIS © Unione europea
   (riuso con citazione); Copernicus DEM GLO-90 © DLR e Airbus (licenza Copernicus DEM) dai file di Open-Meteo (CC BY 4.0).
 - Report: python-docx (MIT), fpdf2 (LGPL-3.0), openpyxl (MIT), odfpy (Apache 2.0 / GPL 2+), font DejaVu Sans (licenza libera Bitstream Vera/DejaVu).
+
+## Come si lanciano tutte le prove della fase 4 (24/11/2026)
+
+```bash
+cd fase4-server && python -m pytest -q tests
+```
+
+(24/11/2026 sera) `tests/conftest.py` mette nei percorsi di Python le altre fasi come il container (fase 10 prima,
+poi 3, 6, 7, 8, 15, 16, 17 in coda): non serve più il PYTHONPATH a mano. Servono le librerie di `api/requirements.txt`
+(anche `fpdf2`, `rasterio`, `dpc-radar`). Il 24/11/2026: 439 passate.
