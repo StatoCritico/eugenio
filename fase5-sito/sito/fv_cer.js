@@ -33,7 +33,10 @@
   const WFS_RER = "https://servizigis.regione.emilia-romagna.it/wfs/areeprotette_natura2000";
   const SCHEDA_RER = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/ambiente/aree-protette";
   const ATTR_RER = "Regione Emilia-Romagna – Aree protette e Rete Natura 2000 (CC BY 4.0)";
-  const ER = [9.19, 43.73, 12.76, 45.14];                   // riquadro dell'Emilia-Romagna (per il servizio regionale)
+  const ER = [9.19, 43.73, 12.76, 45.14];
+  // (24/11/2026 sera) vincoli paesaggistici (art. 136 e 142 del D.Lgs. 42/2004, beni archeologici) dal server, solo da vicino
+  const COLORE_PAESAGGIO = "#7b1fa2", ZOOM_PAESAGGIO = 13;
+  const ATTR_PAESAGGIO = "Regione Emilia-Romagna – vincoli paesaggistici, adeguamento del PTPR; Patrimonio culturale dell'Emilia-Romagna (CC BY 4.0)";                   // riquadro dell'Emilia-Romagna (per il servizio regionale)
   const vuota = () => ({ type: "FeatureCollection", features: [] });
   const colore = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
   const num = (x, d = 0) => (x === null || x === undefined || !Number.isFinite(+x) ? "–" : R.num(+x, d));
@@ -354,7 +357,10 @@
       out.push({ ref: `PROVA_${c.cod_ac}_${i + 1}`, lon, lat, area_m2: Math.round(10000 * f.haMin * (0.6 + rnd() * 1.6)), comune: c.comune || "–", foglio: String(1 + Math.floor(rnd() * 60)),
         particella: String(1 + Math.floor(rnd() * 400)), ente: ENTI_PROVA[i % 3][1], ente_chiave: ENTI_PROVA[i % 3][0], settore: "dati sintetici",
         ente_sede: "", n_enti: 1, tipologie: "Terreno (sintetico)", prob_coltura: p, classe_coltura: p === null ? "non dichiarata" : p >= 60 ? "alta" : p >= 30 ? "media" : "bassa",
-        distanza_m: Math.round(F.distanzaM(c.centro[0], c.centro[1], lon, lat)) });
+        distanza_m: Math.round(F.distanzaM(c.centro[0], c.centro[1], lon, lat)),
+        // in prova il quinto terreno ha un vincolo paesaggistico SINTETICO, il settimo un uso civico SINTETICO
+        ...(i === 4 ? { quota_vincolata: 0.7, vincoli: "foreste e boschi (SINTETICO) 70 %" } : {}),
+        ...(i === 6 ? { quota_vincolata: 0, vincoli_segnalati: "usi civici (SINTETICO) 40 %" } : {}) });
     }
     return out;
   }
@@ -592,7 +598,7 @@
   function fvTerreno(t, c) {
     if (!c || !c.fabbisogno || !c.fabbisogno.kwImpianto) return null;
     const tipo = F.TIPI[st.parametri.tipo] || F.TIPI.fisso;
-    const capienza = Math.max(0, (t.ha - F.ACCESSORI_HA) / tipo.haMw * 1000);
+    const capienza = Math.max(0, ((t.haLibera ?? t.ha) - F.ACCESSORI_HA) / tipo.haMw * 1000);
     return Math.min(c.fabbisogno.kwImpianto, capienza);
   }
   function schedaTerreno(cod_ac, ref) {
@@ -601,11 +607,13 @@
     const fv = fvTerreno(t, c), scelto = (c.pubbliciAdatti || []).includes(t);
     return { titolo: `${t.comune || "–"} – foglio ${t.foglio || "–"}, particella ${t.particella || "–"}`, righe: [
       `Catasto: ${t.comune_cod ? `comune ${t.comune_cod}, ` : ""}foglio ${t.foglio || "–"}, particella ${t.particella || "–"}${t.ref && !/^PROVA/.test(t.ref) ? ` (${t.ref})` : ""}`,
-      `Superficie: ${num(t.ha, 2)} ha`,
+      `Superficie: ${num(t.ha, 2)} ha${t.haLibera !== undefined && t.haLibera < t.ha - 0.005 ? ` (libera dai vincoli ${num(t.haLibera, 2)} ha)` : ""}`,
       fv === null ? "FV previsto: –" : `FV ${scelto ? "previsto" : "possibile"}: ${num(fv)} kWp${scelto ? "" : " (non tra i terreni proposti)"}`,
       `Ente proprietario: ${t.ente}${t.n_enti > 1 ? ` e altri ${t.n_enti - 1}` : ""}${t.proprio ? " (ente promotore: ha la precedenza)" : ""}`,
       `A ${num(t.distanza_m / 1000, 2)} km dalla cabina ${c.cod_ac}; coltura DOP o certificata: ${testoColtura(t)}`,
       t.vincolo ? `${t.vincolo.classe === "non_idonea" ? "Area non idonea" : "Area con limitazioni"}: ${t.vincolo.nome}` : null,
+      t.vincoli ? `Vincoli paesaggistici: ${t.vincoli}` : null,
+      t.vincoli_segnalati ? `Da verificare: ${t.vincoli_segnalati}` : null,
       t.ammesso ? `Classe ${t.classe}, ${t.punti} punti` : `Escluso: ${t.motivi.join("; ")}`].filter(Boolean) };
   }
 
@@ -651,11 +659,32 @@
     const vedi = (id, si) => m.setLayoutProperty(id, "visibility", si ? "visible" : "none");
     vedi("cer-barre-consumi", $("strato-consumi").checked);
     vedi("cer-barre-fv", $("strato-fv").checked);
-    for (const id of ["cer-vincoli-fondo", "cer-vincoli-linea"]) vedi(id, $("strato-vincoli").checked);
+    for (const id of ["cer-vincoli-fondo", "cer-vincoli-linea", "cer-paesaggio-fondo", "cer-paesaggio-linea", "cer-paesaggio-tratteggio"]) vedi(id, $("strato-vincoli").checked);
+  }
+  // vincoli paesaggistici della zona sullo schermo (rotta /api/cer-fv/vincoli, riquadro di al massimo 0,25 gradi²)
+  let attesaPaesaggio = null, chiavePaesaggio = "";
+  function paesaggio() {
+    clearTimeout(attesaPaesaggio);
+    attesaPaesaggio = setTimeout(async () => {
+      const m = st.det; if (!m || !m.getSource("cer-paesaggio") || R.PROVA || !$("strato-vincoli").checked) return;
+      const b = m.getBounds(), bb = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+      if (m.getZoom() < ZOOM_PAESAGGIO || !tocca(bb, ER) || (bb[2] - bb[0]) * (bb[3] - bb[1]) > 0.25) { st.paesaggio = null; m.getSource("cer-paesaggio").setData(vuota()); legenda(); return; }
+      const k = bb.map((x) => x.toFixed(3)).join(",");
+      if (k === chiavePaesaggio) return;
+      chiavePaesaggio = k;
+      try {
+        const r = await fetch(`/api/cer-fv/vincoli?bbox=${k}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        st.paesaggio = d.disponibile ? d : null;
+        m.getSource("cer-paesaggio").setData(d.features && d.features.length ? d : vuota());
+        legenda();
+      } catch { /* senza vincoli paesaggistici a video: i terreni restano segnati dal server */ }
+    }, 400);
   }
   for (const id of ["strato-consumi", "strato-fv"]) $(id).addEventListener("change", () => { vediLivelli(); legenda(); });
   $("strato-vincoli").addEventListener("change", async () => {
-    vediLivelli(); legenda();
+    vediLivelli(); legenda(); paesaggio();
     if ($("strato-vincoli").checked && st.calcolato && !R.PROVA) {
       try { await caricaVincoli(); } catch (e) { messaggio("messaggio-dettaglio", `Aree non idonee non lette: ${e.message}`, true); }
       disegna();
@@ -744,6 +773,10 @@
       const i = h("i", "campione-rete"); i.style.background = "rgba(198,40,40,0.35)"; i.style.border = `2px solid ${COLORE_VINCOLI}`; i.setAttribute("aria-hidden", "true");
       voce(i, st.vincoli.fuori ? "aree non idonee: disponibili solo in Emilia-Romagna" : "aree non idonee (tratteggio chiaro: con limitazioni)");
     }
+    if ($("strato-vincoli").checked && st.paesaggio) {
+      const i = h("i", "campione-rete"); i.style.background = "rgba(123,31,162,0.3)"; i.style.border = `2px solid ${COLORE_PAESAGGIO}`; i.setAttribute("aria-hidden", "true");
+      voce(i, st.paesaggio.troppi ? "vincoli paesaggistici: troppi in questa zona, avvicinati" : "vincoli paesaggistici (tratteggio: usi civici, da verificare)");
+    } else if ($("strato-vincoli").checked && st.terreniCercati && !R.PROVA) voce(h("span", "", ""), `vincoli paesaggistici: dallo zoom ${ZOOM_PAESAGGIO}`);
   }
   function stratiCer(m, prima) {
     m.addSource("cer-vincoli", { type: "geojson", data: vuota(), attribution: ATTR_RER });
@@ -751,6 +784,13 @@
       "fill-opacity": ["case", ["==", ["get", "classe"], "non_idonea"], 0.22, 0.08] } }, prima);
     m.addLayer({ id: "cer-vincoli-linea", type: "line", source: "cer-vincoli", paint: { "line-color": COLORE_VINCOLI, "line-width": 1.4,
       "line-dasharray": [3, 2], "line-opacity": ["case", ["==", ["get", "classe"], "non_idonea"], 0.9, 0.45] } }, prima);
+    m.addSource("cer-paesaggio", { type: "geojson", data: vuota(), attribution: ATTR_PAESAGGIO });
+    m.addLayer({ id: "cer-paesaggio-fondo", type: "fill", source: "cer-paesaggio", minzoom: ZOOM_PAESAGGIO, paint: { "fill-color": COLORE_PAESAGGIO,
+      "fill-opacity": ["case", ["==", ["get", "classe"], "escluso"], 0.2, 0.07] } }, prima);
+    m.addLayer({ id: "cer-paesaggio-linea", type: "line", source: "cer-paesaggio", minzoom: ZOOM_PAESAGGIO, filter: ["==", ["get", "classe"], "escluso"],
+      paint: { "line-color": COLORE_PAESAGGIO, "line-width": 1 } }, prima);
+    m.addLayer({ id: "cer-paesaggio-tratteggio", type: "line", source: "cer-paesaggio", minzoom: ZOOM_PAESAGGIO, filter: ["!=", ["get", "classe"], "escluso"],
+      paint: { "line-color": COLORE_PAESAGGIO, "line-width": 1.2, "line-dasharray": [2, 2] } }, prima);
     m.addSource("cer-aree", { type: "geojson", data: vuota(), attribution: R.ATTR.gse });
     m.addLayer({ id: "cer-aree-fondo", type: "fill", source: "cer-aree", paint: { "fill-color": colore("--primario"), "fill-opacity": 0.06 } }, prima);
     m.addLayer({ id: "cer-aree-linea", type: "line", source: "cer-aree", paint: { "line-color": colore("--primario"), "line-width": 2.4 } }, prima);
@@ -783,7 +823,7 @@
       m.addLayer({ id, type: "symbol", source: "cer-barre", filter: ["==", ["get", "tipo"], tipo], layout: { "icon-image": ["get", "img"],
         "icon-anchor": "bottom", "icon-offset": [dx, -2], "icon-allow-overlap": true, "icon-ignore-placement": true, visibility: "none" } }, prima);
     }
-    R.suggerimento(m, () => ["cer-edifici", "cer-barre-consumi", "cer-terreni", "cer-terreni-fondo", "cer-cabine-anello", "cer-barre-fv", "cer-tutte-punti", "cer-vincoli-fondo", "cer-aree-fondo"], (f) => {
+    R.suggerimento(m, () => ["cer-edifici", "cer-barre-consumi", "cer-terreni", "cer-terreni-fondo", "cer-cabine-anello", "cer-barre-fv", "cer-tutte-punti", "cer-vincoli-fondo", "cer-paesaggio-fondo", "cer-aree-fondo"], (f) => {
       const p = f.properties || {};
       if (f.layer.id === "cer-edifici" || f.layer.id === "cer-barre-consumi") return schedaEdificio(p.id);
       if (f.layer.id === "cer-terreni") return schedaTerreno(p.cod_ac, p.ref);
@@ -791,6 +831,7 @@
         const c = st.cabine.find((x) => (x.terreni || []).some((t) => t.ref === p.r));
         return c ? schedaTerreno(c.cod_ac, p.r) : null;
       }
+      if (f.layer.id === "cer-paesaggio-fondo") return { titolo: p.classe === "escluso" ? "Vincolo paesaggistico (escluso)" : "Vincolo da verificare", righe: [p.nome, ATTR_PAESAGGIO], cursore: false };
       if (f.layer.id === "cer-vincoli-fondo") return { titolo: p.classe === "non_idonea" ? "Area non idonea" : "Area con limitazioni", righe: [p.nome, ATTR_RER], cursore: false };
       if (f.layer.id === "cer-aree-fondo") return { titolo: `Area convenzionale ${p.COD_AC}`, righe: [`Gestore: ${p.RAG_SOC || "–"}`, R.ATTR.gse], cursore: false };
       if (f.layer.id === "cer-cabine-anello" || f.layer.id === "cer-barre-fv") {
@@ -800,6 +841,7 @@
       return { ...schedaCabina(p, st.cabine.find((x) => p.cod_ac && x.cod_ac === p.cod_ac)), cursore: false };
     });
     m.on("zoomend", contorniAlloZoom);
+    m.on("moveend", paesaggio);
     document.addEventListener("eugenio:aspetto", () => {
       m.setPaintProperty("cer-aree-fondo", "fill-color", colore("--primario"));
       m.setPaintProperty("cer-aree-linea", "line-color", colore("--primario"));
@@ -904,6 +946,7 @@
     righe.push("Cabine primarie: colore della saturazione; anello = cabine degli edifici. " + `${R.ATTR.osm}. ${R.ATTR.ed_breve}.`);
     if (st.terreniCercati) righe.push("Terreni pubblici (rombi): MEF – Patrimonio della PA e AdE (CC BY 4.0); verde adatto, arancione solo agrivoltaico, grigio escluso.");
     if ($("strato-vincoli").checked && st.vincoli && st.vincoli.features.length) righe.push(`Aree non idonee: ${ATTR_RER} (${SCHEDA_RER}).`);
+    if ($("strato-vincoli").checked && st.paesaggio && st.paesaggio.features && st.paesaggio.features.length) righe.push(`Vincoli paesaggistici: ${ATTR_PAESAGGIO}.`);
     if ($("strato-consumi").checked) righe.push("Barre blu-verdi: consumi degli edifici, in scala tra loro.");
     if ($("strato-fv").checked) righe.push("Barre gialle: potenza FV calcolata per cabina, in scala tra loro.");
     righe.push(`${R.ATTR.confini}. Mappa: MapLibre GL JS (BSD-3).`);
@@ -936,7 +979,8 @@
     for (const c of st.cabine) for (const [i, t] of (c.terreni || []).slice(0, Math.max(o.nTerreni * 2, 10)).entries())
       ter.push([c.cod_ac, i + 1, t.comune || "", t.foglio || "", t.particella || "", Math.round(100 * t.ha) / 100, Math.round(t.distanza_m), t.ente || "", t.n_enti || 1, t.settore || "",
         t.ente_sede || "", t.tipologie || "", t.prob_coltura ?? null, t.classe_coltura || "", t.classe, testoGse(t, c),
-        t.vincolo ? `${t.vincolo.classe === "non_idonea" ? "non idonea" : "con limitazioni"}: ${t.vincolo.nome}` : "", fvTerreno(t, c) === null ? null : Math.round(fvTerreno(t, c)), t.proprio ? "sì" : "",
+        t.vincolo ? `${t.vincolo.classe === "non_idonea" ? "non idonea" : "con limitazioni"}: ${t.vincolo.nome}` : "", fvTerreno(t, c) === null ? null : Math.round(fvTerreno(t, c)), t.proprio ? "sì" : "", t.quota_vincolata === null || t.quota_vincolata === undefined ? null : Math.round(t.quota_vincolata * 100),
+        t.vincoli || "", t.vincoli_segnalati || "",
         t.ammesso ? t.punti : null, t.motivi.join("; "), Math.round(t.lat * 1e5) / 1e5, Math.round(t.lon * 1e5) / 1e5]);
     const bando = st.calcolato ? righeBando().map((x) => x.riga) : [];
     const sezioni = [
@@ -945,7 +989,7 @@
       { titolo: "Potenza per cabina primaria", intestazioni: ["COD_AC (GSE)", "Cabina", "Codice e-distribuzione", "Saturazione", "Edifici", "Consumi (kWh)", "FV (kW)", "Accumulo (kWh)", "Produzione (kWh)",
         "Condivisa (kWh)", "Quota condivisa (%)", "Autosufficienza (%)", "Impianti", "kW per impianto", "ha per impianto (min)", "ha per impianto (max)", "Suolo agricolo occupato (ha)", "Clima", "Note"], righe: cab },
       { titolo: "A – Terreni pubblici", intestazioni: ["COD_AC (GSE)", "N.", "Comune", "Foglio", "Particella", "Superficie (ha)", "Distanza (m)", "Ente proprietario", "Enti", "Settore", "Sede dell'ente",
-        "Tipologie", "Probabilità di coltura DOP o certificata (%)", "Classe di probabilità", "Classe del terreno", "Area GSE", "Area non idonea o con limitazioni", "FV possibile (kWp)", "Dell'ente promotore", "Punti", "Note", "Latitudine", "Longitudine"], righe: ter },
+        "Tipologie", "Probabilità di coltura DOP o certificata (%)", "Classe di probabilità", "Classe del terreno", "Area GSE", "Area non idonea o con limitazioni", "FV possibile (kWp)", "Dell'ente promotore", "Vincolata (%)", "Vincoli paesaggistici", "Vincoli da verificare", "Punti", "Note", "Latitudine", "Longitudine"], righe: ter },
       { titolo: "B – Cabine per la manifestazione di interesse", intestazioni: INT_BANDO, righe: bando },
     ];
     const piede = [
@@ -954,6 +998,7 @@
       `${R.ATTR.ed}. ${R.ATTR.osm}.`, "Clima orario: elaborazione EuGEnio su dati Open-Meteo.com (ERA5/Copernicus corretto verso ICON), CC BY 4.0.",
       "Terreni pubblici: MEF – Patrimonio della PA, dati al 31/12/2023 (CC BY 4.0), su cartografia catastale dell'Agenzia delle Entrate (CC BY 4.0). Probabilità di coltura DOP o certificata: indicatore di EuGEnio sui piani colturali grafici di AGREA (dati non ceduti), non è una certificazione.",
       "Aree non idonee: zone A, B e C dei parchi, riserve e siti della Rete Natura 2000 della Regione Emilia-Romagna (CC BY 4.0), lette dal vivo e verificate sul centro della particella.",
+      "Vincoli paesaggistici (Regione Emilia-Romagna e Patrimonio culturale, CC BY 4.0): boschi, corsi d'acqua con le fasce di 150 m, coste, laghi, zone umide, zone e beni archeologici, beni dell'art. 136 escludono la parte della particella che coprono (esclusa se vincolata per metà o più); usi civici solo segnalati.",
       "Regole: L.R. Emilia-Romagna 29/05/2026 n. 5 e art. 11-bis del D.Lgs. 190/2024; superfici, perdite e accumulo indicativi.",
       "Licenza: dati elaborati da EuGEnio CC BY 4.0; posizioni delle cabine ODbL 1.0 (© contributori OpenStreetMap).",
     ];

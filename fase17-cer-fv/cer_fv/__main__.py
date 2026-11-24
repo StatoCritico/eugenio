@@ -8,7 +8,7 @@ import logging
 import sys
 from pathlib import Path
 
-from . import agrea, terreni
+from . import agrea, terreni, vincoli
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -20,6 +20,10 @@ def main(argv: list[str] | None = None) -> int:
     t.add_argument("--dest", type=Path, required=True)
     t.add_argument("--regole", type=Path, default=None)
     t.add_argument("--comuni", type=Path, default=None, help="comuni.parquet della fase 3 (istat, belfiore); predefinito DATI/clima_lavoro/comuni.parquet, se manca l'elenco ISTAT")
+    t.add_argument("--vincoli", type=Path, default=None, help="cartella dei vincoli paesaggistici (predefinita DATI/vincoli; se manca, niente vincoli)")
+    v = s.add_parser("scarica-vincoli", help="vincoli paesaggistici della Regione Emilia-Romagna nella cartella dei dati, poi vincoli_er.sqlite per la mappa")
+    v.add_argument("--dest", type=Path, default=vincoli.CARTELLA, help=f"predefinita {vincoli.CARTELLA}")
+    v.add_argument("--solo-mappa", action="store_true", help="non scaricare: rifà solo vincoli_er.sqlite dai file presenti")
     g = s.add_parser("scarica-agrea", help="piani colturali grafici di AGREA (UtilizziGrafici) nella cartella dei dati")
     g.add_argument("--dest", type=Path, default=agrea.CARTELLA, help=f"predefinita {agrea.CARTELLA}")
     g.add_argument("--campagne", type=int, default=3, help="quante campagne chiuse (predefinito 3)")
@@ -28,7 +32,11 @@ def main(argv: list[str] | None = None) -> int:
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     if a.comando == "terreni":
-        print(json.dumps(terreni.costruisci(a.immobili, a.dest, a.agrea, a.regole, a.comuni), ensure_ascii=False, indent=1))
+        print(json.dumps(terreni.costruisci(a.immobili, a.dest, a.agrea, a.regole, a.comuni, a.vincoli), ensure_ascii=False, indent=1))
+    elif a.comando == "scarica-vincoli":
+        esito = {} if a.solo_mappa else vincoli.scarica(a.dest)
+        esito["mappa"] = vincoli.costruisci(a.dest)
+        print(json.dumps(esito, ensure_ascii=False, indent=1))
     elif a.comando == "scarica-agrea":
         print(json.dumps(agrea.scarica(a.dest, a.campagne, a.anni, a.togli_vecchie), ensure_ascii=False, indent=1))
     return 0

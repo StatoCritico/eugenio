@@ -11,6 +11,7 @@ certificata**, letto dalla rotta `GET /api/cer-fv/terreni` della fase 4 (`serviz
 
 ```bash
 python -m cer_fv scarica-agrea      # piani colturali AGREA in /srv/energia/dati/agrea/<anno>/ (ultime 3 campagne chiuse)
+python -m cer_fv scarica-vincoli    # vincoli paesaggistici della Regione in /srv/energia/dati/vincoli/ + vincoli_er.sqlite
 python -m cer_fv terreni --immobili /srv/energia/dati/immobili_pa --agrea /srv/energia/dati/agrea --dest /srv/energia/dati/cer_fv
 ```
 
@@ -47,6 +48,29 @@ python -m cer_fv terreni --immobili /srv/energia/dati/immobili_pa --agrea /srv/e
 4. Scrive `terreni_pubblici_<anno>.sqlite` (tabella `terreni`, indice R*Tree `terreni_rt`, tabella `info`) con scrittura
    sicura (file temporaneo e rinomina).
 
+## Vincoli paesaggistici (24/11/2026 sera, `vincoli.py`)
+
+Richiesta di Paolo (24/11, 20:54–20:56): escludere i vincoli del gruppo «Vincoli paesaggistici» del catalogo della Regione
+(https://datacatalog.regione.emilia-romagna.it/catalogCTA/dataset?groups=vincoli-paesaggistici, CC BY 4.0).
+
+- **Escludono** la parte della particella che coprono: foreste e boschi (art. 142 c. 1 g), corsi d'acqua con le fasce di
+  150 m (c; tratti con `escluso = E` saltati), territori costieri (a), contermini ai laghi (b), zone di interesse
+  archeologico (m), beni dell'art. 136, beni archeologici tutelati e zone umide (i) (questi due dal WFS del Patrimonio
+  culturale dell'Emilia-Romagna, GML in EPSG:4326; le zone umide non sono nel gruppo del catalogo ma sono un vincolo dello
+  stesso articolo). **Segnalati** soltanto: usi civici e università agrarie (h).
+- Non usati: art. 142 c. 2 (zone escluse dai vincoli: nel catalogo il dataset non ha file, 24/11/2026), montagne oltre i
+  1.200 m (d) e circhi glaciali (e) (non toccano i terreni agricoli), il dataset dei decreti (solo pagina web).
+- `scarica-vincoli`: zip degli shapefile (indirizzi letti dall'API CKAN del catalogo, `package_show`) e GML del WFS, tutto in
+  **`/srv/energia/dati/vincoli/`** (~230 MB, quasi tutto boschi); poi `vincoli_er.sqlite` (~230 MB: perimetri semplificati a
+  2 m, in gradi con precisione 1e-5, indice R*Tree) per la rotta `/api/cer-fv/vincoli` della fase 4. `--solo-mappa` rifà
+  il file senza scaricare. Shapefile in RDN2008 / UTM 32N (EPSG:7791); anelli costruiti a mano (pyshp si ferma sugli
+  anelli degeneri dei boschi).
+- In `terreni` (se la cartella c'è, o `--vincoli`): per ogni particella pubblica dell'Emilia-Romagna, col poligono del
+  parquet in UTM 32N, `quota_vincolata` (0-1, unione dei vincoli che escludono, sovrapposizioni contate una volta),
+  `vincoli` (testo con la quota di ognuno) e `vincoli_segnalati`; sotto l'1 % non si conta. Prova sul PC con i file veri:
+  141.629 poligoni, 20 s per caricarli e 1,3 GB di memoria.
+- Nella pagina: conta solo la superficie libera; escluso se vincolato per metà o più; livello viola dallo zoom 13.
+
 ## Dati AGREA: non si cedono (decisione di Paolo, 24/11/2026)
 
 I piani colturali grafici sono pubblicati da AGREA
@@ -74,6 +98,8 @@ cd ~/energia/fase17-cer-fv
 ~/energia/fase7-territorio/.venv/bin/pip install -r requirements.txt
 sudo mkdir -p /srv/energia/dati/agrea /srv/energia/dati/cer_fv && sudo chown -R "$USER" /srv/energia/dati/agrea /srv/energia/dati/cer_fv
 PYTHONPATH=. ~/energia/fase7-territorio/.venv/bin/python -m cer_fv scarica-agrea --togli-vecchie
+sudo mkdir -p /srv/energia/dati/vincoli && sudo chown -R "$USER" /srv/energia/dati/vincoli
+PYTHONPATH=. ~/energia/fase7-territorio/.venv/bin/python -m cer_fv scarica-vincoli
 PYTHONPATH=. ~/energia/fase7-territorio/.venv/bin/python -m cer_fv terreni \
     --immobili /srv/energia/dati/immobili_pa --agrea /srv/energia/dati/agrea --dest /srv/energia/dati/cer_fv
 ```

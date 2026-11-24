@@ -266,3 +266,78 @@ def test_comuni_parquet_senza_belfiore_usa_elenco_istat(tmp_path):
     intestazione = ";".join(f"c{i}" for i in range(20))
     (tmp_path / "comuni_istat.csv").write_text(intestazione + "\n" + ";".join(["08", "", "", "", "099014"] + [""] * 14 + ["H294"]) + "\n", encoding="latin-1")
     assert A.istat_belfiore(tmp_path / "comuni.parquet", tmp_path) == {"099014": "H294"}
+
+
+# ---------------------------------------------------------------- (24/11/2026 sera) vincoli paesaggistici
+from cer_fv import vincoli as V  # noqa: E402
+
+
+def _zip_shp(f: Path, nome: str, poligoni: list, campi: dict):
+    """Shapefile poligonale in UTM 32N (anelli orari) dentro uno zip, come quelli della Regione."""
+    base = f.parent / f"_{nome}"
+    w = shapefile.Writer(str(base), shapeType=shapefile.POLYGON, encoding="utf-8")
+    for k in campi:
+        w.field(k, "C", size=80)
+    for anello in poligoni:
+        w.poly([anello]); w.record(*campi.values())
+    w.close()
+    with zipfile.ZipFile(f, "w") as z:
+        for e in ("shp", "shx", "dbf"):
+            z.write(f"{base}.{e}", f"CARTELLA/{nome}.{e}")
+    for e in ("shp", "shx", "dbf"):
+        Path(f"{base}.{e}").unlink()
+
+
+def _quadrato(x, y, d):   # orario
+    return [[x - d, y - d], [x - d, y + d], [x + d, y + d], [x + d, y - d], [x - d, y - d]]
+
+
+def _cartella_vincoli(d: Path, x, y):
+    d.mkdir(parents=True, exist_ok=True)
+    _zip_shp(d / "boschi.zip", "AS_FBO_PL", [_quadrato(x - 50, y, 50)], {"TIPO": "bosc"})            # metà sinistra
+    _zip_shp(d / "fiumi.zip", "AS_P_FRF_pl", [_quadrato(x - 50, y, 50)], {"note": ""})               # sovrapposto
+    _zip_shp(d / "usi_civici.zip", "AS_P_USC_PL", [_quadrato(x + 50, y, 50)], {"NOME_USU": "Demanio di prova"})
+    from pyproj import Transformer
+    lon, lat = Transformer.from_crs(V.EPSG_RER, 4326, always_xy=True).transform(x + 60, y + 60)
+    q = " ".join(f"{lon + a},{lat + b}" for a, b in [(0, 0), (0.0002, 0), (0.0002, 0.0002), (0, 0.0002), (0, 0)])
+    (d / "beni_archeologici.gml").write_text(f"""<?xml version='1.0' encoding="UTF-8" ?>
+<wfs:FeatureCollection xmlns:ms="http://mapserver.gis.umn.edu/mapserver" xmlns:wfs="http://www.opengis.net/wfs" xmlns:gml="http://www.opengis.net/gml">
+ <gml:featureMember><ms:ba_v_vincoli_pl fid="1"><ms:geom><gml:MultiPolygon srsName="EPSG:4326"><gml:polygonMember><gml:Polygon>
+  <gml:outerBoundaryIs><gml:LinearRing><gml:coordinates>{q}</gml:coordinates></gml:LinearRing></gml:outerBoundaryIs>
+ </gml:Polygon></gml:polygonMember></gml:MultiPolygon></ms:geom><ms:nome>Villa romana di prova</ms:nome></ms:ba_v_vincoli_pl></gml:featureMember>
+</wfs:FeatureCollection>""", encoding="utf-8")
+
+
+def test_vincoli_misura_e_mappa(tmp_path):
+    import shapely
+    x, y = 700_000, 4_900_000
+    _cartella_vincoli(tmp_path, x, y)
+    vv = V.Vincoli(tmp_path)
+    m = vv.misura(shapely.box(x - 100, y - 100, x + 100, y + 100))        # particella di 200 × 200 m
+    assert m["quota_vincolata"] == pytest.approx(0.25, abs=0.01)           # boschi e fiumi sullo stesso quarto: contati una volta
+    assert "foreste e boschi" in m["vincoli"] and "corsi d'acqua" in m["vincoli"]
+    assert "usi civici" in m["vincoli_segnalati"] and "Demanio di prova" in m["vincoli_segnalati"]
+    assert vv.misura(shapely.box(x + 5000, y, x + 5100, y + 100)) == {"quota_vincolata": 0.0, "vincoli": None, "vincoli_segnalati": None}
+    info = V.costruisci(tmp_path)
+    assert info["per_fonte"] == {"boschi": 1, "fiumi": 1, "beni_archeologici": 1, "usi_civici": 1}
+    db = sqlite3.connect(info["file"])
+    assert db.execute("SELECT COUNT(*) FROM v_rt").fetchone()[0] == 4
+    assert {r[0] for r in db.execute("SELECT classe FROM v")} == {"escluso", "segnalato"}
+
+
+def test_costruisci_con_vincoli(tmp_path):
+    from pyproj import Transformer
+    _immobili(tmp_path)
+    # vincoli centrati sulla particella 12/34 (centro del suo poligono, in UTM 32N): metà vincolata
+    lon, lat = PART["F257_000012.34"]
+    x, y = Transformer.from_crs(4326, V.EPSG_RER, always_xy=True).transform(lon + D / 2, lat + D / 2)
+    _cartella_vincoli(tmp_path / "vincoli", x, y)
+    info = T.costruisci(tmp_path, tmp_path / "cer_fv", vincoli=tmp_path / "vincoli")
+    assert info["con_vincoli"] == 3
+    db = sqlite3.connect(info["file"]); db.row_factory = sqlite3.Row
+    r = {x["ref"]: dict(x) for x in db.execute("SELECT * FROM terreni")}
+    assert 0 < r["F257_000012.34"]["quota_vincolata"] < 1 and "boschi" in r["F257_000012.34"]["vincoli"]
+    assert "usi civici" in (r["F257_000012.34"]["vincoli_segnalati"] or "")
+    # senza la cartella dei vincoli le colonne restano vuote
+    info = T.costruisci(tmp_path, tmp_path / "cer_fv2", vincoli=tmp_path / "non_c_e")
+    assert info["con_vincoli"] is None

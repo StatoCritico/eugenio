@@ -648,7 +648,11 @@ righello a sinistra; passi a destra.
    prova un'area non idonea SINTETICA attorno a un terreno. Facoltativo il **limite del 10 %** sui terreni con colture
    certificate (casella `p-10`, **accesa** per difetto dal 24/11 alle 18:32, Paolo: superficie richiesta × 10 per la classe A; DAL 125/2023, parti sulle colture di pregio
    rimaste con l'art. 21 della L.R. 5/2026, interpretazione prudente). La regola generale del 10 % della DAL 28/2010 non
-   si applica più (art. 21 della L.R. 5/2026): la superficie occupata si calcola con l'art. 5 (recinzione per il fisso,
+   si applica più (art. 21 della L.R. 5/2026). **Vincoli paesaggistici** (24/11 sera): dal server (`quota_vincolata`,
+   `vincoli`, `vincoli_segnalati` di ogni terreno, fase 17 `vincoli.py`): conta solo la superficie libera (`haLibera` di
+   `punteggioTerreno`), escluso se vincolato per metà o più; livello viola dallo zoom 13 dalla rotta `/api/cer-fv/vincoli`
+   (riquadro dello schermo); usi civici tratteggiati e solo segnalati. In prova il 5° terreno di ogni cabina è vincolato
+   al 70 % e il 7° ha un uso civico, SINTETICI. La superficie occupata si calcola con l'art. 5 (recinzione per il fisso,
    30 % o proiezione per l'agrivoltaico). Classe I (aree idonee) in una fase successiva. Contatti: rimando all'IPA.
 5. **B – Manifestazione di interesse**: per cabina terreni da cercare (necessari meno i pubblici adatti nella stessa area),
    kW, superficie, distanza, classi; **avviso tipo** in PDF (`/api/report`) con criteri e modulo; **modulo CSV** senza dati

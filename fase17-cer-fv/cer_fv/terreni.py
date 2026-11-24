@@ -24,7 +24,10 @@ log = logging.getLogger("cer_fv.terreni")
 
 COLONNE = ["id", "ref", "lon", "lat", "area_m2", "comune_cod", "foglio", "particella", "comune", "provincia", "regione",
            "ente_chiave", "ente", "settore", "ente_sede", "n_enti", "enti", "tipologie", "utilizzo", "n_beni", "sup_mq",
-           "prob_coltura", "classe_coltura", "campagne", "quota_dichiarata"]
+           "prob_coltura", "classe_coltura", "campagne", "quota_dichiarata",
+           # (24/11/2026 sera) vincoli paesaggistici della Regione Emilia-Romagna (vincoli.py): quota della particella
+           # coperta dai vincoli che escludono, testo con la quota di ognuno, vincoli solo segnalati (usi civici)
+           "quota_vincolata", "vincoli", "vincoli_segnalati"]
 
 
 def _ultimo(cartella: Path, schema: str) -> Path | None:
@@ -91,7 +94,7 @@ def geometrie(parquet: Path, refs: set[str], limiti_4326=None, con_geometria: bo
 
 
 def costruisci(immobili: Path, dest: Path, agrea: Path | None = None, regole_file: Path | None = None,
-               comuni: Path | None = None) -> dict:
+               comuni: Path | None = None, vincoli: Path | None = None) -> dict:
     """Scrive `dest/terreni_pubblici_<anno>.sqlite`. `immobili`: cartella con l'indice SQLite e il parquet delle particelle.
     `comuni`: tabella ISTAT → codice catastale per l'abbinamento dei file AGREA con le particelle (vedi agrea.istat_belfiore)."""
     t0 = time.time()
@@ -151,6 +154,7 @@ def costruisci(immobili: Path, dest: Path, agrea: Path | None = None, regole_fil
             continue
         r.update(K.indicatore(g3, K.codice_provincia(r["provincia"]), indici, R, k, r.get("area_m2")))
         con_ind += 1
+    con_vincoli = misura_vincoli(righe, parquet, vincoli)
     dest.mkdir(parents=True, exist_ok=True)
     f = dest / f"terreni_pubblici_{anno}.sqlite"
     tmp = f.with_suffix(".sqlite.tmp")
@@ -162,7 +166,7 @@ def costruisci(immobili: Path, dest: Path, agrea: Path | None = None, regole_fil
         db.execute(f"INSERT INTO terreni VALUES ({','.join('?' * len(COLONNE))})", [i] + [r.get(c) for c in COLONNE[1:]])
         db.execute("INSERT INTO terreni_rt VALUES (?,?,?,?,?)", (i, r["lon"], r["lon"], r["lat"], r["lat"]))
     info = {"anno": anno, "costruito": time.strftime("%Y-%m-%d %H:%M"), "particelle": len(righe), "con_indicatore": con_ind,
-            "campagne_agrea": [ix.anno for ix in indici],
+            "campagne_agrea": [ix.anno for ix in indici], "con_vincoli": con_vincoli,
             "fonti": "MEF – Patrimonio della PA (CC BY 4.0); Agenzia delle Entrate – cartografia catastale (CC BY 4.0); "
                      "probabilità di coltura: elaborazione EuGEnio sui piani colturali grafici AGREA (dati non ceduti)"}
     db.execute("CREATE TABLE info (chiave PRIMARY KEY, valore)")
@@ -173,3 +177,37 @@ def costruisci(immobili: Path, dest: Path, agrea: Path | None = None, regole_fil
     info["secondi"] = round(time.time() - t0, 1)
     log.info("scritto %s (%d particelle, %d con l'indicatore, %.0f s)", f, len(righe), con_ind, info["secondi"])
     return info
+
+
+ER_RIQUADRO = (9.19, 43.73, 12.76, 45.14)
+
+
+def misura_vincoli(righe: list[dict], parquet: Path, cartella: Path | None) -> int | None:
+    """(24/11/2026 sera) Quota di ogni particella pubblica dell'Emilia-Romagna coperta dai vincoli paesaggistici della
+    Regione (cer_fv.vincoli). Senza la cartella dei vincoli non fa niente (colonne vuote)."""
+    from . import vincoli as V
+    cartella = cartella if cartella is not None else V.CARTELLA
+    if not cartella.exists() or not any(cartella.glob("*.zip")) or not parquet.exists():
+        log.info("vincoli paesaggistici: cartella %s assente o vuota, salto", cartella)
+        return None
+    x0, y0, x1, y1 = ER_RIQUADRO
+    er = [r for r in righe if "EMILIA" in str(r.get("regione") or "").upper() or
+          (not r.get("regione") and x0 <= (r.get("lon") or 0) <= x1 and y0 <= (r.get("lat") or 0) <= y1)]
+    if not er:
+        return 0
+    import shapely.ops
+    from pyproj import Transformer
+    vv = V.Vincoli(cartella)
+    geo = geometrie(parquet, {r["ref"] for r in er})
+    tr = Transformer.from_crs(4326, V.EPSG_RER, always_xy=True)
+    n = 0
+    for i, r in enumerate(er, 1):
+        g = geo.get(r["ref"], (None,))[0]
+        if g is None:
+            continue
+        r.update(vv.misura(shapely.ops.transform(tr.transform, g)))
+        n += 1
+        if i % 20000 == 0:
+            log.info("vincoli: %d/%d particelle", i, len(er))
+    log.info("vincoli paesaggistici misurati su %d particelle dell'Emilia-Romagna", n)
+    return n

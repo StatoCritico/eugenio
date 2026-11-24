@@ -300,12 +300,16 @@
   // (24/11/2026 sera) limite10: occupazione al massimo del 10% del terreno con colture certificate (DAL 125/2023, parti
   // sulle colture di pregio, rimaste in vigore con l'art. 21 della L.R. 5/2026: interpretazione prudente, a scelta)
   function punteggioTerreno(t, f, pesi = PESI) {
-    const ha = (t.area_m2 || 0) / 10000;
+    // (24/11/2026 sera) vincoli paesaggistici della Regione: conta solo la parte libera della particella; esclusa se
+    // vincolata per metà o più
+    const qv = Math.min(1, Math.max(0, +t.quota_vincolata || 0));
+    const haTot = (t.area_m2 || 0) / 10000, ha = haTot * (1 - qv);
     const classe = classeTerreno(t);
     const motivi = [];
+    if (qv >= 0.5) motivi.push(`vincoli paesaggistici sul ${Math.round(qv * 100)} % (${t.vincoli || "art. 136 e 142 del D.Lgs. 42/2004"})`);
     const k = classe === "A" && f.limite10 ? 10 : 1, haMin = f.haMin * k, haMax = f.haMax * k;
     if (t.vincolo && t.vincolo.classe === "non_idonea") motivi.push(`in area non idonea (${t.vincolo.nome})`);
-    if (ha < haMin) motivi.push(`superficie ${it(ha)} ha sotto ${it(haMin)} ha${k > 1 ? " (limite del 10% sulle colture certificate)" : ""}`);
+    if (ha < haMin) motivi.push(`superficie${qv > 0 ? " libera dai vincoli" : ""} ${it(ha)} ha sotto ${it(haMin)} ha${k > 1 ? " (limite del 10% sulle colture certificate)" : ""}`);
     if (t.distanza_m > f.distanzaMaxM) motivi.push(`oltre ${it(f.distanzaMaxM / 1000, 1)} km dalla cabina`);
     if (classe === "A" && f.tipo !== "agrivoltaico") motivi.push("probabile coltura certificata: ammesso solo l'agrivoltaico");
     const ammesso = !motivi.length;
@@ -317,7 +321,7 @@
     const unico = (t.n_enti || 1) === 1 ? 1 : 0.5;
     const tot = pesi.distanza + pesi.superficie + pesi.coltura + pesi.unico;
     const punti = ammesso ? Math.round(100 * (pesi.distanza * dist + pesi.superficie * sup + pesi.coltura * col + pesi.unico * unico) / tot) : 0;
-    return { punti, ammesso, motivi, classe, ha };
+    return { punti, ammesso, motivi, classe, ha: haTot, haLibera: ha };
   }
   // fabbisogno di una cabina per il bando: numero di terreni e fascia di superficie
   function fabbisognoTerreni(d, o = PREDEFINITI) {

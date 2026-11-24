@@ -189,7 +189,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <div class="caselle-strati" id="caselle-cer">
         <label class="casella-strato"><input type="checkbox" id="strato-consumi" data-collegamento="barre_consumi"> Consumi (barre, MWh)</label>
         <label class="casella-strato"><input type="checkbox" id="strato-fv" data-collegamento="barre_fv"> Potenza FV (barre, kWp)</label>
-        <label class="casella-strato"><input type="checkbox" id="strato-vincoli" data-collegamento="non_idonee" checked> Aree non idonee (parchi, riserve, Rete Natura 2000)</label>
+        <label class="casella-strato"><input type="checkbox" id="strato-vincoli" data-collegamento="non_idonee" checked> Aree non idonee e vincoli paesaggistici</label>
       </div>
       <div id="posto-righello"></div>
       <div id="sposta-ortofoto"></div>
@@ -202,7 +202,10 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       stesso colore. Dallo zoom 16 gli edifici diventano anelli e si accendono i contorni degli edifici. Passando col mouse su
       un punto compare la sua scheda. Le barre (consumi sugli edifici, potenza FV sulle cabine) sono in scala tra loro, con
       il valore nella scheda. Le <b>aree non idonee</b> (zone A, B e C dei parchi, riserve, siti della Rete Natura 2000) si
-      leggono dal vivo dal servizio della Regione Emilia-Romagna e i terreni che ci cadono sono esclusi.</p>
+      leggono dal vivo dal servizio della Regione Emilia-Romagna e i terreni che ci cadono sono esclusi. Dallo zoom 13 si
+      vedono anche i <b>vincoli paesaggistici</b> (viola: boschi, corsi d'acqua con le fasce di 150 m, coste, laghi, zone
+      umide, zone e beni archeologici, beni dell'art. 136; tratteggio: usi civici, da verificare): la parte vincolata di un
+      terreno non conta e il terreno è escluso se è vincolato per metà o più.</p>
     <p class="aiuto attribuzione-gse" id="attribuzione-gse" hidden></p>
     <p class="attribuzione-ortofoto" id="attribuzione-ortofoto" aria-live="polite"></p>
     <div class="legenda-strati" id="legenda-strati" aria-live="polite" hidden></div>

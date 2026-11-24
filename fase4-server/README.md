@@ -1161,7 +1161,7 @@ bloccherebbe anche chi usa le API dei dati aperti con uno script.
 | `patrimonio` | `/api/patrimonio` | 2.000 edifici |
 | `luogo` | `/api/patrimonio` con `luogo=1` (ricerca di un luogo, 17/11/2026, oltre a «patrimonio») | `LUOGO_ORA` (300) |
 | `immobili_pa` | `/api/immobili-pa/cerca`, `/particella/{ref}`, `/bene/{id}` (17/11/2026) | 1.200 |
-| `cer_fv` | `/api/cer-fv/terreni` (24/11/2026) | 600 |
+| `cer_fv` | `/api/cer-fv/terreni` (24/11/2026), `/api/cer-fv/vincoli` (24/11/2026 sera: vincoli paesaggistici della Regione nel riquadro `bbox`, al massimo 0,25 gradi² e 6.000 poligoni, da `DATI/vincoli/vincoli_er.sqlite`) | 600 |
 | `immobili_pa_ente` | `/api/immobili-pa/ente/{chiavi}`, `/ente/{chiave}/beni` (peso 1) e `/ente/{chiave}/punti` (peso 3), 22/11/2026; più il tetto orario di tutto il sito `IMMOBILI_PA_ENTE_TETTO_ORA` (30.000, oltre: 503) | 600 |
 | `report` | `/api/report`, `/api/report/{tipo}` | 60 |
 | `converti` | `/api/converti` | 200 |
