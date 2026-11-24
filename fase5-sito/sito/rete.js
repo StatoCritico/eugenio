@@ -197,7 +197,8 @@
   // ------------------------------------------------------------------ riquadretto (mouse e tocco)
   function suggerimento(m, strati, contenuto) {
     const box = m.getContainer();
-    let et = box.querySelector(":scope > .etichetta-mappa");
+    // (24/11/2026) non il riquadretto del righello, che ha la stessa classe: se il righello nasce prima lo nasconderebbe a ogni passaggio
+    let et = box.querySelector(":scope > .etichetta-mappa:not(.righello-etichetta)");
     if (!et) { et = document.createElement("div"); et.className = "etichetta-mappa"; et.setAttribute("aria-hidden", "true"); box.appendChild(et); }
     let timer = 0;
     const visibili = () => strati().filter((id) => m.getLayer(id) && m.getLayoutProperty(id, "visibility") !== "none");

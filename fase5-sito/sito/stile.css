@@ -2091,3 +2091,12 @@ svg.zoom-proprio:focus-visible { outline: 2px solid var(--primario); outline-off
 .riquadro-llm { margin: var(--s3, 1rem) 0 var(--s4, 1.5rem); padding: 0.8rem 1rem; border: 2px solid var(--primario);
   border-left-width: 6px; border-radius: 8px; background: var(--tinta, var(--rialzo)); }
 .riquadro-llm p { margin: 0; }
+
+/* (24/11/2026 sera) CER – Sviluppo impianti FV: campioni di legenda a rombo (terreni) e a barra (consumi, FV) */
+.campione-rombo { transform: rotate(45deg) scale(0.8); border: 1px solid #1a1a1a; }
+.campione-barra { width: 6px !important; height: 14px !important; border: 1px solid rgba(0,0,0,0.6); border-radius: 0 !important; }
+/* (24/11/2026 sera) CER: scelta dell'ente promotore */
+.cerca-ente-cer { margin: 0.6rem 0; }
+.cerca-ente-cer input[type="search"] { width: 100%; max-width: 32rem; }
+.proposte-ente { display: flex; flex-direction: column; gap: 2px; max-width: 32rem; margin-top: 2px; }
+.proposte-ente button { text-align: left; }

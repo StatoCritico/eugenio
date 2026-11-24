@@ -257,3 +257,12 @@ def test_scarica_senza_rete(tmp_path, monkeypatch):
     assert not any("_XX" in c for c in chiamate)
     e = A.scarica(tmp_path, quante=2, oggi=dt.date(2026, 11, 24))
     assert e["scaricati"] == [] and len(e["gia_presenti"]) == 4
+
+
+def test_comuni_parquet_senza_belfiore_usa_elenco_istat(tmp_path):
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    pq.write_table(pa.table({"istat": ["099014"], "nome": ["Rimini"]}), tmp_path / "comuni.parquet")
+    intestazione = ";".join(f"c{i}" for i in range(20))
+    (tmp_path / "comuni_istat.csv").write_text(intestazione + "\n" + ";".join(["08", "", "", "", "099014"] + [""] * 14 + ["H294"]) + "\n", encoding="latin-1")
+    assert A.istat_belfiore(tmp_path / "comuni.parquet", tmp_path) == {"099014": "H294"}

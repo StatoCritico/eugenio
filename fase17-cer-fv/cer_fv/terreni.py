@@ -118,10 +118,10 @@ def costruisci(immobili: Path, dest: Path, agrea: Path | None = None, regole_fil
         from . import agrea as A
         tab = {}
         if any(K._catastale(c) for _, c in K.campagne_disponibili(agrea, R.campagne)):
-            try:
-                tab = A.istat_belfiore(comuni, agrea)
-            except Exception as e:   # noqa: BLE001 - senza tabella dei comuni resta l'abbinamento geometrico
-                log.warning("tabella dei comuni non disponibile (%s): abbinamento geometrico", e)
+            # (24/11/2026) niente ripiego geometrico per questi file: milioni di poligoni in memoria, non finisce più
+            tab = A.istat_belfiore(comuni, agrea)
+            if not tab:
+                raise RuntimeError("tabella dei comuni (ISTAT → codice catastale) vuota: indicala con --comuni")
         indici = K.carica(agrea, R, set(chiavi.values()), tab)
     spaziali = [ix for ix in indici if isinstance(ix, K.Indice)]
     geo = {}

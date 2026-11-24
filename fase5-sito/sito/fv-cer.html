@@ -11,21 +11,21 @@ try{var d=document.documentElement,t=localStorage.getItem("tema"),v=localStorage
 if(t==="light")d.dataset.theme="light";if(/^(ambra|indaco|lime|verde)$/.test(v))d.dataset.vestito=v;
 var f=localStorage.getItem("menu-fissato");if(/^(clima|patrimonio|edificio|aria|cogenerazione|fotovoltaico|statistiche)$/.test(f))d.dataset.menuFissato=f}catch(e){}
 function eugenioLoghi(){var d=document.documentElement,v=d.dataset.vestito||"corallo",t=d.dataset.theme==="light"?"chiaro":"scuro";
-document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261124a";if(i.getAttribute("src")!==s)i.src=s})}</script>
-<script src="protezione.js?v=20261124a"></script>
-<script src="numeri.js?v=20261124a"></script>
-<link rel="stylesheet" href="stile.css?v=20261124a">
-<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261124a">
-<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261124a">
+document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+"/"+i.dataset.logo+"_"+t+".svg?v=20261124b";if(i.getAttribute("src")!==s)i.src=s})}</script>
+<script src="protezione.js?v=20261124b"></script>
+<script src="numeri.js?v=20261124b"></script>
+<link rel="stylesheet" href="stile.css?v=20261124b">
+<link rel="icon" type="image/svg+xml" sizes="32x32" href="logo/corallo/icona_32_chiaro.svg?v=20261124b">
+<link rel="icon" type="image/svg+xml" sizes="16x16" href="logo/corallo/icona_16_chiaro.svg?v=20261124b">
 <link rel="alternate" type="application/atom+xml" title="Novità di EuGEnio" href="novita.xml">
 <!-- /testa -->
-<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261124a">
+<link rel="stylesheet" href="lib/maplibre-gl/maplibre-gl.css?v=20261124b">
 </head>
 <body>
 <!-- testata -->
 <header class="testata">
   <div class="testata-alta">
-    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261124a" alt="EuGEnio" width="153" height="28"></a>
+    <a class="marchio" href="./"><img data-logo="logo_orizzontale" src="logo/corallo/logo_orizzontale_scuro.svg?v=20261124b" alt="EuGEnio" width="153" height="28"></a>
     <script>eugenioLoghi()</script>
     <span class="sezione">un servizio per uno <a href="https://statocritico.it">Stato Critico</a></span>
     <nav class="menu-info" aria-label="Altre pagine">
@@ -33,7 +33,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
       <a href="faq.html">F.A.Q.</a>
       <a href="sitografia.html">Sitografia</a>
       <a href="mirror.html">Mirror</a>
-      <a href="novita.html" class="voce-novita" data-ultima="20261124a">Novità</a>
+      <a href="novita.html" class="voce-novita" data-ultima="20261124b">Novità</a>
       <a href="esempi.html">Esempi</a>
       <a href="contributi.html">Contributi</a>
       <a href="contatti.html">Contattaci</a>
@@ -64,7 +64,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
           <ul><li><a href="indici-prezzi.html">Indici dei prezzi</a></li><li><a href="indicatori.html">Costi energetici Sanità</a></li><li><a href="rete-elettrica.html">Stato della rete elettrica</a></li><li><a href="elettricita.html">Produzione e consumi di elettricità</a></li><li><a href="carichi.html">Carichi elettrici</a></li><li><a href="suolo.html">Suolo e aree agricole <span class="cantiere prova">sperimentale</span></a></li></ul>
         </details>
         <h2>Altre pagine</h2>
-        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261124a">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
+        <ul><li><a href="metodo.html">Come funziona</a></li><li><a href="faq.html">F.A.Q.</a></li><li><a href="sitografia.html">Sitografia</a></li><li><a href="mirror.html">Mirror</a></li><li><a href="novita.html" class="voce-novita" data-ultima="20261124b">Novità</a></li><li><a href="esempi.html">Esempi</a></li><li><a href="contributi.html">Contributi</a></li><li><a href="contatti.html">Contattaci</a></li></ul>
         <h2 id="aspetto-telefono">Aspetto</h2>
         <div class="vestito">
           <ul class="vestito-elenco" id="vestiti-telefono" role="listbox" aria-labelledby="aspetto-telefono" aria-orientation="horizontal" tabindex="0">
@@ -186,15 +186,23 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <div class="comandi-ortofoto comandi-dettaglio">
       <label>Ortofoto <select id="fonte-dettaglio"><option value="">nessuna ortofoto</option></select></label>
       <div class="caselle-strati" id="caselle-strati"></div>
+      <div class="caselle-strati" id="caselle-cer">
+        <label class="casella-strato"><input type="checkbox" id="strato-consumi" data-collegamento="barre_consumi"> Consumi (barre, MWh)</label>
+        <label class="casella-strato"><input type="checkbox" id="strato-fv" data-collegamento="barre_fv"> Potenza FV (barre, kWp)</label>
+        <label class="casella-strato"><input type="checkbox" id="strato-vincoli" data-collegamento="non_idonee" checked> Aree non idonee (parchi, riserve, Rete Natura 2000)</label>
+      </div>
       <div id="posto-righello"></div>
       <div id="sposta-ortofoto"></div>
     </div>
     <div class="legenda legenda-rete" id="legenda-cer" aria-live="polite"></div>
     <p class="aiuto">Gli edifici sono i punti col bordo scuro; le cabine primarie hanno il colore della saturazione (come nello
       Stato della rete elettrica) e un anello se servono i tuoi edifici; le aree convenzionali del GSE delle cabine interessate
-      si leggono dal vivo dal servizio del GSE. I terreni pubblici trovati sono quadrati: verdi se adatti, arancioni se
-      ammettono solo l'agrivoltaico, grigi se esclusi. Particelle catastali e contorni degli edifici si accendono da vicino
-      (zoom 16 e oltre).</p>
+      si leggono dal vivo dal servizio del GSE. I terreni pubblici trovati sono rombi: verdi se adatti, arancioni se
+      ammettono solo l'agrivoltaico, grigi se esclusi; da vicino (zoom 13 e oltre) compaiono i confini della particella nello
+      stesso colore. Dallo zoom 16 gli edifici diventano anelli e si accendono i contorni degli edifici. Passando col mouse su
+      un punto compare la sua scheda. Le barre (consumi sugli edifici, potenza FV sulle cabine) sono in scala tra loro, con
+      il valore nella scheda. Le <b>aree non idonee</b> (zone A, B e C dei parchi, riserve, siti della Rete Natura 2000) si
+      leggono dal vivo dal servizio della Regione Emilia-Romagna e i terreni che ci cadono sono esclusi.</p>
     <p class="aiuto attribuzione-gse" id="attribuzione-gse" hidden></p>
     <p class="attribuzione-ortofoto" id="attribuzione-ortofoto" aria-live="polite"></p>
     <div class="legenda-strati" id="legenda-strati" aria-live="polite" hidden></div>
@@ -226,7 +234,7 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         certificate con l'attestazione di un agronomo.</p>
       </div>
   <!-- piede -->
-  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261124a" alt="" width="44" height="44">
+  <img class="piede-simbolo" data-logo="simbolo" src="logo/corallo/simbolo_scuro.svg?v=20261124b" alt="" width="44" height="44">
   <p class="piede-testi">EuGEnio è un servizio di <a href="https://statocritico.it">Stato Critico</a>. Codice open source su <a href="https://github.com/statocritico/eugenio">GitHub</a>. <a href="privacy.html">Privacy</a> · <a href="contatti.html">Contattaci</a> · <a href="licenza.html">Licenza</a> (codice AGPL con <a href="licenza.html#attribuzione">termini aggiuntivi</a>, dati <a href="licenza.html#dati">CC BY 4.0</a>). <span class="piede-attribuzione">EuGEnio © 2026 Paolo Bianco – Stato Critico – <a href="https://eugenio.statocritico.it">https://eugenio.statocritico.it</a></span></p>
   <!-- /piede -->
     </footer>
@@ -278,7 +286,14 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         immessa e consumi degli edifici della cabina) resta almeno alla quota scelta. L'accumulo ha un'energia pari alle ore
         indicate per la potenza del fotovoltaico, si carica solo dal fotovoltaico e restituisce l'energia quando gli edifici
         consumano più di quanto si produce. Gli impianti si dividono in parti uguali fino alla potenza massima di ognuno
-        (1 MW: limite degli incentivi delle CER e, fuori dalle aree idonee, dell'art. 10 della L.R. 5/2026).</p>
+        (1 MW: limite degli incentivi del GSE per le CER).</p>
+      <div class="cerca-ente-cer">
+        <label>Ente promotore: i suoi terreni hanno la precedenza <input id="p-ente-testo" type="search" autocomplete="off"
+          placeholder="per esempio AUSL della Romagna" aria-describedby="p-ente-scelto"></label>
+        <input id="p-ente" type="hidden" data-collegamento="ente">
+        <div class="proposte-ente" id="proposte-ente" role="listbox" hidden></div>
+        <p class="aiuto" id="p-ente-scelto">Nessun ente scelto: i terreni si ordinano solo col punteggio.</p>
+      </div>
       <div class="campi-cer" id="campi-parametri">
         <label>Ore di accumulo (energia = ore × potenza FV) <input id="p-h" type="number" min="0" max="8" step="0.5" value="0" data-collegamento="h"></label>
         <label>Quota minima di energia condivisa (%) <input id="p-q" type="number" min="5" max="100" step="1" value="60" data-collegamento="q"></label>
@@ -293,6 +308,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <label>Distanza massima dei terreni dalla cabina (km) <input id="p-dist" type="number" min="0.5" max="15" step="0.5" value="5" data-collegamento="dist"></label>
         <label>Terreni da proporre per cabina <input id="p-n" type="number" min="1" max="30" step="1" value="5" data-collegamento="n"></label>
         <label>Superficie accettata fino a (volte quella necessaria) <input id="p-toll" type="number" min="1" max="5" step="0.1" value="1.3" data-collegamento="toll"></label>
+        <label class="casella"><input id="p-10" type="checkbox" data-collegamento="dieci" checked> Limite del 10% sui terreni con colture certificate
+          (impianto al massimo sul 10% del terreno: DAL 125/2023, parti sulle colture di pregio; interpretazione prudente, accesa per difetto)</label>
       </div>
       <div class="riga-campi">
         <button class="bottone" id="calcola" type="button" disabled>Calcola</button>
@@ -349,24 +366,24 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
   </section>
 </main>
 
-<script src="aspetto.js?v=20261124a"></script>
-<script src="collegamento.js?v=20261124a"></script>
-<script src="grafici.js?v=20261124a"></script>
-<script src="divisore.js?v=20261124a"></script>
-<script src="report.js?v=20261124a"></script>
-<script src="tabelle.js?v=20261124a"></script>
-<script src="lib/maplibre-gl/maplibre-gl.js?v=20261124a"></script>
-<script src="lib/pmtiles/pmtiles.js?v=20261124a"></script>
-<script src="minimappa.js?v=20261124a"></script>
-<script src="confini_gl.js?v=20261124a"></script>
-<script src="esporta_mappa.js?v=20261124a"></script>
-<script src="cerca_luogo.js?v=20261124a"></script>
-<script src="strati_gl.js?v=20261124a"></script>
-<script src="sposta_ortofoto.js?v=20261124a"></script>
-<script src="righello.js?v=20261124a"></script>
-<script src="rete.js?v=20261124a"></script>
-<script src="edifici_calcoli.js?v=20261124a"></script>
-<script src="cer_fv_calcolo.js?v=20261124a"></script>
-<script src="fv_cer.js?v=20261124a"></script>
+<script src="aspetto.js?v=20261124b"></script>
+<script src="collegamento.js?v=20261124b"></script>
+<script src="grafici.js?v=20261124b"></script>
+<script src="divisore.js?v=20261124b"></script>
+<script src="report.js?v=20261124b"></script>
+<script src="tabelle.js?v=20261124b"></script>
+<script src="lib/maplibre-gl/maplibre-gl.js?v=20261124b"></script>
+<script src="lib/pmtiles/pmtiles.js?v=20261124b"></script>
+<script src="minimappa.js?v=20261124b"></script>
+<script src="confini_gl.js?v=20261124b"></script>
+<script src="esporta_mappa.js?v=20261124b"></script>
+<script src="cerca_luogo.js?v=20261124b"></script>
+<script src="strati_gl.js?v=20261124b"></script>
+<script src="sposta_ortofoto.js?v=20261124b"></script>
+<script src="righello.js?v=20261124b"></script>
+<script src="rete.js?v=20261124b"></script>
+<script src="edifici_calcoli.js?v=20261124b"></script>
+<script src="cer_fv_calcolo.js?v=20261124b"></script>
+<script src="fv_cer.js?v=20261124b"></script>
 </body>
 </html>

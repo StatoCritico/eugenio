@@ -290,22 +290,28 @@
     if (t.prob_coltura !== null && t.prob_coltura !== undefined && t.prob_coltura >= 50) return "A";
     return "C";
   }
+  // (24/11/2026 sera) art. 10, c. 7 della L.R. 5/2026 come modificato dalla L.R. 27/10/2026 n. 15: senza più il limite di
+  // 1 MW (resta quello degli incentivi del GSE per le CER, «Potenza massima per impianto»)
   const NOMI_CLASSI = {
     A: "probabile coltura certificata: solo agrivoltaico (serve l'attestazione di un agronomo)",
-    C: "agricola non idonea: impianti fino a 1 MW intestati a una CER, oppure agrivoltaico",
+    C: "agricola non idonea: impianti a terra intestati a una CER o nella sua disponibilità, oppure agrivoltaico",
   };
-  // t: { area_m2, distanza_m, prob_coltura (0-100 o null), n_enti }; f: { haMin, haMax, distanzaMaxM, tipo }
+  // t: { area_m2, distanza_m, prob_coltura (0-100 o null), n_enti, vincolo }; f: { haMin, haMax, distanzaMaxM, tipo, limite10 }
+  // (24/11/2026 sera) limite10: occupazione al massimo del 10% del terreno con colture certificate (DAL 125/2023, parti
+  // sulle colture di pregio, rimaste in vigore con l'art. 21 della L.R. 5/2026: interpretazione prudente, a scelta)
   function punteggioTerreno(t, f, pesi = PESI) {
     const ha = (t.area_m2 || 0) / 10000;
     const classe = classeTerreno(t);
     const motivi = [];
-    if (ha < f.haMin) motivi.push(`superficie ${it(ha)} ha sotto ${it(f.haMin)} ha`);
+    const k = classe === "A" && f.limite10 ? 10 : 1, haMin = f.haMin * k, haMax = f.haMax * k;
+    if (t.vincolo && t.vincolo.classe === "non_idonea") motivi.push(`in area non idonea (${t.vincolo.nome})`);
+    if (ha < haMin) motivi.push(`superficie ${it(ha)} ha sotto ${it(haMin)} ha${k > 1 ? " (limite del 10% sulle colture certificate)" : ""}`);
     if (t.distanza_m > f.distanzaMaxM) motivi.push(`oltre ${it(f.distanzaMaxM / 1000, 1)} km dalla cabina`);
     if (classe === "A" && f.tipo !== "agrivoltaico") motivi.push("probabile coltura certificata: ammesso solo l'agrivoltaico");
     const ammesso = !motivi.length;
     // aderenza alla superficie giusta: 1 dentro la fascia, poi scende con l'eccesso (un terreno troppo grande si può usare
     // in parte, quindi resta ammesso)
-    const sup = ha <= f.haMax ? 1 : Math.max(0, 1 - (ha / f.haMax - 1) / 4);
+    const sup = ha <= haMax ? 1 : Math.max(0, 1 - (ha / haMax - 1) / 4);
     const dist = Math.max(0, 1 - t.distanza_m / f.distanzaMaxM);
     const col = t.prob_coltura === null || t.prob_coltura === undefined ? 0.5 : 1 - t.prob_coltura / 100;
     const unico = (t.n_enti || 1) === 1 ? 1 : 0.5;

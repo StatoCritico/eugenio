@@ -22,6 +22,21 @@
 
 [[voce]]
 data = "2026-11-24"
+versione = "20261124b"
+titolo = "CER – Sviluppo impianti FV: mappa più ricca, aree non idonee ed ente promotore"
+migliorato = [
+  "Fotovoltaico › CER – Sviluppo impianti FV: passando col mouse su un punto della mappa compare la sua scheda: consumi totali per gli edifici; foglio e particella, superficie, fotovoltaico previsto ed ente proprietario per i terreni; nome, codice del GSE e congestione per le cabine primarie.",
+  "I terreni sono rombi e, avvicinandosi, mostrano i confini della particella; da vicino gli edifici diventano anelli e compaiono i loro contorni.",
+  "Nuovi livelli: «Consumi» e «Potenza FV», barre verticali in scala sugli edifici e sulle cabine; «Aree non idonee» con parchi (zone A, B e C), riserve e siti della Rete Natura 2000 della Regione Emilia-Romagna: i terreni che ci cadono sono esclusi.",
+  "Puoi indicare l'ente promotore (per esempio un'azienda sanitaria o un Comune): i suoi terreni adatti vengono proposti per primi.",
+  "Regole aggiornate alla L.R. Emilia-Romagna 5/2026 come modificata dalla L.R. 15/2026: fuori dalle aree idonee gli impianti a terra delle comunità energetiche non hanno più il limite di 1 MW (resta quello degli incentivi); sui terreni con colture certificate l'impianto occupa al massimo il 10 % del terreno (si può togliere).",
+]
+collegamenti = [
+  { testo = "CER – Sviluppo impianti FV", indirizzo = "fv-cer.html" },
+]
+
+[[voce]]
+data = "2026-11-24"
 versione = "20261124a"
 titolo = "CER – Sviluppo impianti FV"
 nuovo = [

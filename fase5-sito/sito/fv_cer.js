@@ -11,6 +11,11 @@
 //     da AGREA), graduatoria e verifica dell'area del GSE per i primi;
 //  5. B – cabine per la manifestazione di interesse, avviso tipo (PDF da /api/report) e modulo CSV;
 //  6. file con i soli codici delle aree del GSE e il solo indicatore delle colture.
+// (24/11/2026 sera, Paolo) scheda al passaggio del mouse su edifici (consumi), terreni (catasto, superficie, FV previsto,
+// ente) e cabine (nome, codice del GSE, congestione); terreni come rombi e, da vicino, con i confini della particella
+// (tessere degli immobili delle PA); edifici ad anello con i contorni accesi dallo zoom 16; livelli «Consumi» e «Potenza
+// FV» (barre verticali in scala) e «Aree non idonee» (zone A, B, C dei parchi, riserve e Rete Natura 2000, dal vivo dal
+// WFS della Regione Emilia-Romagna, CC BY 4.0): i terreni che ci cadono sono esclusi.
 // Con ?prova=1 niente server (rete.js): clima, cabine e terreni SINTETICI, dichiarati in pagina e nei file.
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -23,6 +28,12 @@
   const CONTESTO = "s2cloudless2016";
   const COLORE_EDIFICI = "#1e88e5";
   const COLORI_TERRENI = { C: "#2e9d4f", A: "#f08a00", X: "#9a9a9a" };
+  const COLORE_CONSUMI = "#0e7c86", COLORE_FV = "#f2b100", COLORE_VINCOLI = "#c62828";
+  const ZOOM_CONFINI = 13, ZOOM_EDIFICI = 16, ALTEZZA_BARRE = 70;
+  const WFS_RER = "https://servizigis.regione.emilia-romagna.it/wfs/areeprotette_natura2000";
+  const SCHEDA_RER = "https://geoportale.regione.emilia-romagna.it/catalogo/dati-cartografici/ambiente/aree-protette";
+  const ATTR_RER = "Regione Emilia-Romagna – Aree protette e Rete Natura 2000 (CC BY 4.0)";
+  const ER = [9.19, 43.73, 12.76, 45.14];                   // riquadro dell'Emilia-Romagna (per il servizio regionale)
   const vuota = () => ({ type: "FeatureCollection", features: [] });
   const colore = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
   const num = (x, d = 0) => (x === null || x === undefined || !Number.isFinite(+x) ? "–" : R.num(+x, d));
@@ -33,6 +44,7 @@
     det: null, fonti: [], fonte: null, contesto: null, manuale: false, sposta: null, strati: null, pronto: false,
     fileEdifici: null, fileCurve: null, edifici: [], curve: null, cabine: [], tutte: null, aree: null,
     parametri: null, calcolato: false, terreniCercati: false, infoTerreni: null,
+    vincoli: null, infoPa: null, barre: new Set(), contorniAuto: false, contorniToccati: false,
   };
   R.avvisoProva(document.querySelector(".pannello"));
 
@@ -45,12 +57,71 @@
       orientamento: n("p-orient") ?? 180, perdite: Math.min(0.4, Math.max(0, (n("p-perdite") ?? 14) / 100)),
       potenzaMassimaImpianto: Math.min(1000, Math.max(20, n("p-pmax") || 1000)), potenzaMassima: v("p-ptot") === "" ? null : n("p-ptot"),
       distanzaKm: Math.min(15, Math.max(0.5, n("p-dist") || 5)), nTerreni: Math.min(30, Math.max(1, Math.round(n("p-n") || 5))),
-      tolleranza: Math.min(5, Math.max(1, n("p-toll") || 1.3)) };
+      tolleranza: Math.min(5, Math.max(1, n("p-toll") || 1.3)), limite10: !!($("p-10") && $("p-10").checked) };
     // superficie specifica scelta dall'utente al posto di quella del tipo (valori indicativi)
     F.TIPI[tipo] = { ...F.TIPI[tipo], haMw: Math.min(6, Math.max(0.5, n("p-ha") || F.TIPI[tipo].haMw)) };
     return o;
   }
   $("p-tipo").addEventListener("change", () => { $("p-ha").value = $("p-tipo").value === "agrivoltaico" ? "2.5" : "1.4"; });
+
+  // ================================================================== ente promotore (24/11/2026 sera, Paolo: «tra i terreni
+  // vanno selezionati prioritariamente quelli dell'ente stesso … ad esempio come AUSL Romagna ne abbiamo parecchi»)
+  // elenco degli enti dal file statico degli immobili delle PA (come «Edifici pubblici per ente»); la chiave è quella
+  // derivata, mai il codice fiscale. I terreni dell'ente scelto vanno prima degli altri ammessi, a qualsiasi punteggio.
+  const ENTI_PROVA = [["prova1", "COMUNE DI PROVA", 3], ["prova2", "PROVINCIA DI PROVA", 3], ["prova3", "AZIENDA SANITARIA DI PROVA", 3]];
+  const normaNome = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const SINONIMI_ENTE = { ausl: "azienda usl", usl: "azienda usl", asl: "azienda sanitaria", unibo: "universita di bologna" };
+  async function elencoEnti() {
+    if (st.enti) return st.enti;
+    if (R.PROVA) { st.enti = ENTI_PROVA.map(([chiave, nome, beni]) => ({ chiave, nome, beni, n: normaNome(nome) })); return st.enti; }
+    const ri = await fetch("/edifici3d/immobili_pa/indice.json", { cache: "no-cache" });
+    const info = ri.ok && /json/.test(ri.headers.get("Content-Type") || "") ? await ri.json() : null;
+    if (!info || !info.enti) throw new Error("elenco degli enti non ancora sul server");
+    const r = await fetch(info.enti);
+    if (!r.ok) throw new Error(`errore ${r.status}`);
+    const d = await r.json(), c = Object.fromEntries(d.campi.map((k, i) => [k, i]));
+    st.enti = d.enti.map((x) => ({ chiave: x[c.chiave], nome: x[c.nome], beni: x[c.terreni] || x[c.beni] || 0, sede: x[c.sede] || "", n: normaNome(x[c.nome]) }));
+    return st.enti;
+  }
+  function proposteEnti(testo) {
+    const q = normaNome(testo); if (!q) return [];
+    const parole = q.split(" ").map((p) => SINONIMI_ENTE[p] || p).join(" ").split(" ");
+    return st.enti.filter((e) => parole.every((p) => e.n.split(" ").some((w) => w.startsWith(p)) || normaNome(e.sede).includes(p)))
+      .sort((a, b) => (b.n.startsWith(q) - a.n.startsWith(q)) || (b.beni - a.beni)).slice(0, 8);
+  }
+  function scegliEnte(e) {
+    st.ente = e || null;
+    $("p-ente").value = e ? e.chiave : "";
+    $("p-ente-testo").value = e ? e.nome : "";
+    $("proposte-ente").hidden = true;
+    $("p-ente-scelto").textContent = e ? `Ente scelto: ${e.nome}. I suoi terreni vanno prima degli altri (se ammessi). Cancella il testo per toglierlo.`
+      : "Nessun ente scelto: i terreni si ordinano solo col punteggio.";
+    if (st.terreniCercati) { for (const c of st.cabine) ordinaTerreni(c); elencoTerreni(); elencoBando(); disegna(); }
+    if (window.EUGENIO_COLLEGAMENTO) window.EUGENIO_COLLEGAMENTO.aggiorna();
+  }
+  $("p-ente-testo").addEventListener("input", async (e) => {
+    const box = $("proposte-ente");
+    if (!e.target.value.trim()) { if (st.ente) scegliEnte(null); box.hidden = true; return; }
+    try { await elencoEnti(); } catch (x) { $("p-ente-scelto").textContent = `Scelta dell'ente non disponibile: ${x.message}.`; return; }
+    const pp = proposteEnti(e.target.value);
+    box.innerHTML = "";
+    pp.forEach((x) => { const b = h("button", "pulsante-piccolo", `${x.nome}${x.sede ? ` – ${x.sede}` : ""}`); b.type = "button"; b.setAttribute("role", "option");
+      b.addEventListener("click", () => scegliEnte(x)); box.appendChild(b); });
+    box.hidden = !pp.length;
+  });
+  // dal collegamento salvato: la chiave nell'indirizzo, il nome dall'elenco
+  async function enteDalCollegamento() {
+    const k = $("p-ente").value; if (!k || st.ente) return;
+    try { await elencoEnti(); const e = st.enti.find((x) => x.chiave === k); if (e) scegliEnte(e); } catch { /* elenco non disponibile */ }
+  }
+  const proprio = (t) => !!(st.ente && (t.ente_chiave === st.ente.chiave || (t.enti && normaNome(t.enti).includes(st.ente.n))));
+  function ordinaTerreni(c) {
+    if (!c.terreni) return;
+    c.terreni.forEach((t) => { t.proprio = proprio(t); });
+    const ord = (a, b) => (b.ammesso - a.ammesso) || (b.proprio - a.proprio) || (b.punti - a.punti) || (a.distanza_m - b.distanza_m);
+    c.terreni.sort(ord);
+    c.pubbliciAdatti = c.terreni.filter((t) => t.ammesso && t.areaGse === c.cod_ac).slice(0, st.parametri.nTerreni);
+  }
 
   // ================================================================== 1. file
   for (const [id, chiave, nome] of [["file-edifici", "fileEdifici", "nome-file-edifici"], ["file-curve", "fileCurve", "nome-file-curve"]]) {
@@ -281,7 +352,7 @@
       const lon = c.centro[0] + dm * Math.sin(a) / (111320 * Math.cos(c.centro[1] * Math.PI / 180)), lat = c.centro[1] + dm * Math.cos(a) / 111320;
       const p = rnd() < 0.3 ? Math.round(55 + rnd() * 45) : rnd() < 0.2 ? null : Math.round(rnd() * 45);
       out.push({ ref: `PROVA_${c.cod_ac}_${i + 1}`, lon, lat, area_m2: Math.round(10000 * f.haMin * (0.6 + rnd() * 1.6)), comune: c.comune || "–", foglio: String(1 + Math.floor(rnd() * 60)),
-        particella: String(1 + Math.floor(rnd() * 400)), ente: ["COMUNE DI PROVA", "PROVINCIA DI PROVA", "AZIENDA SANITARIA DI PROVA"][i % 3], settore: "dati sintetici",
+        particella: String(1 + Math.floor(rnd() * 400)), ente: ENTI_PROVA[i % 3][1], ente_chiave: ENTI_PROVA[i % 3][0], settore: "dati sintetici",
         ente_sede: "", n_enti: 1, tipologie: "Terreno (sintetico)", prob_coltura: p, classe_coltura: p === null ? "non dichiarata" : p >= 60 ? "alta" : p >= 30 ? "media" : "bassa",
         distanza_m: Math.round(F.distanzaM(c.centro[0], c.centro[1], lon, lat)) });
     }
@@ -296,6 +367,9 @@
       }
       if (!R.PROVA && st.infoTerreni && st.infoTerreni.disponibile === false) throw new Error("i terreni pubblici non sono ancora sul server");
       const conImpianti = st.cabine.filter((c) => c.ris && c.ris.nImpianti);
+      st.vincoli = null;
+      // le aree non idonee servono sempre per escludere i terreni, anche con il livello spento
+      try { await caricaVincoli(); } catch (e) { messaggio("messaggio-dettaglio", `Aree non idonee non lette (${e.message}): i terreni non sono stati controllati.`, true); }
       $("avanzamento-terreni").hidden = false;
       let i = 0;
       for (const c of conImpianti) {
@@ -303,7 +377,15 @@
         messaggio("messaggio-terreni", `Terreni pubblici vicino a ${nomeCabina(c)} (${i} di ${conImpianti.length})…`);
         const f = { ...c.fabbisogno, distanzaMaxM: o.distanzaKm * 1000, tipo: o.tipo };
         let lista;
-        if (R.PROVA) lista = terreniProva(c, o);
+        if (R.PROVA) {
+          lista = terreniProva(c, o);
+          // in prova un'area non idonea SINTETICA attorno al secondo terreno della prima cabina, per vedere l'esclusione
+          if (!st.vincoli && lista[1]) {
+            const [x, y] = [lista[1].lon, lista[1].lat], d = 0.004;
+            st.vincoli = { type: "FeatureCollection", features: [{ type: "Feature", properties: { classe: "non_idonea", nome: "Area non idonea SINTETICA (prova)", strato: "prova" },
+              geometry: { type: "Polygon", coordinates: [[[x - d, y - d], [x + d, y - d], [x + d, y + d], [x - d, y + d], [x - d, y - d]]] } }] };
+          }
+        }
         else {
           const r = await fetch(`/api/cer-fv/terreni?lon=${c.centro[0].toFixed(6)}&lat=${c.centro[1].toFixed(6)}&raggio_km=${o.distanzaKm}&min_m2=${Math.floor(f.haMin * 10000)}&limite=300`);
           const d = await r.json().catch(() => null);
@@ -311,7 +393,10 @@
           lista = d.terreni || [];
           c.attribuzioneTerreni = d.attribuzione;
         }
-        c.terreni = lista.map((t) => ({ ...t, ...F.punteggioTerreno(t, f) })).sort((a, b) => (b.ammesso - a.ammesso) || (b.punti - a.punti) || (a.distanza_m - b.distanza_m));
+        f.limite10 = o.limite10;
+        lista.forEach((t) => { t.vincolo = vincoloNelPunto(t.lon, t.lat); });
+        c.terreni = lista.map((t) => ({ ...t, ...F.punteggioTerreno(t, f) }));
+        ordinaTerreni(c);
         // verifica dell'area del GSE per i primi ammessi: fuori area → esclusi
         const daVerificare = c.terreni.filter((t) => t.ammesso).slice(0, o.nTerreni * VERIFICA_GSE);
         await Promise.all(daVerificare.map(async (t) => {
@@ -319,8 +404,7 @@
           catch { t.areaGse = undefined; }
           if (t.areaGse !== undefined && t.areaGse !== c.cod_ac) { t.ammesso = false; t.punti = 0; t.motivi.push(t.areaGse ? `in un'altra area del GSE (${t.areaGse})` : "fuori dalle aree del GSE"); }
         }));
-        c.terreni.sort((a, b) => (b.ammesso - a.ammesso) || (b.punti - a.punti) || (a.distanza_m - b.distanza_m));
-        c.pubbliciAdatti = c.terreni.filter((t) => t.ammesso && t.areaGse === c.cod_ac).slice(0, o.nTerreni);
+        ordinaTerreni(c);
       }
       st.terreniCercati = true;
       const tot = st.cabine.reduce((s, c) => s + ((c.pubbliciAdatti && c.pubbliciAdatti.length) || 0), 0);
@@ -339,12 +423,12 @@
     for (const c of st.cabine.filter((x) => x.terreni)) {
       const lista = c.terreni.slice(0, Math.max(st.parametri.nTerreni * 2, 10));
       d.appendChild(R.tabella(["#", "Comune", "Foglio", "Particella", "Superficie (ha)", "Distanza (km)", "Ente proprietario", "Settore", "Coltura DOP o certificata", "Classe", "Area GSE", "Punti", "Note"],
-        lista.map((t, i) => [i + 1, t.comune || "–", t.foglio || "–", t.particella || "–", num(t.ha, 2), num(t.distanza_m / 1000, 2), t.n_enti > 1 ? `${t.ente} (+${t.n_enti - 1})` : t.ente,
+        lista.map((t, i) => [i + 1, t.comune || "–", t.foglio || "–", t.particella || "–", num(t.ha, 2), num(t.distanza_m / 1000, 2), `${t.proprio ? "★ " : ""}${t.n_enti > 1 ? `${t.ente} (+${t.n_enti - 1})` : t.ente}`,
           t.settore || "–", testoColtura(t), t.classe, testoGse(t, c), t.ammesso ? t.punti : "escluso", t.motivi.join("; ") || "–"]),
         { titolo: `${c.cod_ac} – ${nomeCabina(c)}: ${c.fabbisogno.n} terreni da ${num(c.fabbisogno.haMin, 2)}–${num(c.fabbisogno.haMax, 2)} ha`, num: [0, 4, 5, 11] }));
       if (!c.terreni.length) d.appendChild(h("p", "aiuto", `${c.cod_ac}: nessun terreno pubblico di almeno ${num(c.fabbisogno.haMin, 2)} ha entro ${num(st.parametri.distanzaKm, 1)} km.`));
     }
-    d.appendChild(h("p", "aiuto", `Classe C: agricola non idonea, ammessi impianti fino a 1 MW intestati a una CER o l'agrivoltaico. Classe A: ${F.NOMI_CLASSI.A}. Le aree idonee (classe I) e i vincoli si aggiungeranno con gli strati regionali.`));
+    d.appendChild(h("p", "aiuto", `Classe C: ${F.NOMI_CLASSI.C}. Classe A: ${F.NOMI_CLASSI.A}. Esclusi i terreni nelle aree non idonee (zone A, B e C dei parchi, riserve, Rete Natura 2000, verificate sul centro della particella); le aree idonee (classe I) si aggiungeranno con gli strati regionali.${st.ente ? ` ★ = terreno dell'ente promotore (${st.ente.nome}): va prima degli altri ammessi.` : ""}`));
   }
 
   // ================================================================== 5. B – cabine per la manifestazione di interesse
@@ -356,7 +440,7 @@
       const comuni = c.props && c.props.comuni_serviti ? String(c.props.comuni_serviti).split(";").filter(Boolean).length : null;
       return { c, cercare, pub, riga: [c.cod_ac, nomeCabina(c), c.props ? c.props.cod_cp_ed || "" : "", livello(c), comuni ?? "–", c.comune || "–",
         num(c.ris.P), num(c.ris.E), f.n, pub ?? "non cercati", cercare, num(f.kwImpianto), `${num(f.haMin, 2)}–${num(f.haMax, 2)}`, num(o.distanzaKm, 1),
-        o.tipo === "agrivoltaico" ? "C, A (agrivoltaico)" : "C (fino a 1 MW per CER); A solo agrivoltaico"] };
+        o.tipo === "agrivoltaico" ? "C, A (agrivoltaico)" : "C (impianti della CER); A solo agrivoltaico"] };
     });
   }
   const INT_BANDO = ["COD_AC (GSE)", "Cabina", "Codice e-distribuzione", "Saturazione", "Comuni serviti", "Comune della cabina", "FV (kW)", "Accumulo (kWh)",
@@ -393,7 +477,8 @@
         { titolo: "Requisiti e regole", blocchi: [
           { tipo: "elenco", voci: [
             "Terreni in zona agricola o in area idonea ai sensi dell'art. 11-bis del D.Lgs. 190/2024 e della L.R. Emilia-Romagna 29/05/2026 n. 5.",
-            "Fuori dalle aree idonee sono ammessi impianti fotovoltaici a terra fino a 1 MW intestati a una CER o che le cedono tutta l'energia, oppure impianti agrivoltaici (art. 10 della L.R. 5/2026).",
+            "Fuori dalle aree idonee sono ammessi impianti fotovoltaici a terra intestati a una CER o nella sua disponibilità e sotto il suo controllo, oppure impianti agrivoltaici (art. 10 della L.R. 5/2026, come modificato dalla L.R. 27/10/2026 n. 15). Il limite di 1 MW per impianto è quello degli incentivi del GSE per le CER.",
+            "Esclusi i terreni nelle zone A, B e C dei parchi, nelle riserve e nei siti della Rete Natura 2000; nelle aree contigue e nelle zone D dei parchi valgono le norme del parco.",
             "Sui terreni con colture certificate (biologico, produzione integrata, DOP/IGP, foraggi per il Parmigiano Reggiano) nelle ultime tre campagne è ammesso solo l'agrivoltaico, con l'attestazione di un agronomo.",
             "Il proprietario dichiara la titolarità allegando una propria visura catastale aggiornata.",
           ] },
@@ -422,6 +507,161 @@
     messaggio("messaggio-bando", "Modulo scaricato.");
   });
 
+  // ================================================================== aree non idonee (Regione Emilia-Romagna, dal vivo)
+  // zone A, B e C dei parchi, riserve e siti della Rete Natura 2000 → non idonee (terreni esclusi); aree contigue e zone
+  // D dei parchi → con limitazioni (solo una nota); zone urbanizzate dei parchi ignorate
+  function classeVincolo(p, strato) {
+    if (strato === "SIC_ZPS_regionali") return { classe: "non_idonea", nome: `${p.Tipologia || "Natura 2000"} ${p.Codice_sito || ""} ${p.Nome_sito || ""}`.trim() };
+    const z = String(p.Codice_zona || "").trim().toUpperCase(), riserva = /^riserva/i.test(p.Tipologia || "");
+    if (z === "U") return null;
+    const nome = `${p.Nome_completo || p.Nome || "area protetta"}${p.Descrizione_zona ? ` – ${p.Descrizione_zona}` : ""}`;
+    return { classe: riserva || ["A", "B", "C"].includes(z) ? "non_idonea" : "limitata", nome };
+  }
+  function riquadroStudio() {
+    const pts = [...st.cabine.map((c) => c.centro), ...st.edifici.map((e) => [e.lon, e.lat])].filter(Boolean);
+    if (!pts.length) return null;
+    const km = (st.parametri ? st.parametri.distanzaKm : 5) + 1, lat = pts[0][1];
+    const dy = km / 111.32, dx = km / (111.32 * Math.cos(lat * Math.PI / 180));
+    return [Math.min(...pts.map((p) => p[0])) - dx, Math.min(...pts.map((p) => p[1])) - dy, Math.max(...pts.map((p) => p[0])) + dx, Math.max(...pts.map((p) => p[1])) + dy];
+  }
+  const tocca = (a, b) => a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1];
+  async function caricaVincoli() {
+    const bb = riquadroStudio();
+    if (!bb) return null;
+    if (R.PROVA) return st.vincoli;                                   // in prova: l'area sintetica di cercaTerreni
+    if (!tocca(bb, ER)) { st.vincoli = { type: "FeatureCollection", features: [], fuori: true }; return st.vincoli; }
+    const chiave = bb.map((x) => x.toFixed(3)).join(",");
+    if (st.vincoli && st.vincoli.chiave === chiave) return st.vincoli;
+    const feats = [];
+    for (const strato of ["Parchi_Riserve_zone", "SIC_ZPS_regionali"]) {
+      const u = `${WFS_RER}?service=WFS&version=2.0.0&request=GetFeature&typeNames=portale_areeprotette_natura2000:${strato}`
+        + `&outputFormat=GEOJSON&srsName=EPSG:4326&bbox=${bb[1]},${bb[0]},${bb[3]},${bb[2]},urn:ogc:def:crs:EPSG::4326`;
+      const r = await fetch(u);
+      if (!r.ok) throw new Error(`servizio della Regione: errore ${r.status}`);
+      const d = await r.json();
+      for (const f of d.features || []) {
+        const c = classeVincolo(f.properties || {}, strato);
+        if (c && f.geometry) feats.push({ type: "Feature", geometry: f.geometry, properties: { ...c, strato } });
+      }
+    }
+    st.vincoli = { type: "FeatureCollection", features: feats, chiave, letto: new Date().toISOString() };
+    return st.vincoli;
+  }
+  function dentro(x, y, anello) {
+    let d = false;
+    for (let i = 0, j = anello.length - 1; i < anello.length; j = i++) {
+      const [xi, yi] = anello[i], [xj, yj] = anello[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) d = !d;
+    }
+    return d;
+  }
+  function nelPoligono(x, y, g) {
+    const poli = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    return poli.some((p) => p.length && dentro(x, y, p[0]) && !p.slice(1).some((buco) => dentro(x, y, buco)));
+  }
+  // il vincolo più restrittivo nel punto (centro della particella)
+  function vincoloNelPunto(lon, lat) {
+    if (!st.vincoli) return null;
+    let lim = null;
+    for (const f of st.vincoli.features) {
+      if (!nelPoligono(lon, lat, f.geometry)) continue;
+      if (f.properties.classe === "non_idonea") return f.properties;
+      lim = lim || f.properties;
+    }
+    return lim;
+  }
+
+  // ================================================================== schede al passaggio del mouse
+  const livelloCabina = (p) => (p && p.livello ? R.NOMI[p.livello] || p.livello : "nessun dato");
+  function schedaCabina(p, c) {
+    const righe = [`Codice del GSE (COD_AC): ${(c && c.cod_ac) || p.cod_ac || "non abbinato"}`, `Congestione (saturazione): ${livelloCabina(p)}`];
+    if (p.cod_cp_ed) righe.push(`Codice e-distribuzione: ${p.cod_cp_ed}`);
+    if (c && c.ris && c.ris.P) righe.push(`FV calcolato: ${num(c.ris.P)} kWp${c.ris.E ? `, accumulo ${num(c.ris.E)} kWh` : ""}`, `${c.ris.nImpianti} impianti, quota condivisa ${pct(c.ris.quota)}`);
+    return { titolo: c ? nomeCabina(c) : R.nomeCabina(p), righe };
+  }
+  function consumoEdificio(e) { const v = st.curve && st.curve.serie.get(e.id); return v ? F.totale(v) / 1000 : null; }
+  function schedaEdificio(id) {
+    const e = st.edifici.find((x) => String(x.id) === String(id));
+    if (!e) return null;
+    const mwh = consumoEdificio(e), cop = st.curve && st.curve.copertura.get(e.id);
+    return { titolo: [e.id, e.nome].filter(Boolean).join(" · "), righe: [
+      mwh === null ? "Senza curva di carico: consumi non noti" : `Consumi totali: ${num(mwh, 1)} MWh${cop !== undefined && cop < 0.98 ? ` (curva presente nel ${pct(cop)} delle ore)` : ""}`,
+      e.indirizzo ? `Indirizzo: ${e.indirizzo}` : null, e.area ? `Area del GSE: ${e.area.COD_AC}` : "Nessuna area del GSE"].filter(Boolean) };
+  }
+  // FV che il terreno può ospitare: l'impianto della cabina, se ci sta, altrimenti quanto entra nella superficie
+  function fvTerreno(t, c) {
+    if (!c || !c.fabbisogno || !c.fabbisogno.kwImpianto) return null;
+    const tipo = F.TIPI[st.parametri.tipo] || F.TIPI.fisso;
+    const capienza = Math.max(0, (t.ha - F.ACCESSORI_HA) / tipo.haMw * 1000);
+    return Math.min(c.fabbisogno.kwImpianto, capienza);
+  }
+  function schedaTerreno(cod_ac, ref) {
+    const c = st.cabine.find((x) => x.cod_ac === cod_ac), t = c && (c.terreni || []).find((x) => x.ref === ref);
+    if (!t) return null;
+    const fv = fvTerreno(t, c), scelto = (c.pubbliciAdatti || []).includes(t);
+    return { titolo: `${t.comune || "–"} – foglio ${t.foglio || "–"}, particella ${t.particella || "–"}`, righe: [
+      `Catasto: ${t.comune_cod ? `comune ${t.comune_cod}, ` : ""}foglio ${t.foglio || "–"}, particella ${t.particella || "–"}${t.ref && !/^PROVA/.test(t.ref) ? ` (${t.ref})` : ""}`,
+      `Superficie: ${num(t.ha, 2)} ha`,
+      fv === null ? "FV previsto: –" : `FV ${scelto ? "previsto" : "possibile"}: ${num(fv)} kWp${scelto ? "" : " (non tra i terreni proposti)"}`,
+      `Ente proprietario: ${t.ente}${t.n_enti > 1 ? ` e altri ${t.n_enti - 1}` : ""}${t.proprio ? " (ente promotore: ha la precedenza)" : ""}`,
+      `A ${num(t.distanza_m / 1000, 2)} km dalla cabina ${c.cod_ac}; coltura DOP o certificata: ${testoColtura(t)}`,
+      t.vincolo ? `${t.vincolo.classe === "non_idonea" ? "Area non idonea" : "Area con limitazioni"}: ${t.vincolo.nome}` : null,
+      t.ammesso ? `Classe ${t.classe}, ${t.punti} punti` : `Escluso: ${t.motivi.join("; ")}`].filter(Boolean) };
+  }
+
+  // ================================================================== barre e simboli
+  function rombi(m) {
+    for (const [k, col] of Object.entries(COLORI_TERRENI)) {
+      const id = `cer-rombo-${k}`; if (m.hasImage(id)) continue;
+      const n = 30, c = document.createElement("canvas"); c.width = c.height = n;
+      const g = c.getContext("2d");
+      g.beginPath(); g.moveTo(n / 2, 1.5); g.lineTo(n - 1.5, n / 2); g.lineTo(n / 2, n - 1.5); g.lineTo(1.5, n / 2); g.closePath();
+      g.fillStyle = col; g.fill(); g.lineWidth = 2; g.strokeStyle = "#1a1a1a"; g.stroke();
+      m.addImage(id, g.getImageData(0, 0, n, n), { pixelRatio: 2 });
+    }
+  }
+  function immagineBarra(v, max, col) {
+    const w = 10, hh = Math.max(3, Math.round(v / max * ALTEZZA_BARRE)), c = document.createElement("canvas");
+    c.width = w; c.height = hh;
+    const g = c.getContext("2d");
+    g.fillStyle = col; g.fillRect(0, 0, w, hh);
+    g.strokeStyle = "rgba(0,0,0,0.65)"; g.lineWidth = 1; g.strokeRect(0.5, 0.5, w - 1, hh - 1);
+    return g.getImageData(0, 0, w, hh);
+  }
+  function fcBarre() {
+    const m = st.det, feats = [];
+    for (const id of st.barre) if (m.hasImage(id)) m.removeImage(id);
+    st.barre.clear();
+    const consumi = st.edifici.map((e) => ({ e, v: consumoEdificio(e) })).filter((x) => x.v > 0);
+    const maxC = Math.max(0, ...consumi.map((x) => x.v));
+    consumi.forEach((x, i) => {
+      const id = `cer-barra-c-${i}`; m.addImage(id, immagineBarra(x.v, maxC, COLORE_CONSUMI)); st.barre.add(id);
+      feats.push({ type: "Feature", geometry: { type: "Point", coordinates: [x.e.lon, x.e.lat] }, properties: { tipo: "consumi", img: id, id: x.e.id } });
+    });
+    const fv = st.cabine.filter((c) => c.ris && c.ris.P > 0);
+    const maxF = Math.max(0, ...fv.map((c) => c.ris.P));
+    fv.forEach((c, i) => {
+      const id = `cer-barra-f-${i}`; m.addImage(id, immagineBarra(c.ris.P, maxF, COLORE_FV)); st.barre.add(id);
+      feats.push({ type: "Feature", geometry: { type: "Point", coordinates: c.coord || c.centro }, properties: { tipo: "fv", img: id, cod_ac: c.cod_ac } });
+    });
+    return { type: "FeatureCollection", features: feats };
+  }
+  function vediLivelli() {
+    const m = st.det; if (!m || !m.getLayer("cer-barre-consumi")) return;
+    const vedi = (id, si) => m.setLayoutProperty(id, "visibility", si ? "visible" : "none");
+    vedi("cer-barre-consumi", $("strato-consumi").checked);
+    vedi("cer-barre-fv", $("strato-fv").checked);
+    for (const id of ["cer-vincoli-fondo", "cer-vincoli-linea"]) vedi(id, $("strato-vincoli").checked);
+  }
+  for (const id of ["strato-consumi", "strato-fv"]) $(id).addEventListener("change", () => { vediLivelli(); legenda(); });
+  $("strato-vincoli").addEventListener("change", async () => {
+    vediLivelli(); legenda();
+    if ($("strato-vincoli").checked && st.calcolato && !R.PROVA) {
+      try { await caricaVincoli(); } catch (e) { messaggio("messaggio-dettaglio", `Aree non idonee non lette: ${e.message}`, true); }
+      disegna();
+    }
+  });
+
   // ================================================================== mappa
   function fcEdifici() {
     return { type: "FeatureCollection", features: st.edifici.map((e) => ({ type: "Feature", geometry: { type: "Point", coordinates: [e.lon, e.lat] },
@@ -436,7 +676,7 @@
     for (const c of st.cabine) for (const t of (c.terreni || []).slice(0, Math.max(st.parametri.nTerreni * 2, 10))) {
       const cl = t.ammesso ? t.classe : "X";
       out.push({ type: "Feature", geometry: { type: "Point", coordinates: [t.lon, t.lat] },
-        properties: { ref: t.ref, cod_ac: c.cod_ac, colore: COLORI_TERRENI[cl] || COLORI_TERRENI.X, punti: t.punti, ammesso: t.ammesso } });
+        properties: { ref: t.ref, cod_ac: c.cod_ac, colore: COLORI_TERRENI[cl] || COLORI_TERRENI.X, classe: COLORI_TERRENI[cl] ? cl : "X", punti: t.punti, ammesso: t.ammesso } });
     }
     return { type: "FeatureCollection", features: out };
   }
@@ -446,10 +686,33 @@
     m.getSource("cer-cabine").setData(fcCabine());
     m.getSource("cer-terreni").setData(st.terreniCercati ? fcTerreni() : vuota());
     m.getSource("cer-aree").setData(st.aree || vuota());
+    m.getSource("cer-barre").setData(fcBarre());
+    m.getSource("cer-vincoli").setData(st.vincoli || vuota());
+    confiniTerreni();
+    vediLivelli();
     const a = $("attribuzione-gse");
     a.hidden = !st.aree;
     a.textContent = st.aree ? `${R.ATTR.gse} (${R.GSE.SCHEDA}); aree semplificate, lette il ${R.oraIt(st.aree.letto)}. Non entrano nelle immagini scaricate.` : "";
     legenda(); chiudiAttribuzione();
+  }
+  // confini delle particelle dei terreni trovati (tessere degli immobili delle PA, campo «r» = riferimento AdE)
+  function confiniTerreni() {
+    const m = st.det; if (!m || !m.getLayer("cer-terreni-bordo")) return;
+    const fs = st.terreniCercati ? fcTerreni().features : [];
+    const refs = fs.map((f) => f.properties.ref);
+    const col = refs.length ? ["match", ["get", "r"], ...fs.flatMap((f) => [f.properties.ref, f.properties.colore]), COLORI_TERRENI.X] : COLORI_TERRENI.X;
+    const filtro = refs.length ? ["in", ["get", "r"], ["literal", refs]] : ["==", ["get", "r"], "-"];
+    for (const id of ["cer-terreni-fondo", "cer-terreni-bordo"]) m.setFilter(id, filtro);
+    m.setPaintProperty("cer-terreni-fondo", "fill-color", col);
+    m.setPaintProperty("cer-terreni-bordo", "line-color", col);
+  }
+  // dallo zoom 16 i contorni degli edifici si accendono da soli (se l'utente non ha toccato la casella)
+  function contorniAlloZoom() {
+    const m = st.det, c = $("strato-edifici");
+    if (!m || !c || c.disabled || st.contorniToccati) return;
+    const vicino = m.getZoom() >= ZOOM_EDIFICI;
+    if (vicino && !c.checked) { c.checked = true; st.contorniAuto = true; c.dispatchEvent(new Event("change")); }
+    else if (!vicino && c.checked && st.contorniAuto) { c.checked = false; st.contorniAuto = false; c.dispatchEvent(new Event("change")); }
   }
   // inquadra edifici, cabine e terreni mostrati; attribuzione compatta chiusa (le fonti complete sono sotto la mappa)
   function inquadra() {
@@ -472,10 +735,22 @@
     voce(R.campione("punto", COLORE_EDIFICI), "edifici");
     if (st.aree) voce(R.campione("area"), "aree del GSE delle cabine (dal vivo)");
     if (st.terreniCercati) for (const [k, t] of [["C", "terreno pubblico adatto"], ["A", "solo agrivoltaico"], ["X", "escluso"]]) {
-      const i = h("i", "campione-rete"); i.style.background = COLORI_TERRENI[k]; i.style.borderRadius = "2px"; i.setAttribute("aria-hidden", "true"); voce(i, t);
+      const i = h("i", "campione-rete campione-rombo"); i.style.background = COLORI_TERRENI[k]; i.setAttribute("aria-hidden", "true"); voce(i, t);
+    }
+    const barra = (col) => { const i = h("i", "campione-rete campione-barra"); i.style.background = col; i.setAttribute("aria-hidden", "true"); return i; };
+    if ($("strato-consumi").checked && st.curve) voce(barra(COLORE_CONSUMI), "consumi degli edifici (in scala tra loro)");
+    if ($("strato-fv").checked && st.calcolato) voce(barra(COLORE_FV), "potenza FV per cabina (in scala tra loro)");
+    if ($("strato-vincoli").checked && st.vincoli) {
+      const i = h("i", "campione-rete"); i.style.background = "rgba(198,40,40,0.35)"; i.style.border = `2px solid ${COLORE_VINCOLI}`; i.setAttribute("aria-hidden", "true");
+      voce(i, st.vincoli.fuori ? "aree non idonee: disponibili solo in Emilia-Romagna" : "aree non idonee (tratteggio chiaro: con limitazioni)");
     }
   }
   function stratiCer(m, prima) {
+    m.addSource("cer-vincoli", { type: "geojson", data: vuota(), attribution: ATTR_RER });
+    m.addLayer({ id: "cer-vincoli-fondo", type: "fill", source: "cer-vincoli", paint: { "fill-color": COLORE_VINCOLI,
+      "fill-opacity": ["case", ["==", ["get", "classe"], "non_idonea"], 0.22, 0.08] } }, prima);
+    m.addLayer({ id: "cer-vincoli-linea", type: "line", source: "cer-vincoli", paint: { "line-color": COLORE_VINCOLI, "line-width": 1.4,
+      "line-dasharray": [3, 2], "line-opacity": ["case", ["==", ["get", "classe"], "non_idonea"], 0.9, 0.45] } }, prima);
     m.addSource("cer-aree", { type: "geojson", data: vuota(), attribution: R.ATTR.gse });
     m.addLayer({ id: "cer-aree-fondo", type: "fill", source: "cer-aree", paint: { "fill-color": colore("--primario"), "fill-opacity": 0.06 } }, prima);
     m.addLayer({ id: "cer-aree-linea", type: "line", source: "cer-aree", paint: { "line-color": colore("--primario"), "line-width": 2.4 } }, prima);
@@ -484,29 +759,47 @@
     m.addSource("cer-cabine", { type: "geojson", data: vuota() });
     m.addLayer({ id: "cer-cabine-anello", type: "circle", source: "cer-cabine", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 8, 10, 10, 14, 13],
       "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": colore("--primario"), "circle-stroke-width": 3 } }, prima);
+    // confini delle particelle dei terreni trovati, da vicino (tessere degli immobili delle PA, se ci sono sul server)
+    if (st.infoPa && st.infoPa.pmtiles) {
+      m.addSource("cer-pa", { type: "vector", url: `pmtiles://${location.origin}${st.infoPa.pmtiles}`, attribution: "MEF – Patrimonio della PA; Agenzia delle Entrate (CC BY 4.0)" });
+      m.addLayer({ id: "cer-terreni-fondo", type: "fill", source: "cer-pa", "source-layer": "particelle", minzoom: ZOOM_CONFINI, filter: ["==", ["get", "r"], "-"],
+        paint: { "fill-color": COLORI_TERRENI.X, "fill-opacity": 0.22 } }, prima);
+      m.addLayer({ id: "cer-terreni-bordo", type: "line", source: "cer-pa", "source-layer": "particelle", minzoom: ZOOM_CONFINI, filter: ["==", ["get", "r"], "-"],
+        paint: { "line-color": COLORI_TERRENI.X, "line-width": ["interpolate", ["linear"], ["zoom"], 13, 1.5, 18, 3.5] } }, prima);
+    }
+    rombi(m);
     m.addSource("cer-terreni", { type: "geojson", data: vuota() });
-    m.addLayer({ id: "cer-terreni", type: "circle", source: "cer-terreni", paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 4, 14, 9],
-      "circle-color": ["get", "colore"], "circle-stroke-color": "#1a1a1a", "circle-stroke-width": 1.2, "circle-pitch-alignment": "map" } }, prima);
+    m.addLayer({ id: "cer-terreni", type: "symbol", source: "cer-terreni", layout: { "icon-image": ["concat", "cer-rombo-", ["get", "classe"]],
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 8, 1, 14, 1.6, 17, 2], "icon-allow-overlap": true, "icon-ignore-placement": true,
+      "symbol-sort-key": ["case", ["get", "ammesso"], 1, 0] } }, prima);
     m.addSource("cer-edifici", { type: "geojson", data: vuota() });
-    m.addLayer({ id: "cer-edifici", type: "circle", source: "cer-edifici", paint: { "circle-radius": 6, "circle-color": COLORE_EDIFICI,
-      "circle-stroke-color": "#1a1a1a", "circle-stroke-width": 1.5, "circle-opacity": ["case", ["get", "curva"], 1, 0.45] } }, prima);
-    R.suggerimento(m, () => ["cer-edifici", "cer-terreni", "cer-cabine-anello", "cer-tutte-punti", "cer-aree-fondo"], (f) => {
+    m.addLayer({ id: "cer-edifici", type: "circle", source: "cer-edifici", paint: { "circle-radius": ["step", ["zoom"], 6, ZOOM_EDIFICI, 9],
+      "circle-color": ["step", ["zoom"], COLORE_EDIFICI, ZOOM_EDIFICI, "rgba(0,0,0,0)"],
+      "circle-stroke-color": ["step", ["zoom"], "#1a1a1a", ZOOM_EDIFICI, COLORE_EDIFICI], "circle-stroke-width": ["step", ["zoom"], 1.5, ZOOM_EDIFICI, 3.5],
+      "circle-opacity": ["case", ["get", "curva"], 1, 0.45] } }, prima);
+    // barre verticali dei consumi (accanto agli edifici) e della potenza FV (sulle cabine), ognuna in scala tra le sue
+    m.addSource("cer-barre", { type: "geojson", data: vuota() });
+    for (const [id, tipo, dx] of [["cer-barre-consumi", "consumi", 9], ["cer-barre-fv", "fv", -9]]) {
+      m.addLayer({ id, type: "symbol", source: "cer-barre", filter: ["==", ["get", "tipo"], tipo], layout: { "icon-image": ["get", "img"],
+        "icon-anchor": "bottom", "icon-offset": [dx, -2], "icon-allow-overlap": true, "icon-ignore-placement": true, visibility: "none" } }, prima);
+    }
+    R.suggerimento(m, () => ["cer-edifici", "cer-barre-consumi", "cer-terreni", "cer-terreni-fondo", "cer-cabine-anello", "cer-barre-fv", "cer-tutte-punti", "cer-vincoli-fondo", "cer-aree-fondo"], (f) => {
       const p = f.properties || {};
-      if (f.layer.id === "cer-edifici") return { titolo: [p.id, p.nome].filter(Boolean).join(" · "), righe: [p.area ? `Area GSE: ${p.area}` : "Nessuna area del GSE", p.curva ? "con la curva di carico" : "senza curva di carico"] };
-      if (f.layer.id === "cer-terreni") {
-        const c = st.cabine.find((x) => x.cod_ac === p.cod_ac), t = c && c.terreni.find((x) => x.ref === p.ref);
-        if (!t) return null;
-        return { titolo: `${t.comune || ""} – foglio ${t.foglio || "–"}, particella ${t.particella || "–"}`, righe: [`${num(t.ha, 2)} ha a ${num(t.distanza_m / 1000, 2)} km dalla cabina ${c.cod_ac}`,
-          `Ente: ${t.ente}${t.n_enti > 1 ? ` e altri ${t.n_enti - 1}` : ""}`, `Coltura DOP o certificata: ${testoColtura(t)}`, t.ammesso ? `Classe ${t.classe}, ${t.punti} punti` : `Escluso: ${t.motivi.join("; ")}`] };
+      if (f.layer.id === "cer-edifici" || f.layer.id === "cer-barre-consumi") return schedaEdificio(p.id);
+      if (f.layer.id === "cer-terreni") return schedaTerreno(p.cod_ac, p.ref);
+      if (f.layer.id === "cer-terreni-fondo") {
+        const c = st.cabine.find((x) => (x.terreni || []).some((t) => t.ref === p.r));
+        return c ? schedaTerreno(c.cod_ac, p.r) : null;
       }
+      if (f.layer.id === "cer-vincoli-fondo") return { titolo: p.classe === "non_idonea" ? "Area non idonea" : "Area con limitazioni", righe: [p.nome, ATTR_RER], cursore: false };
       if (f.layer.id === "cer-aree-fondo") return { titolo: `Area convenzionale ${p.COD_AC}`, righe: [`Gestore: ${p.RAG_SOC || "–"}`, R.ATTR.gse], cursore: false };
-      if (f.layer.id === "cer-cabine-anello") {
+      if (f.layer.id === "cer-cabine-anello" || f.layer.id === "cer-barre-fv") {
         const c = st.cabine.find((x) => x.cod_ac === p.cod_ac);
-        const r = c && c.ris ? [`FV ${num(c.ris.P)} kW, accumulo ${num(c.ris.E)} kWh`, `${c.ris.nImpianti} impianti, quota condivisa ${pct(c.ris.quota)}`] : [];
-        return { titolo: c ? nomeCabina(c) : p.cod_ac, righe: [...(c && c.props ? R.righeCabina(c.props) : []), ...r] };
+        return schedaCabina(c && c.props ? c.props : p, c);
       }
-      return { titolo: R.nomeCabina(p), righe: R.righeCabina(p), cursore: false };
+      return { ...schedaCabina(p, st.cabine.find((x) => p.cod_ac && x.cod_ac === p.cod_ac)), cursore: false };
     });
+    m.on("zoomend", contorniAlloZoom);
     document.addEventListener("eugenio:aspetto", () => {
       m.setPaintProperty("cer-aree-fondo", "fill-color", colore("--primario"));
       m.setPaintProperty("cer-aree-linea", "line-color", colore("--primario"));
@@ -533,6 +826,12 @@
     if (window.EUGENIO_RIGHELLO) st.righello = window.EUGENIO_RIGHELLO.aggiungi(m, { dove: $("posto-righello") });
     if (window.EUGENIO_SPOSTA && $("sposta-ortofoto")) st.sposta = window.EUGENIO_SPOSTA.crea($("sposta-ortofoto"), { pagina: "fv-cer", suCambio: spostaTessere });
     try { await C.aggiungi(m, { clic: false }); } catch { /* confini non disponibili */ }
+    if (!R.PROVA) {
+      try {
+        const r = await fetch("/edifici3d/immobili_pa/indice.json", { cache: "no-cache" });
+        if (r.ok && /json/.test(r.headers.get("Content-Type") || "")) st.infoPa = await r.json();
+      } catch { /* senza le tessere niente confini delle particelle dei terreni */ }
+    }
     stratiCer(m);
     tutteLeCabine().then((fc) => { if (m.getSource("cer-tutte")) m.getSource("cer-tutte").setData(fc); })
       .catch((e) => messaggio("messaggio-dettaglio", `Cabine primarie non disponibili: ${e.message}`, true));
@@ -540,6 +839,7 @@
       try { st.strati = await window.EUGENIO_STRATI.aggiungi(m, { caselle: $("caselle-strati"), legenda: $("legenda-strati"), sotto: () => primoSopra(m) }); } catch { /* strati non disponibili */ }
     }
     $("caselle-strati").addEventListener("change", aggiornaSposta);
+    $("caselle-strati").addEventListener("change", (e) => { if (e.isTrusted && e.target.id === "strato-edifici") st.contorniToccati = true; });
     await ortofoto(m);
     if (window.EUGENIO_ESPORTA) window.EUGENIO_ESPORTA.pulsanti($("scarica-dettaglio"), m, () => opzioniImmagine(m), $("messaggio-dettaglio"));
     disegna();
@@ -602,7 +902,10 @@
     else if (st.contesto) righe.push(`Contesto: ${st.contesto.citazione} – licenza ${st.contesto.licenza} (${st.contesto.scheda}).`);
     if (st.strati) righe.push(...st.strati.righe());
     righe.push("Cabine primarie: colore della saturazione; anello = cabine degli edifici. " + `${R.ATTR.osm}. ${R.ATTR.ed_breve}.`);
-    if (st.terreniCercati) righe.push("Terreni pubblici: MEF – Patrimonio della PA e AdE (CC BY 4.0); verde adatto, arancione solo agrivoltaico, grigio escluso.");
+    if (st.terreniCercati) righe.push("Terreni pubblici (rombi): MEF – Patrimonio della PA e AdE (CC BY 4.0); verde adatto, arancione solo agrivoltaico, grigio escluso.");
+    if ($("strato-vincoli").checked && st.vincoli && st.vincoli.features.length) righe.push(`Aree non idonee: ${ATTR_RER} (${SCHEDA_RER}).`);
+    if ($("strato-consumi").checked) righe.push("Barre blu-verdi: consumi degli edifici, in scala tra loro.");
+    if ($("strato-fv").checked) righe.push("Barre gialle: potenza FV calcolata per cabina, in scala tra loro.");
     righe.push(`${R.ATTR.confini}. Mappa: MapLibre GL JS (BSD-3).`);
     if (st.aree) righe.push("Le aree convenzionali del GSE non entrano nell'immagine (licenza CC BY-NC-SA).");
     if (R.PROVA) righe.unshift("ATTENZIONE: DATI SINTETICI DI PROVA (?prova=1), non reali.");
@@ -620,7 +923,8 @@
     const par = [["Ore di accumulo", o.h], ["Quota minima condivisa (%)", Math.round(o.qMin * 100)], ["Quota calcolata su", o.denominatore === "immessa" ? "energia immessa" : "produzione"],
       ["Tipo di impianto", F.TIPI[o.tipo].nome], ["Superficie specifica (ha/MWp)", F.TIPI[o.tipo].haMw], ["Inclinazione (°)", o.inclinazione], ["Orientamento (°)", o.orientamento],
       ["Perdite (%)", Math.round(o.perdite * 100)], ["Potenza massima per impianto (kW)", o.potenzaMassimaImpianto], ["Potenza massima per cabina (kW)", o.potenzaMassima ?? "nessuna"],
-      ["Distanza massima dei terreni (km)", o.distanzaKm], ["Terreni per cabina", o.nTerreni], ["Tolleranza sulla superficie", o.tolleranza]];
+      ["Distanza massima dei terreni (km)", o.distanzaKm], ["Terreni per cabina", o.nTerreni], ["Tolleranza sulla superficie", o.tolleranza],
+      ["Limite del 10% sui terreni con colture certificate", o.limite10 ? "sì" : "no"], ["Ente promotore (terreni con la precedenza)", st.ente ? st.ente.nome : "nessuno"]];
     const edi = st.edifici.map((e) => { const v = st.curve && st.curve.serie.get(e.id);
       return [e.id, e.nome, e.indirizzo, Math.round(e.lat * 1e6) / 1e6, Math.round(e.lon * 1e6) / 1e6, e.origine, e.area ? e.area.COD_AC : "", v ? Math.round(F.totale(v)) : null, v ? Math.round(100 * st.curve.copertura.get(e.id)) : null]; });
     const cab = st.cabine.map((c) => { const r = c.ris || {}, x = r.impianti && r.impianti[0];
@@ -631,7 +935,9 @@
     const ter = [];
     for (const c of st.cabine) for (const [i, t] of (c.terreni || []).slice(0, Math.max(o.nTerreni * 2, 10)).entries())
       ter.push([c.cod_ac, i + 1, t.comune || "", t.foglio || "", t.particella || "", Math.round(100 * t.ha) / 100, Math.round(t.distanza_m), t.ente || "", t.n_enti || 1, t.settore || "",
-        t.ente_sede || "", t.tipologie || "", t.prob_coltura ?? null, t.classe_coltura || "", t.classe, testoGse(t, c), t.ammesso ? t.punti : null, t.motivi.join("; "), Math.round(t.lat * 1e5) / 1e5, Math.round(t.lon * 1e5) / 1e5]);
+        t.ente_sede || "", t.tipologie || "", t.prob_coltura ?? null, t.classe_coltura || "", t.classe, testoGse(t, c),
+        t.vincolo ? `${t.vincolo.classe === "non_idonea" ? "non idonea" : "con limitazioni"}: ${t.vincolo.nome}` : "", fvTerreno(t, c) === null ? null : Math.round(fvTerreno(t, c)), t.proprio ? "sì" : "",
+        t.ammesso ? t.punti : null, t.motivi.join("; "), Math.round(t.lat * 1e5) / 1e5, Math.round(t.lon * 1e5) / 1e5]);
     const bando = st.calcolato ? righeBando().map((x) => x.riga) : [];
     const sezioni = [
       { titolo: "Parametri", intestazioni: ["Parametro", "Valore"], righe: par },
@@ -639,7 +945,7 @@
       { titolo: "Potenza per cabina primaria", intestazioni: ["COD_AC (GSE)", "Cabina", "Codice e-distribuzione", "Saturazione", "Edifici", "Consumi (kWh)", "FV (kW)", "Accumulo (kWh)", "Produzione (kWh)",
         "Condivisa (kWh)", "Quota condivisa (%)", "Autosufficienza (%)", "Impianti", "kW per impianto", "ha per impianto (min)", "ha per impianto (max)", "Suolo agricolo occupato (ha)", "Clima", "Note"], righe: cab },
       { titolo: "A – Terreni pubblici", intestazioni: ["COD_AC (GSE)", "N.", "Comune", "Foglio", "Particella", "Superficie (ha)", "Distanza (m)", "Ente proprietario", "Enti", "Settore", "Sede dell'ente",
-        "Tipologie", "Probabilità di coltura DOP o certificata (%)", "Classe di probabilità", "Classe del terreno", "Area GSE", "Punti", "Note", "Latitudine", "Longitudine"], righe: ter },
+        "Tipologie", "Probabilità di coltura DOP o certificata (%)", "Classe di probabilità", "Classe del terreno", "Area GSE", "Area non idonea o con limitazioni", "FV possibile (kWp)", "Dell'ente promotore", "Punti", "Note", "Latitudine", "Longitudine"], righe: ter },
       { titolo: "B – Cabine per la manifestazione di interesse", intestazioni: INT_BANDO, righe: bando },
     ];
     const piede = [
@@ -647,6 +953,7 @@
       `${R.ATTR.gse_codici} (${R.GSE.SCHEDA}); nel file solo i codici. La cabina che conta per gli incentivi è quella dell'area del punto di connessione (POD): verifica ufficiale con la ricerca per POD del GSE.`,
       `${R.ATTR.ed}. ${R.ATTR.osm}.`, "Clima orario: elaborazione EuGEnio su dati Open-Meteo.com (ERA5/Copernicus corretto verso ICON), CC BY 4.0.",
       "Terreni pubblici: MEF – Patrimonio della PA, dati al 31/12/2023 (CC BY 4.0), su cartografia catastale dell'Agenzia delle Entrate (CC BY 4.0). Probabilità di coltura DOP o certificata: indicatore di EuGEnio sui piani colturali grafici di AGREA (dati non ceduti), non è una certificazione.",
+      "Aree non idonee: zone A, B e C dei parchi, riserve e siti della Rete Natura 2000 della Regione Emilia-Romagna (CC BY 4.0), lette dal vivo e verificate sul centro della particella.",
       "Regole: L.R. Emilia-Romagna 29/05/2026 n. 5 e art. 11-bis del D.Lgs. 190/2024; superfici, perdite e accumulo indicativi.",
       "Licenza: dati elaborati da EuGEnio CC BY 4.0; posizioni delle cabine ODbL 1.0 (© contributori OpenStreetMap).",
     ];
@@ -671,7 +978,7 @@
   elencoCabine();
   R.pulsantiDati($("scarica-dati"), datiFile, $("messaggio-dati"));
   mappa().catch((e) => messaggio("messaggio-dettaglio", `Mappa non disponibile: ${e.message}`, true))
-    .finally(() => { st.pronto = true; if (st.det && window.EUGENIO_COLLEGAMENTO) st.det.on("moveend", () => window.EUGENIO_COLLEGAMENTO.aggiorna()); });
+    .finally(() => { st.pronto = true; enteDalCollegamento(); if (st.det && window.EUGENIO_COLLEGAMENTO) st.det.on("moveend", () => window.EUGENIO_COLLEGAMENTO.aggiorna()); });
   // collegamento a questa simulazione (regola del 20/11/2026): vista, ortofoto scelta a mano e parametri (data-collegamento);
   // mai i file caricati
   const sei = (x) => Number(x).toFixed(6);
@@ -686,5 +993,5 @@
       if (p.has("fonte")) { st.manuale = true; const id = p.get("fonte") === "nessuna" ? "" : p.get("fonte"); if (!id || st.fonti.some((f) => f.id === id)) scegliFonte(id); await elencoFonti(); }
     },
   });
-  window.EUGENIO_CER_FV_PAGINA = { st, datiFile, parametri, righeBando, opzioniImmagine };
+  window.EUGENIO_CER_FV_PAGINA = { st, datiFile, parametri, righeBando, opzioniImmagine, schedaEdificio, schedaTerreno, schedaCabina, vincoloNelPunto };
 })();

@@ -637,15 +637,44 @@ righello a sinistra; passi a destra.
    l'agrivoltaico il 30 % come suolo agricolo (art. 5 L.R. 5/2026). Valori indicativi, scritti in pagina e nei file.
 4. **A – Terreni pubblici**: `/api/cer-fv/terreni` (fase 17) attorno alla cabina (posizione OSM o baricentro degli edifici),
    superficie almeno quella necessaria; punteggio `punteggioTerreno` (distanza 35, superficie 30, coltura 20, un solo ente
-   15); classe C (agricola non idonea: CER fino a 1 MW o agrivoltaico) o A (probabilità di coltura DOP o certificata
-   ≥ 50 %: solo agrivoltaico); per i primi `n × 2` ammessi domanda al GSE sull'area: fuori area → esclusi. Classe I (aree
-   idonee) e X (vincoli) in una fase successiva con gli strati regionali. Contatti: rimando all'IPA.
+   15); classe C (agricola non idonea: impianti a terra intestati a una CER o nella sua disponibilità, art. 10 c. 7 della
+   L.R. 5/2026 come modificato dalla L.R. 15/2026, senza più il limite di 1 MW, che resta come limite degli incentivi del
+   GSE; oppure agrivoltaico) o A (probabilità di coltura DOP o certificata ≥ 50 %: solo agrivoltaico); per i primi `n × 2`
+   ammessi domanda al GSE sull'area: fuori area → esclusi. **Aree non idonee** (24/11 sera): zone A, B e C dei parchi,
+   riserve e siti della Rete Natura 2000 (esclusi anche questi: Paolo, 24/11 alle 18:32), lette dal browser dal WFS della Regione
+   (`servizigis.regione.emilia-romagna.it/wfs/areeprotette_natura2000`, strati `Parchi_Riserve_zone` e
+   `SIC_ZPS_regionali`, GeoJSON con `bbox` attorno a edifici e cabine, CORS aperto, CC BY 4.0) solo se la zona tocca
+   l'Emilia-Romagna: il terreno il cui centro cade dentro è escluso; aree contigue e zone D dei parchi solo segnalate. In
+   prova un'area non idonea SINTETICA attorno a un terreno. Facoltativo il **limite del 10 %** sui terreni con colture
+   certificate (casella `p-10`, **accesa** per difetto dal 24/11 alle 18:32, Paolo: superficie richiesta × 10 per la classe A; DAL 125/2023, parti sulle colture di pregio
+   rimaste con l'art. 21 della L.R. 5/2026, interpretazione prudente). La regola generale del 10 % della DAL 28/2010 non
+   si applica più (art. 21 della L.R. 5/2026): la superficie occupata si calcola con l'art. 5 (recinzione per il fisso,
+   30 % o proiezione per l'agrivoltaico). Classe I (aree idonee) in una fase successiva. Contatti: rimando all'IPA.
 5. **B – Manifestazione di interesse**: per cabina terreni da cercare (necessari meno i pubblici adatti nella stessa area),
    kW, superficie, distanza, classi; **avviso tipo** in PDF (`/api/report`) con criteri e modulo; **modulo CSV** senza dati
    personali. EuGEnio non raccoglie domande.
-6. **File** (CSV, Excel, PDF): parametri, edifici, cabine, A, B; solo i codici del GSE, solo l'indicatore delle colture.
+6. **File** (CSV, Excel, PDF): parametri, edifici, cabine, A (con l'area non idonea e il FV possibile), B; solo i codici
+   del GSE, solo l'indicatore delle colture.
    Aree del GSE spente nell'immagine della mappa. Collegamento salvabile: vista, ortofoto e parametri (`data-collegamento`),
    mai i file.
+
+**Mappa** (24/11/2026 sera, richieste di Paolo): scheda al passaggio del mouse (`R.suggerimento`) su edifici (consumi
+totali in MWh, area del GSE), terreni (catasto, superficie, FV previsto o possibile = min(impianto della cabina,
+(ha − 0,02) / ha per MWp), ente proprietario, coltura, esclusione) e cabine (nome, COD_AC, congestione, FV calcolato);
+terreni come **rombi** (simbolo con le immagini `cer-rombo-C|A|X`) e, dallo zoom 13, **confini della particella** dalle
+tessere degli immobili delle PA (`/edifici3d/immobili_pa/indice.json` → PMTiles, strato `particelle`, campo `r` = ref AdE)
+nel colore della classe; edifici ad **anello** dallo zoom 16, con la casella «Contorni degli edifici» accesa da sola (se
+l'utente non l'ha toccata). Livelli in `#caselle-cer`: **Consumi** (barre verticali accanto agli edifici, in scala tra
+loro), **Potenza FV** (barre gialle sulle cabine, in scala tra loro), **Aree non idonee** (acceso). `rete.js`: il
+riquadretto della scheda non è più quello del righello, che ha la stessa classe e lo nascondeva a ogni passaggio (vale
+per tutte le pagine con righello e schede).
+
+**Ente promotore** (24/11/2026 sera, Paolo: «tra i terreni vanno selezionati prioritariamente quelli dell'ente stesso»):
+casella di ricerca nei parametri sull'elenco degli enti del file statico degli immobili delle PA (`indice.json` → `enti`,
+come in Edifici pubblici per ente; sinonimi «ausl», «asl», «unibo»); nella pagina e nel collegamento solo la chiave
+derivata (`p-ente`, `data-collegamento="ente"`). I terreni dell'ente (`ente_chiave` o nome tra gli `enti` della particella)
+vanno prima degli altri ammessi, a qualsiasi punteggio, anche nella verifica dell'area del GSE e tra i proposti; ★ nella
+tabella, nota nella scheda, colonna nel file. In prova tre enti sintetici.
 
 Con `?prova=1`: cabine e aree del GSE sintetiche di `rete.js`, clima sintetico (`climaSintetico`), terreni sintetici
 generati per cabina; tutto dichiarato. Prove: `tests/test_fv_cer.py` (file, calcolo con Node, pagina in Chromium).

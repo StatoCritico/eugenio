@@ -108,6 +108,15 @@ const f = F.fabbisognoTerreni(d0, { distanzaKm: 5, tipo: "fisso", tolleranza: 1.
 const t = (a, d, pc) => F.punteggioTerreno({ area_m2: a, distanza_m: d, prob_coltura: pc, n_enti: 1 }, f);
 out.terreni = { vicino: t(f.haMin * 10000 * 1.1, 500, 10), lontano: t(f.haMin * 10000 * 1.1, 4000, 10), piccolo: t(f.haMin * 10000 * 0.5, 500, 10),
   oltre: t(f.haMin * 10000 * 1.1, 6000, 10), dop: t(f.haMin * 10000 * 1.1, 500, 80), ignoto: t(f.haMin * 10000 * 1.1, 500, null) };
+// (24/11/2026 sera) area non idonea e limite del 10% sulle colture certificate (con l'agrivoltaico)
+const fa = { ...f, tipo: "agrivoltaico" };
+out.vincoli = {
+  non_idonea: F.punteggioTerreno({ area_m2: f.haMin * 11000, distanza_m: 500, prob_coltura: 10, n_enti: 1, vincolo: { classe: "non_idonea", nome: "Parco X – zona B" } }, f),
+  limitata: F.punteggioTerreno({ area_m2: f.haMin * 11000, distanza_m: 500, prob_coltura: 10, n_enti: 1, vincolo: { classe: "limitata", nome: "Parco X – area contigua" } }, f),
+  dieci_no: F.punteggioTerreno({ area_m2: f.haMin * 11000, distanza_m: 500, prob_coltura: 80, n_enti: 1 }, fa),
+  dieci_si: F.punteggioTerreno({ area_m2: f.haMin * 11000, distanza_m: 500, prob_coltura: 80, n_enti: 1 }, { ...fa, limite10: true }),
+  dieci_grande: F.punteggioTerreno({ area_m2: f.haMin * 110000, distanza_m: 500, prob_coltura: 80, n_enti: 1 }, { ...fa, limite10: true }),
+};
 console.log(JSON.stringify(out));
 """
 
@@ -135,6 +144,10 @@ def test_calcolo_con_node():
     assert not t["oltre"]["ammesso"]
     assert t["dop"]["classe"] == "A" and not t["dop"]["ammesso"] and "agrivoltaico" in t["dop"]["motivi"][0]
     assert t["ignoto"]["ammesso"] and t["ignoto"]["punti"] < t["vicino"]["punti"]
+    v = o["vincoli"]
+    assert not v["non_idonea"]["ammesso"] and "area non idonea" in v["non_idonea"]["motivi"][0]
+    assert v["limitata"]["ammesso"]
+    assert v["dieci_no"]["ammesso"] and not v["dieci_si"]["ammesso"] and "10%" in v["dieci_si"]["motivi"][0] and v["dieci_grande"]["ammesso"]
 
 
 # ---------------------------------------------------------------------------------------------- Chromium
@@ -196,6 +209,36 @@ def test_pagina_in_prova(browser, base):
     assert not any(re.search(r"(?i)desc_colt|flag|codice fiscale", x) for x in terreni[2])
     piede = " ".join(d["piede"])
     assert "DATI SINTETICI" in piede and "non ceduti" in piede and "solo i codici" in piede
+    # (24/11/2026 sera) ente promotore: i suoi terreni ammessi vanno per primi
+    pg.fill("#p-ente-testo", "azienda sanitaria")
+    pg.wait_for_selector("#proposte-ente button", timeout=5000)
+    pg.click("#proposte-ente button")
+    assert pg.input_value("#p-ente") == "prova3" and "AZIENDA SANITARIA DI PROVA" in pg.inner_text("#p-ente-scelto")
+    ordine = pg.evaluate("window.EUGENIO_CER_FV_PAGINA.st.cabine.filter(c => c.terreni).map(c => c.terreni.filter(t => t.ammesso).map(t => !!t.proprio))")
+    for o in ordine:
+        assert o == sorted(o, reverse=True) and any(o)                      # prima tutti i propri, poi gli altri
+    assert "★" in pg.inner_text("#elenco-terreni")
+    # (24/11/2026 sera) area non idonea SINTETICA: il terreno che ci cade è escluso; schede al passaggio del mouse
+    esclusi = pg.evaluate("window.EUGENIO_CER_FV_PAGINA.st.cabine.flatMap(c => (c.terreni || []).filter(t => t.vincolo).map(t => [t.ammesso, t.motivi.join(';')]))")
+    assert esclusi and all(not a and "area non idonea" in m for a, m in esclusi)
+    sc = pg.evaluate("""(() => { const P = window.EUGENIO_CER_FV_PAGINA, c = P.st.cabine.find(x => x.terreni && x.terreni.length), t = c.terreni[0];
+      return { e: P.schedaEdificio(P.st.edifici[0].id), t: P.schedaTerreno(c.cod_ac, t.ref), c: P.schedaCabina(c.props || {}, c) }; })()""")
+    assert any("Consumi totali" in r and "MWh" in r for r in sc["e"]["righe"])
+    assert any(r.startswith("Superficie") for r in sc["t"]["righe"]) and any("kWp" in r for r in sc["t"]["righe"]) and any("Ente proprietario" in r for r in sc["t"]["righe"])
+    assert any("COD_AC" in r for r in sc["c"]["righe"]) and any("Congestione" in r for r in sc["c"]["righe"])
+    pg.check("#strato-consumi"); pg.check("#strato-fv")
+    leg = pg.inner_text("#legenda-cer")
+    assert "consumi degli edifici" in leg and "potenza FV" in leg and "aree non idonee" in leg
+    vis = pg.evaluate("(() => { const m = window.EUGENIO_CER_FV_PAGINA.st.det; return ['cer-barre-consumi','cer-barre-fv'].map(i => m.getLayoutProperty(i, 'visibility')); })()")
+    assert vis == ["visible", "visible"]
+    # la scheda compare davvero passando col mouse su un edificio (prima il riquadretto del righello la nascondeva)
+    pg.locator("#mappa-dettaglio").scroll_into_view_if_needed()
+    pt = pg.evaluate("""(() => { const m = window.EUGENIO_CER_FV_PAGINA.st.det, e = window.EUGENIO_CER_FV_PAGINA.st.edifici[0];
+      m.jumpTo({ center: [e.lon, e.lat], zoom: 13 }); const p = m.project([e.lon, e.lat]), b = m.getContainer().getBoundingClientRect(); return [p.x + b.left, p.y + b.top]; })()""")
+    pg.wait_for_timeout(800)
+    pg.mouse.move(pt[0] - 30, pt[1] - 30); pg.mouse.move(pt[0], pt[1], steps=4); pg.wait_for_timeout(200)
+    et = pg.evaluate("(() => { const e = document.querySelector('#mappa-dettaglio .etichetta-mappa:not(.righello-etichetta)'); return e ? [e.style.display, e.innerText] : null; })()")
+    assert et and et[0] == "block" and "Consumi totali" in et[1], et
     # immagine della mappa: aree del GSE spente e riaccese dopo
     acc = pg.evaluate("""(() => { const P = window.EUGENIO_CER_FV_PAGINA, m = P.st.det, o = P.opzioniImmagine(m);
       const spenta = m.getLayoutProperty('cer-aree-linea', 'visibility'); o.dopo(); return [spenta, m.getLayoutProperty('cer-aree-linea', 'visibility')]; })()""")
