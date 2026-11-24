@@ -6,7 +6,8 @@
 # l'attestazione di un agronomo.
 #
 # Peso di un appezzamento (0-1):
-#   - 1 se è biologico (FLAG_BIO), in produzione integrata (FLAG_INTE) o se la qualità dichiarata cita DOP/IGP/DOC/DOCG;
+#   - 1 se è biologico o in conversione (DESC_BIO; nei file fino al 2020 FLAG_BIO), in produzione integrata (FLAG_INTE,
+#     solo nei file vecchi) o se qualità o menzione dichiarate citano DOP/IGP/DOC/DOCG (DESC_QUAL, DESC_MENZ, DESC_CE_OL);
 #   - altrimenti il peso della prima categoria di coltura che corrisponde (espressione regolare sulla descrizione della
 #     coltura e dell'uso), moltiplicato per il fattore della provincia (zone dei disciplinari, approssimate per provincia).
 # Per ogni campagna: somma (area in comune con la particella / area della particella) × peso, al massimo 1.

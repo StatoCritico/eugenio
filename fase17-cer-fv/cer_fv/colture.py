@@ -7,6 +7,13 @@ non entrano nel repository né nelle risposte dell'API; da qui esce solo un nume
 Regole in `regole_colture.toml` (accanto a questo file). Campi usati del tracciato AGREA (descrizione della fornitura dei
 piani colturali grafici): DESC_COLT, DESC_USO, DESC_QUAL, FLAG_BIO, FLAG_INTE e la geometria dell'appezzamento; i nomi si
 cercano senza distinguere maiuscole e con qualche variante (COD_/DESC_ troncati dai DBF a 10 caratteri).
+
+Dal 24/11/2026 (file veri dei «UtilizziGrafici», dal 2021): il biologico è in DESC_BIO («Biologico», «In Conversione»), le
+menzioni di qualità in DESC_MENZ (es. «COLLINE DI ROMAGNA - DOP») e DESC_CE_OL («DOP», olio); la produzione integrata non
+c'è. Quei file hanno già comune ISTAT, sezione, foglio, particella e superficie (SUP_UTI, ha): l'abbinamento ai terreni
+pubblici si fa con le chiavi catastali (`IndiceCatasto`), leggendo il .dbf a pezzi dallo zip (agrea.righe_dbf), senza
+geometrie e tenendo in memoria solo le righe delle particelle pubbliche. Per i file senza foglio e particella (fino al 2020)
+resta l'abbinamento geometrico (`Indice`).
 """
 from __future__ import annotations
 
@@ -70,7 +77,9 @@ def peso_appezzamento(r: dict, provincia: str, R: Regole) -> float:
     """Peso 0-1 di un appezzamento: 1 se biologico, integrato o di qualità DOP/IGP; altrimenti categoria × provincia."""
     if str(r.get("flag_bio") or "").strip().upper() in SI or str(r.get("flag_inte") or "").strip().upper() in SI:
         return 1.0
-    if R.qualita.search(str(r.get("desc_qual") or "")):
+    if BIO.search(str(r.get("desc_bio") or "")):                  # «Biologico», «In Conversione» (24/11/2026)
+        return 1.0
+    if any(R.qualita.search(str(r.get(k) or "")) for k in ("desc_qual", "desc_menz", "desc_ce_ol")):
         return 1.0
     testo = f"{r.get('desc_colt') or ''} {r.get('desc_uso') or ''}".upper()
     for c in R.categorie:
@@ -82,7 +91,10 @@ def peso_appezzamento(r: dict, provincia: str, R: Regole) -> float:
 # ------------------------------------------------------------------ lettura dei file AGREA
 ALIAS = {"desc_colt": ["DESC_COLT", "DESC_COLTU", "DS_COLT", "COLTURA"], "desc_uso": ["DESC_USO", "DS_USO", "USO"],
          "desc_qual": ["DESC_QUAL", "DS_QUAL", "QUALITA"], "flag_bio": ["FLAG_BIO", "FL_BIO", "BIO"],
-         "flag_inte": ["FLAG_INTE", "FLAG_INTEG", "FL_INTE", "INTEGRATO"]}
+         "flag_inte": ["FLAG_INTE", "FLAG_INTEG", "FL_INTE", "INTEGRATO"], "desc_bio": ["DESC_BIO"],
+         "desc_menz": ["DESC_MENZ"], "desc_ce_ol": ["DESC_CE_OL"]}
+BIO = re.compile(r"BIOLOGIC|CONVERSIONE", re.I)
+CATASTO = ("ISTAT_PROV", "ISTAT_COMU", "SEZIONE", "FOGLIO", "PARTICELLA", "SUP_UTI")
 
 
 def _campi(nomi: list[str]) -> dict[str, int]:
@@ -217,20 +229,115 @@ class Indice:
         return min(1.0, pesata), min(1.0, coperta)
 
 
-def carica(radice: Path, R: Regole) -> list[Indice]:
+def norm(v) -> str:
+    """Foglio o particella senza zeri iniziali, in maiuscolo ('01133' → '1133', '0' resta '0')."""
+    t = str(v or "").strip().upper()
+    return t.lstrip("0") or ("0" if t else "")
+
+
+def chiave(belfiore: str, sezione: str, foglio, particella) -> tuple[str, str, str, str]:
+    return (str(belfiore or "").strip().upper(), str(sezione or "").strip().upper(), norm(foglio), norm(particella))
+
+
+def chiave_da_ref(ref: str, foglio, particella) -> tuple[str, str, str, str] | None:
+    """Chiave catastale di una particella dell'indice (ref AdE «F257_000012.34», «A944A_…» con la sezione)."""
+    testa = str(ref or "").split("_", 1)[0].upper()
+    if len(testa) < 4 or foglio in (None, "") or particella in (None, ""):
+        return None
+    return chiave(testa[:4], testa[4:], foglio, particella)
+
+
+class IndiceCatasto:
+    """Righe AGREA di una campagna abbinate per chiave catastale alle sole particelle che interessano."""
+
+    limiti = None
+
+    def __init__(self, anno: int, righe: dict[tuple, list[tuple[float, dict]]]):
+        self.anno = anno
+        self.righe = righe
+
+    def quota(self, particella, provincia: str, R: Regole, chiave_cat=None, area_m2=None) -> tuple[float, float]:
+        if not chiave_cat or not area_m2 or area_m2 <= 0:
+            return 0.0, 0.0
+        rr = self.righe.get(chiave_cat)
+        if rr is None and chiave_cat[1]:
+            rr = self.righe.get((chiave_cat[0], "", chiave_cat[2], chiave_cat[3]))
+        pesata = coperta = 0.0
+        for m2, att in rr or []:
+            a = m2 / area_m2
+            coperta += a
+            pesata += a * peso_appezzamento(att, provincia, R)
+        return min(1.0, pesata), min(1.0, coperta)
+
+
+def _catastale(cartella: Path) -> bool:
+    from . import agrea as A
+    for nome, z, n in A.dbf_negli_zip(cartella):
+        with z.open(n) as f:
+            campi = {c.upper() for c in A.campi_dbf(f)}
+        return set(CATASTO) <= campi
+    return False
+
+
+def indice_catasto(anno: int, cartella: Path, chiavi: set, istat_belfiore: dict[str, str]) -> IndiceCatasto:
+    """Legge a pezzi i .dbf della campagna e tiene solo le righe delle particelle in `chiavi`."""
+    from . import agrea as A
+    serve = list(CATASTO) + [a for al in ALIAS.values() for a in al]
+    righe: dict[tuple, list] = {}
+    lette = tenute = 0
+    senza_comune: set[str] = set()
+    senza_sez = {(c[0], "", c[2], c[3]) for c in chiavi if c[1]}
+    for nome, z, n in A.dbf_negli_zip(cartella):
+        with z.open(n) as f:
+            for r in A.righe_dbf(f, serve):
+                lette += 1
+                istat = (r.get("ISTAT_PROV", "") + r.get("ISTAT_COMU", "")).zfill(6)
+                belf = istat_belfiore.get(istat)
+                if not belf:
+                    senza_comune.add(istat)
+                    continue
+                k = chiave(belf, r.get("SEZIONE"), r.get("FOGLIO"), r.get("PARTICELLA"))
+                if k not in chiavi and k not in senza_sez:    # AGREA senza sezione dove l'AdE ce l'ha
+                    continue
+                try:
+                    m2 = float(r.get("SUP_UTI") or 0) * 10_000
+                except ValueError:
+                    continue
+                up = {kk.upper(): v for kk, v in r.items()}
+                att = {k2: up[a] for k2, al in ALIAS.items() for a in al if a in up and up[a]}
+                righe.setdefault(k, []).append((m2, att))
+                tenute += 1
+        log.info("%s: lette %d righe, tenute finora %d", nome, lette, tenute)
+    if senza_comune:
+        log.warning("campagna %d: %d codici ISTAT senza codice catastale (comuni cambiati?): %s", anno, len(senza_comune),
+                    ", ".join(sorted(senza_comune)[:10]))
+    return IndiceCatasto(anno, righe)
+
+
+def carica(radice: Path, R: Regole, chiavi: set | None = None, istat_belfiore: dict[str, str] | None = None) -> list:
+    """Indici delle ultime campagne: per chiave catastale se i file la hanno (e sono date `chiavi` e la tabella dei
+    comuni), altrimenti geometrico."""
     out = []
     for anno, cartella in campagne_disponibili(radice, R.campagne):
-        el = list(appezzamenti(cartella))
-        log.info("campagna %d: %d appezzamenti", anno, len(el))
-        out.append(Indice(anno, el))
+        if chiavi is not None and istat_belfiore and _catastale(cartella):
+            ix = indice_catasto(anno, cartella, chiavi, istat_belfiore)
+            log.info("campagna %d: %d particelle pubbliche con righe AGREA", anno, len(ix.righe))
+        else:
+            el = list(appezzamenti(cartella))
+            log.info("campagna %d: %d appezzamenti", anno, len(el))
+            ix = Indice(anno, el)
+        out.append(ix)
     return out
 
 
-def indicatore(particella_3003, provincia: str, indici: Iterable[Indice], R: Regole) -> dict:
+def indicatore(particella_3003, provincia: str, indici: Iterable, R: Regole, chiave_cat=None, area_m2=None) -> dict:
     """Probabilità 0-100 (massimo delle campagne), classe, campagne usate e quota dichiarata ad AGREA."""
     migliore, dich, anni = None, 0.0, []
     for ix in indici:
-        q, c = ix.quota(particella_3003, provincia, R)
+        if isinstance(ix, IndiceCatasto):
+            q, c = ix.quota(particella_3003, provincia, R, chiave_cat, area_m2)
+        else:
+            q, c = ix.quota(particella_3003, provincia, R) if particella_3003 is not None else (0.0, 0.0)
         anni.append(ix.anno)
         dich = max(dich, c)
         if c > 0:

@@ -129,3 +129,131 @@ def test_particella_non_dichiarata(tmp_path):
     info = T.costruisci(tmp_path, tmp_path / "cer_fv", ag)
     db = sqlite3.connect(info["file"])
     assert db.execute("SELECT DISTINCT classe_coltura FROM terreni").fetchall() == [("non dichiarata",)]
+
+
+# ---------------------------------------------------------------- (24/11/2026) file «UtilizziGrafici» con le chiavi catastali
+from cer_fv import agrea as A  # noqa: E402
+
+CAMPI_UTI = ["ANNO_CAMP", "COD_AZI", "ISTAT_PROV", "ISTAT_COMU", "SEZIONE", "FOGLIO", "PARTICELLA", "DESC_USO", "DESC_COLT",
+             "DESC_BIO", "DESC_MENZ", "DESC_CE_OL", "SUP_UTI"]
+
+
+def _uti(d: Path, anno: int, righe: list[dict], provincia: str = "MO"):
+    """Zip «Uti_Part_PCG_<anno>_<PR>.zip» con il tracciato vero (solo i campi usati), geometrie fittizie."""
+    cart = d / str(anno)
+    cart.mkdir(parents=True, exist_ok=True)
+    base = cart / f"_Uti_{anno}"
+    w = shapefile.Writer(str(base), shapeType=shapefile.POINT, encoding="latin-1")
+    for c in CAMPI_UTI:
+        w.field(c, "N" if c == "SUP_UTI" else "C", size=12 if c == "SUP_UTI" else 80, decimal=4 if c == "SUP_UTI" else 0)
+    for r in righe:
+        w.point(1_650_000, 4_940_000)
+        w.record(*[r.get(c, "") if c != "SUP_UTI" else r.get(c, 0) for c in CAMPI_UTI])
+    w.close()
+    with zipfile.ZipFile(cart / f"Uti_Part_PCG_{anno}_{provincia}.zip", "w") as z:
+        for e in (".shp", ".shx", ".dbf"):
+            z.write(base.with_suffix(e), f"Uti_Part_PCG_{anno}_{provincia}{e}")
+    for e in (".shp", ".shx", ".dbf"):
+        base.with_suffix(e).unlink()
+
+
+def _riga(foglio, part, colt, ha, bio="Convenzionale", menz="", ce="", sez="", comu="225"):
+    return {"ANNO_CAMP": "2025", "COD_AZI": "6DC871BF", "ISTAT_PROV": "036", "ISTAT_COMU": comu, "SEZIONE": sez,
+            "FOGLIO": foglio, "PARTICELLA": part, "DESC_USO": "", "DESC_COLT": colt, "DESC_BIO": bio, "DESC_MENZ": menz,
+            "DESC_CE_OL": ce, "SUP_UTI": ha}
+
+
+def test_campi_veri_bio_e_menzioni():
+    R = K.regole()
+    assert K.peso_appezzamento({"desc_colt": "MAIS", "desc_bio": "Biologico"}, "036", R) == 1
+    assert K.peso_appezzamento({"desc_colt": "MAIS", "desc_bio": "In Conversione"}, "036", R) == 1
+    assert K.peso_appezzamento({"desc_colt": "MAIS", "desc_bio": "Convenzionale"}, "036", R) == pytest.approx(0.05)
+    assert K.peso_appezzamento({"desc_colt": "OLIVO DA OLIO", "desc_menz": "COLLINE DI ROMAGNA - DOP"}, "033", R) == 1
+    assert K.peso_appezzamento({"desc_colt": "OLIVO DA OLIO", "desc_ce_ol": "DOP"}, "033", R) == 1
+    assert K.chiave_da_ref("F257_000012.34", "12", "34") == ("F257", "", "12", "34")
+    assert K.chiave_da_ref("A944A_000003.7", "0003", "007") == ("A944", "A", "3", "7")
+    assert K.chiave("F257", "", "013", "01133") == ("F257", "", "13", "1133")
+
+
+def test_lettura_dbf_a_pezzi(tmp_path):
+    _uti(tmp_path, 2025, [_riga("12", "00034", "ERBA MEDICA", 1.5), _riga("13", "1", "VITE", 0.25, sez="B")])
+    for nome, z, n in A.dbf_negli_zip(tmp_path / "2025"):        # lo zip resta aperto dentro il giro
+        with z.open(n) as f:
+            assert A.campi_dbf(f)[:3] == ["ANNO_CAMP", "COD_AZI", "ISTAT_PROV"]
+        with z.open(n) as f:
+            rr = list(A.righe_dbf(f, ["FOGLIO", "PARTICELLA", "SUP_UTI", "SEZIONE"]))
+    assert rr == [{"SEZIONE": "", "FOGLIO": "12", "PARTICELLA": "00034", "SUP_UTI": "1.5000"},
+                  {"SEZIONE": "B", "FOGLIO": "13", "PARTICELLA": "1", "SUP_UTI": "0.2500"}]
+
+
+def test_costruisci_con_chiavi_catastali(tmp_path):
+    _immobili(tmp_path)
+    ag = tmp_path / "agrea"
+    # particelle di 40.000 m² (area_m2 dell'indice): 12/34 biologica per 4 ha; 12/35 medica per 2 ha (metà) nel 2024 e
+    # 4 ha nel 2025; 13/1 mais; una particella privata (99/9) che non deve restare in memoria; un comune non in tabella
+    _uti(ag, 2024, [_riga("12", "00034", "FRUMENTO TENERO", 4, bio="Biologico"), _riga("12", "35", "ERBA MEDICA", 2),
+                    _riga("13", "1", "MAIS DA GRANELLA", 4), _riga("99", "9", "VITE", 1), _riga("12", "34", "VITE", 1, comu="999")])
+    _uti(ag, 2025, [_riga("012", "035", "ERBA MEDICA", 4)])
+    comuni = tmp_path / "comuni.csv"
+    intestazione = ";".join(f"c{i}" for i in range(20))
+    comuni.write_text(intestazione + "\n" + ";".join(["08", "", "", "", "036023"] + [""] * 14 + ["F257"]) + "\n", encoding="latin-1")
+    # il codice ISTAT di Modena è 036023: le righe dei test hanno 036225, quindi prima nessun abbinamento…
+    info = T.costruisci(tmp_path, tmp_path / "cer_fv", ag, comuni=comuni)
+    db = sqlite3.connect(info["file"])
+    assert db.execute("SELECT COUNT(prob_coltura) FROM terreni").fetchone()[0] == 0
+    # …poi con il codice giusto
+    comuni.write_text(intestazione + "\n" + ";".join(["08", "", "", "", "036225"] + [""] * 14 + ["F257"]) + "\n", encoding="latin-1")
+    info = T.costruisci(tmp_path, tmp_path / "cer_fv", ag, comuni=comuni)
+    assert info["campagne_agrea"] == [2024, 2025]
+    db = sqlite3.connect(info["file"]); db.row_factory = sqlite3.Row
+    r = {x["ref"]: dict(x) for x in db.execute("SELECT * FROM terreni")}
+    assert r["F257_000012.34"]["prob_coltura"] == 100 and r["F257_000012.34"]["quota_dichiarata"] == 1
+    assert r["F257_000012.35"]["prob_coltura"] == 60          # 2025: tutta medica × 0,6 × Modena 1,0 (2024: metà)
+    assert r["F257_000013.1"]["prob_coltura"] == 5
+    assert not (ag / "comuni_istat.csv").exists()               # nessuno scaricamento: la tabella è quella data
+
+
+def test_elenco_e_campagne_chiuse():
+    import datetime as dt
+    assert A.campagne_chiuse([2021, 2022, 2023, 2024, 2025, 2026], oggi=dt.date(2026, 11, 24)) == [2023, 2024, 2025]
+    assert A.campagne_chiuse([2021, 2022], oggi=dt.date(2026, 11, 24)) == [2021, 2022]
+
+
+def test_scarica_senza_rete(tmp_path, monkeypatch):
+    import datetime as dt
+    import io
+    zip_finto = io.BytesIO()
+    with zipfile.ZipFile(zip_finto, "w") as z:
+        z.writestr("x.dbf", b"x")
+    dati = zip_finto.getvalue()
+    radice = ('<pre> 8/24/2023  9:11 AM        &lt;dir&gt; <A HREF="/agrea-file/UtilizziGrafici/2024/">2024</A><br>'
+              ' 5/28/2026 12:28 AM        &lt;dir&gt; <A HREF="/agrea-file/UtilizziGrafici/2025/">2025</A><br>'
+              ' 5/28/2026 12:28 AM        &lt;dir&gt; <A HREF="/agrea-file/UtilizziGrafici/2026/">2026</A><br></pre>')
+
+    def anno(a):
+        return "".join(f' 5/23/2025 11:00 PM {len(dati):>12} <A HREF="/agrea-file/UtilizziGrafici/{a}/Uti_Part_PCG_{a}_{p}.zip">x</A><br>'
+                       for p in ("BO", "RN", "XX"))
+    chiamate = []
+
+    class Risposta(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def finto(url, timeout=0):
+        chiamate.append(url)
+        if url == A.BASE:
+            return Risposta(radice.encode())
+        if url.endswith("/"):
+            return Risposta(anno(url.rstrip("/").rsplit("/", 1)[-1]).encode())
+        return Risposta(dati)
+    monkeypatch.setattr(A, "_get", finto)
+    (tmp_path / "2019").mkdir()
+    e = A.scarica(tmp_path, quante=2, oggi=dt.date(2026, 11, 24), togli_vecchie=True)
+    assert e["campagne"] == [2024, 2025] and len(e["scaricati"]) == 4 and e["tolte"] == ["2019"]
+    assert sorted(p.name for p in (tmp_path / "2025").iterdir()) == ["Uti_Part_PCG_2025_BO.zip", "Uti_Part_PCG_2025_RN.zip"]
+    assert not any("_XX" in c for c in chiamate)
+    e = A.scarica(tmp_path, quante=2, oggi=dt.date(2026, 11, 24))
+    assert e["scaricati"] == [] and len(e["gia_presenti"]) == 4

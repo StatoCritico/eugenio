@@ -65,17 +65,20 @@ def terreni_dall_indice(indice: Path) -> list[dict]:
     return out
 
 
-def geometrie(parquet: Path, refs: set[str], limiti_4326=None) -> dict[str, tuple]:
-    """ref → (poligono in EPSG:4326, foglio, particella) dal parquet delle particelle della fase 7."""
+def geometrie(parquet: Path, refs: set[str], limiti_4326=None, con_geometria: bool = True) -> dict[str, tuple]:
+    """ref → (poligono in EPSG:4326 o None, foglio, particella) dal parquet delle particelle della fase 7."""
     import pyarrow.parquet as pq
     import shapely
     out = {}
     f = pq.ParquetFile(parquet)
-    cols = [c for c in ("ref_ade", "foglio", "particella", "geometry") if c in f.schema_arrow.names]
+    cols = [c for c in ("ref_ade", "foglio", "particella") + (("geometry",) if con_geometria else ()) if c in f.schema_arrow.names]
     for b in f.iter_batches(columns=cols, batch_size=50_000):
         d = b.to_pydict()
         for i, ref in enumerate(d["ref_ade"]):
             if ref not in refs:
+                continue
+            if not con_geometria:
+                out[ref] = (None, d.get("foglio", [None] * len(d["ref_ade"]))[i], d.get("particella", [None] * len(d["ref_ade"]))[i])
                 continue
             g = shapely.from_wkb(d["geometry"][i])
             if limiti_4326 is not None:
@@ -87,8 +90,10 @@ def geometrie(parquet: Path, refs: set[str], limiti_4326=None) -> dict[str, tupl
     return out
 
 
-def costruisci(immobili: Path, dest: Path, agrea: Path | None = None, regole_file: Path | None = None) -> dict:
-    """Scrive `dest/terreni_pubblici_<anno>.sqlite`. `immobili`: cartella con l'indice SQLite e il parquet delle particelle."""
+def costruisci(immobili: Path, dest: Path, agrea: Path | None = None, regole_file: Path | None = None,
+               comuni: Path | None = None) -> dict:
+    """Scrive `dest/terreni_pubblici_<anno>.sqlite`. `immobili`: cartella con l'indice SQLite e il parquet delle particelle.
+    `comuni`: tabella ISTAT → codice catastale per l'abbinamento dei file AGREA con le particelle (vedi agrea.istat_belfiore)."""
     t0 = time.time()
     indice = _ultimo(immobili, "immobili_pa_*.sqlite")
     if not indice:
@@ -97,32 +102,55 @@ def costruisci(immobili: Path, dest: Path, agrea: Path | None = None, regole_fil
     righe = terreni_dall_indice(indice)
     log.info("terreni pubblici in proprietà: %d particelle", len(righe))
     R = K.regole(regole_file)
-    indici = K.carica(agrea, R) if agrea else []
-    limiti = None
-    if indici:
-        import shapely
+    parquet = immobili / f"immobili_pa_{anno}_particelle.parquet"
+    refs = {r["ref"] for r in righe}
+    # prima foglio e particella (senza geometrie): servono le chiavi catastali per leggere AGREA tenendo solo queste
+    fp = geometrie(parquet, refs, con_geometria=False) if parquet.exists() else {}
+    chiavi = {}
+    for r in righe:
+        _, foglio, part = fp.get(r["ref"], (None, None, None))
+        r["foglio"], r["particella"] = foglio, part
+        k = K.chiave_da_ref(r["ref"], foglio, part)
+        if k:
+            chiavi[r["ref"]] = k
+    indici = []
+    if agrea:
+        from . import agrea as A
+        tab = {}
+        if any(K._catastale(c) for _, c in K.campagne_disponibili(agrea, R.campagne)):
+            try:
+                tab = A.istat_belfiore(comuni, agrea)
+            except Exception as e:   # noqa: BLE001 - senza tabella dei comuni resta l'abbinamento geometrico
+                log.warning("tabella dei comuni non disponibile (%s): abbinamento geometrico", e)
+        indici = K.carica(agrea, R, set(chiavi.values()), tab)
+    spaziali = [ix for ix in indici if isinstance(ix, K.Indice)]
+    geo = {}
+    if spaziali and parquet.exists():
         from pyproj import Transformer
         tr = Transformer.from_crs(3003, 4326, always_xy=True)
-        b = [ix.limiti for ix in indici if ix.limiti is not None]
-        x0, y0 = tr.transform(min(v[0] for v in b), min(v[1] for v in b))
-        x1, y1 = tr.transform(max(v[2] for v in b), max(v[3] for v in b))
-        limiti = (x0, y0, x1, y1)
-    parquet = immobili / f"immobili_pa_{anno}_particelle.parquet"
-    geo = geometrie(parquet, {r["ref"] for r in righe}, limiti) if parquet.exists() else {}
-    if indici:
-        import shapely
+        b = [ix.limiti for ix in spaziali if ix.limiti is not None]
+        limiti = None
+        if b:
+            x0, y0 = tr.transform(min(v[0] for v in b), min(v[1] for v in b))
+            x1, y1 = tr.transform(max(v[2] for v in b), max(v[3] for v in b))
+            limiti = (x0, y0, x1, y1)
+        geo = geometrie(parquet, refs, limiti)
+    if spaziali:
         import shapely.ops
         from pyproj import Transformer
         tr = Transformer.from_crs(4326, 3003, always_xy=True)
     con_ind = 0
     for r in righe:
-        g, foglio, part = geo.get(r["ref"], (None, None, None))
-        r["foglio"], r["particella"] = foglio, part
         r.update({"prob_coltura": None, "classe_coltura": None, "campagne": None, "quota_dichiarata": None})
-        if indici and g is not None:
-            g3 = shapely.ops.transform(tr.transform, g)
-            r.update(K.indicatore(g3, K.codice_provincia(r["provincia"]), indici, R))
-            con_ind += 1
+        if not indici:
+            continue
+        g = geo.get(r["ref"], (None,))[0]
+        g3 = shapely.ops.transform(tr.transform, g) if (spaziali and g is not None) else None
+        k = chiavi.get(r["ref"])
+        if g3 is None and k is None:
+            continue
+        r.update(K.indicatore(g3, K.codice_provincia(r["provincia"]), indici, R, k, r.get("area_m2")))
+        con_ind += 1
     dest.mkdir(parents=True, exist_ok=True)
     f = dest / f"terreni_pubblici_{anno}.sqlite"
     tmp = f.with_suffix(".sqlite.tmp")

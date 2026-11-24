@@ -39,57 +39,54 @@ Prove: `fase5-sito/tests/test_fv_cer.py` (file, calcolo con Node, pagina in Chro
 Senza il file dei terreni la pagina funziona fino alla potenza per cabina e alla parte B; la parte A dice «i terreni
 pubblici non sono ancora sul server».
 
-**CF1 – Browser (PC)**: apri https://agrea.regione.emilia-romagna.it/servizi/documentazione/open-data-sullutilizzo-del-suolo-1
-e scarica i **piani colturali grafici** delle 9 province per le **ultime tre campagne concluse** (es. 2023, 2024, 2025).
-Deve comparire uno zip per provincia e anno.
+**Dal 24/11 alle 10:29 (Paolo: «usa la cartella del progetto eugenio per scaricare i file, non sparpagliarli
+dappertutto»)**: i file li scarica il server stesso in `/srv/energia/dati/agrea/` (la cartella dei dati di EuGEnio); niente
+PC, niente `/tmp`. Si usano i file **«UtilizziGrafici»** (campi già ritagliati sulle particelle, con foglio e particella),
+letti a pezzi senza estrarli.
 
-**CF2 – PC**: metti gli zip in tre cartelle con il nome dell'anno, per esempio `C:\Users\ingpa\Documents\claude\agrea\2024\`.
-Non aprirli: il costruttore legge gli zip (anche zip dentro zip).
-
-**CF3 – PC (PowerShell)**: copia le cartelle sul server (stesso comando che usi per gli altri file, cambiando l'utente o
-l'indirizzo se diversi):
-
-```powershell
-scp -r C:\Users\ingpa\Documents\claude\agrea ubuntu@<server>:/tmp/agrea
-```
-
-**CF4 – Server**: sposta i file nella cartella dei dati (non è servita dal sito e non va nel repository):
+**CF1 – Server**: crea le due cartelle dei dati e rendile tue (l'api le legge soltanto):
 
 ```bash
-sudo mkdir -p /srv/energia/dati/agrea /srv/energia/dati/cer_fv
-sudo cp -r /tmp/agrea/* /srv/energia/dati/agrea/ && ls /srv/energia/dati/agrea
+sudo mkdir -p /srv/energia/dati/agrea /srv/energia/dati/cer_fv && sudo chown -R "$USER" /srv/energia/dati/agrea /srv/energia/dati/cer_fv
 ```
 
-Deve comparire l'elenco degli anni (`2023 2024 2025`).
+Non deve comparire niente.
 
-**CF5 – Server**: aggiungi `pyshp` al venv della fase 7:
+**CF2 – Server**: aggiungi `pyshp` al venv della fase 7:
 
 ```bash
 ~/energia/fase7-territorio/.venv/bin/pip install -r ~/energia/fase17-cer-fv/requirements.txt
 ```
 
-**CF6 – Server**: costruisci i terreni (qualche minuto; alla fine un riepilogo JSON con `particelle`, `con_indicatore` e
+Deve finire con «Successfully installed pyshp…» o «Requirement already satisfied».
+
+**CF3 – Server**: scarica le ultime tre campagne chiuse (2023, 2024, 2025: ~3,9 GB, qualche minuto):
+
+```bash
+cd ~/energia/fase17-cer-fv && PYTHONPATH=. ~/energia/fase7-territorio/.venv/bin/python -m cer_fv scarica-agrea
+```
+
+Alla fine un riepilogo con `"campagne": [2023, 2024, 2025]` e 27 file in `"scaricati"`. Se si interrompe, rilancia lo stesso
+comando: riprende dai file mancanti.
+
+**CF4 – Server**: controlla lo spazio: `du -sh /srv/energia/dati/agrea && df -h /srv/energia` (circa 3,9 GB usati).
+
+**CF5 – Server**: costruisci i terreni (qualche minuto; alla fine un riepilogo con `particelle`, `con_indicatore` e
 `campagne_agrea`):
 
 ```bash
 cd ~/energia/fase17-cer-fv && PYTHONPATH=. ~/energia/fase7-territorio/.venv/bin/python -m cer_fv terreni \
-    --immobili /srv/energia/dati/immobili_pa --agrea /srv/energia/dati/agrea --dest /tmp/cer_fv
+    --immobili /srv/energia/dati/immobili_pa --agrea /srv/energia/dati/agrea --dest /srv/energia/dati/cer_fv
 ```
 
-Se scrive «nessun campo della coltura (DESC_COLT/DESC_USO)» per un file, mandami le prime righe del suo `.dbf` (i nomi
-dei campi potrebbero essere diversi da quelli del tracciato del 2018).
+`con_indicatore` deve essere di qualche migliaio (i terreni pubblici dell'Emilia-Romagna dichiarati ad AGREA). Se compare
+«codici ISTAT senza codice catastale», mandami la riga.
 
-**CF7 – Server**: copia il file per l'api:
-
-```bash
-sudo cp /tmp/cer_fv/terreni_pubblici_*.sqlite /srv/energia/dati/cer_fv/ && sudo chown -R 1000:1000 /srv/energia/dati/cer_fv
-```
-
-**CF8 – Browser**: apri https://eugenio.statocritico.it/api/cer-fv/info: deve comparire `"disponibile": true` con l'anno e
+**CF6 – Browser**: apri https://eugenio.statocritico.it/api/cer-fv/info: deve comparire `"disponibile": true` con l'anno e
 le campagne AGREA.
 
-**CF9 – Browser**: apri https://eugenio.statocritico.it/fv-cer.html, premi «Prova con l'esempio», poi «Calcola» e «Cerca i
+**CF7 – Browser**: apri https://eugenio.statocritico.it/fv-cer.html, premi «Prova con l'esempio», poi «Calcola» e «Cerca i
 terreni pubblici». Devono comparire la tabella delle cabine, i terreni (con la colonna «Coltura DOP o certificata») e
 l'elenco B.
 
-**CF10 – Server**: cancella le copie temporanee con `rm -r /tmp/agrea /tmp/cer_fv` (gli zip sul PC puoi tenerli).
+**Ogni anno, dopo il 31/12** (nuova campagna chiusa): CF3 con `--togli-vecchie` (cancella la campagna più vecchia), poi CF5.
