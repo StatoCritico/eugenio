@@ -641,12 +641,12 @@ righello a sinistra; passi a destra.
    L.R. 5/2026 come modificato dalla L.R. 15/2026, senza più il limite di 1 MW, che resta come limite degli incentivi del
    GSE; oppure agrivoltaico) o A (probabilità di coltura DOP o certificata ≥ 50 %: solo agrivoltaico); per i primi `n × 2`
    ammessi domanda al GSE sull'area: fuori area → esclusi. **Aree non idonee** (24/11 sera): zone A, B e C dei parchi,
-   riserve e siti della Rete Natura 2000, lette dal browser dal WFS della Regione
+   riserve e siti della Rete Natura 2000 (esclusi anche questi: Paolo, 24/11 alle 18:32), lette dal browser dal WFS della Regione
    (`servizigis.regione.emilia-romagna.it/wfs/areeprotette_natura2000`, strati `Parchi_Riserve_zone` e
    `SIC_ZPS_regionali`, GeoJSON con `bbox` attorno a edifici e cabine, CORS aperto, CC BY 4.0) solo se la zona tocca
    l'Emilia-Romagna: il terreno il cui centro cade dentro è escluso; aree contigue e zone D dei parchi solo segnalate. In
    prova un'area non idonea SINTETICA attorno a un terreno. Facoltativo il **limite del 10 %** sui terreni con colture
-   certificate (casella `p-10`: superficie richiesta × 10 per la classe A; DAL 125/2023, parti sulle colture di pregio
+   certificate (casella `p-10`, **accesa** per difetto dal 24/11 alle 18:32, Paolo: superficie richiesta × 10 per la classe A; DAL 125/2023, parti sulle colture di pregio
    rimaste con l'art. 21 della L.R. 5/2026, interpretazione prudente). La regola generale del 10 % della DAL 28/2010 non
    si applica più (art. 21 della L.R. 5/2026): la superficie occupata si calcola con l'art. 5 (recinzione per il fisso,
    30 % o proiezione per l'agrivoltaico). Classe I (aree idonee) in una fase successiva. Contatti: rimando all'IPA.

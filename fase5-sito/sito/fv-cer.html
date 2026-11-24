@@ -308,8 +308,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <label>Distanza massima dei terreni dalla cabina (km) <input id="p-dist" type="number" min="0.5" max="15" step="0.5" value="5" data-collegamento="dist"></label>
         <label>Terreni da proporre per cabina <input id="p-n" type="number" min="1" max="30" step="1" value="5" data-collegamento="n"></label>
         <label>Superficie accettata fino a (volte quella necessaria) <input id="p-toll" type="number" min="1" max="5" step="0.1" value="1.3" data-collegamento="toll"></label>
-        <label class="casella"><input id="p-10" type="checkbox" data-collegamento="dieci"> Limite del 10% sui terreni con colture certificate
-          (impianto al massimo sul 10% del terreno: DAL 125/2023, parti sulle colture di pregio; interpretazione prudente)</label>
+        <label class="casella"><input id="p-10" type="checkbox" data-collegamento="dieci" checked> Limite del 10% sui terreni con colture certificate
+          (impianto al massimo sul 10% del terreno: DAL 125/2023, parti sulle colture di pregio; interpretazione prudente, accesa per difetto)</label>
       </div>
       <div class="riga-campi">
         <button class="bottone" id="calcola" type="button" disabled>Calcola</button>

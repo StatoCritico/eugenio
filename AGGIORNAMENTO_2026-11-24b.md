@@ -26,7 +26,7 @@ Fatto:
   DAL 125/2023; l'art. 21 della **L.R. 5/2026** le fa cessare, tranne le parti della DAL 125/2023 sulle colture di pregio.
   Oggi la superficie si conta con l'art. 5 (recinzione per il fisso; 30 % o proiezione dei moduli per l'agrivoltaico),
   come faceva già la pagina; il limite comunale è il 2,5 % della SAU. Il 10 % resta solo come **scelta prudente** per i
-  terreni con colture certificate (casella nei parametri, spenta). La L.R. 27/10/2026 n. 15 ha tolto il limite di 1 MW per
+  terreni con colture certificate (casella nei parametri, **accesa** per difetto: Paolo, 18:32). Siti Natura 2000 esclusi come le zone dei parchi (Paolo, 18:32). La L.R. 27/10/2026 n. 15 ha tolto il limite di 1 MW per
   gli impianti delle CER fuori dalle aree idonee: il limite di 1 MW per impianto resta quello degli incentivi del GSE.
 - **Ente promotore** (Paolo, 17:22: «tra i terreni vanno selezionati prioritariamente quelli dell'ente stesso … ad
   esempio come AUSL Romagna ne abbiamo parecchi»): ricerca dell'ente nei parametri; i suoi terreni ammessi vanno prima
