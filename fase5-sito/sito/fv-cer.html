@@ -186,15 +186,23 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
     <div class="comandi-ortofoto comandi-dettaglio">
       <label>Ortofoto <select id="fonte-dettaglio"><option value="">nessuna ortofoto</option></select></label>
       <div class="caselle-strati" id="caselle-strati"></div>
+      <div class="caselle-strati" id="caselle-cer">
+        <label class="casella-strato"><input type="checkbox" id="strato-consumi" data-collegamento="barre_consumi"> Consumi (barre, MWh)</label>
+        <label class="casella-strato"><input type="checkbox" id="strato-fv" data-collegamento="barre_fv"> Potenza FV (barre, kWp)</label>
+        <label class="casella-strato"><input type="checkbox" id="strato-vincoli" data-collegamento="non_idonee" checked> Aree non idonee (parchi, riserve, Rete Natura 2000)</label>
+      </div>
       <div id="posto-righello"></div>
       <div id="sposta-ortofoto"></div>
     </div>
     <div class="legenda legenda-rete" id="legenda-cer" aria-live="polite"></div>
     <p class="aiuto">Gli edifici sono i punti col bordo scuro; le cabine primarie hanno il colore della saturazione (come nello
       Stato della rete elettrica) e un anello se servono i tuoi edifici; le aree convenzionali del GSE delle cabine interessate
-      si leggono dal vivo dal servizio del GSE. I terreni pubblici trovati sono quadrati: verdi se adatti, arancioni se
-      ammettono solo l'agrivoltaico, grigi se esclusi. Particelle catastali e contorni degli edifici si accendono da vicino
-      (zoom 16 e oltre).</p>
+      si leggono dal vivo dal servizio del GSE. I terreni pubblici trovati sono rombi: verdi se adatti, arancioni se
+      ammettono solo l'agrivoltaico, grigi se esclusi; da vicino (zoom 13 e oltre) compaiono i confini della particella nello
+      stesso colore. Dallo zoom 16 gli edifici diventano anelli e si accendono i contorni degli edifici. Passando col mouse su
+      un punto compare la sua scheda. Le barre (consumi sugli edifici, potenza FV sulle cabine) sono in scala tra loro, con
+      il valore nella scheda. Le <b>aree non idonee</b> (zone A, B e C dei parchi, riserve, siti della Rete Natura 2000) si
+      leggono dal vivo dal servizio della Regione Emilia-Romagna e i terreni che ci cadono sono esclusi.</p>
     <p class="aiuto attribuzione-gse" id="attribuzione-gse" hidden></p>
     <p class="attribuzione-ortofoto" id="attribuzione-ortofoto" aria-live="polite"></p>
     <div class="legenda-strati" id="legenda-strati" aria-live="polite" hidden></div>
@@ -278,7 +286,14 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         immessa e consumi degli edifici della cabina) resta almeno alla quota scelta. L'accumulo ha un'energia pari alle ore
         indicate per la potenza del fotovoltaico, si carica solo dal fotovoltaico e restituisce l'energia quando gli edifici
         consumano più di quanto si produce. Gli impianti si dividono in parti uguali fino alla potenza massima di ognuno
-        (1 MW: limite degli incentivi delle CER e, fuori dalle aree idonee, dell'art. 10 della L.R. 5/2026).</p>
+        (1 MW: limite degli incentivi del GSE per le CER).</p>
+      <div class="cerca-ente-cer">
+        <label>Ente promotore: i suoi terreni hanno la precedenza <input id="p-ente-testo" type="search" autocomplete="off"
+          placeholder="per esempio AUSL della Romagna" aria-describedby="p-ente-scelto"></label>
+        <input id="p-ente" type="hidden" data-collegamento="ente">
+        <div class="proposte-ente" id="proposte-ente" role="listbox" hidden></div>
+        <p class="aiuto" id="p-ente-scelto">Nessun ente scelto: i terreni si ordinano solo col punteggio.</p>
+      </div>
       <div class="campi-cer" id="campi-parametri">
         <label>Ore di accumulo (energia = ore × potenza FV) <input id="p-h" type="number" min="0" max="8" step="0.5" value="0" data-collegamento="h"></label>
         <label>Quota minima di energia condivisa (%) <input id="p-q" type="number" min="5" max="100" step="1" value="60" data-collegamento="q"></label>
@@ -293,6 +308,8 @@ document.querySelectorAll("img[data-logo]").forEach(function(i){var s="logo/"+v+
         <label>Distanza massima dei terreni dalla cabina (km) <input id="p-dist" type="number" min="0.5" max="15" step="0.5" value="5" data-collegamento="dist"></label>
         <label>Terreni da proporre per cabina <input id="p-n" type="number" min="1" max="30" step="1" value="5" data-collegamento="n"></label>
         <label>Superficie accettata fino a (volte quella necessaria) <input id="p-toll" type="number" min="1" max="5" step="0.1" value="1.3" data-collegamento="toll"></label>
+        <label class="casella"><input id="p-10" type="checkbox" data-collegamento="dieci"> Limite del 10% sui terreni con colture certificate
+          (impianto al massimo sul 10% del terreno: DAL 125/2023, parti sulle colture di pregio; interpretazione prudente)</label>
       </div>
       <div class="riga-campi">
         <button class="bottone" id="calcola" type="button" disabled>Calcola</button>
